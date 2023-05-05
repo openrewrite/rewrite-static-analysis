@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.Issue;
@@ -33,6 +33,7 @@ class UseSystemLineSeparatorTest implements RewriteTest {
     @Test
     void useSystemLineSeparator() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -58,6 +59,7 @@ class UseSystemLineSeparatorTest implements RewriteTest {
     @Test
     void useSystemLineSeparatorStaticImport() {
         rewriteRun(
+          //language=java
           java(
             """
               import static java.lang.System.getProperty;
@@ -86,6 +88,7 @@ class UseSystemLineSeparatorTest implements RewriteTest {
     @Test
     void doNotChangeIfNotGetLineSeparator() {
         rewriteRun(
+          //language=java
           java(
             """
               import static java.lang.System.getProperty;

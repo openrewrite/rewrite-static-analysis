@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
@@ -55,59 +56,41 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
     }
 
     @Override
-    protected JavaIsoVisitor<ExecutionContext> getSingleSourceApplicableTest() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public JavaSourceFile visitJavaSourceFile(JavaSourceFile cu, ExecutionContext executionContext) {
-                doAfterVisit(new UsesType<>("javax.annotation.CheckForNull", false));
-                doAfterVisit(new UsesType<>("javax.annotation.Nullable", false));
-                return cu;
-            }
-        };
-    }
-
-    @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
-
-        return new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public JavaSourceFile visitJavaSourceFile(JavaSourceFile cu, ExecutionContext executionContext) {
-                JavaSourceFile c = super.visitJavaSourceFile(cu, executionContext);
-                if (cu != c) {
-                    maybeRemoveImport("javax.annotation.CheckForNull");
-                    maybeRemoveImport("javax.annotation.Nullable");
-                }
-                return c;
-            }
-
-            @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
-                J.MethodDeclaration md = super.visitMethodDeclaration(method, executionContext);
-                if (md.getReturnTypeExpression() != null
-                        && !(md.getReturnTypeExpression() instanceof J.ArrayType)
-                        && md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
-                    md = maybeAutoFormat(md, md.withLeadingAnnotations(filterAnnotations(md.getLeadingAnnotations())), executionContext);
-                }
-                return md;
-            }
-
-            @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-                J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, executionContext);
-                if (varDecls.getType() instanceof JavaType.Primitive && varDecls.getVariables().stream().noneMatch(nv -> nv.getType() instanceof JavaType.Array)) {
-                    varDecls = varDecls.withLeadingAnnotations(filterAnnotations(varDecls.getLeadingAnnotations()));
-                }
-                return varDecls;
-            }
-
-            private List<J.Annotation> filterAnnotations(List<J.Annotation> annotations) {
-                return ListUtils.map(annotations, anno -> {
-                    if (NULLABLE_ANNOTATION_MATCHER.matches(anno) || CHECK_FOR_NULL_ANNOTATION_MATCHER.matches(anno)) {
-                        return null;
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(
+                Preconditions.or(new UsesType<>("javax.annotation.CheckForNull", false), new UsesType<>("javax.annotation.Nullable", false)),
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
+                        J.MethodDeclaration md = super.visitMethodDeclaration(method, executionContext);
+                        if (md.getReturnTypeExpression() != null
+                            && !(md.getReturnTypeExpression() instanceof J.ArrayType)
+                            && md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
+                            md = maybeAutoFormat(md, md.withLeadingAnnotations(filterAnnotations(md.getLeadingAnnotations())), executionContext);
+                        }
+                        return md;
                     }
-                    return anno;
-                });
-            }
-        };
+
+                    @Override
+                    public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
+                        J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, executionContext);
+                        if (varDecls.getType() instanceof JavaType.Primitive && varDecls.getVariables().stream().noneMatch(nv -> nv.getType() instanceof JavaType.Array)) {
+                            varDecls = varDecls.withLeadingAnnotations(filterAnnotations(varDecls.getLeadingAnnotations()));
+                        }
+                        return varDecls;
+                    }
+
+                    private List<J.Annotation> filterAnnotations(List<J.Annotation> annotations) {
+                        return ListUtils.map(annotations, anno -> {
+                            if (NULLABLE_ANNOTATION_MATCHER.matches(anno) || CHECK_FOR_NULL_ANNOTATION_MATCHER.matches(anno)) {
+                                maybeRemoveImport("javax.annotation.CheckForNull");
+                                maybeRemoveImport("javax.annotation.Nullable");
+                                return null;
+                            }
+                            return anno;
+                        });
+                    }
+                }
+        );
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.config.Environment;
@@ -49,12 +49,14 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
     @Test
     void inOutVariance() {
         rewriteRun(
+          //language=java
           java(
             """
               interface In {}
               interface Out {}
               """
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -80,13 +82,15 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
           spec -> spec.recipe(Environment.builder()
             .scanRuntimeClasspath("org.openrewrite.java")
             .build()
-            .activateRecipes("org.openrewrite.java.cleanup.CommonDeclarationSiteTypeVariances")),
+            .activateRecipes("org.openrewrite.staticanalysis.CommonDeclarationSiteTypeVariances")),
+          //language=java
           java(
             """
               interface In {}
               interface Out {}
               """
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -114,12 +118,14 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
             List.of("java.lang.*"),
             null
           )),
+          //language=java
           java(
             """
               interface In {}
               interface Out {}
               """
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -142,6 +148,7 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
     @Test
     void excludedBounds() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -157,12 +164,14 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
     @Test
     void finalClasses() {
         rewriteRun(
+          //language=java
           java(
             """
               interface In {}
               final class Out {}
               """
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -185,12 +194,14 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
     @Test
     void overriddenMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               interface In {}
               interface Out {}
               """
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -200,6 +211,7 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
               """,
             SourceSpec::skip
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;

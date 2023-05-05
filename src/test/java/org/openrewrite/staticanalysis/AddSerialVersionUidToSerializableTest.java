@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void doNothingNotSerializable() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Example {
@@ -48,6 +49,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void addSerialVersionUID() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -73,6 +75,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void fixSerialVersionUIDModifiers() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -99,6 +102,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void fixSerialVersionUIDNoModifiers() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -125,6 +129,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void fixSerialVersionUIDNoModifiersWrongType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -151,6 +156,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void uidAlreadyPresent() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -168,6 +174,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void methodDeclarationsAreNotVisited() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -199,6 +206,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void doNotAlterAnInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -213,6 +221,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void doNotAlterAnException() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -227,6 +236,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void doNotAlterARuntimeException() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;
@@ -241,6 +251,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void serializableInnerClass() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Serializable;

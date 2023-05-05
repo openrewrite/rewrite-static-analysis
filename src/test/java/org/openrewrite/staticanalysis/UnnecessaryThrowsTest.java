@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;/*
+package org.openrewrite.staticanalysis;/*
  * Copyright 2021 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,8 +30,8 @@ package org.openrewrite.java.cleanup;/*
  */
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -48,6 +48,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void genericException() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -63,6 +64,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void unnecessaryThrows() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileInputStream;
@@ -100,6 +102,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void necessaryThrowsFromCloseable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -121,6 +124,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void necessaryThrows() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -140,6 +144,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void interfaces() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -156,6 +161,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void abstractMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -172,6 +178,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void necessaryThrowsFromStaticMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               import javax.xml.datatype.DatatypeFactory;
@@ -190,6 +197,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void necessaryThrowsOnInterfaceWithExplicitOverride() {
         rewriteRun(
+          //language=java
           java(
             """
               public interface Foo {
@@ -197,6 +205,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               public class FooImpl implements Foo {
@@ -213,6 +222,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void necessaryThrowsOnInterfaceWithImplicitOverride() {
         rewriteRun(
+          //language=java
           java(
             """
               public interface Foo {
@@ -220,6 +230,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               public class FooImpl implements Foo {
@@ -235,6 +246,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void doNotRemoveDocumentedExceptions() {
         rewriteRun(
+          //language=java
           java(
             """
               public class ParentFoo {
@@ -260,6 +272,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void doNotRemoveExceptionCoveringOtherExceptions() {
         rewriteRun(
+          //language=java
           java(
             """
               package com.yourorg;
@@ -280,6 +293,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void preventTransformationIfAnyThrownExceptionHasNullOrUnknownType() {
         rewriteRun(
+          //language=java
           java(
             """
               package com.yourorg;

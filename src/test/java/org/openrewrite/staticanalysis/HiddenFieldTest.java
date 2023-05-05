@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Tree;
-import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.HiddenFieldStyle;
@@ -53,6 +53,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void ignoreUnaffectedVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -73,6 +74,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void renameHiddenFields() {
         rewriteRun(
+          //language=java
           java(
             """
               public class B {
@@ -82,6 +84,7 @@ class HiddenFieldTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               public class A extends B {
@@ -126,6 +129,7 @@ class HiddenFieldTest implements RewriteTest {
     void constructorParameter() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreConstructorParameter(false)),
+          //language=java
           java(
             """
               public class A {
@@ -151,6 +155,7 @@ class HiddenFieldTest implements RewriteTest {
     void ignoreConstructorParameter() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreConstructorParameter(true)),
+          //language=java
           java(
             """
               public class A {
@@ -167,6 +172,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void methodParameter() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -191,6 +197,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void methodBodyLocalVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -217,6 +224,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void forLoops() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -259,6 +267,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void blocks() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -300,6 +309,7 @@ class HiddenFieldTest implements RewriteTest {
     @SuppressWarnings("ConstantValue")
     void tryResources() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -335,6 +345,7 @@ class HiddenFieldTest implements RewriteTest {
     @SuppressWarnings({"EmptyTryBlock", "CatchMayIgnoreException", "TryWithIdenticalCatches"})
     void catchClause() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -370,6 +381,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void lambdaWithTypedParameterHides() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -402,6 +414,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void nestedClasses() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Outer {
@@ -450,6 +463,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void incrementRenamedVariableNameUntilUnique() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -476,6 +490,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void incrementRenamedVariableNameShouldNotCollideWithExistingVariablesInUse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -502,6 +517,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void ignoreEnums() {
         rewriteRun(
+          //language=java
           java(
             """
               enum ExampleEnum {
@@ -538,6 +554,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void ignoreStaticMethodsAndInitializers() {
         rewriteRun(
+          //language=java
           java(
             """
               public class StaticMethods {
@@ -574,6 +591,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void ignoreInterfaces() {
         rewriteRun(
+          //language=java
           java(
             """
               interface A {
@@ -590,6 +608,7 @@ class HiddenFieldTest implements RewriteTest {
     void renamesSetters() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreSetter(false)),
+          //language=java
           java(
             """
               class A {
@@ -635,6 +654,7 @@ class HiddenFieldTest implements RewriteTest {
     void ignoreVoidSettersAndChangeSettersThatReturnItsClass() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreSetter(true).withSetterCanReturnItsClass(false)),
+          //language=java
           java(
             """
               class A {
@@ -681,6 +701,7 @@ class HiddenFieldTest implements RewriteTest {
     void ignoreVoidSettersAndSettersThatReturnItsClass() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreSetter(true).withSetterCanReturnItsClass(true)),
+          //language=java
           java(
             """
               class A {
@@ -707,6 +728,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void renamesAbstractMethodParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               public abstract class A {
@@ -730,6 +752,7 @@ class HiddenFieldTest implements RewriteTest {
     void ignoreAbstractMethodParameters() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreAbstractMethods(true)),
+          //language=java
           java(
             """
               public abstract class A {
@@ -745,6 +768,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void updateJavaDocParamName() {
         rewriteRun(
+          //language=java
           java(
             """
               public abstract class A {
@@ -773,6 +797,7 @@ class HiddenFieldTest implements RewriteTest {
     @Test
     void renamingVariableInSubclassShouldNotTakeSuperclassFieldsIntoAccount() {
         rewriteRun(
+          //language=java
           java(
             """
               public class B {
@@ -782,6 +807,7 @@ class HiddenFieldTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               public class A extends B {

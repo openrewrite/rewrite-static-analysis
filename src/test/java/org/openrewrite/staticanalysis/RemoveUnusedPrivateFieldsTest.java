@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -32,6 +32,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void doNotRemoveSerialVersionUid() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test implements java.io.Serializable {
@@ -45,6 +46,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void doNotRemoveAnnotatedField() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -59,6 +61,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void doNotChangeFieldsOnClassWithNativeMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -73,6 +76,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void notPrivateField() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -86,6 +90,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void fieldIsUsed() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -102,6 +107,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void usedInClassScope() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -120,6 +126,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void removeUnusedPrivateField() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -138,6 +145,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void nameIsShadowed() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -163,6 +171,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void onlyRemoveUnusedNamedVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -196,6 +205,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/3061")
     void findReferencesInOuterScope() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Vehicle {

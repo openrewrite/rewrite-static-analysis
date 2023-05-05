@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -33,6 +33,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void doNotChangeMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -47,6 +48,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void doNotChangeLabeledBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -64,6 +66,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void doNotChangeEmptyIfBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -79,6 +82,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void doNotRemoveDoubleBraceInitBlocksInMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -101,6 +105,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void doNotRemoveDoubleBraceInitBlocks() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -121,6 +126,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void doNotRemoveObjectArrayInitializer() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -137,6 +143,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void doNotRemoveObjectArrayArrayInitializer() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -154,6 +161,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void simplifyNestedBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -178,6 +186,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void simplifyDoublyNestedBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -202,6 +211,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void simplifyBlockNestedInIfBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -228,6 +238,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void simplifyBlockInStaticInitializerIfBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -268,6 +279,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void simplifyCraziness() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -338,6 +350,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void simplifyDoesNotFormatSurroundingCode() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -370,6 +383,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void simplifyDoesNotFormatInternalCode() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -405,6 +419,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/3073")
     void preserveComments() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -437,6 +452,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void preserveBlocksContainingVariableDeclarations() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -455,6 +471,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void inlineLastBlockContainingVariableDeclarations() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -484,6 +501,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @SuppressWarnings("EmptyFinallyBlock")
     void removeEmptyTryFinallyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -509,6 +527,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @Test
     void keepNonEmptyTryFinallyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -529,6 +548,7 @@ class RemoveUnneededBlockTest implements RewriteTest {
     @SuppressWarnings("EmptyFinallyBlock")
     void keepNonEmptyTryFinallyBlock2() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {

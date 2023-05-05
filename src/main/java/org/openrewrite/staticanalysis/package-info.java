@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @NonNullApi
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.internal.lang.NonNullApi;

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -36,6 +36,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void initializedInWhileLoop() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.BufferedReader;
@@ -63,6 +64,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void localVariablesAreMadeFinal() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -89,6 +91,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void identifyReassignedLocalVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -123,6 +126,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void localVariableScopeAwareness() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -156,6 +160,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/549")
     void catchBlocksIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -178,6 +183,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void instanceVariablesIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -193,6 +199,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void classVariablesIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -206,6 +213,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void staticInitializer() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -232,6 +240,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void methodParameterVariablesIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -251,6 +260,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void lambdaVariablesIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.stream.Stream;
@@ -268,6 +278,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void forLoopVariablesIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.FutureTask;
@@ -285,6 +296,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void shouldNotFinalizeForCounterWhichIsReassignedWithinForHeader() {
         rewriteRun(
+                //language=java
                 java("""
                 class A {             
                     static {
@@ -301,6 +313,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void shouldNotFinalizeForCounterWhichIsReassignedWithinForBody() {
         rewriteRun(
+                //language=java
                 java("""
                 class A {             
                     static {
@@ -317,6 +330,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void nonModifyingUnaryOperatorAwareness() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -345,6 +359,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void localVariableInInitializerBlockMadeFinal() {
         rewriteRun(
+          //language=java
           java(
             """
               class Person {
@@ -379,6 +394,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     void recordShouldNotIntroduceExtraClosingParenthesis() {
         rewriteRun(
           version(
+          //language=java
           java(
             """
             public class Main {
@@ -405,6 +421,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void shouldNotFinalizeVariableWhichIsReassigedInAnotherSwitchBranch() {
         rewriteRun(
+                //language=java
                 java("""
                 class A {             
                     static int variable = 0;

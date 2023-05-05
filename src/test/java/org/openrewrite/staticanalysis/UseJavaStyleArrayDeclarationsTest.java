@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -32,6 +32,7 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
     @Test
     void javaStyleArrayDeclarations() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -49,6 +50,7 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
     @Test
     void javaStyleArrayForVariableDeclarations() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +35,7 @@ public class UpperCaseLiteralSuffixesTest implements RewriteTest {
     @Test
     void usesPrimitive() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -58,6 +59,7 @@ public class UpperCaseLiteralSuffixesTest implements RewriteTest {
     @Test
     void useUppercaseLiteralSuffix() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

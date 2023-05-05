@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void rethrownButWithDifferentMessage() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileReader;
@@ -57,6 +58,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void catchShouldBePreservedBecauseLessSpecificCatchFollows() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileReader;
@@ -84,6 +86,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void tryCanBeRemoved() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileReader;
@@ -116,6 +119,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void tryShouldBePreservedBecauseFinally() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileReader;
@@ -154,6 +158,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void tryShouldBePreservedBecauseResources() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileReader;
@@ -188,6 +193,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void wrappingAndRethrowingIsUnchanged() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileReader;
@@ -210,6 +216,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void loggingAndRethrowingIsUnchanged() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileReader;

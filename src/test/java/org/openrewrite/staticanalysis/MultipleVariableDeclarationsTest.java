@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +35,7 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
     @Test
     void arrayDimensionsBeforeName() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -59,6 +60,7 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
     @Test
     void arrayDimensionsBeforeName2() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -83,6 +85,7 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
     @Test
     void replaceWithIndividualVariableDeclarations() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -116,6 +119,7 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
     @Test
     void arrayTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -139,6 +143,7 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
     @Test
     void singleLineCommentPreserved() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -163,6 +168,7 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
     @Test
     void blockCommentPreserved() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -193,6 +199,7 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
     @Test
     void removeNewlinesFromMultivariablePrefix() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

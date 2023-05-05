@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +35,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     @Test
     void unnecessaryExplicitTypeArguments() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -70,6 +71,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     @Disabled
     void withinLambda() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -105,6 +107,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     @Test
     void doesNotIntroduceAmbiguity() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collection;
@@ -136,6 +139,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     @Test
     void assignedToVar() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;

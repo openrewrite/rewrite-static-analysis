@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
@@ -40,6 +40,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
     @Test
     void enumSemicolons() {
         rewriteRun(
+          //language=java
           java(
             """
               public enum FRUITS {
@@ -61,6 +62,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
     @Test
     void enumSemicolonsWithOtherStatements() {
         rewriteRun(
+          //language=java
           java(
             """
               public enum FRUITS {
@@ -78,6 +80,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
     @Test
     void emptyBlockStatements() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -99,6 +102,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
     @Test
     void tryWithResources() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.*;

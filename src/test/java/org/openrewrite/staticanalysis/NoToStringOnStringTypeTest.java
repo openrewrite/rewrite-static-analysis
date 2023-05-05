@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -32,6 +32,7 @@ class NoToStringOnStringTypeTest implements RewriteTest {
     @Test
     void doNotChangeOnObject() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -49,6 +50,7 @@ class NoToStringOnStringTypeTest implements RewriteTest {
     @SuppressWarnings("StringOperationCanBeSimplified")
     void toStringOnString() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -72,6 +74,7 @@ class NoToStringOnStringTypeTest implements RewriteTest {
     @SuppressWarnings("StringOperationCanBeSimplified")
     void toStringOnStringVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -95,6 +98,7 @@ class NoToStringOnStringTypeTest implements RewriteTest {
     @SuppressWarnings("StringOperationCanBeSimplified")
     void toStringOnMethodInvocation() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

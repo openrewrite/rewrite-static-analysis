@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Tree;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
@@ -61,6 +61,7 @@ class NeedBracesTest implements RewriteTest {
     @Test
     void addBraces() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -154,6 +155,7 @@ class NeedBracesTest implements RewriteTest {
     void allowEmptyLoopBody() {
         rewriteRun(
           needsBraces(style -> style.withAllowEmptyLoopBody(true)),
+          //language=java
           java(
             """
               class Test {
@@ -174,6 +176,7 @@ class NeedBracesTest implements RewriteTest {
     void allowSingleLineStatement() {
         rewriteRun(
           needsBraces(style -> style.withAllowSingleLineStatement(true)),
+          //language=java
           java(
             """
               class Test {
@@ -213,6 +216,7 @@ class NeedBracesTest implements RewriteTest {
     void doNotAllowLoopsWithEmptyBodyWhenSingleLineStatementAreAllowed() {
         rewriteRun(
           needsBraces(style -> style.withAllowSingleLineStatement(true)),
+          //language=java
           java(
             """
               class Test {
@@ -255,6 +259,7 @@ class NeedBracesTest implements RewriteTest {
     void allowSingleLineStatementInSwitch() {
         rewriteRun(
           needsBraces(style -> style.withAllowSingleLineStatement(true)),
+          //language=java
           java(
             """
               class Test {
@@ -276,6 +281,7 @@ class NeedBracesTest implements RewriteTest {
     @Test
     void initializeStyleWhenOtherwiseNotProvided() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

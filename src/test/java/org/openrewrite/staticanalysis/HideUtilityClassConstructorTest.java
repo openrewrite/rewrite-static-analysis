@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
 import org.openrewrite.style.NamedStyles;
@@ -46,6 +46,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void doNotAddConstructorToInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               public interface A {
@@ -63,6 +64,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void changePublicConstructorToPrivate() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -89,6 +91,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void changePackagePrivateConstructorToPrivate() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -115,6 +118,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyUtilityClassesWithProtectedConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -132,6 +136,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void doNotChangeInapplicableNestedClass() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -146,6 +151,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void changeApplicableNestedClass() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -174,6 +180,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void changeUtilityClassesWithMixedExposedConstructors() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -221,6 +228,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void addPrivateConstructorWhenOnlyDefaultConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Math {
@@ -251,6 +259,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/538")
     void ignoreClassesWithMainMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               package a;
@@ -271,6 +280,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyUtilityClassesOnlyStaticFields() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -298,6 +308,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyNonUtilityClassesWhenImplementsInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               public interface B {
@@ -306,6 +317,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               public class A implements B {
@@ -327,6 +339,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyNonUtilityClassesWhenExtendsClass() {
         rewriteRun(
+          //language=java
           java(
             """
               public class B {
@@ -335,6 +348,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               """,
             SourceSpec::skip
           ),
+          //language=java
           java(
             """
               public class A extends B {
@@ -355,6 +369,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyNonUtilityClassesMixedFields() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -376,6 +391,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyUtilityClassesOnlyStaticMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -413,6 +429,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyUtilityClassesInnerStaticClasses() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -454,6 +471,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyNonUtilityClassesMixedMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -475,6 +493,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyAbstractClass() {
         rewriteRun(
+          //language=java
           java(
             """
               public abstract class A {
@@ -495,6 +514,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyNonUtilityClassesOnlyPublicConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -509,6 +529,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void identifyNonUtilityClassesTotallyEmpty() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -537,12 +558,14 @@ class HideUtilityClassConstructorTest implements RewriteTest {
             "@lombok.experimental.UtilityClass",
             "@java.lang.SuppressWarnings(\"checkstyle:HideUtilityClassConstructor\")"
           ),
+          //language=java
           java(
             """
               package lombok.experimental;
               public @interface UtilityClass {}
               """
           ),
+          //language=java
           java(
             """
               import lombok.experimental.UtilityClass;
@@ -567,6 +590,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     void suppressedUtilityClassWithDifferentArgument() {
         rewriteRun(
           hideUtilityClassConstructor("@java.lang.SuppressWarnings(\"checkstyle:HideUtilityClassConstructor\")"),
+          //language=java
           java(
             """
               class ChangeMeA {
@@ -591,6 +615,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void doesNotChangePackagePrivateEnumConstructorToPrivate() {
         rewriteRun(
+          //language=java
           java(
             """
               public enum SomeEnum {
@@ -611,6 +636,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Test
     void enumClass() {
         rewriteRun(
+          //language=java
           java(
             """
               public enum SomeEnum {

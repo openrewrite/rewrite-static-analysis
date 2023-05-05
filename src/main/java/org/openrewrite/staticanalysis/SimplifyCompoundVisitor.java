@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
+import org.openrewrite.ExecutionContext;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.style.Checkstyle;
+import org.openrewrite.java.cleanup.SimplifyBooleanExpression;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 
-public class SimplifyCompoundVisitor<P> extends JavaVisitor<P> {
-    @Nullable
+public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
     @Override
-    public J visitAssignmentOperation(J.AssignmentOperation assignOp, P p) {
-        Expression cleanedUpAssignment = cleanupBooleanExpression(assignOp.getAssignment(), p);
+    public J visitAssignmentOperation(J.AssignmentOperation assignOp, ExecutionContext ctx) {
+        Expression cleanedUpAssignment = cleanupBooleanExpression(assignOp.getAssignment(), ctx);
         if (assignOp.getOperator() == J.AssignmentOperation.Type.BitAnd) {
             if (isLiteralTrue(cleanedUpAssignment)) {
+                //noinspection DataFlowIssue
                 return null;
             } else if (isLiteralFalse(cleanedUpAssignment)) {
                 return maybeAutoFormat(
@@ -42,11 +43,12 @@ public class SimplifyCompoundVisitor<P> extends JavaVisitor<P> {
                                 JLeftPadded.build(cleanedUpAssignment),
                                 assignOp.getType()
                         ),
-                        p
+                        ctx
                 );
             }
         } else if (assignOp.getOperator() == J.AssignmentOperation.Type.BitOr) {
             if (isLiteralFalse(cleanedUpAssignment)) {
+                //noinspection DataFlowIssue
                 return null;
             } else if (isLiteralTrue(cleanedUpAssignment)) {
                 return maybeAutoFormat(
@@ -59,24 +61,19 @@ public class SimplifyCompoundVisitor<P> extends JavaVisitor<P> {
                                 JLeftPadded.build(cleanedUpAssignment),
                                 assignOp.getType()
                         ),
-                        p
+                        ctx
                 );
             }
         }
-        return super.visitAssignmentOperation(assignOp, p);
+        return super.visitAssignmentOperation(assignOp, ctx);
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends Expression> E cleanupBooleanExpression(
-            E expression, P context
-    ) {
-        final E ex1 =
-                (E) new UnnecessaryParenthesesVisitor<>(Checkstyle.unnecessaryParentheses())
-                        .visitNonNull(expression, context, getCursor().getParentOrThrow());
-        final E ex2 =
-                (E) new SimplifyBooleanExpressionVisitor<>()
-                        .visitNonNull(ex1, context, getCursor().getParentOrThrow());
-        return ex2;
+    private <E extends Expression> E cleanupBooleanExpression(E expression, ExecutionContext ctx) {
+        E ex1 = (E) new SimplifyBooleanExpression().getVisitor()
+                .visitNonNull(expression, ctx, getCursor().getParentOrThrow());
+        return (E) new SimplifyBooleanExpression().getVisitor()
+                .visitNonNull(ex1, ctx, getCursor().getParentOrThrow());
     }
 
     private static boolean isLiteralTrue(@Nullable Expression expression) {

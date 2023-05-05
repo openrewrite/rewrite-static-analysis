@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.Incubating;
 import org.openrewrite.java.*;
@@ -44,7 +44,7 @@ import java.util.EnumSet;
  *     </li>
  *     <li>
  *         HideUtilityClassConstructorVisitor can be configured with a list of fully-qualified "ignorable Annotations" strings.
- *         These are used with {@link org.openrewrite.java.AnnotationMatcher} to check for the presence of annotations on the class.
+ *         These are used with {@link AnnotationMatcher} to check for the presence of annotations on the class.
  *         HideUtilityClassConstructorVisitor will ignore classes which have any of the configured Annotations.
  *         This is valuable for situations such as Lombok Utility classes, which generate Private constructors in bytecode.
  *     </li>

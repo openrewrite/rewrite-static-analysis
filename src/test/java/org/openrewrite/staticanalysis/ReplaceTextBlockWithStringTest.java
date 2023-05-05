@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.openrewrite.java.Assertions.*;
+import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 @SuppressWarnings("UnnecessaryStringEscape")
 class ReplaceTextBlockWithStringTest implements RewriteTest {
@@ -34,6 +35,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void newLine() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -57,6 +59,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void singleLine() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -81,6 +84,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void singleLineNoNewLineAtEnd() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -104,6 +108,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void multipleLines() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -130,6 +135,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void multipleLinesNoNewLineAtEnd() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -155,6 +161,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void indent() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -181,6 +188,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void startingEmptyLines() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -209,6 +217,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void endingEmptyLines() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -237,6 +246,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void middleEmptyLines() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -267,6 +277,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void assignmentAndBlockSameLine() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -291,6 +302,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void singleLineComment() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -319,6 +331,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void multiLineComment() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -351,6 +364,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void doubleQuote() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -375,6 +389,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void threeDoubleQuotes() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;
@@ -399,6 +414,7 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
     @Test
     void unicode() {
         rewriteRun(
+          //language=java
           java(
             """
             package com.example;

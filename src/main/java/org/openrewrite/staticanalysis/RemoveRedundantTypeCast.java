@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
@@ -49,7 +49,7 @@ public class RemoveRedundantTypeCast extends Recipe {
     }
 
     @Override
-    public JavaVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext executionContext) {

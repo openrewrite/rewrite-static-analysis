@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.test.RecipeSpec;
@@ -32,6 +32,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void rawString() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.File;
@@ -73,6 +74,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void stringVariableAsInput() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.File;
@@ -114,6 +116,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void methodInvocationAsInput() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.IOException;
@@ -149,6 +152,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void concatenatedRawStringsAsInput() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.IOException;
@@ -178,6 +182,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void concatenatedObjectsAsInput() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.IOException;
@@ -209,6 +214,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void deprecatedMethod2() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.IOException;
@@ -241,6 +247,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void doNotChangeIfUsingNewMethods() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.File;
@@ -266,6 +273,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     void doNotChangeIfUnderJava18() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
                 import java.io.File;

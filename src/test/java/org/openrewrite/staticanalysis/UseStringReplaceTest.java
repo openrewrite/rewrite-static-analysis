@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -36,6 +36,7 @@ class UseStringReplaceTest implements RewriteTest {
     @Test
     void literalValueSourceAccountsForEscapeCharacters() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -55,6 +56,7 @@ class UseStringReplaceTest implements RewriteTest {
     @Test
     void replaceAllContainsEscapedQuotes() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -79,6 +81,7 @@ class UseStringReplaceTest implements RewriteTest {
     @DocumentExample
     void replaceAllReplacedByReplace() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -104,6 +107,7 @@ class UseStringReplaceTest implements RewriteTest {
     @DisplayName("String#replaceAll replaced by String#replace, because first argument is not a regular expression and it contains special characters")
     void replaceAllReplacedByReplaceWithSpecialCharacters() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -129,6 +133,7 @@ class UseStringReplaceTest implements RewriteTest {
     @DisplayName("String#replaceAll is not replaced by String#replace, because first argument is a real regular expression")
     void replaceAllUnchanged() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

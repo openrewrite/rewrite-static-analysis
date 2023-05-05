@@ -1,5 +1,5 @@
 #
-# Copyright 2020 the original author or authors.
+# Copyright 2023 the original author or authors.
 # <p>
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,7 @@
 # limitations under the License.
 #
 ---
-type: specs.openrewrite.org/v1beta/style
-name: org.openrewrite.java.GoogleJavaFormat
-displayName: Google java format
-styleConfigs:
-  - org.openrewrite.java.style.ImportLayoutStyle:
-      classCountToUseStarImport: 999
-      nameCountToUseStarImport: 999
-      layout:
-        - import static all other imports
-        - <blank line>
-        - import all other imports
+type: specs.openrewrite.org/v1beta/category
+name: Static Analysis and _Remediation_
+packageName: org.openrewrite.staticanalysis
+description: Remediations for issues identified by SAST tools.

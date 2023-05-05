@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Recipe;
-import org.openrewrite.DocumentExample;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -39,6 +39,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void lowerCamelVariableHasNonLowerCamelVariableSibling() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -59,6 +60,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void renameAllCapsAcronyms() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -81,6 +83,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void renameLocalVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -115,6 +118,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void renameJavaDocParam() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -141,6 +145,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeStaticImports() {
         rewriteRun(
+          //language=java
           java(
             """
               package p;
@@ -149,6 +154,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import static p.B._staticImport_;
@@ -167,6 +173,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeInheritedFields() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -174,6 +181,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class Test extends A {
@@ -190,6 +198,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeIfToNameExists() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -208,6 +217,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeCatch() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -231,6 +241,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void doNotForLoop() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -251,6 +262,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void doNotRenameConstantVariable() {
         rewriteRun(
+          //language=java
           java(
             """
                   import java.util.ArrayList;
@@ -280,6 +292,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
                   spec.recipe(Recipe.noop());
               }
           }),
+          //language=java
           java(
             """
               public record MyRecord(

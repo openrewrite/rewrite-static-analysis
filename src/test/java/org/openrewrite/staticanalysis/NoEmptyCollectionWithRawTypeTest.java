@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptyListFullyQualified() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -55,6 +56,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptyListStaticImport() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -81,6 +83,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptyListFieldAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collections;
@@ -105,6 +108,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptyMapFullyQualified() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Map;
@@ -127,6 +131,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptyMapStaticImport() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Map;
@@ -153,6 +158,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptyMapFieldAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collections;
@@ -177,6 +183,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptySetFullyQualified() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Set;
@@ -199,6 +206,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptySetStaticImport() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Set;
@@ -225,6 +233,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
     @Test
     void emptySetFieldAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collections;

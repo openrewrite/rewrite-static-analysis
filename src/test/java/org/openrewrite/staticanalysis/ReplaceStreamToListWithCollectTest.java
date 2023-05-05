@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.test.RecipeSpec;
@@ -33,6 +33,7 @@ class ReplaceStreamToListWithCollectTest implements RewriteTest {
     void replacesToList() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -64,6 +65,7 @@ class ReplaceStreamToListWithCollectTest implements RewriteTest {
     void formatting() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -97,6 +99,7 @@ class ReplaceStreamToListWithCollectTest implements RewriteTest {
     void comment() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;

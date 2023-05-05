@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,6 +34,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void possibleMistakenlyMissedAddingToCollection() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -52,12 +53,14 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class OTElement {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -72,6 +75,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void possibleMistakenlyMissedAddingToCollectionWithDifferentMethodName() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -117,6 +121,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void noCollectionInitializedInDoubleBraceIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;
@@ -140,6 +145,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void doubleBranchInitializationForArgIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;
@@ -159,6 +165,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void doubleBranchInitializationForNewClassArgIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               package abc;
@@ -172,6 +179,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package abc;
@@ -189,6 +197,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void doubleBraceInitWithinConstructorArgIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -214,6 +223,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void addStatementInForLoop() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Set;
@@ -249,6 +259,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void doubleBraceInitializationForFieldVar() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -298,6 +309,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void memberVar() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;
@@ -337,6 +349,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void anonymousSubClassMethodInvoked() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;
@@ -363,6 +376,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
     @Test
     void selectIsThis() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;

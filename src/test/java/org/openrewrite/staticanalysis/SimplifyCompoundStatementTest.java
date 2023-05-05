@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class SimplifyCompoundStatementTest implements RewriteTest {
     @Test
     void removeCompoundAnd() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -56,6 +57,7 @@ class SimplifyCompoundStatementTest implements RewriteTest {
     @Test
     void fixCompoundAnd() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -80,6 +82,7 @@ class SimplifyCompoundStatementTest implements RewriteTest {
     @Test
     void removeCompoundOr() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -103,6 +106,7 @@ class SimplifyCompoundStatementTest implements RewriteTest {
     @Test
     void fixCompoundOr() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -127,6 +131,7 @@ class SimplifyCompoundStatementTest implements RewriteTest {
     @Test
     void removeCompoundOrComplex() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

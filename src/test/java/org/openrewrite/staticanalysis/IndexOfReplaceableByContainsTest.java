@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -22,7 +22,6 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"StatementWithEmptyBody", "IndexOfReplaceableByContains", "ListIndexOfReplaceableByContains"})
 class IndexOfReplaceableByContainsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
@@ -33,6 +32,7 @@ class IndexOfReplaceableByContainsTest implements RewriteTest {
     @Test
     void stringIndexOfReplaceableByContains() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -59,6 +59,7 @@ class IndexOfReplaceableByContainsTest implements RewriteTest {
     @Test
     void listIndexOfReplaceableByContains() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;

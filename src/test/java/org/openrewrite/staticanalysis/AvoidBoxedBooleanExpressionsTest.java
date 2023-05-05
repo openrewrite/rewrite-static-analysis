@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ public class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
     @Test
     void guardAgainstNpe() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -65,6 +66,7 @@ public class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
     @Test
     void unaryNotInIfCondition() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -89,6 +91,7 @@ public class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
     @Test
     void guardAgainstNpeUnaryExpressions() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -125,6 +128,7 @@ public class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
     @Test
     void boxedBooleansInTernaryExpressions() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

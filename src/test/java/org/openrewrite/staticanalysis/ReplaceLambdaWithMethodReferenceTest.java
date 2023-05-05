@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
@@ -40,6 +40,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void dontSelectCastFromTypeVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -57,6 +58,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void multipleMethodInvocations() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.nio.file.Path;
@@ -79,6 +81,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void containsMultipleStatements() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -101,6 +104,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void typeCastOnMethodInvocationReturnType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -122,6 +126,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void instanceOf() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.test;
@@ -129,6 +134,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.List;
@@ -170,6 +176,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void instanceOfLeftHandIsNotLambdaParameter() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.test;
@@ -177,6 +184,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.List;
@@ -198,6 +206,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void functionMultiParamReference() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -248,6 +257,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void nonStaticMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collections;
@@ -284,6 +294,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void staticMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collections;
@@ -316,6 +327,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void systemOutPrint() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -342,6 +354,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void systemOutPrintInBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -368,6 +381,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void castType() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.test;
@@ -375,6 +389,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.List;
@@ -421,6 +436,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void methodSelectMatchingSingleLambdaParameter() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -453,6 +469,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void methodSelectMatchingMultipleLambdaParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiFunction;
@@ -479,6 +496,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void notEqualToNull() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -513,6 +531,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void notNullToObjectsNonNullError() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collection;
@@ -577,6 +596,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void isEqualToNull() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -608,6 +628,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void voidMethodReference() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -632,6 +653,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void functionReference() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -664,6 +686,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void returnExpressionIsNotAMethodInvocation() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -683,6 +706,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void lambdaReturnsFunctionalInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               package abc;
@@ -692,6 +716,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package abc;
@@ -710,6 +735,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void doNotReplaceInvocationWhichAcceptsArgument() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.*;
@@ -728,6 +754,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void replacedConstructorCalls() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -778,6 +805,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void notReplacedConstructorCalls() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -807,6 +835,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void multipleConstructors() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Predicate;
@@ -817,6 +846,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -842,6 +872,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void anotherMultipleConstructorsCaseEasyUnderstanding() {
         rewriteRun(
+          //language=java
           java(
             """
               class B {
@@ -850,6 +881,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -875,6 +907,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void anotherSimplerMultipleConstructorsCase() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -898,6 +931,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void insideIfConditionAfterInstanceOfPatternVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collection;
@@ -929,6 +963,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void tryInAForLoop() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.nio.file.DirectoryStream;
@@ -968,6 +1003,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/3071")
     void missingImportForDeclaringType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.net.URI;

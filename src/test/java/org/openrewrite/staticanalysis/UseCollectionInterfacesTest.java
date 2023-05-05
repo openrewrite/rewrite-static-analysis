@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -37,6 +37,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void noTargetInUse() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collections;
@@ -55,6 +56,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void returnIsAlreadyInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -74,6 +76,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void rawReturnType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -101,6 +104,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void parameterizedReturnType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -128,6 +132,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void preserveParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -155,6 +160,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void fieldIsAlreadyInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -171,6 +177,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void rawFieldType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -194,6 +201,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void parameterizedFieldType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -217,6 +225,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void arrayDeque() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayDeque;
@@ -240,6 +249,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void concurrentLinkedDeque() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.ConcurrentLinkedDeque;
@@ -263,6 +273,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void abstractList() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -287,6 +298,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void abstractSequentialList() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.AbstractSequentialList;
@@ -311,6 +323,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void arrayList() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -334,6 +347,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void copyOnWriteArrayList() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.CopyOnWriteArrayList;
@@ -357,6 +371,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void abstractMap() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.AbstractMap;
@@ -382,7 +397,9 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void enumMap() {
         rewriteRun(
+          //language=java
           java("public enum A {}"),
+          //language=java
           java(
             """
               import java.util.EnumMap;
@@ -406,6 +423,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void hashMap() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;
@@ -429,6 +447,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void hashtable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Hashtable;
@@ -452,6 +471,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void identityHashMap() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.IdentityHashMap;
@@ -475,6 +495,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void linkedHashMap() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.LinkedHashMap;
@@ -498,6 +519,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void weakHashMap() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.WeakHashMap;
@@ -521,6 +543,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void concurrentHashMap() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.ConcurrentHashMap;
@@ -544,6 +567,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void concurrentSkipListMap() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.ConcurrentSkipListMap;
@@ -567,6 +591,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void abstractQueue() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.AbstractQueue;
@@ -591,6 +616,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void concurrentLinkedQueue() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.ConcurrentLinkedQueue;
@@ -614,6 +640,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void abstractSet() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.AbstractSet;
@@ -638,7 +665,9 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void enumSet() {
         rewriteRun(
+          //language=java
           java("public enum A {}"),
+          //language=java
           java(
             """
               import java.util.EnumSet;
@@ -662,6 +691,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void hashSet() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -685,6 +715,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void linkedHashSet() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.LinkedHashSet;
@@ -708,6 +739,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void copyOnWriteArraySet() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.CopyOnWriteArraySet;
@@ -732,6 +764,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void privateVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -756,6 +789,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void noModifierOnVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -780,6 +814,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void privateMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -808,6 +843,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Test
     void noModifierOnMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashSet;
@@ -837,6 +873,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @ExpectedToFail
     void testExplicitImplementationClassInApi() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -866,6 +903,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
         if (new JavaVersion(UUID.randomUUID(), javaRuntimeVersion, javaVendor, javaRuntimeVersion, javaRuntimeVersion)
               .getMajorVersion() >= 10) {
             rewriteRun(
+              //language=java
               java(
                 """
                   import java.util.ArrayList;

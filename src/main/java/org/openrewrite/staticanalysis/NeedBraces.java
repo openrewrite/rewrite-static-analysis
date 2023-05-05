@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.SourceFile;
-import org.openrewrite.Tree;
+import org.openrewrite.*;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
@@ -28,6 +26,8 @@ import org.openrewrite.marker.Markers;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 public class NeedBraces extends Recipe {
     @Override
@@ -51,7 +51,7 @@ public class NeedBraces extends Recipe {
     }
 
     @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new NeedBracesVisitor();
     }
 
@@ -75,10 +75,12 @@ public class NeedBraces extends Recipe {
         }
 
         @Override
-        public JavaSourceFile visitJavaSourceFile(JavaSourceFile javaSourceFile, ExecutionContext ctx) {
-            SourceFile cu = (SourceFile)javaSourceFile;
-            needBracesStyle = cu.getStyle(NeedBracesStyle.class) == null ? Checkstyle.needBracesStyle() : cu.getStyle(NeedBracesStyle.class);
-            return super.visitJavaSourceFile((JavaSourceFile)cu, ctx);
+        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            if (tree instanceof JavaSourceFile) {
+                SourceFile cu = (SourceFile) requireNonNull(tree);
+                needBracesStyle = cu.getStyle(NeedBracesStyle.class) == null ? Checkstyle.needBracesStyle() : cu.getStyle(NeedBracesStyle.class);
+            }
+            return super.visit(tree, ctx);
         }
 
         @Override

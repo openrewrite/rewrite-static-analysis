@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -34,6 +34,7 @@ class ExplicitInitializationTest implements RewriteTest {
     void ignoreLombokDefaultBuilder() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
           java(
             """
               import lombok.Builder;
@@ -49,6 +50,7 @@ class ExplicitInitializationTest implements RewriteTest {
     @Test
     void ignoreInterfaces() {
         rewriteRun(
+          //language=java
           java(
             """
               interface Test {
@@ -65,6 +67,7 @@ class ExplicitInitializationTest implements RewriteTest {
     @Test
     void blockStatement() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -83,6 +86,7 @@ class ExplicitInitializationTest implements RewriteTest {
     @Test
     void removeExplicitInitialization() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

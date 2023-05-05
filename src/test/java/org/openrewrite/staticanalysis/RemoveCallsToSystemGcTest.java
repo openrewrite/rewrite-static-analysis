@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class RemoveCallsToSystemGcTest implements RewriteTest {
     @Test
     void noGc() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {

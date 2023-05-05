@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -34,6 +34,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     @Test
     void assertTrue() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -59,6 +60,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     @Test
     void assertFalse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -77,6 +79,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junitJupiterAssertTrue() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+          //language=java
           java(
             """
               import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,6 +103,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junitJupiterAssertFalse() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+          //language=java
           java(
             """
               import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -123,6 +127,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junitJupiterAssertTrueMessage() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+          //language=java
           java(
             """
               import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -146,6 +151,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junitJupiterAssertFalseMessage() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+          //language=java
           java(
             """
               import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -169,6 +175,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junit4AssertTrueWithTrueArgument() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+          //language=java
           java(
             """
               import static org.junit.Assert.assertTrue;
@@ -192,6 +199,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junit4AssertFalseWithFalseArgument() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+          //language=java
           java(
             """
               import static org.junit.Assert.assertFalse;
@@ -215,6 +223,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junit4AssertTrueWithMessageAndTrueArgument() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+          //language=java
           java(
             """
               import static org.junit.Assert.assertTrue;
@@ -238,6 +247,7 @@ class RemoveUnneededAssertionTest implements RewriteTest {
     void junit4AssertTrueWithMessageAndFalseArgument() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+          //language=java
           java(
             """
               import static org.junit.Assert.assertFalse;

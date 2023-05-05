@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -37,6 +37,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     void usedAsStatementWithNonInferenceableType() {
         rewriteRun(
           spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
+          //language=java
           java(
             """
               import java.util.function.Consumer;
@@ -57,7 +58,11 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void useLambdaThenSimplifyFurther() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface().doNext(new ReplaceLambdaWithMethodReference())),
+          spec -> spec.recipes(
+            new UseLambdaForFunctionalInterface(),
+            new ReplaceLambdaWithMethodReference()
+          ),
+          //language=java
           java(
             """
               class Test {
@@ -86,6 +91,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void useLambda() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -111,6 +117,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void useLambdaNoParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -137,6 +144,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void emptyLambda() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Consumer;
@@ -171,10 +179,11 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void nestedLambdaInMethodArgument() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Consumer;
-              
+                            
               class Test {
                   void bar(Consumer<Integer> c) {
                   }
@@ -194,7 +203,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               """,
             """
               import java.util.function.Consumer;
-              
+                            
               class Test {
                   void bar(Consumer<Integer> c) {
                   }
@@ -213,6 +222,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void dontUseLambdaWhenThis() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -234,6 +244,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void dontUseLambdaWhenShadowsLocalVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -259,6 +270,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void dontUseLambdaWhenShadowsClassField() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -284,6 +296,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void dontUseLambdaWhenShadowsMethodDeclarationParam() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -306,6 +319,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void finalParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Function;
@@ -331,6 +345,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void useLambdaThenRemoveUnusedImports() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;
@@ -364,6 +379,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @SuppressWarnings("DataFlowIssue")
     void noReplaceOnReferenceToUninitializedFinalField() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -388,6 +404,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void replaceOnReferenceToUninitializedNonFinalField() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -423,6 +440,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void arrayTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               class Temp {
@@ -452,6 +470,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void noChangeIfHasShallowVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -477,6 +496,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void outOfNameScopesShallowVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -520,6 +540,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void noChangeIfHasShallowVariableForAndWhileLoop() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Tree;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.DefaultComesLastStyle;
 import org.openrewrite.style.NamedStyles;
@@ -40,6 +40,7 @@ class DefaultComesLastTest implements RewriteTest {
     @Test
     void moveDefaultToLastAlongWithItsStatementsAndAddBreakIfNecessary() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -84,6 +85,7 @@ class DefaultComesLastTest implements RewriteTest {
     @Test
     void moveDefaultToLastWhenSharedWithAnotherCaseStatement() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -133,6 +135,7 @@ class DefaultComesLastTest implements RewriteTest {
               Tree.randomId(), "test", "test", "test", emptySet(),
               singletonList(new DefaultComesLastStyle(true)))))
           ),
+          //language=java
           java(
             """
               class Test {
@@ -157,6 +160,7 @@ class DefaultComesLastTest implements RewriteTest {
     @Test
     void defaultIsLastAndThrows() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -178,6 +182,7 @@ class DefaultComesLastTest implements RewriteTest {
     @Test
     void defaultIsLastAndReturnsNonVoid() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -198,6 +203,7 @@ class DefaultComesLastTest implements RewriteTest {
     @Test
     void dontAddBreaksIfCasesArentMoving() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -220,6 +226,7 @@ class DefaultComesLastTest implements RewriteTest {
     @Test
     void dontRemoveExtraneousDefaultCaseBreaks() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -239,6 +246,7 @@ class DefaultComesLastTest implements RewriteTest {
     @Test
     void allCasesGroupedWithDefault() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -33,6 +33,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @Test
     void doNotChangeOnObject() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -48,6 +49,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @Test
     void isMethodInvocationSelect() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -69,6 +71,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     })
     void valueOfOnLiterals() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -104,6 +107,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @SuppressWarnings("UnnecessaryCallToStringValueOf")
     void valueOfOnNonStringPrimitiveWithinBinaryConcatenation() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -126,6 +130,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @Test
     void valueOfOnNonStringPrimitiveWithinBinaryNotAString() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -142,6 +147,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/1200")
     void valueOfIsMethodInvocationPartOfBinary() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -162,6 +168,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @SuppressWarnings({"UnnecessaryCallToStringValueOf", "StringConcatenationMissingWhitespace"})
     void valueOfOnStandaloneNonStringPrimitive() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -184,6 +191,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @Test
     void concatenationResultingInNonString() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -201,6 +209,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @SuppressWarnings({"IndexOfReplaceableByContains", "StatementWithEmptyBody"})
     void valueOfOnIntWithinBinaryComparison() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -219,6 +228,7 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     @SuppressWarnings("UnnecessaryCallToStringValueOf")
     void valueOfOnMethodInvocation() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

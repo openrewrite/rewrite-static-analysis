@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
@@ -53,13 +54,8 @@ public class ObjectFinalizeCallsSuper extends Recipe {
     }
 
     @Override
-    protected JavaIsoVisitor<ExecutionContext> getSingleSourceApplicableTest() {
-        return new DeclaresMethod<>(FINALIZE_METHOD_MATCHER);
-    }
-
-    @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(new DeclaresMethod<>(FINALIZE_METHOD_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, executionContext);
@@ -75,7 +71,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                 new FindSuperFinalizeVisitor().visit(md, hasSuperFinalize);
                 return hasSuperFinalize.get();
             }
-        };
+        });
     }
 
     private static class FindSuperFinalizeVisitor extends JavaIsoVisitor<AtomicBoolean> {

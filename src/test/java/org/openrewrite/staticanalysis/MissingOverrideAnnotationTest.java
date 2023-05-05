@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.intellij.lang.annotations.Language;
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,9 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenAMethodOverridesFromAParent() {
         rewriteRun(
+          //language=java
           java(testParentParent),
+          //language=java
           java(
             """
               package com.example;
@@ -126,8 +128,11 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenAMethodOverridesMultipleLayersOfParents() {
         rewriteRun(
+          //language=java
           java(testParent),
+          //language=java
           java(testParentParent),
+          //language=java
           java(
             """
               package com.example;
@@ -159,7 +164,9 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenAMethodImplementsAnInterface() {
         rewriteRun(
+          //language=java
           java(testInterface),
+          //language=java
           java(
             """
               package com.example;
@@ -191,8 +198,11 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenMethodsAreImplementedFromMultipleInterfaces() {
         rewriteRun(
+          //language=java
           java(testInterface),
+          //language=java
           java(testInterface0),
+          //language=java
           java(
             """
               package com.example;
@@ -231,8 +241,11 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenMethodsAreImplementedFromMultipleLayersOfInterfaces() {
         rewriteRun(
+          //language=java
           java(testInterfaceExtension),
+          //language=java
           java(testInterface0),
+          //language=java
           java(
             """
               package com.example;
@@ -271,9 +284,13 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenAMethodOverridesFromAParentAndAMethodImplementsAnInterface() {
         rewriteRun(
+          //language=java
           java(testParent),
+          //language=java
           java(testParentParent),
+          //language=java
           java(testInterface),
+          //language=java
           java(
             """
               package com.example;
@@ -312,6 +329,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenTheMethodIsStatic() {
         rewriteRun(
+          //language=java
           java(
             """
               package com.example;
@@ -326,6 +344,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package com.example;
@@ -346,7 +365,9 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenTheSuperclassHasAbstractAndNonAbstractMethods() {
         rewriteRun(
+          //language=java
           java(abstractTestParent),
+          //language=java
           java(
             """
               package com.example;
@@ -383,8 +404,11 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Test
     void whenAMethodAlreadyHasAnAnnotation() {
         rewriteRun(
+          //language=java
           java(testParent),
+          //language=java
           java(testParentParent),
+          //language=java
           java(
             """
               package com.example;
@@ -403,6 +427,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     void whenIgnoreAnonymousClassMethodsIsTrueAndAMethodOverridesWithinAnAnonymousClass() {
         rewriteRun(
           spec -> spec.recipe(new MissingOverrideAnnotation(true)),
+          //language=java
           java(
             """
               package com.example;
@@ -426,6 +451,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     void whenIgnoreAnonymousClassMethodsIsFalseAndAMethodOverridesWithinAnAnonymousClass() {
         rewriteRun(
           spec -> spec.recipe(new MissingOverrideAnnotation(false)),
+          //language=java
           java(
             """
               package com.example;
@@ -462,6 +488,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     void whenIgnoreObjectMethodsIsFalseAndAMethodOverridesFromTheBaseObjectClass() {
         rewriteRun(
           spec -> spec.recipe(new MissingOverrideAnnotation(null)),
+          //language=java
           java(
             """
               package com.example;

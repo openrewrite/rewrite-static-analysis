@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +35,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void useDiamondOperator() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.*;
@@ -67,6 +68,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void varArgIsParameterizedNewClass() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.*;
@@ -101,6 +103,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void useDiamondOperatorTest2() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -181,6 +184,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void returnTypeParamsDoNotMatchNewClassParams() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -226,6 +230,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void doNotUseDiamondOperatorsForVariablesHavingNullOrUnknownTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               import lombok.val;
@@ -244,6 +249,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void noLeftSide() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.HashMap;
@@ -260,6 +266,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void notAsAChainedMethodInvocation() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -300,6 +307,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void doNotConvertVar() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.*;
@@ -326,6 +334,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     @Test
     void doNotChangeIfAsParam() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiFunction;
@@ -346,6 +355,7 @@ class UseDiamondOperatorTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.ArrayList;

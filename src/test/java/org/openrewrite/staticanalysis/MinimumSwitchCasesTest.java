@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +35,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void primitiveAndDefault() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -74,6 +75,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void caseWithFallthrough() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -98,6 +100,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void caseWithReturnInsteadOfBreak() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -137,6 +140,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void caseWithFallthroughInDefault() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -175,6 +179,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void multipleExpressions() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -199,6 +204,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void twoPrimitives() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -239,6 +245,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void stringAndDefault() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -279,6 +286,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void twoStrings() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -319,6 +327,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void onePrimitive() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -354,6 +363,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void oneString() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -390,6 +400,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void noCases() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -409,6 +420,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     void importsOnEnum() {
         //noinspection EnhancedSwitchMigration
         rewriteRun(
+          //language=java
           java(
             """
               import java.time.DayOfWeek;
@@ -478,6 +490,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void removeBreaksFromCaseBody() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -514,6 +527,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void defaultOnly() {
         rewriteRun(
+          //language=java
           java(
             """
               enum Test {
@@ -554,6 +568,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/3076")
     void switchExpressions() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -590,6 +605,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/3076")
     void multipleSwitchExpressions() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

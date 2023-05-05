@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -40,6 +40,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void invertConditional() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -70,6 +71,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
             new NamedStyles(randomId(), "test", "", "", emptySet(), singletonList(
               new EqualsAvoidsNullStyle(true)))))
           ),
+          //language=java
           java(
             """
               public class A {
@@ -96,6 +98,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void removeUnnecessaryNullCheckAndParens() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -124,6 +127,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void removeUnnecessaryNullCheckAndKeepNecessaryParens() {
         rewriteRun(
+          //language=java
           java(
             """
             import java.util.Collection;

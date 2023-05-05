@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Tree;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.style.NamedStyles;
@@ -38,6 +38,7 @@ class FallThroughTest implements RewriteTest {
     @Test
     void switchExpressions() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -58,6 +59,7 @@ class FallThroughTest implements RewriteTest {
     @Test
     void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -93,6 +95,7 @@ class FallThroughTest implements RewriteTest {
     @Test
     void doNotAddBreakWhenPreviousCaseDoesNotContainCode() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -119,6 +122,7 @@ class FallThroughTest implements RewriteTest {
                 Tree.randomId(), "test", "test", "test", emptySet(),
                 singletonList(new FallThroughStyle(true)))))
           ),
+          //language=java
           java(
             """
               public class A {
@@ -152,6 +156,7 @@ class FallThroughTest implements RewriteTest {
     @Test
     void acceptableStatementsAreBreakOrReturnOrThrowOrContinue() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -181,6 +186,7 @@ class FallThroughTest implements RewriteTest {
     @Test
     void reliefPatternExpectedMatchesVariations() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -213,6 +219,7 @@ class FallThroughTest implements RewriteTest {
     @Test
     void handlesSwitchesWithOneOrNoneCases() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -236,6 +243,7 @@ class FallThroughTest implements RewriteTest {
     @Test
     void addBreaksFallthroughCasesComprehensive() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {

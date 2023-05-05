@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -55,38 +55,32 @@ public class NoDoubleBraceInitialization extends Recipe {
     }
 
     @Override
-    protected JavaIsoVisitor<ExecutionContext> getSingleSourceApplicableTest() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public JavaSourceFile visitJavaSourceFile(JavaSourceFile cu, ExecutionContext executionContext) {
-                doAfterVisit(new UsesType<>("java.util.Map", false));
-                doAfterVisit(new UsesType<>("java.util.List", false));
-                doAfterVisit(new UsesType<>("java.util.Set", false));
-                return cu;
-            }
-        };
-    }
-
-    @Override
-    public NoDoubleBraceInitializationVisitor getVisitor() {
-        return new NoDoubleBraceInitializationVisitor();
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(
+                Preconditions.or(
+                        new UsesType<>("java.util.Map", false),
+                        new UsesType<>("java.util.List", false),
+                        new UsesType<>("java.util.Set", false)
+                ),
+                new NoDoubleBraceInitializationVisitor()
+        );
     }
 
     private static class NoDoubleBraceInitializationVisitor extends JavaIsoVisitor<ExecutionContext> {
 
         private boolean isSupportedDoubleBraceInitialization(J.NewClass nc) {
             if (getCursor().getParent() == null
-                    || getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation
-                    || getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
+                || getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation
+                || getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
                 return false;
             }
             if (nc.getBody() != null && !nc.getBody().getStatements().isEmpty()
-                    && nc.getBody().getStatements().size() == 1
-                    && nc.getBody().getStatements().get(0) instanceof J.Block
-                    && getCursor().getParent(3) != null) {
+                && nc.getBody().getStatements().size() == 1
+                && nc.getBody().getStatements().get(0) instanceof J.Block
+                && getCursor().getParent(3) != null) {
                 return TypeUtils.isAssignableTo(MAP_TYPE, nc.getType())
-                        || TypeUtils.isAssignableTo(LIST_TYPE, nc.getType())
-                        || TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
+                       || TypeUtils.isAssignableTo(LIST_TYPE, nc.getType())
+                       || TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
             }
             return false;
         }
@@ -102,7 +96,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                 List<Statement> initStatements = secondBlock.getStatements();
 
                 boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty()
-                        && initStatements.stream().allMatch(statement -> statement instanceof J.NewClass);
+                                                             && initStatements.stream().allMatch(statement -> statement instanceof J.NewClass);
 
                 if (maybeMistakenlyMissedAddingElement) {
                     JavaType newClassType = nc.getType();
@@ -164,7 +158,7 @@ public class NoDoubleBraceInitialization extends Recipe {
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
                 if (mi.getMethodType() != null && identifier.getFieldType() != null && mi.getSelect() == null
-                        || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
+                    || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
                     if (identifier.getFieldType() == null) {
                         return mi;
                     }

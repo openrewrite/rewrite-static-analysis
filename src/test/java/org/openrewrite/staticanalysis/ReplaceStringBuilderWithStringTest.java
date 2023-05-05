@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,6 +34,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Test
     void replaceLiteralConcatenation() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -56,6 +57,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Test
     void replaceLiteralConcatenationWithReturn() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -78,6 +80,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Test
     void replaceCombinedConcatenation() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -116,6 +119,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Test
     void replaceInChainedMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -139,6 +143,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Test
     void withConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -173,6 +178,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     @Test
     void objectsGrouping() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -36,6 +36,7 @@ class ModifierOrderTest implements RewriteTest {
     @Test
     void changeModifierOrder() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.openrewrite.internal.lang.Nullable;
@@ -58,6 +59,7 @@ class ModifierOrderTest implements RewriteTest {
     @Test
     void dontChangeOrderedModifiers() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.ExecutionContext;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
@@ -36,6 +36,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void redundantImport() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -58,6 +59,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void nestedTypeReference() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -78,6 +80,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void conflictingTypeInSamePackage() {
         rewriteRun(
+          //language=java
           java(
             """
               package a;
@@ -86,6 +89,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package a;
@@ -102,6 +106,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void withinStaticFieldAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -122,6 +127,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void inGenericTypeParameter() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -144,6 +150,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void noImport() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -164,6 +171,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void multipleConflictingTypesWithoutImport() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -196,6 +204,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
                   return super.visitMethodDeclaration(method, ctx);
               }
           })),
+          //language=java
           java(
             """
               class T {
@@ -220,6 +229,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void conflictWithLocalType() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -235,6 +245,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void dontModifyThisReference() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -251,6 +262,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void dontModifyJavadoc() {
         rewriteRun(
+          //language=java
           java(
             """
               /**
@@ -268,6 +280,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void dontModifyQualifiedJavaLangTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -283,6 +296,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void conflictExistingImport() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.awt.List;
@@ -297,6 +311,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @Test
     void conflictGenericVariable() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -314,6 +329,7 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     @SuppressWarnings("TypeParameterHidesVisibleType")
     void conflictGenericVariableOnMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;

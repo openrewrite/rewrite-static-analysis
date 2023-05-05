@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -38,6 +38,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
     @Test
     void assertTrueIsRemoved() {
         rewriteRun(
+          //language=java
           java(
             """
               abstract class Test {
@@ -66,6 +67,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
     @Test
     void assertTrueFalseIsNotremoved() {
         rewriteRun(
+          //language=java
           java(
             """
               abstract class Test {
@@ -88,6 +90,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
           spec -> spec.recipe(toRecipe(() -> new RemoveMethodCallVisitor<>(
             new MethodMatcher("* assertTrue(..)"), (arg, expr) -> arg != 1 || J.Literal.isLiteralValue(expr, true)
           ))),
+          //language=java
           java(
             """
               abstract class Test {
@@ -117,6 +120,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
     @Test
     void doesNotRemoveAssertTrueIfReturnValueIsUsed() {
         rewriteRun(
+          //language=java
           java(
             """
               abstract class Test {

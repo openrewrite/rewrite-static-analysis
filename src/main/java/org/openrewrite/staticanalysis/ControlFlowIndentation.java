@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.SourceFile;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -34,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 
 public class ControlFlowIndentation extends Recipe {
     @Override
@@ -59,18 +58,21 @@ public class ControlFlowIndentation extends Recipe {
     }
 
     @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             TabsAndIndentsStyle tabsAndIndentsStyle;
 
             @Override
-            public JavaSourceFile visitJavaSourceFile(JavaSourceFile cu, ExecutionContext executionContext) {
-                TabsAndIndentsStyle style = ((SourceFile)cu).getStyle(TabsAndIndentsStyle.class);
-                if (style == null) {
-                    style = IntelliJ.tabsAndIndents();
+            public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                if (tree instanceof JavaSourceFile) {
+                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+                    TabsAndIndentsStyle style = ((SourceFile) cu).getStyle(TabsAndIndentsStyle.class);
+                    if (style == null) {
+                        style = IntelliJ.tabsAndIndents();
+                    }
+                    tabsAndIndentsStyle = style;
                 }
-                tabsAndIndentsStyle = style;
-                return super.visitJavaSourceFile(cu, executionContext);
+                return super.visit(tree, ctx);
             }
 
             @Override

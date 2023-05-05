@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -50,6 +50,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/841")
     void ignoreSuppressWarnings() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -70,6 +71,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     void ignoreVariablesNamed() {
         rewriteRun(
           spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused", "ignoreMe"})),
+          //language=java
           java(
             """
               class Test {
@@ -92,6 +94,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @SuppressWarnings("MethodMayBeStatic")
     void keepRightHandSideStatement() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -112,6 +115,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void keepStatementWhenSideEffectInInitialization() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -128,6 +132,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void keepStatementWhenSideEffectInAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -147,6 +152,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeUnusedLocalVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -173,6 +179,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void preserveComment() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -198,6 +205,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeUnusedLocalVariablesReassignedButNeverUsed() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -226,6 +234,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void ignoreClassFields() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -245,6 +254,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeUnusedLocalVariablesInClassInitializer() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -281,6 +291,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void handleLocalVariablesShadowingClassFields() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -310,6 +321,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void localVariableUnusedIncrementOperation() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -350,6 +362,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/apache/dubbo/blob/747282cdf851c144af562d3f92e10349cc315e36/dubbo-metadata/dubbo-metadata-definition-protobuf/src/test/java/org/apache/dubbo/metadata/definition/protobuf/model/GooglePB.java#L938-L944")
     void keepLocalVariablesAssignmentOperationToOtherVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -372,6 +385,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
     void keepLocalVariableAssignmentOperation() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -389,6 +403,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
     void removeUnusedLocalVariableBitwiseAssignmentOperation() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -416,6 +431,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
     void keepLocalVariableBitwiseAssignmentOperationWithinExpression() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -438,6 +454,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/blob/706a172ed5449214a4a08637a27dbe768fb4eecd/rewrite-core/src/main/java/org/openrewrite/internal/StringUtils.java#L55-L65")
     void handleInstanceOf() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Stack;
@@ -460,6 +477,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeUnusedLocalVariablesFromMultiVariablesDeclaration() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -484,6 +502,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void keepLocalVariablesWhenUsedAsMethodInvocationArgument() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -500,6 +519,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void keepLocalVariablesWhenMethodInvocationsCalledOnThem() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -522,6 +542,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void ignoreClassVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -540,6 +561,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void ignoreAnonymousClassVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.File;
@@ -561,6 +583,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/apache/dubbo/blob/747282cdf851c144af562d3f92e10349cc315e36/dubbo-rpc/dubbo-rpc-api/src/main/java/org/apache/dubbo/rpc/RpcStatus.java#L108-L118")
     void forLoopWithExternalIncrementLogic() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -581,6 +604,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void forLoopIncrementVariableReadInEvaluationCondition() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -597,6 +621,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeUnusedLocalVariablesWithinTryCatch() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -637,6 +662,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void ignoreTryWithResourceUnusedVariables() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.stream.Stream;
@@ -658,6 +684,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void handleVariablesReadWithinTry() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -701,6 +728,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void ignoreUnusedTryCatchExceptionVariableDeclaration() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -720,6 +748,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void ignoreUnusedLambdaExpressionParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BinaryOperator;
@@ -742,6 +771,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void ignoreUnusedLambdaExpressionParametersForEach() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -762,6 +792,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/txazo/spring-cloud-sourcecode/blob/5ffe615558e76f3bb37f19026ece5cbaff4d0404/eureka-client/src/main/java/com/netflix/discovery/converters/jackson/builder/StringInterningAmazonInfoBuilder.java#L114-L124")
     void recognizeUsedVariableWithinWhileLoop() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -821,6 +852,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("This still causes SonarQube to warn, but there isn't much that can be done in these cases. Maybe change to a while loop?")
     void ignoreForLoopIncrementVariableNeverRead() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -842,6 +874,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("This still causes SonarQube to warn, but there isn't much that can be done in these cases. Maybe change to a forEach?")
     void ignoreEnhancedForLoops() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -861,6 +894,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeFileGetterMethodsAsTheyDoNotHaveSideEffects() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.File;
@@ -886,6 +920,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeFileGetterMethodsWhenChainedAsTheyDoNotHaveSideEffects() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.File;
@@ -912,6 +947,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void assignmentWithinExpression() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

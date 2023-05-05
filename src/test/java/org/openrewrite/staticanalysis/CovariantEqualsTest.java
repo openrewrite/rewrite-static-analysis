@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,6 +34,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void replaceWithNonCovariantEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -65,6 +66,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void replaceMultiStatementReturnBody() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -97,6 +99,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void replaceEqualsBasedOnTypeSignature() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -156,6 +159,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void replaceEqualsMaintainsExistingAnnotations() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -189,6 +193,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void replaceWithNonCovariantEqualsWhenNested() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -223,6 +228,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void renameExistingParameterNameWhenParameterNameIsDefaultTemplateName() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -253,6 +259,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void ignoreIfAtLeastOneExistingNonCovariantEqualsMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -276,6 +283,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void ignoreIfNoExistingEqualsMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {}
@@ -294,6 +302,7 @@ class CovariantEqualsTest implements RewriteTest {
     @Test
     void equalsInInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               public interface Test {

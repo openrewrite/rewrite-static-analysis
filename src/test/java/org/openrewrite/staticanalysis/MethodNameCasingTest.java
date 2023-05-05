@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.ExecutionContext;
@@ -39,6 +39,7 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void noChangesOnMethodsBeginningWithUnderscore() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -54,6 +55,7 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void interfaceMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               interface Test {
@@ -68,6 +70,7 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void annotationMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               @interface Test {
@@ -83,6 +86,7 @@ class MethodNameCasingTest implements RewriteTest {
     void correctMethodNameCasing() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class Test {
@@ -107,6 +111,7 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void doNotRenamePublicMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -121,13 +126,14 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void doNotRenamePublicMethodsNullOptions() {
         rewriteRun(
-        spec -> spec.recipe(new MethodNameCasing(null, null)),
+          spec -> spec.recipe(new MethodNameCasing(null, null)),
+          //language=java
           java(
             """
-            class Test {
-                public void getFoo_bar() {}
-            }
-            """
+              class Test {
+                  public void getFoo_bar() {}
+              }
+              """
           )
         );
     }
@@ -138,6 +144,7 @@ class MethodNameCasingTest implements RewriteTest {
         rewriteRun(
           spec -> spec.recipe(new MethodNameCasing(true, true)),
           srcTestJava(
+            //language=java
             java(
               """
                 class Test {
@@ -159,6 +166,7 @@ class MethodNameCasingTest implements RewriteTest {
     void doNotApplyToTest() {
         rewriteRun(
           srcTestJava(
+            //language=java
             java(
               """
                 class Test {
@@ -177,18 +185,19 @@ class MethodNameCasingTest implements RewriteTest {
         rewriteRun(
           spec -> spec.recipe(new MethodNameCasing(true, false)),
           srcTestJava(
+            //language=java
             java(
               """
-                    class Test {
-                        void MyMethod_with_über() {
-                        }
+                class Test {
+                    void MyMethod_with_über() {
                     }
+                }
                 """,
               """
-                    class Test {
-                        void myMethodWithUber() {
-                        }
+                class Test {
+                    void myMethodWithUber() {
                     }
+                }
                 """
             )
           )
@@ -199,6 +208,7 @@ class MethodNameCasingTest implements RewriteTest {
     void changeMethodDeclaration() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class Test {
@@ -221,6 +231,7 @@ class MethodNameCasingTest implements RewriteTest {
     void changeCamelCaseMethodWithFirstLetterUpperCase() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class Test {
@@ -243,6 +254,7 @@ class MethodNameCasingTest implements RewriteTest {
     void changeMethodInvocations() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class Test {
@@ -256,6 +268,7 @@ class MethodNameCasingTest implements RewriteTest {
                 }
                 """
             ),
+            //language=java
             java(
               """
                 class A {
@@ -279,6 +292,7 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void dontChangeCorrectlyCasedMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -294,6 +308,7 @@ class MethodNameCasingTest implements RewriteTest {
     void changeMethodNameWhenOverride() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class ParentClass {
@@ -308,6 +323,7 @@ class MethodNameCasingTest implements RewriteTest {
                 }
                 """
             ),
+            //language=java
             java(
               """
                 class Test extends ParentClass {
@@ -331,6 +347,7 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void newNameExists() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -348,6 +365,7 @@ class MethodNameCasingTest implements RewriteTest {
     void nameExistsInInnerClass() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class T {
@@ -378,6 +396,7 @@ class MethodNameCasingTest implements RewriteTest {
     void snakeCaseToCamelCase() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class T {
@@ -426,12 +445,18 @@ class MethodNameCasingTest implements RewriteTest {
     @Test
     void doesNotRenameMethodInvocationsWhenTheMethodDeclarationsClassTypeIsNull() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()).recipe(toRecipe(() -> new JavaIsoVisitor<>() {
-              @Override
-              public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-                  return super.visitClassDeclaration(classDecl, executionContext).withType(null);
-              }
-          }).doNext(new MethodNameCasing(true, false))),
+          spec -> spec
+            .typeValidationOptions(TypeValidation.none())
+            .recipes(
+              toRecipe(() -> new JavaIsoVisitor<>() {
+                  @Override
+                  public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
+                      return super.visitClassDeclaration(classDecl, executionContext).withType(null);
+                  }
+              }),
+              new MethodNameCasing(true, false)
+            ),
+          //language=java
           java(
             """
               package abc;
@@ -459,6 +484,7 @@ class MethodNameCasingTest implements RewriteTest {
     void keepCamelCase() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 class Test {
@@ -483,6 +509,7 @@ class MethodNameCasingTest implements RewriteTest {
     void keepCamelCase2() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 import java.util.*;
@@ -532,6 +559,7 @@ class MethodNameCasingTest implements RewriteTest {
     void changeNameOfMethodWithArrayArgument() {
         rewriteRun(
           srcMainJava(
+            //language=java
             java(
               """
                 import java.util.*;
@@ -564,6 +592,7 @@ class MethodNameCasingTest implements RewriteTest {
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.none()),
           srcMainJava(
+            //language=java
             java(
               """
                 class Test {

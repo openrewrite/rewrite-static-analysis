@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.PathUtils;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.PathUtils;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -37,6 +37,7 @@ class LowercasePackageTest implements RewriteTest {
     @Test
     void lowerCasePackage() {
         rewriteRun(
+          //language=java
           java(
             """
               package com.UPPERCASE.CamelCase;

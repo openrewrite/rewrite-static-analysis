@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -41,6 +41,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptySwitch() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -65,6 +66,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyBlockWithComment() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -81,6 +83,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptySynchronized() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -105,6 +108,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyTry() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.*;
@@ -132,6 +136,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyCatchBlockWithIOException() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.FileInputStream;
@@ -154,6 +159,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyTryFinallyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -173,6 +179,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyCatchBlockWithExceptionAndEmptyFinally() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.File;
@@ -210,6 +217,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyLoops() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -240,6 +248,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyInstanceAndStaticInit() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -259,6 +268,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void extractSideEffectsFromEmptyIfsWithNoElse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -316,6 +326,7 @@ class EmptyBlockTest implements RewriteTest {
     void invertIfWithOnlyElseClauseAndBinaryOperator() {
         rewriteRun(
           // extra spaces after the original if condition to ensure that we preserve the if statement's block formatting
+          //language=java
           java(
             """
               public class A {
@@ -343,6 +354,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void invertIfWithElseIfElseClause() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -378,6 +390,7 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyElseBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -33,6 +33,7 @@ class UseStandardCharsetTest implements RewriteTest {
     @Test
     void notAStandardCharset() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.nio.charset.Charset;
@@ -49,6 +50,7 @@ class UseStandardCharsetTest implements RewriteTest {
     @Test
     void changeCharsetForName() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.nio.charset.Charset;
@@ -83,6 +85,7 @@ class UseStandardCharsetTest implements RewriteTest {
     @Test
     void convertAnyValidName() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.nio.charset.Charset;
@@ -111,6 +114,7 @@ class UseStandardCharsetTest implements RewriteTest {
     @Issue("https://github.com/moderneinc/support-public/issues/29")
     void nonConstantCharset() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.nio.charset.Charset;

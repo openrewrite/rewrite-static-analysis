@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.apache.commons.text.StringEscapeUtils;
 import org.openrewrite.ExecutionContext;
@@ -25,6 +25,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Objects;

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -33,6 +33,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void doNotChangeUpCast() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -51,6 +52,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void objectToObjectArray() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -67,6 +69,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void parametersDoNotMatch() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Collection;
@@ -87,6 +90,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void doNotChangeGenericTypeCast() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.*;
@@ -109,6 +113,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void redundantTypeCast() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -138,6 +143,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void downCast() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -167,6 +173,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void downCastParameterizedTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -202,12 +209,14 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void downCastExtendedObject() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
               }
               """
           ),
+          //language=java
           java(
             """
               class ExtendTest extends Test {
@@ -227,12 +236,14 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void downCastExtendedObjectArray() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
               }
               """
           ),
+          //language=java
           java(
             """
               class ExtendTest extends Test {

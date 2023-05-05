@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -36,6 +36,7 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
     @Test
     void doNothingIfMethodNotFound() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.apache.commons.lang3.Validate;
@@ -51,6 +52,7 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
     @Test
     void doNothingOnMethodsWithOneArg() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.apache.commons.lang3.Validate;
@@ -68,6 +70,7 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
     @Test
     void replaceMethodsWithTwoArg() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.apache.commons.lang3.Validate;
@@ -93,6 +96,7 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
     @Test
     void replaceMethodsWithThreeArg() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.apache.commons.lang3.Validate;
@@ -118,6 +122,7 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
     @Test
     void replaceMethodsWithThreeArgRetainWhitespace() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.apache.commons.lang3.Validate;
@@ -145,6 +150,7 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
     @Test
     void replaceMethodsWithThreeArgRetainComment() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.apache.commons.lang3.Validate;

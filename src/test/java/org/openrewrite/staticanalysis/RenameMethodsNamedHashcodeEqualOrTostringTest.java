@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -34,6 +34,7 @@ class RenameMethodsNamedHashcodeEqualOrTostringTest implements RewriteTest {
     @Test
     void noncompliantMethodNames() {
         rewriteRun(
+          //language=java
           java(
             """
               interface ITest {
@@ -88,6 +89,7 @@ class RenameMethodsNamedHashcodeEqualOrTostringTest implements RewriteTest {
     @Test
     void compliantWhenHasMismatchingTypeInformation() {
         rewriteRun(
+          //language=java
           java(
             """
               interface ITest {

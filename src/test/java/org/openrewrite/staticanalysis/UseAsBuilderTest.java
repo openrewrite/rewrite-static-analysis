@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.test.RecipeSpec;
@@ -30,6 +30,7 @@ class UseAsBuilderTest implements RewriteTest {
     @Test
     void useAsBuilder() {
         rewriteRun(
+          //language=java
           java(
             """
               class Buildable {
@@ -45,6 +46,7 @@ class UseAsBuilderTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class Test {

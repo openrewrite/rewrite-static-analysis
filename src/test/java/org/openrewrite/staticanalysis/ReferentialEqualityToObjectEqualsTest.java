@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -36,6 +36,7 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
     @Test
     void doesNotModifyBoxedTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               class C {
@@ -52,6 +53,7 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
     @Test
     void doesNotModifyEnumComparison() {
         rewriteRun(
+          //language=java
           java(
             """
               class B {
@@ -68,6 +70,7 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
     @Test
     void doesNotModifyClassComparisons() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -89,6 +92,7 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
     @Test
     void typeDoesNotOverrideEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -108,6 +112,7 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
     @Test
     void onlyOneSideOverridesEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -130,6 +135,7 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
     @Test
     void doNotModifyWithinEqualsMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -151,6 +157,7 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
     @Test
     void bothSidesOverrideEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {

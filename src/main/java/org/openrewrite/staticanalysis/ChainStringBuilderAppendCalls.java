@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.PartProvider;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
-import org.openrewrite.java.PartProvider;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,13 +53,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
     }
 
     @Override
-    protected @Nullable TreeVisitor<?, ExecutionContext> getSingleSourceApplicableTest() {
-        return new UsesMethod<>(STRING_BUILDER_APPEND);
-    }
-
-    @Override
-    protected TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(new UsesMethod<>(STRING_BUILDER_APPEND), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
@@ -98,7 +94,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                                 && (((J.Literal) exp).getType() == JavaType.Primitive.String)) {
                                 addToGroups(group, groups);
                                 appendToString = true;
-                            }  else if ((exp instanceof J.Identifier || exp instanceof J.MethodInvocation) && exp.getType() != null) {
+                            } else if ((exp instanceof J.Identifier || exp instanceof J.MethodInvocation) && exp.getType() != null) {
                                 JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(exp.getType());
                                 if (fullyQualified != null && fullyQualified.getFullyQualifiedName().equals("java.lang.String")) {
                                     addToGroups(group, groups);
@@ -114,8 +110,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                     J.MethodInvocation chainedMethods = m.withArguments(singletonList(groups.get(0)));
                     for (int i = 1; i < groups.size(); i++) {
                         chainedMethods = chainedMethods.withSelect(chainedMethods)
-                            .withArguments(singletonList(groups.get(i).unwrap()))
-                            .withPrefix(Space.EMPTY);
+                                .withArguments(singletonList(groups.get(i).unwrap()))
+                                .withPrefix(Space.EMPTY);
                     }
 
                     return chainedMethods;
@@ -123,7 +119,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
                 return m;
             }
-        };
+        });
     }
 
     /**
@@ -132,13 +128,14 @@ public class ChainStringBuilderAppendCalls extends Recipe {
     public static J.Binary concatAdditionBinary(Expression left, Expression right) {
         J.Binary b = getAdditiveBinaryTemplate();
         return b.withPrefix(b.getLeft().getPrefix())
-            .withLeft(left)
-            .withRight(right.withPrefix(Space.build(" " + right.getPrefix().getWhitespace(), emptyList())));
+                .withLeft(left)
+                .withRight(right.withPrefix(Space.build(" " + right.getPrefix().getWhitespace(), emptyList())));
     }
 
     /**
      * Concat expressions to an expression with '+' connected.
      */
+    @Nullable
     public static Expression additiveExpression(Expression... expressions) {
         Expression expression = null;
         for (Expression element : expressions) {
@@ -149,6 +146,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         return expression;
     }
 
+    @Nullable
     public static Expression additiveExpression(List<Expression> expressions) {
         return additiveExpression(expressions.toArray(new Expression[0]));
     }
@@ -178,7 +176,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
             }
 
             return flatAdditiveExpressions(b.getLeft(), expressionList)
-                && flatAdditiveExpressions(b.getRight(), expressionList);
+                   && flatAdditiveExpressions(b.getRight(), expressionList);
         } else if (expression instanceof J.Literal ||
                    expression instanceof J.Identifier ||
                    expression instanceof J.MethodInvocation ||

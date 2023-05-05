@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -30,6 +30,7 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
     void rspec1940() {
         rewriteRun(
           spec -> spec.recipe(new BooleanChecksNotInverted()),
+          //language=java
           java(
             """
               public class Test {
@@ -61,6 +62,7 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
     void doubleNegation() {
         rewriteRun(
           spec -> spec.recipe(new BooleanChecksNotInverted()),
+          //language=java
           java(
             """
               public class Test {

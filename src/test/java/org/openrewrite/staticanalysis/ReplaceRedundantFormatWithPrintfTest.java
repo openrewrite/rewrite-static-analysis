@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -32,6 +32,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void doesNotModifyNonLiteralFormatStringForPrintln() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -49,6 +50,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void transformsNonLiteralFormatStringForPrint() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -73,6 +75,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void modifiesCorrectArgumentGivenLocale() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Locale;
@@ -99,6 +102,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void transformsWhenTargetIsArbitraryPrintStreamSubclass() {
         rewriteRun(
+          //language=java
           java(
             """              
               class Test {
@@ -125,6 +129,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void transformsPrint() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -147,6 +152,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void transformsPrintWithTextBlockFormatString() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -171,6 +177,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void appendsNewlineForPrintln() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -193,6 +200,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void appendsNewlineForPrintlnWithTextBlockFormatString() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -220,6 +228,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void doesNotFailWhenArgHasParameterizedType() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -247,6 +256,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void doesNotFailWhenArgHasPrimitiveType() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -274,6 +284,7 @@ public class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     @Test
     void doesNotFailWhenArgHasTemplateParameter() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test<T> {

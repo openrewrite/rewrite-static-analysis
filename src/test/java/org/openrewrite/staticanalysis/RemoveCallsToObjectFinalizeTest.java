@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
     @Test
     void removeCallToFinalize() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -73,6 +74,7 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
     @Test
     void privateFinalizeIsNotChanged() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -97,6 +99,7 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
     @Test
     void publicFinalizeIsNotChanged() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -121,6 +124,7 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
     @Test
     void protectedFinalizeIsNotRemoved() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -143,6 +147,7 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
         @Test
         void staticFinalizeIsNotRemoved() {
             rewriteRun(
+              //language=java
               java(
                 """
                   public class A {

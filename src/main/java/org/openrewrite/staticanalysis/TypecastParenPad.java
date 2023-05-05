@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.SourceFile;
+import org.openrewrite.*;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.SpacesVisitor;
-import org.openrewrite.java.style.*;
+import org.openrewrite.java.style.Checkstyle;
+import org.openrewrite.java.style.IntelliJ;
+import org.openrewrite.java.style.SpacesStyle;
+import org.openrewrite.java.style.TypecastParenPadStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
 import java.util.Optional;
+
+import static java.util.Objects.requireNonNull;
 
 public class TypecastParenPad extends Recipe {
     @Override
@@ -35,11 +39,11 @@ public class TypecastParenPad extends Recipe {
     @Override
     public String getDescription() {
         return "Fixes whitespace padding between a typecast type identifier and the enclosing left and right parenthesis. " +
-                "For example, when configured to remove spacing, `( int ) 0L;` becomes `(int) 0L;`.";
+               "For example, when configured to remove spacing, `( int ) 0L;` becomes `(int) 0L;`.";
     }
 
     @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new TypecastParenPadVisitor();
     }
 
@@ -48,13 +52,15 @@ public class TypecastParenPad extends Recipe {
         TypecastParenPadStyle typecastParenPadStyle;
 
         @Override
-        public JavaSourceFile visitJavaSourceFile(JavaSourceFile javaSourceFile, ExecutionContext ctx) {
-            SourceFile cu = (SourceFile)javaSourceFile;
-            spacesStyle = Optional.ofNullable(cu.getStyle(SpacesStyle.class)).orElse(IntelliJ.spaces());
-            typecastParenPadStyle = Optional.ofNullable(cu.getStyle(TypecastParenPadStyle.class)).orElse(Checkstyle.typecastParenPadStyle());
+        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            if (tree instanceof JavaSourceFile) {
+                SourceFile cu = (SourceFile) requireNonNull(tree);
+                spacesStyle = Optional.ofNullable(cu.getStyle(SpacesStyle.class)).orElse(IntelliJ.spaces());
+                typecastParenPadStyle = Optional.ofNullable(cu.getStyle(TypecastParenPadStyle.class)).orElse(Checkstyle.typecastParenPadStyle());
 
-            spacesStyle = spacesStyle.withWithin(spacesStyle.getWithin().withTypeCastParentheses(typecastParenPadStyle.getSpace()));
-            return super.visitJavaSourceFile((JavaSourceFile)cu, ctx);
+                spacesStyle = spacesStyle.withWithin(spacesStyle.getWithin().withTypeCastParentheses(typecastParenPadStyle.getSpace()));
+            }
+            return super.visit(tree, ctx);
         }
 
         @Override

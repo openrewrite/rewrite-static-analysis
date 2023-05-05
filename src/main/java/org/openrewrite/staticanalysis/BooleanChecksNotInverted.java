@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 
@@ -34,7 +35,7 @@ public class BooleanChecksNotInverted extends Recipe {
     @Override
     public String getDescription() {
         return "It is needlessly complex to invert the result of a boolean comparison. The opposite comparison should be made instead. "
-                + "Also double negation of boolean expressions should be avoided. This recipes takes care of that.";
+                + "Also double negation of boolean expressions should be avoided.";
     }
 
     @Override
@@ -48,7 +49,7 @@ public class BooleanChecksNotInverted extends Recipe {
     }
 
     @Override
-    public JavaVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
 
             @SuppressWarnings("ConstantConditions")

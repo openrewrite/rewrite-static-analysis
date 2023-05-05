@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class IndexOfShouldNotCompareGreaterThanZeroTest implements RewriteTest {
     @Test
     void indexOfOnList() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -63,6 +64,7 @@ class IndexOfShouldNotCompareGreaterThanZeroTest implements RewriteTest {
     @Test
     void indexOfOnString() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -89,6 +91,7 @@ class IndexOfShouldNotCompareGreaterThanZeroTest implements RewriteTest {
     @Test
     void doNotChangeGreaterThanOrEqualToZero() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ public class FixStringFormatExpressionsTest implements RewriteTest {
     @Test
     void newLineFormat() {
         rewriteRun(
+          //language=java
           java(
             //language=java
             """
@@ -58,6 +59,7 @@ public class FixStringFormatExpressionsTest implements RewriteTest {
     void trimUnusedArguments() {
         rewriteRun(
           //language=java
+          //language=java
           java(
             """
               class T {
@@ -82,6 +84,7 @@ public class FixStringFormatExpressionsTest implements RewriteTest {
     @Test
     void allArgsAreUsed() {
         rewriteRun(
+          //language=java
           //language=java
           java(
             """

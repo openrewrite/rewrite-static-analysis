@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ public class UseListSortTest implements RewriteTest {
     @Test
     void hasSelect() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -66,6 +67,7 @@ public class UseListSortTest implements RewriteTest {
     @Test
     void staticImportNoSelect() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -39,6 +39,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void unknownArgumentType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Predicate;
@@ -61,6 +62,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void oneArgumentExistingExplicitType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -82,6 +84,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void oneArgumentNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Consumer;
@@ -102,6 +105,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void twoArgumentsExistingExplicitType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiConsumer;
@@ -122,6 +126,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void twoArgumentsNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiConsumer;
@@ -143,6 +148,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void twoArgumentsWithBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiPredicate;
@@ -179,6 +185,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void handlePrimitiveArrays() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiFunction;
@@ -205,6 +212,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void handleMultiDimensionalPrimitiveArrays() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiFunction;
@@ -231,6 +239,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void handleMultiDimensionalFullyQualifiedArrays() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.BiFunction;
@@ -257,6 +266,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void oneArgumentWithBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Predicate;
@@ -293,6 +303,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void threeArgumentsNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -329,6 +340,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void threeArgumentsWithBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -369,6 +381,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void threeArgumentsWithBlockPrimitive() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -409,6 +422,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void threeArgumentsWithBlockGeneric() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -449,6 +463,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void noArguments() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.function.Supplier;
@@ -471,6 +486,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void arraysSortExample() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Arrays;
@@ -501,6 +517,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void arraysSortExampleWithGeneric() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Arrays;
@@ -531,6 +548,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void parameterizedTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               package javafx.beans.value;
@@ -540,6 +558,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package javafx.beans.value;
@@ -550,6 +569,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package example;
@@ -563,6 +583,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import javafx.beans.value.ObservableValue;
@@ -596,6 +617,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void extendsConstraint() {
         rewriteRun(
+          //language=java
           java(
             """
               package com.test;

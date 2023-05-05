@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -36,6 +36,7 @@ class ControlFlowIndentationTest implements RewriteTest {
     @Test
     void removesIndentationFromStatementAroundIf() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -75,6 +76,7 @@ class ControlFlowIndentationTest implements RewriteTest {
     @Test
     void leavesIndentationAloneWhenBlocksAreExplicit() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -101,6 +103,7 @@ class ControlFlowIndentationTest implements RewriteTest {
     @Test
     void removesIndentationFromStatementAfterIfElse() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -135,6 +138,7 @@ class ControlFlowIndentationTest implements RewriteTest {
     @Test
     void elseIf() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -172,6 +176,7 @@ class ControlFlowIndentationTest implements RewriteTest {
     @Test
     void removesIndentationFromStatementAfterLoop() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

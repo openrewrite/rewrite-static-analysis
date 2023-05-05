@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
     @Test
     void bigDecimalRoundingNoChange() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.math.BigDecimal;import java.math.RoundingMode;class A {
@@ -53,6 +54,7 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
     @Test
     void bigDecimalRoundingChangeRoundingMode() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.math.BigDecimal;

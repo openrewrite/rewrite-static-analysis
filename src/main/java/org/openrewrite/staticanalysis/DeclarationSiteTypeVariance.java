@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -83,7 +83,7 @@ public class DeclarationSiteTypeVariance extends Recipe {
     }
 
     @Override
-    protected TreeVisitor<?, ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         List<VariantTypeSpec> variantTypeSpecs = variantTypes.stream().map(VariantTypeSpec::build).collect(Collectors.toList());
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override

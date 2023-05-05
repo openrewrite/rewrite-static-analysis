@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,6 +34,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void twoParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               class Foo {
@@ -57,6 +58,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void ignoreAbstractMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               class Foo {
@@ -70,6 +72,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void doNotAddFinalIfAssigned() {
         rewriteRun(
+          //language=java
           java(
             """
                     package a;
@@ -86,6 +89,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void doNotAddFinalIfInterface() {
         rewriteRun(
+          //language=java
           java(
             """
                     package a;
@@ -102,6 +106,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void replaceWithFinalModifier() {
         rewriteRun(
+          //language=java
           java(
             """
                     package com.test;
@@ -130,6 +135,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void replaceWithFinalModifierWhenAnnotated() {
         rewriteRun(
+          //language=java
           java(
             """
                 public class Test {
@@ -148,6 +154,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void replaceWithFinalModifierNoArguments() {
         rewriteRun(
+          //language=java
           java(
             """
                     package com.test;
@@ -166,6 +173,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void doNotReplaceWithFinalModifier() {
         rewriteRun(
+          //language=java
           java(
             """
                     package responsive.utils.subevent;

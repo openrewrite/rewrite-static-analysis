@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -37,6 +37,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     @Test
     void singleLineParam() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -71,6 +72,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     @Test
     void removeParamWithNoPrefix() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -96,6 +98,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     @Test
     void removeEmptyParams() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -125,6 +128,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     @Test
     void multipleEmptyLines() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -155,6 +159,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     @Test
     void emptyReturn() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -180,6 +185,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     @Test
     void emptyThrows() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -205,6 +211,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     @Test
     void emptyThrowsOnFirstLine() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

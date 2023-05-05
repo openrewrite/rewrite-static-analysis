@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -36,6 +36,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
     @Test
     void removeUnusedPrivateMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -69,6 +70,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
     @Test
     void doNotRemoveCustomizedSerialization() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test implements java.io.Serializable {
@@ -84,6 +86,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
     @Test
     void doNotRemoveMethodsWithAnnotations() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.junit.jupiter.params.provider.MethodSource;
@@ -106,6 +109,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
     @Test
     void privateMethodWithBoundedGenericTypes() {
         rewriteRun(
+          //language=java
           java(
             """
               public class TestClass {

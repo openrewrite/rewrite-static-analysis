@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.SourceFile;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.OperatorWrapStyle;
@@ -26,6 +25,8 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.TypeTree;
+
+import static java.util.Objects.requireNonNull;
 
 public class OperatorWrap extends Recipe {
     @Override
@@ -39,7 +40,7 @@ public class OperatorWrap extends Recipe {
     }
 
     @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new OperatorWrapVisitor();
     }
 
@@ -47,10 +48,12 @@ public class OperatorWrap extends Recipe {
         OperatorWrapStyle operatorWrapStyle;
 
         @Override
-        public JavaSourceFile visitJavaSourceFile(JavaSourceFile javaSourceFile, ExecutionContext ctx) {
-            SourceFile cu = (SourceFile)javaSourceFile;
-            operatorWrapStyle = cu.getStyle(OperatorWrapStyle.class) == null ? Checkstyle.operatorWrapStyle() : cu.getStyle(OperatorWrapStyle.class);
-            return super.visitJavaSourceFile((JavaSourceFile) cu, ctx);
+        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            if (tree instanceof JavaSourceFile) {
+                SourceFile cu = (SourceFile) requireNonNull(tree);
+                operatorWrapStyle = cu.getStyle(OperatorWrapStyle.class) == null ? Checkstyle.operatorWrapStyle() : cu.getStyle(OperatorWrapStyle.class);
+            }
+            return super.visit(tree, ctx);
         }
 
         @Override
@@ -58,24 +61,24 @@ public class OperatorWrap extends Recipe {
             J.Binary b = super.visitBinary(binary, ctx);
             J.Binary.Type op = b.getOperator();
             if ((Boolean.TRUE.equals(operatorWrapStyle.getDiv()) && op == J.Binary.Type.Division) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getStar()) && op == J.Binary.Type.Multiplication) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getPlus()) && op == J.Binary.Type.Addition) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getMinus()) && op == J.Binary.Type.Subtraction) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getMod()) && op == J.Binary.Type.Modulo) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getSr()) && op == J.Binary.Type.RightShift) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getSl()) && op == J.Binary.Type.LeftShift) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBsr()) && op == J.Binary.Type.UnsignedRightShift) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getEqual()) && op == J.Binary.Type.Equal) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getNotEqual()) && op == J.Binary.Type.NotEqual) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getGt()) && op == J.Binary.Type.GreaterThan) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getGe()) && op == J.Binary.Type.GreaterThanOrEqual) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getLt()) && op == J.Binary.Type.LessThan) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getLe()) && op == J.Binary.Type.LessThanOrEqual) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBand()) && op == J.Binary.Type.BitAnd) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBxor()) && op == J.Binary.Type.BitXor) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBor()) && op == J.Binary.Type.BitOr) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getLand()) && op == J.Binary.Type.And) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getLor()) && op == J.Binary.Type.Or)) {
+                (Boolean.TRUE.equals(operatorWrapStyle.getStar()) && op == J.Binary.Type.Multiplication) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getPlus()) && op == J.Binary.Type.Addition) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getMinus()) && op == J.Binary.Type.Subtraction) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getMod()) && op == J.Binary.Type.Modulo) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getSr()) && op == J.Binary.Type.RightShift) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getSl()) && op == J.Binary.Type.LeftShift) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBsr()) && op == J.Binary.Type.UnsignedRightShift) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getEqual()) && op == J.Binary.Type.Equal) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getNotEqual()) && op == J.Binary.Type.NotEqual) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getGt()) && op == J.Binary.Type.GreaterThan) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getGe()) && op == J.Binary.Type.GreaterThanOrEqual) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getLt()) && op == J.Binary.Type.LessThan) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getLe()) && op == J.Binary.Type.LessThanOrEqual) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBand()) && op == J.Binary.Type.BitAnd) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBxor()) && op == J.Binary.Type.BitXor) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBor()) && op == J.Binary.Type.BitOr) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getLand()) && op == J.Binary.Type.And) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getLor()) && op == J.Binary.Type.Or)) {
                 if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
                     if (b.getRight().getPrefix().getWhitespace().contains("\n")) {
                         b = b.getPadding().withOperator(
@@ -334,16 +337,16 @@ public class OperatorWrap extends Recipe {
             J.AssignmentOperation a = super.visitAssignmentOperation(assignOp, ctx);
             J.AssignmentOperation.Type op = a.getOperator();
             if ((Boolean.TRUE.equals(operatorWrapStyle.getPlusAssign()) && op == J.AssignmentOperation.Type.Addition) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getMinusAssign()) && op == J.AssignmentOperation.Type.Subtraction) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getStarAssign()) && op == J.AssignmentOperation.Type.Multiplication) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getDivAssign()) && op == J.AssignmentOperation.Type.Division) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getModAssign()) && op == J.AssignmentOperation.Type.Modulo) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getSrAssign()) && op == J.AssignmentOperation.Type.RightShift) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getSlAssign()) && op == J.AssignmentOperation.Type.LeftShift) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBsrAssign()) && op == J.AssignmentOperation.Type.UnsignedRightShift) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBandAssign()) && op == J.AssignmentOperation.Type.BitAnd) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBxorAssign()) && op == J.AssignmentOperation.Type.BitXor) ||
-                    (Boolean.TRUE.equals(operatorWrapStyle.getBorAssign()) && op == J.AssignmentOperation.Type.BitOr)) {
+                (Boolean.TRUE.equals(operatorWrapStyle.getMinusAssign()) && op == J.AssignmentOperation.Type.Subtraction) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getStarAssign()) && op == J.AssignmentOperation.Type.Multiplication) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getDivAssign()) && op == J.AssignmentOperation.Type.Division) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getModAssign()) && op == J.AssignmentOperation.Type.Modulo) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getSrAssign()) && op == J.AssignmentOperation.Type.RightShift) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getSlAssign()) && op == J.AssignmentOperation.Type.LeftShift) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBsrAssign()) && op == J.AssignmentOperation.Type.UnsignedRightShift) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBandAssign()) && op == J.AssignmentOperation.Type.BitAnd) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBxorAssign()) && op == J.AssignmentOperation.Type.BitXor) ||
+                (Boolean.TRUE.equals(operatorWrapStyle.getBorAssign()) && op == J.AssignmentOperation.Type.BitOr)) {
                 if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
                     if (a.getAssignment().getPrefix().getWhitespace().contains("\n")) {
                         a = a.getPadding().withOperator(

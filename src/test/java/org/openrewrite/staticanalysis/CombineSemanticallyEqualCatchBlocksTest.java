@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.test.RecipeSpec;
@@ -32,8 +32,11 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void doNotCombineDifferentCatchBlocks() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -54,9 +57,13 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void childClassIsCaughtBeforeParentClass() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends BaseException {}"),
+          //language=java
           java("class BaseException extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -77,8 +84,11 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void blocksContainDifferentComments() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -99,8 +109,11 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void blocksContainSameComments() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -131,9 +144,13 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void combineSameSemanticallyEquivalentMethodTypes() {
         rewriteRun(
+          //language=java
           java("class A extends BaseException {}"),
+          //language=java
           java("class B extends BaseException {}"),
+          //language=java
           java("class BaseException extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -166,8 +183,11 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void combineCatchesIntoNewMultiCatch() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -195,9 +215,13 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void fromMultiCatchCombineWithCatch() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java("class C extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -225,9 +249,13 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void fromCatchCombineWithMultiCatch() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java("class C extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -255,10 +283,15 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void fromMultiCatchCombineWithMultiCatch() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java("class C extends RuntimeException {}"),
+          //language=java
           java("class D extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -286,10 +319,15 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void preserveOrderOfCatchesWhenPossible() {
         rewriteRun(
+          //language=java
           java("class A extends RuntimeException {}"),
+          //language=java
           java("class B extends BaseException {}"),
+          //language=java
           java("class C extends BaseException {}"),
+          //language=java
           java("class BaseException extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -321,9 +359,13 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void removeRedundantChildClasses() {
         rewriteRun(
+          //language=java
           java("class A extends BaseException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java("class BaseException extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -352,10 +394,15 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void removeRedundantChildClassesWithExistingMultiCatches() {
         rewriteRun(
+          //language=java
           java("class A extends BaseException {}"),
+          //language=java
           java("class B extends RuntimeException {}"),
+          //language=java
           java("class BaseException extends RuntimeException {}"),
+          //language=java
           java("class Other extends RuntimeException {}"),
+          //language=java
           java(
             """
               class Test {
@@ -383,6 +430,7 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Test
     void dontCombineCatchBlocksWithDifferentMethodInvocationParameters() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,7 @@ public class ReplaceStackWithDequeTest implements RewriteTest {
     @Test
     void replaceStack() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Stack;
@@ -66,6 +67,7 @@ public class ReplaceStackWithDequeTest implements RewriteTest {
     @Test
     void doNotReplaceIfReturned() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Stack;
@@ -88,6 +90,7 @@ public class ReplaceStackWithDequeTest implements RewriteTest {
     void dataFlow() {
         rewriteRun(
           spec -> spec.recipe(new FindMethods("java.util.Stack <constructor>(..)", false, "data")),
+          //language=java
           java(
             """
               import java.util.Stack;

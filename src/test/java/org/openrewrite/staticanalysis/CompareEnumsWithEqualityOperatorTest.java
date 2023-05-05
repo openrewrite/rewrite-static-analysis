@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.Issue;
@@ -43,6 +43,7 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     void changeEnumEquals() {
         rewriteRun(
           enumA,
+          //language=java
           java(
             """
               import a.A;
@@ -75,6 +76,7 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     void changeEnumNotEquals() {
         rewriteRun(
           enumA,
+          //language=java
           java(
             """
               import a.A;
@@ -107,6 +109,7 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     void changeEnumNotEqualsWithParentheses() {
         rewriteRun(
           enumA,
+          //language=java
           java(
             """
               import a.A;
@@ -134,6 +137,7 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     @Test
     void equals() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -166,6 +170,7 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     @Test
     void notEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {

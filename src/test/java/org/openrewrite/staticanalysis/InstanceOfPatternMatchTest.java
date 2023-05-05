@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +41,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void ifConditionWithoutPattern() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -75,6 +76,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void multipleCasts() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -107,6 +109,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void longNames() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     import java.util.ArrayList;
@@ -139,6 +142,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void primitiveArray() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -167,6 +171,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void matchingVariableInBody() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -198,6 +203,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void conflictingVariableInBody() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -232,6 +238,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void nestedPotentiallyConflictingIfs() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -266,6 +273,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void expressionWithSideEffects() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -291,6 +299,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void noTypeCast() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -309,6 +318,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void typeCastInElse() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -329,6 +339,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void ifConditionWithPattern() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -347,6 +358,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void orOperationInIfCondition() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -368,6 +380,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void negatedInstanceOfMatchedInElse() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -394,6 +407,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void typeCastInTrue() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -418,6 +432,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void multipleVariablesOnlyOneUsed() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -444,6 +459,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void initBlocks() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -478,6 +494,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void typeCastInFalse() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -499,6 +516,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void onlyReplacementsBeforeOrOperator() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -523,6 +541,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void methodCallBreaksFlowScope() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -547,6 +566,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void string() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -571,6 +591,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void primitive() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -595,6 +616,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void multiDimensional() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -619,6 +641,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void dimensionalMismatch() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -640,6 +663,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void wildcardInstanceOf() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     import java.util.List;
@@ -671,6 +695,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void rawInstanceOfAndWildcardParameterizedCast() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     import java.util.List;
@@ -696,6 +721,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void rawInstanceOfAndObjectParameterizedCast() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     import java.util.List;
@@ -721,6 +747,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void rawInstanceOfAndParameterizedCast() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     import java.util.List;
@@ -739,6 +766,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void unboundGenericTypeVariable() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     import java.util.List;
@@ -762,6 +790,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void unaryWithoutSideEffects() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {
@@ -785,6 +814,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         void nestedClasses() {
             rewriteRun(
               version(
+                //language=java
                 java(
                   """
                     public class A {

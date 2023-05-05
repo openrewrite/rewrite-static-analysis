@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Applicability;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -50,14 +50,9 @@ public class ReplaceStreamToListWithCollect extends Recipe {
     }
 
     @Override
-    protected TreeVisitor<?, ExecutionContext> getSingleSourceApplicableTest() {
-        return Applicability.and(new UsesJavaVersion<>(16),
-                new UsesMethod<>(STREAM_TO_LIST));
-    }
-
-    @Override
-    protected TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(Preconditions.and(new UsesJavaVersion<>(16),
+                new UsesMethod<>(STREAM_TO_LIST)), new JavaVisitor<ExecutionContext>() {
 
             private final JavaTemplate template = JavaTemplate
                     .builder(this::getCursor, "#{any(java.util.stream.Stream)}.collect(Collectors.toList())")
@@ -75,8 +70,6 @@ public class ReplaceStreamToListWithCollect extends Recipe {
                 }
                 return result;
             }
-
-        };
+        });
     }
-
 }

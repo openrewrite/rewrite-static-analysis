@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,6 +34,7 @@ class FinalClassTest implements RewriteTest {
     @Test
     void finalizeClass() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -61,6 +62,7 @@ class FinalClassTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/2954")
     void nestedClassWithSubclass() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -88,6 +90,7 @@ class FinalClassTest implements RewriteTest {
     @Test
     void hasPublicConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -105,6 +108,7 @@ class FinalClassTest implements RewriteTest {
     @Test
     void hasImplicitConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -117,6 +121,7 @@ class FinalClassTest implements RewriteTest {
     @Test
     void innerClass() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -142,6 +147,7 @@ class FinalClassTest implements RewriteTest {
     @Test
     void abstractClass() {
         rewriteRun(
+          //language=java
           java(
             """
               public abstract class A {
@@ -160,6 +166,7 @@ class FinalClassTest implements RewriteTest {
     @Test
     void classWithAnnotation() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

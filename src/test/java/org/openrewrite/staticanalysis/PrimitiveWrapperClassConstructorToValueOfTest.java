@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -37,6 +37,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
     @Test
     void ternaryWithBinary() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.TimeUnit;
@@ -65,6 +66,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
     @Test
     void integerValueOf() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -81,6 +83,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
     @Test
     void newClassToValueOf() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -117,6 +120,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
     @Test
     void newIntegerToValueOfValueRef() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -150,6 +154,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
     @Test
     void templateIsNewClassArgumentForNewClass() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Date;
@@ -176,6 +181,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
     @Test
     void doubleToFloat() {
         rewriteRun(
+          //language=java
           java(
             """
               class T {
@@ -210,6 +216,7 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
     @Test
     void withinEnum() {
         rewriteRun(
+          //language=java
           java(
             """
               public enum Options {

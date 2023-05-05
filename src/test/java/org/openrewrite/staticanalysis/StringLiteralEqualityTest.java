@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -41,6 +41,7 @@ class StringLiteralEqualityTest implements RewriteTest {
     @Test
     void stringLiteralEqualityReplacedWithEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -103,6 +104,7 @@ class StringLiteralEqualityTest implements RewriteTest {
     @Test
     void stringLiteralEqualityReplacedWithNotEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -147,6 +149,7 @@ class StringLiteralEqualityTest implements RewriteTest {
     @Test
     void changeNotNeeded() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

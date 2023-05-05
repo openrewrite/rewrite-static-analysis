@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.internal.TypesInUse;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.marker.SearchResult;
 
 import java.util.function.BiPredicate;
@@ -56,37 +55,28 @@ public class RemoveUnneededAssertion extends Recipe {
     }
 
     @Override
-    protected @Nullable TreeVisitor<?, ExecutionContext> getSingleSourceApplicableTest() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-
-            @Override
-            public JavaSourceFile visitJavaSourceFile(JavaSourceFile cu, ExecutionContext executionContext) {
-                doAfterVisit(new UsesMethod<>(JUNIT_JUPITER_ASSERT_TRUE_MATCHER));
-                doAfterVisit(new UsesMethod<>(JUNIT_JUPITER_ASSERT_FALSE_MATCHER));
-                doAfterVisit(new UsesMethod<>(JUNIT_ASSERT_TRUE_MATCHER));
-                doAfterVisit(new UsesMethod<>(JUNIT_ASSERT_FALSE_MATCHER));
-                doAfterVisit(new UsesMethod<>(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER));
-                doAfterVisit(new UsesMethod<>(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER));
-                return super.visitJavaSourceFile(cu, executionContext);
-            }
-
-            @Override
-            public J.Assert visitAssert(J.Assert _assert, ExecutionContext executionContext) {
-                if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
-                    return SearchResult.found(_assert);
-                }
-                return _assert;
-            }
-        };
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(
+                Preconditions.or(
+                        new UsesMethod<>(JUNIT_JUPITER_ASSERT_TRUE_MATCHER),
+                        new UsesMethod<>(JUNIT_JUPITER_ASSERT_FALSE_MATCHER),
+                        new UsesMethod<>(JUNIT_ASSERT_TRUE_MATCHER),
+                        new UsesMethod<>(JUNIT_ASSERT_FALSE_MATCHER),
+                        new UsesMethod<>(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER),
+                        new UsesMethod<>(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER),
+                        new JavaIsoVisitor<ExecutionContext>() {
+                            @Override
+                            public J.Assert visitAssert(J.Assert _assert, ExecutionContext executionContext) {
+                                if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
+                                    return SearchResult.found(_assert);
+                                }
+                                return _assert;
+                            }
+                        }
+                ), new RemoveUnneededAssertionVisitor());
     }
 
-    @Override
-    protected TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new RemoveUnneededAssertionVisitor<>();
-    }
-
-    private static class RemoveUnneededAssertionVisitor<P> extends JavaIsoVisitor<P> {
-
+    private static class RemoveUnneededAssertionVisitor extends JavaIsoVisitor<ExecutionContext> {
         @FunctionalInterface
         private interface InvokeRemoveMethodCallVisitor {
             J.CompilationUnit invoke(
@@ -97,15 +87,15 @@ public class RemoveUnneededAssertion extends Recipe {
         }
 
         @Override
-        public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, P p) {
-            J.CompilationUnit compilationUnit = super.visitCompilationUnit(cu, p);
+        public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
+            J.CompilationUnit compilationUnit = super.visitCompilationUnit(cu, ctx);
             // We can compute the types in use once, because this logic only removes method calls, never adds them.
             TypesInUse typesInUse = compilationUnit.getTypesInUse();
             InvokeRemoveMethodCallVisitor invokeRemoveMethodCallVisitor = (inputCu, methodMatcher, argumentPredicate) -> {
                 if (typesInUse.getUsedMethods().stream().anyMatch(methodMatcher::matches)) {
                     // Only visit the subtree when we know the method is present.
                     return (J.CompilationUnit) new RemoveMethodCallVisitor<>(methodMatcher, argumentPredicate)
-                            .visitNonNull(cu, p, getCursor().getParentOrThrow());
+                            .visitNonNull(cu, ctx, getCursor().getParentOrThrow());
                 }
                 return inputCu;
             };
@@ -147,14 +137,14 @@ public class RemoveUnneededAssertion extends Recipe {
         }
 
         @Override
-        public J.Assert visitAssert(J.Assert _assert, P p) {
-            if (_assert.getCondition() instanceof J.Literal) {
-                if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
+        public J.Assert visitAssert(J.Assert anAssert, ExecutionContext ctx) {
+            if (anAssert.getCondition() instanceof J.Literal) {
+                if (J.Literal.isLiteralValue(anAssert.getCondition(), true)) {
                     //noinspection ConstantConditions
                     return null;
                 }
             }
-            return super.visitAssert(_assert, p);
+            return super.visitAssert(anAssert, ctx);
         }
     }
 }

@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -56,22 +61,16 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     }
 
     @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
-        return new NoPrimitiveWrapperVisitor();
-    }
-
-    @Override
-    protected JavaIsoVisitor<ExecutionContext> getSingleSourceApplicableTest() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public JavaSourceFile visitJavaSourceFile(JavaSourceFile cu, ExecutionContext executionContext) {
-                doAfterVisit(new UsesMethod<>(NUMBER_COMPARE_TO_MATCHER));
-                doAfterVisit(new UsesMethod<>(NUMBER_TO_STRING_MATCHER));
-                doAfterVisit(new UsesMethod<>(BOOLEAN_COMPARE_TO_MATCHER));
-                doAfterVisit(new UsesMethod<>(BOOLEAN_TO_STRING_MATCHER));
-                return cu;
-            }
-        };
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(
+                Preconditions.or(
+                        new UsesMethod<>(NUMBER_COMPARE_TO_MATCHER),
+                        new UsesMethod<>(NUMBER_TO_STRING_MATCHER),
+                        new UsesMethod<>(BOOLEAN_COMPARE_TO_MATCHER),
+                        new UsesMethod<>(BOOLEAN_TO_STRING_MATCHER)
+                ),
+                new NoPrimitiveWrapperVisitor()
+        );
     }
 
     private static class NoPrimitiveWrapperVisitor extends JavaIsoVisitor<ExecutionContext> {

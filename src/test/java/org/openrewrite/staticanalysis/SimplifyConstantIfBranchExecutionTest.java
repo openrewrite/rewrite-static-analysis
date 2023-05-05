@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -32,6 +32,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void doNotChangeNonIf() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -51,6 +52,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrue() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -75,6 +77,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueInParens() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -99,6 +102,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfNotFalse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -124,6 +128,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @SuppressWarnings("DuplicateCondition")
     void simplifyConstantIfTrueOrTrue() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -148,6 +153,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -171,6 +177,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueElse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -195,6 +202,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseElse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -220,6 +228,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -242,6 +251,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -263,6 +273,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueEmptyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -284,6 +295,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseEmptyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -305,6 +317,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueElseIf() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -331,6 +344,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseElseIf() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -359,6 +373,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueElseIfFalse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -383,6 +398,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseElseIfTrue() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -408,6 +424,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueElseIfFalseNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -431,6 +448,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseElseIfNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -454,6 +472,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfTrueElseIfFalseEmptyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -476,6 +495,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseElseIfTrueEmptyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -498,6 +518,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfVariableElseIfTrueEmptyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -525,6 +546,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfVariableElseIfTruePrint() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -555,6 +577,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfVariableElseIfFalseEmptyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -583,6 +606,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void simplifyConstantIfFalseElseWhileTrueEmptyBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -610,6 +634,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void doNotFormatCodeOutsideRemovedBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -642,6 +667,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void doesNotRemoveWhenReturnInIfBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -661,6 +687,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void doesNotRemoveWhenThrowsInIfBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -680,6 +707,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void doesNotRemoveWhenBreakInIfBlockWithinWhile() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -702,6 +730,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void doesNotRemoveWhenContinueInIfBlockWithinWhile() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -724,6 +753,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void binaryOrIsAlwaysFalse() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -747,6 +777,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     @Test
     void negatedTrueTrue() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {

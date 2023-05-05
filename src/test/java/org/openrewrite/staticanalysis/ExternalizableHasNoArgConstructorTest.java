@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,6 +33,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
     @Test
     void hasDefaultNoArgsConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Externalizable;
@@ -65,6 +66,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
     @Test
     void hasNoArgsConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Externalizable;
@@ -99,6 +101,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
     @Test
     void needsNoArgsConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Externalizable;
@@ -154,6 +157,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
     @Test
     void implementsExternalizableInterface() {
         rewriteRun(
+          //language=java
           java(
             """
               package abc;
@@ -164,6 +168,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package abc;
@@ -229,6 +234,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
     @Test
     void hasFinalFieldVar() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Externalizable;
@@ -259,6 +265,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
     @Test
     void hasInitializedFinalFieldVar() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.Externalizable;
@@ -312,6 +319,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
     @Test
     void superClassDoesNotHaveDefaultConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               package abc;
@@ -324,6 +332,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               package abc;

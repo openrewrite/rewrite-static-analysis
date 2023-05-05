@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
 import lombok.Value;
@@ -21,6 +21,7 @@ import lombok.With;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -60,7 +61,7 @@ public class MinimumSwitchCases extends Recipe {
     }
 
     @Override
-    public JavaVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder(this::getCursor, "" +
                                                                                          "if(#{any()} == #{any()}) {\n" +

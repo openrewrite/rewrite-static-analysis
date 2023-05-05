@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,6 +34,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralMillisToSeconds() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -56,6 +57,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralMillisToMinutes() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -78,6 +80,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralMillisToHours() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -100,6 +103,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralMillisToDays() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -122,6 +126,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralMillisProduct() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -144,6 +149,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralMillisProductWithWeirdFactors() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -166,6 +172,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralSeconds() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -188,6 +195,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralMinutes() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -210,6 +218,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void simplifyLiteralHours() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -232,6 +241,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void doesNotChangeLiteralDays() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -247,6 +257,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void doNotChangeSubSecondMillis() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -281,6 +292,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Test
     void doesNotChangeNonMultiplicationArithmetic() {
         rewriteRun(
+          //language=java
           java(
             """
             import java.time.Duration;
@@ -305,6 +317,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     void doesNotChangeNonConstantUnitCount() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;
@@ -322,6 +335,7 @@ public class SimplifyDurationCreationUnitsTest implements RewriteTest {
     @Issue("https://github.com/moderneinc/support-public/issues/30")
     void doesNotChangeZeroConstant() {
         rewriteRun(
+          //language=java
           java(
               """
               import java.time.Duration;

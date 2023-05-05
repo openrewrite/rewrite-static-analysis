@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -34,6 +34,7 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void unwrapTry() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -62,6 +63,7 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void removeCatch() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -96,6 +98,7 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void doNotRemoveRuntimeException() {
         rewriteRun(
+          //language=java
           java(
             """ 
               public class AnExample {
@@ -115,6 +118,7 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void doNotRemoveThrownException() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.IOException;
@@ -139,6 +143,7 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void doNotRemoveJavaLangException() {
         rewriteRun(
+          //language=java
           java(
             """
                 class Scratch {

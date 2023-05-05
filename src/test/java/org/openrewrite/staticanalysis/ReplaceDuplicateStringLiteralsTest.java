@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,6 +34,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void doesNotMeetCharacterLimit() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -52,6 +53,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         rewriteRun(
           spec -> spec.recipe(new ReplaceDuplicateStringLiterals(false)),
           srcTestJava(
+            //language=java
             java(
               """
                 class A {
@@ -70,6 +72,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     void testSourcesEnabled() {
         rewriteRun(
           srcTestJava(
+            //language=java
             java(
               """
                 class A {
@@ -94,6 +97,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void doNotChangeLiteralsInAnnotations() {
         rewriteRun(
+          //language=java
           java(
             """
               public @interface Example {
@@ -101,6 +105,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class A {
@@ -120,6 +125,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void replaceRedundantFinalStrings() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.foo;
@@ -145,6 +151,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void replaceRedundantLiteralInMethodInvocation() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -174,6 +181,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void replaceRedundantLiteralsInNewClass() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -209,6 +217,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void multipleRedundantValues() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -239,6 +248,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void transformStringValue() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -262,6 +272,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void constantAlreadyExists() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -286,6 +297,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void constantExistsWithInnerClass() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -320,6 +332,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void preventNamespaceShadowingWithNonStringConstant() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.foo;
@@ -347,6 +360,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void preventNamespaceShadowingOnExistingConstant() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -395,6 +409,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void preventNamespaceShadowingOnNewConstant() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -420,6 +435,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void multiVariableDeclaration() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -443,6 +459,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void replaceMixedRedundantLiterals() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -483,6 +500,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void unicodeCharacterEquivalents() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -507,6 +525,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void enumDefinition() {
         rewriteRun(
+          //language=java
           java(
             """
               enum A {
@@ -544,6 +563,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     @Test
     void enumCannotReplaceConstructorArgument() {
         rewriteRun(
+          //language=java
           java(
             """
               enum Scratch {

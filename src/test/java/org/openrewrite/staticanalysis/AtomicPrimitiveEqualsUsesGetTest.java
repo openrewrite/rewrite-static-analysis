@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -32,6 +32,7 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
     @Test
     void usesGet() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.atomic.AtomicInteger;
@@ -57,6 +58,7 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
     @Test
     void equalsArgNotAtomicType() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.atomic.AtomicInteger;
@@ -77,6 +79,7 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
     @Test
     void usesEquals() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.concurrent.atomic.AtomicInteger;
@@ -119,6 +122,7 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
     @Test
     void typeExtendsAtomic() {
         rewriteRun(
+          //language=java
           java(
             """
             package abc;
@@ -131,6 +135,7 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
             }
             """
           ),
+          //language=java
           java(
             """
               package abc;

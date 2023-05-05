@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
@@ -31,6 +31,7 @@ class StaticMethodNotFinalTest implements RewriteTest {
     void removeFinalFromStaticMethods() {
         rewriteRun(
           spec -> spec.recipe(new StaticMethodNotFinal()),
+          //language=java
           java(
             """
               class Test {

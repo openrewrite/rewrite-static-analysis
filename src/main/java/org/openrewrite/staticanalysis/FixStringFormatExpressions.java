@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Applicability;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
@@ -29,7 +28,8 @@ import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collections;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,16 +54,16 @@ public class FixStringFormatExpressions extends Recipe {
         return Duration.of(5, ChronoUnit.MINUTES);
     }
 
-    @Override
-    protected @Nullable TreeVisitor<?, ExecutionContext> getSingleSourceApplicableTest() {
-        return Applicability.or(
-                new UsesMethod<>(new MethodMatcher("java.lang.String format(..)")),
-                new UsesMethod<>(new MethodMatcher("java.lang.String formatted(..)")));
-    }
 
     @Override
-    protected FixPrintfExpressionsVisitor getVisitor() {
-        return new FixPrintfExpressionsVisitor();
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return Preconditions.check(
+                Preconditions.or(
+                        new UsesMethod<>(new MethodMatcher("java.lang.String format(..)")),
+                        new UsesMethod<>(new MethodMatcher("java.lang.String formatted(..)"))
+                ),
+                new FixPrintfExpressionsVisitor()
+        );
     }
 
     private static class FixPrintfExpressionsVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -73,6 +73,7 @@ public class FixStringFormatExpressions extends Recipe {
 
         MethodMatcher sFormatMatcher = new MethodMatcher("java.lang.String format(..)");
         MethodMatcher sFormattedMatcher = new MethodMatcher("java.lang.String formatted(..)");
+
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
             J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
@@ -82,7 +83,7 @@ public class FixStringFormatExpressions extends Recipe {
                 if (sFormatMatcher.matches(mi) && mi.getArguments().get(0) instanceof J.Literal) {
                     fmtArg = (J.Literal) mi.getArguments().get(0);
                 } else if (sFormattedMatcher.matches(mi) && mi.getSelect() instanceof J.Literal) {
-                    fmtArg = (J.Literal)mi.getSelect();
+                    fmtArg = (J.Literal) mi.getSelect();
                     isStringFormattedExpression = true;
                 }
 
@@ -121,7 +122,7 @@ public class FixStringFormatExpressions extends Recipe {
 
         private static Expression replaceNewLineChars(Expression arg0) {
             if (arg0 instanceof J.Literal) {
-                J.Literal fmt = (J.Literal)arg0;
+                J.Literal fmt = (J.Literal) arg0;
                 if (fmt.getValue() != null) {
                     fmt = fmt.withValue(fmt.getValue().toString().replace("\n", "%n"));
                 }

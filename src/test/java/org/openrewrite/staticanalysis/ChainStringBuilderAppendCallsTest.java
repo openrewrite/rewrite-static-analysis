@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -32,6 +32,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void objectsConcatenation() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -60,6 +61,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void literalConcatenationIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -77,6 +79,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void groupedStringsConcatenation() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -103,6 +106,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void unWrap() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -129,6 +133,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void chainedAppend() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -156,6 +161,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     void runMultipleTimes() {
         rewriteRun(
           spec -> spec.expectedCyclesThatMakeChanges(2),
+          //language=java
           java(
             """
               class A {
@@ -182,6 +188,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void correctlyGroupConcatenations() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -216,6 +223,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void appendMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -248,6 +256,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void ChainedAppendWithConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -274,6 +283,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void methodArgument() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {

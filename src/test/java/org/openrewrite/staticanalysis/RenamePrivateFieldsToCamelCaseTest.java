@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Recipe;
-import org.openrewrite.DocumentExample;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -38,6 +38,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void upperSnakeToLowerCamel() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -56,6 +57,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void lowerCaseWithLeadingDollarCharacter() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -70,6 +72,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void nameConflict() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -93,6 +96,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doesNotRenameAssociatedIdentifiers() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -133,6 +137,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeStaticImports() {
         rewriteRun(
+          //language=java
           java(
             """
               package p;
@@ -141,6 +146,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import static p.B._staticImport_;
@@ -156,6 +162,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeInheritedFields() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -163,6 +170,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class Test extends A {
@@ -181,6 +189,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeIfToNameExists() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -198,6 +207,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeExistsInOnlyOneMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -219,6 +229,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void renamePrivateMembers() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -265,6 +276,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void renameWithFieldAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               class ClassWithPublicField {
@@ -272,6 +284,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class Test {
@@ -298,6 +311,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doNotRenameInnerClassesMembers() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -316,6 +330,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void renameUsageInInnerClasses() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -342,11 +357,13 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doNotRenameAnonymousInnerClasses() {
         rewriteRun(
+          //language=java
           java(
             """
               interface Book{}
               """
           ),
+          //language=java
           java(
             """
               class B {
@@ -369,6 +386,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void handleStaticMethods() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -397,6 +415,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void renameFinalMembers() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -419,6 +438,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void doNotChangeWhenSameMethodParam() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -435,6 +455,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
     @Test
     void renameWhenSameMethodExists() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -467,6 +488,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
                   spec.recipe(Recipe.noop());
               }
           }),
+          //language=java
           java(
             """
               public record MyRecord(

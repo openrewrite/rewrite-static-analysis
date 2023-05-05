@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
@@ -36,6 +36,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void modifierAndVariableTypeFlagSet() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -59,6 +60,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldWithInitializerMadeFinal() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -83,6 +85,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldWithInitializerViaMethodMadeFinal() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -109,6 +112,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldAssignedInConstructorMadeFinal() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -136,6 +140,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldAssignedInConstructorMightHaveBeenNotInitializedIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -164,6 +169,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void multiVariablesMadeFinal() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -200,6 +206,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void multiVariablesReassigned() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -223,6 +230,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldReassignedByAMethod() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -244,6 +252,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldReassignedByAMethodUsingThis() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -267,6 +276,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldReassignedByAMethodUsingClassAndThis() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -288,6 +298,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldOfAFieldReassignedByAMethodUsingThis() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -308,6 +319,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class B {
@@ -321,6 +333,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldReassignedInConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -338,6 +351,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldAssignedInConstructorViaThis() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -364,6 +378,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldReferencedByNonModifyingUnaryOperator() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -385,6 +400,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldAssignedInAllAlternateConstructors() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -420,6 +436,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldAssignedInIfElseStatementsInConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -456,6 +473,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldAssignedIndirectlyInAllAlternateConstructors() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -488,6 +506,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldReassignedInAlternateConstructors() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -509,6 +528,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldReassignedInConstructorMultipleTimes() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -527,6 +547,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldsReassignedInLoops() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -559,6 +580,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void nonPrivateFieldsIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -574,6 +596,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void finalFieldsIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -587,6 +610,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void staticFieldsMadeFinal() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -611,6 +635,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void initializedByInitializerBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Person {
@@ -655,6 +680,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void staticInitializerBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -688,6 +714,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void ignoreInnerClass() {
         rewriteRun(
+          //language=java
           java(
             """
               class OuterClass {
@@ -707,6 +734,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void notInitializedByClassIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -723,6 +751,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void fieldAssignedInLambdaInsideConstructor() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.List;
@@ -743,6 +772,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void anyFieldAnnotationAppliedIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import lombok.Setter;
@@ -766,6 +796,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void anyAnnotationAppliedClassIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               import lombok.Data;
@@ -788,6 +819,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/2865")
     void additionalConstructorIgnored() {
         rewriteRun(
+          //language=java
           java(
             """
               class Reproducer {

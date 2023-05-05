@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.Issue;
@@ -32,6 +32,7 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
     @Test
     void tagOnFirstLine() {
         rewriteRun(
+          //language=java
           java(
             """
               /** @author foo.bar
@@ -51,6 +52,7 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
     @Test
     void preserveDocsBeforeTag() {
         rewriteRun(
+          //language=java
           java(
             """
               /**

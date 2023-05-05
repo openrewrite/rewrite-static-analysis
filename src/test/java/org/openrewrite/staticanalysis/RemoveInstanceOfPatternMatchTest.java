@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void blockOfStatements() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -65,6 +66,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void singleStatement() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -95,6 +97,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void emptyStatement() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -121,6 +124,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void elseStatement() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -156,6 +160,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void qualifiedTypeName() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -187,6 +192,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void genericType() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -224,6 +230,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void expression() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -255,6 +262,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void multipleVariableUsage() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -286,6 +294,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void multipleInstanceOf() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -320,6 +329,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void multipleInstanceOfWithOppositeOrder() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -354,6 +364,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void complexCondition() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -385,6 +396,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void noExtraParentheses() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -416,6 +428,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void unusedVariable() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -446,6 +459,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void disjunction() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -476,6 +490,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void localVariable() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -509,6 +524,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void negationLocalVariable() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -547,6 +563,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void negationWithoutElse() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -580,6 +597,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void nestedComplexCondition() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -611,6 +629,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void expressionAndComplexCondition() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -642,6 +661,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void sequentialIfs() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -680,6 +700,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void nestedIfs() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -722,6 +743,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void declaredInThenUsedInElse() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -765,6 +787,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void instanceOfPattern() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -802,6 +825,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void negation() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -837,6 +861,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void emptyElseStatement() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -867,6 +892,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void singleElseStatement() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -901,6 +927,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void doubleNegation() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -936,6 +963,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void negationCancellation() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;
@@ -971,6 +999,7 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     void ternary() {
         rewriteRun(
           version(
+            //language=java
             java(
               """
               package com.example;

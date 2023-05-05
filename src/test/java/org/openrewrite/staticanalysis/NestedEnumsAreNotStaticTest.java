@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -33,6 +33,7 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
     @Test
     void enumIsNotNested() {
         rewriteRun(
+          //language=java
           java(
             """
               static enum ABC {
@@ -46,6 +47,7 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
     @Test
     void nestedEnumIsNotStatic() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -62,6 +64,7 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
     @Test
     void nestedEnumIsStatic() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {
@@ -95,6 +98,7 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
     @Test
     void doesNotReformatWholeEnum() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
