@@ -154,12 +154,40 @@ class InlineVariableTest implements RewriteTest {
             """
               class Test {
                   String test() {
-                      @SuppressWarnings("unchecked")
+                      @SuppressWarnings("all")
                       String someString = (String) getSomething();
                       return someString;
                   }
                   
                   Object getSomething() {return null;}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    void preserveComment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int test(int i1, int i2) {
+                      // leading var comment
+                      int result = i1 - i2; // trailing var comment
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int test(int i1, int i2) {
+                      // leading var comment
+                      // trailing var comment
+                      return i1 - i2;
+                  }
               }
               """
           )
