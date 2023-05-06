@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -168,6 +169,7 @@ class InlineVariableTest implements RewriteTest {
 
     @Test
     @SuppressWarnings("UnnecessaryLocalVariable")
+    @Issue("https://github.com/openrewrite/rewrite/issues/3201")
     void preserveComment() {
         rewriteRun(
           //language=java
