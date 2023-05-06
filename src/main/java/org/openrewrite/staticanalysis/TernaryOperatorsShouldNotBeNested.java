@@ -38,10 +38,11 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         public J visitTernary(final J.Ternary ternary, final ExecutionContext executionContext) {
             if(ternary.getFalsePart() instanceof J.Ternary){
                 System.out.println("Ternary nesting found: " + ternary.getFalsePart());
-                //replace with:
+                //todo replace with:
                 // if(${ternary.getCondition()}){
                 //    return ${ternary.getTruePart()};
                 // }
+                // return ternary.getFalsePart();
             }
             return super.visitTernary(ternary, executionContext);
         }
