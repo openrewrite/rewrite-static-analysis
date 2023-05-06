@@ -43,6 +43,9 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 //    return ${ternary.getTruePart()};
                 // }
                 // return ternary.getFalsePart();
+
+                //todo consider recursion
+                //todo consider nesting in truePart
             }
             return super.visitTernary(ternary, executionContext);
         }
