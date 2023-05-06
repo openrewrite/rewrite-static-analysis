@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -791,6 +792,36 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
             """
               public class A {
                   void test() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/89")
+    void preserveComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  void test() {
+                      // if comment
+                      if (true) {
+                          // statement comment
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  void test() {
+                      // if comment
+                      // statement comment
+                      System.out.println("hello");
                   }
               }
               """

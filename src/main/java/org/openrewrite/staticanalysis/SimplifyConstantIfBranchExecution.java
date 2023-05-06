@@ -114,7 +114,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             } else if (compileTimeConstantBoolean.get()) {
                 // True branch
                 // Only keep the `then` branch, and remove the `else` branch.
-                Statement s = if__.getThenPart();
+                Statement s = if__.getThenPart().withPrefix(if__.getPrefix());
                 return maybeAutoFormat(
                         if__,
                         s,
@@ -125,7 +125,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 // Only keep the `else` branch, and remove the `then` branch.
                 if (if__.getElsePart() != null) {
                     // The `else` part needs to be kept
-                    Statement s = if__.getElsePart().getBody();
+                    Statement s = if__.getElsePart().getBody().withPrefix(if__.getPrefix());
                     return maybeAutoFormat(
                             if__,
                             s,
@@ -158,7 +158,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
 
             AtomicBoolean visitedCFKeyword = new AtomicBoolean(false);
             // if there is a return, break, continue, throws in _then, then set visitedKeyword to true
-            new JavaIsoVisitor<AtomicBoolean>(){
+            new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.Return visitReturn(J.Return _return, AtomicBoolean atomicBoolean) {
                     atomicBoolean.set(true);
