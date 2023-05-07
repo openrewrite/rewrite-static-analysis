@@ -15,7 +15,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
     }
 
     @Test
-    void doReplaceNestedTernaryWithIfFollowedByNestedTernary() {
+    void doReplaceNestedOrTernaryWithIfFollowedByTernary() {
         rewriteRun(
           //language=java
           java(
@@ -33,6 +33,118 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                     return "a";
                   }
                   return  "b".equals(b) ? "b" : "nope";
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedOrTernaryWithIfFollowedByTernaryWithoutReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public void doThing(String a, String b) {
+                  String result = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                  System.out.println(result);
+                }
+              }
+              """,
+            """
+              class Test {
+                public void doThing(String a, String b) {
+                  String result;
+                  if("a".equals(a)){
+                    result = "a";
+                  }
+                  else {
+                    result = "b".equals(b) ? "b" : "nope";
+                  }
+                  System.out.println(result);
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedOrTernaryRecursive() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineHardThing(String a, String b, String c) {
+                  return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "c".equals(b) ? "c" :"nope";
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineHardThing(String a, String b, String c) {
+                  if("a".equals(a)){
+                    return "a";
+                  }
+                  if("b".equals(b)){
+                    return "b";
+                  }
+                  return  "c".equals(b) ? "c" : "nope";
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedAndTernaryWithIfThenTernary() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineHardThing(String a, String b) {
+                  return "a".equals(a) ? "b".equals(b) ? "b" : "a" : "nope";
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineHardThing(String a, String b) {
+                  if("a".equals(a)) {
+                      return "b".equals(b) ? "b" : "a";
+                  }
+                  return "nope";
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedAndOrTernaryWithIfThenTernaryElseTernary() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineHardThing(String a, String b, String c) {
+                  return "a".equals(a) ? "b".equals(b) ? "b" : "a" : "c".equals(c) ? "c" : "nope";
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineHardThing(String a, String b) {
+                  if("a".equals(a)) {
+                      return "b".equals(b) ? "b" : "a";
+                  }
+                  return "c".equals(b) ? "c" : "nope";
                 }
               }
               """

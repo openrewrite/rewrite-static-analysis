@@ -1,12 +1,19 @@
 package org.openrewrite.staticanalysis;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
+import org.openrewrite.marker.Markers;
+
 
 public class TernaryOperatorsShouldNotBeNested extends Recipe {
     @Override
@@ -34,18 +41,33 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
     private static class TernaryOperatorsShouldNotBeNestedVisitor extends JavaVisitor<ExecutionContext> {
 
+        private final JavaTemplate splitNestedFalsePart = JavaTemplate.builder(
+                        this::getCursor,
+                        "if(#{any(boolean)})"
+                )
+                .build();
+
+        @Override
+        public J visitStatement(final Statement statement, final ExecutionContext executionContext) {
+            //if statement contains a nested ternary, clone "statement part" and split?
+            // return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+
+
+
+            return super.visitStatement(statement, executionContext);
+        }
+
         @Override
         public J visitTernary(final J.Ternary ternary, final ExecutionContext executionContext) {
-            if(ternary.getFalsePart() instanceof J.Ternary){
+            if (ternary.getFalsePart() instanceof J.Ternary) {
                 System.out.println("Ternary nesting found: " + ternary.getFalsePart());
                 //todo replace with:
-                // if(${ternary.getCondition()}){
-                //    return ${ternary.getTruePart()};
+                // if(ternary.getCondition()){
+                //    return ternary.getTruePart();
                 // }
                 // return ternary.getFalsePart();
-
-                //todo consider recursion
-                //todo consider nesting in truePart
+                //
+                // return is not actually part of the ternary, so how to "clone" that?
             }
             return super.visitTernary(ternary, executionContext);
         }
