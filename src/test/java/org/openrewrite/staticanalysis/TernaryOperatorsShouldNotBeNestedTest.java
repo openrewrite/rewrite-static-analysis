@@ -28,10 +28,10 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
             """
               class Test {
                 public String determineSomething(String a, String b) {
-                  if("a".equals(a)){
-                    return "a";
-                  }
-                  return  "b".equals(b) ? "b" : "nope";
+                    if ("a".equals(a)) {
+                        return "a";
+                    }
+                    return "b".equals(b) ? "b" : "nope";
                 }
               }
               """
@@ -54,13 +54,13 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
             """
               class Test {
                 public String determineSomething(String a, String b, String c) {
-                  if("a".equals(a)){
-                    return "a";
-                  }
-                  if("b".equals(b)){
-                    return "b";
-                  }
-                  return  "c".equals(b) ? "c" : "nope";
+                    if ("a".equals(a)) {
+                        return "a";
+                    }
+                    if ("b".equals(b)) {
+                        return "b";
+                    }
+                    return "c".equals(b) ? "c" : "nope";
                 }
               }
               """
@@ -83,10 +83,10 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
             """
               class Test {
                 public String determineSomething(String a, String b) {
-                  if("a".equals(a)) {
+                    if ("a".equals(a)) {
                       return "b".equals(b) ? "b" : "a";
-                  }
-                  return "nope";
+                    }
+                    return "nope";
                 }
               }
               """
@@ -109,10 +109,10 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
             """
               class Test {
                 public String determineSomething(String a, String b) {
-                  if("a".equals(a)) {
-                      return "b".equals(b) ? "b" : "a";
-                  }
-                  return "c".equals(b) ? "c" : "nope";
+                    if ("a".equals(a)) {
+                        return "b".equals(b) ? "b" : "a";
+                    }
+                    return "c".equals(b) ? "c" : "nope";
                 }
               }
               """
@@ -137,14 +137,14 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
             """
               class Test {
                 public void doThing(String a, String b) {
-                  String result;
-                  if("a".equals(a)){
-                    result = "a";
-                  }
-                  else {
-                    result = "b".equals(b) ? "b" : "nope";
-                  }
-                  System.out.println(result);
+                    String result;
+                    if ("a".equals(a)) {
+                      result = "a";
+                    }
+                    else {
+                      result = "b".equals(b) ? "b" : "nope";
+                    }
+                    System.out.println(result);
                 }
               }
               """
