@@ -120,7 +120,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         );
     }
 
-
+    //todo maybe not take this into consideration at all.
     @Test
     void doReplaceNestedOrAssignmentTernaryWithIfElse() {
         rewriteRun(

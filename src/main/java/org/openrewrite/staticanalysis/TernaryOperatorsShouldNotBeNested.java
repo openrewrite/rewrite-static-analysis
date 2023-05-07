@@ -13,7 +13,6 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
 
@@ -74,20 +73,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             JRightPadded.build(false),
                             Collections.singletonList(JRightPadded.build(retrn.withExpression(ternary.getTruePart()))),
                             Space.EMPTY
-                    )).withElsePart(new J.If.Else(
+                    ));
+                    J result = new J.Block(
                             Tree.randomId(),
                             Space.EMPTY,
                             Markers.EMPTY,
-                            JRightPadded.build(new J.Block(
-                                    Tree.randomId(),
-                                    Space.EMPTY,
-                                    Markers.EMPTY,
-                                    JRightPadded.build(false),
-                                    Collections.singletonList(JRightPadded.build(retrn.withExpression(ternary.getFalsePart()))),
-                                    Space.EMPTY
-                            ))
-                    ));
-                    return autoFormat(iff, executionContext);
+                            JRightPadded.build(false),
+                            Arrays.asList(
+                                    JRightPadded.build(iff),
+                                    JRightPadded.build(retrn.withExpression(ternary.getFalsePart()))
+                            ),
+                            Space.EMPTY
+                    );
+                    return autoFormat(result, executionContext);
                 }
             }
             return super.visitReturn(retrn, executionContext);
