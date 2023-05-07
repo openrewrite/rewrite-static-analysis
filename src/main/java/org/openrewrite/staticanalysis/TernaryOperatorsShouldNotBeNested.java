@@ -13,6 +13,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
 
@@ -50,6 +51,12 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 .build();
 
         @Override
+        public J visitAssignment(final J.Assignment assignment, final ExecutionContext executionContext) {
+            //todo
+            return super.visitAssignment(assignment, executionContext);
+        }
+
+        @Override
         public J visitReturn(final J.Return retrn, final ExecutionContext executionContext) {
             J possiblyTernary = retrn.getExpression();
             if (possiblyTernary instanceof J.Ternary) {
@@ -67,10 +74,20 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             JRightPadded.build(false),
                             Collections.singletonList(JRightPadded.build(retrn.withExpression(ternary.getTruePart()))),
                             Space.EMPTY
+                    )).withElsePart(new J.If.Else(
+                            Tree.randomId(),
+                            Space.EMPTY,
+                            Markers.EMPTY,
+                            JRightPadded.build(new J.Block(
+                                    Tree.randomId(),
+                                    Space.EMPTY,
+                                    Markers.EMPTY,
+                                    JRightPadded.build(false),
+                                    Collections.singletonList(JRightPadded.build(retrn.withExpression(ternary.getFalsePart()))),
+                                    Space.EMPTY
+                            ))
                     ));
-                    J result = getCursor().firstEnclosingOrThrow(J.Block.class).withStatements(Arrays.asList(iff,
-                            retrn.withExpression(ternary.getFalsePart())));
-                    return autoFormat(result, executionContext);
+                    return autoFormat(iff, executionContext);
                 }
             }
             return super.visitReturn(retrn, executionContext);
