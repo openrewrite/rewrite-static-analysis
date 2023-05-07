@@ -60,6 +60,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             J possiblyTernary = retrn.getExpression();
             if (possiblyTernary instanceof J.Ternary) {
                 J.Ternary ternary = (J.Ternary) possiblyTernary;
+                //todo handle TruePart being nested ternary and combine with below
                 if (ternary.getFalsePart() instanceof J.Ternary) {
                     J.If iff = retrn.withTemplate(
                             iffTemplate,
