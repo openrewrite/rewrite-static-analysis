@@ -2,6 +2,8 @@ package org.openrewrite.staticanalysis;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.openrewrite.ExecutionContext;
@@ -37,6 +39,10 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         return Duration.ofMinutes(5);
     }
 
+    @Override
+    public Set<String> getTags() {
+        return Collections.singleton("RSPEC-3358");
+    }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
