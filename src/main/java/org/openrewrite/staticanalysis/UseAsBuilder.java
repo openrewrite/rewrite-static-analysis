@@ -33,7 +33,10 @@ import static org.openrewrite.java.format.TabsAndIndents.formatTabsAndIndents;
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class UseAsBuilder extends Recipe {
-    @Option
+    @Option(
+            displayName = "Builder Type",
+            description = "Fully qualified name of the Builder"
+    )
     String builderType;
 
     @Option(
