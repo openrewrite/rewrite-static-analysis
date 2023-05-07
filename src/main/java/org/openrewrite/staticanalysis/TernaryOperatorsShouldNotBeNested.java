@@ -2,7 +2,7 @@ package org.openrewrite.staticanalysis;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.stream.Collectors;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -10,9 +10,11 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
 
@@ -67,29 +69,20 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             retrn.getCoordinates().replace(),
                             ternary.getCondition()
                     );
-                    iff = iff.withThenPart(new J.Block(
-                            Tree.randomId(),
-                            Space.EMPTY,
-                            Markers.EMPTY,
-                            JRightPadded.build(false),
-                            Collections.singletonList(JRightPadded.build(retrn.withExpression(ternary.getTruePart()))),
-                            Space.EMPTY
-                    ));
-                    J result = new J.Block(
-                            Tree.randomId(),
-                            Space.EMPTY,
-                            Markers.EMPTY,
-                            JRightPadded.build(false),
-                            Arrays.asList(
-                                    JRightPadded.build(iff),
-                                    JRightPadded.build(retrn.withExpression(ternary.getFalsePart()))
-                            ),
-                            Space.EMPTY
-                    );
+                    iff = iff.withThenPart(block(returnOf(ternary.getTruePart())));
+                    J result = block(iff, returnOf(ternary.getFalsePart()));
                     return autoFormat(result, executionContext);
                 }
             }
             return super.visitReturn(retrn, executionContext);
         }
+    }
+
+    private static J.Return returnOf(Expression expression) {
+        return new J.Return(Tree.randomId(), Space.EMPTY, Markers.EMPTY, expression);
+    }
+
+    private static J.Block block(Statement... statements) {
+        return J.Block.createEmptyBlock().withStatements(Arrays.asList(statements));
     }
 }
