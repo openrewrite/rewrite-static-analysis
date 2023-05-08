@@ -74,7 +74,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             ternary.getCondition()
                     );
                     iff = iff.withThenPart(block(returnOf(ternary.getTruePart())));
-                    //todo in stead of returning a new block here this should be inserted into the existing one.
                     J result = block(iff, returnOf(ternary.getFalsePart()));
                     return autoFormat(result, executionContext);
                 }
