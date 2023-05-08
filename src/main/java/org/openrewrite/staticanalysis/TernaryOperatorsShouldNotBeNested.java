@@ -4,17 +4,17 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
@@ -51,16 +51,15 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
     private static class TernaryOperatorsShouldNotBeNestedVisitor extends JavaVisitor<ExecutionContext> {
 
-        final JavaTemplate iffTemplate = JavaTemplate.builder(
-                        this::getCursor,
-                        "if(#{any(boolean)}) {}"
-                )
-                .build();
+        final JavaTemplate iffTemplate = JavaTemplate.builder(this::getCursor, "if(#{any(boolean)}) {}").build();
 
         @Override
-        public J visitAssignment(final J.Assignment assignment, final ExecutionContext executionContext) {
-            //todo
-            return super.visitAssignment(assignment, executionContext);
+        public @Nullable J visit(@Nullable final Tree tree, final ExecutionContext executionContext) {
+            J result = super.visit(tree, executionContext);
+            if (tree instanceof JavaSourceFile) {
+                result = (J) new RemoveUnneededBlock().getVisitor().visit(result, executionContext);
+            }
+            return result;
         }
 
         @Override

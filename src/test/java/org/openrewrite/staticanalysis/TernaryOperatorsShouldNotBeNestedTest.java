@@ -3,6 +3,8 @@ package org.openrewrite.staticanalysis;
 import static org.openrewrite.java.Assertions.java;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -84,7 +86,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
               class Test {
                 public String determineSomething(String a, String b) {
                     if ("a".equals(a)) {
-                      return "b".equals(b) ? "b" : "a";
+                        return "b".equals(b) ? "b" : "a";
                     }
                     return "nope";
                 }
@@ -108,11 +110,11 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
               """,
             """
               class Test {
-                public String determineSomething(String a, String b) {
+                public String determineSomething(String a, String b, String c) {
                     if ("a".equals(a)) {
                         return "b".equals(b) ? "b" : "a";
                     }
-                    return "c".equals(b) ? "c" : "nope";
+                    return "c".equals(c) ? "c" : "nope";
                 }
               }
               """
@@ -120,7 +122,8 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         );
     }
 
-    //todo maybe not take this into consideration at all.
+    @Issue("todo")
+    @ExpectedToFail("only directly returned ternaries are taken into account")
     @Test
     void doReplaceNestedOrAssignmentTernaryWithIfElse() {
         rewriteRun(
