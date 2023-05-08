@@ -73,8 +73,8 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             retrn.getCoordinates().replace(),
                             ternary.getCondition()
                     );
-                    iff = iff.withThenPart(block(returnOf(ternary.getTruePart())));
-                    J result = block(iff, returnOf(ternary.getFalsePart()));
+                    iff = iff.withThenPart(blockOf(returnOf(ternary.getTruePart())));
+                    J result = blockOf(iff, returnOf(ternary.getFalsePart()));
                     return autoFormat(result, executionContext);
                 }
             }
@@ -86,7 +86,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         return new J.Return(Tree.randomId(), Space.EMPTY, Markers.EMPTY, expression);
     }
 
-    private static J.Block block(Statement... statements) {
+    private static J.Block blockOf(Statement... statements) {
         return J.Block.createEmptyBlock().withStatements(Arrays.asList(statements));
     }
 }
