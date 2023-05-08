@@ -155,4 +155,165 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         );
     }
 
+    @Issue("todo")
+    @ExpectedToFail("Not yet implemented")
+    @Test
+    void doReplaceNestedOrTernaryInStreamWithIfInBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Set;
+              import java.util.Arrays;
+              import java.util.List;
+              import java.util.stream.Collectors;
+              class Test {
+                public Set<String> makeASet() {
+                   List<String> s = Arrays.asList("a","b","c","nope");
+                   return s.stream().map(item -> item.startsWith("a") ? "a" : item.startsWith("b") ? "b" : "nope").collect(Collectors.toSet());
+                }
+              }
+              """,
+            """
+              import java.util.Set;
+              import java.util.Arrays;
+              import java.util.List;
+              import java.util.stream.Collectors;
+              class Test {
+                public Set<String> makeASet() {
+                   List<String> s = Arrays.asList("a","b","c","nope");
+                   return s.stream().map(item -> {
+                    if (item.startsWith("a")) {
+                        return "a";
+                    }
+                    return item.startsWith("b") ? "b" : "nope";
+                   }).collect(Collectors.toSet());
+                }
+              }
+              """
+          )
+        );
+    }
+
+
+
+    @Test
+    void doReplaceNestedOrTernaryContainingNull() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                  return "a".equals(a) ? null : "b".equals(b) ? "b" : null;
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                    if ("a".equals(a)) {
+                        return null;
+                    }
+                    return "b".equals(b) ? "b" : null;
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedOrTernaryContainingExpression() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                  return "a".equals(a) ? "foo" + "bar" : "b".equals(b) ? a + b : b + a;
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                    if ("a".equals(a)) {
+                        return "foo" + "bar";
+                    }
+                    return "b".equals(b) ? a + b : b + a;
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedOrTernaryContainingComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                  //this should be before the if and followed by a new line
+                 
+                  return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope"; //this should be behind the ternary
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                    //this should be before the if and followed by a new line
+                    
+                    if ("a".equals(a)) {
+                        return "a";
+                    }
+                    return "b".equals(b) ? "b" : "nope"; //this should be behind the ternary
+                }
+              }
+              """
+          )
+        );
+    }
+
+
+
+    @Test
+    void doReplaceNestedOrTernaryContainingMethodCall() {
+        //language=java
+        rewriteRun(
+          java("""
+            class M{
+              static String a(){return "a";}
+              static String b(){return "b";}
+              static String c(){return "c";}
+              static String nope(){return "nope";}
+            }
+            """),
+          java(
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                  return "a".equals(a) ? M.a() : "b".equals(b) ? M.b() : M.nope();
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                    if ("a".equals(a)) {
+                        return M.a();
+                    }
+                    return "b".equals(b) ? M.b() : M.nope();
+                }
+              }
+              """
+          )
+        );
+    }
+
+
 }

@@ -28,10 +28,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Just because you can do something, doesn’t mean you should, and that’s the case with nested ternary operations. " +
-                "Nesting ternary operators results in the kind of code that may seem clear as day when you write it, " +
-                "but six months later will leave maintainers (or worse - future you) scratching their heads and cursing.\n\n" +
-                "Instead, err on the side of clarity, and use another line to express the nested operation as a separate statement.";
+        return "Nested ternary operators can be hard to read quickly. Prefer simpler constructs for improved readability.";
     }
 
     @Override
