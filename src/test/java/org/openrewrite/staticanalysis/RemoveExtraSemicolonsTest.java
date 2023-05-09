@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -134,6 +135,33 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                     return t;
                 }
             }.visit(cu, 0))
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/99")
+    @ExpectedToFail("The formatting (new line) is lost during cleanup")
+    @Test
+    void semicolonBeforeStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      int a = 1;
+                      ;int b = 2;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      int a = 1;
+                      int b = 2;
+                  }
+              }
+              """
           )
         );
     }
