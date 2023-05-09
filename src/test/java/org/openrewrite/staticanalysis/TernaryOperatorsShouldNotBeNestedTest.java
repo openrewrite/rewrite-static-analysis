@@ -294,8 +294,6 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         );
     }
 
-
-
     @Test
     void doReplaceNestedOrTernaryContainingMethodCall() {
         //language=java
@@ -323,6 +321,38 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return M.a();
                     }
                     return "b".equals(b) ? M.b() : M.nope();
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedOrTernaryContainingNewlines() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                  return "a".equals(a)
+                  ? null
+                  : "b".equals(b)
+                  ? "b"
+                  : null;
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String a, String b) {
+                    if ("a".equals(a)) {
+                        return null;
+                    }
+                    return "b".equals(b)
+                            ? "b"
+                            : null;
                 }
               }
               """
