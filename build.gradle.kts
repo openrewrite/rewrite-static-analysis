@@ -2,12 +2,18 @@
 
 plugins {
     id("org.openrewrite.build.recipe-library") version "latest.release"
+    id("org.openrewrite.rewrite") version("5.41.0-SNAPSHOT")
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
 }
 
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
-val rewriteVersion = rewriteRecipe.rewriteVersion.get()
+val rewriteVersion = "7.41.0-SNAPSHOT"
 dependencies {
     compileOnly("org.projectlombok:lombok:latest.release")
     annotationProcessor("org.projectlombok:lombok:latest.release")
@@ -23,3 +29,10 @@ dependencies {
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
 }
+
+rewrite {
+    // rewriteVersion("latest.integration")
+    activeRecipe("org.openrewrite.java.migrate.MigrateToRewrite8")
+    // activeRecipe("org.openrewrite.java.format.AutoFormat")
+}
+
