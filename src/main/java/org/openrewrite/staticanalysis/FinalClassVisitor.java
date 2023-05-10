@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Tree;
@@ -26,7 +26,7 @@ import java.util.*;
 
 import static java.util.Collections.emptyList;
 import static org.openrewrite.Tree.randomId;
-import static org.openrewrite.java.cleanup.ModifierOrder.sortModifiers;
+import static org.openrewrite.staticanalysis.ModifierOrder.sortModifiers;
 
 public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
 

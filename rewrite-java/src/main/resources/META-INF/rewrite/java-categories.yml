@@ -21,7 +21,7 @@ description: Basic building blocks for transforming Java code.
 ---
 type: specs.openrewrite.org/v1beta/category
 name: Common static analysis issues cleanup
-packageName: org.openrewrite.java.cleanup
+packageName: org.openrewrite.staticanalysis
 description: Resolve common static analysis issues discovered, apply best practices, format and cleanup Java code to ensure a consistent style is used.
 ---
 type: specs.openrewrite.org/v1beta/category

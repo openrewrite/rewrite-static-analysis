@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.config.Environment;
@@ -80,7 +80,7 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
           spec -> spec.recipe(Environment.builder()
             .scanRuntimeClasspath("org.openrewrite.java")
             .build()
-            .activateRecipes("org.openrewrite.java.cleanup.CommonDeclarationSiteTypeVariances")),
+            .activateRecipes("org.openrewrite.staticanalysis.CommonDeclarationSiteTypeVariances")),
           java(
             """
               interface In {}

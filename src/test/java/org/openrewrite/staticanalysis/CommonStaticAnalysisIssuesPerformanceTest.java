@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.Recipe;
@@ -29,7 +29,7 @@ public class CommonStaticAnalysisIssuesPerformanceTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(RewriteTest.fromRuntimeClasspath("org.openrewrite.java.cleanup.CommonStaticAnalysis"));
+        spec.recipe(RewriteTest.fromRuntimeClasspath("org.openrewrite.staticanalysis.CommonStaticAnalysis"));
 //          .afterRecipe(run -> {
 //              System.out.println(run.getStats().printAsMermaidGantt(1e6));
 //              System.out.println("\n");

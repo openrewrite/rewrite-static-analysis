@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.config.Environment;
@@ -28,9 +28,9 @@ class ReplaceThreadRunWithThreadStartTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(Environment.builder()
-          .scanRuntimeClasspath("org.openrewrite.java.cleanup")
+          .scanRuntimeClasspath("org.openrewrite.staticanalysis")
           .build()
-          .activateRecipes("org.openrewrite.java.cleanup.ReplaceThreadRunWithThreadStart"));
+          .activateRecipes("org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart"));
     }
 
     @DocumentExample

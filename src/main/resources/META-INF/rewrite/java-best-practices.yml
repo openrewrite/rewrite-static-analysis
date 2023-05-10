@@ -15,14 +15,14 @@
 #
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.cleanup.JavaApiBestPractices
+name: org.openrewrite.staticanalysis.JavaApiBestPractices
 displayName: Java API best practices
 description: Use the Java standard library in a way that is most idiomatic.
 recipeList:
-  - org.openrewrite.java.cleanup.UseMapContainsKey
+  - org.openrewrite.staticanalysis.UseMapContainsKey
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.cleanup.UseMapContainsKey
+name: org.openrewrite.staticanalysis.UseMapContainsKey
 displayName: Use `Map#containsKey`
 description: '`map.keySet().contains(a)` can be simplified to `map.containsKey(a)`.'
 recipeList:
@@ -33,15 +33,15 @@ recipeList:
       newMethodName: containsKey
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.cleanup.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull
+name: org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull
 displayName: Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`
 description: 'Replace `org.apache.commons.lang3.Validate.notNull(..)` with `Objects.requireNonNull(..)`.'
 recipeList:
-  - org.openrewrite.java.cleanup.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull
-  - org.openrewrite.java.cleanup.ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull
+  - org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull
+  - org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.cleanup.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull
+name: org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull
 displayName: Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`
 description: 'Replace `org.apache.commons.lang3.Validate.notNull(Object)` with `Objects.requireNonNull(Object)`.'
 recipeList:

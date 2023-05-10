@@ -15,36 +15,36 @@
 #
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.cleanup.Cleanup
+name: org.openrewrite.staticanalysis.Cleanup
 displayName: Code cleanup
 description: Automatically cleanup code, e.g. remove unnecessary parentheses, simplify expressions.
 recipeList:
-  - org.openrewrite.java.cleanup.DefaultComesLast
-  - org.openrewrite.java.cleanup.EmptyBlock
+  - org.openrewrite.staticanalysis.DefaultComesLast
+  - org.openrewrite.staticanalysis.EmptyBlock
   - org.openrewrite.java.format.EmptyNewlineAtEndOfFile
-  - org.openrewrite.java.cleanup.ForLoopControlVariablePostfixOperators
-  - org.openrewrite.java.cleanup.FinalizePrivateFields
-  - org.openrewrite.java.cleanup.MethodParamPad
-  - org.openrewrite.java.cleanup.NoWhitespaceAfter
-  - org.openrewrite.java.cleanup.NoWhitespaceBefore
-  - org.openrewrite.java.cleanup.PadEmptyForLoopComponents
-  - org.openrewrite.java.cleanup.TypecastParenPad
-  - org.openrewrite.java.cleanup.EqualsAvoidsNull
-  - org.openrewrite.java.cleanup.ExplicitInitialization
-  - org.openrewrite.java.cleanup.FallThrough
-  - org.openrewrite.java.cleanup.HideUtilityClassConstructor
-  - org.openrewrite.java.cleanup.NeedBraces
-  - org.openrewrite.java.cleanup.OperatorWrap
-  - org.openrewrite.java.cleanup.UnnecessaryParentheses
-  - org.openrewrite.java.cleanup.ReplaceThreadRunWithThreadStart
-  - org.openrewrite.java.cleanup.ChainStringBuilderAppendCalls
-  - org.openrewrite.java.cleanup.ReplaceStringBuilderWithString
-#  - org.openrewrite.java.cleanup.RemoveRedundantTypeCast
-  - org.openrewrite.java.cleanup.ShortenFullyQualifiedTypeReferences
+  - org.openrewrite.staticanalysis.ForLoopControlVariablePostfixOperators
+  - org.openrewrite.staticanalysis.FinalizePrivateFields
+  - org.openrewrite.staticanalysis.MethodParamPad
+  - org.openrewrite.staticanalysis.NoWhitespaceAfter
+  - org.openrewrite.staticanalysis.NoWhitespaceBefore
+  - org.openrewrite.staticanalysis.PadEmptyForLoopComponents
+  - org.openrewrite.staticanalysis.TypecastParenPad
+  - org.openrewrite.staticanalysis.EqualsAvoidsNull
+  - org.openrewrite.staticanalysis.ExplicitInitialization
+  - org.openrewrite.staticanalysis.FallThrough
+  - org.openrewrite.staticanalysis.HideUtilityClassConstructor
+  - org.openrewrite.staticanalysis.NeedBraces
+  - org.openrewrite.staticanalysis.OperatorWrap
+  - org.openrewrite.staticanalysis.UnnecessaryParentheses
+  - org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
+  - org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+  - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
+#  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast
+  - org.openrewrite.staticanalysis.ShortenFullyQualifiedTypeReferences
 
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.cleanup.ReplaceThreadRunWithThreadStart
+name: org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
 displayName: "Replace calls to `Thread.run()` with `Thread.start()`"
 description: "`Thread.run()` should not be called directly."
 recipeList:
@@ -55,11 +55,11 @@ tags:
   - RSPEC-1217
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.java.cleanup.CommonDeclarationSiteTypeVariances
+name: org.openrewrite.staticanalysis.CommonDeclarationSiteTypeVariances
 displayName: "Properly use declaration-site type variance for well-known types"
 description: "When using a method parameter like `Function<IN, OUT>`, it should rather be `Function<? super IN, ? extends OUT>`. This recipe checks for method parameters of well-known types."
 recipeList:
-  - org.openrewrite.java.cleanup.DeclarationSiteTypeVariance:
+  - org.openrewrite.staticanalysis.DeclarationSiteTypeVariance:
       variantTypes:
         - java.util.function.Consumer<IN>
         - java.util.function.BiPredicate<IN, IN>

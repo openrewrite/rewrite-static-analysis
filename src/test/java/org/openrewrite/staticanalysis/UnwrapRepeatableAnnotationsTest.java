@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.java.cleanup;
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -28,36 +28,59 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UnwrapRepeatableAnnotations())
-          .parser(JavaParser.fromJavaVersion().classpath("mapstruct"));
+            .parser(JavaParser.fromJavaVersion()
+                .dependsOn(
+                    //language=java
+                    """
+                      package com.exmaple;
+                                                              
+                      import java.lang.annotation.ElementType;
+                      import java.lang.annotation.Target;
+      
+                      @Target(ElementType.TYPE)
+                      public @interface Annotations {
+                          Annotation[] value();
+                      }
+                      """,
+                    //language=java
+                    """
+                      package com.example;
+                                                              
+                      import java.lang.annotation.ElementType;
+                      import java.lang.annotation.Repeatable;
+                      import java.lang.annotation.Target;
+                                                              
+                      @Repeatable(Tests.class)
+                      @Target(ElementType.TYPE)
+                      public @interface Annotation {
+                      }
+                      """
+                )
+            );
     }
 
     @DocumentExample
     @Test
     void unwrapRepeatable() {
         rewriteRun(
-          java(
-            """
-              import org.mapstruct.*;
-              class Test {
-                  @ValueMappings({
-                          @ValueMapping(source = "UNKNOWN", target = MappingConstants.NULL),
-                          @ValueMapping(source = "UNRECOGNIZED", target = MappingConstants.NULL)
-                  })
-                  void test() {
+            //language=java
+            java(
+                """
+                  import com.example.*;
+    
+                  @Annotations({@Annotation, @Annotation})
+                  class Test {
                   }
-              }
-              """,
-            """
-              import org.mapstruct.*;
-              class Test {
-                            
-                  @ValueMapping(source = "UNKNOWN", target = MappingConstants.NULL)
-                  @ValueMapping(source = "UNRECOGNIZED", target = MappingConstants.NULL)
-                  void test() {
+                  """,
+                """
+                  import com.example.*;
+    
+                  @Annotation
+                  @Annotation
+                  class Test {
                   }
-              }
-              """
-          )
+                  """
+            )
         );
     }
 }
