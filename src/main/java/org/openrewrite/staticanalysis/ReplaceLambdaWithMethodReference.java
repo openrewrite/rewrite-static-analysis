@@ -26,10 +26,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReplaceLambdaWithMethodReference extends Recipe {
@@ -144,11 +141,15 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     JavaType.Method methodType = method.getMethodType();
                     if (methodType != null) {
                         JavaType.FullyQualified declaringType = methodType.getDeclaringType();
+                        JavaType.FullyQualified topLevelType = declaringType;
+                        while (topLevelType.getOwningClass() != null) {
+                            topLevelType = topLevelType.getOwningClass();
+                        }
                         if (methodType.hasFlags(Flag.Static) ||
                             methodSelectMatchesFirstLambdaParameter(method, lambda)) {
-                            maybeAddImport(declaringType);
+                            maybeAddImport(topLevelType.getFullyQualifiedName());
                             return l.withTemplate(JavaTemplate.builder(this::getCursor, "#{}::#{}")
-                                            .imports(declaringType.getFullyQualifiedName())
+                                            .imports(topLevelType.getFullyQualifiedName())
                                             .build(),
                                     l.getCoordinates().replace(), declaringType.getClassName(),
                                     method.getMethodType().getName());
