@@ -55,7 +55,7 @@ public class ReplaceStreamToListWithCollect extends Recipe {
                 new UsesMethod<>(STREAM_TO_LIST)), new JavaVisitor<ExecutionContext>() {
 
             private final JavaTemplate template = JavaTemplate
-                    .builder(this::getCursor, "#{any(java.util.stream.Stream)}.collect(Collectors.toList())")
+                    .builder("#{any(java.util.stream.Stream)}.collect(Collectors.toList())")
                     .imports("java.util.stream.Collectors")
                     .build();
 
@@ -64,7 +64,7 @@ public class ReplaceStreamToListWithCollect extends Recipe {
                 J.MethodInvocation result = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (STREAM_TO_LIST.matches(method)) {
                     JRightPadded<Expression> select = result.getPadding().getSelect();
-                    result = result.withTemplate(template, result.getCoordinates().replace(), result.getSelect());
+                    result = result.withTemplate(template, getCursor(), result.getCoordinates().replace(), result.getSelect());
                     result = result.getPadding().withSelect(select);
                     maybeAddImport("java.util.stream.Collectors");
                 }

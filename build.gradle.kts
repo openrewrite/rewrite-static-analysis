@@ -15,6 +15,7 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
+    implementation("org.openrewrite.meta:rewrite-analysis")
     implementation("org.apache.commons:commons-text:latest.release")
 
     testImplementation("org.openrewrite:rewrite-groovy")

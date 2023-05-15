@@ -61,7 +61,9 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, executionContext);
                 if (FINALIZE_METHOD_MATCHER.matches(md.getMethodType()) && !hasSuperFinalizeMethodInvocation(md)) {
                     //noinspection ConstantConditions
-                    md = md.withTemplate(JavaTemplate.builder(this::getCursor, "super.finalize()").build(), md.getBody().getCoordinates().lastStatement());
+                    md = md.withTemplate(JavaTemplate.builder("super.finalize()")
+                                    .context(getCursor()).build(),
+                            getCursor(), md.getBody().getCoordinates().lastStatement());
                 }
                 return md;
             }

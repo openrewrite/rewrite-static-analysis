@@ -80,11 +80,10 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     if (flattenAble) {
                         String[] cmds = sb.toString().split(" ");
                         String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
-                        JavaTemplate template = JavaTemplate.builder(
-                                this::getCursor, templateCode).build();
+                        JavaTemplate template = JavaTemplate.builder(templateCode).build();
 
                         List<Expression> args = m.getArguments();
-                        args.set(0, args.get(0).withTemplate(template, args.get(0).getCoordinates().replace()));
+                        args.set(0, args.get(0).withTemplate(template, getCursor(), args.get(0).getCoordinates().replace()));
 
                         if (m.getMethodType() != null) {
                             List<JavaType> parameterTypes = m.getMethodType().getParameterTypes();
@@ -105,9 +104,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
 
                         String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
-                        JavaTemplate template = JavaTemplate.builder(
-                                this::getCursor, code).build();
-                        arg0 = args.get(0).withTemplate(template, args.get(0).getCoordinates().replace(), args.get(0));
+                        JavaTemplate template = JavaTemplate.builder(code).context(getCursor()).build();
+                        arg0 = args.get(0).withTemplate(template, getCursor(), args.get(0).getCoordinates().replace(), args.get(0));
                         args.set(0, arg0);
 
                         if (m.getMethodType() != null) {

@@ -75,7 +75,8 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
 
                 if (m.getAllAnnotations().stream().noneMatch(OVERRIDE_ANNOTATION::matches)) {
                     m = m.withTemplate(
-                            JavaTemplate.builder(() -> getCursor().getParentOrThrow(), "@Override").build(),
+                            JavaTemplate.builder("@Override").build(),
+                            getCursor(),
                             m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName))
                     );
                 }
@@ -88,7 +89,8 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
                 J.VariableDeclarations.NamedVariable oldParamName = ((J.VariableDeclarations) m.getParameters().iterator().next()).getVariables().iterator().next();
                 String paramName = "obj".equals(oldParamName.getSimpleName()) ? "other" : "obj";
                 m = m.withTemplate(
-                        JavaTemplate.builder(() -> getCursor().getParentOrThrow(), "Object #{}").build(),
+                        JavaTemplate.builder("Object #{}").context(() -> getCursor().getParentOrThrow()).build(),
+                        getCursor(),
                         m.getCoordinates().replaceParameters(),
                         paramName);
 
@@ -97,7 +99,7 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
                  * equals(..) method body statements, and let the existing equals(..) method definition continue
                  * with the logic doing what it was doing.
                  */
-                JavaTemplate equalsBodySnippet = JavaTemplate.builder(this::getCursor, EQUALS_BODY_PREFIX_TEMPLATE).build();
+                JavaTemplate equalsBodySnippet = JavaTemplate.builder(EQUALS_BODY_PREFIX_TEMPLATE).context(this::getCursor).build();
 
                 assert m.getBody() != null;
                 Object[] params = new Object[]{
@@ -112,6 +114,7 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
 
                 m = m.withTemplate(
                         equalsBodySnippet,
+                        getCursor(),
                         m.getBody().getStatements().get(0).getCoordinates().before(),
                         params);
             }

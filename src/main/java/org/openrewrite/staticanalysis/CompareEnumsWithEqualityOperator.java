@@ -64,8 +64,10 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
                     String code = "#{any()} " + (isNot ? "!=" : "==") + " #{any()}";
                     return autoFormat(m.withTemplate(
                             JavaTemplate
-                                    .builder(this::getCursor, code)
+                                    .builder(code)
+                                    .context(getCursor())
                                     .build(),
+                            getCursor(),
                             m.getCoordinates().replace(),
                             m.getSelect(), m.getArguments().get(0)
                     ), executionContext);

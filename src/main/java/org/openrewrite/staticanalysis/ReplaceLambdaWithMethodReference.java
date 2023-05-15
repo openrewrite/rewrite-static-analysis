@@ -72,7 +72,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (statement instanceof J.MethodInvocation) {
                         body = statement;
                     } else if (statement instanceof J.Return &&
-                               (((J.Return) statement).getExpression()) instanceof MethodCall) {
+                            (((J.Return) statement).getExpression()) instanceof MethodCall) {
                         body = ((J.Return) statement).getExpression();
                     }
                 } else if (body instanceof J.InstanceOf) {
@@ -88,7 +88,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         if (j != null) {
                             @SuppressWarnings("rawtypes") J tree = ((J.ControlParentheses) j).getTree();
                             if (tree instanceof J.Identifier &&
-                                !(j.getType() instanceof JavaType.GenericTypeVariable)) {
+                                    !(j.getType() instanceof JavaType.GenericTypeVariable)) {
                                 body = tree;
                                 code = "#{}.class::cast";
                             }
@@ -101,20 +101,22 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(identifier.getType());
                     @Language("java") String stub = fullyQualified == null ? "" :
                             "package " + fullyQualified.getPackageName() + "; public class " +
-                            fullyQualified.getClassName();
-                    JavaTemplate template = JavaTemplate.builder(this::getCursor, code)
+                                    fullyQualified.getClassName();
+                    JavaTemplate template = JavaTemplate.builder(code)
+                            .context(this::getCursor)
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(stub))
                             .imports(fullyQualified == null ? "" : fullyQualified.getFullyQualifiedName()).build();
-                    return l.withTemplate(template, l.getCoordinates().replace(), identifier.getSimpleName());
+                    return l.withTemplate(template, getCursor(), l.getCoordinates().replace(), identifier.getSimpleName());
                 } else if (body instanceof J.Binary) {
                     J.Binary binary = (J.Binary) body;
                     if (isNullCheck(binary.getLeft(), binary.getRight()) ||
-                        isNullCheck(binary.getRight(), binary.getLeft())) {
+                            isNullCheck(binary.getRight(), binary.getLeft())) {
                         maybeAddImport("java.util.Objects");
                         code = J.Binary.Type.Equal.equals(binary.getOperator()) ? "Objects::isNull" :
                                 "Objects::nonNull";
                         return l.withTemplate(
-                                JavaTemplate.builder(this::getCursor, code).imports("java.util.Objects").build(),
+                                JavaTemplate.builder(code).context(getCursor()).imports("java.util.Objects").build(),
+                                getCursor(),
                                 l.getCoordinates().replace());
                     }
                 } else if (body instanceof MethodCall) {
@@ -135,7 +137,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     }
 
                     if (multipleMethodInvocations(method) ||
-                        !methodArgumentsMatchLambdaParameters(method, lambda)) {
+                            !methodArgumentsMatchLambdaParameters(method, lambda)) {
                         return l;
                     }
 
@@ -145,21 +147,23 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (methodType != null) {
                         JavaType.FullyQualified declaringType = methodType.getDeclaringType();
                         if (methodType.hasFlags(Flag.Static) ||
-                            methodSelectMatchesFirstLambdaParameter(method, lambda)) {
+                                methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                             maybeAddImport(declaringType);
-                            return l.withTemplate(JavaTemplate.builder(this::getCursor, "#{}::#{}")
+                            return l.withTemplate(JavaTemplate.builder("#{}::#{}")
+                                            .context(getCursor())
                                             .imports(declaringType.getFullyQualifiedName())
                                             .build(),
+                                    getCursor(),
                                     l.getCoordinates().replace(), declaringType.getClassName(),
                                     method.getMethodType().getName());
                         } else if (method instanceof J.NewClass) {
-                            return l.withTemplate(JavaTemplate.builder(this::getCursor, "#{}::new").build(),
-                                    l.getCoordinates().replace(), className((J.NewClass) method));
+                            return l.withTemplate(JavaTemplate.builder("#{}::new").context(getCursor()).build(),
+                                    getCursor(), l.getCoordinates().replace(), className((J.NewClass) method));
                         } else {
                             String templ = select == null ? "#{}::#{}" :
                                     "#{any(" + declaringType.getFullyQualifiedName() + ")}::#{}";
-                            return l.withTemplate(JavaTemplate.builder(this::getCursor, templ).build(),
-                                    l.getCoordinates().replace(), select == null ? "this" : select,
+                            return l.withTemplate(JavaTemplate.builder(templ).context(getCursor()).build(),
+                                    getCursor(), l.getCoordinates().replace(), select == null ? "this" : select,
                                     method.getMethodType().getName());
                         }
                     }
@@ -177,7 +181,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             private boolean multipleMethodInvocations(MethodCall method) {
                 return method instanceof J.MethodInvocation &&
-                       ((J.MethodInvocation) method).getSelect() instanceof J.MethodInvocation;
+                        ((J.MethodInvocation) method).getSelect() instanceof J.MethodInvocation;
             }
 
             private boolean methodArgumentsMatchLambdaParameters(MethodCall method, J.Lambda lambda) {
@@ -216,20 +220,20 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             private boolean methodSelectMatchesFirstLambdaParameter(MethodCall method, J.Lambda lambda) {
                 if (!(method instanceof J.MethodInvocation) ||
-                    !(((J.MethodInvocation) method).getSelect() instanceof J.Identifier) ||
-                    lambda.getParameters().getParameters().isEmpty() ||
-                    !(lambda.getParameters().getParameters().get(0) instanceof J.VariableDeclarations)) {
+                        !(((J.MethodInvocation) method).getSelect() instanceof J.Identifier) ||
+                        lambda.getParameters().getParameters().isEmpty() ||
+                        !(lambda.getParameters().getParameters().get(0) instanceof J.VariableDeclarations)) {
                     return false;
                 }
                 J.VariableDeclarations firstLambdaParameter = (J.VariableDeclarations) lambda.getParameters()
                         .getParameters().get(0);
                 return ((J.Identifier) ((J.MethodInvocation) method).getSelect()).getFieldType() ==
-                       firstLambdaParameter.getVariables().get(0).getVariableType();
+                        firstLambdaParameter.getVariables().get(0).getVariableType();
             }
 
             private boolean isNullCheck(J j1, J j2) {
                 return j1 instanceof J.Identifier && j2 instanceof J.Literal &&
-                       "null".equals(((J.Literal) j2).getValueSource());
+                        "null".equals(((J.Literal) j2).getValueSource());
             }
         };
 

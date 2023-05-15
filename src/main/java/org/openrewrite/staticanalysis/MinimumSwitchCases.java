@@ -63,47 +63,47 @@ public class MinimumSwitchCases extends Recipe {
     @Override
     public JavaVisitor<ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
-            final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else if(#{any()} == #{any()}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseIfString = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseIfString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
                     "} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseIfEnum = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseIfEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
                     "} else if(#{any()} == #{}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElsePrimitive = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElsePrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseString = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
                     "} else {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseEnum = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
                     "} else {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifPrimitive = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifString = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifEnum = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
             @Override
             public J visitBlock(J.Block block, ExecutionContext executionContext) {
@@ -164,14 +164,14 @@ public class MinimumSwitchCases extends Recipe {
                                 if (isDefault(cases[0])) {
                                     return switzh.withMarkers(switzh.getMarkers().add(new DefaultOnly()));
                                 } else {
-                                    generatedIf = switzh.withTemplate(ifString, switzh.getCoordinates().replace(),
+                                    generatedIf = switzh.withTemplate(ifString, getCursor(), switzh.getCoordinates().replace(),
                                             cases[0].getPattern(), tree);
                                 }
                             } else if (isDefault(cases[1])) {
-                                generatedIf = switzh.withTemplate(ifElseString, switzh.getCoordinates().replace(),
+                                generatedIf = switzh.withTemplate(ifElseString, getCursor(), switzh.getCoordinates().replace(),
                                         cases[0].getPattern(), tree);
                             } else {
-                                generatedIf = switzh.withTemplate(ifElseIfString, switzh.getCoordinates().replace(),
+                                generatedIf = switzh.withTemplate(ifElseIfString, getCursor(), switzh.getCoordinates().replace(),
                                         cases[0].getPattern(), tree, cases[1].getPattern(), tree);
                             }
                         } else if (switchesOnEnum(switzh)) {
@@ -179,14 +179,14 @@ public class MinimumSwitchCases extends Recipe {
                                 if (isDefault(cases[0])) {
                                     return switzh.withMarkers(switzh.getMarkers().add(new DefaultOnly()));
                                 } else {
-                                    generatedIf = switzh.withTemplate(ifEnum, switzh.getCoordinates().replace(),
+                                    generatedIf = switzh.withTemplate(ifEnum, getCursor(), switzh.getCoordinates().replace(),
                                             tree, enumIdentToFieldAccessString(cases[0].getPattern()));
                                 }
                             } else if (isDefault(cases[1])) {
-                                generatedIf = switzh.withTemplate(ifElseEnum, switzh.getCoordinates().replace(),
+                                generatedIf = switzh.withTemplate(ifElseEnum, getCursor(), switzh.getCoordinates().replace(),
                                         tree, enumIdentToFieldAccessString(cases[0].getPattern()));
                             } else {
-                                generatedIf = switzh.withTemplate(ifElseIfEnum, switzh.getCoordinates().replace(),
+                                generatedIf = switzh.withTemplate(ifElseIfEnum, getCursor(), switzh.getCoordinates().replace(),
                                         tree, enumIdentToFieldAccessString(cases[0].getPattern()), tree, enumIdentToFieldAccessString(cases[1].getPattern()));
                             }
                         } else {
@@ -194,14 +194,14 @@ public class MinimumSwitchCases extends Recipe {
                                 if (isDefault(cases[0])) {
                                     return switzh.withMarkers(switzh.getMarkers().add(new DefaultOnly()));
                                 } else {
-                                    generatedIf = switzh.withTemplate(ifPrimitive, switzh.getCoordinates().replace(),
+                                    generatedIf = switzh.withTemplate(ifPrimitive, getCursor(), switzh.getCoordinates().replace(),
                                             tree, cases[0].getPattern());
                                 }
                             } else if (isDefault(cases[1])) {
-                                generatedIf = switzh.withTemplate(ifElsePrimitive, switzh.getCoordinates().replace(),
+                                generatedIf = switzh.withTemplate(ifElsePrimitive, getCursor(), switzh.getCoordinates().replace(),
                                         tree, cases[0].getPattern());
                             } else {
-                                generatedIf = switzh.withTemplate(ifElseIfPrimitive, switzh.getCoordinates().replace(),
+                                generatedIf = switzh.withTemplate(ifElseIfPrimitive, getCursor(), switzh.getCoordinates().replace(),
                                         tree, cases[0].getPattern(), tree, cases[1].getPattern());
                             }
                         }
