@@ -63,7 +63,6 @@ class ExplicitInitializationTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Lombok @Value makes the field final, so the default value cannot be removed. The result will add the field to the default constructor,")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/101")
     @Test
     void ignoreLombokValueField() {

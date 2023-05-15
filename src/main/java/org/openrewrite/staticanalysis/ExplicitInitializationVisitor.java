@@ -15,8 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import org.openrewrite.Cursor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -27,6 +25,9 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
@@ -35,7 +36,6 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
     @Override
     public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, P p) {
         J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, p);
-
         Cursor variableDeclsCursor = getCursor().getParentTreeCursor();
         Cursor maybeBlockOrGType = variableDeclsCursor.getParentTreeCursor();
         if (maybeBlockOrGType.getParent() == null || maybeBlockOrGType.getParent().getParent() == null) {
@@ -46,28 +46,30 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
                     .getParentTreeCursor() // maybe J.ClassDecl
                     .getValue();
             if (!(maybeClassDecl instanceof J.ClassDeclaration) ||
-                    J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration)maybeClassDecl).getKind()) {
+                    J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration) maybeClassDecl).getKind()) {
                 return v;
             }
         }
-
+        J clz = getCursor().firstEnclosing(J.ClassDeclaration.class);
+        if (clz != null && !FindAnnotations.find(clz, "@lombok.Value").isEmpty()) {
+            return v;
+        }
         JavaType.Primitive primitive = TypeUtils.asPrimitive(variable.getType());
         JavaType.Array array = TypeUtils.asArray(variable.getType());
-
         J tree = variableDeclsCursor.getValue();
-        if(!(tree instanceof J.VariableDeclarations)) {
+        if (!(tree instanceof J.VariableDeclarations)) {
             return v;
         }
-
         J.VariableDeclarations variableDecls = (J.VariableDeclarations) tree;
-        if(!FindAnnotations.find(variableDecls, "@lombok.Builder.Default").isEmpty()) {
+        if (!FindAnnotations.find(variableDecls, "@lombok.Builder.Default").isEmpty()) {
             return v;
         }
-
-        J.Literal literalInit = variable.getInitializer() instanceof J.Literal ? (J.Literal) variable.getInitializer() : null;
-
+        J.Literal literalInit = variable.getInitializer() instanceof J.Literal
+                ? (J.Literal) variable.getInitializer()
+                : null;
         if (literalInit != null && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
-            if (TypeUtils.asFullyQualified(variable.getType()) != null && JavaType.Primitive.Null.equals(literalInit.getType())) {
+            if (TypeUtils.asFullyQualified(variable.getType()) != null &&
+                    JavaType.Primitive.Null.equals(literalInit.getType())) {
                 v = v.withInitializer(null);
             } else if (primitive != null && !Boolean.TRUE.equals(style.getOnlyObjectReferences())) {
                 switch (primitive) {
@@ -95,7 +97,6 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
                                 i == 0 ? dim.withBefore(Space.EMPTY) : dim));
             }
         }
-
         return v;
     }
 }
