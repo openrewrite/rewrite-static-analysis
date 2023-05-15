@@ -175,7 +175,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
               class Test {
                   int test() {
                       int a = 1; //first we set a to 1
-                      ;a = 2;//then we set a to 2
+                      ;a = 2;/*then we set a to 2 */
                       a = 3;//then we set a to 3
                       ;a = 4;;;;;//then we set a to 4
                       ;a = 5;//then we set a to 5
@@ -196,7 +196,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
               class Test {
                   int test() {
                       int a = 1; //first we set a to 1
-                      a = 2;//then we set a to 2
+                      a = 2;/*then we set a to 2 */
                       a = 3;//then we set a to 3
                       a = 4;//then we set a to 4
                       a = 5;//then we set a to 5
