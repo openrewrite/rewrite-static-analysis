@@ -72,6 +72,9 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
         return new RenameToCamelCase() {
             @Override
             protected boolean shouldRename(Set<String> hasNameKey, J.VariableDeclarations.NamedVariable variable, String toName) {
+                if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
+                    return false;
+                }
                 return !hasNameKey.contains(toName);
             }
 
