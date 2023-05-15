@@ -15,16 +15,23 @@
  */
 package org.openrewrite.staticanalysis;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
-
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 
 public class RemoveExtraSemicolons extends Recipe {
 
@@ -52,20 +59,33 @@ public class RemoveExtraSemicolons extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+
             @Override
-            public J.Empty visitEmpty(J.Empty empty, ExecutionContext ctx) {
-                if (getCursor().getParentTreeCursor().getValue() instanceof J.Block) {
-                    return null;
+            public J.Block visitBlock(final J.Block block, final ExecutionContext executionContext) {
+                final Iterator<Statement> iterator = block.getStatements().iterator();
+                final List<Statement> result = new ArrayList<>(); //todo should this be arraylist?
+                while (iterator.hasNext()) {
+                    Statement statement = iterator.next();
+                    if (statement instanceof J.Empty) {
+                        nextNonEmptyAggregatedWithComments(statement, iterator)
+                                .ifPresent(nextLine -> {
+                                    Space updatedPrefix = nextLine.getPrefix()
+                                            .withWhitespace(statement.getPrefix().getWhitespace());
+                                    result.add(nextLine.withPrefix(updatedPrefix));
+                                });
+                    } else {
+                        result.add(statement);
+                    }
                 }
-                return empty;
+                return super.visitBlock(block.withStatements(result), executionContext);
             }
 
             @Override
             public J.Try.Resource visitTryResource(J.Try.Resource tr, ExecutionContext executionContext) {
                 J.Try _try = getCursor().dropParentUntil(is -> is instanceof J.Try).getValue();
                 if (_try.getResources().isEmpty() ||
-                    _try.getResources().get(_try.getResources().size() - 1) != tr ||
-                    !_try.getResources().get(_try.getResources().size() - 1).isTerminatedWithSemicolon()) {
+                        _try.getResources().get(_try.getResources().size() - 1) != tr ||
+                        !_try.getResources().get(_try.getResources().size() - 1).isTerminatedWithSemicolon()) {
                     return tr;
                 }
                 return tr.withTerminatedWithSemicolon(false);
@@ -80,5 +100,17 @@ public class RemoveExtraSemicolons extends Recipe {
                 return e;
             }
         };
+    }
+
+    private Optional<Statement> nextNonEmptyAggregatedWithComments(Statement current, Iterator<Statement> iterator) {
+        List<Comment> comments = new ArrayList<>(current.getComments());
+        while (iterator.hasNext()) {
+            Statement statement = iterator.next();
+            comments.addAll(statement.getComments());
+            if (!(statement instanceof J.Empty)) {
+                return Optional.of(statement.withComments(comments));
+            }
+        }
+        return Optional.empty();
     }
 }

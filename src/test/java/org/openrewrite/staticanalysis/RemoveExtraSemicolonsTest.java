@@ -140,7 +140,6 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/99")
-    @ExpectedToFail("The formatting (new line) is lost during cleanup")
     @Test
     void semicolonBeforeStatement() {
         rewriteRun(
@@ -159,6 +158,56 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                   void test() {
                       int a = 1;
                       int b = 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/99")
+    @Test
+    void manySemicolonBeforeStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int test() {
+                      int a = 1; //first we set a to 1
+                      ;a = 2;//then we set a to 2
+                      a = 3;//then we set a to 3
+                      ;a = 4;;;;;//then we set a to 4
+                      ;a = 5;//then we set a to 5
+                      a = 6;;//then we set a to 6
+                      if (a == 6) { //if a is 6
+                        ;a = 7;;//then if a is 6 we set a to 7
+                      }
+                      ;;
+                      ;//next we set a to 8
+                      ;a = 8;
+                      return a;
+                      ;
+                      //we are done!
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int test() {
+                      int a = 1; //first we set a to 1
+                      a = 2;//then we set a to 2
+                      a = 3;//then we set a to 3
+                      a = 4;//then we set a to 4
+                      a = 5;//then we set a to 5
+                      a = 6;//then we set a to 6
+                      if (a == 6) { //if a is 6
+                        a = 7;//then if a is 6 we set a to 7
+                      }
+                      //next we set a to 8
+                      a = 8;
+                      return a;
+                      //we are done!
                   }
               }
               """
