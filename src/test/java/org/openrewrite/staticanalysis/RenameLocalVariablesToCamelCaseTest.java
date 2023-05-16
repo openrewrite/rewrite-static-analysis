@@ -282,6 +282,44 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
+    @Test
+    void doNotRenameUnderscoreNumber() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public int testFoo() {
+                      int _20th = 20;
+                      int _40th = 40;
+                      return _20th + _40th;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
+    @Test
+    void doNotRenameUnderscoreOnly() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public int testFoo() {
+                      int _ = 20;
+                      return _;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void recordCompactConstructor() {
         rewriteRun(

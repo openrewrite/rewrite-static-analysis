@@ -54,7 +54,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
-            final JavaTemplate template = JavaTemplate.builder(this::getCursor, "private static final long serialVersionUID = 1;").build();
+            final JavaTemplate template = JavaTemplate.builder("private static final long serialVersionUID = 1;").context(this::getCursor).build();
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
@@ -90,7 +90,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                     return s;
                 })));
                 if (needsSerialVersionId.get()) {
-                    c = c.withTemplate(template, c.getBody().getCoordinates().firstStatement());
+                    c = c.withTemplate(template, getCursor(), c.getBody().getCoordinates().firstStatement());
                 }
                 return c;
             }

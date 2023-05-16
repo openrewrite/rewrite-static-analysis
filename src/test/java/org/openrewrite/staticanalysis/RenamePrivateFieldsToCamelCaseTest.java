@@ -477,6 +477,42 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
+    @Test
+    void doNotRenameUnderscoreNumber() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private boolean _20th;
+                   public boolean method() {
+                       return _20th;
+                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
+    @Test
+    void doNotRenameUnderscoreOnly() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private boolean _;
+                   public boolean method() {
+                       return _;
+                   }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2526")
     @Test
     void recordCompactConstructor() {

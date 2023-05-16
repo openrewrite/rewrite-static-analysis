@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 @SuppressWarnings({"Convert2Diamond", "unchecked", "rawtypes"})
 class UseDiamondOperatorTest implements RewriteTest {
@@ -372,6 +373,29 @@ class UseDiamondOperatorTest implements RewriteTest {
                           .subscribe(result -> print(result)
                       );
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void anonymousNewClassJava9Plus() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(11))),
+          java(
+            """
+              import java.util.*;
+
+              class Foo {
+                  List<String> l = new ArrayList<String>() {};
+              }
+              """,
+            """
+              import java.util.*;
+
+              class Foo {
+                  List<String> l = new ArrayList<>() {};
               }
               """
           )

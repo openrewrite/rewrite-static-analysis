@@ -60,7 +60,7 @@ public class NoValueOfOnStringType extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(new MethodMatcher("java.lang.String valueOf(..)")), new JavaVisitor<ExecutionContext>() {
-            private final JavaTemplate t = JavaTemplate.builder(this::getCursor, "#{any(java.lang.String)}").build();
+            private final JavaTemplate t = JavaTemplate.builder("#{any(java.lang.String)}").build();
 
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
@@ -73,7 +73,7 @@ public class NoValueOfOnStringType extends Recipe {
                     Expression argument = mi.getArguments().get(0);
 
                     if (TypeUtils.isString(argument.getType()) || removeValueOfFromBinaryExpression(argument)) {
-                        return mi.withTemplate(t, mi.getCoordinates().replace(), argument);
+                        return mi.withTemplate(t, getCursor(), mi.getCoordinates().replace(), argument);
                     }
                 }
                 return mi;

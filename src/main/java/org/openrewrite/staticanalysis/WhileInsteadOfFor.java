@@ -51,8 +51,8 @@ public class WhileInsteadOfFor extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
-            final JavaTemplate whileLoop = JavaTemplate.builder(this::getCursor,
-                    "while(#{any(boolean)}) {}")
+            final JavaTemplate whileLoop = JavaTemplate.builder("while(#{any(boolean)}) {}")
+                    .context(this::getCursor)
                     .build();
 
             @Override
@@ -61,7 +61,7 @@ public class WhileInsteadOfFor extends Recipe {
                     forLoop.getControl().getUpdate().get(0) instanceof J.Empty &&
                     !(forLoop.getControl().getCondition() instanceof J.Empty)
                 ) {
-                    J.WhileLoop w = forLoop.withTemplate(whileLoop, forLoop.getCoordinates().replace(),
+                    J.WhileLoop w = forLoop.withTemplate(whileLoop, getCursor(), forLoop.getCoordinates().replace(),
                         forLoop.getControl().getCondition());
                     w = w.withBody(forLoop.getBody());
                     return w;

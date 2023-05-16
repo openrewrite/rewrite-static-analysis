@@ -16,10 +16,10 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
+import org.openrewrite.analysis.dataflow.FindLocalFlowPaths;
+import org.openrewrite.analysis.dataflow.LocalFlowSpec;
 import org.openrewrite.java.ChangeType;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.dataflow.FindLocalFlowPaths;
-import org.openrewrite.java.dataflow.LocalFlowSpec;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;

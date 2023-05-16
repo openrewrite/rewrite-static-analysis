@@ -57,9 +57,11 @@ public class IsEmptyCallOnCollections extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COLLECTION_SIZE), new JavaVisitor<ExecutionContext>() {
-            final JavaTemplate isEmpty = JavaTemplate.builder(this::getCursor, "#{}#{any(java.util.Collection)}.isEmpty()")
+            final JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Collection)}.isEmpty()")
+                    .context(this::getCursor)
                     .build();
-            final JavaTemplate isEmptyNoReceiver = JavaTemplate.builder(this::getCursor, "#{}isEmpty()")
+            final JavaTemplate isEmptyNoReceiver = JavaTemplate.builder("#{}isEmpty()")
+                    .context(this::getCursor)
                     .build();
 
             @Override
@@ -75,8 +77,8 @@ public class IsEmptyCallOnCollections extends Recipe {
                             if (COLLECTION_SIZE.matches(maybeSizeCallMethod)) {
                                 String op = binary.getOperator() == J.Binary.Type.Equal ? "" : "!";
                                 return (maybeSizeCallMethod.getSelect() == null ?
-                                        binary.withTemplate(isEmptyNoReceiver, binary.getCoordinates().replace(), op) :
-                                        binary.withTemplate(isEmpty, binary.getCoordinates().replace(), op, maybeSizeCallMethod.getSelect())
+                                        binary.withTemplate(isEmptyNoReceiver, getCursor(), binary.getCoordinates().replace(), op) :
+                                        binary.withTemplate(isEmpty, getCursor(), binary.getCoordinates().replace(), op, maybeSizeCallMethod.getSelect())
                                 ).withPrefix(binary.getPrefix());
                             }
                         }

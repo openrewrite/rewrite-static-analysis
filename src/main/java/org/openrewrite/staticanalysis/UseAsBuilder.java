@@ -27,12 +27,16 @@ import org.openrewrite.java.tree.*;
 
 import java.util.*;
 
+import static org.openrewrite.Validated.notBlank;
 import static org.openrewrite.java.format.TabsAndIndents.formatTabsAndIndents;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class UseAsBuilder extends Recipe {
-    @Option
+    @Option(
+            displayName = "Builder Type",
+            description = "Fully qualified name of the Builder"
+    )
     String builderType;
 
     @Option(
@@ -60,6 +64,11 @@ public class UseAsBuilder extends Recipe {
     @Override
     public String getDescription() {
         return "When an API has been designed as a builder, use it that way rather than as a series of setter calls.";
+    }
+
+    @Override
+    public Validated validate() {
+        return super.validate().and(notBlank("builderType", builderType));
     }
 
     @Override
