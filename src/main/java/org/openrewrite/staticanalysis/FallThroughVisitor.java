@@ -43,8 +43,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     FallThroughStyle style;
 
-    private static boolean isLastCase(J.Case case_, J.Switch switzh) {
-        J.Block switchBlock = switzh.getCases();
+    private static boolean isLastCase(J.Case case_, J.Switch switch_) {
+        J.Block switchBlock = switch_.getCases();
         return case_ == switchBlock.getStatements().get(switchBlock.getStatements().size() - 1);
     }
 
@@ -52,9 +52,9 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     public J.Case visitCase(J.Case case_, P p) {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
-            J.Switch switzh = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
-            if ((Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(c, switzh))) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switzh, c).isEmpty()) {
+            J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
+            if ((Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(c, switch_))) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
                     doAfterVisit(new AddBreak<>(c));
                 }
             }
@@ -151,8 +151,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             }
 
             @Override
-            public J.Switch visitSwitch(J.Switch switzh, Set<J> ctx) {
-                J.Switch s = super.visitSwitch(switzh, ctx);
+            public J.Switch visitSwitch(J.Switch switch_, Set<J> ctx) {
+                J.Switch s = super.visitSwitch(switch_, ctx);
                 List<Statement> statements = s.getCases().getStatements();
                 for (int i = 0; i < statements.size() - 1; i++) {
                     if (!(statements.get(i) instanceof J.Case)) {
