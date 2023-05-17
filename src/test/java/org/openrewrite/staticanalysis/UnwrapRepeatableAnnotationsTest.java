@@ -32,7 +32,7 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
             .dependsOn(
               //language=java
               """
-                package com.exmaple;
+                package com.example;
                                                         
                 import java.lang.annotation.ElementType;
                 import java.lang.annotation.Target;
