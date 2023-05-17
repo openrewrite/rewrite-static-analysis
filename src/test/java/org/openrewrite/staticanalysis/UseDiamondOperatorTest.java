@@ -363,7 +363,7 @@ class UseDiamondOperatorTest implements RewriteTest {
               import java.util.List;
 
               class A {
-                  void print(List<String> strs) {
+                  void print(List<String> strings) {
                   }
 
                   void method() {
