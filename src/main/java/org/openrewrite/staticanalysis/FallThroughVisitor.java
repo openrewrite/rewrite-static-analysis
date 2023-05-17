@@ -43,14 +43,14 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     FallThroughStyle style;
 
-    private static boolean isLastCase(J.Case caze, J.Switch switzh) {
+    private static boolean isLastCase(J.Case case_, J.Switch switzh) {
         J.Block switchBlock = switzh.getCases();
-        return caze == switchBlock.getStatements().get(switchBlock.getStatements().size() - 1);
+        return case_ == switchBlock.getStatements().get(switchBlock.getStatements().size() - 1);
     }
 
     @Override
-    public J.Case visitCase(J.Case caze, P p) {
-        J.Case c = super.visitCase(caze, p);
+    public J.Case visitCase(J.Case case_, P p) {
+        J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switzh = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if ((Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(c, switzh))) {
@@ -70,8 +70,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         @Override
-        public J.Case visitCase(J.Case caze, P p) {
-            J.Case c = super.visitCase(caze, p);
+        public J.Case visitCase(J.Case case_, P p) {
+            J.Case c = super.visitCase(case_, p);
             if (scope.isScope(c) &&
                 c.getStatements().stream().noneMatch(J.Break.class::isInstance) &&
                 c.getStatements().stream()
@@ -159,7 +159,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         continue;
                     }
 
-                    J.Case caze = (J.Case) statements.get(i);
+                    J.Case case_ = (J.Case) statements.get(i);
                     /*
                      * {@code i + 1} because a last-line comment for a J.Case gets attached as a prefix comment in the next case
                      *
@@ -175,7 +175,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                      * In order to know whether "CASE 1" ended with the comment "fallthrough", we have to check
                      * the "prefix" of CASE 2, because the CASE 2 prefix is what has the comments associated for CASE 1.
                      **/
-                    if (caze == scope && statements.get(i + 1).getPrefix().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)) {
+                    if (case_ == scope && statements.get(i + 1).getPrefix().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)) {
                         ctx.add(s);
                     }
                 }
@@ -183,8 +183,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             }
 
             @Override
-            public J.Case visitCase(J.Case caze, Set<J> ctx) {
-                J.Case c = super.visitCase(caze, ctx);
+            public J.Case visitCase(J.Case case_, Set<J> ctx) {
+                J.Case c = super.visitCase(case_, ctx);
                 if (c == scope) {
                     if (c.getStatements().isEmpty() || lastLineBreaksOrFallsThrough(c.getStatements())) {
                         ctx.add(c);

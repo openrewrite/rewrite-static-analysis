@@ -247,8 +247,8 @@ public class MinimumSwitchCases extends Recipe {
                 return statements;
             }
 
-            private boolean isDefault(J.Case caze) {
-                return caze.getPattern() instanceof J.Identifier && ((J.Identifier) caze.getPattern()).getSimpleName().equals("default");
+            private boolean isDefault(J.Case case_) {
+                return case_.getPattern() instanceof J.Identifier && ((J.Identifier) case_.getPattern()).getSimpleName().equals("default");
             }
 
             private boolean switchesOnEnum(J.Switch switzh) {

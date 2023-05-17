@@ -180,8 +180,8 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         return true;
     }
 
-    private boolean isDefaultCase(J.Case caze) {
-        Expression elem = caze.getPattern();
+    private boolean isDefaultCase(J.Case case_) {
+        Expression elem = case_.getPattern();
         return elem instanceof J.Identifier && ((J.Identifier) elem).getSimpleName().equals("default");
     }
 
