@@ -65,11 +65,11 @@ public class ShortenFullyQualifiedTypeReferences extends Recipe {
                 if (sourceFile instanceof JavaSourceFile) {
                     JavaIsoVisitor<Map<String, JavaType>> typeCollector = new JavaIsoVisitor<Map<String, JavaType>>() {
                         @Override
-                        public J.Import visitImport(J.Import impoort, Map<String, JavaType> types) {
-                            if (!impoort.isStatic() && isWellFormedType(impoort.getQualid().getType())) {
-                                types.put(impoort.getQualid().getSimpleName(), impoort.getQualid().getType());
+                        public J.Import visitImport(J.Import import_, Map<String, JavaType> types) {
+                            if (!import_.isStatic() && isWellFormedType(import_.getQualid().getType())) {
+                                types.put(import_.getQualid().getSimpleName(), import_.getQualid().getType());
                             }
-                            return impoort;
+                            return import_;
                         }
 
                         @Override
@@ -98,9 +98,9 @@ public class ShortenFullyQualifiedTypeReferences extends Recipe {
             }
 
             @Override
-            public J visitImport(J.Import impoort, ExecutionContext ctx) {
+            public J visitImport(J.Import import_, ExecutionContext ctx) {
                 // stop recursion
-                return impoort;
+                return import_;
             }
 
             @Override
