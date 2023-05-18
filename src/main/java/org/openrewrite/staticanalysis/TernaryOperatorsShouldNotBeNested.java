@@ -98,7 +98,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         }
     }
 
-    @NotNull
     private static J.If ifOf(final J.Ternary ternary) {
         return new J.If(
                 Tree.randomId(),
