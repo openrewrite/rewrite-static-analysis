@@ -137,7 +137,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         );
     }
 
-    @Issue("todo")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
     @ExpectedToFail("only directly returned ternaries are taken into account")
     @Test
     void doReplaceNestedOrAssignmentTernaryWithIfElse() {
