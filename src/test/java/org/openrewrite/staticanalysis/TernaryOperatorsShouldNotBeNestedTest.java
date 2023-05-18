@@ -170,8 +170,6 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         );
     }
 
-    @Issue("todo")
-    @ExpectedToFail("Not yet implemented")
     @Test
     void doReplaceNestedOrTernaryInStreamWithIfInBlock() {
         rewriteRun(
@@ -198,11 +196,55 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                 public Set<String> makeASet() {
                    List<String> s = Arrays.asList("a","b","c","nope");
                    return s.stream().map(item -> {
-                    if (item.startsWith("a")) {
-                        return "a";
-                    }
-                    return item.startsWith("b") ? "b" : "nope";
+                       if (item.startsWith("a")) {
+                           return "a";
+                       }
+                       return item.startsWith("b") ? "b" : "nope";
                    }).collect(Collectors.toSet());
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doReplaceNestedOrTernaryInStreamContainingComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Set;
+              import java.util.Arrays;
+              import java.util.List;
+              import java.util.stream.Collectors;
+              class Test {
+                public Set<String> makeASet() {
+                   List<String> s = Arrays.asList("a","b","c","nope");
+                   return s.stream().map( /* look a lambda */ item ->
+                        //look a ternary
+                        item.startsWith("a") ? "a" : item.startsWith("b") ? "b" : "nope"
+                        ).collect(Collectors.toSet());
+                }
+              }
+              """,
+            """
+              import java.util.Set;
+              import java.util.Arrays;
+              import java.util.List;
+              import java.util.stream.Collectors;
+              class Test {
+                public Set<String> makeASet() {
+                   List<String> s = Arrays.asList("a","b","c","nope");
+                   return s.stream().map( /* look a lambda */ item ->
+                           //look a ternary
+                           {
+                               if (item.startsWith("a")) {
+                                   return "a";
+                               }
+                               return item.startsWith("b") ? "b" : "nope";
+                           }
+                        ).collect(Collectors.toSet());
                 }
               }
               """
