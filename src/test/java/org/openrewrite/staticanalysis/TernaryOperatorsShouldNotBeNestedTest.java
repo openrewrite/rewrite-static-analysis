@@ -171,6 +171,27 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
     }
 
     @Test
+    void doNotReplaceNonNestedOrTernaryInStream() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Set;
+              import java.util.Arrays;
+              import java.util.List;
+              import java.util.stream.Collectors;
+              class Test {
+                public Set<String> makeASet() {
+                   List<String> s = Arrays.asList("a","b","c","nope");
+                   return s.stream().map(item -> item.startsWith("a") ? "a" : "nope").collect(Collectors.toSet());
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doReplaceNestedOrTernaryInStreamWithIfInBlock() {
         rewriteRun(
           //language=java

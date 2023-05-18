@@ -78,8 +78,13 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         public J visitLambda(final J.Lambda lambda, final ExecutionContext executionContext) {
             if (lambda.getBody() instanceof J.Ternary) {
                 J.Ternary ternary = (J.Ternary) lambda.getBody();
-                J.If iff = ifOf(ternary);
-                return autoFormat(lambda.withBody(blockOf(iff, returnOf(ternary.getFalsePart())).withPrefix(ternary.getPrefix())), executionContext);
+                if (ternary.getFalsePart() instanceof J.Ternary || ternary.getTruePart() instanceof J.Ternary) {
+                    J.If iff = ifOf(ternary);
+                    return autoFormat(lambda.withBody(blockOf(
+                            iff,
+                            returnOf(ternary.getFalsePart())
+                    ).withPrefix(ternary.getPrefix())), executionContext);
+                }
             }
             return super.visitLambda(lambda, executionContext);
         }
