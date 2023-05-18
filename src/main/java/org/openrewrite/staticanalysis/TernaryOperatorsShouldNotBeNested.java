@@ -96,26 +96,26 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             }
             return super.visitReturn(retrn, executionContext);
         }
-    }
 
-    private static J.If ifOf(final J.Ternary ternary) {
-        return new J.If(
-                Tree.randomId(),
-                Space.EMPTY,
-                Markers.EMPTY,
-                new J.ControlParentheses<>(Tree.randomId(), Space.EMPTY, Markers.EMPTY,
-                        JRightPadded.build(ternary.getCondition())
-                ),
-                JRightPadded.build(blockOf(returnOf(ternary.getTruePart()))),
-                null
-        );
-    }
+        private static J.If ifOf(final J.Ternary ternary) {
+            return new J.If(
+                    Tree.randomId(),
+                    Space.EMPTY,
+                    Markers.EMPTY,
+                    new J.ControlParentheses<>(Tree.randomId(), Space.EMPTY, Markers.EMPTY,
+                            JRightPadded.build(ternary.getCondition())
+                    ),
+                    JRightPadded.build(blockOf(returnOf(ternary.getTruePart()))),
+                    null
+            );
+        }
 
-    private static J.Return returnOf(Expression expression) {
-        return new J.Return(Tree.randomId(), Space.EMPTY, Markers.EMPTY, expression);
-    }
+        private static J.Return returnOf(Expression expression) {
+            return new J.Return(Tree.randomId(), Space.EMPTY, Markers.EMPTY, expression);
+        }
 
-    private static J.Block blockOf(Statement... statements) {
-        return J.Block.createEmptyBlock().withStatements(Arrays.asList(statements));
+        private static J.Block blockOf(Statement... statements) {
+            return J.Block.createEmptyBlock().withStatements(Arrays.asList(statements));
+        }
     }
 }
