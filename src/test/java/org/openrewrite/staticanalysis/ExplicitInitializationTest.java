@@ -16,7 +16,9 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -41,6 +43,38 @@ class ExplicitInitializationTest implements RewriteTest {
               class Test {
                   @Builder.Default
                   private boolean b = false;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ignoreFinalField() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private final boolean b = false;
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/101")
+    @Test
+    void ignoreLombokValueField() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              import lombok.Value;
+              @Value
+              class Test {
+                  boolean b = false;
               }
               """
           )
