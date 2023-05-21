@@ -34,7 +34,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     @Test
-    void usedAsStatementWithNonInferenceableType() {
+    void usedAsStatementWithNonInferrableType() {
         rewriteRun(
           spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
           //language=java
