@@ -20,13 +20,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 
-import org.jetbrains.annotations.NotNull;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
-import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -76,51 +74,79 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         @Override
         public J visitLambda(final J.Lambda lambda, final ExecutionContext executionContext) {
-            if (lambda.getBody() instanceof J.Ternary) {
-                J.Ternary ternary = (J.Ternary) lambda.getBody();
-                if (ternary.getFalsePart() instanceof J.Ternary || ternary.getTruePart() instanceof J.Ternary) {
-                    J.If iff = ifOf(ternary);
-                    return autoFormat(lambda.withBody(blockOf(
-                            iff,
-                            returnOf(ternary.getFalsePart())
-                    ).withPrefix(ternary.getPrefix())), executionContext);
-                }
+            J result = rewriteNestedTernary(lambda);
+            if (result == lambda) {
+                return super.visitLambda(lambda, executionContext);
             }
-            return super.visitLambda(lambda, executionContext);
+            return autoFormat(lambda.withBody(result.withPrefix(lambda.getBody().getPrefix())), executionContext);
         }
 
         @Override
         public J visitReturn(final J.Return retrn, final ExecutionContext executionContext) {
-            J possiblyTernary = retrn.getExpression();
-            if (possiblyTernary instanceof J.Ternary) {
-                J.Ternary ternary = (J.Ternary) possiblyTernary;
-                if (ternary.getFalsePart() instanceof J.Ternary || ternary.getTruePart() instanceof J.Ternary) {
-                    J result = blockOf(ifOf(ternary).withPrefix(retrn.getPrefix()), returnOf(ternary.getFalsePart()));
-                    return autoFormat(result, executionContext);
-                }
+            J result = rewriteNestedTernary(retrn);
+            if (result == retrn) {
+                return super.visitReturn(retrn, executionContext);
             }
-            return super.visitReturn(retrn, executionContext);
+            return autoFormat(result, executionContext);
         }
 
-        private static J.If ifOf(final J.Ternary ternary) {
+        private Statement rewriteNestedTernary(final Statement parent) {
+            J possibleTernary;
+            if (parent instanceof J.Return) {
+                possibleTernary = ((J.Return) parent).getExpression();
+            } else if (parent instanceof J.Lambda) {
+                possibleTernary = ((J.Lambda) parent).getBody();
+            } else {
+                return parent;
+            }
+            if (possibleTernary instanceof J.Ternary) {
+                J.Ternary ternary = (J.Ternary) possibleTernary;
+                if (!isNestedTernary(ternary)) {
+                    return parent;
+                }
+                J.If iff = ifOf(ternary);
+                J.Return otherwise = returnOf(ternary.getFalsePart());
+                return blockOf(iff, rewriteNestedTernary(otherwise)).withPrefix(parent.getPrefix());
+            }
+            return parent;
+        }
+
+
+        private J.If ifOf(final J.Ternary ternary) {
             return new J.If(
                     Tree.randomId(),
                     Space.EMPTY,
                     Markers.EMPTY,
                     new J.ControlParentheses<>(Tree.randomId(), Space.EMPTY, Markers.EMPTY,
                             JRightPadded.build(ternary.getCondition())
-                    ),
-                    JRightPadded.build(blockOf(returnOf(ternary.getTruePart()))),
+                    ).withComments(ternary.getCondition().getComments()),
+                    JRightPadded.build(blockOf(rewriteNestedTernary(returnOf(ternary.getTruePart())))),
                     null
             );
         }
 
-        private static J.Return returnOf(Expression expression) {
-            return new J.Return(Tree.randomId(), Space.EMPTY, Markers.EMPTY, expression);
+        private J.Return returnOf(Expression expression) {
+            return new J.Return(Tree.randomId(), Space.EMPTY, Markers.EMPTY, expression.withPrefix(Space.EMPTY))
+                    .withComments(expression.getComments());
         }
 
         private static J.Block blockOf(Statement... statements) {
             return J.Block.createEmptyBlock().withStatements(Arrays.asList(statements));
+        }
+
+        private static boolean isNestedTernary(final J possibleTernary) {
+            int result = determineNestingLevels(possibleTernary, 0);
+            return result > 1;
+        }
+
+        private static int determineNestingLevels(final J possibleTernary, final int level) {
+            if (!(possibleTernary instanceof J.Ternary)) {
+                return level;
+            }
+            J.Ternary ternary = (J.Ternary) possibleTernary;
+            int truePath = determineNestingLevels(ternary.getTruePart(), level + 1);
+            int falsePath = determineNestingLevels(ternary.getFalsePart(), level + 1);
+            return Math.max(falsePath, truePath);
         }
     }
 }

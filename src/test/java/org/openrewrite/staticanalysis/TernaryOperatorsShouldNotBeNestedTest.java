@@ -137,6 +137,151 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         );
     }
 
+    @Test
+    void doReplaceMultiLevelTernaries() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineSomething(String letter) {
+                  return "a".equals(letter) ? "a" :
+                  "b".equals(letter) ? "b" :
+                  "c".equals(letter) ? "c" :
+                  letter.contains("d") ? letter.startsWith("d") ? letter.equals("d") ? "equals" : "startsWith" : "contains" :
+                  "e".equals(letter) ? "e" :
+                  "f".equals(letter) ? "f" :
+                  "g".equals(letter) ? "g" : "nope";
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String letter) {
+                    if ("a".equals(letter)) {
+                        return "a";
+                    }
+                    if ("b".equals(letter)) {
+                        return "b";
+                    }
+                    if ("c".equals(letter)) {
+                        return "c";
+                    }
+                    if (letter.contains("d")) {
+                        if (letter.startsWith("d")) {
+                            return letter.equals("d") ? "equals" : "startsWith";
+                        }
+                        return "contains";
+                    }
+                    if ("e".equals(letter)) {
+                        return "e";
+                    }
+                    if ("f".equals(letter)) {
+                        return "f";
+                    }
+                    return "g".equals(letter) ? "g" : "nope";
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Comment `dont forget about c` is dropped as it is part of a `before` in leftPad, not sure how to extract that")
+    @Issue("todo")
+    @Test
+    void doReplaceMultiLevelTernariesWithComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineSomething(String letter) {
+                  return "a".equals(letter) ? "a" : //look its a
+                  "b".equals(letter) ? "b" : //b is also here
+                  "c".equals(letter) ? "c" /* dont forget about c */ :
+                  // d is important too
+                  letter.contains("d") ? letter.startsWith("d") ? letter.equals("d") ? "equals" : "startsWith" : "contains" :
+                  "e".equals(letter) ? "e" : //e
+                  "f".equals(letter) ? "f" : //f
+                  "g".equals(letter) ? "g" : "nope"; //and nope if nope
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String letter) {
+                    if ("a".equals(letter)) {
+                        return "a";
+                    }//look its a
+                    if ("b".equals(letter)) {
+                        return "b";
+                    }//b is also here
+                    if ("c".equals(letter)) {
+                        return "c"; /* dont forget about c */
+                    }// d is important too
+                    if (letter.contains("d")) {
+                        if (letter.startsWith("d")) {
+                            return letter.equals("d") ? "equals" : "startsWith";
+                        }
+                        return "contains";
+                    }
+                    if ("e".equals(letter)) {
+                        return "e";
+                    }//e
+                    if ("f".equals(letter)) {
+                        return "f";
+                    }//f
+                    return "g".equals(letter) ? "g" : "nope"; //and nope if nope
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Not yet implemented")
+    @Issue("todo")
+    @Test
+    void doReplaceMultiLevelTernariesWithSwitch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String determineSomething(String letter) {
+                  return "a".equals(letter) ? "a" : //look its a
+                  "b".equals(letter) ? "b" : //b is also here
+                  "c".equals(letter) ? "c" : /* dont forget about c */
+                  // d is important too
+                  "d".equals(letter) ? "d" :
+                  "e".equals(letter) ? "e" : //e
+                  "f".equals(letter) ? "f" : //f
+                  "g".equals(letter) ? "g" : "nope"; //and nope if nope
+                }
+              }
+              """,
+            """
+              class Test {
+                public String determineSomething(String letter) {
+                    return switch(letter) {
+                        case "a" -> "a"; //look its a
+                        case "b" -> "b"; //b is also here
+                        case "c" -> "c"; /* dont forget about c */
+                        // d is important too
+                        case "d" -> "d";
+                        case "e" -> "e"; //e
+                        case "f" -> "f"; //f
+                        case "g" -> "g";
+                        default -> "nope"; //and nope if nope
+                    };
+                }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
     @ExpectedToFail("only directly returned ternaries are taken into account")
     @Test
