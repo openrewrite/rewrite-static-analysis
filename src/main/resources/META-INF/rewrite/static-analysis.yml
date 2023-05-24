@@ -39,7 +39,7 @@ recipeList:
   - org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
   - org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
-  - org.openrewrite.staticanalysis.ShortenFullyQualifiedTypeReferences
+  - org.openrewrite.java.ShortenFullyQualifiedTypeReferences
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
