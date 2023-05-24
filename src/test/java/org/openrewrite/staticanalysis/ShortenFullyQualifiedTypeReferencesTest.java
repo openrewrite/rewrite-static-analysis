@@ -294,6 +294,27 @@ public class ShortenFullyQualifiedTypeReferencesTest implements RewriteTest {
     }
 
     @Test
+    void shortenQualifiedJavaLangTypesWhenAlreadyPresentElsewhere() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  java.lang.String s1;
+                  String s2;
+              }
+              """,
+            """
+              class T {
+                  String s1;
+                  String s2;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void conflictExistingImport() {
         rewriteRun(
           //language=java
