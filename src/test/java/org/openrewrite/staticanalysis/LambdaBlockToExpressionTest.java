@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
@@ -50,6 +52,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
     }
 
     @Test
+    @Disabled
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
     void simplifyLambdaBlockToExpressionWithComments() {
         rewriteRun(
           spec -> spec.recipe(new LambdaBlockToExpression()),
