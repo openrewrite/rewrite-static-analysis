@@ -52,7 +52,6 @@ class LambdaBlockToExpressionTest implements RewriteTest {
     }
 
     @Test
-//    @Disabled
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
     void simplifyLambdaBlockToExpressionWithComments() {
         rewriteRun(
