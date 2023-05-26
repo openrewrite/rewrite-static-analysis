@@ -48,4 +48,31 @@ class LambdaBlockToExpressionTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void simplifyLambdaBlockToExpressionWithComments() {
+        rewriteRun(
+          spec -> spec.recipe(new LambdaBlockToExpression()),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = n -> {
+                      // The buttonType will always be "cancel", even if we pressed one of the entry type buttons
+                      return n + 1;
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = n -> 
+                  // The buttonType will always be "cancel", even if we pressed one of the entry type buttons
+                  n + 1;
+              }
+              """
+          )
+        );
+    }
 }
