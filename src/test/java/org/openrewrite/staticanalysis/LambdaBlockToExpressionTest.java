@@ -52,7 +52,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
     }
 
     @Test
-    @Disabled
+//    @Disabled
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
     void simplifyLambdaBlockToExpressionWithComments() {
         rewriteRun(
@@ -72,8 +72,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
               import java.util.function.Function;
               class Test {
                   Function<Integer, Integer> f = n -> 
-                  // The buttonType will always be "cancel", even if we pressed one of the entry type buttons
-                  n + 1;
+                      // The buttonType will always be "cancel", even if we pressed one of the entry type buttons
+                      n + 1;
               }
               """
           )

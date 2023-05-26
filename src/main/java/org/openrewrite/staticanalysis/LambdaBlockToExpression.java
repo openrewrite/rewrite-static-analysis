@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.SearchResult;
 
@@ -53,7 +54,12 @@ public class LambdaBlockToExpression extends Recipe {
                         if (lambda.getBody() instanceof J.Block) {
                             List<Statement> statements = ((J.Block) lambda.getBody()).getStatements();
                             if (statements.size() == 1 && statements.get(0) instanceof J.Return) {
-                                return l.withBody(((J.Return) statements.get(0)).getExpression());
+                                Space prefix = statements.get(0).getPrefix();
+                                if (prefix.getComments().isEmpty()) {
+                                    return l.withBody(((J.Return) statements.get(0)).getExpression());
+                                } else {
+                                    return l.withBody(((J.Return) statements.get(0)).getExpression().withPrefix(prefix));
+                                }
                             }
                         }
                         return l;
