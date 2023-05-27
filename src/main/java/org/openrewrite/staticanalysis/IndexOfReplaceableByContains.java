@@ -63,8 +63,8 @@ public class IndexOfReplaceableByContains extends Recipe {
     }
 
     private static class IndexOfReplaceableByContainsVisitor extends JavaVisitor<ExecutionContext> {
-        private final JavaTemplate stringContains = JavaTemplate.builder(this::getCursor, "#{any(java.lang.String)}.contains(#{any(java.lang.String)})").build();
-        private final JavaTemplate listContains = JavaTemplate.builder(this::getCursor, "#{any(java.util.List)}.contains(#{any(java.lang.Object)})").build();
+        private final JavaTemplate stringContains = JavaTemplate.builder("#{any(java.lang.String)}.contains(#{any(java.lang.String)})").build();
+        private final JavaTemplate listContains = JavaTemplate.builder("#{any(java.util.List)}.contains(#{any(java.lang.Object)})").build();
 
         @Override
         public J visitBinary(J.Binary binary, ExecutionContext ctx) {
@@ -79,7 +79,7 @@ public class IndexOfReplaceableByContains extends Recipe {
                         boolean isGreaterThanOrEqualToZero = asBinary.getOperator() == J.Binary.Type.GreaterThanOrEqual && "0".equals(valueSource);
                         if (isGreaterThanNegativeOne || isGreaterThanOrEqualToZero) {
                             j = mi.withTemplate(STRING_INDEX_MATCHER.matches(mi) ? stringContains : listContains,
-                                    mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0)).withPrefix(asBinary.getPrefix());
+                                    getCursor(), mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0)).withPrefix(asBinary.getPrefix());
                         }
                     }
                 }

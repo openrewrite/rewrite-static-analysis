@@ -67,10 +67,11 @@ public class UseSystemLineSeparator extends Recipe {
 
                     if (method.getSelect() != null) {
                         final JavaTemplate template = JavaTemplate
-                                .builder(this::getCursor, "#{any(java.lang.System)}.lineSeparator()")
+                                .builder("#{any(java.lang.System)}.lineSeparator()")
                                 .build();
 
                         return method.withTemplate(template,
+                                getCursor(),
                                 method.getCoordinates().replace(),
                                 method.getSelect());
                     } else {
@@ -79,11 +80,12 @@ public class UseSystemLineSeparator extends Recipe {
                         maybeAddImport("java.lang.System", "lineSeparator");
 
                         final JavaTemplate template = JavaTemplate
-                                .builder(this::getCursor, "lineSeparator()")
+                                .builder("lineSeparator()")
                                 .staticImports("java.lang.System.lineSeparator")
                                 .build();
 
                         return method.withTemplate(template,
+                                getCursor(),
                                 method.getCoordinates()
                                         .replace());
                     }

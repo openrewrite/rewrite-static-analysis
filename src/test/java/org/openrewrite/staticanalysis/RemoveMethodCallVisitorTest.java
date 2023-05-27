@@ -65,7 +65,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
     }
 
     @Test
-    void assertTrueFalseIsNotremoved() {
+    void assertTrueFalseIsNotRemoved() {
         rewriteRun(
           //language=java
           java(

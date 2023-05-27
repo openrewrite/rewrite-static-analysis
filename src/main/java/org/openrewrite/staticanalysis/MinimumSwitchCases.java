@@ -63,47 +63,47 @@ public class MinimumSwitchCases extends Recipe {
     @Override
     public JavaVisitor<ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
-            final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else if(#{any()} == #{any()}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseIfString = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseIfString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
                     "} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseIfEnum = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseIfEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
                     "} else if(#{any()} == #{}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElsePrimitive = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElsePrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseString = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
                     "} else {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifElseEnum = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifElseEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
                     "} else {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifPrimitive = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifString = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
-            final JavaTemplate ifEnum = JavaTemplate.builder(this::getCursor, "" +
+            final JavaTemplate ifEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
-                    "}").build();
+                    "}").context(this::getCursor).build();
 
             @Override
             public J visitBlock(J.Block block, ExecutionContext executionContext) {
@@ -126,9 +126,9 @@ public class MinimumSwitchCases extends Recipe {
             }
 
             @Override
-            public J visitSwitch(J.Switch switzh, ExecutionContext ctx) {
-                if (switzh.getCases().getStatements().size() < 3) {
-                    J.Switch sortedSwitch = (J.Switch) new DefaultComesLast().getVisitor().visit(switzh, ctx);
+            public J visitSwitch(J.Switch switch_, ExecutionContext ctx) {
+                if (switch_.getCases().getStatements().size() < 3) {
+                    J.Switch sortedSwitch = (J.Switch) new DefaultComesLast().getVisitor().visit(switch_, ctx);
                     assert sortedSwitch != null;
 
                     J.Case[] cases = new J.Case[2];
@@ -140,12 +140,12 @@ public class MinimumSwitchCases extends Recipe {
                             J.Case aCase = (J.Case) statement;
                             if (aCase.getType() == J.Case.Type.Rule) {
                                 if (aCase.getExpressions().size() > 1 || !(aCase.getBody() instanceof Statement)) {
-                                    return super.visitSwitch(switzh, ctx);
+                                    return super.visitSwitch(switch_, ctx);
                                 }
                             } else {
                                 Statement lastStatement = aCase.getStatements().isEmpty() ? null : aCase.getStatements().get(aCase.getStatements().size() - 1);
                                 if (j != statements.size() - 1 && !(lastStatement instanceof J.Break || lastStatement instanceof J.Return)) {
-                                    return super.visitSwitch(switzh, ctx);
+                                    return super.visitSwitch(switch_, ctx);
                                 }
                             }
                             cases[i++] = aCase;
@@ -153,7 +153,7 @@ public class MinimumSwitchCases extends Recipe {
                     }
 
                     if (i == 0) {
-                        return super.visitSwitch(switzh, ctx);
+                        return super.visitSwitch(switch_, ctx);
                     }
 
                     try {
@@ -162,46 +162,46 @@ public class MinimumSwitchCases extends Recipe {
                         if (TypeUtils.isString(tree.getType())) {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
-                                    return switzh.withMarkers(switzh.getMarkers().add(new DefaultOnly()));
+                                    return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                                 } else {
-                                    generatedIf = switzh.withTemplate(ifString, switzh.getCoordinates().replace(),
+                                    generatedIf = switch_.withTemplate(ifString, getCursor(), switch_.getCoordinates().replace(),
                                             cases[0].getPattern(), tree);
                                 }
                             } else if (isDefault(cases[1])) {
-                                generatedIf = switzh.withTemplate(ifElseString, switzh.getCoordinates().replace(),
+                                generatedIf = switch_.withTemplate(ifElseString, getCursor(), switch_.getCoordinates().replace(),
                                         cases[0].getPattern(), tree);
                             } else {
-                                generatedIf = switzh.withTemplate(ifElseIfString, switzh.getCoordinates().replace(),
+                                generatedIf = switch_.withTemplate(ifElseIfString, getCursor(), switch_.getCoordinates().replace(),
                                         cases[0].getPattern(), tree, cases[1].getPattern(), tree);
                             }
-                        } else if (switchesOnEnum(switzh)) {
+                        } else if (switchesOnEnum(switch_)) {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
-                                    return switzh.withMarkers(switzh.getMarkers().add(new DefaultOnly()));
+                                    return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                                 } else {
-                                    generatedIf = switzh.withTemplate(ifEnum, switzh.getCoordinates().replace(),
+                                    generatedIf = switch_.withTemplate(ifEnum, getCursor(), switch_.getCoordinates().replace(),
                                             tree, enumIdentToFieldAccessString(cases[0].getPattern()));
                                 }
                             } else if (isDefault(cases[1])) {
-                                generatedIf = switzh.withTemplate(ifElseEnum, switzh.getCoordinates().replace(),
+                                generatedIf = switch_.withTemplate(ifElseEnum, getCursor(), switch_.getCoordinates().replace(),
                                         tree, enumIdentToFieldAccessString(cases[0].getPattern()));
                             } else {
-                                generatedIf = switzh.withTemplate(ifElseIfEnum, switzh.getCoordinates().replace(),
+                                generatedIf = switch_.withTemplate(ifElseIfEnum, getCursor(), switch_.getCoordinates().replace(),
                                         tree, enumIdentToFieldAccessString(cases[0].getPattern()), tree, enumIdentToFieldAccessString(cases[1].getPattern()));
                             }
                         } else {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
-                                    return switzh.withMarkers(switzh.getMarkers().add(new DefaultOnly()));
+                                    return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                                 } else {
-                                    generatedIf = switzh.withTemplate(ifPrimitive, switzh.getCoordinates().replace(),
+                                    generatedIf = switch_.withTemplate(ifPrimitive, getCursor(), switch_.getCoordinates().replace(),
                                             tree, cases[0].getPattern());
                                 }
                             } else if (isDefault(cases[1])) {
-                                generatedIf = switzh.withTemplate(ifElsePrimitive, switzh.getCoordinates().replace(),
+                                generatedIf = switch_.withTemplate(ifElsePrimitive, getCursor(), switch_.getCoordinates().replace(),
                                         tree, cases[0].getPattern());
                             } else {
-                                generatedIf = switzh.withTemplate(ifElseIfPrimitive, switzh.getCoordinates().replace(),
+                                generatedIf = switch_.withTemplate(ifElseIfPrimitive, getCursor(), switch_.getCoordinates().replace(),
                                         tree, cases[0].getPattern(), tree, cases[1].getPattern());
                             }
                         }
@@ -228,11 +228,11 @@ public class MinimumSwitchCases extends Recipe {
                         return autoFormat(generatedIf, ctx);
                     } catch (RecipeRunException e) {
                         // JavaTemplate has problems on some Groovy files, don't currently have a way to adapt it appropriately
-                        return switzh;
+                        return switch_;
                     }
                 }
 
-                return super.visitSwitch(switzh, ctx);
+                return super.visitSwitch(switch_, ctx);
             }
 
             private List<Statement> getStatements(J.Case aCase) {
@@ -247,12 +247,12 @@ public class MinimumSwitchCases extends Recipe {
                 return statements;
             }
 
-            private boolean isDefault(J.Case caze) {
-                return caze.getPattern() instanceof J.Identifier && ((J.Identifier) caze.getPattern()).getSimpleName().equals("default");
+            private boolean isDefault(J.Case case_) {
+                return case_.getPattern() instanceof J.Identifier && ((J.Identifier) case_.getPattern()).getSimpleName().equals("default");
             }
 
-            private boolean switchesOnEnum(J.Switch switzh) {
-                JavaType selectorType = switzh.getSelector().getTree().getType();
+            private boolean switchesOnEnum(J.Switch switch_) {
+                JavaType selectorType = switch_.getSelector().getTree().getType();
                 return selectorType instanceof JavaType.Class
                         && ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
             }

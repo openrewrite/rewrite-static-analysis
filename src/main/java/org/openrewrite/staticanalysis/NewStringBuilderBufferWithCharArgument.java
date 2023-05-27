@@ -57,7 +57,7 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         TreeVisitor<?, ExecutionContext> condition = Preconditions.or(new UsesType<>("java.lang.StringBuilder", true), new UsesType<>("java.lang.StringBuffer", true));
         return Preconditions.check(condition, new JavaIsoVisitor<ExecutionContext>() {
-            private final JavaTemplate toString = JavaTemplate.builder(this::getCursor, "String.valueOf(#{any()})").build();
+            private final JavaTemplate toString = JavaTemplate.builder("String.valueOf(#{any()})").build();
 
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
@@ -75,7 +75,7 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                                 }
                                 return l;
                             } else {
-                                return arg.withTemplate(toString, arg.getCoordinates().replace(), arg);
+                                return arg.withTemplate(toString, getCursor(), arg.getCoordinates().replace(), arg);
                             }
                         }));
                     }

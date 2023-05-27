@@ -43,8 +43,9 @@ public class UseForEachRemoveInsteadOfSetRemoveAll extends Recipe {
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
                 if (removeAll.matches(mi) && !returnValueIsUsed()) {
-                    mi = mi.withTemplate(JavaTemplate.builder(() -> getCursor().getParentOrThrow(), "#{any(java.util.Collection)}.forEach(#{any(java.util.Set)}::remove)").build(),
-                            mi.getCoordinates().replace(), mi.getArguments().get(0), mi.getSelect());
+                    mi = mi.withTemplate(JavaTemplate.builder("#{any(java.util.Collection)}.forEach(#{any(java.util.Set)}::remove)")
+                                    .build(),
+                            getCursor(), mi.getCoordinates().replace(), mi.getArguments().get(0), mi.getSelect());
                 }
                 return mi;
             }
@@ -54,13 +55,13 @@ public class UseForEachRemoveInsteadOfSetRemoveAll extends Recipe {
                 while (cIterator.hasNext()) {
                     Cursor p = cIterator.next();
                     if (p.getValue() instanceof J.ClassDeclaration
-                        || p.getValue() instanceof J.Block
-                        || p.getValue() instanceof J.Lambda) {
+                            || p.getValue() instanceof J.Block
+                            || p.getValue() instanceof J.Lambda) {
                         return false;
                     } else if (p.getValue() instanceof J.ControlParentheses
-                               || p.getValue() instanceof J.Return
-                               || p.getValue() instanceof J.VariableDeclarations
-                               || p.getValue() instanceof J.Assignment) {
+                            || p.getValue() instanceof J.Return
+                            || p.getValue() instanceof J.VariableDeclarations
+                            || p.getValue() instanceof J.Assignment) {
                         return true;
                     }
                 }

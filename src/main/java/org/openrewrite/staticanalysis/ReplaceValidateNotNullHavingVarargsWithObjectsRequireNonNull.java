@@ -66,9 +66,11 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 maybeAddImport("java.util.Objects");
 
                 mi = mi.withTemplate(
-                        JavaTemplate.builder(this::getCursor, template)
+                        JavaTemplate.builder(template)
+                                .context(getCursor())
                                 .imports("java.util.Objects")
                                 .build(),
+                        getCursor(),
                         mi.getCoordinates().replace(),
                         arguments.toArray());
 

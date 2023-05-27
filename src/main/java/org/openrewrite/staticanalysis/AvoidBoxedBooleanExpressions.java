@@ -60,8 +60,8 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
                 if (TypeUtils.isOfClassType(e.getType(), "java.lang.Boolean")) {
                     if (isControlExpression(expression)) {
                         return e.withTemplate(
-                                JavaTemplate.builder(this::getCursor,
-                                        "Boolean.TRUE.equals(#{any(java.lang.Boolean)})").build(),
+                                JavaTemplate.builder("Boolean.TRUE.equals(#{any(java.lang.Boolean)})").build(),
+                                getCursor(),
                                 e.getCoordinates().replace(),
                                 e
                         );
@@ -75,8 +75,8 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
                 J.Unary un = (J.Unary) super.visitUnary(unary, executionContext);
                 if (J.Unary.Type.Not == un.getOperator() && TypeUtils.isOfClassType(un.getExpression().getType(), "java.lang.Boolean")) {
                     return un.withTemplate(
-                            JavaTemplate.builder(this::getCursor,
-                                    "Boolean.FALSE.equals(#{any(java.lang.Boolean)})").build(),
+                            JavaTemplate.builder("Boolean.FALSE.equals(#{any(java.lang.Boolean)})").build(),
+                            getCursor(),
                             un.getCoordinates().replace(),
                             un.getExpression()
                     );

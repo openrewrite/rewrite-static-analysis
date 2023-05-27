@@ -52,7 +52,8 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(GET_BYTES), new JavaIsoVisitor<ExecutionContext>() {
             final JavaTemplate WITH_ENCODING = JavaTemplate
-                    .builder(this::getCursor, "getBytes(StandardCharsets.#{})")
+                    .builder("getBytes(StandardCharsets.#{})")
+                    .context(this::getCursor)
                     .imports("java.nio.charset.StandardCharsets")
                     .build();
 
@@ -61,7 +62,7 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 if (GET_BYTES.matches(method)) {
                     maybeAddImport("java.nio.charset.StandardCharsets");
-                    m = m.withTemplate(WITH_ENCODING, method.getCoordinates().replaceMethod(),
+                    m = m.withTemplate(WITH_ENCODING, getCursor(), method.getCoordinates().replaceMethod(),
                             encoding == null ? "UTF_8" : encoding);
                 }
                 return m;

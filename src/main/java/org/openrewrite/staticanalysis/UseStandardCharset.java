@@ -90,8 +90,10 @@ public class UseStandardCharset extends Recipe {
                         }
 
                         if (!StringUtils.isBlank(standardName)) {
-                            return m.withTemplate(JavaTemplate.builder(this::getCursor, "StandardCharsets." + standardName)
-                                    .imports("java.nio.charset.StandardCharsets").build(), m.getCoordinates().replace());
+                            return m.withTemplate(JavaTemplate.builder("StandardCharsets." + standardName)
+                                            .imports("java.nio.charset.StandardCharsets").build(),
+                                    getCursor(),
+                                    m.getCoordinates().replace());
                         }
                     }
                 }
