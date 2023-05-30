@@ -679,6 +679,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
+
         @Test
         void doReplaceNestedOrTernaryPrimitiveNotEqualsCondition() {
             rewriteRun(
@@ -1275,6 +1276,32 @@ class TernaryOperatorsShouldNotBeNestedTest {
                             case "b" -> M.b();
                             default -> M.nope();
                         };
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryWithNonConstantEqualsWithIf() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                        return a.equals("a".toString()) ? "a" : "b".equals(a) ? "b" : "nope";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                        if (a.equals("a".toString())) {
+                            return "a";
+                        }
+                        return "b".equals(a) ? "b" : "nope";
                     }
                   }
                   """

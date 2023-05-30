@@ -298,17 +298,24 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 if (!inv.getSimpleName().equals("equals")) {
                     return Optional.empty();
                 }
-                if (isVariable(inv.getSelect())) {
-                    result = (J.Identifier) inv.getSelect();
-                }
-                if (inv.getArguments().size() == 1 && inv.getArguments().get(0) instanceof J.Identifier) {
-                    result = (J.Identifier) inv.getArguments().get(0);
-                }
                 if (isObjectsEquals(inv)) {
                     //one has to be constant, other not
                     J first = inv.getArguments().get(0);
                     J second = inv.getArguments().get(1);
                     result = xorVariable(first, second);
+                } else if (inv.getArguments().size() == 1) {
+                    J other = null;
+                    if (isVariable(inv.getSelect())) {
+                        result = (J.Identifier) inv.getSelect();
+                        other = inv.getArguments().get(0);
+                    }
+                    if (inv.getArguments().get(0) instanceof J.Identifier) {
+                        result = (J.Identifier) inv.getArguments().get(0);
+                        other = inv.getSelect();
+                    }
+                    if(!isConstant(other)){
+                        return Optional.empty();
+                    }
                 }
             } else if (isEqualsBinary(ternary.getCondition())) {
                 J.Binary bin = (J.Binary) ternary.getCondition();
@@ -341,6 +348,23 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 return false;
             }
             J.Identifier identifier = (J.Identifier) maybeVariable;
+            if (identifier.getFieldType() == null) {
+                return false;
+            }
+            return !identifier.getFieldType().hasFlags(Flag.Final) || !identifier.getFieldType().hasFlags(Flag.Static);
+        }
+
+        private static boolean isConstant(@Nullable J maybeConstant) {
+            if (maybeConstant == null) {
+                return false;
+            }
+            if (maybeConstant instanceof J.Literal) {
+                return true;
+            }
+            if (!(maybeConstant instanceof J.Identifier)) {
+                return false;
+            }
+            J.Identifier identifier = (J.Identifier) maybeConstant;
             if (identifier.getFieldType() == null) {
                 return false;
             }
