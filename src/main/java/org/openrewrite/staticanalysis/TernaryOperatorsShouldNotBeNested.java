@@ -27,13 +27,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jetbrains.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.format.AutoFormat;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -79,15 +79,15 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                         .findFirst(JavaVersion.class)
                         .filter(javaVersion -> javaVersion.getMajorVersion() >= 14)
                         .isPresent()) {
-                    doAfterVisit(new NestedTernaryToSwitchExpressionVisitor());
+                    doAfterVisit(new UseSwitchExpressionVisitor());
                 }
-                doAfterVisit(new NestedTernaryToIfVisitor());
+                doAfterVisit(new UseIfVisitor());
                 return super.visitCompilationUnit(cu, executionContext);
             }
         };
     }
 
-    private static class NestedTernaryToIfVisitor extends JavaVisitor<ExecutionContext> {
+    private static class UseIfVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
         public J visitLambda(final J.Lambda lambda, final ExecutionContext executionContext) {
@@ -165,31 +165,39 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     }
 
 
-    static class NestedTernaryToSwitchExpressionVisitor extends JavaVisitor<ExecutionContext> {
+    static class UseSwitchExpressionVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
         public J visitTernary(final J.Ternary ternary, final ExecutionContext executionContext) {
             return findConditionIdentifier(ternary).map(switchVar -> {
-                        List<J.Ternary> nestList = new ArrayList<>();
-                        J.Ternary next = ternary;
-                        while (next.getFalsePart() instanceof J.Ternary) {
-                            if (next.getTruePart() instanceof J.Ternary) {
-                                return null;
-                            }
-                            if (!findConditionIdentifier(next).filter(found -> found.equals(switchVar)).isPresent()) {
-                                return null;
-                            }
-                            J.Ternary nested = (J.Ternary) next.getFalsePart();
-                            nestList.add(next);
-                            next = nested;
-                        }
-                        nestList.add(next);
+                        List<J.Ternary> nestList = findNestedTernaries(ternary, switchVar);
+
                         if (nestList.size() < 2) {
                             return null;
                         }
                         return autoFormat(toSwitch(switchVar, nestList), executionContext);
                     }).map(J.class::cast)
                     .orElseGet(() -> super.visitTernary(ternary, executionContext));
+        }
+
+        private List<J.Ternary> findNestedTernaries(final J.Ternary ternary, final J.Identifier switchVar) {
+            List<J.Ternary> nestList = new ArrayList<>();
+            J.Ternary next = ternary;
+            while (next.getFalsePart() instanceof J.Ternary) {
+                if (next.getTruePart() instanceof J.Ternary) {
+                    //todo this could become complicated if this is also nested. Lets skip it for now?
+                    // maybe we can just leave a (nested) ternary here though.
+                    return Collections.emptyList();
+                }
+                J.Ternary nested = (J.Ternary) next.getFalsePart();
+                if (!findConditionIdentifier(nested).filter(found -> found.equals(switchVar)).isPresent()) {
+                    return Collections.emptyList();
+                }
+                nestList.add(next);
+                next = nested;
+            }
+            nestList.add(next);
+            return nestList;
         }
 
         private J.SwitchExpression toSwitch(final J.Identifier switchVar, final List<J.Ternary> nestList) {

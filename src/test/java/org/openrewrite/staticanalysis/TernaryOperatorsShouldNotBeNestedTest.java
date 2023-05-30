@@ -609,21 +609,21 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
               java(
                 """
                   class Test {
-                    public String determineSomething(String a, String b, String c) {
-                        return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "c".equals(b) ? "c" :"nope";
+                    public String determineSomething(String aString, String bString, String cString) {
+                        return "a".equals(aString) ? "a" : "b".equals(bString) ? "b" : "c".equals(cString) ? "c" :"nope";
                     }
                   }
                   """,
                 """
                   class Test {
-                    public String determineSomething(String a, String b, String c) {
-                        if ("a".equals(a)) {
+                    public String determineSomething(String aString, String bString, String cString) {
+                        if ("a".equals(aString)) {
                             return "a";
                         }
-                        if ("b".equals(b)) {
+                        if ("b".equals(bString)) {
                             return "b";
                         }
-                        return "c".equals(b) ? "c" : "nope";
+                        return "c".equals(cString) ? "c" : "nope";
                     }
                   }
                   """,
