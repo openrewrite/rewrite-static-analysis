@@ -38,6 +38,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JContainer;
 import org.openrewrite.java.tree.JRightPadded;
@@ -340,7 +341,10 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 return false;
             }
             J.Identifier identifier = (J.Identifier) maybeVariable;
-            return identifier.getFieldType() != null;
+            if (identifier.getFieldType() == null) {
+                return false;
+            }
+            return !identifier.getFieldType().hasFlags(Flag.Final) || !identifier.getFieldType().hasFlags(Flag.Static);
         }
 
         private static boolean isObjectsEquals(J.MethodInvocation inv) {

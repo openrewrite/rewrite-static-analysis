@@ -649,6 +649,37 @@ class TernaryOperatorsShouldNotBeNestedTest {
         }
 
         @Test
+        void doReplaceNestedOrTernaryPrimitiveConditionWithConstants() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    private static final int ONE = 1;
+                    private static final int TWO = 2;
+                    public String determineSomething(int a) {
+                        return a == ONE ? "one" : a == TWO ? "two" : "other";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    private static final int ONE = 1;
+                    private static final int TWO = 2;
+                    public String determineSomething(int a) {
+                        return switch (a) {
+                            case ONE -> "one";
+                            case TWO -> "two";
+                            default -> "other";
+                        };
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void doReplaceNestedOrTernaryPrimitiveNotEqualsCondition() {
             rewriteRun(
               //language=java
