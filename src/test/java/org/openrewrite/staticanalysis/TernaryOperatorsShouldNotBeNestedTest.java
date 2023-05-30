@@ -87,6 +87,60 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
         }
 
         @Test
+        void doReplaceNestedOrTernaryPrimitiveCondition() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(int a, int b) {
+                      return a == 1 ? "one" : b == 2 ? "two" : "other";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(int a, int b) {
+                        if (a == 1) {
+                            return "one";
+                        }
+                        return b == 2 ? "two" : "other";
+                    }
+                  }
+                  """,
+                JAVA_11
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryPrimitiveConditionInverted() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(int a, int b) {
+                      return 1 == a ? "one" : 2 == b ? "two" : "other";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(int a, int b) {
+                        if (1 == a) {
+                            return "one";
+                        }
+                        return 2 == b ? "two" : "other";
+                    }
+                  }
+                  """,
+                JAVA_11
+              )
+            );
+        }
+
+        @Test
         void doReplaceNestedOrTernaryRecursive() {
             rewriteRun(
               //language=java
@@ -594,6 +648,62 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           case "b" -> "b";
                           default -> "nope";
                       };
+                    }
+                  }
+                  """,
+                JAVA_17
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryPrimitiveCondition() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(int a) {
+                        return a == 1 ? "one" : a == 2 ? "two" : "other";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(int a) {
+                        return switch (a) {
+                            case 1 -> "one";
+                            case 2 -> "two";
+                            default -> "other";
+                        };
+                    }
+                  }
+                  """,
+                JAVA_17
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryPrimitiveConditionInverted() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(int a) {
+                        return 1 == a ? "one" : 2 == a ? "two" : "other";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(int a) {
+                        return switch (a) {
+                            case 1 -> "one";
+                            case 2 -> "two";
+                            default -> "other";
+                        };
                     }
                   }
                   """,

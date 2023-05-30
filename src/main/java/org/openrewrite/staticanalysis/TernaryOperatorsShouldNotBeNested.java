@@ -234,17 +234,30 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         }
 
         private J.Case toCase(final J.Identifier switchVar, final J.Ternary ternary) {
-            //todo could be something else
-            J.MethodInvocation inv = ((J.MethodInvocation) ternary.getCondition());
             Expression compare;
-            if (isObjectsEquals(inv)) {
-                doAfterVisit(new RemoveImport<>("java.util.Objects"));
-                compare = isVariable(inv.getArguments().get(0)) ? inv.getArguments().get(1) : inv.getArguments().get(0);
-            } else {
-                compare = isEqualVariable(switchVar, inv.getSelect())
-                        ? inv.getArguments().get(0)
-                        : inv.getSelect();
+            if (ternary.getCondition() instanceof J.MethodInvocation) {
+                J.MethodInvocation inv = ((J.MethodInvocation) ternary.getCondition());
+                if (isObjectsEquals(inv)) {
+                    doAfterVisit(new RemoveImport<>("java.util.Objects"));
+                    compare = isVariable(inv.getArguments().get(0))
+                            ? inv.getArguments().get(1)
+                            : inv.getArguments().get(0);
+                } else {
+                    compare = isEqualVariable(switchVar, inv.getSelect())
+                            ? inv.getArguments().get(0)
+                            : inv.getSelect();
+                }
             }
+            else if (ternary.getCondition() instanceof J.Binary) {
+                J.Binary bin = ((J.Binary) ternary.getCondition());
+                compare = isEqualVariable(switchVar, bin.getLeft())
+                        ? bin.getRight()
+                        : bin.getLeft();
+            }
+            else {
+                throw new IllegalArgumentException("Only J.Binary or J.MethodInvocation are expected as ternary conditions when creating a switch case");
+            }
+
             return new J.Case(
                     Tree.randomId(),
                     ternary.getPrefix().withWhitespace(" "),
@@ -279,36 +292,47 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         }
 
         private Optional<J.Identifier> findConditionIdentifier(final J.Ternary ternary) {
-            if (!(ternary.getCondition() instanceof J.MethodInvocation)) {
-                return Optional.empty();
-            }
-            J.MethodInvocation inv = (J.MethodInvocation) ternary.getCondition();
-            //todo get a if inv is ~like~ "a".equals(a) or a.equals("a") or Object.equals(a,"a") or Object.equals("a",a)
-            if (!inv.getSimpleName().equals("equals")) {
-                return Optional.empty();
-            }
             J.Identifier result = null;
-            if (isVariable(inv.getSelect())) {
-                result = (J.Identifier) inv.getSelect();
-            }
-            if (inv.getArguments().size() == 1 && inv.getArguments().get(0) instanceof J.Identifier) {
-                result = (J.Identifier) inv.getArguments().get(0);
-            }
-            if (isObjectsEquals(inv)) {
-                //one has to be constant, other not
-                J first = inv.getArguments().get(0);
-                J second = inv.getArguments().get(1);
-                if (isVariable(first) && isVariable(second)) {
+            if (ternary.getCondition() instanceof J.MethodInvocation) {
+                J.MethodInvocation inv = (J.MethodInvocation) ternary.getCondition();
+                //todo get a if inv is ~like~ "a".equals(a) or a.equals("a") or Object.equals(a,"a") or Object.equals("a",a)
+                if (!inv.getSimpleName().equals("equals")) {
                     return Optional.empty();
                 }
-                if (isVariable(first)) {
-                    result = (J.Identifier) first;
+                if (isVariable(inv.getSelect())) {
+                    result = (J.Identifier) inv.getSelect();
                 }
-                if (isVariable(second)) {
-                    result = (J.Identifier) second;
+                if (inv.getArguments().size() == 1 && inv.getArguments().get(0) instanceof J.Identifier) {
+                    result = (J.Identifier) inv.getArguments().get(0);
+                }
+                if (isObjectsEquals(inv)) {
+                    //one has to be constant, other not
+                    J first = inv.getArguments().get(0);
+                    J second = inv.getArguments().get(1);
+                    result = xorVariable(first, second);
                 }
             }
+            if (ternary.getCondition() instanceof J.Binary) {
+                J.Binary bin = (J.Binary) ternary.getCondition();
+                result = xorVariable(bin.getLeft(), bin.getRight());
+            }
             return Optional.ofNullable(result);
+
+        }
+
+        @Nullable
+        private static J.Identifier xorVariable(J first, J second) {
+            J.Identifier result = null;
+            if (isVariable(first) && isVariable(second)) {
+                return null;
+            }
+            if (isVariable(first)) {
+                result = (J.Identifier) first;
+            }
+            if (isVariable(second)) {
+                result = (J.Identifier) second;
+            }
+            return result;
         }
 
         private static boolean isVariable(@Nullable J maybeVariable) {
