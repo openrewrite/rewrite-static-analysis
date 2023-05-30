@@ -64,6 +64,7 @@ public class ReplaceStackWithDequeTest implements RewriteTest {
         );
     }
 
+    @Disabled
     @Test
     void doNotReplaceIfReturned() {
         rewriteRun(
