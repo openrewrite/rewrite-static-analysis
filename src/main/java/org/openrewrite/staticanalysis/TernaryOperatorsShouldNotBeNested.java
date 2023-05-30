@@ -22,25 +22,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jetbrains.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.RemoveImport;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JContainer;
 import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 
@@ -171,7 +175,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         public J visitTernary(final J.Ternary ternary, final ExecutionContext executionContext) {
             return findConditionIdentifier(ternary).map(switchVar -> {
                         List<J.Ternary> nestList = findNestedTernaries(ternary, switchVar);
-
                         if (nestList.size() < 2) {
                             return null;
                         }
@@ -190,7 +193,9 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     return Collections.emptyList();
                 }
                 J.Ternary nested = (J.Ternary) next.getFalsePart();
-                if (!findConditionIdentifier(nested).filter(found -> found.equals(switchVar)).isPresent()) {
+                if (!findConditionIdentifier(nested)
+                        .filter(found -> isEqualVariable(switchVar, found))
+                        .isPresent()) {
                     return Collections.emptyList();
                 }
                 nestList.add(next);
@@ -200,18 +205,25 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             return nestList;
         }
 
+        private static boolean isEqualVariable(final J.Identifier switchVar, @Nullable final J found) {
+            if (!(found instanceof J.Identifier)) {
+                return false;
+            }
+            J.Identifier foundVar = (J.Identifier) found;
+            return Objects.equals(foundVar.getFieldType(), switchVar.getFieldType());
+        }
+
         private J.SwitchExpression toSwitch(final J.Identifier switchVar, final List<J.Ternary> nestList) {
-            J first = nestList.get(0);
             J.Ternary last = nestList.get(nestList.size() - 1);
             return new J.SwitchExpression(
                     Tree.randomId(),
-                    first.getPrefix(),
-                    first.getMarkers(),
+                    Space.SINGLE_SPACE,
+                    Markers.EMPTY,
                     new J.ControlParentheses<>(
                             Tree.randomId(),
                             switchVar.getPrefix().withWhitespace(" "),
                             switchVar.getMarkers(),
-                            JRightPadded.build(switchVar)
+                            JRightPadded.build(switchVar.withPrefix(Space.EMPTY))
                     ),
                     blockOf(Stream.concat(
                             nestList.stream().map(ternary -> toCase(switchVar, ternary)),
@@ -224,7 +236,15 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         private J.Case toCase(final J.Identifier switchVar, final J.Ternary ternary) {
             //todo could be something else
             J.MethodInvocation inv = ((J.MethodInvocation) ternary.getCondition());
-            Expression compare = inv.getSelect() == switchVar ? inv.getArguments().get(0) : inv.getSelect();
+            Expression compare;
+            if (isObjectsEquals(inv)) {
+                doAfterVisit(new RemoveImport<>("java.util.Objects"));
+                compare = isVariable(inv.getArguments().get(0)) ? inv.getArguments().get(1) : inv.getArguments().get(0);
+            } else {
+                compare = isEqualVariable(switchVar, inv.getSelect())
+                        ? inv.getArguments().get(0)
+                        : inv.getSelect();
+            }
             return new J.Case(
                     Tree.randomId(),
                     ternary.getPrefix().withWhitespace(" "),
@@ -268,13 +288,47 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 return Optional.empty();
             }
             J.Identifier result = null;
-            if (inv.getSelect() instanceof J.Identifier) {
+            if (isVariable(inv.getSelect())) {
                 result = (J.Identifier) inv.getSelect();
             }
             if (inv.getArguments().size() == 1 && inv.getArguments().get(0) instanceof J.Identifier) {
                 result = (J.Identifier) inv.getArguments().get(0);
             }
+            if (isObjectsEquals(inv)) {
+                //one has to be constant, other not
+                J first = inv.getArguments().get(0);
+                J second = inv.getArguments().get(1);
+                if (isVariable(first) && isVariable(second)) {
+                    return Optional.empty();
+                }
+                if (isVariable(first)) {
+                    result = (J.Identifier) first;
+                }
+                if (isVariable(second)) {
+                    result = (J.Identifier) second;
+                }
+            }
             return Optional.ofNullable(result);
+        }
+
+        private static boolean isVariable(@Nullable J maybeVariable) {
+            if (maybeVariable == null) {
+                return false;
+            }
+            if (!(maybeVariable instanceof J.Identifier)) {
+                return false;
+            }
+            J.Identifier identifier = (J.Identifier) maybeVariable;
+            return identifier.getFieldType() != null;
+        }
+
+        private static boolean isObjectsEquals(J.MethodInvocation inv) {
+            if (inv.getSelect() instanceof J.Identifier) {
+                J.Identifier maybeObjects = (J.Identifier) inv.getSelect();
+                boolean isObjects = TypeUtils.isOfType(maybeObjects.getType(), JavaType.buildType("java.util.Objects"));
+                return isObjects && "equals".equals(inv.getSimpleName());
+            }
+            return false;
         }
     }
 

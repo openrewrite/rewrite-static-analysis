@@ -582,7 +582,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                 """
                   class Test {
                     public String determineSomething(String a, String b) {
-                      return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                      return "a".equals(a) ? "a" : "b".equals(a) ? "b" : "nope";
                     }
                   }
                   """,
@@ -592,6 +592,92 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       return switch (a) {
                           case "a" -> "a";
                           case "b" -> "b";
+                          default -> "nope";
+                      };
+                    }
+                  }
+                  """,
+                JAVA_17
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryWithSwitchExpressionInvertedEquals() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return a.equals("a") ? "a" : a.equals("b") ? b : "nope";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return switch (a) {
+                          case "a" -> "a";
+                          case "b" -> b;
+                          default -> "nope";
+                      };
+                    }
+                  }
+                  """,
+                JAVA_17
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryWithSwitchExpressionNullSafeEquals() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Objects;
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return Objects.equals(a, "a") ? "a" : Objects.equals(a, "b") ? b : "nope";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return switch (a) {
+                          case "a" -> "a";
+                          case "b" -> b;
+                          default -> "nope";
+                      };
+                    }
+                  }
+                  """,
+                JAVA_17
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryWithSwitchExpressionNullSafeEqualsInverted() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Objects;
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return Objects.equals("a", a) ? "a" : Objects.equals("b", a) ? b : "nope";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return switch (a) {
+                          case "a" -> "a";
+                          case "b" -> b;
                           default -> "nope";
                       };
                     }
@@ -680,7 +766,8 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "c".equals(c) ? "c" : "nope";
                     }
                   }
-                  """
+                  """,
+                JAVA_17
               )
             );
         }
@@ -720,7 +807,8 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       }; //and nope if nope
                     }
                   }
-                  """
+                  """,
+                JAVA_17
               )
             );
         }
@@ -732,9 +820,9 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
               java(
                 """
                   class Test {
-                    public void doThing(String a) {
-                      String result = "a".equals(a) ? "a" : "b".equals(a) ? "b" : "nope";
-                      System.out.println(result);
+                    public void doThing(String a, String b) {
+                        String result = "a".equals(a) ? "a" : "b".equals(a) ? b : "nope";
+                        System.out.println(result);
                     }
                   }
                   """,
@@ -742,14 +830,15 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                   class Test {
                     public void doThing(String a, String b) {
                         String result = switch (a) {
-                          case "a" -> "a";
-                          case "b" -> "b";
-                          default -> "nope";
+                            case "a" -> "a";
+                            case "b" -> b;
+                            default -> "nope";
                         };
                         System.out.println(result);
                     }
                   }
-                  """
+                  """,
+                JAVA_17
               )
             );
         }
@@ -770,7 +859,8 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                        return s.stream().map(item -> item.startsWith("a") ? "a" : "nope").collect(Collectors.toSet());
                     }
                   }
-                  """
+                  """,
+                JAVA_17
               )
             );
         }
@@ -883,13 +973,11 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                   class Test {
                     public Set<String> makeASet() {
                        List<String> s = Arrays.asList("a","b","c","nope");
-                       return s.stream().map( /* look a lambda */ item ->
-                                    //look a ternary
-                                    switch (item) {
-                                        case "a" -> "a";
-                                        case item -> "b";
-                                        default -> "nope";
-                                    }
+                       return s.stream().map( /* look a lambda */ item -> switch (item) { //look a ternary
+                                case "a" -> "a";
+                                case "b" -> "b";
+                                default -> "nope";
+                            }
                             ).collect(Collectors.toSet());
                     }
                   }
