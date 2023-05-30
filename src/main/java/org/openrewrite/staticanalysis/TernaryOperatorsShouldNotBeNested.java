@@ -374,7 +374,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         private static boolean isObjectsEquals(J.MethodInvocation inv) {
             if (inv.getSelect() instanceof J.Identifier) {
                 J.Identifier maybeObjects = (J.Identifier) inv.getSelect();
-                boolean isObjects = TypeUtils.isOfType(maybeObjects.getType(), JavaType.buildType("java.util.Objects"));
+                boolean isObjects = TypeUtils.isOfClassType(maybeObjects.getType(), "java.util.Objects");
                 return isObjects && "equals".equals(inv.getSimpleName());
             }
             return false;
