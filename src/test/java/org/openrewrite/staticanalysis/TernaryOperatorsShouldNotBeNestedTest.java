@@ -275,8 +275,8 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
             );
         }
 
-        @ExpectedToFail(
-          "Comment `dont forget about c` is dropped as it is part of a `before` in leftPad, not sure how to extract that")
+        @ExpectedToFail("Comment `dont forget about c` is dropped as it is part of a `before` in leftPad, " +
+          "not sure how to extract that")
         @Issue("todo")
         @Test
         void doReplaceMultiLevelTernariesWithComments() {
@@ -805,21 +805,50 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
               java(
                 """
                   class Test {
-                    public String determineSomething(String aString, String bString, String cString) {
-                        return "a".equals(aString) ? "a" : "b".equals(bString) ? "b" : "c".equals(cString) ? "c" :"nope";
+                    public String determineSomething(String a) {
+                        return "a".equals(a) ? "a" : "b".equals(a) ? "b" : "c".equals(a) ? "c" : "nope";
                     }
                   }
                   """,
                 """
                   class Test {
-                    public String determineSomething(String aString, String bString, String cString) {
-                        if ("a".equals(aString)) {
+                    public String determineSomething(String a) {
+                        return switch (a) {
+                            case "a" -> "a";
+                            case "b" -> "b";
+                            case "c" -> "c";
+                            default -> "nope";
+                        };
+                    }
+                  }
+                  """,
+                JAVA_17
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryRecursiveWithIfsWhenMultipleVariablesAreUsed() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(String a, String b, String c) {
+                        return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "c".equals(c) ? "c" :"nope";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(String a, String b, String c) {
+                        if ("a".equals(a)) {
                             return "a";
                         }
-                        if ("b".equals(bString)) {
+                        if ("b".equals(b)) {
                             return "b";
                         }
-                        return "c".equals(cString) ? "c" : "nope";
+                        return "c".equals(c) ? "c" : "nope";
                     }
                   }
                   """,
