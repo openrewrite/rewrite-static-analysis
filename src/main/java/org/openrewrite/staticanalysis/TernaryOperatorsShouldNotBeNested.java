@@ -188,8 +188,8 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             J.Ternary next = ternary;
             while (next.getFalsePart() instanceof J.Ternary) {
                 if (next.getTruePart() instanceof J.Ternary) {
-                    //todo this could become complicated if this is also nested. Lets skip it for now?
-                    // maybe we can just leave a (nested) ternary here though.
+                    //as long as we do not use pattern matching, an "and" nested ternary will never work for a switch:
+                    // Example: a equals a and a equals b will never be true
                     return Collections.emptyList();
                 }
                 J.Ternary nested = (J.Ternary) next.getFalsePart();
