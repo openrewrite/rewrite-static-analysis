@@ -51,7 +51,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
     }
 
     @Override
-    public Map<String, String> getInitialValue() {
+    public Map<String, String> getInitialValue(ExecutionContext ctx) {
         return new HashMap<>();
     }
 
