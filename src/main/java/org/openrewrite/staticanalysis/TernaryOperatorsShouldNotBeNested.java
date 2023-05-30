@@ -86,7 +86,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     doAfterVisit(new UseSwitchExpressionVisitor());
                 }
                 doAfterVisit(new UseIfVisitor());
-                return super.visitCompilationUnit(cu, executionContext);
+                return cu;
             }
         };
     }
