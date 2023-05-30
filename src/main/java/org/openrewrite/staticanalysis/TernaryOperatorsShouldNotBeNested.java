@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -132,7 +133,8 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     new J.ControlParentheses<>(Tree.randomId(), Space.EMPTY, Markers.EMPTY,
                             JRightPadded.build(ternary.getCondition())
                     ).withComments(ternary.getCondition().getComments()),
-                    JRightPadded.build(blockOf(rewriteNestedTernary(returnOf(ternary.getTruePart())))),
+                    JRightPadded.build(blockOf(rewriteNestedTernary(returnOf(ternary.getTruePart()
+                            .withComments(ternary.getTruePart().getComments()))))),
                     null
             );
         }
@@ -246,7 +248,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             ? inv.getArguments().get(0)
                             : inv.getSelect();
                 }
-            } else if (ternary.getCondition() instanceof J.Binary) {
+            } else if (isEqualsBinary(ternary.getCondition())) {
                 J.Binary bin = ((J.Binary) ternary.getCondition());
                 compare = isEqualVariable(switchVar, bin.getLeft())
                         ? bin.getRight()
@@ -307,8 +309,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     J second = inv.getArguments().get(1);
                     result = xorVariable(first, second);
                 }
-            }
-            if (ternary.getCondition() instanceof J.Binary) {
+            } else if (isEqualsBinary(ternary.getCondition())) {
                 J.Binary bin = (J.Binary) ternary.getCondition();
                 result = xorVariable(bin.getLeft(), bin.getRight());
             }
@@ -349,6 +350,10 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 return isObjects && "equals".equals(inv.getSimpleName());
             }
             return false;
+        }
+
+        private static boolean isEqualsBinary(J maybeEqualsBinary) {
+            return maybeEqualsBinary instanceof J.Binary && ((J.Binary) maybeEqualsBinary).getOperator().equals(Equal);
         }
     }
 

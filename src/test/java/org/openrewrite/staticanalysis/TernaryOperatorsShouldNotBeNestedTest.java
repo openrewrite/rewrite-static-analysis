@@ -244,9 +244,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
-        @ExpectedToFail("Comment `dont forget about c` is dropped as it is part of a `before` in leftPad, " +
-          "not sure how to extract that")
-        @Issue("todo")
+        @ExpectedToFail("Comment `dont forget about c` falls off. It is part of a `before` that is dropped when falsePart is extracted")
         @Test
         void doReplaceMultiLevelTernariesWithComments() {
             rewriteRun(
@@ -271,13 +269,16 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       public String determineSomething(String letter) {
                           if ("a".equals(letter)) {
                               return "a";
-                          }//look its a
+                          }
+                          //look its a
                           if ("b".equals(letter)) {
                               return "b";
-                          }//b is also here
+                          }
+                          //b is also here
                           if ("c".equals(letter)) {
                               return "c"; /* dont forget about c */
-                          }// d is important too
+                          }
+                          // d is important too
                           if (letter.contains("d")) {
                               if (letter.startsWith("d")) {
                                   return letter.equals("d") ? "equals" : "startsWith";
@@ -286,7 +287,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
                           }
                           if ("e".equals(letter)) {
                               return "e";
-                          }//e
+                          }
+                          //e
                           if ("f".equals(letter)) {
                               return "f";
                           }//f
@@ -639,6 +641,32 @@ class TernaryOperatorsShouldNotBeNestedTest {
                             case 2 -> "two";
                             default -> "other";
                         };
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doReplaceNestedOrTernaryPrimitiveNotEqualsCondition() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    public String determineSomething(int a) {
+                        return a >= 3 ? "a lot" : a == 2 ? "two" : "other";
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    public String determineSomething(int a) {
+                        if (a >= 3) {
+                            return "a lot";
+                        }
+                        return a == 2 ? "two" : "other";
                     }
                   }
                   """
