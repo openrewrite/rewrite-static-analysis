@@ -35,7 +35,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.RemoveImport;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -238,7 +237,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             if (ternary.getCondition() instanceof J.MethodInvocation) {
                 J.MethodInvocation inv = ((J.MethodInvocation) ternary.getCondition());
                 if (isObjectsEquals(inv)) {
-                    doAfterVisit(new RemoveImport<>("java.util.Objects"));
+                    maybeRemoveImport("java.util.Objects");
                     compare = isVariable(inv.getArguments().get(0))
                             ? inv.getArguments().get(1)
                             : inv.getArguments().get(0);
@@ -247,17 +246,15 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             ? inv.getArguments().get(0)
                             : inv.getSelect();
                 }
-            }
-            else if (ternary.getCondition() instanceof J.Binary) {
+            } else if (ternary.getCondition() instanceof J.Binary) {
                 J.Binary bin = ((J.Binary) ternary.getCondition());
                 compare = isEqualVariable(switchVar, bin.getLeft())
                         ? bin.getRight()
                         : bin.getLeft();
+            } else {
+                throw new IllegalArgumentException(
+                        "Only J.Binary or J.MethodInvocation are expected as ternary conditions when creating a switch case");
             }
-            else {
-                throw new IllegalArgumentException("Only J.Binary or J.MethodInvocation are expected as ternary conditions when creating a switch case");
-            }
-
             return new J.Case(
                     Tree.randomId(),
                     ternary.getPrefix().withWhitespace(" "),

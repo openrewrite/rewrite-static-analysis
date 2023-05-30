@@ -16,48 +16,24 @@
 package org.openrewrite.staticanalysis;
 
 import static org.openrewrite.java.Assertions.java;
-
-import java.util.function.Consumer;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.Issue;
-import org.openrewrite.Tree;
-import org.openrewrite.java.marker.JavaVersion;
-import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
-import org.openrewrite.test.SourceSpec;
 
-class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
-
-    private static final Consumer<SourceSpec<J.CompilationUnit>> JAVA_17 = (spec) -> spec.markers(new JavaVersion(
-      Tree.randomId(),
-      "createdBy",
-      "vmVendor",
-      "17",
-      "17"
-    ));
-
-    private static final Consumer<SourceSpec<J.CompilationUnit>> JAVA_11 = (spec) -> spec.markers(new JavaVersion(
-      Tree.randomId(),
-      "createdBy",
-      "vmVendor",
-      "11",
-      "11"
-    ));
-
-    TernaryOperatorsShouldNotBeNested recipe = new TernaryOperatorsShouldNotBeNested();
-
-    @Override
-    public void defaults(RecipeSpec spec) {
-        recipe = new TernaryOperatorsShouldNotBeNested();
-        spec.recipe(recipe);
-    }
+class TernaryOperatorsShouldNotBeNestedTest {
 
     @Nested
-    class SwitchExpressionNotSupported {
+    class SwitchExpressionNotSupported implements RewriteTest {
+
+        @Override
+        public void defaults(RecipeSpec spec) {
+            spec.recipe(new TernaryOperatorsShouldNotBeNested()).allSources(s -> s.markers(javaVersion(11)));
+        }
 
         @Test
         void doReplaceNestedOrTernaryWithIfFollowedByTernary() {
@@ -80,8 +56,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "b".equals(b) ? "b" : "nope";
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -107,8 +82,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return b == 2 ? "two" : "other";
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -134,8 +108,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return 2 == b ? "two" : "other";
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -164,8 +137,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           return "c".equals(b) ? "c" : "nope";
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -191,8 +163,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           return "nope";
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -218,8 +189,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           return "c".equals(c) ? "c" : "nope";
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -269,8 +239,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           return "g".equals(letter) ? "g" : "nope";
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -324,8 +293,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           return "g".equals(letter) ? "g" : "nope"; //and nope if nope
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -358,8 +326,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           System.out.println(result);
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -380,8 +347,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                          return s.stream().map(item -> item.startsWith("a") ? "a" : "nope").collect(Collectors.toSet());
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -419,8 +385,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         }).collect(Collectors.toSet());
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -464,8 +429,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                              ).collect(Collectors.toSet());
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -492,8 +456,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                           return "b".equals(b) ? "b" : null;
                       }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -519,8 +482,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "b".equals(b) ? a + b : b + a;
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -550,8 +512,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "b".equals(b) ? "b" : "nope"; //this should be behind the ternary
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -585,8 +546,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "b".equals(b) ? M.b() : M.nope();
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
@@ -618,15 +578,19 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                                 : null;
                     }
                   }
-                  """,
-                JAVA_11
+                  """
               )
             );
         }
     }
 
     @Nested
-    class SwitchExpressionSupported {
+    class SwitchExpressionSupported implements RewriteTest {
+
+        @Override
+        public void defaults(RecipeSpec spec) {
+            spec.recipe(new TernaryOperatorsShouldNotBeNested()).allSources(s -> s.markers(javaVersion(14)));
+        }
 
         @Test
         void doReplaceNestedOrTernaryWithSwitchExpression() {
@@ -650,8 +614,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -678,8 +641,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -706,8 +668,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -734,8 +695,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -763,8 +723,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -792,8 +751,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -821,8 +779,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -851,8 +808,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "c".equals(c) ? "c" : "nope";
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -878,8 +834,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "nope";
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -905,8 +860,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         return "c".equals(c) ? "c" : "nope";
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -946,8 +900,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       }; //and nope if nope
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -976,8 +929,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         System.out.println(result);
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -998,8 +950,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                        return s.stream().map(item -> item.startsWith("a") ? "a" : "nope").collect(Collectors.toSet());
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1036,8 +987,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         }).collect(Collectors.toSet());
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1078,8 +1028,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                        ).collect(Collectors.toSet());
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1120,8 +1069,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                             ).collect(Collectors.toSet());
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1148,8 +1096,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                       };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1178,8 +1125,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1206,8 +1152,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1238,8 +1183,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         }; //this should be behind the ternary
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
@@ -1274,8 +1218,7 @@ class TernaryOperatorsShouldNotBeNestedTest implements RewriteTest {
                         };
                     }
                   }
-                  """,
-                JAVA_17
+                  """
               )
             );
         }
