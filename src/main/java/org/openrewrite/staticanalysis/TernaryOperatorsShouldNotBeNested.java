@@ -42,7 +42,6 @@ import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JContainer;
 import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
@@ -100,7 +99,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             if (result == lambda) {
                 return super.visitLambda(lambda, executionContext);
             }
-            doAfterVisit(new RemoveUnneededBlock());
+            doAfterVisit(new RemoveUnneededBlock().getVisitor());
             return autoFormat(lambda.withBody(result.withPrefix(lambda.getBody().getPrefix())), executionContext);
         }
 
@@ -110,7 +109,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             if (result == retrn) {
                 return super.visitReturn(retrn, executionContext);
             }
-            doAfterVisit(new RemoveUnneededBlock());
+            doAfterVisit(new RemoveUnneededBlock().getVisitor());
             return autoFormat(result, executionContext);
         }
 
@@ -313,7 +312,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                         result = (J.Identifier) inv.getArguments().get(0);
                         other = inv.getSelect();
                     }
-                    if(!isConstant(other)){
+                    if (!isConstant(other)) {
                         return Optional.empty();
                     }
                 }
