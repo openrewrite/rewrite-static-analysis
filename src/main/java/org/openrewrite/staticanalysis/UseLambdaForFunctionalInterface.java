@@ -135,7 +135,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
                         lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
 
-                        doAfterVisit(new RemoveUnusedImports());
+                        doAfterVisit(new RemoveUnusedImports().getVisitor());
 
                         return autoFormat(lambda, ctx);
                     }
