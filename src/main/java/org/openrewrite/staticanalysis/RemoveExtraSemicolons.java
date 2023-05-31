@@ -63,7 +63,7 @@ public class RemoveExtraSemicolons extends Recipe {
             @Override
             public J.Block visitBlock(final J.Block block, final ExecutionContext executionContext) {
                 final Iterator<Statement> iterator = block.getStatements().iterator();
-                final List<Statement> result = new ArrayList<>(); //todo should this be arraylist?
+                final List<Statement> result = new ArrayList<>();
                 while (iterator.hasNext()) {
                     Statement statement = iterator.next();
                     if (statement instanceof J.Empty) {
