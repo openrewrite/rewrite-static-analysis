@@ -60,7 +60,7 @@ public class RemoveCallsToSystemGc extends Recipe {
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext context) {
                 J.MethodInvocation invocation = super.visitMethodInvocation(method, context);
                 if (SYSTEM_GC.matches(invocation) || RUNTIME_GC.matches(invocation)) {
-                    doAfterVisit(new EmptyBlock());
+                    doAfterVisit(new EmptyBlock().getVisitor());
                     //noinspection DataFlowIssue
                     return null;
                 }
