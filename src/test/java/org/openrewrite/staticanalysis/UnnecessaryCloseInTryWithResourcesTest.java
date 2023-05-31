@@ -51,7 +51,7 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void hasUnecessaryClose() {
+    void hasUnnecessaryClose() {
         rewriteRun(
           //language=java
           java(

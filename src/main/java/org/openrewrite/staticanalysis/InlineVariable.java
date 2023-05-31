@@ -73,10 +73,10 @@ public class InlineVariable extends Recipe {
                                         return null;
                                     } else if (i == statements.size() - 1) {
                                         if (statement instanceof J.Return) {
-                                            J.Return retrn = (J.Return) statement;
-                                            return retrn.withExpression(requireNonNull(identDefinition.getInitializer())
-                                                            .withPrefix(requireNonNull(retrn.getExpression()).getPrefix()))
-                                                    .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), retrn.getComments())));
+                                            J.Return return_ = (J.Return) statement;
+                                            return return_.withExpression(requireNonNull(identDefinition.getInitializer())
+                                                            .withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
+                                                    .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), return_.getComments())));
                                         } else if (statement instanceof J.Throw) {
                                             J.Throw thrown = (J.Throw) statement;
                                             return thrown.withException(requireNonNull(identDefinition.getInitializer())
@@ -97,9 +97,9 @@ public class InlineVariable extends Recipe {
             private String identReturned(List<Statement> stats) {
                 Statement lastStatement = stats.get(stats.size() - 1);
                 if (lastStatement instanceof J.Return) {
-                    J.Return retrn = (J.Return) lastStatement;
-                    if (retrn.getExpression() instanceof J.Identifier) {
-                        return ((J.Identifier) retrn.getExpression()).getSimpleName();
+                    J.Return return_ = (J.Return) lastStatement;
+                    if (return_.getExpression() instanceof J.Identifier) {
+                        return ((J.Identifier) return_.getExpression()).getSimpleName();
                     }
                 } else if (lastStatement instanceof J.Throw) {
                     J.Throw thr = (J.Throw) lastStatement;

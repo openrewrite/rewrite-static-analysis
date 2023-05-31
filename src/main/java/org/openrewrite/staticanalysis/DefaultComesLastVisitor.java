@@ -38,10 +38,10 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     DefaultComesLastStyle style;
 
     @Override
-    public J.Switch visitSwitch(J.Switch switzh, P p) {
-        J.Switch s = visitAndCast(switzh, p, super::visitSwitch);
+    public J.Switch visitSwitch(J.Switch switch_, P p) {
+        J.Switch s = visitAndCast(switch_, p, super::visitSwitch);
 
-        if (!isDefaultCaseLastOrNotPresent(switzh)) {
+        if (!isDefaultCaseLastOrNotPresent(switch_)) {
             List<J.Case> cases = s.getCases().getStatements().stream().map(J.Case.class::cast).collect(Collectors.toList());
             List<J.Case> fixedCases = new ArrayList<>(cases.size());
 
@@ -150,10 +150,10 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         return stat instanceof J.Return && ((J.Return) stat).getExpression() == null;
     }
 
-    private boolean isDefaultCaseLastOrNotPresent(J.Switch switzh) {
+    private boolean isDefaultCaseLastOrNotPresent(J.Switch switch_) {
         J.Case defaultCase = null;
         J.Case prior = null;
-        for (Statement aCaseStmt : switzh.getCases().getStatements()) {
+        for (Statement aCaseStmt : switch_.getCases().getStatements()) {
             if (!(aCaseStmt instanceof J.Case)) {
                 continue;
             }
@@ -180,8 +180,8 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         return true;
     }
 
-    private boolean isDefaultCase(J.Case caze) {
-        Expression elem = caze.getPattern();
+    private boolean isDefaultCase(J.Case case_) {
+        Expression elem = case_.getPattern();
         return elem instanceof J.Identifier && ((J.Identifier) elem).getSimpleName().equals("default");
     }
 

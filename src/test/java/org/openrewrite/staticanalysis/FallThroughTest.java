@@ -200,7 +200,7 @@ class FallThroughTest implements RewriteTest {
                       case 2:
                           i++; // fallthrough
                       case 3:
-                          i++; // fallthru
+                          i++; // fallthrough
                       case 4:
                           i++; // fall-through
                       case 5:
@@ -265,7 +265,7 @@ class FallThroughTest implements RewriteTest {
                       // fallthrough
                       case 5:
                           i++;
-                      /* fallthru */case 6:
+                      /* fallthrough */case 6:
                           i++;
                           // fall-through
                       case 7:
@@ -301,7 +301,7 @@ class FallThroughTest implements RewriteTest {
                       // fallthrough
                       case 5:
                           i++;
-                      /* fallthru */case 6:
+                      /* fallthrough */case 6:
                           i++;
                           // fall-through
                       case 7:

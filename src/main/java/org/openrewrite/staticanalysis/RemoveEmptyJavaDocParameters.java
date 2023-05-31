@@ -35,12 +35,12 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Remove JavaDoc `@params`, `@return`, and `@throws` with no description";
+        return "Remove JavaDoc `@param`, `@return`, and `@throws` with no description";
     }
 
     @Override
     public String getDescription() {
-        return "Removes `@params`, `@return`, and `@throws` with no description from JavaDocs.";
+        return "Removes `@param`, `@return`, and `@throws` with no description from JavaDocs.";
     }
 
     @Override

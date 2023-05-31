@@ -95,8 +95,8 @@ public class NeedBraces extends Recipe {
         }
 
         @Override
-        public J.If.Else visitElse(J.If.Else elze, ExecutionContext ctx) {
-            J.If.Else elem = super.visitElse(elze, ctx);
+        public J.If.Else visitElse(J.If.Else else_, ExecutionContext ctx) {
+            J.If.Else elem = super.visitElse(else_, ctx);
             boolean hasAllowableBodyType = elem.getBody() instanceof J.Block || elem.getBody() instanceof J.If;
             if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
                 J.Block b = buildBlock(elem.getBody());

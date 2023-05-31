@@ -189,7 +189,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodType == null) {
                     return false;
                 }
-                boolean statik = methodType.hasFlags(Flag.Static);
+                boolean static_ = methodType.hasFlags(Flag.Static);
                 List<Expression> methodArgs = method.getArguments().stream().filter(a -> !(a instanceof J.Empty))
                         .collect(Collectors.toList());
                 List<J.VariableDeclarations.NamedVariable> lambdaParameters = lambda.getParameters().getParameters()
@@ -199,7 +199,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodArgs.isEmpty() && lambdaParameters.isEmpty()) {
                     return true;
                 }
-                if (!statik && methodSelectMatchesFirstLambdaParameter(method, lambda)) {
+                if (!static_ && methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                     methodArgs.add(0, ((J.MethodInvocation) method).getSelect());
                 }
                 if (methodArgs.size() != lambdaParameters.size()) {

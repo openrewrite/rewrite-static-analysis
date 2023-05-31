@@ -202,12 +202,12 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     @Override
-    public J.Switch visitSwitch(J.Switch switzh, P p) {
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralSwitch()) && isEmptyBlock(switzh.getCases())) {
-            doAfterVisit(new DeleteStatement<>(switzh));
+    public J.Switch visitSwitch(J.Switch switch_, P p) {
+        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralSwitch()) && isEmptyBlock(switch_.getCases())) {
+            doAfterVisit(new DeleteStatement<>(switch_));
         }
 
-        return super.visitSwitch(switzh, p);
+        return super.visitSwitch(switch_, p);
     }
 
     private boolean isEmptyBlock(Statement blockNode) {
