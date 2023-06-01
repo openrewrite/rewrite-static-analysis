@@ -59,9 +59,9 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 J.Block combined = b;
                 do {
                     b = combined;
+                    updateCursor(b);
                     J.Block b2 = b;
                     AtomicInteger skip = new AtomicInteger(-1);
-                    Cursor blockCursor = new Cursor(getCursor().getParent(), b);
 
                     combined = b.withStatements(ListUtils.map(b.getStatements(), (i, stat) -> {
                         if (skip.get() == i) {
@@ -80,7 +80,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                             if (acc != null && op != null) {
                                 skip.set(i + 1);
                                 // combine this statement with the following statement into one binary expression
-                                return combine(new Cursor(blockCursor, stat), op, acc);
+                                return combine(new Cursor(getCursor(), stat), op, acc);
                             }
                         }
 

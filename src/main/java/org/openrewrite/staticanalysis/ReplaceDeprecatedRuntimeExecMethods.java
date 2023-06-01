@@ -74,13 +74,14 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
                     }
 
+                    updateCursor(m);
                     if (flattenAble) {
                         String[] cmds = sb.toString().split(" ");
                         String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
                         JavaTemplate template = JavaTemplate.builder(templateCode).build();
 
                         List<Expression> args = m.getArguments();
-                        Cursor cursor = new Cursor(new Cursor(getCursor().getParent(), m), args.get(0));
+                        Cursor cursor = new Cursor(getCursor(), args.get(0));
                         args.set(0, template.apply(cursor, args.get(0).getCoordinates().replace()));
 
                         if (m.getMethodType() != null) {
@@ -103,7 +104,7 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
                         String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
                         JavaTemplate template = JavaTemplate.builder(code).contextSensitive().build();
-                        Cursor cursor = new Cursor(new Cursor(getCursor().getParent(), m), args.get(0));
+                        Cursor cursor = new Cursor(getCursor(), args.get(0));
                         arg0 = template.apply(cursor, args.get(0).getCoordinates().replace(), args.get(0));
                         args.set(0, arg0);
 

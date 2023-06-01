@@ -66,7 +66,8 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
                     if (fqt != null) {
                         String templateString = "#{any(" + fqt.getFullyQualifiedName() + ")}.get() == #{any(" + fqt.getFullyQualifiedName() + ")}.get()";
                         return JavaTemplate.builder(templateString)
-                                .imports(fqt.getFullyQualifiedName()).build().apply(getCursor(), mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0));
+                                .imports(fqt.getFullyQualifiedName()).build()
+                                .apply(updateCursor(mi), mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0));
                     }
                 }
                 return mi;

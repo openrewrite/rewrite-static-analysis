@@ -88,6 +88,7 @@ public class NoDoubleBraceInitialization extends Recipe {
         @Override
         public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
             J.NewClass nc = super.visitNewClass(newClass, executionContext);
+            updateCursor(nc);
             if (isSupportedDoubleBraceInitialization(newClass)) {
                 Cursor parentBlockCursor = getCursor().dropParentUntil(J.Block.class::isInstance);
                 J.VariableDeclarations.NamedVariable var = getCursor().firstEnclosing(J.VariableDeclarations.NamedVariable.class);

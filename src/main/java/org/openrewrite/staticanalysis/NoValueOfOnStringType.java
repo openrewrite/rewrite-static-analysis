@@ -73,7 +73,7 @@ public class NoValueOfOnStringType extends Recipe {
                     Expression argument = mi.getArguments().get(0);
 
                     if (TypeUtils.isString(argument.getType()) || removeValueOfFromBinaryExpression(argument)) {
-                        return t.apply(getCursor(), mi.getCoordinates().replace(), argument);
+                        return t.apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
                     }
                 }
                 return mi;

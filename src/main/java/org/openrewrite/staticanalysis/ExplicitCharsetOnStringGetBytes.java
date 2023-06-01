@@ -62,7 +62,7 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 if (GET_BYTES.matches(method)) {
                     maybeAddImport("java.nio.charset.StandardCharsets");
-                    m = WITH_ENCODING.apply(getCursor(), method.getCoordinates().replaceMethod(), encoding == null ? "UTF_8" : encoding);
+                    m = WITH_ENCODING.apply(updateCursor(m), m.getCoordinates().replaceMethod(), encoding == null ? "UTF_8" : encoding);
                 }
                 return m;
             }

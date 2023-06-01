@@ -46,8 +46,8 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
         private static final AnnotationMatcher OVERRIDE_ANNOTATION = new AnnotationMatcher("@java.lang.Override");
         private static final String EQUALS_BODY_PREFIX_TEMPLATE =
                 "if (#{} == this) return true;\n" +
-                        "if (#{} == null || getClass() != #{}.getClass()) return false;\n" +
-                        "#{} #{} = (#{}) #{};\n";
+                "if (#{} == null || getClass() != #{}.getClass()) return false;\n" +
+                "#{} #{} = (#{}) #{};\n";
 
         private final J.ClassDeclaration enclosingClass;
 
@@ -70,13 +70,13 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
 
             String ecfqn = type.getFullyQualifiedName();
             if (new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass) &&
-                    m.hasModifier(J.Modifier.Type.Public) &&
-                    m.getReturnTypeExpression() != null &&
-                    JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType())) {
+                m.hasModifier(J.Modifier.Type.Public) &&
+                m.getReturnTypeExpression() != null &&
+                JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType())) {
 
                 if (m.getAllAnnotations().stream().noneMatch(OVERRIDE_ANNOTATION::matches)) {
                     m = JavaTemplate.builder("@Override").build()
-                            .apply(new Cursor(getCursor().getParent(), m),
+                            .apply(updateCursor(m),
                                     m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                 }
 
@@ -88,7 +88,7 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
                 J.VariableDeclarations.NamedVariable oldParamName = ((J.VariableDeclarations) m.getParameters().iterator().next()).getVariables().iterator().next();
                 String paramName = "obj".equals(oldParamName.getSimpleName()) ? "other" : "obj";
                 m = JavaTemplate.builder("Object #{}").contextSensitive().build()
-                        .apply(new Cursor(getCursor().getParent(), m),
+                        .apply(updateCursor(m),
                                 m.getCoordinates().replaceParameters(),
                                 paramName);
 

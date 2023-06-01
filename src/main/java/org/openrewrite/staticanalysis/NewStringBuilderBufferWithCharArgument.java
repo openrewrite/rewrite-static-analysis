@@ -72,8 +72,8 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                                 }
                                 return l;
                             } else {
-                                Cursor cursor = new Cursor(getCursor(), arg);
-                                return toString.apply(cursor, arg.getCoordinates().replace(), arg);
+                                Cursor argCursor = new Cursor(getCursor(), arg);
+                                return toString.apply(argCursor, arg.getCoordinates().replace(), arg);
                             }
                         }));
                     }

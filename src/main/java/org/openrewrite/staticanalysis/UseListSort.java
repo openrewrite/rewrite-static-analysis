@@ -45,13 +45,18 @@ public class UseListSort extends Recipe {
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
                 if (collectionsSort.matches(mi)) {
+                    updateCursor(mi);
                     maybeRemoveImport("java.util.Collections");
                     if (mi.getArguments().size() == 1) {
                         return JavaTemplate.builder("#{any(java.util.List)}.sort(null)")
-                                .imports("java.util.List").build().apply(getCursor(), mi.getCoordinates().replace(), mi.getArguments().get(0));
+                                .imports("java.util.List")
+                                .build()
+                                .apply(getCursor(), mi.getCoordinates().replace(), mi.getArguments().get(0));
                     } else {
                         return JavaTemplate.builder("#{any(java.util.List)}.sort(#{any(java.util.Comparator)})")
-                                .imports("java.util.List", "java.util.Comparator").build().apply(getCursor(), mi.getCoordinates().replace(), mi.getArguments().get(0), mi.getArguments().get(1));
+                                .imports("java.util.List", "java.util.Comparator")
+                                .build()
+                                .apply(getCursor(), mi.getCoordinates().replace(), mi.getArguments().get(0), mi.getArguments().get(1));
                     }
                 }
                 return mi;

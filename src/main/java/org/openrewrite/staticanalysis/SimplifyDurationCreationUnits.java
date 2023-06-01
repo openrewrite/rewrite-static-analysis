@@ -104,7 +104,7 @@ public class SimplifyDurationCreationUnits extends Recipe {
                 JavaTemplate template = JavaTemplate.builder("#{}(#{})").contextSensitive().build();
                 return maybeAutoFormat(
                         method,
-                        template.apply(getCursor(), method.getCoordinates().replaceMethod(), simplifiedUnits.methodName,
+                        template.apply(updateCursor(method), method.getCoordinates().replaceMethod(), simplifiedUnits.methodName,
                                 millis / simplifiedUnits.millisFactor),
                         ctx
                 );

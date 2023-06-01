@@ -53,7 +53,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
             J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(getCursor(), body.getCoordinates().lastStatement());
+            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
         }
 
         return w;
@@ -65,7 +65,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
             J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(getCursor(), body.getCoordinates().lastStatement());
+            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
         }
 
         return w;

@@ -63,6 +63,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             @Override
             public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = (J.NewClass) super.visitNewClass(newClass, ctx);
+                updateCursor(n);
                 if (n.getBody() != null &&
                     n.getBody().getStatements().size() == 1 &&
                     n.getBody().getStatements().get(0) instanceof J.MethodDeclaration &&
@@ -119,7 +120,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
                         J.Lambda lambda = JavaTemplate.builder(templateBuilder.toString())
                                 .contextSensitive()
-                                .build().apply(getCursor(), n.getCoordinates().replace());
+                                .build()
+                                .apply(getCursor(), n.getCoordinates().replace());
                         lambda = lambda.withType(typedInterface);
                         lambda = (J.Lambda) new UnnecessaryParentheses().getVisitor()
                                 .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());

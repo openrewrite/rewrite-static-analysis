@@ -61,7 +61,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     md = JavaTemplate.builder("super.finalize()")
                             .contextSensitive()
                             .build()
-                            .apply(new Cursor(getCursor().getParent(), md),
+                            .apply(updateCursor(md),
                                     md.getBody().getCoordinates().lastStatement());
                 }
                 return md;

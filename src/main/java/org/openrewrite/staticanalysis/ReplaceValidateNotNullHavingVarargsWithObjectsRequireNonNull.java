@@ -68,7 +68,7 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 mi = JavaTemplate.builder(template)
                         .contextSensitive()
                         .imports("java.util.Objects")
-                        .build().apply(getCursor(), mi.getCoordinates().replace(), arguments.toArray());
+                        .build().apply(updateCursor(mi), mi.getCoordinates().replace(), arguments.toArray());
 
                 if (arguments.size() == 2) {
                     return maybeAutoFormat(mi, mi.withArguments(

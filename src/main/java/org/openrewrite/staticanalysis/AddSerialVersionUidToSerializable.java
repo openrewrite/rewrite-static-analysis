@@ -90,7 +90,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                     return s;
                 })));
                 if (needsSerialVersionId.get()) {
-                    c = template.apply(getCursor(), c.getBody().getCoordinates().firstStatement());
+                    c = template.apply(updateCursor(c), c.getBody().getCoordinates().firstStatement());
                 }
                 return c;
             }

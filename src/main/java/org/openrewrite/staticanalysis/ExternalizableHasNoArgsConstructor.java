@@ -87,7 +87,10 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
                     }
                 }
                 if (!hasFinalUninitializedFieldVar && !hasNoArgsConstructor(cd) && parentClassHasNoArgsConstructor(cd)) {
-                    cd = JavaTemplate.builder("public " + cd.getSimpleName() + "() {}").contextSensitive().build().apply(getCursor(), cd.getBody().getCoordinates().lastStatement());
+                    cd = JavaTemplate.builder("public " + cd.getSimpleName() + "() {}")
+                            .contextSensitive()
+                            .build()
+                            .apply(updateCursor(cd), cd.getBody().getCoordinates().lastStatement());
                     if (firstMethodDeclarationIndex != null) {
                         statements.add(firstMethodDeclarationIndex, cd.getBody().getStatements().remove(cd.getBody().getStatements().size() - 1));
                         cd = cd.withBody(cd.getBody().withStatements(statements));

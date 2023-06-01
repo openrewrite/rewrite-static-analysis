@@ -81,8 +81,7 @@ public class UseSystemLineSeparator extends Recipe {
                                 .staticImports("java.lang.System.lineSeparator")
                                 .build();
 
-                        return template.apply(getCursor(), method.getCoordinates()
-                                .replace());
+                        return template.apply(getCursor(), method.getCoordinates().replace());
                     }
                 }
 
