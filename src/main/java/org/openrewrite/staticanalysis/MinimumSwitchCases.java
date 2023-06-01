@@ -66,44 +66,44 @@ public class MinimumSwitchCases extends Recipe {
             final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else if(#{any()} == #{any()}) {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifElseIfString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
                     "} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifElseIfEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
                     "} else if(#{any()} == #{}) {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifElsePrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifElseString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
                     "} else {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifElseEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
                     "} else {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             final JavaTemplate ifEnum = JavaTemplate.builder("" +
                     "if(#{any()} == #{}) {\n" +
-                    "}").context(this::getCursor).build();
+                    "}").contextSensitive().build();
 
             @Override
             public J visitBlock(J.Block block, ExecutionContext executionContext) {
@@ -164,15 +164,15 @@ public class MinimumSwitchCases extends Recipe {
                             if (isDefault(cases[0])) {
                                 return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                             } else {
-                                generatedIf = switch_.withTemplate(ifString, getCursor(), switch_.getCoordinates().replace(),
+                                generatedIf = ifString.apply(getCursor(), switch_.getCoordinates().replace(),
                                         cases[0].getPattern(), tree);
                             }
                         } else if (isDefault(cases[1])) { // check if two cases exist
-                            generatedIf = switch_.withTemplate(ifElseString, getCursor(), switch_.getCoordinates().replace(),
+                            generatedIf = ifElseString.apply(getCursor(), switch_.getCoordinates().replace(),
                                     cases[0].getPattern(), tree); // create conditional template
                         } else { // else case exists
                             // create conditional template
-                            generatedIf = switch_.withTemplate(ifElseIfString, getCursor(), switch_.getCoordinates().replace(),
+                            generatedIf = ifElseIfString.apply(getCursor(), switch_.getCoordinates().replace(),
                                     cases[0].getPattern(), tree, cases[1].getPattern(), tree);
                         }
                     } else if (switchesOnEnum(switch_)) { // encountered enum expression
@@ -180,14 +180,14 @@ public class MinimumSwitchCases extends Recipe {
                             if (isDefault(cases[0])) {
                                 return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                             } else {
-                                generatedIf = switch_.withTemplate(ifEnum, getCursor(), switch_.getCoordinates().replace(),
+                                generatedIf = ifEnum.apply(getCursor(), switch_.getCoordinates().replace(),
                                         tree, enumIdentToFieldAccessString(cases[0].getPattern()));
                             }
                         } else if (isDefault(cases[1])) {
-                            generatedIf = switch_.withTemplate(ifElseEnum, getCursor(), switch_.getCoordinates().replace(),
+                            generatedIf = ifElseEnum.apply(getCursor(), switch_.getCoordinates().replace(),
                                     tree, enumIdentToFieldAccessString(cases[0].getPattern()));
                         } else {
-                            generatedIf = switch_.withTemplate(ifElseIfEnum, getCursor(), switch_.getCoordinates().replace(),
+                            generatedIf = ifElseIfEnum.apply(getCursor(), switch_.getCoordinates().replace(),
                                     tree, enumIdentToFieldAccessString(cases[0].getPattern()), tree, enumIdentToFieldAccessString(cases[1].getPattern()));
                         }
                     } else { // encountered primitive conditional case
@@ -196,16 +196,16 @@ public class MinimumSwitchCases extends Recipe {
                                 return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                             } else {
                                 System.out.println(switch_);
-                                generatedIf = switch_.withTemplate(ifPrimitive, getCursor(), switch_.getCoordinates().replace(),
+                                generatedIf = ifPrimitive.apply(getCursor(), switch_.getCoordinates().replace(),
                                         tree, cases[0].getPattern());
                             }
                         } else if (isDefault(cases[1])) {
                             // IllegalArgumentException template error thrown here
-                            generatedIf = switch_.withTemplate(ifElsePrimitive, getCursor(), switch_.getCoordinates().replace(),
+                            generatedIf = ifElsePrimitive.apply(getCursor(), switch_.getCoordinates().replace(),
                                     tree, cases[0].getPattern());
                             System.out.println("if generated successfully");
                         } else {
-                            generatedIf = switch_.withTemplate(ifElseIfPrimitive, getCursor(), switch_.getCoordinates().replace(),
+                            generatedIf = ifElseIfPrimitive.apply(getCursor(), switch_.getCoordinates().replace(),
                                     tree, cases[0].getPattern(), tree, cases[1].getPattern());
                         }
                     }
