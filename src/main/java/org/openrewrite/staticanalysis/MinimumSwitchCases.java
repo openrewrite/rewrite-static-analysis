@@ -107,7 +107,6 @@ public class MinimumSwitchCases extends Recipe {
 
             @Override
             public J visitBlock(J.Block block, ExecutionContext executionContext) {
-                System.out.println("RUNNING");
                 // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
                 return block.withStatements(ListUtils.flatMap(block.getStatements(), (statement) -> {
                     Statement visited = (Statement) visit(statement, executionContext, getCursor());
@@ -204,7 +203,7 @@ public class MinimumSwitchCases extends Recipe {
                             // IllegalArgumentException template error thrown here
                             generatedIf = switch_.withTemplate(ifElsePrimitive, getCursor(), switch_.getCoordinates().replace(),
                                     tree, cases[0].getPattern());
-                            System.out.println("IF GENERATED SUCCESSFULLY");
+                            System.out.println("if generated successfully");
                         } else {
                             generatedIf = switch_.withTemplate(ifElseIfPrimitive, getCursor(), switch_.getCoordinates().replace(),
                                     tree, cases[0].getPattern(), tree, cases[1].getPattern());
