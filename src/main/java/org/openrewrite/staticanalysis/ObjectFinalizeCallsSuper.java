@@ -15,10 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
@@ -61,9 +58,11 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, executionContext);
                 if (FINALIZE_METHOD_MATCHER.matches(md.getMethodType()) && !hasSuperFinalizeMethodInvocation(md)) {
                     //noinspection ConstantConditions
-                    md = md.withTemplate(JavaTemplate.builder("super.finalize()")
-                                    .context(getCursor()).build(),
-                            getCursor(), md.getBody().getCoordinates().lastStatement());
+                    md = JavaTemplate.builder("super.finalize()")
+                            .contextSensitive()
+                            .build()
+                            .apply(new Cursor(getCursor().getParent(), md),
+                                    md.getBody().getCoordinates().lastStatement());
                 }
                 return md;
             }

@@ -70,10 +70,7 @@ public class UseSystemLineSeparator extends Recipe {
                                 .builder("#{any(java.lang.System)}.lineSeparator()")
                                 .build();
 
-                        return method.withTemplate(template,
-                                getCursor(),
-                                method.getCoordinates().replace(),
-                                method.getSelect());
+                        return template.apply(getCursor(), method.getCoordinates().replace(), method.getSelect());
                     } else {
                         // static import scenario
                         maybeRemoveImport("java.lang.System.getProperty");
@@ -84,10 +81,8 @@ public class UseSystemLineSeparator extends Recipe {
                                 .staticImports("java.lang.System.lineSeparator")
                                 .build();
 
-                        return method.withTemplate(template,
-                                getCursor(),
-                                method.getCoordinates()
-                                        .replace());
+                        return template.apply(getCursor(), method.getCoordinates()
+                                .replace());
                     }
                 }
 

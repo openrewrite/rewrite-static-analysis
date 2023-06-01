@@ -62,15 +62,10 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
                         executionContext.putMessage("REMOVE_UNARY_NOT", parent.getValue());
                     }
                     String code = "#{any()} " + (isNot ? "!=" : "==") + " #{any()}";
-                    return autoFormat(m.withTemplate(
-                            JavaTemplate
-                                    .builder(code)
-                                    .context(getCursor())
-                                    .build(),
-                            getCursor(),
-                            m.getCoordinates().replace(),
-                            m.getSelect(), m.getArguments().get(0)
-                    ), executionContext);
+                    return autoFormat(JavaTemplate
+                            .builder(code)
+                            .contextSensitive()
+                            .build().apply(getCursor(), m.getCoordinates().replace(), m.getSelect(), m.getArguments().get(0)), executionContext);
                 }
                 return m;
             }

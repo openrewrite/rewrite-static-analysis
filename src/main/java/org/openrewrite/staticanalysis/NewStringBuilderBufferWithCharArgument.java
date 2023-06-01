@@ -15,10 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -75,7 +72,8 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                                 }
                                 return l;
                             } else {
-                                return arg.withTemplate(toString, getCursor(), arg.getCoordinates().replace(), arg);
+                                Cursor cursor = new Cursor(getCursor(), arg);
+                                return toString.apply(cursor, arg.getCoordinates().replace(), arg);
                             }
                         }));
                     }

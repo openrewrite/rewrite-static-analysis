@@ -78,8 +78,10 @@ public class IndexOfReplaceableByContains extends Recipe {
                         boolean isGreaterThanNegativeOne = asBinary.getOperator() == J.Binary.Type.GreaterThan && "-1".equals(valueSource);
                         boolean isGreaterThanOrEqualToZero = asBinary.getOperator() == J.Binary.Type.GreaterThanOrEqual && "0".equals(valueSource);
                         if (isGreaterThanNegativeOne || isGreaterThanOrEqualToZero) {
-                            j = mi.withTemplate(STRING_INDEX_MATCHER.matches(mi) ? stringContains : listContains,
-                                    getCursor(), mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0)).withPrefix(asBinary.getPrefix());
+                            Cursor cursor = new Cursor(new Cursor(getCursor().getParent(), asBinary), asBinary.getLeft());
+                            j = (STRING_INDEX_MATCHER.matches(mi) ? stringContains : listContains)
+                                    .apply(cursor, mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0))
+                                    .withPrefix(asBinary.getPrefix());
                         }
                     }
                 }

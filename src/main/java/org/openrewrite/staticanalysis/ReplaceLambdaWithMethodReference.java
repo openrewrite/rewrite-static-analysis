@@ -103,10 +103,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                             "package " + fullyQualified.getPackageName() + "; public class " +
                                     fullyQualified.getClassName();
                     JavaTemplate template = JavaTemplate.builder(code)
-                            .context(this::getCursor)
+                            .contextSensitive()
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(stub))
                             .imports(fullyQualified == null ? "" : fullyQualified.getFullyQualifiedName()).build();
-                    return l.withTemplate(template, getCursor(), l.getCoordinates().replace(), identifier.getSimpleName());
+                    return template.apply(getCursor(), l.getCoordinates().replace(), identifier.getSimpleName());
                 } else if (body instanceof J.Binary) {
                     J.Binary binary = (J.Binary) body;
                     if (isNullCheck(binary.getLeft(), binary.getRight()) ||
@@ -114,10 +114,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         maybeAddImport("java.util.Objects");
                         code = J.Binary.Type.Equal.equals(binary.getOperator()) ? "Objects::isNull" :
                                 "Objects::nonNull";
-                        return l.withTemplate(
-                                JavaTemplate.builder(code).context(getCursor()).imports("java.util.Objects").build(),
-                                getCursor(),
-                                l.getCoordinates().replace());
+                        return JavaTemplate.builder(code).contextSensitive().imports("java.util.Objects").build().apply(getCursor(), l.getCoordinates().replace());
                     }
                 } else if (body instanceof MethodCall) {
                     MethodCall method = (MethodCall) body;
@@ -149,21 +146,17 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         if (methodType.hasFlags(Flag.Static) ||
                                 methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                             maybeAddImport(declaringType);
-                            return l.withTemplate(JavaTemplate.builder("#{}::#{}")
-                                            .context(getCursor())
-                                            .imports(declaringType.getFullyQualifiedName())
-                                            .build(),
-                                    getCursor(),
-                                    l.getCoordinates().replace(), declaringType.getClassName(),
-                                    method.getMethodType().getName());
+                            return JavaTemplate.builder("#{}::#{}")
+                                    .contextSensitive()
+                                    .imports(declaringType.getFullyQualifiedName())
+                                    .build().apply(getCursor(), l.getCoordinates().replace(), declaringType.getClassName(),
+                                            method.getMethodType().getName());
                         } else if (method instanceof J.NewClass) {
-                            return l.withTemplate(JavaTemplate.builder("#{}::new").context(getCursor()).build(),
-                                    getCursor(), l.getCoordinates().replace(), className((J.NewClass) method));
+                            return JavaTemplate.builder("#{}::new").contextSensitive().build().apply(getCursor(), l.getCoordinates().replace(), className((J.NewClass) method));
                         } else {
                             String templ = select == null ? "#{}::#{}" :
                                     "#{any(" + declaringType.getFullyQualifiedName() + ")}::#{}";
-                            return l.withTemplate(JavaTemplate.builder(templ).context(getCursor()).build(),
-                                    getCursor(), l.getCoordinates().replace(), select == null ? "this" : select,
+                            return JavaTemplate.builder(templ).contextSensitive().build().apply(getCursor(), l.getCoordinates().replace(), select == null ? "this" : select,
                                     method.getMethodType().getName());
                         }
                     }

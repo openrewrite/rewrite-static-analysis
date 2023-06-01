@@ -172,10 +172,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             }
                         } else {
                             classDecl = classDecl.withBody(
-                                    classDecl.getBody().withTemplate(
-                                            JavaTemplate.builder(insertStatement).context(getCursor()).build(),
-                                            getCursor(),
-                                            classDecl.getBody().getCoordinates().firstStatement(), replaceLiteral));
+                                    JavaTemplate.builder(insertStatement).contextSensitive().build()
+                                            .apply(new Cursor(getCursor(), classDecl.getBody()), classDecl.getBody().getCoordinates().firstStatement(), replaceLiteral));
                         }
                     }
                     variableNames.add(variableName);

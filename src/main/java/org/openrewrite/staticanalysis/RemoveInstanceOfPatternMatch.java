@@ -125,8 +125,8 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                 while (iter.hasNext()) {
                     J.InstanceOf instanceOf = iter.next();
                     if (thenInstanceOfs.contains(instanceOf)) {
-                        result = result.withThenPart(addVariableDeclaration(
-                                (J.Block) result.getThenPart(), instanceOf, ctx));
+                        Cursor blockCursor = new Cursor(new Cursor(getCursor().getParent(), result), result.getThenPart());
+                        result = result.withThenPart(addVariableDeclaration(blockCursor, instanceOf, ctx));
                     }
                 }
             }
@@ -151,9 +151,9 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                     while (iter.hasNext()) {
                         J.InstanceOf instanceOf = iter.next();
                         if (elseInstanceOfs.contains(instanceOf)) {
+                            Cursor blockCursor = new Cursor(new Cursor(new Cursor(getCursor().getParent(), result), elsePart), elsePart.getBody());
                             result = result.withElsePart(elsePart.withBody(
-                                    addVariableDeclaration(
-                                            (J.Block) elsePart.getBody(), instanceOf, ctx)));
+                                    addVariableDeclaration(blockCursor, instanceOf, ctx)));
                         }
                     }
                 }
@@ -166,20 +166,18 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
          * declaration is based on a pattern variable declared in an instanceof
          * expression.
          *
-         * @param block      the statement block
-         * @param instanceOf the instanceof expression
-         * @param ctx        the execution context
+         * @param blockCursor the cursor to the statement block
+         * @param instanceOf  the instanceof expression
+         * @param ctx         the execution context
          * @return the updated block
          */
-        private J.Block addVariableDeclaration(J.Block block, J.InstanceOf instanceOf, ExecutionContext ctx) {
+        private J.Block addVariableDeclaration(Cursor blockCursor, J.InstanceOf instanceOf, ExecutionContext ctx) {
+            J.Block block = blockCursor.getValue();
             JavaTemplate template = JavaTemplate
                     .builder("#{} #{} = (#{}) #{any()};")
-                    .context(() -> new Cursor(getCursor(), block))
+                    .contextSensitive()
                     .build();
-            return block.withTemplate(template,
-                    getCursor(),
-                    block.getCoordinates().firstStatement(),
-                    instanceOf.getClazz().toString(),
+            return template.apply(blockCursor, block.getCoordinates().firstStatement(), instanceOf.getClazz().toString(),
                     ((J.Identifier) Objects.requireNonNull(instanceOf.getPattern())).getSimpleName(),
                     instanceOf.getClazz().toString(),
                     visit(instanceOf.getExpression(), ctx));

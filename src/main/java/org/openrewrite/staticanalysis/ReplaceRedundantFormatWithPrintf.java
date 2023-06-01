@@ -137,15 +137,10 @@ public class ReplaceRedundantFormatWithPrintf extends Recipe {
                 }
                 code.append(")");
 
-                JavaTemplate template = JavaTemplate.builder(code.toString()).context(getCursor()).build();
+                JavaTemplate template = JavaTemplate.builder(code.toString()).contextSensitive().build();
                 return maybeAutoFormat(
                         method,
-                        method.withTemplate(
-                                template,
-                                getCursor(),
-                                method.getCoordinates().replaceMethod(),
-                                printfArgs.toArray()
-                        ),
+                        template.apply(getCursor(), method.getCoordinates().replaceMethod(), printfArgs.toArray()),
                         ctx
                 );
             }

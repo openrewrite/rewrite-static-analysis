@@ -117,13 +117,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         }
                         templateBuilder.append('}');
 
-                        J.Lambda lambda = n.withTemplate(
-                                JavaTemplate.builder(templateBuilder.toString())
-                                        .context(getCursor())
-                                        .build(),
-                                getCursor(),
-                                n.getCoordinates().replace()
-                        );
+                        J.Lambda lambda = JavaTemplate.builder(templateBuilder.toString())
+                                .contextSensitive()
+                                .build().apply(getCursor(), n.getCoordinates().replace());
                         lambda = lambda.withType(typedInterface);
                         lambda = (J.Lambda) new UnnecessaryParentheses().getVisitor()
                                 .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
