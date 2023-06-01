@@ -74,7 +74,7 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
     }
 
     @Override
-    public List<ChangeMethodName> getInitialValue() {
+    public List<ChangeMethodName> getInitialValue(ExecutionContext ctx) {
         return new ArrayList<>();
     }
 

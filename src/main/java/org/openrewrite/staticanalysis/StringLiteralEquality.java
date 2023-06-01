@@ -115,7 +115,7 @@ public class StringLiteralEquality extends Recipe {
                         after = asNegatedUnary(mi);
                     }
                     if (after != null) {
-                        doAfterVisit(new EqualsAvoidsNull());
+                        doAfterVisit(new EqualsAvoidsNull().getVisitor());
                         return after;
                     }
                 }
