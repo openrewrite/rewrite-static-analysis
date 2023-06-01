@@ -107,6 +107,7 @@ public class MinimumSwitchCases extends Recipe {
 
             @Override
             public J visitBlock(J.Block block, ExecutionContext executionContext) {
+                System.out.println("RUNNING");
                 // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
                 return block.withStatements(ListUtils.flatMap(block.getStatements(), (statement) -> {
                     Statement visited = (Statement) visit(statement, executionContext, getCursor());
@@ -156,80 +157,80 @@ public class MinimumSwitchCases extends Recipe {
                         return super.visitSwitch(switch_, ctx);
                     }
 
-                    try {
-                        Expression tree = sortedSwitch.getSelector().getTree();
-                        J.If generatedIf;
-                        if (TypeUtils.isString(tree.getType())) {
-                            if (cases[1] == null) {
-                                if (isDefault(cases[0])) {
-                                    return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
-                                } else {
-                                    generatedIf = switch_.withTemplate(ifString, getCursor(), switch_.getCoordinates().replace(),
-                                            cases[0].getPattern(), tree);
-                                }
-                            } else if (isDefault(cases[1])) {
-                                generatedIf = switch_.withTemplate(ifElseString, getCursor(), switch_.getCoordinates().replace(),
+                    Expression tree = sortedSwitch.getSelector().getTree(); // get tree
+                    J.If generatedIf; // new if statement
+
+                    if (TypeUtils.isString(tree.getType())) { // encountered string expression
+                        if (cases[1] == null) { // check if only one case exists
+                            if (isDefault(cases[0])) {
+                                return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
+                            } else {
+                                generatedIf = switch_.withTemplate(ifString, getCursor(), switch_.getCoordinates().replace(),
                                         cases[0].getPattern(), tree);
-                            } else {
-                                generatedIf = switch_.withTemplate(ifElseIfString, getCursor(), switch_.getCoordinates().replace(),
-                                        cases[0].getPattern(), tree, cases[1].getPattern(), tree);
                             }
-                        } else if (switchesOnEnum(switch_)) {
-                            if (cases[1] == null) {
-                                if (isDefault(cases[0])) {
-                                    return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
-                                } else {
-                                    generatedIf = switch_.withTemplate(ifEnum, getCursor(), switch_.getCoordinates().replace(),
-                                            tree, enumIdentToFieldAccessString(cases[0].getPattern()));
-                                }
-                            } else if (isDefault(cases[1])) {
-                                generatedIf = switch_.withTemplate(ifElseEnum, getCursor(), switch_.getCoordinates().replace(),
+                        } else if (isDefault(cases[1])) { // check if two cases exist
+                            generatedIf = switch_.withTemplate(ifElseString, getCursor(), switch_.getCoordinates().replace(),
+                                    cases[0].getPattern(), tree); // create conditional template
+                        } else { // else case exists
+                            // create conditional template
+                            generatedIf = switch_.withTemplate(ifElseIfString, getCursor(), switch_.getCoordinates().replace(),
+                                    cases[0].getPattern(), tree, cases[1].getPattern(), tree);
+                        }
+                    } else if (switchesOnEnum(switch_)) { // encountered enum expression
+                        if (cases[1] == null) {
+                            if (isDefault(cases[0])) {
+                                return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
+                            } else {
+                                generatedIf = switch_.withTemplate(ifEnum, getCursor(), switch_.getCoordinates().replace(),
                                         tree, enumIdentToFieldAccessString(cases[0].getPattern()));
-                            } else {
-                                generatedIf = switch_.withTemplate(ifElseIfEnum, getCursor(), switch_.getCoordinates().replace(),
-                                        tree, enumIdentToFieldAccessString(cases[0].getPattern()), tree, enumIdentToFieldAccessString(cases[1].getPattern()));
                             }
+                        } else if (isDefault(cases[1])) {
+                            generatedIf = switch_.withTemplate(ifElseEnum, getCursor(), switch_.getCoordinates().replace(),
+                                    tree, enumIdentToFieldAccessString(cases[0].getPattern()));
                         } else {
-                            if (cases[1] == null) {
-                                if (isDefault(cases[0])) {
-                                    return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
-                                } else {
-                                    generatedIf = switch_.withTemplate(ifPrimitive, getCursor(), switch_.getCoordinates().replace(),
-                                            tree, cases[0].getPattern());
-                                }
-                            } else if (isDefault(cases[1])) {
-                                generatedIf = switch_.withTemplate(ifElsePrimitive, getCursor(), switch_.getCoordinates().replace(),
+                            generatedIf = switch_.withTemplate(ifElseIfEnum, getCursor(), switch_.getCoordinates().replace(),
+                                    tree, enumIdentToFieldAccessString(cases[0].getPattern()), tree, enumIdentToFieldAccessString(cases[1].getPattern()));
+                        }
+                    } else { // encountered primitive conditional case
+                        if (cases[1] == null) {
+                            if (isDefault(cases[0])) {
+                                return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
+                            } else {
+                                System.out.println(switch_);
+                                generatedIf = switch_.withTemplate(ifPrimitive, getCursor(), switch_.getCoordinates().replace(),
                                         tree, cases[0].getPattern());
-                            } else {
-                                generatedIf = switch_.withTemplate(ifElseIfPrimitive, getCursor(), switch_.getCoordinates().replace(),
-                                        tree, cases[0].getPattern(), tree, cases[1].getPattern());
                             }
+                        } else if (isDefault(cases[1])) {
+                            // IllegalArgumentException template error thrown here
+                            generatedIf = switch_.withTemplate(ifElsePrimitive, getCursor(), switch_.getCoordinates().replace(),
+                                    tree, cases[0].getPattern());
+                            System.out.println("IF GENERATED SUCCESSFULLY");
+                        } else {
+                            generatedIf = switch_.withTemplate(ifElseIfPrimitive, getCursor(), switch_.getCoordinates().replace(),
+                                    tree, cases[0].getPattern(), tree, cases[1].getPattern());
                         }
-
-                        // move first case to "if"
-                        List<Statement> thenStatements = getStatements(cases[0]);
-
-                        generatedIf = generatedIf.withThenPart(((J.Block) generatedIf.getThenPart()).withStatements(ListUtils.map(thenStatements,
-                                s -> s instanceof J.Break ? null : s)));
-
-                        // move second case to "else"
-                        if (cases[1] != null) {
-                            assert generatedIf.getElsePart() != null;
-                            if (isDefault(cases[1])) {
-                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(((J.Block) generatedIf.getElsePart().getBody()).withStatements(ListUtils.map(getStatements(cases[1]),
-                                        s -> s instanceof J.Break ? null : s))));
-                            } else {
-                                J.If elseIf = (J.If) generatedIf.getElsePart().getBody();
-                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseIf.withThenPart(((J.Block) elseIf.getThenPart()).withStatements(ListUtils.map(getStatements(cases[1]),
-                                        s -> s instanceof J.Break ? null : s)))));
-                            }
-                        }
-
-                        return autoFormat(generatedIf, ctx);
-                    } catch (RecipeRunException e) {
-                        // JavaTemplate has problems on some Groovy files, don't currently have a way to adapt it appropriately
-                        return switch_;
                     }
+
+                    // move first case to "if"
+                    List<Statement> thenStatements = getStatements(cases[0]);
+
+                    generatedIf = generatedIf.withThenPart(((J.Block) generatedIf.getThenPart()).withStatements(ListUtils.map(thenStatements,
+                            s -> s instanceof J.Break ? null : s)));
+
+                    // move second case to "else"
+                    if (cases[1] != null) {
+                        assert generatedIf.getElsePart() != null;
+                        if (isDefault(cases[1])) {
+                            generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(((J.Block) generatedIf.getElsePart().getBody()).withStatements(ListUtils.map(getStatements(cases[1]),
+                                    s -> s instanceof J.Break ? null : s))));
+                        } else {
+                            J.If elseIf = (J.If) generatedIf.getElsePart().getBody();
+                            generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseIf.withThenPart(((J.Block) elseIf.getThenPart()).withStatements(ListUtils.map(getStatements(cases[1]),
+                                    s -> s instanceof J.Break ? null : s)))));
+                        }
+                    }
+
+                    return autoFormat(generatedIf, ctx);
                 }
 
                 return super.visitSwitch(switch_, ctx);

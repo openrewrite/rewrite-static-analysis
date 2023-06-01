@@ -47,7 +47,7 @@ public class MinimumSwitchCasesTest implements RewriteTest {
                   }
               }
               """,
-            """
+              """
               import java.nio.file.*
               class Test {
                   void test(OpenOption o) {
