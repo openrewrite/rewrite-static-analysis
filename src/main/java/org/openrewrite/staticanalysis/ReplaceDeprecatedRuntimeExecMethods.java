@@ -15,10 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -77,13 +74,15 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
                     }
 
+                    updateCursor(m);
                     if (flattenAble) {
                         String[] cmds = sb.toString().split(" ");
                         String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
                         JavaTemplate template = JavaTemplate.builder(templateCode).build();
 
                         List<Expression> args = m.getArguments();
-                        args.set(0, args.get(0).withTemplate(template, getCursor(), args.get(0).getCoordinates().replace()));
+                        Cursor cursor = new Cursor(getCursor(), args.get(0));
+                        args.set(0, template.apply(cursor, args.get(0).getCoordinates().replace()));
 
                         if (m.getMethodType() != null) {
                             List<JavaType> parameterTypes = m.getMethodType().getParameterTypes();
@@ -104,8 +103,9 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
 
                         String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
-                        JavaTemplate template = JavaTemplate.builder(code).context(getCursor()).build();
-                        arg0 = args.get(0).withTemplate(template, getCursor(), args.get(0).getCoordinates().replace(), args.get(0));
+                        JavaTemplate template = JavaTemplate.builder(code).contextSensitive().build();
+                        Cursor cursor = new Cursor(getCursor(), args.get(0));
+                        arg0 = template.apply(cursor, args.get(0).getCoordinates().replace(), args.get(0));
                         args.set(0, arg0);
 
                         if (m.getMethodType() != null) {

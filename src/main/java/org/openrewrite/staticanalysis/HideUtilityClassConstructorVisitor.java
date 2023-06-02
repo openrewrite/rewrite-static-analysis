@@ -94,11 +94,10 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
             if (UtilityClassMatcher.hasImplicitDefaultConstructor(classDecl) &&
                     !J.ClassDeclaration.Kind.Type.Enum.equals(classDecl.getKind())) {
-                classDecl = classDecl.withTemplate(JavaTemplate.builder("private #{}() {}").context(getCursor()).build(),
-                        getCursor(),
-                        classDecl.getBody().getCoordinates().lastStatement(),
-                        classDecl.getSimpleName()
-                );
+                classDecl = JavaTemplate.builder("private #{}() {}")
+                        .contextSensitive()
+                        .build()
+                        .apply(getCursor(), classDecl.getBody().getCoordinates().lastStatement(), classDecl.getSimpleName());
             }
             return classDecl;
         }

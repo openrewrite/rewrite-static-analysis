@@ -111,7 +111,7 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
                         default:
                             return nc;
                     }
-                    return nc.withTemplate(valueOf.build(), getCursor(), nc.getCoordinates().replace(), arg);
+                    return valueOf.build().apply(updateCursor(nc), nc.getCoordinates().replace(), arg);
                 }
                 return nc;
             }

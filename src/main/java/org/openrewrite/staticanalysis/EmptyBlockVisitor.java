@@ -42,10 +42,10 @@ import static org.openrewrite.Tree.randomId;
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     EmptyBlockStyle emptyBlockStyle;
     JavaTemplate throwException = JavaTemplate.builder("throw new #{}(#{any(String)});")
-            .context(this::getCursor)
+            .contextSensitive()
             .imports("java.io.UncheckedIOException")
             .build();
-    JavaTemplate continueStatement = JavaTemplate.builder("continue;").context(this::getCursor).build();
+    JavaTemplate continueStatement = JavaTemplate.builder("continue;").contextSensitive().build();
 
     @Override
     public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
@@ -53,7 +53,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
             J.Block body = (J.Block) w.getBody();
-            w = w.withTemplate(continueStatement, getCursor(), body.getCoordinates().lastStatement());
+            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
         }
 
         return w;
@@ -65,7 +65,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
             J.Block body = (J.Block) w.getBody();
-            w = w.withTemplate(continueStatement, getCursor(), body.getCoordinates().lastStatement());
+            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
         }
 
         return w;
