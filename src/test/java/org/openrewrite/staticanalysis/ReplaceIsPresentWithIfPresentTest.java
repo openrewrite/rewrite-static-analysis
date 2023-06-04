@@ -257,7 +257,13 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                   }
               }
               """
-          ),
+          )
+        );
+    }
+
+    @Test
+    void replace2() {
+        rewriteRun(
           java(
             """
               import java.util.Optional;
@@ -297,7 +303,6 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                   }
               }
               """
-
           )
         );
     }

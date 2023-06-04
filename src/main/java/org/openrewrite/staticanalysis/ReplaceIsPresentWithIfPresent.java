@@ -53,21 +53,23 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
     private static class ReplaceIsPresentWithIfPresentVisitor extends JavaVisitor<ExecutionContext> {
         @Override
         public J visitIf(J.If _if, ExecutionContext context) {
-            J.If __if = (J.If) super.visitIf(_if, context);
-            if (__if != _if) {
-                /* if else part is present */
+            J.If updatedIf = (J.If) super.visitIf(_if, context);
+            if (updatedIf != _if) {
+                /* skip if `if-else` part is present */
                 if (Objects.nonNull(_if.getElsePart())) {
                     return _if;
                 }
 
                 /* check if parent is else-if */
-                if (getCursor().getParent().getParent().getValue() instanceof J.If.Else) {
+                if (getCursor().getParent() == null ||
+                    getCursor().getParent().getParent() == null ||
+                    getCursor().getParent().getParent().getValue() instanceof J.If.Else) {
                     return _if;
                 }
 
                 /* handle J.If ancestors */
-                if (!(__if.getIfCondition().getTree() instanceof J.MethodInvocation) || !OPTIONAL_IS_PRESENT.matches((J.MethodInvocation) __if.getIfCondition().getTree())) {
-                    return __if;
+                if (!(updatedIf.getIfCondition().getTree() instanceof J.MethodInvocation) || !OPTIONAL_IS_PRESENT.matches((J.MethodInvocation) updatedIf.getIfCondition().getTree())) {
+                    return updatedIf;
                 }
 
                 /* handle nested ifs with optional#IsPresent mi */
@@ -75,8 +77,10 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
                     return _if;
                 }
 
-                J.Identifier optionalVariable = (J.Identifier) ((J.MethodInvocation) __if.getIfCondition().getTree()).getSelect();
-                if (!IsBlockLambdaConvertibleVisitor.isBlockLambdaConvertible((J.Block) __if.getThenPart(), getCursor(), optionalVariable).get()) {
+                J.Identifier optionalVariable = (J.Identifier) ((J.MethodInvocation) updatedIf.getIfCondition().getTree()).getSelect();
+                if (optionalVariable == null ||
+                    !IsBlockLambdaConvertibleVisitor.isBlockLambdaConvertible((J.Block) updatedIf.getThenPart(),
+                        getCursor(), optionalVariable).get()) {
                     return _if;
                 }
 
@@ -88,15 +92,16 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
                     .contextSensitive()
                     .build()
                     .apply(getCursor(),
-                    __if.getCoordinates().replace(),
-                        __if.getThenPart()
+                        updatedIf.getCoordinates().replace(),
+                        updatedIf.getThenPart()
                     );
 
                 /* replace Optional#get to lambda parameter */
-                J.Identifier lambdaParameterIdentifier = ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0)).getParameters().getParameters().get(0)).getVariables().get(0).getName();
-                return ReplaceMethodCallWithStringVisitor.replace(ifPresentMi, context, lambdaParameterIdentifier, methodSelector);
+                J.Identifier lambdaParameterIdentifier = ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0))
+                    .getParameters().getParameters().get(0)).getVariables().get(0).getName();
+                return ReplaceMethodCallWithStringVisitor.replace(ifPresentMi, context, lambdaParameterIdentifier, optionalVariable);
             }
-            return __if;
+            return updatedIf;
         }
 
         @Override
@@ -116,7 +121,9 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
         private boolean isIfCondition() {
             /* Check if current mi is part of J.If condition*/
             Cursor maybeControlParentheses = getCursor().dropParentUntil(is -> is instanceof J.ControlParentheses || is instanceof J.CompilationUnit);
-            return maybeControlParentheses.getValue() instanceof J.ControlParentheses && maybeControlParentheses.getParent().getValue() instanceof J.If;
+            return maybeControlParentheses.getValue() instanceof J.ControlParentheses &&
+                   maybeControlParentheses.getParent() != null &&
+                   maybeControlParentheses.getParent().getValue() instanceof J.If;
         }
 
         private boolean isParentWithOptionalIsPresentMi() {
@@ -128,21 +135,22 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
     @Value
     @EqualsAndHashCode(callSuper = true)
     public static class ReplaceMethodCallWithStringVisitor extends JavaVisitor<ExecutionContext> {
-
         J.Identifier lambdaParameterIdentifier;
-        String methodSelector;
+        J.Identifier methodSelector;
 
-        static J replace(J subtree, ExecutionContext p, J.Identifier lambdaParameterIdentifier, String methodSelector) {
-            return new ReplaceMethodCallWithStringVisitor(lambdaParameterIdentifier, methodSelector).visit(subtree, p);
+        static J replace(J subtree, ExecutionContext p, J.Identifier lambdaParameterIdentifier, J.Identifier methodSelector) {
+            return new ReplaceMethodCallWithStringVisitor(lambdaParameterIdentifier, methodSelector).visitNonNull(subtree, p);
         }
 
         @Override
         public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext p) {
             J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-
             /* Only replace method invocations that has same method selector as present in if condition */
-            if (OPTIONAL_GET.matches(mi)) {
-                if (mi.getSelect().toString().equals(methodSelector))
+            if (OPTIONAL_GET.matches(mi) && mi.getSelect() instanceof J.Identifier) {
+                J.Identifier selectToBeReplaced = (J.Identifier) mi.getSelect();
+                if (methodSelector.getSimpleName().equals(mi.getSelect().toString()) &&
+                    methodSelector.getFieldType() != null &&
+                    methodSelector.getFieldType().equals(selectToBeReplaced.getFieldType()))
                     return lambdaParameterIdentifier;
             }
             return mi;
