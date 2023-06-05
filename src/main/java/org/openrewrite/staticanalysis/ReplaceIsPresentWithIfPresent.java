@@ -21,10 +21,14 @@ import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.marker.SearchResult;
+import org.openrewrite.java.tree.Statement;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -49,6 +53,14 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
     }
 
     private static class ReplaceIsPresentWithIfPresentVisitor extends JavaVisitor<ExecutionContext> {
+        private final List<J.Identifier> lambdaAccessibleVariables = new ArrayList<>();
+
+        @Override
+        public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
+            collectLambdaAccessibleVariables(cu, ctx);
+            return super.visitCompilationUnit(cu, ctx);
+        }
+
         @Override
         public J visitIf(J.If _if, ExecutionContext context) {
             J.If before = _if;
@@ -80,8 +92,8 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
             J.Identifier optionalVariable =
                 (J.Identifier) ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
             if (optionalVariable == null ||
-                !IsBlockLambdaConvertibleVisitor.isBlockLambdaConvertible((J.Block) _if.getThenPart(),
-                    getCursor(), optionalVariable).get()) {
+                isBlockLambdaUnConvertible(_if.getThenPart())
+            ) {
                 return _if;
             }
 
@@ -110,26 +122,90 @@ public class ReplaceIsPresentWithIfPresent extends Recipe {
             J.Identifier lambdaParameterIdentifier =
                 ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0))
                 .getParameters().getParameters().get(0)).getVariables().get(0).getName();
+            lambdaAccessibleVariables.add(lambdaParameterIdentifier);
             return ReplaceMethodCallWithStringVisitor.replace(ifPresentMi, context, lambdaParameterIdentifier,
                 optionalVariable);
         }
-    }
 
-    private static Cursor getUpdatedNameScope(Cursor cursor, J.If before, J.If after) {
-        J.CompilationUnit cu = cursor.firstEnclosing(J.CompilationUnit.class);
-        if (cu == null || before == after) {
-            return cursor;
-        }
-        cu = (J.CompilationUnit) new JavaIsoVisitor<J.If>(){
-            @Override
-            public J.If visitIf(J.If iff, J.If targetIf) {
-                if (iff == targetIf) {
-                    return after;
+        private boolean isBlockLambdaUnConvertible(Statement ifThenPart) {
+            return new JavaIsoVisitor<AtomicBoolean>() {
+                @Override
+                public J.Identifier visitIdentifier(J.Identifier id, AtomicBoolean unconvertible) {
+                    if (id.getType() == null || id.getFieldType() == null) {
+                        return id;
+                    }
+
+                    if (lambdaAccessibleVariables.stream().noneMatch(v -> id.getFieldType().equals(v.getFieldType()) &&
+                                                               v.getSimpleName().equals(id.getSimpleName()))
+                    ) {
+                        unconvertible.set(true);
+                    }
+
+                    return id;
                 }
-                return super.visitIf(iff, targetIf);
+
+                @Override
+                public J.Return visitReturn(J.Return _return, AtomicBoolean unconvertible) {
+                    unconvertible.set(true);
+                    return _return;
+                }
+            }.reduce(ifThenPart, new AtomicBoolean()).get();
+        }
+
+        private void collectLambdaAccessibleVariables(J.CompilationUnit cu, ExecutionContext ctx) {
+            J.CompilationUnit finalizeLocalVariablesCu = (J.CompilationUnit) new FinalizeLocalVariables().getVisitor().visit(cu, ctx);
+            J.CompilationUnit finalizeMethodArgumentsCu = (J.CompilationUnit) new FinalizeMethodArguments().getVisitor().visit(cu, ctx);
+            JavaIsoVisitor<List<J.Identifier>> finalVariablesCollector = new JavaIsoVisitor<List<J.Identifier>>() {
+                @Override
+                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable,
+                                                                        List<J.Identifier> identifiers) {
+                    if (multiVariable.hasModifier(J.Modifier.Type.Final)) {
+                        identifiers.addAll(multiVariable.getVariables().stream()
+                            .map(J.VariableDeclarations.NamedVariable::getName)
+                            .collect(Collectors.toList()));
+                    }
+                    return super.visitVariableDeclarations(multiVariable, identifiers);
+                }
+
+                @Override
+                public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl,
+                                                                List<J.Identifier> identifiers) {
+                    identifiers.addAll(collectFields(classDecl));
+                    return super.visitClassDeclaration(classDecl, identifiers);
+                }
+            };
+            finalVariablesCollector.visit(finalizeLocalVariablesCu, lambdaAccessibleVariables);
+            finalVariablesCollector.visit(finalizeMethodArgumentsCu, lambdaAccessibleVariables);
+        }
+
+        private static Cursor getUpdatedNameScope(Cursor cursor, J.If before, J.If after) {
+            J.CompilationUnit cu = cursor.firstEnclosing(J.CompilationUnit.class);
+            if (cu == null || before == after) {
+                return cursor;
             }
-        }.visitNonNull(cu, before);
-        return new Cursor(null, cu);
+            cu = (J.CompilationUnit) new JavaIsoVisitor<J.If>(){
+                @Override
+                public J.If visitIf(J.If iff, J.If targetIf) {
+                    if (iff == targetIf) {
+                        return after;
+                    }
+                    return super.visitIf(iff, targetIf);
+                }
+            }.visitNonNull(cu, before);
+            return new Cursor(null, cu);
+        }
+
+        private static List<J.Identifier> collectFields(J.ClassDeclaration classDecl) {
+            return classDecl.getBody()
+                .getStatements()
+                .stream()
+                .filter(statement -> statement instanceof J.VariableDeclarations)
+                .map(J.VariableDeclarations.class::cast)
+                .map(J.VariableDeclarations::getVariables)
+                .flatMap(Collection::stream)
+                .map(J.VariableDeclarations.NamedVariable::getName)
+                .collect(Collectors.toList());
+        }
     }
 
     @Value
