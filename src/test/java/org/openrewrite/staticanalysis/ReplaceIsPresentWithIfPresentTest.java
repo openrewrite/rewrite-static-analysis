@@ -210,11 +210,11 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
               import java.util.Optional;
               public class A {
                   Integer method(Optional<Integer> a, Optional<Integer> b, Optional<Integer> c) {
-                      a.ifPresent((obj) -> {
+                      a.ifPresent((obj2) -> {
                           b.ifPresent((obj1) -> {
-                              if (c.isPresent()) {
-                                  int x = obj +obj1 + c.get();
-                              }
+                              c.ifPresent((obj) -> {
+                                  int x = obj2 + obj1 + obj;
+                              });
                           });
                       });
                       return -1;
@@ -458,7 +458,6 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
           )
         );
     }
-
 
     @Test
     void replaceNestedIf() {
