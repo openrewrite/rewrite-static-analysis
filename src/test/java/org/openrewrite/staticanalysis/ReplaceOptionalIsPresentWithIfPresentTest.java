@@ -23,13 +23,14 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
+@SuppressWarnings({"OptionalIsPresent", "ConstantValue", "OptionalUsedAsFieldOrParameterType", "UnusedAssignment", "UnnecessaryLocalVariable", "CodeBlock2Expr", "Convert2MethodRef", "SuspiciousNameCombination", "Convert2Lambda", "Anonymous2MethodRef"})
+class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec
           .parser(JavaParser.fromJavaVersion()
             .logCompilationWarningsAndErrors(true))
-          .recipe(new ReplaceIsPresentWithIfPresent());
+          .recipe(new ReplaceOptionalIsPresentWithIfPresent());
     }
 
     @Test
@@ -110,6 +111,107 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                   Integer method(Optional<Integer> o) {
                       if (o.isPresent()){
                           return o.get();
+                      }
+                      return -1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ignoreReturnInsideLambda() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  Supplier<Integer> s = () -> { return 1; };
+                  int method(Optional<Integer> o) {
+                      if (o.isPresent()) {
+                          s = () -> {
+                              return 2;
+                          };
+                      }
+                      return s.get();
+                  }
+              }
+              """,
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  Supplier<Integer> s = () -> { return 1; };
+                  int method(Optional<Integer> o) {
+                      o.ifPresent(obj -> {
+                          s = () -> {
+                              return 2;
+                          };
+                      });
+                      return s.get();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ignoreReturnInsideAnonymousSubclass() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  Supplier<Integer> s = () -> { return 1; };
+                  int method(Optional<Integer> o) {
+                      if (o.isPresent()) {
+                          s = new Supplier<>() {
+                              @Override
+                              public Integer get() {
+                                  return o.get();
+                              }
+                          };
+                      }
+                      return s.get();
+                  }
+              }
+              """,
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  Supplier<Integer> s = () -> { return 1; };
+                  int method(Optional<Integer> o) {
+                      o.ifPresent(obj -> {
+                          s = new Supplier<>() {
+                              @Override
+                              public Integer get() {
+                                  return obj;
+                              }
+                          };
+                      });
+                      return s.get();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNothingIfContainsThrow() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Optional;
+              public class A {
+                  Integer method(Optional<Integer> o) {
+                      if (o.isPresent()){
+                          throw new RuntimeException();
                       }
                       return -1;
                   }
@@ -211,9 +313,9 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
               import java.util.Optional;
               public class A {
                   Integer method(Optional<Integer> a, Optional<Integer> b, Optional<Integer> c) {
-                      a.ifPresent((obj2) -> {
-                          b.ifPresent((obj1) -> {
-                              c.ifPresent((obj) -> {
+                      a.ifPresent(obj2 -> {
+                          b.ifPresent(obj1 -> {
+                              c.ifPresent(obj -> {
                                   int x = obj2 + obj1 + obj;
                               });
                           });
@@ -252,7 +354,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                   void method() {
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
-                      o.ifPresent((obj) -> {
+                      o.ifPresent(obj -> {
                           list.add(obj);
                       });
                   }
@@ -297,7 +399,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                       x=10;
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
-                      o.ifPresent((obj) -> {
+                      o.ifPresent(obj -> {
                           int y = x;
                           list.add(obj);
                           System.out.println(obj + y + z);
@@ -340,7 +442,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                       z=20;
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
-                      o.ifPresent((obj) -> {
+                      o.ifPresent(obj -> {
                           z = 30;
                           list.add(obj);
                       });
@@ -375,7 +477,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                       z=20;
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
-                      o.ifPresent((obj) -> {
+                      o.ifPresent(obj -> {
                           list.add(obj + z);
                       });
                   }
@@ -416,7 +518,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                       z=20;
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
-                      o.ifPresent((obj) -> {
+                      o.ifPresent(obj -> {
                           z = 30;
                           list.add(obj);
                       });
@@ -451,7 +553,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                       z=20;
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
-                      o.ifPresent((obj) -> {
+                      o.ifPresent(obj -> {
                           list.add(obj + z);
                       });
                   }
@@ -492,7 +594,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
                       if(x){
-                          o.ifPresent((obj) -> {
+                          o.ifPresent(obj -> {
                               list.add(obj);
                           });
                       }
@@ -532,7 +634,7 @@ class ReplaceIsPresentWithIfPresentTest implements RewriteTest {
                       List<Integer> list = new ArrayList<>();
                       Optional<Integer> o = Optional.of(2);
                       Optional<Integer> o2 = Optional.of(3);
-                      o.ifPresent((obj) -> {
+                      o.ifPresent(obj -> {
                           list.add(obj);
                           list.add(o2.get());
                       });
