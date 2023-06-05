@@ -159,6 +159,38 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     }
 
     @Test
+    void allowFieldAccess() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  int method(Optional<Integer> o) {
+                      if (o.isPresent()) {
+                          System.out.println(o.get());
+                      }
+                      return 1;
+                  }
+              }
+              """,
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  int method(Optional<Integer> o) {
+                      o.ifPresent(obj -> {
+                          System.out.println(obj);
+                      });
+                      return 1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void ignoreReturnInsideAnonymousSubclass() {
         rewriteRun(
           java(

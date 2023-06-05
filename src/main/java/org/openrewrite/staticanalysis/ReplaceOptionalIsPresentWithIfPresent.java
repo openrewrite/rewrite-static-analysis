@@ -21,6 +21,7 @@ import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.ArrayList;
@@ -126,7 +127,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
             return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.Identifier visitIdentifier(J.Identifier id, AtomicBoolean convertible) {
-                    if (id.getType() == null || id.getFieldType() == null) {
+                    if (id.getType() == null || id.getFieldType() == null || id.getFieldType().getOwner() instanceof JavaType.Class) {
                         return id;
                     }
 
@@ -168,6 +169,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
                 @Override
                 public J.Break visitBreak(J.Break breakStatement, AtomicBoolean convertible) {
+                    convertible.set(false);
                     convertible.set(false);
                     return breakStatement;
                 }
