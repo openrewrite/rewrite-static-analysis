@@ -88,7 +88,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
             J.Identifier optionalVariable =
                     (J.Identifier) ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
-            if (optionalVariable == null || isBlockLambdaUnConvertible(_if.getThenPart())) {
+            if (optionalVariable == null || !isStatementLambdaConvertible(_if.getThenPart())) {
                 return _if;
             }
 
@@ -118,68 +118,68 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                     ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0))
                             .getParameters().getParameters().get(0)).getVariables().get(0).getName();
             lambdaAccessibleVariables.add(lambdaParameterIdentifier);
-            return ReplaceMethodCallWithStringVisitor.replace(ifPresentMi, context, lambdaParameterIdentifier,
+            return ReplaceMethodCallWithVariableVisitor.replace(ifPresentMi, context, lambdaParameterIdentifier,
                     optionalVariable);
         }
 
-        private boolean isBlockLambdaUnConvertible(Statement ifThenPart) {
+        private boolean isStatementLambdaConvertible(Statement statement) {
             return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
-                public J.Identifier visitIdentifier(J.Identifier id, AtomicBoolean unconvertible) {
+                public J.Identifier visitIdentifier(J.Identifier id, AtomicBoolean convertible) {
                     if (id.getType() == null || id.getFieldType() == null) {
                         return id;
                     }
 
                     if (lambdaAccessibleVariables.stream().noneMatch(v -> id.getFieldType().equals(v.getFieldType()) &&
                                                                           v.getSimpleName().equals(id.getSimpleName()))) {
-                        unconvertible.set(true);
+                        convertible.set(false);
                     }
 
                     return id;
                 }
 
                 @Override
-                public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, AtomicBoolean atomicBoolean) {
+                public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, AtomicBoolean convertible) {
                     return classDecl;
                 }
 
                 @Override
-                public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean atomicBoolean) {
+                public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean convertible) {
                     return lambda;
                 }
 
                 @Override
-                public J.Return visitReturn(J.Return _return, AtomicBoolean unconvertible) {
-                    unconvertible.set(true);
+                public J.Return visitReturn(J.Return _return, AtomicBoolean convertible) {
+                    convertible.set(false);
                     return _return;
                 }
 
                 @Override
-                public J.Throw visitThrow(J.Throw thrown, AtomicBoolean unconvertible) {
-                    unconvertible.set(true);
+                public J.Throw visitThrow(J.Throw thrown, AtomicBoolean convertible) {
+                    convertible.set(false);
                     return thrown;
                 }
 
                 @Override
-                public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean unconvertible) {
-                    unconvertible.set(true);
+                public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean convertible) {
+                    convertible.set(false);
                     return continueStatement;
                 }
 
                 @Override
-                public J.Break visitBreak(J.Break breakStatement, AtomicBoolean unconvertible) {
-                    unconvertible.set(true);
+                public J.Break visitBreak(J.Break breakStatement, AtomicBoolean convertible) {
+                    convertible.set(false);
                     return breakStatement;
                 }
 
                 @Override
-                public J.Block visitBlock(J.Block block, AtomicBoolean unconvertible) {
+                public J.Block visitBlock(J.Block block, AtomicBoolean convertible) {
                     if (getCursor().getParentTreeCursor().getValue() instanceof J.NewClass) {
                         return block;
                     }
-                    return super.visitBlock(block, unconvertible);
+                    return super.visitBlock(block, convertible);
                 }
-            }.reduce(ifThenPart, new AtomicBoolean()).get();
+            }.reduce(statement, new AtomicBoolean(true)).get();
         }
 
         private void collectLambdaAccessibleVariables(J.CompilationUnit cu, ExecutionContext ctx) {
@@ -223,12 +223,12 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
     @Value
     @EqualsAndHashCode(callSuper = true)
-    public static class ReplaceMethodCallWithStringVisitor extends JavaVisitor<ExecutionContext> {
+    public static class ReplaceMethodCallWithVariableVisitor extends JavaVisitor<ExecutionContext> {
         J.Identifier lambdaParameterIdentifier;
         J.Identifier methodSelector;
 
         static J replace(J subtree, ExecutionContext p, J.Identifier lambdaParameterIdentifier, J.Identifier methodSelector) {
-            return new ReplaceMethodCallWithStringVisitor(lambdaParameterIdentifier, methodSelector).visitNonNull(subtree, p);
+            return new ReplaceMethodCallWithVariableVisitor(lambdaParameterIdentifier, methodSelector).visitNonNull(subtree, p);
         }
 
         @Override
