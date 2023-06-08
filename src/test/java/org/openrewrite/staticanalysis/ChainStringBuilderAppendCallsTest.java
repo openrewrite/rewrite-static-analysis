@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
+@SuppressWarnings({"StringConcatenationInsideStringBufferAppend", "StringBufferReplaceableByString"})
 class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {

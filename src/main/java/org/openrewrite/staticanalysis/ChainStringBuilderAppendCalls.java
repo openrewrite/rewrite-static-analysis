@@ -21,8 +21,8 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.PartProvider;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
 
@@ -153,7 +153,18 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
     public static J.Binary getAdditiveBinaryTemplate() {
         if (additiveBinaryTemplate == null) {
-            additiveBinaryTemplate = PartProvider.buildPart("class A { void foo() {String s = \"A\" + \"B\";}}", J.Binary.class);
+            //noinspection OptionalGetWithoutIsPresent
+            J.CompilationUnit cu = JavaParser.fromJavaVersion()
+                    .build()
+                    .parse("class A { String s = \"A\" + \"B\";}")
+                    .findFirst()
+                    .get();
+            additiveBinaryTemplate = (J.Binary) ((J.VariableDeclarations) cu.getClasses().get(0)
+                    .getBody()
+                    .getStatements().get(0))
+                    .getVariables().get(0)
+                    .getInitializer();
+            assert additiveBinaryTemplate != null;
         }
         return additiveBinaryTemplate;
     }
