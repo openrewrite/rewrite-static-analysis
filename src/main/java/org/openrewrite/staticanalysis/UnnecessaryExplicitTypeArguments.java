@@ -20,10 +20,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.NameTree;
+import org.openrewrite.java.tree.*;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -88,7 +85,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         }
                     }
 
-                    if (enclosingType != null && enclosingType.equals(m.getMethodType().getReturnType())) {
+                    if (enclosingType != null && TypeUtils.isOfType(enclosingType, m.getMethodType().getReturnType())) {
                         m = m.withTypeParameters(null);
                     }
                 }
