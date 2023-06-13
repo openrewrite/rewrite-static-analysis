@@ -43,7 +43,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
     @Override
     public String getDescription() {
-        System.out.println();
         return "Replace `Optional#isPresent()` with `Optional#ifPresent()`. Please note that this recipe is only suitable for if-blocks that lack an Else-block and have a single condition applied.";
     }
 
