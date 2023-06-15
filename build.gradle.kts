@@ -2,7 +2,7 @@
 
 plugins {
     id("org.openrewrite.build.recipe-library") version "latest.release"
-    id("org.openrewrite.rewrite") version("5.41.0-SNAPSHOT")
+    id("org.openrewrite.rewrite") version("6.2.0-SNAPSHOT")
 }
 
 repositories {
@@ -20,10 +20,10 @@ dependencies {
     testImplementation("org.projectlombok:lombok:latest.release")
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
-    implementation("org.openrewrite:rewrite-java")
+    implementation("org.openrewrite:rewrite-java:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
-    testImplementation("org.openrewrite:rewrite-groovy")
+    testImplementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
     testImplementation("org.junit-pioneer:junit-pioneer:2.0.0")
 
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
@@ -32,7 +32,7 @@ dependencies {
 
 rewrite {
     // rewriteVersion("latest.integration")
-    activeRecipe("org.openrewrite.java.migrate.MigrateToRewrite8")
+    activeRecipe("org.openrewrite.java.upgrade.MigrateToRewrite8")
     // activeRecipe("org.openrewrite.java.format.AutoFormat")
 }
 

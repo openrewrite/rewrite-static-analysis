@@ -87,7 +87,7 @@ public class ReplaceStackWithDequeTest implements RewriteTest {
     @Test
     void dataFlow() {
         rewriteRun(
-          spec -> spec.recipe(new FindMethods("java.util.Stack <constructor>(..)", false, "data")),
+          spec -> spec.recipe(new FindMethods("java.util.Stack <constructor>(..)", false)),
           java(
             """
               import java.util.Stack;

@@ -24,7 +24,6 @@ import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.dataflow.internal.InvocationMatcher;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
@@ -67,9 +66,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         // All methods that start with 'get' matching this InvocationMatcher will be considered non-side effecting.
-        InvocationMatcher SAFE_GETTER_METHODS = InvocationMatcher.fromMethodMatcher(
-                new MethodMatcher("java.io.File get*(..)")
-        );
+//        InvocationMatcher SAFE_GETTER_METHODS = InvocationMatcher.fromMethodMatcher(
+//                new MethodMatcher("java.io.File get*(..)")
+//        );
 
         Set<String> ignoreVariableNames;
         if (ignoreVariablesNamed == null) {
@@ -175,9 +174,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, AtomicBoolean result) {
-                        if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
-                            return methodInvocation;
-                        }
+//                        if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
+//                            return methodInvocation;
+//                        }
                         result.set(true);
                         return methodInvocation;
                     }

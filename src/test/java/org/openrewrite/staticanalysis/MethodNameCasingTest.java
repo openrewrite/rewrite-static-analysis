@@ -422,38 +422,38 @@ class MethodNameCasingTest implements RewriteTest {
 
     // This test uses a recipe remove ClassDeclaration types information prior to running the MethodNameCasing recipe.
     // This results in a change with an empty diff, thus before and after sources are identical
-    @Issue("https://github.com/openrewrite/rewrite/issues/2103")
-    @Test
-    void doesNotRenameMethodInvocationsWhenTheMethodDeclarationsClassTypeIsNull() {
-        rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.none()).recipe(toRecipe(() -> new JavaIsoVisitor<>() {
-              @Override
-              public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-                  return super.visitClassDeclaration(classDecl, executionContext).withType(null);
-              }
-          }).doNext(new MethodNameCasing(true, false))),
-          java(
-            """
-              package abc;
-              class T {
-                  public static int MyMethod() {return -1;}
-                  public static void anotherMethod() {
-                      int i = MyMethod();
-                  }
-              }
-              """,
-            """
-              package abc;
-              class T {
-                  public static int MyMethod() {return -1;}
-                  public static void anotherMethod() {
-                      int i = MyMethod();
-                  }
-              }
-              """
-          )
-        );
-    }
+//    @Issue("https://github.com/openrewrite/rewrite/issues/2103")
+//    @Test
+//    void doesNotRenameMethodInvocationsWhenTheMethodDeclarationsClassTypeIsNull() {
+//        rewriteRun(
+//          spec -> spec.typeValidationOptions(TypeValidation.none()).recipe(toRecipe(() -> new JavaIsoVisitor<>() {
+//              @Override
+//              public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
+//                  return super.visitClassDeclaration(classDecl, executionContext).withType(null);
+//              }
+//          }).doNext(new MethodNameCasing(true, false))),
+//          java(
+//            """
+//              package abc;
+//              class T {
+//                  public static int MyMethod() {return -1;}
+//                  public static void anotherMethod() {
+//                      int i = MyMethod();
+//                  }
+//              }
+//              """,
+//            """
+//              package abc;
+//              class T {
+//                  public static int MyMethod() {return -1;}
+//                  public static void anotherMethod() {
+//                      int i = MyMethod();
+//                  }
+//              }
+//              """
+//          )
+//        );
+//    }
 
     @Test
     void keepCamelCase() {

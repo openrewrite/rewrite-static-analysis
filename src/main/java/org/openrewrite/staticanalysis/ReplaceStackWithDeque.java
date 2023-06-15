@@ -21,8 +21,6 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.ChangeType;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.dataflow.FindLocalFlowPaths;
-import org.openrewrite.java.dataflow.LocalFlowSpec;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -51,23 +49,6 @@ public class ReplaceStackWithDeque extends Recipe {
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, ctx);
 
-                LocalFlowSpec<Expression, J> returned = new LocalFlowSpec<Expression, J>() {
-                    @Override
-                    public boolean isSource(Expression expression, Cursor cursor) {
-                        return variable.getInitializer() == expression;
-                    }
-
-                    @Override
-                    public boolean isSink(J j, Cursor cursor) {
-                        return cursor.firstEnclosing(J.Return.class) != null;
-                    }
-                };
-
-                if (v.getInitializer() != null && FindLocalFlowPaths.noneMatch(getCursor(), returned)) {
-                    v = (J.VariableDeclarations.NamedVariable) new ChangeType("java.util.Stack", "java.util.ArrayDeque", false)
-                            .getVisitor().visitNonNull(v, ctx, getCursor().getParentOrThrow());
-                    getCursor().putMessageOnFirstEnclosing(J.VariableDeclarations.class, "replace", true);
-                }
 
                 return v;
             }

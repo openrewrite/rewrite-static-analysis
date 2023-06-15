@@ -52,35 +52,35 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
           )
         );
     }
-
-    @Disabled("The recipe currently avoids simplifying anonymous classes that use the this keyword.")
-    @Test
-    void useLambdaThenSimplifyFurther() {
-        rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface().doNext(new ReplaceLambdaWithMethodReference())),
-          java(
-            """
-              class Test {
-                  Runnable r = new Runnable() {
-                      @Override
-                      public void run() {
-                          Test.this.execute();
-                      }
-                  };
-                  
-                  void execute() {}
-              }
-              """,
-            """
-              class Test {
-                  Runnable r = Test.this::execute;
-                  
-                  void execute() {}
-              }
-              """
-          )
-        );
-    }
+//
+//    @Disabled("The recipe currently avoids simplifying anonymous classes that use the this keyword.")
+//    @Test
+//    void useLambdaThenSimplifyFurther() {
+//        rewriteRun(
+//          spec -> spec.recipe(new UseLambdaForFunctionalInterface().doNext(new ReplaceLambdaWithMethodReference())),
+//          java(
+//            """
+//              class Test {
+//                  Runnable r = new Runnable() {
+//                      @Override
+//                      public void run() {
+//                          Test.this.execute();
+//                      }
+//                  };
+//
+//                  void execute() {}
+//              }
+//              """,
+//            """
+//              class Test {
+//                  Runnable r = Test.this::execute;
+//
+//                  void execute() {}
+//              }
+//              """
+//          )
+//        );
+//    }
 
     @DocumentExample
     @Test
