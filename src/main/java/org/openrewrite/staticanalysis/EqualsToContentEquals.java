@@ -63,7 +63,7 @@ public class EqualsToContentEquals extends Recipe {
                 Expression argument = m.getArguments().get(0);
 
                 // checks whether the argument is a toString() method call on a StringBuffer or CharSequence
-                if (toString_matchers.stream().anyMatch(matcher -> matcher.matches(argument))) {
+                if (TOSTRING_MATCHERS.stream().anyMatch(matcher -> matcher.matches(argument))) {
                     J.MethodInvocation inv = (J.MethodInvocation) argument;
                     Expression newArg = inv.getSelect();
                     if (inv.getSelect() == null) { return m; }
