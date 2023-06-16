@@ -76,11 +76,8 @@ public class EqualsToContentEquals extends Recipe {
 
                     if (TYPES.anyMatch(type -> TypeUtils.isOfType(newArg.getType(), type))) {
                         // strip out the toString() on the argument
-                        List<Expression> args = new ArrayList<>(1);
-                        args.add(newArg);
-                        m = m.withArguments(args);
-                        // rename the method to contentEquals
-                        methodName = m.getName().withSimpleName("contentEquals");
+                        return m.withArguments(Collections.singletonList(newArg))
+                                .withName(m.getName().withSimpleName("contentEquals"));
                     }
                 }
             }
