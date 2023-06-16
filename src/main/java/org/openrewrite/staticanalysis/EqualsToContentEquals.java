@@ -32,16 +32,14 @@ import java.util.stream.Stream;
 
 public class EqualsToContentEquals extends Recipe {
     private static final MethodMatcher equals_matcher = new MethodMatcher("java.lang.String equals(..)");
-    private static final List<String> TYPE_NAMES = Arrays.asList(
-            "java.lang.StringBuffer",
-            "java.lang.StringBuilder",
-            "java.lang.CharSequence"
-    );
-    @SuppressWarnings("unchecked")
-    private static final TreeVisitor<?, ExecutionContext> PRECONDITION =
-            Preconditions.or(TYPE_NAMES.stream().map(s -> new UsesType<>(s, false)).toArray(UsesType[]::new));
-    private static final List<MethodMatcher> toString_matchers = TYPE_NAMES.stream()
-            .map(obj -> new MethodMatcher(obj + " toString()")).collect(Collectors.toList());
+    private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
+            new UsesType<>("java.lang.StringBuffer", false),
+            new UsesType<>("java.lang.StringBuilder", false),
+            new UsesType<>("java.lang.CharSequence", false));
+    private static final List<MethodMatcher> TOSTRING_MATCHERS = Arrays.asList(
+            new MethodMatcher("java.lang.String toString()"),
+            new MethodMatcher("java.lang.StringBuffer toString()"),
+            new MethodMatcher("java.lang.StringBuilder toString()"));
 
     @Override
     public String getDisplayName() {
