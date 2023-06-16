@@ -86,7 +86,7 @@ public class EqualsToContentEquals extends Recipe {
                 }
             }
 
-            return m.withName(methodName);
+            return m;
         }
     }
 }
