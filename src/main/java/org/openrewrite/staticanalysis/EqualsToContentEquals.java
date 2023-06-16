@@ -58,7 +58,6 @@ public class EqualsToContentEquals extends Recipe {
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
             J.MethodInvocation m = super.visitMethodInvocation(mi, ctx);
-            J.Identifier methodName = m.getName();
             // create method matcher on equals(String)
             if (equals_matcher.matches(m)) {
                 Expression argument = m.getArguments().get(0);
