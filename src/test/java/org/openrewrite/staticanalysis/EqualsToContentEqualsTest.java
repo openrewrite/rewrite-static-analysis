@@ -32,6 +32,7 @@ public class EqualsToContentEqualsTest implements RewriteTest {
     }
 
     @Test
+    @DocumentExample
     public void replaceStringBuilder() {
         //language=java
         rewriteRun(
