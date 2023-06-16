@@ -64,7 +64,7 @@ public class EqualsToContentEqualsTest implements RewriteTest {
           java(
             """
               class SomeClass {
-                  boolean foo(int number, String str) {
+                  boolean foo(Integer number, String str) {
                       return str.equals(number.toString());
                   }
               }
