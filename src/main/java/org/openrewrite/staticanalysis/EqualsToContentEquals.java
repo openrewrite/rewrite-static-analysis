@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Collections;
-import java.util.Set;
 
 public class EqualsToContentEquals extends Recipe {
     private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
