@@ -20,6 +20,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaSourceFile;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -49,12 +50,12 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
     @Override
     public String getDescription() {
         return "Reformat local variable and method parameter names to camelCase to comply with Java naming convention. " +
-               "The recipe will not rename variables declared in for loop controls or catches with a single character. " +
-               "The first character is set to lower case and existing capital letters are preserved. " +
-               "Special characters that are allowed in java field names `$` and `_` are removed. " +
-               "If a special character is removed the next valid alphanumeric will be capitalized. " +
-               "Currently, does not support renaming members of classes. " +
-               "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
+                "The recipe will not rename variables declared in for loop controls or catches with a single character. " +
+                "The first character is set to lower case and existing capital letters are preserved. " +
+                "Special characters that are allowed in java field names `$` and `_` are removed. " +
+                "If a special character is removed the next valid alphanumeric will be capitalized. " +
+                "Currently, does not support renaming members of classes. " +
+                "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
     }
 
     @Override
@@ -84,15 +85,16 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 Cursor parentScope = getCursorToParentScope(getCursor());
 
                 // Does not currently support renaming fields in a J.ClassDeclaration.
-                if (!(parentScope.getParent() != null && (parentScope.getParent().getValue() instanceof J.ClassDeclaration ||
-                                                          // Detect java records
-                                                          parentScope.getValue() instanceof J.ClassDeclaration)) &&
-                    // Does not apply for instance variables of anonymous inner classes
-                    !(parentScope.getParent().getValue() instanceof J.NewClass) &&
-                    // Does not apply to for loop controls.
-                    !(parentScope.getValue() instanceof J.ForLoop.Control) &&
-                    // Does not apply to catches with 1 character.
-                    !((parentScope.getValue() instanceof J.Try.Catch || parentScope.getValue() instanceof J.MultiCatch) && variable.getSimpleName().length() == 1)) {
+                if (!(parentScope.getParent() != null &&
+                        (parentScope.getParent().getValue() instanceof J.ClassDeclaration ||
+                                // Detect java records
+                                parentScope.getValue() instanceof J.ClassDeclaration)) &&
+                        // Does not apply for instance variables of anonymous inner classes
+                        !(parentScope.getParent().getValue() instanceof J.NewClass) &&
+                        // Does not apply to for loop controls.
+                        !(parentScope.getValue() instanceof J.ForLoop.Control) &&
+                        // Does not apply to catches with 1 character.
+                        !((parentScope.getValue() instanceof J.Try.Catch || parentScope.getValue() instanceof J.MultiCatch) && variable.getSimpleName().length() == 1)) {
 
                     if (!LOWER_CAMEL.matches(variable.getSimpleName())) {
                         String toName = LOWER_CAMEL.format(variable.getSimpleName());
@@ -122,16 +124,17 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||
-                        is instanceof J.Block ||
-                        is instanceof J.MethodDeclaration ||
-                        is instanceof J.ForLoop ||
-                        is instanceof J.ForEachLoop ||
-                        is instanceof J.ForLoop.Control ||
-                        is instanceof J.Case ||
-                        is instanceof J.Try ||
-                        is instanceof J.Try.Catch ||
-                        is instanceof J.MultiCatch ||
-                        is instanceof J.Lambda
+                                is instanceof J.Block ||
+                                is instanceof J.MethodDeclaration ||
+                                is instanceof J.ForLoop ||
+                                is instanceof J.ForEachLoop ||
+                                is instanceof J.ForLoop.Control ||
+                                is instanceof J.Case ||
+                                is instanceof J.Try ||
+                                is instanceof J.Try.Catch ||
+                                is instanceof J.MultiCatch ||
+                                is instanceof J.Lambda ||
+                                is instanceof JavaSourceFile
                 );
             }
         };
