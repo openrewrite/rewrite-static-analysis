@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2023 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,8 @@ public class EqualsToContentEquals extends Recipe {
     private static final List<MethodMatcher> TOSTRING_MATCHERS = Arrays.asList(
             new MethodMatcher("java.lang.String toString()"),
             new MethodMatcher("java.lang.StringBuffer toString()"),
-            new MethodMatcher("java.lang.StringBuilder toString()"));
+            new MethodMatcher("java.lang.StringBuilder toString()"),
+            new MethodMatcher("java.lang.CharSequence toString()"));
 
     @Override
     public String getDisplayName() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2023 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,37 @@ public class EqualsToContentEqualsTest implements RewriteTest {
               class SomeClass {
                   boolean foo(CharSequence cs, String str) {
                       return str.contentEquals(cs);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void runsOnNonStringVariablesAlso() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                  boolean foo(String str) {
+                      return str.equals(getMessage().toString());
+                  }
+                  
+                  StringBuilder getMessage() {
+                      return new StringBuilder("message");
+                  }
+              }
+              """,
+            """
+              class SomeClass {
+                  boolean foo(String str) {
+                      return str.contentEquals(getMessage());
+                  }
+                  
+                  StringBuilder getMessage() {
+                      return new StringBuilder("message");
                   }
               }
               """
