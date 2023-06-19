@@ -13,7 +13,8 @@ repositories {
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
-val rewriteVersion = "7.41.0-SNAPSHOT"
+// val rewriteVersion = "7.41.0-SNAPSHOT"
+val rewriteVersion = "8.2.0-SNAPSHOT"
 dependencies {
     compileOnly("org.projectlombok:lombok:latest.release")
     annotationProcessor("org.projectlombok:lombok:latest.release")
