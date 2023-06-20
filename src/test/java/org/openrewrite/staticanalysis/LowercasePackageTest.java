@@ -37,8 +37,8 @@ class LowercasePackageTest implements RewriteTest {
     @Test
     void lowerCasePackage() {
         rewriteRun(
-          //language=java
           java(
+            //language=java
             """
               package com.UPPERCASE.CamelCase;
               class A {}
@@ -49,6 +49,21 @@ class LowercasePackageTest implements RewriteTest {
               """,
             spec -> spec.afterRecipe(cu ->
               assertThat(PathUtils.equalIgnoringSeparators(cu.getSourcePath(), Paths.get("com/uppercase/camelcase/A.java"))).isTrue())
+          )
+        );
+    }
+
+    @Test
+    void noChange() {
+        rewriteRun(
+          java(
+            //language=java
+            """
+              package com.lowercase;
+              class A {}
+              """,
+            spec -> spec.afterRecipe(cu ->
+              assertThat(PathUtils.equalIgnoringSeparators(cu.getSourcePath(), Paths.get("com/lowercase/A.java"))).isTrue())
           )
         );
     }
