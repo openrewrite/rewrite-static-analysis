@@ -15,19 +15,22 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesType;
-import org.openrewrite.java.tree.*;
-import org.openrewrite.marker.Markers;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import static java.util.Collections.emptyList;
 
 public class NoEmptyCollectionWithRawType extends Recipe {
 
@@ -53,12 +56,15 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        Map<String, String> updateFields = new HashMap<>();
-        updateFields.put("EMPTY_LIST", "emptyList");
-        updateFields.put("EMPTY_MAP", "emptyMap");
-        updateFields.put("EMPTY_SET", "emptySet");
-
         return Preconditions.check(new UsesType<>("java.util.Collections", false), new JavaVisitor<ExecutionContext>() {
+            final Map<String, String> updateFields = new HashMap<>();
+
+            {
+                updateFields.put("EMPTY_LIST", "emptyList");
+                updateFields.put("EMPTY_MAP", "emptyMap");
+                updateFields.put("EMPTY_SET", "emptySet");
+            }
+
             @Override
             public J visitImport(J.Import anImport, ExecutionContext executionContext) {
                 J.Identifier name = anImport.getQualid().getName();
@@ -70,41 +76,33 @@ public class NoEmptyCollectionWithRawType extends Recipe {
             }
 
             @Override
+            public J visitFieldAccess(J.FieldAccess fieldAccess, ExecutionContext ctx) {
+                J.Identifier name = fieldAccess.getName();
+                JavaType.Variable varType = name.getFieldType();
+                if (varType != null && TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections") &&
+                    varType.getName().startsWith("EMPTY_")) {
+                    return JavaTemplate.builder("#{any(java.util.Collections)}." + updateFields.get(varType.getName()) + "()")
+                            .contextSensitive() // context sensitive due to generics
+                            .imports("java.util.Collections")
+                            .build()
+                            .apply(getCursor(), fieldAccess.getCoordinates().replace(), fieldAccess.getTarget());
+                }
+                return super.visitFieldAccess(fieldAccess, ctx);
+            }
+
+            @Override
             public J visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
                 J.Identifier id = (J.Identifier) super.visitIdentifier(identifier, ctx);
                 JavaType.Variable varType = id.getFieldType();
                 if (varType != null && TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections") &&
                     varType.getName().startsWith("EMPTY_")) {
 
-                    J.Identifier methodId = new J.Identifier(
-                            Tree.randomId(),
-                            Space.EMPTY,
-                            Markers.EMPTY,
-                            updateFields.get(varType.getName()),
-                            null,
-                            null
-                    );
+                    return JavaTemplate.builder(updateFields.get(varType.getName()) + "()")
+                            .contextSensitive() // context sensitive due to generics
+                            .staticImports("java.util.Collections." + updateFields.get(varType.getName()))
+                            .build()
+                            .apply(getCursor(), identifier.getCoordinates().replace());
 
-                    JavaType.Method method = null;
-
-                    //noinspection ConstantConditions
-                    for (JavaType.Method m : TypeUtils.asFullyQualified(varType.getOwner()).getMethods()) {
-                        if (m.getName().equals(updateFields.get(id.getSimpleName()))) {
-                            method = m;
-                            break;
-                        }
-                    }
-
-                    return new J.MethodInvocation(
-                            Tree.randomId(),
-                            id.getPrefix(),
-                            id.getMarkers(),
-                            null,
-                            null,
-                            methodId,
-                            JContainer.build(emptyList()),
-                            method
-                    );
                 }
                 return id;
             }
