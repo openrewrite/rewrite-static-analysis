@@ -1,3 +1,18 @@
+/*
+ * Copyright 2023 the original author or authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * https://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
@@ -21,24 +36,24 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     @Test
     @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/44")
-    public void fixNonCompliantToString() {
+    void fixNonCompliantToString() {
         //language=java
         rewriteRun(
           java(
             """
               class SomeClass {
-                  public static void main(String[] args) {
-                      String argStr = args.toString();
-                  }
+                public static void main(String[] args) {
+                  String argStr = args.toString();
+                }
               }
               """,
             """
               import java.util.Arrays;
               
               class SomeClass {
-                  public static void main(String[] args) {
-                      String argStr = Arrays.toString(args);
-                  }
+                public static void main(String[] args) {
+                  String argStr = Arrays.toString(args);
+                }
               }
               """
           )
@@ -46,16 +61,16 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    public void doesNotRunOnNonArrayInstances() {
+    void doesNotRunOnNonArrayInstances() {
         //language=java
         rewriteRun(
           java(
             """
               class SomeClass {
-                  public static void main(String[] args) {
-                      int number = 5;
-                      System.out.println(number.toString());
-                  }
+                public static void main(String[] args) {
+                  int number = 5;
+                  System.out.println(number.toString());
+                }
               }
               """
           )
@@ -63,34 +78,34 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    public void runsOnNonStringArrays() {
+    void runsOnNonStringArrays() {
         //language=java
         rewriteRun(
           java(
             """
               class SomeClass {
-                  public static void main(String[] args) {
-                      String arrStr = getNumArr().toString();
-                  }
-                  
-                  public int[] getNumArr() {
-                      int[] nums = {1, 2, 3, 4};
-                      return nums;
-                  }
+                public static void main(String[] args) {
+                  String arrStr = getNumArr().toString();
+                }
+                
+                public int[] getNumArr() {
+                  int[] nums = {1, 2, 3, 4};
+                  return nums;
+                }
               }
               """,
             """
               import java.util.Arrays;
               
               class SomeClass {
-                  public static void main(String[] args) {
-                      String arrStr = Arrays.toString(getNumArr());
-                  }
-                  
-                  public int[] getNumArr() {
-                      int[] nums = {1, 2, 3, 4};
-                      return nums;
-                  }
+                public static void main(String[] args) {
+                  String arrStr = Arrays.toString(getNumArr());
+                }
+                
+                public int[] getNumArr() {
+                  int[] nums = {1, 2, 3, 4};
+                  return nums;
+                }
               }
               """
           )
@@ -98,34 +113,34 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    public void selectIsAMethod() {
+    void selectIsAMethod() {
         //language=java
         rewriteRun(
           java(
             """
               class SomeClass {
-                  public static void main(String[] args) {
-                      String arrStr = getArr().toString();
-                  }
-                  
-                  public String[] getArr() {
-                      String[] arr = {"test", "array"};
-                      return arr;
-                  }
+                public static void main(String[] args) {
+                  String arrStr = getArr().toString();
+                }
+                
+                public String[] getArr() {
+                  String[] arr = {"test", "array"};
+                  return arr;
+                }
               }
               """,
             """
               import java.util.Arrays;
               
               class SomeClass {
-                  public static void main(String[] args) {
-                      String arrStr = Arrays.toString(getArr());
-                  }
-                  
-                  public String[] getArr() {
-                      String[] arr = {"test", "array"};
-                      return arr;
-                  }
+                public static void main(String[] args) {
+                  String arrStr = Arrays.toString(getArr());
+                }
+                
+                public String[] getArr() {
+                  String[] arr = {"test", "array"};
+                  return arr;
+                }
               }
               """
           )
@@ -133,7 +148,7 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    public void printlnEdgeCase() {
+    void printlnEdgeCase() {
         //language=java
         rewriteRun(
           java(
@@ -160,26 +175,26 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    public void stringFormatEdgeCase() {
+    void stringFormatEdgeCase() {
         //language=java
         rewriteRun(
           java(
             """
               class SomeClass {
-                  public static void main(String[] args) {
-                      int[] s = new int[]{1, 2, 3};
-                      System.out.println(String.format("s=%s", s));
-                  }
+                public static void main(String[] args) {
+                  int[] s = new int[]{1, 2, 3};
+                  System.out.println(String.format("s=%s", s));
+                }
               }
               """,
             """
               import java.util.Arrays;
               
               class SomeClass {
-                  public static void main(String[] args) {
-                      int[] s = new int[]{1, 2, 3};
-                      System.out.println(String.format("s=%s", Arrays.toString(s)));
-                  }
+                public static void main(String[] args) {
+                  int[] s = new int[]{1, 2, 3};
+                  System.out.println(String.format("s=%s", Arrays.toString(s)));
+                }
               }
               """
           )
@@ -187,30 +202,65 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    public void stringFormatMultipleArraysPassedIn() {
+    void stringFormatMultipleArraysPassedIn() {
         //language=java
         rewriteRun(
           java(
             """
               class SomeClass {
-                  public static void main(String[] args) {
-                    int[] s1 = new int[]{1, 2, 3};
-                    int[] s2 = new int[]{4, 5, 6};
-                    
-                    System.out.println(String.format("s1=%s, s2=%s", s1, s2));
-                  }
+                public static void main(String[] args) {
+                  int[] s1 = new int[]{1, 2, 3};
+                  int[] s2 = new int[]{4, 5, 6};
+                  
+                  System.out.println(String.format("s1=%s, s2=%s", s1, s2));
+                }
               }
               """,
             """
               import java.util.Arrays;
               
               class SomeClass {
-                  public static void main(String[] args) {
-                      int[] s1 = new int[]{1, 2, 3};
-                      int[] s2 = new int[]{4, 5, 6};
-                      
-                      System.out.println(String.format("s1=%s, s2=%s", Arrays.toString(s1), Arrays.toString(s2)));
-                  }
+                public static void main(String[] args) {
+                  int[] s1 = new int[]{1, 2, 3};
+                  int[] s2 = new int[]{4, 5, 6};
+                  
+                  System.out.println(String.format("s1=%s, s2=%s", Arrays.toString(s1), Arrays.toString(s2)));
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void stringFormatMultipleValuesWithArraysPassedIn() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                public static void main(String[] args) {
+                  int[] s1 = new int[]{1, 2, 3};
+                  int[] s2 = new int[]{4, 5, 6};
+                  String name = "First array:";
+                  String secondName = "Second array:";
+                  
+                  System.out.println(String.format("%s %s, %s %s", name, s1, secondName, s2));
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  int[] s1 = new int[]{1, 2, 3};
+                  int[] s2 = new int[]{4, 5, 6};
+                  String name = "First array:";
+                  String secondName = "Second array:";
+                  
+                  System.out.println(String.format("%s %s, %s %s", name, Arrays.toString(s1), secondName, Arrays.toString(s2)));
+                }
               }
               """
           )
