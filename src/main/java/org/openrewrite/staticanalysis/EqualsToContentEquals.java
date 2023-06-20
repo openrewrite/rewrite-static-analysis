@@ -22,32 +22,27 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesType;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
 
 public class EqualsToContentEquals extends Recipe {
-    private static final MethodMatcher equals_matcher = new MethodMatcher("java.lang.String equals(..)");
     private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
+            new UsesType<>("java.lang.CharSequence", false),
             new UsesType<>("java.lang.StringBuffer", false),
-            new UsesType<>("java.lang.StringBuilder", false),
-            new UsesType<>("java.lang.CharSequence", false));
-    private static final List<MethodMatcher> TOSTRING_MATCHERS = Arrays.asList(
-            new MethodMatcher("java.lang.String toString()"),
-            new MethodMatcher("java.lang.StringBuffer toString()"),
-            new MethodMatcher("java.lang.StringBuilder toString()"),
-            new MethodMatcher("java.lang.CharSequence toString()"));
+            new UsesType<>("java.lang.StringBuilder", false)
+    );
 
     @Override
     public String getDisplayName() {
-        return "Use contentEquals to compare StringBuilder to a String";
+        return "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`";
     }
+
     @Override
     public String getDescription() {
-        return "Use contentEquals to compare StringBuilder to a String.";
+        return "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`.";
     }
 
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -55,34 +50,27 @@ public class EqualsToContentEquals extends Recipe {
     }
 
     private static class EqualsToContentEqualsVisitor extends JavaIsoVisitor<ExecutionContext> {
+        private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("String equals(Object)");
+        private static final MethodMatcher TOSTRING_MATCHER = new MethodMatcher("java.lang.* toString()");
+
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
             J.MethodInvocation m = super.visitMethodInvocation(mi, ctx);
-            // create method matcher on equals(String)
-            if (equals_matcher.matches(m)) {
-                Expression argument = m.getArguments().get(0);
-
-                // checks whether the argument is a toString() method call on a StringBuffer or CharSequence
-                if (TOSTRING_MATCHERS.stream().anyMatch(matcher -> matcher.matches(argument))) {
-                    J.MethodInvocation inv = (J.MethodInvocation) argument;
-                    Expression newArg = inv.getSelect();
-                    if (inv.getSelect() == null) { return m; }
-
-                    Stream<JavaType> TYPES = Stream.of(
-                            JavaType.buildType("java.lang.StringBuilder"),
-                            JavaType.buildType("java.lang.StringBuffer"),
-                            JavaType.buildType("java.lang.CharSequence")
-                    );
-
-                    if (TYPES.anyMatch(type -> TypeUtils.isOfType(newArg.getType(), type))) {
-                        // strip out the toString() on the argument
-                        return m.withArguments(Collections.singletonList(newArg))
-                                .withName(m.getName().withSimpleName("contentEquals"));
-                    }
-                }
+            if (!EQUALS_MATCHER.matches(m)) {
+                return m;
             }
-
-            return m;
+            Expression equalsArgument = m.getArguments().get(0);
+            if (!TOSTRING_MATCHER.matches(equalsArgument)) {
+                return m;
+            }
+            J.MethodInvocation inv = (J.MethodInvocation) equalsArgument;
+            Expression toStringSelect = inv.getSelect();
+            if (toStringSelect == null || !TypeUtils.isAssignableTo("java.lang.CharSequence", toStringSelect.getType())) {
+                return m;
+            }
+            // Strip out the toString() on the argument and replace with contentEquals
+            return m.withArguments(Collections.singletonList(toStringSelect))
+                    .withName(m.getName().withSimpleName("contentEquals"));
         }
     }
 }

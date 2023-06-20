@@ -23,8 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class EqualsToContentEqualsTest implements RewriteTest {
-
+class EqualsToContentEqualsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec
@@ -34,7 +33,7 @@ public class EqualsToContentEqualsTest implements RewriteTest {
 
     @Test
     @DocumentExample
-    public void replaceStringBuilder() {
+    void replaceStringBuilder() {
         //language=java
         rewriteRun(
           java(
@@ -59,7 +58,7 @@ public class EqualsToContentEqualsTest implements RewriteTest {
     }
 
     @Test
-    public void onlyRunsOnCorrectInvocations() {
+    void onlyRunsOnCorrectInvocations() {
         //language=java
         rewriteRun(
           java(
