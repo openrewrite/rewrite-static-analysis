@@ -29,7 +29,6 @@ public class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec
-          .parser(JavaParser.fromJavaVersion())
           .recipe(new RemoveHashCodeCallsFromArrayInstances());
     }
 

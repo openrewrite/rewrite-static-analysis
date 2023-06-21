@@ -31,12 +31,13 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher HASHCODE_MATCHER = new MethodMatcher("java.lang.Object hashCode()");
     @Override
     public String getDisplayName() {
-        return "hashCode should not be called on array instances";
+        return "`hashCode()` should not be called on array instances";
     }
 
     @Override
     public String getDescription() {
-        return "Removes hashCode method calls and replaces it with Arrays.hashCode(...) call.";
+        return "Removes `hashCode()` calls on arrays and replaces it with `Arrays.hashCode()` because the results from `hashCode()`" +
+                " are largely useless.";
     }
 
     public TreeVisitor<?, ExecutionContext> getVisitor() {
