@@ -27,6 +27,9 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
+import java.util.Collections;
+import java.util.Set;
+
 public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher HASHCODE_MATCHER = new MethodMatcher("java.lang.Object hashCode()");
     @Override
@@ -37,7 +40,12 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     @Override
     public String getDescription() {
         return "Removes `hashCode()` calls on arrays and replaces it with `Arrays.hashCode()` because the results from `hashCode()`" +
-                " are largely useless.";
+                " not helpful.";
+    }
+
+    @Override
+    public Set<String> getTags() {
+        return Collections.singleton("RSPEC-2116");
     }
 
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -54,19 +62,17 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
             if (HASHCODE_MATCHER.matches(m)) {
                 String builder_string = "Arrays.hashCode(#{anyArray(java.lang.Object)})";
                 Expression select = m.getSelect();
-                assert select != null;
 
-                if (!(select.getType() instanceof JavaType.Array)) {
-                    return m;
+                if (select != null) {
+                    if (!(select.getType() instanceof JavaType.Array)) {
+                        return m;
+                    }
+                    maybeAddImport("java.util.Arrays");
+                    return JavaTemplate.builder(builder_string)
+                            .imports("java.util.Arrays")
+                            .build()
+                            .apply(getCursor(), m.getCoordinates().replace(), select);
                 }
-
-                J.MethodInvocation invocation = JavaTemplate.builder(builder_string)
-                        .imports("java.util.Arrays")
-                        .build()
-                        .apply(getCursor(), m.getCoordinates().replace(), select);
-                maybeAddImport("java.util.Arrays");
-
-                return invocation;
             }
 
             return m;
