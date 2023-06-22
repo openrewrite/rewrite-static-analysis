@@ -20,17 +20,10 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
-import org.openrewrite.marker.Marker;
 
-import java.beans.Customizer;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RemoveToStringCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher OBJECT_TOSTRING_MATCHER = new MethodMatcher("java.lang.Object toString()");
@@ -47,6 +40,11 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             PATTERNS.stream().map(UsesMethod::new).toArray(UsesMethod[]::new)
     );
     private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(Collectors.toList());
+
+    @Override
+    public Set<String> getTags() {
+        return Collections.singleton("RSPEC-2116");
+    }
 
     @Override
     public String getDisplayName() {
