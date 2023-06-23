@@ -19,7 +19,6 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -33,6 +32,7 @@ import java.util.stream.Collectors;
 public class RemoveToStringCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher OBJECT_TOSTRING_MATCHER = new MethodMatcher("java.lang.Object toString()");
     private static final MethodMatcher OBJECTS_TOSTRING_MATCHER = new MethodMatcher("java.lang.Objects toString()");
+    private static final MethodMatcher PRINT_MATCHER = new MethodMatcher("java.io.PrintStream print*(String)");
     private static final List<String> PATTERNS = Arrays.asList(
             "java.io.PrintStream print*(Object)",
             "java.lang.String format*(..)",
@@ -40,9 +40,6 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             "java.lang.StringBuilder insert(int, Object)",
             "java.lang.StringBuilder append(Object)",
             "java.io.PrintStream format(String, Object[])"
-    );
-    private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
-            PATTERNS.stream().map(UsesMethod::new).toArray(UsesMethod[]::new)
     );
     private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(Collectors.toList());
 
@@ -64,8 +61,6 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
 
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new RemoveToStringFromArraysVisitor();
-// FIXME not sure we actually need a precondition here, but it currently doesn't cover OBJECT_TOSTRING_MATCHER and OBJECTS_TOSTRING_MATCHER
-//        return Preconditions.check(PRECONDITION, new RemoveToStringFromArraysVisitor());
     }
 
     private static class RemoveToStringFromArraysVisitor extends JavaVisitor<ExecutionContext> {
@@ -73,18 +68,18 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
         public J visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
             if (OBJECT_TOSTRING_MATCHER.matches(mi) || OBJECTS_TOSTRING_MATCHER.matches(mi)) {
                 Expression select = mi.getSelect();
-                assert select != null;
 
-                if (!(select.getType() instanceof JavaType.Array)) {
-                    return mi;
+                if (select != null) {
+                    if (!(select.getType() instanceof JavaType.Array)) {
+                        return mi;
+                    }
+
+                    maybeAddImport("java.util.Arrays");
+                    return JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
+                            .imports("java.util.Arrays")
+                            .build()
+                            .apply(getCursor(), mi.getCoordinates().replace(), select);
                 }
-
-                J.MethodInvocation newInv = JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
-                        .imports("java.util.Arrays")
-                        .build()
-                        .apply(getCursor(), mi.getCoordinates().replace(), select);
-                maybeAddImport("java.util.Arrays");
-                return newInv;
             } else if (METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(mi))) {
                 // deals with edge cases where .toString() is called implicitly
                 List<Expression> arguments = mi.getArguments();
@@ -105,17 +100,33 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             Expression e = (Expression) super.visitExpression(exp, ctx);
             if (e.getType() instanceof JavaType.Array) {
                 Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
-                if (c.getMessage("METHOD_KEY") != null) {
-                    Expression newExpression = JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
+                if (c.getMessage("METHOD_KEY") != null || c.getMessage("BINARY_FOUND") != null) {
+                    maybeAddImport("java.util.Arrays");
+                    return JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
                             .imports("java.util.Arrays")
                             .build()
                             .apply(getCursor(), e.getCoordinates().replace(), e);
-                    maybeAddImport("java.util.Arrays");
-                    return newExpression;
                 }
             }
 
             return e;
+        }
+
+        @Override
+        public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
+            Expression left = binary.getLeft();
+            Expression right = binary.getRight();
+
+            Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
+            if (c.getValue() instanceof J.MethodInvocation) {
+                if (PRINT_MATCHER.matches((J.MethodInvocation) c.getValue())) {
+                    if (left.getType() instanceof JavaType.Array || right.getType() instanceof JavaType.Array) {
+                        getCursor().putMessage("BINARY_FOUND", binary);
+                    }
+                }
+            }
+
+            return (J.Binary) super.visitBinary(binary, ctx);
         }
     }
 }

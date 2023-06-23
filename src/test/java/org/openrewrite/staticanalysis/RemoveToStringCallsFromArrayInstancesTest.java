@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
-import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -174,6 +173,51 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
+    void printStringConcatenationTest() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                public static void main(String[] args) {
+                  String[] arr = new String[]{"string ", "array"};
+                  System.out.print("Array: " + arr);
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  String[] arr = new String[]{"string ", "array"};
+                  System.out.print("Array: " + Arrays.toString(arr));
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotRunOnNormalStringConcat() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                public static void main(Stringp[] args) {
+                  String strOne = "hello, ";
+                  String strTwo = "world!";
+                  System.out.print(strOne + strTwo);
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void stringFormatEdgeCase() {
         //language=java
         rewriteRun(
@@ -265,4 +309,170 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void worksWithValueOf() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                public static void main(String[] args) {
+                  String str = "foo";
+                  String[] strings = new String[]{"bar"};
+                  
+                  System.out.println(str.valueOf(strings));
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  String str = "foo";
+                  String[] strings = new String[]{"bar"};
+                  
+                  System.out.println(str.valueOf(Arrays.toString(strings)));
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void worksWithInsert() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                public static void main(String[] args) {
+                  StringBuilder builder = new StringBuilder("builder");
+                  String[] strings = new String[]{"string", "array"};
+                  
+                  builder.insert(0, strings);
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  StringBuilder builder = new StringBuilder("builder");
+                  String[] strings = new String[]{"string", "array"};
+                  
+                  builder.insert(0, Arrays.toString(strings));
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void worksWithAppend() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                public static void main(String[] args) {
+                  StringBuilder builder = new StringBuilder("builder");
+                  String[] strings = new String[]{"array"};
+                  
+                  builder.append(strings);
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  StringBuilder builder = new StringBuilder("builder");
+                  String[] strings = new String[]{"array"};
+                  
+                  builder.append(Arrays.toString(strings));
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void worksWithPrintStreamFormat() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.io.PrintStream;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  PrintStream ps = new PrintStream(System.out);
+                  String[] arr = new String[]{"test", "array"};
+                  
+                  ps.format("formatting array: %s", arr);
+                  ps.flush();
+                }
+              }
+              """,
+            """
+              import java.io.PrintStream;
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  PrintStream ps = new PrintStream(System.out);
+                  String[] arr = new String[]{"test", "array"};
+                  
+                  ps.format("formatting array: %s", Arrays.toString(arr));
+                  ps.flush();
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void PrintStreamPrintWorks() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.io.PrintStream;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  PrintStream ps = new PrintStream(System.out);
+                  String[] arr = new String[]{"test", "array"};
+                  
+                  ps.print(arr);
+                  ps.flush();
+                }
+              }
+              """,
+            """
+              import java.io.PrintStream;
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  PrintStream ps = new PrintStream(System.out);
+                  String[] arr = new String[]{"test", "array"};
+                  
+                  ps.print(Arrays.toString(arr));
+                  ps.flush();
+                }
+              }
+              """
+          )
+        );
+    }
+
 }
