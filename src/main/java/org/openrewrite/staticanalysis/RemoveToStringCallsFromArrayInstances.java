@@ -22,6 +22,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypedTree;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,15 +32,16 @@ import java.util.stream.Collectors;
 
 public class RemoveToStringCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher OBJECT_TOSTRING_MATCHER = new MethodMatcher("java.lang.Object toString()");
-    private static final MethodMatcher OBJECTS_TOSTRING_MATCHER = new MethodMatcher("java.lang.Objects toString()");
-    private static final MethodMatcher PRINT_MATCHER = new MethodMatcher("java.io.PrintStream print*(String)");
+    private static final MethodMatcher OBJECTS_TOSTRING_MATCHER = new MethodMatcher("java.util.Objects toString(Object)");
     private static final List<String> PATTERNS = Arrays.asList(
             "java.io.PrintStream print*(Object)",
             "java.lang.String format*(..)",
             "java.lang.String valueOf(java.lang.Object)",
             "java.lang.StringBuilder insert(int, Object)",
             "java.lang.StringBuilder append(Object)",
-            "java.io.PrintStream format(String, Object[])"
+            "java.io.PrintStream format(String, Object[])",
+            "java.io.PrintWriter print*(..)",
+            "java.io.PrintWriter format(..)"
     );
     private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(Collectors.toList());
 
@@ -98,7 +100,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
         @Override
         public Expression visitExpression(Expression exp, ExecutionContext ctx) {
             Expression e = (Expression) super.visitExpression(exp, ctx);
-            if (e.getType() instanceof JavaType.Array) {
+            if (e instanceof TypedTree && e.getType() instanceof JavaType.Array) {
                 Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
                 if (c.getMessage("METHOD_KEY") != null || c.getMessage("BINARY_FOUND") != null) {
                     maybeAddImport("java.util.Arrays");
@@ -118,12 +120,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             Expression right = binary.getRight();
 
             Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
-            if (c.getValue() instanceof J.MethodInvocation) {
-                if (PRINT_MATCHER.matches((J.MethodInvocation) c.getValue())) {
-                    if (left.getType() instanceof JavaType.Array || right.getType() instanceof JavaType.Array) {
-                        getCursor().putMessage("BINARY_FOUND", binary);
-                    }
-                }
+            if (binary.getOperator() == J.Binary.Type.Addition || left.getType() instanceof JavaType.Array || right.getType() instanceof JavaType.Array) {
+                getCursor().putMessage("BINARY_FOUND", binary);
             }
 
             return (J.Binary) super.visitBinary(binary, ctx);
