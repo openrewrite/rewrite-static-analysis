@@ -32,6 +32,7 @@ import java.util.Set;
 
 public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher HASHCODE_MATCHER = new MethodMatcher("java.lang.Object hashCode()");
+
     @Override
     public String getDisplayName() {
         return "`hashCode()` should not be called on array instances";
@@ -39,8 +40,8 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Removes `hashCode()` calls on arrays and replaces it with `Arrays.hashCode()` because the results from `hashCode()`" +
-                " not helpful.";
+        return "Replace `hashCode()` calls on arrays with `Arrays.hashCode()` because the results from `hashCode()`" +
+               " are not helpful.";
     }
 
     @Override
@@ -48,34 +49,28 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
         return Collections.singleton("RSPEC-2116");
     }
 
+    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.or(
-                new UsesMethod<>(HASHCODE_MATCHER)
-        ), new RemoveHashCodeCallsFromArrayInstancesVisitor());
+        return Preconditions.check(new UsesMethod<>(HASHCODE_MATCHER), new RemoveHashCodeCallsFromArrayInstancesVisitor());
     }
 
     private static class RemoveHashCodeCallsFromArrayInstancesVisitor extends JavaIsoVisitor<ExecutionContext> {
         @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
-            J.MethodInvocation m = super.visitMethodInvocation(mi, ctx);
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, ExecutionContext ctx) {
+            J.MethodInvocation mi = super.visitMethodInvocation(methodInvocation, ctx);
 
-            if (HASHCODE_MATCHER.matches(m)) {
-                String builder_string = "Arrays.hashCode(#{anyArray(java.lang.Object)})";
-                Expression select = m.getSelect();
-
-                if (select != null) {
-                    if (!(select.getType() instanceof JavaType.Array)) {
-                        return m;
-                    }
+            if (HASHCODE_MATCHER.matches(mi)) {
+                Expression select = mi.getSelect();
+                if (select != null && select.getType() instanceof JavaType.Array) {
                     maybeAddImport("java.util.Arrays");
-                    return JavaTemplate.builder(builder_string)
+                    return JavaTemplate.builder("Arrays.hashCode(#{anyArray(java.lang.Object)})")
                             .imports("java.util.Arrays")
                             .build()
-                            .apply(getCursor(), m.getCoordinates().replace(), select);
+                            .apply(getCursor(), mi.getCoordinates().replace(), select);
                 }
             }
 
-            return m;
+            return mi;
         }
     }
 }

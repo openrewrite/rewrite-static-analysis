@@ -18,18 +18,16 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
-import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("ArrayHashCode")
-public class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
+class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec
-          .recipe(new RemoveHashCodeCallsFromArrayInstances());
+        spec.recipe(new RemoveHashCodeCallsFromArrayInstances());
     }
 
     @Test
@@ -38,24 +36,21 @@ public class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     void replaceHashCodeCalls() {
         //language=java
         rewriteRun(
-          java(
-            """
-              class SomeClass {
-                public static void main(String[] args) {
-                  int argHash = args.hashCode();
-                }
+          java("""
+            class SomeClass {
+              public static void main(String[] args) {
+                int argHash = args.hashCode();
               }
-              """,
-            """
-              import java.util.Arrays;
-              
-              class SomeClass {
-                public static void main(String[] args) {
-                  int argHash = Arrays.hashCode(args);
-                }
+            }
+            """, """
+            import java.util.Arrays;
+            
+            class SomeClass {
+              public static void main(String[] args) {
+                int argHash = Arrays.hashCode(args);
               }
-              """
-          )
+            }
+            """)
         );
     }
 
@@ -63,32 +58,29 @@ public class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     void selectIsAMethod() {
         //language=java
         rewriteRun(
-          java(
-            """
-              class SomeClass {
-                public static void main(String[] args) {
-                  int hashCode = getArr().hashCode();
-                }
-                
-                public int[] getArr() {
-                  return new int[]{1, 2, 3};
-                }
+          java("""
+            class SomeClass {
+              void foo() {
+                int hashCode = getArr().hashCode();
               }
-              """,
-            """
-              import java.util.Arrays;
               
-              class SomeClass {
-                public static void main(String[] args) {
-                  int hashCode = Arrays.hashCode(getArr());
-                }
-                
-                public int[] getArr() {
-                  return new int[]{1, 2, 3};
-                }
+              public int[] getArr() {
+                return new int[]{1, 2, 3};
               }
-              """
-          )
+            }
+            """, """
+            import java.util.Arrays;
+            
+            class SomeClass {
+              void foo() {
+                int hashCode = Arrays.hashCode(getArr());
+              }
+              
+              public int[] getArr() {
+                return new int[]{1, 2, 3};
+              }
+            }
+            """)
         );
     }
 
@@ -96,16 +88,14 @@ public class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     void onlyRunOnArrayInstances() {
         //language=java
         rewriteRun(
-          java(
-            """
-              class SomeClass {
-                public static void main(String[] args) {
-                  int name = "bill";
-                  int hashCode = name.hashCode();
-                }
+          java("""
+            class SomeClass {
+              void foo() {
+                String name = "bill";
+                int hashCode = name.hashCode();
               }
-              """
-          )
+            }
+            """)
         );
     }
 }
