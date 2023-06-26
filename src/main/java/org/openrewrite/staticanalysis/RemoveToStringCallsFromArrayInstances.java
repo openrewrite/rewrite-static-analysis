@@ -19,10 +19,7 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.TypedTree;
+import org.openrewrite.java.tree.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,12 +28,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RemoveToStringCallsFromArrayInstances extends Recipe {
-    private static final MethodMatcher OBJECT_TOSTRING_MATCHER = new MethodMatcher("java.lang.Object toString()");
+    private static final MethodMatcher VALUEOF_MATCHER = new MethodMatcher("java.lang.String valueOf(java.lang.Object)");
     private static final MethodMatcher OBJECTS_TOSTRING_MATCHER = new MethodMatcher("java.util.Objects toString(Object)");
+    private static final MethodMatcher TOSTRING_MATCHER = new MethodMatcher("java.lang.Object toString()");
+
     private static final List<String> PATTERNS = Arrays.asList(
             "java.io.PrintStream print*(Object)",
             "java.lang.String format*(..)",
-            "java.lang.String valueOf(java.lang.Object)",
             "java.lang.StringBuilder insert(int, Object)",
             "java.lang.StringBuilder append(Object)",
             "java.io.PrintStream format(String, Object[])",
@@ -68,33 +66,43 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
     private static class RemoveToStringFromArraysVisitor extends JavaVisitor<ExecutionContext> {
         @Override
         public J visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
-            if (OBJECT_TOSTRING_MATCHER.matches(mi) || OBJECTS_TOSTRING_MATCHER.matches(mi)) {
+            if (TOSTRING_MATCHER.matches(mi)) {
                 Expression select = mi.getSelect();
-
-                if (select != null) {
-                    if (!(select.getType() instanceof JavaType.Array)) {
-                        return mi;
-                    }
-
-                    maybeAddImport("java.util.Arrays");
-                    return JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
-                            .imports("java.util.Arrays")
-                            .build()
-                            .apply(getCursor(), mi.getCoordinates().replace(), select);
+                if (select == null) {
+                    return mi;
                 }
+
+                return buildReplacement(select, mi);
             } else if (METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(mi))) {
                 // deals with edge cases where .toString() is called implicitly
                 List<Expression> arguments = mi.getArguments();
                 for (Expression arg : arguments) {
                     if (arg.getType() instanceof JavaType.Array) {
-                        Cursor c = getCursor();
-                        c.putMessage("METHOD_KEY", mi);
+                        getCursor().putMessage("METHOD_KEY", mi);
                         break;
                     }
                 }
+            }else if (OBJECTS_TOSTRING_MATCHER.matches(mi) || VALUEOF_MATCHER.matches(mi)) {
+                // method is static
+                Expression select = mi.getArguments().get(0);
+                maybeRemoveImport("java.util.Objects");
+
+                return buildReplacement(select, mi);
             }
 
             return super.visitMethodInvocation(mi, ctx);
+        }
+
+        public J buildReplacement(Expression select, J.MethodInvocation mi) {
+            if (!(select.getType() instanceof JavaType.Array)) {
+                return mi;
+            }
+
+            maybeAddImport("java.util.Arrays");
+            return JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
+                    .imports("java.util.Arrays")
+                    .build()
+                    .apply(getCursor(), mi.getCoordinates().replace(), select);
         }
 
         @Override
@@ -119,7 +127,6 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             Expression left = binary.getLeft();
             Expression right = binary.getRight();
 
-            Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
             if (binary.getOperator() == J.Binary.Type.Addition || left.getType() instanceof JavaType.Array || right.getType() instanceof JavaType.Array) {
                 getCursor().putMessage("BINARY_FOUND", binary);
             }

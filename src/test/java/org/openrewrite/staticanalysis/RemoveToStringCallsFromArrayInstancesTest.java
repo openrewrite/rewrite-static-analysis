@@ -87,8 +87,7 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                 }
                 
                 public int[] getNumArr() {
-                  int[] nums = {1, 2, 3, 4};
-                  return nums;
+                  return new int[]{1, 2, 3, 4};
                 }
               }
               """,
@@ -101,8 +100,7 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                 }
                 
                 public int[] getNumArr() {
-                  int[] nums = {1, 2, 3, 4};
-                  return nums;
+                  return new int[]{1, 2, 3, 4};
                 }
               }
               """
@@ -311,17 +309,17 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    void worksWithValueOf() {
+    void worksWithObjectsToString() {
         //language=java
         rewriteRun(
           java(
             """
+              import java.util.Objects;
+              
               class SomeClass {
                 public static void main(String[] args) {
-                  String str = "foo";
-                  String[] strings = new String[]{"bar"};
-                  
-                  System.out.println(str.valueOf(strings));
+                  int[] arr = new int[]{1, 2, 3};
+                  String str_rep = Objects.toString(arr);
                 }
               }
               """,
@@ -330,10 +328,37 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               
               class SomeClass {
                 public static void main(String[] args) {
-                  String str = "foo";
+                  int[] arr = new int[]{1, 2, 3};
+                  String str_rep = Arrays.toString(arr);
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void worksWithValueOf() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                public static void main(String[] args) {
                   String[] strings = new String[]{"bar"};
                   
-                  System.out.println(str.valueOf(Arrays.toString(strings)));
+                  String str_rep = String.valueOf(strings);
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                public static void main(String[] args) {
+                  String[] strings = new String[]{"bar"};
+                  
+                  String str_rep = Arrays.toString(strings);
                 }
               }
               """
