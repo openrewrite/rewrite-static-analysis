@@ -127,7 +127,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             Expression left = binary.getLeft();
             Expression right = binary.getRight();
 
-            if (binary.getOperator() == J.Binary.Type.Addition || left.getType() instanceof JavaType.Array || right.getType() instanceof JavaType.Array) {
+            if (binary.getOperator() == J.Binary.Type.Addition && (left.getType() instanceof JavaType.Array || right.getType() instanceof JavaType.Array)) {
                 getCursor().putMessage("BINARY_FOUND", binary);
             }
 
