@@ -465,7 +465,7 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    void PrintStreamPrintWorks() {
+    void printStreamPrintWorks() {
         //language=java
         rewriteRun(
           java(
