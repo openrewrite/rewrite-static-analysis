@@ -25,6 +25,7 @@ public class ReplaceWeekYearWithYearTest implements RewriteTest {
           java(
             """
               import java.text.SimpleDateFormat;
+              import java.util.Date;
               
               class Test {
                 public void formatDate() {
@@ -35,6 +36,7 @@ public class ReplaceWeekYearWithYearTest implements RewriteTest {
               """,
             """
               import java.text.SimpleDateFormat;
+              import java.util.Date;
               
               class Test {
                 public void formatDate() {
@@ -54,6 +56,7 @@ public class ReplaceWeekYearWithYearTest implements RewriteTest {
           java(
             """
               import java.time.format.DateTimeFormatter;
+              import java.util.Date;
               
               class Test {
                 public void formatDate() {
@@ -64,6 +67,7 @@ public class ReplaceWeekYearWithYearTest implements RewriteTest {
               """,
             """
               import java.time.format.DateTimeFormatter;
+              import java.util.Date;
               
               class Test {
                 public void formatDate() {
