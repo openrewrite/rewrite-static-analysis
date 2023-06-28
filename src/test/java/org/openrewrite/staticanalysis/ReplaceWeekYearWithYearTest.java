@@ -55,24 +55,76 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
         rewriteRun(
           java(
             """
+              import java.text.SimpleDateFormat;
               import java.time.format.DateTimeFormatter;
               import java.util.Date;
               
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
-                  String result = DateTimeFormatter.ofPattern("YYYY/MM/dd").format(date);
+                  String result = DateTimeFormatter.ofPattern("YYYY/MM/dd").format(date.toInstant());
                 }
               }
               """,
             """
+              import java.text.SimpleDateFormat;
               import java.time.format.DateTimeFormatter;
               import java.util.Date;
               
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
-                  String result = DateTimeFormatter.ofPattern("yyyy/MM/dd").format(date);
+                  String result = DateTimeFormatter.ofPattern("yyyy/MM/dd").format(date.toInstant());
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void worksWithYYUses() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.text.SimpleDateFormat;
+              import java.time.format.DateTimeFormatter;
+              import java.util.Date;
+              
+              class Test {
+                public void formatDate() {
+                  Date date = new SimpleDateFormat("yy/MM/dd").parse("2015/12/31");
+                  String result = DateTimeFormatter.ofPattern("YY/MM/dd").format(date.toInstant());
+                }
+              }
+              """,
+            """
+              import java.text.SimpleDateFormat;
+              import java.time.format.DateTimeFormatter;
+              import java.util.Date;
+              
+              class Test {
+                public void formatDate() {
+                  Date date = new SimpleDateFormat("yy/MM/dd").parse("2015/12/31");
+                  String result = DateTimeFormatter.ofPattern("yy/MM/dd").format(date.toInstant());
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void onlyRunsWhenFormatAndDateTypesAreUsed() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                public static void main(String[] args) {
+                  String pattern = "YYYY/MM/dd";
+                  System.out.println(pattern);
                 }
               }
               """
