@@ -50,7 +50,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
     }
 
     @Test
-    public void worksWithOfPatternFormatter() {
+    void worksWithOfPatternFormatter() {
         //language=java
         rewriteRun(
           java(
