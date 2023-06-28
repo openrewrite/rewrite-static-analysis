@@ -62,7 +62,6 @@ public class ReplaceWeekYearWithYear extends Recipe {
                             JavaType.Primitive.String
                     );
 
-                    System.out.println("getting here");
 
                     return JavaTemplate.builder("new SimpleDateFormat(#{any(java.lang.String)})")
                             .contextSensitive()
