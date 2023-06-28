@@ -19,7 +19,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
     @Test
     @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/58")
-    public void changeSimpleDateFormat() {
+    void changeSimpleDateFormat() {
         //language=java
         rewriteRun(
           java(
