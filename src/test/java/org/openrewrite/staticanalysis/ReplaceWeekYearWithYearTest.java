@@ -9,7 +9,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("SuspiciousDateFormat")
-public class ReplaceWeekYearWithYearTest implements RewriteTest {
+class ReplaceWeekYearWithYearTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec
