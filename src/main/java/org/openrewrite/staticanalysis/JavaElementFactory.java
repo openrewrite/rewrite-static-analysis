@@ -28,28 +28,32 @@ final class JavaElementFactory {
 
     static J.MemberReference newStaticMethodReference(JavaType.Method method, boolean qualified, @Nullable JavaType type) {
         JavaType.FullyQualified declaringType = method.getDeclaringType();
-        Expression containing = null;
-        String qualifiedName = qualified ? declaringType.getFullyQualifiedName() : declaringType.getClassName();
+        Expression containing = className(declaringType, qualified);
+        return newInstanceMethodReference(method, containing, type);
+    }
+
+    static Expression className(JavaType.FullyQualified classType, boolean qualified) {
+        Expression name = null;
+        String qualifiedName = qualified ? classType.getFullyQualifiedName() : classType.getClassName();
         Scanner scanner = new Scanner(qualifiedName.replace('$', '.')).useDelimiter("\\.");
         for (int i = 0; scanner.hasNext(); i++) {
             String part = scanner.next();
-            JavaType typeOfContaining = scanner.hasNext() ? null : declaringType;
+            JavaType typeOfContaining = scanner.hasNext() ? null : classType;
             if (i > 0) {
-                containing = new J.FieldAccess(
+                name = new J.FieldAccess(
                         randomId(),
                         Space.EMPTY,
                         Markers.EMPTY,
-                        containing,
+                        name,
                         new JLeftPadded<>(Space.EMPTY, new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, typeOfContaining, null), Markers.EMPTY),
                         typeOfContaining
                 );
             } else {
-                containing = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, declaringType, null);
+                name = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, classType, null);
             }
         }
-
-        assert containing != null;
-        return newInstanceMethodReference(method, containing, type);
+        assert name != null;
+        return name;
     }
 
     static J.MemberReference newInstanceMethodReference(JavaType.Method method, Expression containing, @Nullable JavaType type) {
