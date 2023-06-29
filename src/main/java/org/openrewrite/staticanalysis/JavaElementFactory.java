@@ -32,13 +32,19 @@ final class JavaElementFactory {
         return newInstanceMethodReference(method, containing, type);
     }
 
-    static Expression className(JavaType.FullyQualified classType, boolean qualified) {
+    static Expression className(JavaType type, boolean qualified) {
         Expression name = null;
-        String qualifiedName = qualified ? classType.getFullyQualifiedName() : classType.getClassName();
+        String qualifiedName;
+        if (type instanceof JavaType.FullyQualified) {
+            qualifiedName = qualified ? ((JavaType.FullyQualified) type).getFullyQualifiedName() : ((JavaType.FullyQualified) type).getClassName();
+        } else {
+            qualifiedName = type.toString();
+        }
+
         Scanner scanner = new Scanner(qualifiedName.replace('$', '.')).useDelimiter("\\.");
         for (int i = 0; scanner.hasNext(); i++) {
             String part = scanner.next();
-            JavaType typeOfContaining = scanner.hasNext() ? null : classType;
+            JavaType typeOfContaining = scanner.hasNext() ? null : type;
             if (i > 0) {
                 name = new J.FieldAccess(
                         randomId(),
@@ -49,7 +55,7 @@ final class JavaElementFactory {
                         typeOfContaining
                 );
             } else {
-                name = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, classType, null);
+                name = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, type, null);
             }
         }
         assert name != null;
@@ -71,18 +77,18 @@ final class JavaElementFactory {
     }
 
     @Nullable
-    static J.FieldAccess newClassLiteral(Expression typeReference) {
-        JavaType.Class classType = getClassType(typeReference.getType());
+    static J.FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
+        JavaType.Class classType = getClassType(type);
         if (classType == null) {
             return null;
         }
 
-        JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, Collections.singletonList(typeReference.getType()));
+        JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, Collections.singletonList(type));
         return new J.FieldAccess(
                 randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
-                typeReference,
+                className(type, qualified),
                 new JLeftPadded<>(
                         Space.EMPTY,
                         new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, "class", parameterized, null),

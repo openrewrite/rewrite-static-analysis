@@ -79,7 +79,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     J j = instanceOf.getClazz();
                     if ((j instanceof J.Identifier || j instanceof J.FieldAccess) &&
                         instanceOf.getExpression() instanceof J.Identifier) {
-                        J.FieldAccess classLiteral = newClassLiteral(j.withPrefix(Space.EMPTY));
+                        J.FieldAccess classLiteral = newClassLiteral(((TypeTree) j).getType(), j instanceof J.FieldAccess);
                         if (classLiteral != null) {
                             //noinspection DataFlowIssue
                             JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
@@ -95,7 +95,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         J tree = j.getTree();
                         if ((tree instanceof J.Identifier || tree instanceof J.FieldAccess) &&
                             !(j.getType() instanceof JavaType.GenericTypeVariable)) {
-                            J.FieldAccess classLiteral = newClassLiteral(tree.withPrefix(Space.EMPTY));
+                            J.FieldAccess classLiteral = newClassLiteral(((Expression) tree).getType(), tree instanceof J.FieldAccess);
                             if (classLiteral != null) {
                                 //noinspection DataFlowIssue
                                 JavaType.FullyQualified classType = ((JavaType.Parameterized) classLiteral.getType()).getType();
