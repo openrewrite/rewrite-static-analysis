@@ -15,18 +15,20 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 
 public class ReplaceWeekYearWithYear extends Recipe {
+    public static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");
+    public static final MethodMatcher OF_PATTERN_MATCHER = new MethodMatcher("java.time.format.DateTimeFormatter ofPattern(..)");
+
     @Override
     public String getDisplayName() {
         return "Week Year (YYYY) should not be used for date formatting";
@@ -57,12 +59,28 @@ public class ReplaceWeekYearWithYear extends Recipe {
 
     private static class ReplaceWeekYearVisitor extends JavaIsoVisitor<ExecutionContext> {
         @Override
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+            if (SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER.matches(mi) || OF_PATTERN_MATCHER.matches(mi)) {
+                getCursor().putMessage("KEY", mi);
+            }else if (SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER.matches(mi.getSelect()) || OF_PATTERN_MATCHER.matches(mi.getSelect())) {
+                if (mi.getSelect() == null) { return mi; }
+                // ! This should really be putting the message on the cursor for the select, but I'm not sure how to get that cursor.
+                getCursor().putMessage("KEY", mi.getSelect());
+            }
+
+            return super.visitMethodInvocation(mi, ctx);
+        }
+
+        @Override
         public J.Literal visitLiteral(J.Literal li, ExecutionContext ctx) {
             if (li.getValue() instanceof String) {
-                String value = li.getValueSource();
-                if (value != null && value.contains("YY")) {
-                    String newValue = value.replace('Y', 'y');
-                    return li.withValueSource(newValue).withValue(newValue);
+                Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
+                if (c.getMessage("KEY") != null) {
+                    String value = li.getValueSource();
+                    if (value != null && value.contains("YY")) {
+                        String newValue = value.replace('Y', 'y');
+                        return li.withValueSource(newValue).withValue(newValue);
+                    }
                 }
             }
 

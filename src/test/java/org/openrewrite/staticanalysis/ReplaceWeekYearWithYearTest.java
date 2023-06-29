@@ -146,4 +146,33 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void datePatternIsVariable() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.text.SimpleDateFormat;
+              
+              class Test {
+                void formatDate() {
+                  String pattern = "YYYY-MM-dd";
+                  SimpleDateFormat format = new SimpleDateFormat(pattern);
+                }
+              }
+              """,
+            """
+              import java.text.SimpleDateFormat;
+              
+              class Test {
+                void formatDate() {
+                  String pattern = "yyyy-MM-dd";
+                  SimpleDateFormat format = new SimpleDateFormat(pattern);
+                }
+              }
+              """
+          )
+        );
+    }
 }
