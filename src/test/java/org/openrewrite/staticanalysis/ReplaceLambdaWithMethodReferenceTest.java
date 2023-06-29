@@ -1184,5 +1184,27 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void orElseGet() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Function;
 
+              class A {
+                public void testCase() {
+                  Function<String, Integer> function = str -> 1;
+                  Optional.of(function).orElseGet(() -> this::foo);
+                }
+
+                private Integer foo(String bar) {
+                  return 1;
+                }
+              }
+              """
+          )
+        );
+    }
 }
