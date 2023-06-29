@@ -29,26 +29,23 @@ final class JavaElementFactory {
     static J.MemberReference newStaticMethodReference(JavaType.Method method, boolean qualified, @Nullable JavaType type) {
         JavaType.FullyQualified declaringType = method.getDeclaringType();
         Expression containing = null;
-        if (qualified) {
-            Scanner scanner = new Scanner(declaringType.getFullyQualifiedName().replace('$', '.')).useDelimiter("\\.");
-            for (int i = 0; scanner.hasNext(); i++) {
-                String part = scanner.next();
-                JavaType typeOfContaining = scanner.hasNext() ? null : declaringType;
-                if (i > 0) {
-                    containing = new J.FieldAccess(
-                            randomId(),
-                            Space.EMPTY,
-                            Markers.EMPTY,
-                            containing,
-                            new JLeftPadded<>(Space.EMPTY, new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, typeOfContaining, null), Markers.EMPTY),
-                            typeOfContaining
-                    );
-                } else {
-                    containing = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, declaringType, null);
-                }
+        String qualifiedName = qualified ? declaringType.getFullyQualifiedName() : declaringType.getClassName();
+        Scanner scanner = new Scanner(qualifiedName.replace('$', '.')).useDelimiter("\\.");
+        for (int i = 0; scanner.hasNext(); i++) {
+            String part = scanner.next();
+            JavaType typeOfContaining = scanner.hasNext() ? null : declaringType;
+            if (i > 0) {
+                containing = new J.FieldAccess(
+                        randomId(),
+                        Space.EMPTY,
+                        Markers.EMPTY,
+                        containing,
+                        new JLeftPadded<>(Space.EMPTY, new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, typeOfContaining, null), Markers.EMPTY),
+                        typeOfContaining
+                );
+            } else {
+                containing = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, part, declaringType, null);
             }
-        } else {
-            containing = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, declaringType.getClassName(), declaringType, null);
         }
 
         assert containing != null;
