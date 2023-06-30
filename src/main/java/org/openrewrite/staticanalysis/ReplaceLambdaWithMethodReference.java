@@ -138,7 +138,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     }
 
                     if (multipleMethodInvocations(method) ||
-                        !methodArgumentsMatchLambdaParameters(method, lambda)) {
+                        !methodArgumentsMatchLambdaParameters(method, lambda) ||
+                        method instanceof J.MemberReference) {
                         return l;
                     }
 
