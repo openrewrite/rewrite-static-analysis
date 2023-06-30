@@ -42,10 +42,9 @@ import static org.openrewrite.Tree.randomId;
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     EmptyBlockStyle emptyBlockStyle;
     JavaTemplate throwException = JavaTemplate.builder("throw new #{}(#{any(String)});")
-            .contextSensitive()
             .imports("java.io.UncheckedIOException")
             .build();
-    JavaTemplate continueStatement = JavaTemplate.builder("continue;").contextSensitive().build();
+    JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();
 
     @Override
     public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
