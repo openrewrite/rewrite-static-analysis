@@ -21,8 +21,8 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 
 public class ReplaceWeekYearWithYear extends Recipe {
@@ -60,15 +60,20 @@ public class ReplaceWeekYearWithYear extends Recipe {
     private static class ReplaceWeekYearVisitor extends JavaIsoVisitor<ExecutionContext> {
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
-            if (SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER.matches(mi) || OF_PATTERN_MATCHER.matches(mi)) {
+            if (OF_PATTERN_MATCHER.matches(mi)) {
                 getCursor().putMessage("KEY", mi);
-            }else if (SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER.matches(mi.getSelect()) || OF_PATTERN_MATCHER.matches(mi.getSelect())) {
-                if (mi.getSelect() == null) { return mi; }
-                // ! This should really be putting the message on the cursor for the select, but I'm not sure how to get that cursor.
-                getCursor().putMessage("KEY", mi.getSelect());
             }
 
             return super.visitMethodInvocation(mi, ctx);
+        }
+
+        @Override
+        public J.NewClass visitNewClass(J.NewClass nc, ExecutionContext ctx) {
+            if (SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER.matches(nc)) {
+                getCursor().putMessage("KEY", nc);
+            }
+
+            return super.visitNewClass(nc, ctx);
         }
 
         @Override
