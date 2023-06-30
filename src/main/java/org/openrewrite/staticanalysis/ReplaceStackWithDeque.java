@@ -19,7 +19,6 @@ import org.openrewrite.*;
 import org.openrewrite.analysis.dataflow.DataFlowNode;
 import org.openrewrite.analysis.dataflow.FindLocalFlowPaths;
 import org.openrewrite.analysis.dataflow.LocalFlowSpec;
-import org.openrewrite.analysis.trait.expr.Expr;
 import org.openrewrite.java.ChangeType;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
