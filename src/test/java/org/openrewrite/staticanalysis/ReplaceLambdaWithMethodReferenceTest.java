@@ -1186,7 +1186,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
     @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
-    void orElseGet() {
+    void dontReplaceLambdaSupplierOfMethodReference() {
         rewriteRun(
           //language=java
           java(
