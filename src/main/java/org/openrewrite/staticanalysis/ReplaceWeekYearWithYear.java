@@ -21,9 +21,7 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 public class ReplaceWeekYearWithYear extends Recipe {
     public static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");
@@ -82,14 +80,41 @@ public class ReplaceWeekYearWithYear extends Recipe {
                 Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
                 if (c.getMessage("KEY") != null) {
                     String value = li.getValueSource();
-                    if (value != null && value.contains("YY")) {
-                        String newValue = value.replace('Y', 'y');
-                        return li.withValueSource(newValue).withValue(newValue);
+
+                    if (value == null) {
+                        return li;
                     }
+
+                    String newValue = replaceY(value);
+
+                    return li.withValueSource(newValue).withValue(newValue);
                 }
             }
 
             return li;
+        }
+
+        public static String replaceY(String input) {
+            StringBuilder output = new StringBuilder();
+            boolean insideQuotes = false;
+
+            for (int i = 0; i < input.length(); i++) {
+                char currentChar = input.charAt(i);
+                char nextChar = (i < input.length() - 1) ? input.charAt(i + 1) : '\0';
+
+                if (currentChar == '\'') {
+                    insideQuotes = !insideQuotes;
+                    output.append(currentChar);
+                } else if (currentChar == 'Y' && !insideQuotes) {
+                    output.append('y');
+                } else if (currentChar == 'Y' && nextChar == '\'') {
+                    output.append(currentChar);
+                } else {
+                    output.append(currentChar);
+                }
+            }
+
+            return output.toString();
         }
     }
 }
