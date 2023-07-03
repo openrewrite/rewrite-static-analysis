@@ -177,4 +177,65 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
           )
         );
     }
+    @Test
+    void patternUsesSingleQuotes() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.text.SimpleDateFormat;
+              import java.util.Date;
+              
+              class Test {
+                public void formatDate() {
+                  SimpleDateFormat format = new SimpleDateFormat("'Your date is:' YYYY-MM-dd");
+                  Date date = format.parse("2015/12/31");
+                }
+              }
+              """,
+            """
+              import java.text.SimpleDateFormat;
+              import java.util.Date;
+              
+              class Test {
+                public void formatDate() {
+                  SimpleDateFormat format = new SimpleDateFormat("'Your date is:' yyyy-MM-dd");
+                  Date date = format.parse("2015/12/31");
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void patternUsesMultipleSingleQuotes() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.text.SimpleDateFormat;
+              import java.util.Date;
+              
+              class Test {
+                public void formatDate() {
+                  SimpleDateFormat format = new SimpleDateFormat("'Your date is:' YYYY-MM-dd, 'yy'");
+                  Date date = format.parse("2015/12/31");
+                }
+              }
+              """,
+            """
+              import java.text.SimpleDateFormat;
+              import java.util.Date;
+              
+              class Test {
+                public void formatDate() {
+                  SimpleDateFormat format = new SimpleDateFormat("'Your date is:' yyyy-MM-dd, 'yy'");
+                  Date date = format.parse("2015/12/31");
+                }
+              }
+              """
+          )
+        );
+    }
 }
