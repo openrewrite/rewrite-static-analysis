@@ -238,4 +238,24 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doesNotChangeWhyInSingleQuotes() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.text.SimpleDateFormat;
+              import java.util.Date;
+              
+              class Test {
+                public void formatDate() {
+                  SimpleDateFormat format = new SimpleDateFormat("'Y' dd-MM");
+                  Date date = format.parse("2015/12/31");
+                }
+              }
+              """
+          
+        );
+    }
 }

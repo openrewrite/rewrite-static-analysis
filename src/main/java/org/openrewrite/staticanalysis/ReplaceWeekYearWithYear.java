@@ -87,6 +87,10 @@ public class ReplaceWeekYearWithYear extends Recipe {
 
                     String newValue = replaceY(value.toString());
 
+                    if (newValue.equals(value.toString())) {
+                        return li;
+                    }
+
                     return li.withValueSource("\""+newValue+"\"").withValue(newValue);
                 }
             }
