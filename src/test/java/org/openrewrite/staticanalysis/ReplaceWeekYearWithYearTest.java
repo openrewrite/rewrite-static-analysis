@@ -255,7 +255,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
                 }
               }
               """
-          
+          )
         );
     }
 }
