@@ -69,7 +69,7 @@ public class StringLiteralEquality extends Recipe {
             private J.MethodInvocation asEqualsMethodInvocation(J.Binary binary) {
                 return new J.MethodInvocation(
                         Tree.randomId(),
-                        binary.getPrefix(),
+                        Space.EMPTY,
                         Markers.EMPTY,
                         new JRightPadded<>(binary.getLeft().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY),
                         null,
@@ -109,10 +109,9 @@ public class StringLiteralEquality extends Recipe {
                 if (isStringLiteral(binary.getLeft()) || isStringLiteral(binary.getRight())) {
                     J after = null;
                     if (binary.getOperator() == J.Binary.Type.Equal) {
-                        after = asEqualsMethodInvocation(binary);
+                        after = asEqualsMethodInvocation(binary).withPrefix(binary.getPrefix());
                     } else if (binary.getOperator() == J.Binary.Type.NotEqual) {
-                        J.MethodInvocation mi = asEqualsMethodInvocation(binary);
-                        after = asNegatedUnary(mi);
+                        after = asNegatedUnary(asEqualsMethodInvocation(binary)).withPrefix(binary.getPrefix());
                     }
                     if (after != null) {
                         doAfterVisit(new EqualsAvoidsNull().getVisitor());

@@ -24,8 +24,8 @@ import org.openrewrite.java.tree.*;
 import java.util.*;
 
 public class ReplaceWeekYearWithYear extends Recipe {
-    public static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");
-    public static final MethodMatcher OF_PATTERN_MATCHER = new MethodMatcher("java.time.format.DateTimeFormatter ofPattern(..)");
+    private static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");
+    private static final MethodMatcher OF_PATTERN_MATCHER = new MethodMatcher("java.time.format.DateTimeFormatter ofPattern(..)");
 
     @Override
     public String getDisplayName() {
@@ -79,15 +79,15 @@ public class ReplaceWeekYearWithYear extends Recipe {
             if (li.getValue() instanceof String) {
                 Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
                 if (c.getMessage("KEY") != null) {
-                    String value = li.getValueSource();
+                    Object value = li.getValue();
 
                     if (value == null) {
                         return li;
                     }
 
-                    String newValue = replaceY(value);
+                    String newValue = replaceY(value.toString());
 
-                    return li.withValueSource(newValue).withValue(newValue);
+                    return li.withValueSource("\""+newValue+"\"").withValue(newValue);
                 }
             }
 
