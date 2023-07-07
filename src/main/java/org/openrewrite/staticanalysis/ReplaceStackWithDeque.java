@@ -18,11 +18,10 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.*;
 import org.openrewrite.analysis.dataflow.DataFlowNode;
 import org.openrewrite.analysis.dataflow.FindLocalFlowPaths;
-import org.openrewrite.analysis.dataflow.LocalFlowSpec;
+import org.openrewrite.analysis.dataflow.DataFlowSpec;
 import org.openrewrite.java.ChangeType;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
-import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 public class ReplaceStackWithDeque extends Recipe {
@@ -44,7 +43,7 @@ public class ReplaceStackWithDeque extends Recipe {
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, ctx);
 
-                LocalFlowSpec<Expression, J> returned = new LocalFlowSpec<Expression, J>() {
+                DataFlowSpec returned = new DataFlowSpec() {
                     @Override
                     public boolean isSource(DataFlowNode srcNode) {
                         return variable.getInitializer() == srcNode.getCursor().getValue();
