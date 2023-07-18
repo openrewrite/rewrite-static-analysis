@@ -15,14 +15,14 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.kotlin.KotlinVisitor;
+import org.openrewrite.kotlin.tree.K;
 
 import java.time.Duration;
 import java.util.*;
@@ -54,15 +54,28 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new TreeVisitor<Tree, ExecutionContext>() {
             @Override
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx, Cursor parent) {
+                if (tree instanceof J.CompilationUnit) {
+                    return new ReplaceLambdaWithMethodReferenceJavaVisitor().visit(tree, ctx);
+                } else if (tree instanceof K.CompilationUnit) {
+                    return new ReplaceLambdaWithMethodReferenceKotlinVisitor().visit(tree, ctx);
+                }
+                return tree;
+            }
+        };
+    }
+
+    private static class ReplaceLambdaWithMethodReferenceKotlinVisitor extends KotlinVisitor<ExecutionContext> {
+        // Implement Me
+    }
+
+    private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
+        @Override
             public J visitLambda(J.Lambda lambda, ExecutionContext executionContext) {
                 J.Lambda l = (J.Lambda) super.visitLambda(lambda, executionContext);
                 updateCursor(l);
-
-                if (TypeUtils.isOfClassType(lambda.getType(), "groovy.lang.Closure")) {
-                    return l;
-                }
 
                 String code = "";
                 J body = l.getBody();
@@ -236,9 +249,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 return j1 instanceof J.Identifier && j2 instanceof J.Literal &&
                        "null".equals(((J.Literal) j2).getValueSource());
             }
-        };
-
-    }
+        }
 
     private static boolean isAMethodInvocationArgument(J.Lambda lambda, Cursor cursor) {
         Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof J.CompilationUnit);
