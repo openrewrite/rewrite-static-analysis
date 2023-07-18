@@ -145,7 +145,6 @@ recipeList:
   - org.openrewrite.java.cleanup.SimplifyBooleanExpression
   - org.openrewrite.java.cleanup.SimplifyBooleanReturn
   - org.openrewrite.staticanalysis.StaticMethodNotFinal
-  - org.openrewrite.staticanalysis.StringLiteralEquality
   - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
