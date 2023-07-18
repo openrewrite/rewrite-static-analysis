@@ -92,16 +92,6 @@ public class FinalizePrivateFields extends Recipe {
                     .map(J.VariableDeclarations.NamedVariable::getVariableType)
                     .allMatch(v -> privateFieldsToBeFinalized.contains(v));
 
-                // makes sure the final flag is not also added to variables that have the volatile flag
-                for (J.VariableDeclarations.NamedVariable v : mv.getVariables()) {
-                    if (v.getVariableType() == null) { break; }
-                    for (Flag flag : v.getVariableType().getFlags()) {
-                        if (flag.equals(Flag.Volatile)) {
-                            return mv;
-                        }
-                    }
-                }
-
                 if (canAllVariablesBeFinalized) {
                     mv = autoFormat(mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
                         JavaType.Variable type = v.getVariableType();
@@ -131,7 +121,9 @@ public class FinalizePrivateFields extends Recipe {
             .stream()
             .filter(statement -> statement instanceof J.VariableDeclarations)
             .map(J.VariableDeclarations.class::cast)
-            .filter(mv -> mv.hasModifier(J.Modifier.Type.Private) && !mv.hasModifier(J.Modifier.Type.Final))
+            .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
+                          && !mv.hasModifier(J.Modifier.Type.Final)
+                          && !mv.hasModifier(J.Modifier.Type.Volatile))
             .filter(mv -> !anyAnnotationApplied(mv))
             .map(J.VariableDeclarations::getVariables)
             .flatMap(Collection::stream)
