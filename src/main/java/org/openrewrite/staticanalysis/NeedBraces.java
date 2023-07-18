@@ -21,6 +21,8 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.kotlin.KotlinIsoVisitor;
+import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -52,10 +54,22 @@ public class NeedBraces extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new NeedBracesVisitor();
+
+        return new TreeVisitor<Tree, ExecutionContext>() {
+            @Override
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx, Cursor parent) {
+                if (tree instanceof J.CompilationUnit) {
+                    return new NeedBracesJavaVisitor().visit(tree, ctx);
+                } else if (tree instanceof K.CompilationUnit) {
+                    return new NeedBracesKotlinVisitor().visit(tree, ctx);
+                }
+
+                return tree;
+            }
+        };
     }
 
-    private static class NeedBracesVisitor extends JavaIsoVisitor<ExecutionContext> {
+    private static class NeedBracesJavaVisitor extends JavaIsoVisitor<ExecutionContext> {
         NeedBracesStyle needBracesStyle;
 
         /**
@@ -152,6 +166,9 @@ public class NeedBraces extends Recipe {
             }
             return elem;
         }
+    }
 
+    private static class NeedBracesKotlinVisitor extends KotlinIsoVisitor<ExecutionContext> {
+        // Implement ME. Hold on to transformation on Kotlin files until AutoFormat supports Kotlin well
     }
 }
