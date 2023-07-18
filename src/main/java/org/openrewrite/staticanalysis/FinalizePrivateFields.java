@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import fj.P;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
@@ -95,7 +94,7 @@ public class FinalizePrivateFields extends Recipe {
 
                 // makes sure the final flag is not also added to variables that have the volatile flag
                 for (J.VariableDeclarations.NamedVariable v : mv.getVariables()) {
-                    assert v.getVariableType() != null;
+                    if (v.getVariableType() == null) { break; }
                     for (Flag flag : v.getVariableType().getFlags()) {
                         if (flag.equals(Flag.Volatile)) {
                             return mv;
