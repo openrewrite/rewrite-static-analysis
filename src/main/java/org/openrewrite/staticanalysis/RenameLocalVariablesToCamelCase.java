@@ -79,6 +79,16 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 return !hasNameKey.contains(toName);
             }
 
+            @Override
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
+                // Don't change if variables has `internal` modifier (in Kotlin), since `internal` modifier means package-private in Kotlin, so it's not a local variable
+                if (multiVariable.getAllAnnotations().stream().anyMatch(anno -> "internal".equals(anno.getSimpleName()))) {
+                    return multiVariable;
+                }
+
+                return super.visitVariableDeclarations(multiVariable, executionContext);
+            }
+
             @SuppressWarnings("all")
             @Override
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
