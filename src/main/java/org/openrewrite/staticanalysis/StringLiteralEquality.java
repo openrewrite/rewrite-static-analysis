@@ -20,6 +20,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -53,7 +54,11 @@ public class StringLiteralEquality extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.lang.String", false), new JavaVisitor<ExecutionContext>() {
+        // Don't change for Kotlin because In Kotlin, `==` means structural equality, so it's redundant to call equals().
+        // see https://rules.sonarsource.com/kotlin/RSPEC-6519/
+        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(Preconditions.not(new KotlinFileChecker<>()),
+            new UsesType<>("java.lang.String", false));
+        return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
             private final JavaType.FullyQualified TYPE_STRING = TypeUtils.asFullyQualified(JavaType.buildType("java.lang.String"));
             private final JavaType TYPE_OBJECT = JavaType.buildType("java.lang.Object");
 
