@@ -16,7 +16,7 @@
 package org.openrewrite.staticanalysis.kotlin;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.DocumentExample;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.staticanalysis.NeedBraces;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -30,24 +30,23 @@ class NeedBracesTest implements RewriteTest {
         spec.recipe(new NeedBraces());
     }
 
-    @DocumentExample
+    @ExpectedToFail("Kotlin version visitor to be implemented")
     @Test
     void addBracesForIfBranch() {
         rewriteRun(
           kotlin(
             """
               fun getSymbol(num : Int) : String {
-                  if (num > 0)
-                      return "+"
+                  if (num > 0) return "+"
 
                   return "-"
               }
               """,
             """
               fun getSymbol(num : Int) : String {
-                          if (num > 0) {
-                                      return "+"
-                          }
+                  if (num > 0) {
+                      return "+"
+                  }
 
                   return "-"
               }
@@ -56,7 +55,7 @@ class NeedBracesTest implements RewriteTest {
         );
     }
 
-    // make sure the else body starts from a new line
+    @ExpectedToFail("Kotlin version visitor to be implemented")
     @Test
     void addBracesForElseBranch() {
         rewriteRun(
@@ -71,11 +70,24 @@ class NeedBracesTest implements RewriteTest {
             """
               fun getSymbol(num : Int) : String {
                   return if (num > 0) {
-                          "+"
+                      "+"
                   } else {
-                          "-"
+                      "-"
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeForArguments() {
+        rewriteRun(
+          kotlin(
+            """
+              fun run(foo: String, bar: String) {}
+              var x = run( if (true) "" else "",
+                  if (true) "" else "")
               """
           )
         );
