@@ -21,6 +21,8 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.kotlin.KotlinIsoVisitor;
+import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -52,10 +54,22 @@ public class NeedBraces extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new NeedBracesVisitor();
+
+        return new TreeVisitor<Tree, ExecutionContext>() {
+            @Override
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx, Cursor parent) {
+                if (tree instanceof J.CompilationUnit) {
+                    return new NeedBracesJavaVisitor().visit(tree, ctx);
+                } else if (tree instanceof K.CompilationUnit) {
+                    return new NeedBracesKotlinVisitor().visit(tree, ctx);
+                }
+
+                return tree;
+            }
+        };
     }
 
-    private static class NeedBracesVisitor extends JavaIsoVisitor<ExecutionContext> {
+    private static class NeedBracesJavaVisitor extends JavaIsoVisitor<ExecutionContext> {
         NeedBracesStyle needBracesStyle;
 
         /**
@@ -152,6 +166,112 @@ public class NeedBraces extends Recipe {
             }
             return elem;
         }
+    }
 
+    // We do some manual formatting for kotlin only before AutoFormat supports Kotlin well
+    private static class NeedBracesKotlinVisitor extends KotlinIsoVisitor<ExecutionContext> {
+        NeedBracesStyle needBracesStyle;
+
+        /**
+         * A {@link J.Block} implies the section of code is implicitly surrounded in braces.
+         * We can use that to our advantage by saying if you aren't a block (e.g. a single {@link Statement}, etc.),
+         * then we're going to make this into a block. That's how we'll get the code bodies surrounded in braces.
+         */
+        private static <T extends Statement> J.Block buildBlock(T element) {
+            return new J.Block(
+                Tree.randomId(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                JRightPadded.build(false),
+                element instanceof J.Empty ? Collections.emptyList() : Collections.singletonList(JRightPadded.build(element)),
+                Space.EMPTY
+            );
+        }
+
+        @Override
+        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            if (tree instanceof JavaSourceFile) {
+                SourceFile cu = (SourceFile) requireNonNull(tree);
+                needBracesStyle = cu.getStyle(NeedBracesStyle.class) == null ? Checkstyle.needBracesStyle() : cu.getStyle(NeedBracesStyle.class);
+            }
+            return super.visit(tree, ctx);
+        }
+
+        @Override
+        public J.If visitIf(J.If iff, ExecutionContext ctx) {
+            J.If elem = super.visitIf(iff, ctx);
+            boolean hasAllowableBodyType = elem.getThenPart() instanceof J.Block;
+            if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                J.Block b = buildBlock(elem.getThenPart());
+                elem = maybeAutoFormat(elem, elem.withThenPart(b), ctx);
+            }
+            return elem;
+        }
+
+        @Override
+        public J.If.Else visitElse(J.If.Else else_, ExecutionContext ctx) {
+            J.If.Else elem = super.visitElse(else_, ctx);
+            boolean hasAllowableBodyType = elem.getBody() instanceof J.Block || elem.getBody() instanceof J.If;
+            if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                if (!elem.getBody().getPrefix().getWhitespace().contains("\n")) {
+                    // make sure the else body starts from a new line
+                    Space before = elem.getBody().getPrefix();
+                    Space after = before.withWhitespace("\n" + before.getWhitespace());
+                    elem = elem.withBody(elem.getBody().withPrefix(after));
+                }
+
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            }
+            return autoFormat(elem, ctx);
+        }
+
+        @Override
+        public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, ExecutionContext ctx) {
+            J.WhileLoop elem = super.visitWhileLoop(whileLoop, ctx);
+            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                elem.getBody() instanceof J.Block;
+            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            }
+            return elem;
+        }
+
+        @Override
+        public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, ExecutionContext ctx) {
+            J.DoWhileLoop elem = super.visitDoWhileLoop(doWhileLoop, ctx);
+            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                elem.getBody() instanceof J.Block;
+            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            }
+            return elem;
+        }
+
+        @Override
+        public J.ForLoop visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
+            J.ForLoop elem = super.visitForLoop(forLoop, ctx);
+            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                elem.getBody() instanceof J.Block;
+            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            }
+            return elem;
+        }
     }
 }
