@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis.kotlin;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -36,11 +37,39 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
             """
               fun foo() {
                   val EMPTY_METAS = HashMap<String, Any>()
+                  EMPTY_METAS.isEmpty()
               }
               """,
             """
               fun foo() {
                   val emptyMetas = HashMap<String, Any>()
+                  emptyMetas.isEmpty()
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("A bug to be fixed")
+    @Test
+    void renameBothVariableAndUsage() {
+        rewriteRun(
+          kotlin(
+            """
+              class MqttRegex (val topic : String)
+              """
+          ),
+          kotlin(
+            """
+              fun foo() {
+                  val MQTT = MqttRegex("topic1")
+                  val x = listOf("", MQTT.topic)
+              }
+              """,
+            """
+              fun foo() {
+                  val mqtt = MqttRegex("topic1")
+                  val x = listOf("", mqtt.topic)
               }
               """
           )
