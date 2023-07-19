@@ -86,6 +86,7 @@ recipeList:
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
+# https://github.com/openrewrite/rewrite-static-analysis/issues/10
 #  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
 #  - org.openrewrite.staticanalysis.UseStringReplace
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
@@ -151,7 +152,8 @@ recipeList:
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
-  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
+# https://github.com/openrewrite/rewrite-static-analysis/issues/10
+#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
   - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
   - org.openrewrite.kotlin.cleanup.EqualsMethodUsage
