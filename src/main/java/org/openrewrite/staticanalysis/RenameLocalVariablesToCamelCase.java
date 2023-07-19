@@ -84,12 +84,12 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 // the meaning of a local variable is “is contained in a method declaration body”.
-                if (!isValidLocalVariable(mv)) {
+                if (!isLocalVariable(mv)) {
                     return mv;
                 }
 
                 List<J.VariableDeclarations.NamedVariable> variables = mv.getVariables();
-                variables.forEach(v -> {
+                for (J.VariableDeclarations.NamedVariable v : variables) {
                     String name = v.getSimpleName();
                     if (!LOWER_CAMEL.matches(name) && name.length() > 1) {
                         String toName = LOWER_CAMEL.format(name);
@@ -97,24 +97,29 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                     } else {
                         hasNameKey(name);
                     }
-                });
+                }
                 return mv;
             }
 
-            private boolean isValidLocalVariable(J.VariableDeclarations mv) {
+            private boolean isLocalVariable(J.VariableDeclarations mv) {
                 // The recipe will not rename variables declared in for loop controls or catches.
                 if (!isInMethodDeclarationBody() || isDeclaredInForLoopControl() || isDeclaredInCatch()) {
                     return false;
                 }
 
                 // Skip constant variable
-                boolean isFinalVariable = mv.hasModifier(J.Modifier.Type.Final);
-                if (isFinalVariable) {
+                if (mv.hasModifier(J.Modifier.Type.Final)) {
                     return false;
                 }
 
-                // ignore fields (aka "instance variable" or "class variable")
-                return mv.getVariables().stream().noneMatch(v -> v.isField(getCursor()));
+                // Ignore fields (aka "instance variable" or "class variable")
+                for (J.VariableDeclarations.NamedVariable v : mv.getVariables()) {
+                    if (v.isField(getCursor())) {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             private boolean isInMethodDeclarationBody() {
