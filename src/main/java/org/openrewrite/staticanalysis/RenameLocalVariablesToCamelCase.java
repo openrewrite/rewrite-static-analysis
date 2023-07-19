@@ -24,6 +24,7 @@ import org.openrewrite.java.tree.JavaSourceFile;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
@@ -80,44 +81,58 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
             }
 
             @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-                // Don't change if variables has `internal` modifier (in Kotlin), since `internal` modifier means package-private in Kotlin, so it's not a local variable
-                if (multiVariable.getAllAnnotations().stream().anyMatch(anno -> "internal".equals(anno.getSimpleName()))) {
-                    return multiVariable;
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
+                // the meaning of a local variable is “is contained in a method declaration body”.
+                if (!isValidLocalVariable(mv)) {
+                    return mv;
                 }
 
-                return super.visitVariableDeclarations(multiVariable, executionContext);
-            }
-
-            @SuppressWarnings("all")
-            @Override
-            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
-                Cursor parentScope = getCursorToParentScope(getCursor());
-
-                // Does not currently support renaming fields in a J.ClassDeclaration.
-                if (!(parentScope.getParent() != null &&
-                        (parentScope.getParent().getValue() instanceof J.ClassDeclaration ||
-                                // Detect java records
-                                parentScope.getValue() instanceof J.ClassDeclaration)) &&
-                        // Does not apply for instance variables of anonymous inner classes
-                        !(parentScope.getParent().getValue() instanceof J.NewClass) &&
-                        // Does not apply to for loop controls.
-                        !(parentScope.getValue() instanceof J.ForLoop.Control) &&
-                        // Does not apply to catches with 1 character.
-                        !((parentScope.getValue() instanceof J.Try.Catch || parentScope.getValue() instanceof J.MultiCatch) && variable.getSimpleName().length() == 1)) {
-
-                    if (!LOWER_CAMEL.matches(variable.getSimpleName())) {
-                        String toName = LOWER_CAMEL.format(variable.getSimpleName());
-                        renameVariable(variable, toName);
+                List<J.VariableDeclarations.NamedVariable> variables = mv.getVariables();
+                variables.forEach(v -> {
+                    String name = v.getSimpleName();
+                    if (!LOWER_CAMEL.matches(name) && name.length() > 1) {
+                        String toName = LOWER_CAMEL.format(name);
+                        renameVariable(v, toName);
                     } else {
-                        hasNameKey(variable.getSimpleName());
+                        hasNameKey(name);
                     }
-                }
-
-                return variable;
+                });
+                return mv;
             }
 
-            @SuppressWarnings("all")
+            private boolean isValidLocalVariable(J.VariableDeclarations mv) {
+                // The recipe will not rename variables declared in for loop controls or catches.
+                if (!isInMethodDeclarationBody() || isDeclaredInForLoopControl() || isDeclaredInCatch()) {
+                    return false;
+                }
+
+                // Skip constant variable
+                boolean isFinalVariable = mv.hasModifier(J.Modifier.Type.Final);
+                if (isFinalVariable) {
+                    return false;
+                }
+
+                // ignore fields (aka "instance variable" or "class variable")
+                return mv.getVariables().stream().noneMatch(v -> v.isField(getCursor()));
+            }
+
+            private boolean isInMethodDeclarationBody() {
+                return getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration ||
+                                                        p instanceof J.ClassDeclaration ||
+                                                        p == Cursor.ROOT_VALUE).getValue() instanceof J.MethodDeclaration;
+            }
+
+            private boolean isDeclaredInForLoopControl() {
+                return getCursor().getParentTreeCursor()
+                    .getValue() instanceof J.ForLoop.Control;
+            }
+
+            private boolean isDeclaredInCatch() {
+                Cursor parentScope = getCursorToParentScope(getCursor());
+                return parentScope.getValue() instanceof J.Try.Catch || parentScope.getValue() instanceof J.MultiCatch;
+            }
+
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
                 hasNameKey(identifier.getSimpleName());
