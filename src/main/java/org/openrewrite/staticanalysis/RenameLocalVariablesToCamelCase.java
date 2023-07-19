@@ -92,8 +92,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 for (J.VariableDeclarations.NamedVariable v : variables) {
                     String name = v.getSimpleName();
                     if (!LOWER_CAMEL.matches(name) && name.length() > 1) {
-                        String toName = LOWER_CAMEL.format(name);
-                        renameVariable(v, toName);
+                        renameVariable(v, LOWER_CAMEL.format(name));
                     } else {
                         hasNameKey(name);
                     }
@@ -125,6 +124,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
             private boolean isInMethodDeclarationBody() {
                 return getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration ||
                                                         p instanceof J.ClassDeclaration ||
+                                                        p instanceof J.NewClass ||
                                                         p == Cursor.ROOT_VALUE).getValue() instanceof J.MethodDeclaration;
             }
 

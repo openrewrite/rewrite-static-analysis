@@ -347,4 +347,29 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void noChangeInAnonymousClass() {
+        rewriteRun(
+          java(
+            """
+              interface MyInterface {
+                  void doSomething();
+              }
+
+              public class A {
+                  void test() {
+                      new MyInterface() {
+                          int SOME_THING_NOT_LOCAL = 1;
+
+                          @Override
+                          public void doSomething() {
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
 }
