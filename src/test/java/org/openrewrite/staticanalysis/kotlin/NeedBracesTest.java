@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis.kotlin;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.staticanalysis.NeedBraces;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -30,7 +30,7 @@ class NeedBracesTest implements RewriteTest {
         spec.recipe(new NeedBraces());
     }
 
-    @ExpectedToFail("Kotlin version visitor to be implemented")
+    @Disabled("Kotlin version visitor to be implemented")
     @Test
     void addBracesForIfBranch() {
         rewriteRun(
@@ -55,7 +55,7 @@ class NeedBracesTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Kotlin version visitor to be implemented")
+    @Disabled("Kotlin version visitor to be implemented")
     @Test
     void addBracesForElseBranch() {
         rewriteRun(

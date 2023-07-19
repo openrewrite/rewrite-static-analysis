@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis.kotlin;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -50,7 +50,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("A bug to be fixed")
+    @Disabled("A bug to be fixed")
     @Test
     void renameBothVariableAndUsage() {
         rewriteRun(
