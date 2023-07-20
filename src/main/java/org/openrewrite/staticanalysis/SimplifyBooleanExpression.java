@@ -103,19 +103,27 @@ public class SimplifyBooleanExpression extends Recipe {
                     }
                 } else if (asBinary.getOperator() == J.Binary.Type.Equal) {
                     if (isLiteralTrue(asBinary.getLeft())) {
-                        maybeUnwrapParentheses();
-                        j = asBinary.getRight().withPrefix(asBinary.getRight().getPrefix().withWhitespace(""));
+                        if (isNotKotlinNullableType(asBinary.getRight())) {
+                            maybeUnwrapParentheses();
+                            j = asBinary.getRight().withPrefix(asBinary.getRight().getPrefix().withWhitespace(""));
+                        }
                     } else if (isLiteralTrue(asBinary.getRight())) {
-                        maybeUnwrapParentheses();
-                        j = asBinary.getLeft();
+                        if (isNotKotlinNullableType(asBinary.getLeft())) {
+                            maybeUnwrapParentheses();
+                            j = asBinary.getLeft().withPrefix(asBinary.getLeft().getPrefix().withWhitespace(" "));
+                        }
                     }
                 } else if (asBinary.getOperator() == J.Binary.Type.NotEqual) {
                     if (isLiteralFalse(asBinary.getLeft())) {
-                        maybeUnwrapParentheses();
-                        j = asBinary.getRight().withPrefix(asBinary.getRight().getPrefix().withWhitespace(""));
+                        if (isNotKotlinNullableType(asBinary.getRight())) {
+                            maybeUnwrapParentheses();
+                            j = asBinary.getRight().withPrefix(asBinary.getRight().getPrefix().withWhitespace(""));
+                        }
                     } else if (isLiteralFalse(asBinary.getRight())) {
-                        maybeUnwrapParentheses();
-                        j = asBinary.getLeft();
+                        if (isNotKotlinNullableType(asBinary.getLeft())) {
+                            maybeUnwrapParentheses();
+                            j = asBinary.getLeft().withPrefix(asBinary.getLeft().getPrefix().withWhitespace(" "));
+                        }
                     }
                 }
                 if (asBinary != j) {
@@ -187,6 +195,21 @@ public class SimplifyBooleanExpression extends Recipe {
                         return Space.EMPTY;
                     }
                 }.visit(j, 0);
+            }
+
+            // Comparing Kotlin nullable type `?` with tree/false can not be simplified,
+            // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
+            private boolean isNotKotlinNullableType(@Nullable  J j) {
+                if (j == null) {
+                    return true;
+                }
+
+                if (j instanceof J.MethodInvocation) {
+                    J.MethodInvocation m = (J.MethodInvocation) j;
+                    return !m.getMarkers().findFirst(org.openrewrite.kotlin.marker.IsNullable.class).isPresent();
+                }
+
+                return true;
             }
         };
     }

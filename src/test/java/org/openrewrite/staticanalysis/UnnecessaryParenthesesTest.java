@@ -37,7 +37,6 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
-import org.openrewrite.java.cleanup.UnnecessaryParentheses;
 import org.openrewrite.java.style.UnnecessaryParenthesesStyle;
 import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
@@ -50,10 +49,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({
-  "UnnecessaryLocalVariable", "ConstantConditions", "UnusedAssignment", "PointlessBooleanExpression",
-  "MismatchedStringCase", "SillyAssignment"
-  , "ParameterCanBeLocal"})
+@SuppressWarnings({"ConstantConditions"})
 class UnnecessaryParenthesesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
