@@ -32,7 +32,7 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Correct 'set.stream().sorted().collect(Collectors.toSet())' to 'set.stream().sorted().collect(LinkedHashSet::new)'";
+        return "Correct 'set.stream().sorted().collect(Collectors.toSet())' to 'set.stream().sorted().collect(LinkedHashSet::new)'.";
     }
 
     @Override

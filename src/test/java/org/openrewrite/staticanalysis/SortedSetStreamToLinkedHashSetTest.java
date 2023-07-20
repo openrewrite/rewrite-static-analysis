@@ -35,25 +35,24 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
                 //language=java
                 java(
                         """
+                                import java.util.Set;
+                                import java.util.HashSet;
+                                import java.util.stream.Collectors;
+                                                                
                                 class A {
-                                  void test() {
-                                      Set<Integer> set = new HashSet<>();
-                                      set.add(5);
-                                      set.add(60);
-                                      set.add(3);
-                      
+                                  void method(Set<Integer> set) {
                                       Set<Integer> sorted = set.stream().sorted().collect(Collectors.toSet());
                                   }
                                 }
                                 """,
                         """
-                                  class A {
-                                  void test() {
-                                      Set<Integer> set = new HashSet<>();
-                                      set.add(5);
-                                      set.add(60);
-                                      set.add(3);
-                      
+                                import java.util.LinkedHashSet;
+                                import java.util.Set;
+                                import java.util.HashSet;
+                                import java.util.stream.Collectors;
+                                                                
+                                class A {
+                                  void method(Set<Integer> set) {
                                       Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
                                   }
                                 }
@@ -63,18 +62,17 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
     }
 
     @Test
-    void ignoreLinkedHashSet() {
+    void ignoreCollectToLinkedHashSet() {
         rewriteRun(
                 //language=java
                 java(
                         """
+                                import java.util.Set;
+                                import java.util.LinkedHashSet;
+                                import java.util.stream.Collectors;
+                                                                
                                 class A {
-                                  void test() {
-                                      Set<Integer> set = new HashSet<>();
-                                      set.add(5);
-                                      set.add(60);
-                                      set.add(3);
-                      
+                                  void method(Set<Integer> set) {
                                       Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
                                   }
                                 }

@@ -17,53 +17,46 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.openrewrite.Cursor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaCoordinates;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
-import java.util.stream.Collectors;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
-public class SortedSetStreamToLinkedHashSetVisitor<P> extends JavaIsoVisitor<P> {
+public class SortedSetStreamToLinkedHashSetVisitor<ExecutionContext> extends JavaIsoVisitor<ExecutionContext> {
 
-    private static final MethodMatcher STREAM_COLLECT_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream.collect(java.util.stream.Collector)");
-    private static final MethodMatcher STREAM_SORTED_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream.sorted()");
-    private static final MethodMatcher COLLECTORS_TO_SET_METHOD_MATCHER = new MethodMatcher("java.util.stream.Collectors.toSet()");
-    JavaTemplate template = JavaTemplate.builder("LinkedHashSet::new").imports("java.util.LinkedHashSet").build();
+    private static final MethodMatcher STREAM_COLLECT_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream " +
+            "collect(java.util.stream.Collector)");
+    private static final MethodMatcher STREAM_SORTED_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream sorted()");
+    private static final MethodMatcher COLLECTORS_TO_SET_METHOD_MATCHER = new MethodMatcher("java.util.stream.Collectors toSet()");
+    JavaTemplate template = JavaTemplate.builder("Collectors.toCollection(LinkedHashSet::new)")
+            .imports("java.util.LinkedHashSet", "java.util.stream.Collectors").build();
 
     @Override
-    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
-        J.MethodInvocation mi = super.visitMethodInvocation(method, p);
-        if (STREAM_COLLECT_METHOD_MATCHER.matches(mi) && isSortedStream(mi.getSelect())) {
-            JavaCoordinates replace = mi.getCoordinates().replace();
-            mi = mi.withArguments(ListUtils.map(mi.getArguments(), arg -> {
-                if (isCollectToUnorderedSet(arg)) {
-                    return template.apply(getCursor(), replace);
-                }
-                return arg;
-            }));
+    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+        J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+        if (STREAM_COLLECT_METHOD_MATCHER.matches(mi) && isSortedStreamToUnOrderedSet(mi)) {
+            mi = template.apply(updateCursor(mi), mi.getCoordinates().replaceArguments());
+            maybeAddImport("java.util.LinkedHashSet");
+            maybeAddImport("java.util.stream.Collectors");
         }
         return mi;
     }
 
-    private boolean isSortedStream(@Nullable J j) {
-        if (j instanceof J.MethodInvocation) {
-            J.MethodInvocation mi = (J.MethodInvocation) j;
-            return STREAM_COLLECT_METHOD_MATCHER.matches(mi);
-        }
-        return false;
-    }
-
-    private boolean isCollectToUnorderedSet(@Nullable J j) {
-        if (j instanceof J.MethodInvocation) {
-            J.MethodInvocation mi = (J.MethodInvocation) j;
-            return COLLECTORS_TO_SET_METHOD_MATCHER.matches(mi);
+    private boolean isSortedStreamToUnOrderedSet(J.MethodInvocation mi) {
+        Expression selectExp = mi.getSelect();
+        Expression argExp = mi.getArguments().get(0);
+        if (selectExp instanceof J.MethodInvocation && argExp instanceof J.MethodInvocation) {
+            J.MethodInvocation selectMI = (J.MethodInvocation) selectExp;
+            J.MethodInvocation argMI = (J.MethodInvocation) argExp;
+            return STREAM_SORTED_METHOD_MATCHER.matches(selectMI) && COLLECTORS_TO_SET_METHOD_MATCHER.matches(argMI);
         }
         return false;
     }
