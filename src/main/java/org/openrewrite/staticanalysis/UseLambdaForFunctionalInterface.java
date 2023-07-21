@@ -21,7 +21,6 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.RemoveUnusedImports;
-import org.openrewrite.java.cleanup.UnnecessaryParentheses;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;

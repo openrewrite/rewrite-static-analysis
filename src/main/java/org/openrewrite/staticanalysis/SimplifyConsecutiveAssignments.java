@@ -20,7 +20,6 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.cleanup.UnnecessaryParentheses;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 

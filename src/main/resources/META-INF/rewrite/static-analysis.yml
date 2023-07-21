@@ -35,7 +35,7 @@ recipeList:
   - org.openrewrite.staticanalysis.HideUtilityClassConstructor
   - org.openrewrite.staticanalysis.NeedBraces
   - org.openrewrite.staticanalysis.OperatorWrap
-  - org.openrewrite.java.cleanup.UnnecessaryParentheses
+  - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
   - org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString

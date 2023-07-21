@@ -22,14 +22,14 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.cleanup.SimplifyBooleanExpression;
-import org.openrewrite.java.cleanup.UnnecessaryParentheses;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.EmptyBlockStyle;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.SimplifyBooleanExpression;
+import org.openrewrite.staticanalysis.UnnecessaryParentheses;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
