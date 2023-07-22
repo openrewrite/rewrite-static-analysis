@@ -21,6 +21,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.RemoveUnusedImports;
+import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
@@ -122,7 +123,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                                 .build()
                                 .apply(getCursor(), n.getCoordinates().replace());
                         lambda = lambda.withType(typedInterface);
-                        lambda = (J.Lambda) new UnnecessaryParentheses().getVisitor()
+                        lambda = (J.Lambda) new UnnecessaryParenthesesVisitor()
                                 .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
 
                         J.Block lambdaBody = methodDeclaration.getBody();
