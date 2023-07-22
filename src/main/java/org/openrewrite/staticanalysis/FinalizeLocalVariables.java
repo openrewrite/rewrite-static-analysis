@@ -74,7 +74,7 @@ public class FinalizeLocalVariables extends Recipe {
                         })) {
                     mv = autoFormat(
                             mv.withModifiers(
-                                    ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Final, Collections.emptyList()))
+                                    ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()))
                             ), p);
                 }
 

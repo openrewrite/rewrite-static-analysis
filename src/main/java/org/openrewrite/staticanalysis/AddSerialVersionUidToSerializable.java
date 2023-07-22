@@ -102,9 +102,9 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                         || !J.Modifier.hasModifier(modifiers, J.Modifier.Type.Final)) {
                     Space singleSpace = Space.build(" ", Collections.emptyList());
                     varDecls = varDecls.withModifiers(Arrays.asList(
-                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Private, Collections.emptyList()),
-                            new J.Modifier(Tree.randomId(), singleSpace, Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Static, Collections.emptyList()),
-                            new J.Modifier(Tree.randomId(), singleSpace, Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Final,   Collections.emptyList())
+                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Private, Collections.emptyList()),
+                            new J.Modifier(Tree.randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()),
+                            new J.Modifier(Tree.randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Final,   Collections.emptyList())
                     ));
                 }
                 if (TypeUtils.asPrimitive(varDecls.getType()) != JavaType.Primitive.Long) {

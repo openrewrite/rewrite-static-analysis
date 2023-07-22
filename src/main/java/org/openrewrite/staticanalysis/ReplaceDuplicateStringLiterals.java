@@ -125,8 +125,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                                 Space singleSpace = Space.build(" ", emptyList());
                                 Expression literal = duplicateLiteralsMap.get(valueOfLiteral).toArray(new J.Literal[0])[0].withId(randomId());
                                 J.Modifier privateModifier = new J.Modifier(randomId(), Space.build("\n", emptyList()), Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Private, emptyList());
-                                J.Modifier staticModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Static, emptyList());
-                                J.Modifier finalModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Final, emptyList());
+                                J.Modifier staticModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Static, emptyList());
+                                J.Modifier finalModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList());
                                 J.VariableDeclarations variableDeclarations = autoFormat(new J.VariableDeclarations(
                                         randomId(),
                                         Space.EMPTY,

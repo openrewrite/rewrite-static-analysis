@@ -109,7 +109,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
             J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
             if (cd.getType() != null && typesToFinalize.remove(cd.getType().getFullyQualifiedName())) {
                 List<J.Modifier> modifiers = new ArrayList<>(cd.getModifiers());
-                modifiers.add(new J.Modifier(randomId(), Space.EMPTY, Markers.EMPTY, Collections.emptyList(), J.Modifier.Type.Final, emptyList()));
+                modifiers.add(new J.Modifier(randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()));
                 modifiers = sortModifiers(modifiers);
                 cd = cd.withModifiers(modifiers);
                 if (cd.getType() instanceof JavaType.Class && !cd.getType().hasFlags(Flag.Final)) {
