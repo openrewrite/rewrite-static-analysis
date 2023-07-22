@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
+
 public class ExplicitLambdaArgumentTypes extends Recipe {
     @Override
     public String getDisplayName() {
@@ -138,6 +140,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 J.Identifier identifier = new J.Identifier(Tree.randomId(),
                         space,
                         Markers.EMPTY,
+                        emptyList(),
                         fq.getClassName(),
                         type,
                         null
@@ -174,6 +177,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     return new J.Identifier(Tree.randomId(),
                             space,
                             Markers.EMPTY,
+                            emptyList(),
                             genericType.getName(),
                             type,
                             null

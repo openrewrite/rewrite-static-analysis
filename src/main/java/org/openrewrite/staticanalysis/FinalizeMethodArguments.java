@@ -169,6 +169,7 @@ public class FinalizeMethodArguments extends Recipe {
         Modifier finalModifier = new Modifier(Tree.randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
+                null,
                 Type.Final,
                 emptyList());
         if (leadingAnnotations) {

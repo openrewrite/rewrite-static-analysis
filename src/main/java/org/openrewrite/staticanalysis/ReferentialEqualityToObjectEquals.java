@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 public class ReferentialEqualityToObjectEquals extends Recipe {
@@ -70,7 +71,7 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
                     Markers.EMPTY,
                     new JRightPadded<>(binary.getLeft().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY),
                     null,
-                    new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, "equals", JavaType.Primitive.Boolean, null),
+                    new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "equals", JavaType.Primitive.Boolean, null),
                     JContainer.build(singletonList(new JRightPadded<>(binary.getRight().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY))),
                     new JavaType.Method(
                             null,

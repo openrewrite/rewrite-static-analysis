@@ -98,8 +98,8 @@ public class FinalizePrivateFields extends Recipe {
                         return type != null ? v.withVariableType(type.withFlags(
                                 Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
                     })).withModifiers(ListUtils.concat(mv.getModifiers(),
-                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, J.Modifier.Type.Final,
-                                    emptyList()))), ctx);
+                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null,
+                                    J.Modifier.Type.Final, emptyList()))), ctx);
                 }
 
                 return mv;
