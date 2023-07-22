@@ -137,6 +137,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                                                 randomId(),
                                                 singleSpace,
                                                 Markers.EMPTY,
+                                                emptyList(),
                                                 "String",
                                                 JavaType.ShallowClass.build("java.lang.String"),
                                                 null),
@@ -150,6 +151,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                                                         randomId(),
                                                         Space.EMPTY,
                                                         Markers.EMPTY,
+                                                        emptyList(),
                                                         variableName,
                                                         JavaType.ShallowClass.build("java.lang.String"),
                                                         null),
@@ -364,6 +366,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         Tree.randomId(),
                         literal.getPrefix(),
                         literal.getMarkers(),
+                        emptyList(),
                         variableName,
                         JavaType.Primitive.String,
                         new JavaType.Variable(

@@ -212,6 +212,7 @@ public class InstanceOfPatternMatch extends Recipe {
                     randomId(),
                     Space.build(" ", emptyList()),
                     Markers.EMPTY,
+                    emptyList(),
                     name,
                     type,
                     null));
@@ -251,6 +252,7 @@ public class InstanceOfPatternMatch extends Recipe {
                         randomId(),
                         typeCast.getPrefix(),
                         Markers.EMPTY,
+                        emptyList(),
                         name,
                         typeCast.getType(),
                         fieldType);
