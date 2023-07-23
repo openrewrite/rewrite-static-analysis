@@ -32,52 +32,85 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
     @Test
     void changeSortedSetStreamToLinkedHashSet() {
         rewriteRun(
-                //language=java
-                java(
-                        """
-                                import java.util.Set;
-                                import java.util.HashSet;
-                                import java.util.stream.Collectors;
-                                                                
-                                class A {
-                                  void method(Set<Integer> set) {
-                                      Set<Integer> sorted = set.stream().sorted().collect(Collectors.toSet());
-                                  }
-                                }
-                                """,
-                        """
-                                import java.util.LinkedHashSet;
-                                import java.util.Set;
-                                import java.util.HashSet;
-                                import java.util.stream.Collectors;
-                                                                
-                                class A {
-                                  void method(Set<Integer> set) {
-                                      Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
-                                  }
-                                }
-                                """
-                )
-        );
+          //language=java
+          java("""
+            import java.util.Set;
+            import java.util.stream.Collectors;
+                                            
+            class A {
+              void method(Set<Integer> set) {
+                  Set<Integer> sorted = set.stream().sorted().collect(Collectors.toSet());
+              }
+            }
+            """, """
+            import java.util.LinkedHashSet;
+            import java.util.Set;
+            import java.util.stream.Collectors;
+                                            
+            class A {
+              void method(Set<Integer> set) {
+                  Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
+              }
+            }
+            """));
+    }
+
+    @Test
+    void changeSortedSetStreamToLinkedHashSetStaticImport() {
+        rewriteRun(
+          //language=java
+          java("""
+            import java.util.Set;
+            import static java.util.stream.Collectors.toSet;
+            
+            class A {
+              void method(Set<Integer> set) {
+                  Set<Integer> sorted = set.stream().sorted().collect(toSet());
+              }
+            }
+            """, """
+            import java.util.LinkedHashSet;
+            import java.util.Set;
+            import java.util.stream.Collectors;
+            
+            class A {
+              void method(Set<Integer> set) {
+                  Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
+              }
+            }
+            """));
     }
 
     @Test
     void ignoreCollectToLinkedHashSet() {
         rewriteRun(
-                //language=java
-                java(
-                        """
-                                import java.util.Set;
-                                import java.util.LinkedHashSet;
-                                import java.util.stream.Collectors;
-                                                                
-                                class A {
-                                  void method(Set<Integer> set) {
-                                      Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
-                                  }
-                                }
-                                """
-                )
-        );
+          //language=java
+          java("""
+            import java.util.Set;
+            import java.util.LinkedHashSet;
+            import java.util.stream.Collectors;
+                                            
+            class A {
+              void method(Set<Integer> set) {
+                  Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
+              }
+            }
+            """));
+    }
+
+    @Test
+    void ignoreCollectToList() {
+        rewriteRun(
+          //language=java
+          java("""
+            import java.util.List;
+            import java.util.stream.Collectors;
+                                            
+            class A {
+              void method(Set<Integer> set) {
+                  List<Integer> sorted = set.stream().sorted().collect(Collectors.toList());
+              }
+            }
+            """));
     }
 }

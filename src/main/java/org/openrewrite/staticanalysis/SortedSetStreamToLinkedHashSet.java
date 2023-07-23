@@ -20,6 +20,10 @@ import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.tree.J;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -35,8 +39,30 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
         return "Correct 'set.stream().sorted().collect(Collectors.toSet())' to 'set.stream().sorted().collect(LinkedHashSet::new)'.";
     }
 
+    private static final MethodMatcher STREAM_COLLECT_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream collect(java.util.stream.Collector)");
+    private static final MethodMatcher STREAM_SORTED_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream sorted()");
+    private static final MethodMatcher COLLECTORS_TO_SET_METHOD_MATCHER = new MethodMatcher("java.util.stream.Collectors toSet()");
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new SortedSetStreamToLinkedHashSetVisitor<>();
+        return new JavaIsoVisitor<ExecutionContext>() {
+            private JavaTemplate template = JavaTemplate.builder("Collectors.toCollection(LinkedHashSet::new)")
+                    .imports("java.util.stream.Collectors", "java.util.LinkedHashSet")
+                    .build();
+
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+                if (STREAM_COLLECT_METHOD_MATCHER.matches(mi)
+                    && STREAM_SORTED_METHOD_MATCHER.matches(mi.getSelect())
+                    && COLLECTORS_TO_SET_METHOD_MATCHER.matches(mi.getArguments().get(0))) {
+                    maybeRemoveImport("java.util.stream.Collectors.toSet");
+                    maybeAddImport("java.util.LinkedHashSet");
+                    maybeAddImport("java.util.stream.Collectors");
+                    return template.apply(updateCursor(mi), mi.getCoordinates().replaceArguments());
+                }
+                return mi;
+            }
+        };
     }
 }
