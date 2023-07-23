@@ -94,14 +94,14 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
           kotlin(
             """
               fun main() {
-                  val name : String? = null;
+                  val name : String? = null
                   val isPositive1 = name?.equals("+") == true
                   val isPositive2 = name.equals("+") == true
               }
               """,
             """
               fun main() {
-                  val name : String? = null;
+                  val name : String? = null
                   val isPositive1 = name?.equals("+") == true
                   val isPositive2 = name.equals("+")
               }
