@@ -7,8 +7,7 @@ plugins {
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
-//val rewriteVersion = rewriteRecipe.rewriteVersion.get()
-val rewriteVersion = "8.2.0-SNAPSHOT"
+val rewriteVersion = rewriteRecipe.rewriteVersion.get()
 dependencies {
     compileOnly("org.projectlombok:lombok:latest.release")
     annotationProcessor("org.projectlombok:lombok:latest.release")
@@ -16,8 +15,8 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
-    implementation("org.openrewrite:rewrite-kotlin:1.2.0-SNAPSHOT")
-    implementation("org.openrewrite.meta:rewrite-analysis:2.1.0-SNAPSHOT")
+    implementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
     testImplementation("org.openrewrite:rewrite-groovy")
