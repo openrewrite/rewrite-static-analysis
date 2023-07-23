@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
 @Value
@@ -45,7 +47,7 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(COLLECTORS_TO_SET_METHOD_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
             private JavaTemplate template = JavaTemplate.builder("Collectors.toCollection(LinkedHashSet::new)")
                     .imports("java.util.stream.Collectors", "java.util.LinkedHashSet")
                     .build();
@@ -63,6 +65,6 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
                 }
                 return mi;
             }
-        };
+        });
     }
 }
