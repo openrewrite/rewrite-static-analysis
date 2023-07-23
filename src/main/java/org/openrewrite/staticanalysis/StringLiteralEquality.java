@@ -20,11 +20,13 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 public class StringLiteralEquality extends Recipe {
@@ -53,7 +55,11 @@ public class StringLiteralEquality extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.lang.String", false), new JavaVisitor<ExecutionContext>() {
+        // Don't change for Kotlin because In Kotlin, `==` means structural equality, so it's redundant to call equals().
+        // see https://rules.sonarsource.com/kotlin/RSPEC-6519/
+        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(Preconditions.not(new KotlinFileChecker<>()),
+            new UsesType<>("java.lang.String", false));
+        return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
             private final JavaType.FullyQualified TYPE_STRING = TypeUtils.asFullyQualified(JavaType.buildType("java.lang.String"));
             private final JavaType TYPE_OBJECT = JavaType.buildType("java.lang.Object");
 
@@ -69,11 +75,11 @@ public class StringLiteralEquality extends Recipe {
             private J.MethodInvocation asEqualsMethodInvocation(J.Binary binary) {
                 return new J.MethodInvocation(
                         Tree.randomId(),
-                        binary.getPrefix(),
+                        Space.EMPTY,
                         Markers.EMPTY,
                         new JRightPadded<>(binary.getLeft().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY),
                         null,
-                        new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, "equals", JavaType.Primitive.Boolean, null),
+                        new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(),"equals", JavaType.Primitive.Boolean, null),
                         JContainer.build(singletonList(new JRightPadded<>(binary.getRight().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY))),
                         new JavaType.Method(
                                 null,
@@ -109,10 +115,9 @@ public class StringLiteralEquality extends Recipe {
                 if (isStringLiteral(binary.getLeft()) || isStringLiteral(binary.getRight())) {
                     J after = null;
                     if (binary.getOperator() == J.Binary.Type.Equal) {
-                        after = asEqualsMethodInvocation(binary);
+                        after = asEqualsMethodInvocation(binary).withPrefix(binary.getPrefix());
                     } else if (binary.getOperator() == J.Binary.Type.NotEqual) {
-                        J.MethodInvocation mi = asEqualsMethodInvocation(binary);
-                        after = asNegatedUnary(mi);
+                        after = asNegatedUnary(asEqualsMethodInvocation(binary)).withPrefix(binary.getPrefix());
                     }
                     if (after != null) {
                         doAfterVisit(new EqualsAvoidsNull().getVisitor());

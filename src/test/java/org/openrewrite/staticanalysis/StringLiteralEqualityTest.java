@@ -51,7 +51,7 @@ class StringLiteralEqualityTest implements RewriteTest {
                   }
 
                   public void method(String str) {
-                      if (str == "test") ;
+                      if (str.length() > 1 && str == "test") ;
                       if ("test" == str) ;
                       if ("test" == "test") ;
                       if ("test" == new String("test")) ;
@@ -78,7 +78,7 @@ class StringLiteralEqualityTest implements RewriteTest {
                   }
 
                   public void method(String str) {
-                      if ("test".equals(str)) ;
+                      if (str.length() > 1 && "test".equals(str)) ;
                       if ("test".equals(str)) ;
                       if ("test".equals("test")) ;
                       if ("test".equals(new String("test"))) ;
@@ -113,7 +113,7 @@ class StringLiteralEqualityTest implements RewriteTest {
                   }
 
                   public void method(String str) {
-                      if (str != "test") ;
+                      if (str.length() > 1 && str != "test") ;
                       if ("test" != str) ;
                       if ("test" != "test") ;
                       if ("test" != new String("test")) ;
@@ -131,7 +131,7 @@ class StringLiteralEqualityTest implements RewriteTest {
                   }
 
                   public void method(String str) {
-                      if (!"test".equals(str)) ;
+                      if (str.length() > 1 && !"test".equals(str)) ;
                       if (!"test".equals(str)) ;
                       if (!"test".equals("test")) ;
                       if (!"test".equals(new String("test"))) ;

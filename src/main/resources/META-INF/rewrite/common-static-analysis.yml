@@ -19,7 +19,7 @@ name: org.openrewrite.staticanalysis.CommonStaticAnalysis
 displayName: Common static analysis issues
 description: Resolve common static analysis issues discovered through 3rd party tools.
 recipeList:
-  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
+#  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
   - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
   - org.openrewrite.staticanalysis.BooleanChecksNotInverted
@@ -73,20 +73,21 @@ recipeList:
   - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
   - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
-  - org.openrewrite.java.cleanup.SimplifyBooleanExpression
-  - org.openrewrite.java.cleanup.SimplifyBooleanReturn
+  - org.openrewrite.staticanalysis.SimplifyBooleanExpression
+  - org.openrewrite.staticanalysis.SimplifyBooleanReturn
   - org.openrewrite.staticanalysis.StaticMethodNotFinal
   - org.openrewrite.staticanalysis.StringLiteralEquality
   - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
   - org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments
-  - org.openrewrite.java.cleanup.UnnecessaryParentheses
+  - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
 #  - org.openrewrite.staticanalysis.UnnecessaryThrows
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
-  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
+# https://github.com/openrewrite/rewrite-static-analysis/issues/10
+#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
 #  - org.openrewrite.staticanalysis.UseStringReplace
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
   - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
@@ -142,16 +143,19 @@ recipeList:
   - org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrTostring
   - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
-  - org.openrewrite.java.cleanup.SimplifyBooleanExpression
-  - org.openrewrite.java.cleanup.SimplifyBooleanReturn
+  - org.openrewrite.staticanalysis.SimplifyBooleanExpression
+  - org.openrewrite.staticanalysis.SimplifyBooleanReturn
   - org.openrewrite.staticanalysis.StaticMethodNotFinal
-  - org.openrewrite.staticanalysis.StringLiteralEquality
   - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
-  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
+# https://github.com/openrewrite/rewrite-static-analysis/issues/10
+#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
   - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
+  - org.openrewrite.kotlin.cleanup.EqualsMethodUsage
+  - org.openrewrite.kotlin.cleanup.ImplicitParameterInLambda
+  - org.openrewrite.kotlin.cleanup.ReplaceCharToIntWithCode

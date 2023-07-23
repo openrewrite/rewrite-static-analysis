@@ -15,22 +15,20 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.intellij.lang.annotations.Language;
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaParser;
+import org.openrewrite.*;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.kotlin.KotlinVisitor;
+import org.openrewrite.kotlin.tree.K;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
 public class ReplaceLambdaWithMethodReference extends Recipe {
 
@@ -56,15 +54,28 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new TreeVisitor<Tree, ExecutionContext>() {
             @Override
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx, Cursor parent) {
+                if (tree instanceof J.CompilationUnit) {
+                    return new ReplaceLambdaWithMethodReferenceJavaVisitor().visit(tree, ctx);
+                } else if (tree instanceof K.CompilationUnit) {
+                    return new ReplaceLambdaWithMethodReferenceKotlinVisitor().visit(tree, ctx);
+                }
+                return tree;
+            }
+        };
+    }
+
+    private static class ReplaceLambdaWithMethodReferenceKotlinVisitor extends KotlinVisitor<ExecutionContext> {
+        // Implement Me
+    }
+
+    private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
+        @Override
             public J visitLambda(J.Lambda lambda, ExecutionContext executionContext) {
                 J.Lambda l = (J.Lambda) super.visitLambda(lambda, executionContext);
                 updateCursor(l);
-
-                if (TypeUtils.isOfClassType(lambda.getType(), "groovy.lang.Closure")) {
-                    return l;
-                }
 
                 String code = "";
                 J body = l.getBody();
@@ -79,45 +90,46 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 } else if (body instanceof J.InstanceOf) {
                     J.InstanceOf instanceOf = (J.InstanceOf) body;
                     J j = instanceOf.getClazz();
-                    if (j instanceof J.Identifier && instanceOf.getExpression() instanceof J.Identifier) {
-                        body = j;
-                        code = "#{}.class::isInstance";
+                    if ((j instanceof J.Identifier || j instanceof J.FieldAccess) &&
+                        instanceOf.getExpression() instanceof J.Identifier) {
+                        J.FieldAccess classLiteral = newClassLiteral(((TypeTree) j).getType(), j instanceof J.FieldAccess);
+                        if (classLiteral != null) {
+                            //noinspection DataFlowIssue
+                            JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
+                            Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> m.getName().equals("isInstance")).findFirst();
+                            if (isInstanceMethod.isPresent()) {
+                                return newInstanceMethodReference(isInstanceMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
+                            }
+                        }
                     }
                 } else if (body instanceof J.TypeCast) {
                     if (!(((J.TypeCast) body).getExpression() instanceof J.MethodInvocation)) {
                         J.ControlParentheses<TypeTree> j = ((J.TypeCast) body).getClazz();
-                        if (j != null) {
-                            @SuppressWarnings("rawtypes") J tree = ((J.ControlParentheses) j).getTree();
-                            if (tree instanceof J.Identifier &&
-                                !(j.getType() instanceof JavaType.GenericTypeVariable)) {
-                                body = tree;
-                                code = "#{}.class::cast";
+                        J tree = j.getTree();
+                        if ((tree instanceof J.Identifier || tree instanceof J.FieldAccess) &&
+                            !(j.getType() instanceof JavaType.GenericTypeVariable)) {
+                            J.FieldAccess classLiteral = newClassLiteral(((Expression) tree).getType(), tree instanceof J.FieldAccess);
+                            if (classLiteral != null) {
+                                //noinspection DataFlowIssue
+                                JavaType.FullyQualified classType = ((JavaType.Parameterized) classLiteral.getType()).getType();
+                                Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> m.getName().equals("cast")).findFirst();
+                                if (castMethod.isPresent()) {
+                                    return newInstanceMethodReference(castMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
+                                }
                             }
                         }
                     }
                 }
 
-                if (body instanceof J.Identifier && !code.isEmpty()) {
-                    J.Identifier identifier = (J.Identifier) body;
-                    JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(identifier.getType());
-                    @Language("java") String stub = fullyQualified == null ? "" :
-                            "package " + fullyQualified.getPackageName() + "; public class " +
-                            fullyQualified.getClassName();
-                    JavaTemplate template = JavaTemplate.builder(code)
-                            .contextSensitive()
-                            .javaParser(JavaParser.fromJavaVersion().dependsOn(stub))
-                            .imports(fullyQualified == null ? "" : fullyQualified.getFullyQualifiedName()).build();
-                    return template.apply(getCursor(), l.getCoordinates().replace(), identifier.getSimpleName());
-                } else if (body instanceof J.Binary) {
+                if (body instanceof J.Binary) {
                     J.Binary binary = (J.Binary) body;
                     if (isNullCheck(binary.getLeft(), binary.getRight()) ||
                         isNullCheck(binary.getRight(), binary.getLeft())) {
-                        maybeAddImport("java.util.Objects");
-                        code = J.Binary.Type.Equal.equals(binary.getOperator()) ? "Objects::isNull" :
-                                "Objects::nonNull";
+                        doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
+                        code = J.Binary.Type.Equal.equals(binary.getOperator()) ? "java.util.Objects::isNull" :
+                                "java.util.Objects::nonNull";
                         return JavaTemplate.builder(code)
                                 .contextSensitive()
-                                .imports("java.util.Objects")
                                 .build()
                                 .apply(getCursor(), l.getCoordinates().replace());
                     }
@@ -139,7 +151,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     }
 
                     if (multipleMethodInvocations(method) ||
-                        !methodArgumentsMatchLambdaParameters(method, lambda)) {
+                        !methodArgumentsMatchLambdaParameters(method, lambda) ||
+                        method instanceof J.MemberReference) {
                         return l;
                     }
 
@@ -147,29 +160,25 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                             method instanceof J.MethodInvocation ? ((J.MethodInvocation) method).getSelect() : null;
                     JavaType.Method methodType = method.getMethodType();
                     if (methodType != null) {
-                        JavaType.FullyQualified declaringType = methodType.getDeclaringType();
                         if (methodType.hasFlags(Flag.Static) ||
                             methodSelectMatchesFirstLambdaParameter(method, lambda)) {
-                            maybeAddImport(declaringType);
-                            return JavaTemplate.builder("#{}::#{}")
-                                    .contextSensitive()
-                                    .imports(declaringType.getFullyQualifiedName())
-                                    .build()
-                                    .apply(getCursor(), l.getCoordinates().replace(), declaringType.getClassName(),
-                                            method.getMethodType().getName());
+                            doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
+
+                            return newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
                         } else if (method instanceof J.NewClass) {
                             return JavaTemplate.builder("#{}::new")
                                     .contextSensitive()
                                     .build()
                                     .apply(getCursor(), l.getCoordinates().replace(), className((J.NewClass) method));
+                        } else if (select != null) {
+                            return newInstanceMethodReference(methodType, select, lambda.getType()).withPrefix(lambda.getPrefix());
                         } else {
-                            String templ = select == null ? "#{}::#{}" :
-                                    "#{any(" + declaringType.getFullyQualifiedName() + ")}::#{}";
+                            String templ = "#{}::#{}";
                             return JavaTemplate.builder(templ)
                                     .contextSensitive()
                                     .build()
-                                    .apply(getCursor(), l.getCoordinates().replace(), select == null ? "this" : select,
-                                    method.getMethodType().getName());
+                                    .apply(getCursor(), l.getCoordinates().replace(), "this",
+                                            method.getMethodType().getName());
                         }
                     }
                 }
@@ -240,9 +249,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 return j1 instanceof J.Identifier && j2 instanceof J.Literal &&
                        "null".equals(((J.Literal) j2).getValueSource());
             }
-        };
-
-    }
+        }
 
     private static boolean isAMethodInvocationArgument(J.Lambda lambda, Cursor cursor) {
         Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof J.CompilationUnit);

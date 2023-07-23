@@ -98,8 +98,8 @@ public class FinalizePrivateFields extends Recipe {
                         return type != null ? v.withVariableType(type.withFlags(
                                 Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
                     })).withModifiers(ListUtils.concat(mv.getModifiers(),
-                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, J.Modifier.Type.Final,
-                                    emptyList()))), ctx);
+                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null,
+                                    J.Modifier.Type.Final, emptyList()))), ctx);
                 }
 
                 return mv;
@@ -121,7 +121,9 @@ public class FinalizePrivateFields extends Recipe {
             .stream()
             .filter(statement -> statement instanceof J.VariableDeclarations)
             .map(J.VariableDeclarations.class::cast)
-            .filter(mv -> mv.hasModifier(J.Modifier.Type.Private) && !mv.hasModifier(J.Modifier.Type.Final))
+            .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
+                          && !mv.hasModifier(J.Modifier.Type.Final)
+                          && !mv.hasModifier(J.Modifier.Type.Volatile))
             .filter(mv -> !anyAnnotationApplied(mv))
             .map(J.VariableDeclarations::getVariables)
             .flatMap(Collection::stream)

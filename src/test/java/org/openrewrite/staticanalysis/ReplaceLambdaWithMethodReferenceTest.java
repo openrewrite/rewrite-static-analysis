@@ -134,8 +134,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
-          //language=java
           java(
+            //language=java
             """
               import java.util.List;
               import java.util.stream.Collectors;
@@ -164,6 +164,101 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                 @Override
                 public J.MemberReference visitMemberReference(J.MemberReference memberRef, Object o) {
                     assertThat(TypeUtils.isOfClassType(((J.FieldAccess) memberRef.getContaining()).getTarget().getType(),
+                      "org.test.CheckType")).isTrue();
+                    return memberRef;
+                }
+            }.visit(cu, 0))
+          )
+        );
+    }
+
+    @Test
+    void qualifiedInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.test;
+              public class CheckType {
+              }
+              """
+          ),
+          java(
+            //language=java
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> method(List<Object> input) {
+                      return input.stream().filter(n -> n instanceof org.test.CheckType).collect(Collectors.toList());
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> method(List<Object> input) {
+                      return input.stream().filter(org.test.CheckType.class::isInstance).collect(Collectors.toList());
+                  }
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> new JavaIsoVisitor<>() {
+                @Override
+                public J.MemberReference visitMemberReference(J.MemberReference memberRef, Object o) {
+                    assertThat(TypeUtils.isOfClassType(((J.FieldAccess) memberRef.getContaining()).getTarget().getType(),
+                      "org.test.CheckType")).isTrue();
+                    return memberRef;
+                }
+            }.visit(cu, 0))
+          )
+        );
+    }
+
+    @Test
+    void typeFromSourcePath() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.test;
+              public class CheckType {
+                  Integer foo() {
+                      return 0;
+                  }
+              }
+              """
+          ),
+          java(
+            //language=java
+            """
+              import java.util.List;
+              import java.util.stream.Stream;
+              import org.test.CheckType;
+
+              class Test {
+                  Stream<Integer> method(List<CheckType> input) {
+                      return input.stream().map(n -> n.foo());
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.stream.Stream;
+              import org.test.CheckType;
+
+              class Test {
+                  Stream<Integer> method(List<CheckType> input) {
+                      return input.stream().map(CheckType::foo);
+                  }
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> new JavaIsoVisitor<>() {
+                @Override
+                public J.MemberReference visitMemberReference(J.MemberReference memberRef, Object o) {
+                    assertThat(TypeUtils.isOfClassType(((J.Identifier) memberRef.getContaining()).getType(),
                       "org.test.CheckType")).isTrue();
                     return memberRef;
                 }
@@ -261,28 +356,28 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.Collections;
-              class Test {
-                  Runnable r = () -> run();
-                  public void run() {
-                      Collections.singletonList(1).forEach(n -> run());
-                  }
-              }
                             
               class Test2 {
+                  class Test {
+                      Runnable r = () -> run();
+                      public void run() {
+                          Collections.singletonList(1).forEach(n -> run());
+                      }
+                  }
                   Test t = new Test();
                   Runnable r = () -> t.run();
               }
               """,
             """
               import java.util.Collections;
-              class Test {
-                  Runnable r = this::run;
-                  public void run() {
-                      Collections.singletonList(1).forEach(n -> run());
-                  }
-              }
                             
               class Test2 {
+                  class Test {
+                      Runnable r = this::run;
+                      public void run() {
+                          Collections.singletonList(1).forEach(n -> run());
+                      }
+                  }
                   Test t = new Test();
                   Runnable r = t::run;
               }
@@ -389,8 +484,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
-          //language=java
           java(
+            //language=java
             """
               import java.util.List;
               import java.util.stream.Collectors;
@@ -417,6 +512,57 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       return l.stream()
                           .filter(CheckType.class::isInstance)
                           .map(CheckType.class::cast)
+                          .collect(Collectors.toList());
+                  }
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> new JavaIsoVisitor<>() {
+                @Override
+                public J.MemberReference visitMemberReference(J.MemberReference memberRef, Object o) {
+                    assertThat(TypeUtils.isOfClassType(((J.FieldAccess) memberRef.getContaining()).getTarget().getType(),
+                      "org.test.CheckType")).isTrue();
+                    return memberRef;
+                }
+            }.visit(cu, 0))
+          )
+        );
+    }
+
+    @Test
+    void qualifiedCastType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.test;
+              public class CheckType {
+              }
+              """
+          ),
+          java(
+            //language=java
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> filter(List<Object> l) {
+                      return l.stream()
+                          .filter(org.test.CheckType.class::isInstance)
+                          .map(o -> (org.test.CheckType) o)
+                          .collect(Collectors.toList());
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> filter(List<Object> l) {
+                      return l.stream()
+                          .filter(org.test.CheckType.class::isInstance)
+                          .map(org.test.CheckType.class::cast)
                           .collect(Collectors.toList());
                   }
               }
@@ -760,7 +906,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-              
+                            
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -781,7 +927,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-              
+                            
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -811,7 +957,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-              
+                            
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -998,7 +1144,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
 
-    @SuppressWarnings("DataFlowIssue")
+    @SuppressWarnings("OptionalOfNullableMisuse")
     @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3071")
     void missingImportForDeclaringType() {
@@ -1038,5 +1184,28 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
+    void dontReplaceLambdaSupplierOfMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Function;
 
+              class A {
+                public void testCase() {
+                  Function<String, Integer> function = str -> 1;
+                  Optional.of(function).orElseGet(() -> this::foo);
+                }
+
+                private Integer foo(String bar) {
+                  return 1;
+                }
+              }
+              """
+          )
+        );
+    }
 }
