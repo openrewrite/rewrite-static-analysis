@@ -36,13 +36,13 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
           kotlin(
             """
               fun foo() {
-                  val EMPTY_METAS = HashMap<String, Any>()
+                  var EMPTY_METAS = HashMap<String, Any>()
                   EMPTY_METAS.isEmpty()
               }
               """,
             """
               fun foo() {
-                  val emptyMetas = HashMap<String, Any>()
+                  var emptyMetas = HashMap<String, Any>()
                   emptyMetas.isEmpty()
               }
               """
