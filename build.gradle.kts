@@ -21,7 +21,7 @@ dependencies {
     implementation("org.apache.commons:commons-text:latest.release")
 
     testImplementation("org.openrewrite:rewrite-groovy")
-    testImplementation("org.junit-pioneer:junit-pioneer:2.0.0")
+    testImplementation("org.junit-pioneer:junit-pioneer:2.0.1")
     testImplementation("junit:junit:4.13.2")
 
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
