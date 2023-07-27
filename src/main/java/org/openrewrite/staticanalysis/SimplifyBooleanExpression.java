@@ -206,7 +206,7 @@ public class SimplifyBooleanExpression extends Recipe {
 
                 if (j instanceof J.MethodInvocation) {
                     J.MethodInvocation m = (J.MethodInvocation) j;
-                    return !m.getMarkers().findFirst(org.openrewrite.kotlin.marker.IsNullable.class).isPresent();
+                    return m.getSelect() != null && !m.getSelect().getMarkers().findFirst(org.openrewrite.kotlin.marker.IsNullSafe.class).isPresent();
                 }
 
                 return true;
