@@ -20,6 +20,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
@@ -57,8 +58,11 @@ public class StringLiteralEquality extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         // Don't change for Kotlin because In Kotlin, `==` means structural equality, so it's redundant to call equals().
         // see https://rules.sonarsource.com/kotlin/RSPEC-6519/
-        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(Preconditions.not(new KotlinFileChecker<>()),
-            new UsesType<>("java.lang.String", false));
+        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(
+                Preconditions.and(
+                        Preconditions.not(new KotlinFileChecker<>()),
+                        Preconditions.not(new GroovyFileChecker<>())),
+                new UsesType<>("java.lang.String", false));
         return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
             private final JavaType.FullyQualified TYPE_STRING = TypeUtils.asFullyQualified(JavaType.buildType("java.lang.String"));
             private final JavaType TYPE_OBJECT = JavaType.buildType("java.lang.Object");
@@ -79,7 +83,7 @@ public class StringLiteralEquality extends Recipe {
                         Markers.EMPTY,
                         new JRightPadded<>(binary.getLeft().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY),
                         null,
-                        new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(),"equals", JavaType.Primitive.Boolean, null),
+                        new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "equals", JavaType.Primitive.Boolean, null),
                         JContainer.build(singletonList(new JRightPadded<>(binary.getRight().withPrefix(Space.EMPTY), Space.EMPTY, Markers.EMPTY))),
                         new JavaType.Method(
                                 null,
