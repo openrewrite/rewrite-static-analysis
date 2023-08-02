@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
   "ConstantConditions",
@@ -558,6 +559,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("All")
     @Test
     void ignoreAnonymousClassVariables() {
         rewriteRun(
@@ -986,6 +988,27 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
               }
               """
           ), 17)
+        );
+    }
+
+    @Test
+    void removeKotlinUnusedLocalVariable() {
+        rewriteRun(
+          kotlin(
+            """
+              class A (val b: String) {
+                  fun foo() {
+                      val bar = b;
+                  }
+              }
+              """,
+            """
+              class A (val b: String) {
+                  fun foo() {
+                  }
+              }
+              """
+          )
         );
     }
 }
