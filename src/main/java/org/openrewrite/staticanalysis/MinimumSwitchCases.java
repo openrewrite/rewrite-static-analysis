@@ -173,6 +173,8 @@ public class MinimumSwitchCases extends Recipe {
                                 generatedIf = ifElseIfString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree, cases[1].getPattern(), tree);
                             }
                         } else if (switchesOnEnum(switch_)) {
+                            JavaType selectorType = switch_.getSelector().getTree().getType();
+                            maybeAddImport((JavaType.FullyQualified) selectorType);
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
