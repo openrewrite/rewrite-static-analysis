@@ -81,14 +81,13 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void ignoreAmbiguousMethodReference() {
         rewriteRun(
+          //language=java
           java(
             """
-              import java.nio.file.Path;
-              import java.nio.file.Paths;
-              import java.util.List;import java.util.stream.Collectors;
-                            
+              import java.util.stream.Stream;
+              
               class Test {
-                  List<String> method() {
+                  Stream<String> method() {
                       return Stream.of(1, 32, 12, 15, 23).map(x -> Integer.toString(x));
                   }
               }
@@ -439,6 +438,56 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
+    void systemOutPrint() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              class Test {
+                  void method(List<Integer> input) {
+                      input.forEach(x -> System.out.println(x));
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              class Test {
+                  void method(List<Integer> input) {
+                      input.forEach(System.out::println);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void systemOutPrintInBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              class Test {
+                  void method(List<Integer> input) {
+                      input.forEach(x -> { System.out.println(x); });
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              class Test {
+                  void method(List<Integer> input) {
+                      input.forEach(System.out::println);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void castType() {
         rewriteRun(
           //language=java
@@ -449,8 +498,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
-            //language=java
             """
               import java.util.List;
               import java.util.stream.Collectors;
@@ -877,6 +926,13 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       Supplier<?> s;
                       s = () -> new Object();
                       s = () -> new java.lang.Object();
+                      s = () -> new java.util.ArrayList();
+                      s = () -> new java.util.ArrayList<>();
+                      s = () -> new java.util.ArrayList<Object>();
+                      s = () -> new ArrayList<Object>();
+                      s = () -> new java.util.HashSet<Object>();
+                      Function<Integer, ?> f;
+                      f = i -> new ArrayList(i);
                   }
               }
               """,
@@ -890,6 +946,13 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       Supplier<?> s;
                       s = Object::new;
                       s = java.lang.Object::new;
+                      s = java.util.ArrayList::new;
+                      s = java.util.ArrayList::new;
+                      s = java.util.ArrayList::new;
+                      s = ArrayList::new;
+                      s = java.util.HashSet::new;
+                      Function<Integer, ?> f;
+                      f = ArrayList::new;
                   }
               }
               """
