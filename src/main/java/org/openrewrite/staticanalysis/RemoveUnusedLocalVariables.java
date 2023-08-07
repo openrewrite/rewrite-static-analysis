@@ -80,19 +80,19 @@ public class RemoveUnusedLocalVariables extends Recipe {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||
-                                is instanceof J.Block ||
-                                is instanceof J.MethodDeclaration ||
-                                is instanceof J.ForLoop ||
-                                is instanceof J.ForEachLoop ||
-                                is instanceof J.ForLoop.Control ||
-                                is instanceof J.ForEachLoop.Control ||
-                                is instanceof J.Case ||
-                                is instanceof J.Try ||
-                                is instanceof J.Try.Resource ||
-                                is instanceof J.Try.Catch ||
-                                is instanceof J.MultiCatch ||
-                                is instanceof J.Lambda ||
-                                is instanceof JavaSourceFile
+                        is instanceof J.Block ||
+                        is instanceof J.MethodDeclaration ||
+                        is instanceof J.ForLoop ||
+                        is instanceof J.ForEachLoop ||
+                        is instanceof J.ForLoop.Control ||
+                        is instanceof J.ForEachLoop.Control ||
+                        is instanceof J.Case ||
+                        is instanceof J.Try ||
+                        is instanceof J.Try.Resource ||
+                        is instanceof J.Try.Catch ||
+                        is instanceof J.MultiCatch ||
+                        is instanceof J.Lambda ||
+                        is instanceof JavaSourceFile
                 );
             }
 
@@ -106,20 +106,20 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 Cursor parentScope = getCursorToParentScope(getCursor());
                 J parent = parentScope.getValue();
                 if (parentScope.getParent() == null ||
-                        // skip class instance variables. parentScope.getValue() covers java records.
-                        parentScope.getParent().getValue() instanceof J.ClassDeclaration || parentScope.getValue() instanceof J.ClassDeclaration ||
-                        // skip anonymous class instance variables
-                        parentScope.getParent().getValue() instanceof J.NewClass ||
-                        // skip if method declaration parameter
-                        parent instanceof J.MethodDeclaration ||
-                        // skip if defined in an enhanced or standard for loop, since there isn't much we can do about the semantics at that point
-                        parent instanceof J.ForLoop.Control || parent instanceof J.ForEachLoop.Control ||
-                        // skip if defined in a try's catch clause as an Exception variable declaration
-                        parent instanceof J.Try.Resource || parent instanceof J.Try.Catch || parent instanceof J.MultiCatch ||
-                        // skip if defined as a parameter to a lambda expression
-                        parent instanceof J.Lambda ||
-                        // skip if the initializer may have a side effect
-                        initializerMightSideEffect(variable)
+                    // skip class instance variables. parentScope.getValue() covers java records.
+                    parentScope.getParent().getValue() instanceof J.ClassDeclaration || parentScope.getValue() instanceof J.ClassDeclaration ||
+                    // skip anonymous class instance variables
+                    parentScope.getParent().getValue() instanceof J.NewClass ||
+                    // skip if method declaration parameter
+                    parent instanceof J.MethodDeclaration ||
+                    // skip if defined in an enhanced or standard for loop, since there isn't much we can do about the semantics at that point
+                    parent instanceof J.ForLoop.Control || parent instanceof J.ForEachLoop.Control ||
+                    // skip if defined in a try's catch clause as an Exception variable declaration
+                    parent instanceof J.Try.Resource || parent instanceof J.Try.Catch || parent instanceof J.MultiCatch ||
+                    // skip if defined as a parameter to a lambda expression
+                    parent instanceof J.Lambda ||
+                    // skip if the initializer may have a side effect
+                    initializerMightSideEffect(variable)
                 ) {
                     return variable;
                 }
@@ -225,9 +225,10 @@ public class RemoveUnusedLocalVariables extends Recipe {
     @EqualsAndHashCode(callSuper = true)
     private static class AssignmentToLiteral extends JavaVisitor<ExecutionContext> {
         J.Assignment assignment;
+
         @Override
         public J visitAssignment(J.Assignment a, ExecutionContext executionContext) {
-            if(assignment.isScope(a)) {
+            if (assignment.isScope(a)) {
                 return a.getAssignment().withPrefix(a.getPrefix());
             }
             return a;

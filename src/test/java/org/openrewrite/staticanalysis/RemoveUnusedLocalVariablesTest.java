@@ -15,7 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -1013,22 +1015,6 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     }
 
     @Test
-    void retainKotlinUnusedLocalVariableWithNewClass() {
-        rewriteRun(
-          kotlin(
-            """
-              class A {}
-              class B {
-                fun foo() {
-                  val a = A();
-                }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void retainJavaUnusedLocalVariableWithNewClass() {
         rewriteRun(
           java(
@@ -1042,5 +1028,49 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Kotlin {
+
+        @Test
+        void retainUnusedLocalVariableWithNewClass() {
+            rewriteRun(
+              kotlin(
+                """
+                  class A {}
+                  class B {
+                    fun foo() {
+                      val a = A();
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @ExpectedToFail("Not yet implemented")
+        void retainUnusedLocalVariableConst() {
+            rewriteRun(
+              kotlin(
+                """
+                  package constants
+                  const val FOO = "bar"
+                  """
+              ),
+              kotlin(
+                """
+                  package config
+                  import constants.FOO
+                  fun baz() {
+                    val foo = FOO
+                    println(foo)
+                  }
+                  """
+              )
+            );
+        }
+
     }
 }
