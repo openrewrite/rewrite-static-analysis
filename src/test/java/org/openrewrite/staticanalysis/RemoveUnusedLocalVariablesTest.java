@@ -1011,4 +1011,36 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void retainKotlinUnusedLocalVariableWithNewClass() {
+        rewriteRun(
+          kotlin(
+            """
+              class A {}
+              class B {
+                fun foo() {
+                  val a = A();
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainJavaUnusedLocalVariableWithNewClass() {
+        rewriteRun(
+          java(
+            """
+              class A {}
+              class B {
+                void foo() {
+                  A a = new A();
+                }
+              }
+              """
+          )
+        );
+    }
 }
