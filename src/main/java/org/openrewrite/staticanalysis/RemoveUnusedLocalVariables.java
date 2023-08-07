@@ -180,6 +180,12 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     }
 
                     @Override
+                    public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean result) {
+                        result.set(true);
+                        return newClass;
+                    }
+
+                    @Override
                     public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean result) {
                         result.set(true);
                         return assignment;
