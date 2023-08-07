@@ -159,11 +159,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     Expression select =
                             method instanceof J.MethodInvocation ? ((J.MethodInvocation) method).getSelect() : null;
                     JavaType.Method methodType = method.getMethodType();
-                    if (methodType != null) {
+                    if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                         if (methodType.hasFlags(Flag.Static) ||
                             methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                             doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
-
                             return newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
                         } else if (method instanceof J.NewClass) {
                             return JavaTemplate.builder("#{}::new")
@@ -248,6 +247,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             private boolean isNullCheck(J j1, J j2) {
                 return j1 instanceof J.Identifier && j2 instanceof J.Literal &&
                        "null".equals(((J.Literal) j2).getValueSource());
+            }
+
+            private boolean isMethodReferenceAmbiguous(JavaType.Method _method){
+                return _method.getDeclaringType().getMethods().stream().filter(meth -> meth.getName().equals(_method.getName())).count() > 1;
             }
         }
 
