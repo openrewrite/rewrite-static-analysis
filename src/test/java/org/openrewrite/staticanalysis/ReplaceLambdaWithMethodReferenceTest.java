@@ -16,7 +16,6 @@
 
 package org.openrewrite.staticanalysis;
 
-
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -71,6 +70,25 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       return l.stream()
                           .filter(s -> path.getFileName().toString().equals(s))
                           .collect(Collectors.toList());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/96")
+    @Test
+    void ignoreAmbiguousMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.stream.Stream;
+              
+              class Test {
+                  Stream<String> method() {
+                      return Stream.of(1, 32, 12, 15, 23).map(x -> Integer.toString(x));
                   }
               }
               """
@@ -426,7 +444,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.List;
-
               class Test {
                   void method(List<Integer> input) {
                       input.forEach(x -> System.out.println(x));
@@ -435,7 +452,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               """,
             """
               import java.util.List;
-
               class Test {
                   void method(List<Integer> input) {
                       input.forEach(System.out::println);
@@ -453,7 +469,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.List;
-
               class Test {
                   void method(List<Integer> input) {
                       input.forEach(x -> { System.out.println(x); });
@@ -462,7 +477,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               """,
             """
               import java.util.List;
-
               class Test {
                   void method(List<Integer> input) {
                       input.forEach(System.out::println);
@@ -484,8 +498,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
-            //language=java
             """
               import java.util.List;
               import java.util.stream.Collectors;
@@ -917,7 +931,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       s = () -> new java.util.ArrayList<Object>();
                       s = () -> new ArrayList<Object>();
                       s = () -> new java.util.HashSet<Object>();
-
                       Function<Integer, ?> f;
                       f = i -> new ArrayList(i);
                   }
@@ -938,7 +951,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       s = java.util.ArrayList::new;
                       s = ArrayList::new;
                       s = java.util.HashSet::new;
-
                       Function<Integer, ?> f;
                       f = ArrayList::new;
                   }
