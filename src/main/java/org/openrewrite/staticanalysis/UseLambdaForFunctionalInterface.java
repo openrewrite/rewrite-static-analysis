@@ -188,7 +188,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     private static List<String> parameterNames(J.MethodDeclaration method) {
         return method.getParameters().stream()
-                .filter(s -> s instanceof J.VariableDeclarations)
+                .filter(org.openrewrite.java.tree.J.VariableDeclarations.class::isInstance)
                 .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
                 .collect(Collectors.toList());
     }
@@ -196,7 +196,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     // This does not recursive descend extended classes for inherited fields.
     private static List<String> classFields(J.ClassDeclaration classDeclaration) {
         return classDeclaration.getBody().getStatements().stream()
-                .filter(s -> s instanceof J.VariableDeclarations)
+                .filter(org.openrewrite.java.tree.J.VariableDeclarations.class::isInstance)
                 .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
                 .collect(Collectors.toList());
     }

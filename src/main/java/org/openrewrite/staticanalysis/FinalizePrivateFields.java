@@ -90,7 +90,7 @@ public class FinalizePrivateFields extends Recipe {
                 boolean canAllVariablesBeFinalized = mv.getVariables()
                     .stream()
                     .map(J.VariableDeclarations.NamedVariable::getVariableType)
-                    .allMatch(v -> privateFieldsToBeFinalized.contains(v));
+                    .allMatch(privateFieldsToBeFinalized::contains);
 
                 if (canAllVariablesBeFinalized) {
                     mv = autoFormat(mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
@@ -119,7 +119,7 @@ public class FinalizePrivateFields extends Recipe {
         return classDecl.getBody()
             .getStatements()
             .stream()
-            .filter(statement -> statement instanceof J.VariableDeclarations)
+            .filter(org.openrewrite.java.tree.J.VariableDeclarations.class::isInstance)
             .map(J.VariableDeclarations.class::cast)
             .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
                           && !mv.hasModifier(J.Modifier.Type.Final)
@@ -134,7 +134,7 @@ public class FinalizePrivateFields extends Recipe {
         return (int) classDecl.getBody()
             .getStatements()
             .stream()
-            .filter(statement -> statement instanceof J.MethodDeclaration)
+            .filter(org.openrewrite.java.tree.J.MethodDeclaration.class::isInstance)
             .map(J.MethodDeclaration.class::cast)
             .filter(J.MethodDeclaration::isConstructor)
             .count();
@@ -275,25 +275,25 @@ public class FinalizePrivateFields extends Recipe {
         private static boolean isInForLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.ForLoop);
+                org.openrewrite.java.tree.J.ForLoop.class::isInstance);
         }
 
         private static boolean isInDoWhileLoopLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.DoWhileLoop);
+                org.openrewrite.java.tree.J.DoWhileLoop.class::isInstance);
         }
 
         private static boolean isInWhileLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.WhileLoop);
+                org.openrewrite.java.tree.J.WhileLoop.class::isInstance);
         }
 
         private static boolean isInLambda(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.Lambda);
+                org.openrewrite.java.tree.J.Lambda.class::isInstance);
         }
     }
 

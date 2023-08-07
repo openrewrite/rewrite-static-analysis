@@ -213,7 +213,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
             return classDecl.getBody()
                     .getStatements()
                     .stream()
-                    .filter(statement -> statement instanceof J.VariableDeclarations)
+                    .filter(org.openrewrite.java.tree.J.VariableDeclarations.class::isInstance)
                     .map(J.VariableDeclarations.class::cast)
                     .map(J.VariableDeclarations::getVariables)
                     .flatMap(Collection::stream)

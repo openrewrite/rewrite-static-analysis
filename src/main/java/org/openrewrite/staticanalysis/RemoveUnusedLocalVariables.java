@@ -157,7 +157,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 if (mv.getVariables().isEmpty()) {
                     if (!mv.getPrefix().getComments().isEmpty()) {
-                        getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
+                        getCursor().dropParentUntil(org.openrewrite.java.tree.J.ClassDeclaration.class::isInstance).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
                     }
                     doAfterVisit(new DeleteStatement<>(mv));
                 }

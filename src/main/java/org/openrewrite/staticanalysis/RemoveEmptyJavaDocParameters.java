@@ -56,7 +56,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-                if (md.getComments().stream().anyMatch(it -> it instanceof Javadoc.DocComment)) {
+                if (md.getComments().stream().anyMatch(org.openrewrite.java.tree.Javadoc.DocComment.class::isInstance)) {
                     md = md.withComments(ListUtils.map(md.getComments(), it -> {
                         if (it instanceof Javadoc.DocComment) {
                             Javadoc.DocComment docComment = (Javadoc.DocComment) it;
@@ -150,7 +150,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
 
                 @Override
                 public Javadoc visitParameter(Javadoc.Parameter parameter, ExecutionContext ctx) {
-                    if (parameter.getDescription().stream().allMatch(it -> it instanceof Javadoc.LineBreak)) {
+                    if (parameter.getDescription().stream().allMatch(org.openrewrite.java.tree.Javadoc.LineBreak.class::isInstance)) {
                         return null;
                     }
                     return super.visitParameter(parameter, ctx);
@@ -158,7 +158,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
 
                 @Override
                 public Javadoc visitReturn(Javadoc.Return aReturn, ExecutionContext ctx) {
-                    if (aReturn.getDescription().stream().allMatch(it -> it instanceof Javadoc.LineBreak)) {
+                    if (aReturn.getDescription().stream().allMatch(org.openrewrite.java.tree.Javadoc.LineBreak.class::isInstance)) {
                         return null;
                     }
                     return super.visitReturn(aReturn, ctx);
