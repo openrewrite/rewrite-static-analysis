@@ -121,8 +121,7 @@ public class FixStringFormatExpressions extends Recipe {
         }
 
         private static Expression replaceNewLineChars(Expression arg0) {
-            if (arg0 instanceof J.Literal) {
-                J.Literal fmt = (J.Literal) arg0;
+            if (arg0 instanceof J.Literal fmt) {
                 if (fmt.getValue() != null) {
                     fmt = fmt.withValue(fmt.getValue().toString().replace("\n", "%n"));
                 }

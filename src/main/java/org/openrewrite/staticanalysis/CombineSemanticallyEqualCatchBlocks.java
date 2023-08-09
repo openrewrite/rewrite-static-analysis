@@ -39,8 +39,10 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Combine catches in a try that contain semantically equivalent blocks. " +
-                "No change will be made when a caught exception exists if combing catches may change application behavior or type attribution is missing.";
+        return """
+                Combine catches in a try that contain semantically equivalent blocks. \
+                No change will be made when a caught exception exists if combing catches may change application behavior or type attribution is missing.\
+                """;
     }
 
     @Override

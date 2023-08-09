@@ -43,9 +43,11 @@ public class ReplaceStringBuilderWithString extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Replace `StringBuilder.append()` with String if you are only concatenating a small number of strings " +
-               "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
-               "expressions into a single String object, which can be more efficient than using StringBuilder.";
+        return """
+               Replace `StringBuilder.append()` with String if you are only concatenating a small number of strings \
+               and the code is simple and easy to read, as the compiler can optimize simple string concatenation \
+               expressions into a single String object, which can be more efficient than using StringBuilder.\
+               """;
     }
 
     @Override
@@ -162,10 +164,9 @@ public class ReplaceStringBuilderWithString extends Recipe {
             }
         }
 
-        if (select instanceof J.NewClass &&
-            ((J.NewClass) select).getClazz() != null &&
-            TypeUtils.isOfClassType(((J.NewClass) select).getClazz().getType(), "java.lang.StringBuilder")) {
-            J.NewClass nc = (J.NewClass) select;
+        if (select instanceof J.NewClass nc &&
+            nc.getClazz() != null &&
+            TypeUtils.isOfClassType(nc.getClazz().getType(), "java.lang.StringBuilder")) {
             if (nc.getArguments().size() == 1 && TypeUtils.isString(nc.getArguments().get(0).getType())) {
                 arguments.add(nc.getArguments().get(0));
             }
@@ -183,12 +184,14 @@ public class ReplaceStringBuilderWithString extends Recipe {
 
     public static J.MethodInvocation getStringValueOfMethodInvocationTemplate() {
         if (stringValueOfTemplate == null) {
-            stringValueOfTemplate = PartProvider.buildPart("class C {\n" +
-                                                           "    void foo() {\n" +
-                                                           "        Object obj = 1 + 2;\n" +
-                                                           "        String.valueOf(obj);\n" +
-                                                           "    }\n" +
-                                                           "}",
+            stringValueOfTemplate = PartProvider.buildPart("""
+                                                           class C {
+                                                               void foo() {
+                                                                   Object obj = 1 + 2;
+                                                                   String.valueOf(obj);
+                                                               }
+                                                           }\
+                                                           """,
                     J.MethodInvocation.class);
         }
         return stringValueOfTemplate;

@@ -73,8 +73,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
                 }
 
                 tr = tr.withBody(tr.getBody().withStatements(ListUtils.map(tr.getBody().getStatements(), statement -> {
-                    if (statement instanceof J.MethodInvocation) {
-                        J.MethodInvocation mi = (J.MethodInvocation) statement;
+                    if (statement instanceof J.MethodInvocation mi) {
                         if (AUTO_CLOSEABLE_METHOD_MATCHER.matches(mi) && mi.getSelect() instanceof J.Identifier) {
                             String selectName = ((J.Identifier) mi.getSelect()).getSimpleName();
                             for (String resourceName : resourceNames) {

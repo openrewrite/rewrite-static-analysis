@@ -147,7 +147,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private boolean isVoidReturn(Statement stat) {
-        return stat instanceof J.Return && ((J.Return) stat).getExpression() == null;
+        return stat instanceof J.Return r && r.getExpression() == null;
     }
 
     private boolean isDefaultCaseLastOrNotPresent(J.Switch switch_) {
@@ -182,7 +182,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private boolean isDefaultCase(J.Case case_) {
         Expression elem = case_.getPattern();
-        return elem instanceof J.Identifier && ((J.Identifier) elem).getSimpleName().equals("default");
+        return elem instanceof J.Identifier i && i.getSimpleName().equals("default");
     }
 
 }

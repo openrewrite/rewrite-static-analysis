@@ -45,9 +45,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     Object enclosing = getCursor().getParentTreeCursor().getValue();
                     JavaType enclosingType = null;
 
-                    if(enclosing instanceof J.MethodInvocation) {
-                        // Cannot remove type parameters if it would introduce ambiguity about which method should be called
-                        J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
+                    if(enclosing instanceof J.MethodInvocation enclosingMethod) {
                         if(enclosingMethod.getMethodType() == null) {
                             return m;
                         }
@@ -63,25 +61,24 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                             return m;
                         }
                         enclosingType = enclosingMethod.getType();
-                    } else if (enclosing instanceof Expression) {
-                        enclosingType = ((Expression) enclosing).getType();
-                    } else if (enclosing instanceof NameTree) {
+                    } else if (enclosing instanceof Expression expression) {
+                        enclosingType = expression.getType();
+                    } else if (enclosing instanceof NameTree tree) {
                         if (enclosing instanceof J.VariableDeclarations.NamedVariable) {
                             J.VariableDeclarations decl = getCursor().getParentTreeCursor().getParentTreeCursor().getValue();
                             if (decl.getTypeExpression() instanceof J.Identifier && "var".equals(((J.Identifier) decl.getTypeExpression()).getSimpleName())) {
                                 return m;
                             }
                         }
-                        enclosingType = ((NameTree) enclosing).getType();
+                        enclosingType = tree.getType();
                     } else if (enclosing instanceof J.Return) {
                         Object e = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || p.equals(Cursor.ROOT_VALUE)).getValue();
-                        if (e instanceof J.MethodDeclaration) {
-                            J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) e;
+                        if (e instanceof J.MethodDeclaration methodDeclaration) {
                             if (methodDeclaration.getReturnTypeExpression() != null) {
                                 enclosingType = methodDeclaration.getReturnTypeExpression().getType();
                             }
-                        } else if (e instanceof J.Lambda) {
-                            enclosingType = ((J.Lambda) e).getType();
+                        } else if (e instanceof J.Lambda lambda) {
+                            enclosingType = lambda.getType();
                         }
                     }
 

@@ -40,8 +40,10 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Replace `hashCode()` calls on arrays with `Arrays.hashCode()` because the results from `hashCode()`" +
-               " are not helpful.";
+        return """
+               Replace `hashCode()` calls on arrays with `Arrays.hashCode()` because the results from `hashCode()`\
+                are not helpful.\
+               """;
     }
 
     @Override

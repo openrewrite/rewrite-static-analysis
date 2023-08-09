@@ -41,8 +41,10 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Replace `Runtime.exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
-               "after Java 18 and is no longer recommended for use by the Java documentation.";
+        return """
+               Replace `Runtime.exec(String)` methods to use `exec(String[])` instead because the former is deprecated \
+               after Java 18 and is no longer recommended for use by the Java documentation.\
+               """;
     }
 
     @Override
@@ -65,8 +67,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     StringBuilder sb = new StringBuilder();
                     if (flattenAble) {
                         for (Expression e : commands) {
-                            if (e instanceof J.Literal && ((J.Literal) e).getType() == JavaType.Primitive.String) {
-                                sb.append(((J.Literal) e).getValue());
+                            if (e instanceof J.Literal literal && literal.getType() == JavaType.Primitive.String) {
+                                sb.append(literal.getValue());
                             } else {
                                 flattenAble = false;
                                 break;
@@ -77,7 +79,7 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     updateCursor(m);
                     if (flattenAble) {
                         String[] cmds = sb.toString().split(" ");
-                        String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
+                        String templateCode = "new String[] {%s}".formatted(toStringArguments(cmds));
                         JavaTemplate template = JavaTemplate.builder(templateCode).build();
 
                         List<Expression> args = m.getArguments();

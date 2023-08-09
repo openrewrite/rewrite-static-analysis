@@ -41,9 +41,11 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Adds explicit types on lambda arguments, which are otherwise optional. This can make the code clearer and easier to read. " +
-                "This does not add explicit types on arguments when the lambda has one or two parameters and does not have a block body, as things are considered more readable in those cases. " +
-                "For example, `stream.map((a, b) -> a.length);` will not have explicit types added.";
+        return """
+                Adds explicit types on lambda arguments, which are otherwise optional. This can make the code clearer and easier to read. \
+                This does not add explicit types on arguments when the lambda has one or two parameters and does not have a block body, as things are considered more readable in those cases. \
+                For example, `stream.map((a, b) -> a.length);` will not have explicit types added.\
+                """;
     }
 
     @Override
@@ -74,8 +76,8 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             J.Lambda after = l.withParameters(
                     l.getParameters().withParameters(
                             ListUtils.map(l.getParameters().getParameters(), (parameter) -> {
-                                if (parameter instanceof J.VariableDeclarations) {
-                                    return maybeAddTypeExpression((J.VariableDeclarations) parameter);
+                                if (parameter instanceof J.VariableDeclarations declarations) {
+                                    return maybeAddTypeExpression(declarations);
                                 }
                                 return parameter;
                             })
@@ -95,8 +97,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY);
                 if (typeExpression != null) {
                     // "? extends Foo" is not a valid type definition on its own. Unwrap wildcard and replace with its bound
-                    if(typeExpression instanceof J.Wildcard) {
-                        J.Wildcard wildcard = (J.Wildcard)typeExpression;
+                    if(typeExpression instanceof J.Wildcard wildcard) {
                         if(wildcard.getBoundedType() == null) {
                             return multiVariable;
                         }
@@ -126,16 +127,14 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
         private TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
             if (type == null || type instanceof JavaType.Unknown) {
                 return null;
-            } else if (type instanceof JavaType.Primitive) {
+            } else if (type instanceof JavaType.Primitive primitive) {
                 return new J.Primitive(
                         Tree.randomId(),
                         space,
                         Markers.EMPTY,
-                        (JavaType.Primitive) type
+                        primitive
                 );
-            } else if (type instanceof JavaType.FullyQualified) {
-
-                JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
+            } else if (type instanceof JavaType.FullyQualified fq) {
 
                 J.Identifier identifier = new J.Identifier(Tree.randomId(),
                         space,
@@ -166,12 +165,11 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     maybeAddImport(fq);
                     return identifier;
                 }
-            } else if (type instanceof JavaType.Array) {
-                return (buildTypeTree(((JavaType.Array) type).getElemType(), space));
-            } else if(type instanceof JavaType.Variable) {
-                return buildTypeTree(((JavaType.Variable) type).getType(), space);
-            } else if (type instanceof JavaType.GenericTypeVariable) {
-                JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
+            } else if (type instanceof JavaType.Array array) {
+                return (buildTypeTree(array.getElemType(), space));
+            } else if(type instanceof JavaType.Variable variable) {
+                return buildTypeTree(variable.getType(), space);
+            } else if (type instanceof JavaType.GenericTypeVariable genericType) {
 
                 if (!genericType.getName().equals("?")) {
                     return new J.Identifier(Tree.randomId(),

@@ -40,10 +40,12 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Using `==` or `!=` compares object references, not the equality of two objects. " +
-                "This modifies code where both sides of a binary operation (`==` or `!=`) override `Object.equals(Object obj)` " +
-                "except when the comparison is within an overridden `Object.equals(Object obj)` method declaration itself. " +
-                "The resulting transformation must be carefully reviewed since any modifications change the program's semantics.";
+        return """
+                Using `==` or `!=` compares object references, not the equality of two objects. \
+                This modifies code where both sides of a binary operation (`==` or `!=`) override `Object.equals(Object obj)` \
+                except when the comparison is within an overridden `Object.equals(Object obj)` method declaration itself. \
+                The resulting transformation must be carefully reviewed since any modifications change the program's semantics.\
+                """;
     }
 
     @Override

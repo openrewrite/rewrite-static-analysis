@@ -42,9 +42,11 @@ public class ControlFlowIndentation extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Program flow control statements like `if`, `while`, and `for` can omit curly braces when they apply to " +
-                "only a single statement. This recipe ensures that any statements which follow that statement are correctly " +
-                "indented to show they are not part of the flow control statement.";
+        return """
+                Program flow control statements like `if`, `while`, and `for` can omit curly braces when they apply to \
+                only a single statement. This recipe ensures that any statements which follow that statement are correctly \
+                indented to show they are not part of the flow control statement.\
+                """;
     }
 
     @Override
@@ -89,10 +91,10 @@ public class ControlFlowIndentation extends Recipe {
             }
 
             boolean shouldReformat(Statement s) {
-                if(s instanceof J.If) {
-                    return shouldReformat((J.If) s);
-                } else if(s instanceof Loop) {
-                    Statement body = ((Loop) s).getBody();
+                if(s instanceof J.If if1) {
+                    return shouldReformat(if1);
+                } else if(s instanceof Loop loop) {
+                    Statement body = loop.getBody();
                     return !(body instanceof J.Block);
                 }
                 return false;
@@ -113,8 +115,8 @@ public class ControlFlowIndentation extends Recipe {
                     return false;
                 }
                 Statement body = s.getBody();
-                if (body instanceof J.If) {
-                    return shouldReformat(((J.If) body));
+                if (body instanceof J.If if1) {
+                    return shouldReformat(if1);
                 }
                 return !(body instanceof J.Block);
             }

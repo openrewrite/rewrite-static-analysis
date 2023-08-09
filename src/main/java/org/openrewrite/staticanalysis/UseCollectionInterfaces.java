@@ -44,8 +44,10 @@ public class UseCollectionInterfaces extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
-               "Replaces the return type of public method declarations and the variable type public variable declarations.";
+        return """
+               Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. \
+               Replaces the return type of public method declarations and the variable type public variable declarations.\
+               """;
     }
 
     @Override

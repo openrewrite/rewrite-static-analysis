@@ -64,8 +64,7 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                     nc.getArguments();
                     if (nc.getArguments().get(0).getType() == JavaType.Primitive.Char) {
                         nc = nc.withArguments(ListUtils.mapFirst(nc.getArguments(), arg -> {
-                            if (arg instanceof J.Literal) {
-                                J.Literal l = (J.Literal) arg;
+                            if (arg instanceof J.Literal l) {
                                 l = l.withType(JavaType.buildType("String"));
                                 if (l.getValueSource() != null) {
                                     l = l.withValueSource(l.getValueSource().replace("'", "\""));

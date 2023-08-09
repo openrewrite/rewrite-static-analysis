@@ -68,14 +68,13 @@ public class RemoveUnneededBlock extends Recipe {
             Statement lastStatement = statements.get(statements.size() - 1);
             J.Block flattened = block.withStatements(ListUtils.flatMap(statements, (i, stmt) -> {
                 J.Block nested;
-                if (stmt instanceof J.Try) {
-                    J.Try _try = (J.Try) stmt;
+                if (stmt instanceof J.Try _try) {
                     if (_try.getResources() != null || !_try.getCatches().isEmpty() || _try.getFinally() == null || !_try.getFinally().getStatements().isEmpty()) {
                         return stmt;
                     }
                     nested = _try.getBody();
-                } else if (stmt instanceof J.Block) {
-                    nested = (J.Block) stmt;
+                } else if (stmt instanceof J.Block .Block) {
+                    nested = .Block;
                 } else {
                     return stmt;
                 }
@@ -96,9 +95,9 @@ public class RemoveUnneededBlock extends Recipe {
 
             if (flattened == block) {
                 return block;
-            } else if (lastStatement instanceof J.Block) {
+            } else if (lastStatement instanceof J.Block .Block) {
                 flattened = flattened.withEnd(flattened.getEnd()
-                        .withComments(ListUtils.concatAll(((J.Block) lastStatement).getEnd().getComments(), flattened.getEnd().getComments())));
+                        .withComments(ListUtils.concatAll(.Block.getEnd().getComments(), flattened.getEnd().getComments())));
             }
             return flattened;
         }

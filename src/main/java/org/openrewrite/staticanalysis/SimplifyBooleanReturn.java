@@ -75,7 +75,7 @@ public class SimplifyBooleanReturn extends Recipe {
                         elseWithOnlyReturn(i)) {
                     List<Statement> followingStatements = followingStatements();
                     Optional<Expression> singleFollowingStatement = Optional.ofNullable(followingStatements.isEmpty() ? null : followingStatements.get(0))
-                            .flatMap(stat -> Optional.ofNullable(stat instanceof J.Return ? (J.Return) stat : null))
+                            .flatMap(stat -> Optional.ofNullable(stat instanceof J.Return r ? r : null))
                             .map(J.Return::getExpression);
 
                     if (followingStatements.isEmpty() || singleFollowingStatement.map(r -> isLiteralFalse(r) || isLiteralTrue(r)).orElse(false)) {
@@ -88,7 +88,7 @@ public class SimplifyBooleanReturn extends Recipe {
                             if (singleFollowingStatement.map(this::isLiteralFalse).orElse(false) && i.getElsePart() == null) {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
                                 return maybeAutoFormat(return_, return_.withExpression(ifCondition), ctx, parent);
-                            } else if (!singleFollowingStatement.isPresent() &&
+                            } else if (singleFollowingStatement.isEmpty() &&
                                     getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
@@ -101,7 +101,7 @@ public class SimplifyBooleanReturn extends Recipe {
                             if (singleFollowingStatement.map(this::isLiteralTrue).orElse(false) && i.getElsePart() == null) {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
                                 returnThenPart = true;
-                            } else if (!singleFollowingStatement.isPresent() && getReturnExprIfOnlyStatementInElseThen(i)
+                            } else if (singleFollowingStatement.isEmpty() && getReturnExprIfOnlyStatementInElseThen(i)
                                     .map(this::isLiteralTrue).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
@@ -143,11 +143,11 @@ public class SimplifyBooleanReturn extends Recipe {
             }
 
             private boolean isLiteralTrue(@Nullable J tree) {
-                return tree instanceof J.Literal && ((J.Literal) tree).getValue() == Boolean.valueOf(true);
+                return tree instanceof J.Literal l && l.getValue() == Boolean.valueOf(true);
             }
 
             private boolean isLiteralFalse(@Nullable J tree) {
-                return tree instanceof J.Literal && ((J.Literal) tree).getValue() == Boolean.valueOf(false);
+                return tree instanceof J.Literal l && l.getValue() == Boolean.valueOf(false);
             }
 
             private Optional<J.Return> getReturnIfOnlyStatementInThen(J.If iff) {
@@ -169,16 +169,16 @@ public class SimplifyBooleanReturn extends Recipe {
                 }
 
                 Statement else_ = iff2.getElsePart().getBody();
-                if (else_ instanceof J.Return) {
-                    return Optional.ofNullable(((J.Return) else_).getExpression());
+                if (else_ instanceof J.Return return1) {
+                    return Optional.ofNullable(return1.getExpression());
                 }
 
-                if (else_ instanceof J.Block) {
-                    List<Statement> statements = ((J.Block) else_).getStatements();
+                if (else_ instanceof J.Block block) {
+                    List<Statement> statements = block.getStatements();
                     if (statements.size() == 1) {
                         J statement = statements.get(0);
-                        if (statement instanceof J.Return) {
-                            return Optional.ofNullable(((J.Return) statement).getExpression());
+                        if (statement instanceof J.Return return1) {
+                            return Optional.ofNullable(return1.getExpression());
                         }
                     }
                 }

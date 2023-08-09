@@ -78,8 +78,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                     boolean appendToString = false;
                     for (Expression exp : flattenExpressions) {
                         if (appendToString) {
-                            if (exp instanceof J.Literal
-                                && (((J.Literal) exp).getType() == JavaType.Primitive.String)
+                            if (exp instanceof J.Literal literal
+                                && (literal.getType() == JavaType.Primitive.String)
                             ) {
                                 group.add(exp);
                             } else {
@@ -87,8 +87,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                                 groups.add(exp);
                             }
                         } else {
-                            if (exp instanceof J.Literal
-                                && (((J.Literal) exp).getType() == JavaType.Primitive.String)) {
+                            if (exp instanceof J.Literal literal
+                                && (literal.getType() == JavaType.Primitive.String)) {
                                 addToGroups(group, groups);
                                 appendToString = true;
                             } else if ((exp instanceof J.Identifier || exp instanceof J.MethodInvocation) && exp.getType() != null) {
@@ -178,8 +178,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
     }
 
     public static boolean flatAdditiveExpressions(Expression expression, List<Expression> expressionList) {
-        if (expression instanceof J.Binary) {
-            J.Binary b = (J.Binary) expression;
+        if (expression instanceof J.Binary b) {
             if (b.getOperator() != J.Binary.Type.Addition) {
                 return false;
             }

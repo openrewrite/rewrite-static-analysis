@@ -49,8 +49,10 @@ public class InstanceOfPatternMatch extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`."
-               + " Currently, this recipe supports `if` statements and ternary operator expressions.";
+        return """
+               Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`.\
+                Currently, this recipe supports `if` statements and ternary operator expressions.\
+               """;
     }
 
     @Override
@@ -84,14 +86,13 @@ public class InstanceOfPatternMatch extends Recipe {
                 for (Iterator<Cursor> it = getCursor().getPathAsCursors(); it.hasNext(); ) {
                     Cursor next = it.next();
                     Object value = next.getValue();
-                    if (value instanceof J.Binary) {
-                        J.Binary binary = (J.Binary) value;
+                    if (value instanceof J.Binary binary) {
                         if (!flowScopeBreakEncountered && binary.getOperator() == J.Binary.Type.And) {
                             additionalContext = binary;
                         } else {
                             flowScopeBreakEncountered = true;
                         }
-                    } else if (value instanceof J.Unary && ((J.Unary) value).getOperator() == J.Unary.Type.Not) {
+                    } else if (value instanceof J.Unary unary && unary.getOperator() == J.Unary.Type.Not) {
                         // TODO this could be improved (the pattern variable may be applicable in the else case
                         // or even in subsequent statements (due to the flow scope semantics)
                         flowScopeBreakEncountered = true;
@@ -105,10 +106,10 @@ public class InstanceOfPatternMatch extends Recipe {
                     J root = maybeReplacementRoot.getValue();
                     Set<J> contexts = new HashSet<>();
                     if (!flowScopeBreakEncountered) {
-                        if (root instanceof J.If) {
-                            contexts.add(((J.If) root).getThenPart());
-                        } else if (root instanceof J.Ternary) {
-                            contexts.add(((J.Ternary) root).getTruePart());
+                        if (root instanceof J.If if1) {
+                            contexts.add(if1.getThenPart());
+                        } else if (root instanceof J.Ternary ternary) {
+                            contexts.add(ternary.getTruePart());
                         }
                     }
                     if (additionalContext != null) {
@@ -127,10 +128,10 @@ public class InstanceOfPatternMatch extends Recipe {
             @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext executionContext) {
                 J result = super.visitTypeCast(typeCast, executionContext);
-                if (result instanceof J.TypeCast) {
+                if (result instanceof J.TypeCast cast) {
                     InstanceOfPatternReplacements replacements = getCursor().getNearestMessage("flowTypeScope");
                     if (replacements != null) {
-                        replacements.registerTypeCast((J.TypeCast) result, getCursor());
+                        replacements.registerTypeCast(cast, getCursor());
                     }
                 }
                 return result;
@@ -161,7 +162,7 @@ public class InstanceOfPatternMatch extends Recipe {
                     .filter(k -> TypeUtils.isAssignableTo(type, k.getType())
                                  && SemanticallyEqual.areEqual(k.getExpression(), expression))
                     .findAny();
-            if (!existing.isPresent()) {
+            if (existing.isEmpty()) {
                 instanceOfs.put(new ExpressionAndType(expression, type), instanceOf);
                 this.contexts.put(instanceOf, contexts);
             }
@@ -269,9 +270,9 @@ public class InstanceOfPatternMatch extends Recipe {
     // FIXME remove this method when https://github.com/openrewrite/rewrite/issues/2713 is addressed and use `TypedTree#getType()`
     @Nullable
     private static JavaType toJavaType(TypedTree typeTree) {
-        if (typeTree instanceof J.ArrayType) {
-            JavaType.Array result = new JavaType.Array(null, ((J.ArrayType) typeTree).getElementType().getType());
-            for (int i = 0; i < ((J.ArrayType) typeTree).getDimensions().size() - 1; i++) {
+        if (typeTree instanceof J.ArrayType type) {
+            JavaType.Array result = new JavaType.Array(null, type.getElementType().getType());
+            for (int i = 0; i < type.getDimensions().size() - 1; i++) {
                 result = new JavaType.Array(null, result);
             }
             return result;
@@ -367,8 +368,8 @@ public class InstanceOfPatternMatch extends Recipe {
             if (style == Style.EXACT) {
                 //noinspection DataFlowIssue
                 return name;
-            } else if (type instanceof JavaType.FullyQualified) {
-                String className = ((JavaType.FullyQualified) type).getClassName();
+            } else if (type instanceof JavaType.FullyQualified qualified) {
+                String className = qualified.getClassName();
                 if (className.indexOf('.') > 0) {
                     className = className.substring(className.lastIndexOf('.'));
                 }
@@ -421,11 +422,11 @@ public class InstanceOfPatternMatch extends Recipe {
                     break;
                 }
                 return candidate;
-            } else if (type instanceof JavaType.Primitive) {
-                String keyword = ((JavaType.Primitive) type).getKeyword();
+            } else if (type instanceof JavaType.Primitive primitive) {
+                String keyword = primitive.getKeyword();
                 return style == Style.SHORT ? keyword.substring(0, 1) : keyword;
-            } else if (type instanceof JavaType.Array) {
-                JavaType elemType = ((JavaType.Array) type).getElemType();
+            } else if (type instanceof JavaType.Array array) {
+                JavaType elemType = array.getElemType();
                 while (elemType instanceof JavaType.Array) {
                     elemType = ((JavaType.Array) elemType).getElemType();
                 }

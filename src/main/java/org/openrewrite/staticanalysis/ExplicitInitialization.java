@@ -38,11 +38,13 @@ public class ExplicitInitialization extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Checks if any class or object member is explicitly initialized to default for its type value:\n" +
-               "- `null` for object references\n" +
-               "- zero for numeric types and `char`\n" +
-               "- and `false` for `boolean`\n" +
-               "Removes explicit initializations where they aren't necessary.";
+        return """
+               Checks if any class or object member is explicitly initialized to default for its type value:
+               - `null` for object references
+               - zero for numeric types and `char`
+               - and `false` for `boolean`
+               Removes explicit initializations where they aren't necessary.\
+               """;
     }
 
     @Override

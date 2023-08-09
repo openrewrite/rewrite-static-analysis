@@ -77,10 +77,10 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
     }
 
     private static boolean isLiteralTrue(@Nullable Expression expression) {
-        return expression instanceof J.Literal && ((J.Literal) expression).getValue() == Boolean.valueOf(true);
+        return expression instanceof J.Literal l && l.getValue() == Boolean.valueOf(true);
     }
 
     private static boolean isLiteralFalse(@Nullable Expression expression) {
-        return expression instanceof J.Literal && ((J.Literal) expression).getValue() == Boolean.valueOf(false);
+        return expression instanceof J.Literal l && l.getValue() == Boolean.valueOf(false);
     }
 }

@@ -49,8 +49,10 @@ public class DeclarationSiteTypeVariance extends Recipe {
     List<String> excludedBounds;
 
     @Option(displayName = "Exclude final classes",
-            description = "If true, do not add `? extends` variance to final classes. " +
-                          "`? super` variance will be added regardless of finality.",
+            description = """
+                          If true, do not add `? extends` variance to final classes. \
+                          `? super` variance will be added regardless of finality.\
+                          """,
             required = false)
     @Nullable
     Boolean excludeFinalClasses;
@@ -62,8 +64,10 @@ public class DeclarationSiteTypeVariance extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Currently, Java requires use-site type variance, so if someone has `Function<IN, OUT>` method parameter, it should rather be `Function<? super IN, ? extends OUT>`. " +
-               "Unfortunately, it is not easy to notice that `? super` and `? extends` is missing, so this recipe adds it where that would improve the situation.";
+        return """
+               Currently, Java requires use-site type variance, so if someone has `Function<IN, OUT>` method parameter, it should rather be `Function<? super IN, ? extends OUT>`. \
+               Unfortunately, it is not easy to notice that `? super` and `? extends` is missing, so this recipe adds it where that would improve the situation.\
+               """;
     }
 
     @Override
@@ -93,8 +97,7 @@ public class DeclarationSiteTypeVariance extends Recipe {
                     return m;
                 }
                 return m.withParameters(ListUtils.map(m.getParameters(), param -> {
-                    if (param instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations varParam = (J.VariableDeclarations) param;
+                    if (param instanceof J.VariableDeclarations varParam) {
                         if (varParam.getTypeExpression() instanceof J.ParameterizedType) {
                             J.ParameterizedType pt = (J.ParameterizedType) varParam.getTypeExpression();
                             for (VariantTypeSpec variantTypeSpec : variantTypeSpecs) {

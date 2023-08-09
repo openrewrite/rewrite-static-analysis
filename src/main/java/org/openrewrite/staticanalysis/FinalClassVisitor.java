@@ -67,8 +67,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
         boolean allPrivate = true;
         int constructorCount = 0;
         for (Statement s : cd.getBody().getStatements()) {
-            if (s instanceof J.MethodDeclaration && ((J.MethodDeclaration) s).isConstructor()) {
-                J.MethodDeclaration constructor = (J.MethodDeclaration) s;
+            if (s instanceof J.MethodDeclaration constructor && constructor.isConstructor()) {
                 constructorCount++;
                 if (!constructor.hasModifier(J.Modifier.Type.Private)) {
                     allPrivate = false;

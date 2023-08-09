@@ -337,9 +337,9 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                 // then add it to a list of variable declarations associated with
                 // the "if" statement, so later they can be converted to a simple
                 // variable declarations
-                if (contextTree instanceof J.If) {
+                if (contextTree instanceof J.If if1) {
                     variableUsage.declarations
-                            .computeIfAbsent((J.If) contextTree, k -> new LinkedList<>())
+                            .computeIfAbsent(if1, k -> new LinkedList<>())
                             .add(instanceOf);
                 }
             }
@@ -401,8 +401,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
          * @return the usage context
          */
         private UsageContext getUsageContext(J parentTree) {
-            if (parentTree instanceof J.If) {
-                J.If iff = (J.If) parentTree;
+            if (parentTree instanceof J.If iff) {
                 Iterator<Object> iter = getCursor().getPath();
                 while (iter.hasNext()) {
                     Object tree = iter.next();

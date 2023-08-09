@@ -72,8 +72,7 @@ public class IsEmptyCallOnCollections extends Recipe {
                     if (binary.getOperator() == J.Binary.Type.Equal || binary.getOperator() == J.Binary.Type.NotEqual
                         || zeroRight && binary.getOperator() == J.Binary.Type.GreaterThan
                         || !zeroRight && binary.getOperator() == J.Binary.Type.LessThan) {
-                        if (maybeSizeCall instanceof J.MethodInvocation) {
-                            J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
+                        if (maybeSizeCall instanceof J.MethodInvocation maybeSizeCallMethod) {
                             if (COLLECTION_SIZE.matches(maybeSizeCallMethod)) {
                                 String op = binary.getOperator() == J.Binary.Type.Equal ? "" : "!";
                                 return (maybeSizeCallMethod.getSelect() == null ?
@@ -90,6 +89,6 @@ public class IsEmptyCallOnCollections extends Recipe {
     }
 
     private static boolean isZero(Expression expression) {
-        return expression instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) expression).getValue());
+        return expression instanceof J.Literal l && Integer.valueOf(0).equals(l.getValue());
     }
 }

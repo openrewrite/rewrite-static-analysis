@@ -66,8 +66,8 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
             J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
             if (COMPARE_IGNORE_CASE_METHOD_MATCHER.matches(mi)) {
                 mi = mi.withArguments(ListUtils.map(mi.getArguments(), arg -> {
-                    if (arg instanceof J.MethodInvocation && isChangeCaseMethod(arg)) {
-                        return ((J.MethodInvocation) arg).getSelect();
+                    if (arg instanceof J.MethodInvocation invocation && isChangeCaseMethod(arg)) {
+                        return invocation.getSelect();
                     }
                     return arg;
                 }));
@@ -80,8 +80,7 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
         }
 
         private boolean isChangeCaseMethod(@Nullable J j) {
-            if (j instanceof J.MethodInvocation) {
-                J.MethodInvocation mi = (J.MethodInvocation) j;
+            if (j instanceof J.MethodInvocation mi) {
                 return TO_LOWER_CASE_METHOD_MATCHER.matches(mi) || TO_UPPER_CASE_METHOD_MATCHER.matches(mi);
             }
             return false;

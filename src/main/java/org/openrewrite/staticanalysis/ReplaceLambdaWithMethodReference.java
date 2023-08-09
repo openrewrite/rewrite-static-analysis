@@ -79,16 +79,15 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             String code = "";
             J body = l.getBody();
-            if (body instanceof J.Block && ((J.Block) body).getStatements().size() == 1) {
-                Statement statement = ((J.Block) body).getStatements().get(0);
+            if (body instanceof J.Block block && block.getStatements().size() == 1) {
+                Statement statement = block.getStatements().get(0);
                 if (statement instanceof J.MethodInvocation) {
                     body = statement;
-                } else if (statement instanceof J.Return &&
-                           (((J.Return) statement).getExpression()) instanceof MethodCall) {
-                    body = ((J.Return) statement).getExpression();
+                } else if (statement instanceof J.Return return1 &&
+                           (return1.getExpression()) instanceof MethodCall) {
+                    body = return1.getExpression();
                 }
-            } else if (body instanceof J.InstanceOf) {
-                J.InstanceOf instanceOf = (J.InstanceOf) body;
+            } else if (body instanceof J.InstanceOf instanceOf) {
                 J j = instanceOf.getClazz();
                 if ((j instanceof J.Identifier || j instanceof J.FieldAccess) &&
                     instanceOf.getExpression() instanceof J.Identifier) {
@@ -102,9 +101,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         }
                     }
                 }
-            } else if (body instanceof J.TypeCast) {
-                if (!(((J.TypeCast) body).getExpression() instanceof J.MethodInvocation)) {
-                    J.ControlParentheses<TypeTree> j = ((J.TypeCast) body).getClazz();
+            } else if (body instanceof J.TypeCast cast) {
+                if (!(cast.getExpression() instanceof J.MethodInvocation)) {
+                    J.ControlParentheses<TypeTree> j = cast.getClazz();
                     J tree = j.getTree();
                     if ((tree instanceof J.Identifier || tree instanceof J.FieldAccess) &&
                         !(j.getType() instanceof JavaType.GenericTypeVariable)) {
@@ -121,8 +120,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 }
             }
 
-            if (body instanceof J.Binary) {
-                J.Binary binary = (J.Binary) body;
+            if (body instanceof J.Binary binary) {
                 if (isNullCheck(binary.getLeft(), binary.getRight()) ||
                     isNullCheck(binary.getRight(), binary.getLeft())) {
                     doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
@@ -133,10 +131,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                             .build()
                             .apply(getCursor(), l.getCoordinates().replace());
                 }
-            } else if (body instanceof MethodCall) {
-                MethodCall method = (MethodCall) body;
-                if (method instanceof J.NewClass) {
-                    J.NewClass nc = (J.NewClass) method;
+            } else if (body instanceof MethodCall method) {
+                if (method instanceof J.NewClass nc) {
                     if (nc.getBody() != null) {
                         return l;
                     } else {
@@ -157,18 +153,18 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 }
 
                 Expression select =
-                        method instanceof J.MethodInvocation ? ((J.MethodInvocation) method).getSelect() : null;
+                        method instanceof J.MethodInvocation mi ? mi.getSelect() : null;
                 JavaType.Method methodType = method.getMethodType();
                 if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                     if (methodType.hasFlags(Flag.Static) ||
                         methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                         doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
                         return newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
-                    } else if (method instanceof J.NewClass) {
+                    } else if (method instanceof J.NewClass class1) {
                         return JavaTemplate.builder("#{}::new")
                                 .contextSensitive()
                                 .build()
-                                .apply(getCursor(), l.getCoordinates().replace(), className((J.NewClass) method));
+                                .apply(getCursor(), l.getCoordinates().replace(), className(class1));
                     } else if (select != null) {
                         return newInstanceMethodReference(methodType, select, lambda.getType()).withPrefix(lambda.getPrefix());
                     } else {
@@ -188,13 +184,13 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         // returns the class name as given in the source code (qualified or unqualified)
         private String className(J.NewClass method) {
             TypeTree clazz = method.getClazz();
-            return clazz instanceof J.ParameterizedType ? ((J.ParameterizedType) clazz).getClazz().toString() :
+            return clazz instanceof J.ParameterizedType pt ? pt.getClazz().toString() :
                     Objects.toString(clazz);
         }
 
         private boolean multipleMethodInvocations(MethodCall method) {
-            return method instanceof J.MethodInvocation &&
-                   ((J.MethodInvocation) method).getSelect() instanceof J.MethodInvocation;
+            return method instanceof J.MethodInvocation mi &&
+                   mi.getSelect() instanceof J.MethodInvocation;
         }
 
         private boolean methodArgumentsMatchLambdaParameters(MethodCall method, J.Lambda lambda) {
@@ -245,8 +241,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         }
 
         private boolean isNullCheck(J j1, J j2) {
-            return j1 instanceof J.Identifier && j2 instanceof J.Literal &&
-                   "null".equals(((J.Literal) j2).getValueSource());
+            return j1 instanceof J.Identifier && j2 instanceof J.Literal l &&
+                   "null".equals(l.getValueSource());
         }
 
         private boolean isMethodReferenceAmbiguous(JavaType.Method _method) {

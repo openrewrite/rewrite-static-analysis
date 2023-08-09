@@ -181,8 +181,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
                 return false;
             }
             for (Statement statement : c.getBody().getStatements()) {
-                if (statement instanceof J.MethodDeclaration) {
-                    J.MethodDeclaration md = (J.MethodDeclaration) statement;
+                if (statement instanceof J.MethodDeclaration md) {
                     if (!md.isConstructor() &&
                             md.hasModifier(J.Modifier.Type.Public) &&
                             md.hasModifier(J.Modifier.Type.Static) &&
@@ -209,8 +208,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
          */
         static boolean hasImplicitDefaultConstructor(J.ClassDeclaration c) {
             for (Statement statement : c.getBody().getStatements()) {
-                if (statement instanceof J.MethodDeclaration) {
-                    J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) statement;
+                if (statement instanceof J.MethodDeclaration methodDeclaration) {
                     if (methodDeclaration.isConstructor()) {
                         return false;
                     }

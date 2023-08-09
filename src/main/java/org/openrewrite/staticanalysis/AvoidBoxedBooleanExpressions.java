@@ -37,8 +37,10 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Under certain conditions the `java.lang.Boolean` type is used as an expression, " +
-               "and it may throw a `NullPointerException` if the value is null.";
+        return """
+               Under certain conditions the `java.lang.Boolean` type is used as an expression, \
+               and it may throw a `NullPointerException` if the value is null.\
+               """;
     }
 
     @Override

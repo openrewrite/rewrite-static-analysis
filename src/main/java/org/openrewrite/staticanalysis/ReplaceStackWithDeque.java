@@ -32,8 +32,10 @@ public class ReplaceStackWithDeque extends Recipe {
 
     @Override
     public String getDescription() {
-        return "From the Javadoc of `Stack`:\n" +
-               "> A more complete and consistent set of LIFO stack operations is provided by the Deque interface and its implementations, which should be used in preference to this class.";
+        return """
+               From the Javadoc of `Stack`:
+               > A more complete and consistent set of LIFO stack operations is provided by the Deque interface and its implementations, which should be used in preference to this class.\
+               """;
     }
 
     @Override

@@ -45,8 +45,7 @@ public class RedundantFileCreation extends Recipe {
                 if (n.getClazz() != null && TypeUtils.isOfClassType(n.getClazz().getType(),
                         "java.io.FileInputStream")) {
                     n = n.withArguments(ListUtils.map(n.getArguments(), arg -> {
-                        if (arg instanceof J.NewClass) {
-                            J.NewClass newClassArg = (J.NewClass) arg;
+                        if (arg instanceof J.NewClass newClassArg) {
                             if (newClassArg.getClazz() != null &&
                                 TypeUtils.isOfClassType(newClassArg.getClazz().getType(), "java.io.File")) {
                                 if (newClassArg.getArguments().size() == 1 && !(newClassArg.getArguments().get(0) instanceof J.Empty)) {

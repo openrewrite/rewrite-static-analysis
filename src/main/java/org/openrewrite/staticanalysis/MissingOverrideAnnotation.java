@@ -46,9 +46,11 @@ public class MissingOverrideAnnotation extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Adds `@Override` to methods overriding superclass methods or implementing interface methods. " +
-                "Annotating methods improves readability by showing the author's intent to override. " +
-                "Additionally, when annotated, the compiler will emit an error when a signature of the overridden method does not match the superclass method.";
+        return """
+                Adds `@Override` to methods overriding superclass methods or implementing interface methods. \
+                Annotating methods improves readability by showing the author's intent to override. \
+                Additionally, when annotated, the compiler will emit an error when a signature of the overridden method does not match the superclass method.\
+                """;
     }
 
     @Override

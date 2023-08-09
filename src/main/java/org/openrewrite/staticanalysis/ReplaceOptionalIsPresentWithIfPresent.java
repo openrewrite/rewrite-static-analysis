@@ -103,7 +103,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
             String uniqueLambdaParameterName = VariableNameUtils.generateVariableName("obj", nameScope,
                     VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER);
-            String template = String.format("%s.ifPresent(%s -> #{any()})", methodSelector,
+            String template = "%s.ifPresent(%s -> #{any()})".formatted(methodSelector,
                     uniqueLambdaParameterName);
             J ifPresentMi = JavaTemplate.builder(template)
                     .contextSensitive()

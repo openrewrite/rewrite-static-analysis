@@ -38,8 +38,10 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
 
     @Override
     public String getDescription() {
-        return "By convention all Java package names should contain only lowercase letters, numbers, and dashes. " +
-               "This recipe converts any uppercase letters in package names to be lowercase.";
+        return """
+               By convention all Java package names should contain only lowercase letters, numbers, and dashes. \
+               This recipe converts any uppercase letters in package names to be lowercase.\
+               """;
     }
 
     @Override

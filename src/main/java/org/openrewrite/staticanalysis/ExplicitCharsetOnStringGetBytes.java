@@ -44,8 +44,10 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
 
     @Override
     public String getDescription() {
-        return "This makes the behavior of the code platform neutral. It will not override any " +
-               "existing explicit encodings, even if they don't match the default encoding option.";
+        return """
+               This makes the behavior of the code platform neutral. It will not override any \
+               existing explicit encodings, even if they don't match the default encoding option.\
+               """;
     }
 
     @Override

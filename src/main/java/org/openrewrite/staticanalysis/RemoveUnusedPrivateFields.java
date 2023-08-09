@@ -67,17 +67,14 @@ public class RemoveUnusedPrivateFields extends Recipe {
                 boolean skipSerialVersionUID = cd.getType() == null ||
                         cd.getType().isAssignableTo("java.io.Serializable");
                 for (Statement statement : cd.getBody().getStatements()) {
-                    if (statement instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations vd = (J.VariableDeclarations) statement;
+                    if (statement instanceof J.VariableDeclarations vd) {
                         // RSPEC-1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
                                 vd.getLeadingAnnotations().isEmpty() &&
                                 vd.hasModifier(J.Modifier.Type.Private)) {
                             checkFields.add(vd);
                         }
-                    } else if (statement instanceof J.MethodDeclaration) {
-                        // RSPEC-1068 does not apply fields from classes with native methods.
-                        J.MethodDeclaration md = (J.MethodDeclaration) statement;
+                    } else if (statement instanceof J.MethodDeclaration md) {
                         if (md.hasModifier(J.Modifier.Type.Native)) {
                             return cd;
                         }

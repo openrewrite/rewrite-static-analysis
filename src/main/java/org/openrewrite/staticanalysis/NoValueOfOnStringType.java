@@ -42,9 +42,11 @@ public class NoValueOfOnStringType extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Replace unnecessary `String#valueOf(..)` method invocations with the argument directly. " +
-               "This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf(\"example\")`. " +
-               "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`.";
+        return """
+               Replace unnecessary `String#valueOf(..)` method invocations with the argument directly. \
+               This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf("example")`. \
+               Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `"example" + String.valueOf("example")`.\
+               """;
     }
 
     @Override
@@ -90,8 +92,7 @@ public class NoValueOfOnStringType extends Recipe {
 
                 if (TypeUtils.asPrimitive(argument.getType()) != null) {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
-                    if (parent instanceof J.Binary) {
-                        J.Binary b = (J.Binary) parent;
+                    if (parent instanceof J.Binary b) {
                         JavaType otherType = b.getRight() == getCursor().getValue() ? b.getLeft().getType() : b.getRight().getType();
                         return TypeUtils.isString(otherType) && b.getOperator() == J.Binary.Type.Addition;
                     }

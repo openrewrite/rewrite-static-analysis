@@ -195,8 +195,7 @@ public class FinalizePrivateFields extends Recipe {
                 if (lastId != null && assignedCountMap.containsKey(lastId.getFieldType())) {
                     privateField = lastId.getFieldType();
                 }
-            } else if (expression instanceof J.Identifier) {
-                J.Identifier i = (J.Identifier) expression;
+            } else if (expression instanceof J.Identifier i) {
                 if (assignedCountMap.containsKey(i.getFieldType())) {
                     privateField = i.getFieldType();
                 }
@@ -228,8 +227,8 @@ public class FinalizePrivateFields extends Recipe {
         }
 
         private static boolean isConstructor(Object parent) {
-            if (parent instanceof J.MethodDeclaration) {
-                return ((J.MethodDeclaration) parent).isConstructor();
+            if (parent instanceof J.MethodDeclaration declaration) {
+                return declaration.isConstructor();
             }
             return false;
         }

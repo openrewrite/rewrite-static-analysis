@@ -70,10 +70,9 @@ public class NoRedundantJumpStatements extends Recipe {
                             .getParentTreeCursor()
                             .getValue();
 
-                    if (enclosing instanceof Loop) {
+                    if (enclosing instanceof Loop loop) {
                         if (thenIsOnlyContinue &&
                             i.getElsePart() != null && !(i.getElsePart().getBody() instanceof J.If)) {
-                            Loop loop = (Loop) enclosing;
                             if (loop.getBody() instanceof J.Block) {
                                 J.Block loopBlock = (J.Block) loop.getBody();
 

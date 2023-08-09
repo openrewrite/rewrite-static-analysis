@@ -42,8 +42,10 @@ public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Methods should not be named `hashcode`, `equal`, or `tostring`. " +
-               "Any of these are confusing as they appear to be intended as overridden methods from the `Object` base class, despite being case-insensitive.";
+        return """
+               Methods should not be named `hashcode`, `equal`, or `tostring`. \
+               Any of these are confusing as they appear to be intended as overridden methods from the `Object` base class, despite being case-insensitive.\
+               """;
     }
 
     @Override

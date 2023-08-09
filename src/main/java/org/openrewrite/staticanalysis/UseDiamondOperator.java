@@ -68,7 +68,7 @@ public class UseDiamondOperator extends Recipe {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                 // don't try to do this for Groovy or Kotlin sources
-                return cu instanceof J.CompilationUnit ? visitCompilationUnit((J.CompilationUnit) cu, ctx) : cu;
+                return cu instanceof J.CompilationUnit cu1 ? visitCompilationUnit(cu1, ctx) : cu;
             }
             return super.visit(tree, ctx);
         }
@@ -118,8 +118,7 @@ public class UseDiamondOperator extends Recipe {
             JavaType.Method methodType = mi.getMethodType();
             if (methodType != null) {
                 mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
-                    if (arg instanceof J.NewClass) {
-                        J.NewClass nc = (J.NewClass) arg;
+                    if (arg instanceof J.NewClass nc) {
                         if ((java9 || nc.getBody() == null) && !methodType.getParameterTypes().isEmpty()) {
                             JavaType.Parameterized paramType = TypeUtils.asParameterized(getMethodParamType(methodType, i));
                             if (paramType != null && nc.getClazz() instanceof J.ParameterizedType) {
@@ -147,8 +146,7 @@ public class UseDiamondOperator extends Recipe {
             J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass)return_.getExpression() : null;
             if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
                 J parentBlock = getCursor().dropParentUntil(v -> v instanceof J.MethodDeclaration || v instanceof J.Lambda).getValue();
-                if (parentBlock instanceof J.MethodDeclaration) {
-                    J.MethodDeclaration md = (J.MethodDeclaration) parentBlock;
+                if (parentBlock instanceof J.MethodDeclaration md) {
                     if (md.getReturnTypeExpression() instanceof J.ParameterizedType) {
                         return_ = return_.withExpression(
                                 maybeRemoveParams(parameterizedTypes((J.ParameterizedType) md.getReturnTypeExpression()), nc));

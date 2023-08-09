@@ -45,9 +45,11 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
     private static class ChangeCovariantEqualsMethodVisitor<P> extends JavaIsoVisitor<P> {
         private static final AnnotationMatcher OVERRIDE_ANNOTATION = new AnnotationMatcher("@java.lang.Override");
         private static final String EQUALS_BODY_PREFIX_TEMPLATE =
-                "if (#{} == this) return true;\n" +
-                "if (#{} == null || getClass() != #{}.getClass()) return false;\n" +
-                "#{} #{} = (#{}) #{};\n";
+                """
+                if (#{} == this) return true;
+                if (#{} == null || getClass() != #{}.getClass()) return false;
+                #{} #{} = (#{}) #{};
+                """;
 
         private final J.ClassDeclaration enclosingClass;
 

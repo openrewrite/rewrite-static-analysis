@@ -103,10 +103,10 @@ public class SimplifyConsecutiveAssignments extends Recipe {
              */
             @Nullable
             private String numericVariableName(Statement s) {
-                if (s instanceof J.Assignment) {
-                    return singleVariableName(((J.Assignment) s).getVariable());
-                } else if (s instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations.NamedVariable firstNamedVariable = ((J.VariableDeclarations) s).getVariables().get(0);
+                if (s instanceof J.Assignment assignment) {
+                    return singleVariableName(assignment.getVariable());
+                } else if (s instanceof J.VariableDeclarations declarations) {
+                    J.VariableDeclarations.NamedVariable firstNamedVariable = declarations.getVariables().get(0);
                     return firstNamedVariable.getInitializer() == null ?
                             null :
                             singleVariableName(firstNamedVariable.getName());
@@ -116,13 +116,12 @@ public class SimplifyConsecutiveAssignments extends Recipe {
 
             @Nullable
             private Expression numericVariableAccumulation(Statement s, String name) {
-                if (s instanceof J.Unary) {
-                    if (name.equals(singleVariableName(((J.Unary) s).getExpression()))) {
+                if (s instanceof J.Unary unary) {
+                    if (name.equals(singleVariableName(unary.getExpression()))) {
                         return new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, 1, "1", null,
                                 JavaType.Primitive.Int);
                     }
-                } else if (s instanceof J.AssignmentOperation) {
-                    J.AssignmentOperation assignOp = (J.AssignmentOperation) s;
+                } else if (s instanceof J.AssignmentOperation assignOp) {
                     if (name.equals(singleVariableName(assignOp.getVariable()))) {
                         return assignOp.getAssignment();
                     }
@@ -132,9 +131,9 @@ public class SimplifyConsecutiveAssignments extends Recipe {
 
             @Nullable
             private String numericVariableOperator(Statement s, String name) {
-                if (s instanceof J.Unary) {
-                    if (name.equals(singleVariableName(((J.Unary) s).getExpression()))) {
-                        switch (((J.Unary) s).getOperator()) {
+                if (s instanceof J.Unary unary) {
+                    if (name.equals(singleVariableName(unary.getExpression()))) {
+                        switch (unary.getOperator()) {
                             case PreDecrement:
                             case PostDecrement:
                                 return "-";
@@ -143,8 +142,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                                 return "+";
                         }
                     }
-                } else if (s instanceof J.AssignmentOperation) {
-                    J.AssignmentOperation assignOp = (J.AssignmentOperation) s;
+                } else if (s instanceof J.AssignmentOperation assignOp) {
                     if (name.equals(singleVariableName(assignOp.getVariable()))) {
                         switch (assignOp.getOperator()) {
                             case Addition:
@@ -178,25 +176,25 @@ public class SimplifyConsecutiveAssignments extends Recipe {
             @Nullable
             private String singleVariableName(Expression e) {
                 JavaType.Primitive type = TypeUtils.asPrimitive(e.getType());
-                return type != null && type.isNumeric() && e instanceof J.Identifier ?
-                        ((J.Identifier) e).getSimpleName() :
+                return type != null && type.isNumeric() && e instanceof J.Identifier i ?
+                        i.getSimpleName() :
                         null;
             }
 
             private Statement combine(Cursor cursor, String op, Expression right) {
                 Statement s = cursor.getValue();
-                if (s instanceof J.Assignment) {
-                    J.Assignment assign = (J.Assignment) s;
+                if (s instanceof J.Assignment assign) {
                     J.Assignment after = combinedAssignment.apply(cursor, s.getCoordinates().replace(), assign.getAssignment(), op, right);
                     return assign.withAssignment(after.getAssignment());
-                } else if (s instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations variables = (J.VariableDeclarations) s;
+                } else if (s instanceof J.VariableDeclarations variables) {
                     J.Assignment after = combinedAssignment.apply(cursor, s.getCoordinates().replace(), variables.getVariables().get(0).getInitializer(), op, right);
                     return variables.withVariables(ListUtils.map(variables.getVariables(), (i, namedVar) -> i == 0 ?
                             namedVar.withInitializer(after.getAssignment()) : namedVar));
                 }
-                throw new UnsupportedOperationException("Attempted to combine assignments into a " +
-                                                        "single statement with type " + s.getClass().getSimpleName());
+                throw new UnsupportedOperationException("""
+                                                        Attempted to combine assignments into a \
+                                                        single statement with type \
+                                                        """ + s.getClass().getSimpleName());
             }
         };
     }

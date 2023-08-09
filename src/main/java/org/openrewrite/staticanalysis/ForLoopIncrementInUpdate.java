@@ -60,13 +60,12 @@ public class ForLoopIncrementInUpdate extends Recipe {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
                 Statement init = forLoop.getControl().getInit().get(0);
-                if (init instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations initVars = (J.VariableDeclarations) init;
+                if (init instanceof J.VariableDeclarations initVars) {
 
                     Statement body = forLoop.getBody();
                     Statement lastStatement;
-                    if (body instanceof J.Block) {
-                        List<Statement> statements = ((J.Block) body).getStatements();
+                    if (body instanceof J.Block block) {
+                        List<Statement> statements = block.getStatements();
                         if (statements.isEmpty()) {
                             return super.visitForLoop(forLoop, ctx);
                         }
@@ -75,8 +74,7 @@ public class ForLoopIncrementInUpdate extends Recipe {
                         return super.visitForLoop(forLoop, ctx);
                     }
 
-                    if (lastStatement instanceof J.Unary) {
-                        J.Unary unary = (J.Unary) lastStatement;
+                    if (lastStatement instanceof J.Unary unary) {
                         if (unary.getExpression() instanceof J.Identifier) {
                             String unaryTarget = ((J.Identifier) unary.getExpression()).getSimpleName();
                             for (J.VariableDeclarations.NamedVariable initVar : initVars.getVariables()) {

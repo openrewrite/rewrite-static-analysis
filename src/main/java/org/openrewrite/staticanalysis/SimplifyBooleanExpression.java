@@ -180,11 +180,11 @@ public class SimplifyBooleanExpression extends Recipe {
             }
 
             private boolean isLiteralTrue(@Nullable Expression expression) {
-                return expression instanceof J.Literal && ((J.Literal) expression).getValue() == Boolean.valueOf(true);
+                return expression instanceof J.Literal l && l.getValue() == Boolean.valueOf(true);
             }
 
             private boolean isLiteralFalse(@Nullable Expression expression) {
-                return expression instanceof J.Literal && ((J.Literal) expression).getValue() == Boolean.valueOf(false);
+                return expression instanceof J.Literal l && l.getValue() == Boolean.valueOf(false);
             }
 
             private J removeAllSpace(J j) {
@@ -204,9 +204,8 @@ public class SimplifyBooleanExpression extends Recipe {
                     return true;
                 }
 
-                if (j instanceof J.MethodInvocation) {
-                    J.MethodInvocation m = (J.MethodInvocation) j;
-                    return m.getSelect() != null && !m.getSelect().getMarkers().findFirst(org.openrewrite.kotlin.marker.IsNullSafe.class).isPresent();
+                if (j instanceof J.MethodInvocation m) {
+                    return m.getSelect() != null && m.getSelect().getMarkers().findFirst(org.openrewrite.kotlin.marker.IsNullSafe.class).isEmpty();
                 }
 
                 return true;

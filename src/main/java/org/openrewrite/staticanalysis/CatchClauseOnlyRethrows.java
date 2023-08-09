@@ -40,8 +40,10 @@ public class CatchClauseOnlyRethrows extends Recipe {
 
     @Override
     public String getDescription() {
-        return "A `catch` clause that only rethrows the caught exception is unnecessary. " +
-                "Letting the exception bubble up as normal achieves the same result with less code.";
+        return """
+                A `catch` clause that only rethrows the caught exception is unnecessary. \
+                Letting the exception bubble up as normal achieves the same result with less code.\
+                """;
     }
 
     @Override
@@ -61,9 +63,7 @@ public class CatchClauseOnlyRethrows extends Recipe {
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = super.visitBlock(block, ctx);
                 return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
-                    if (statement instanceof J.Try) {
-                        // if a try has no catches, no finally, and no resources get rid of it and merge its statements into the current block
-                        J.Try aTry = (J.Try) statement;
+                    if (statement instanceof J.Try aTry) {
                         if (aTry.getCatches().isEmpty() && aTry.getResources() == null && aTry.getFinally() == null) {
                             return ListUtils.map(aTry.getBody().getStatements(), tryStat -> autoFormat(tryStat, ctx, getCursor()));
                         }
@@ -104,8 +104,8 @@ public class CatchClauseOnlyRethrows extends Recipe {
                     return false;
                 }
 
-                if (exception instanceof J.Identifier) {
-                    return ((J.Identifier) exception).getSimpleName().equals(aCatch.getParameter().getTree().getVariables().get(0).getSimpleName());
+                if (exception instanceof J.Identifier identifier) {
+                    return identifier.getSimpleName().equals(aCatch.getParameter().getTree().getVariables().get(0).getSimpleName());
                 }
 
                 return false;

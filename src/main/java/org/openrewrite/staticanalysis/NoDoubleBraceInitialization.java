@@ -164,12 +164,12 @@ public class NoDoubleBraceInitialization extends Recipe {
                         return mi;
                     }
                     JavaType rawFieldType = identifier.getFieldType().getType();
-                    rawFieldType = rawFieldType instanceof JavaType.Parameterized ? ((JavaType.Parameterized) rawFieldType).getType() : rawFieldType;
+                    rawFieldType = rawFieldType instanceof JavaType.Parameterized p ? p.getType() : rawFieldType;
                     if (mi.getMethodType() == null) {
                         return mi;
                     }
                     JavaType rawMethodDeclaringType = mi.getMethodType().getDeclaringType();
-                    rawMethodDeclaringType = rawMethodDeclaringType instanceof JavaType.Parameterized ? ((JavaType.Parameterized) rawMethodDeclaringType).getType() : rawMethodDeclaringType;
+                    rawMethodDeclaringType = rawMethodDeclaringType instanceof JavaType.Parameterized p ? p.getType() : rawMethodDeclaringType;
 
                     if (TypeUtils.isAssignableTo(rawFieldType, rawMethodDeclaringType)) {
                         return mi.withSelect(identifier);

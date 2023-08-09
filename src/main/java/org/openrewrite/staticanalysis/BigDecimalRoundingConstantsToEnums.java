@@ -107,8 +107,7 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
             private boolean isConvertibleBigDecimalConstant(J elem) {
                 if (elem instanceof J.Literal) {
                     return true;
-                } else if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
-                    J.FieldAccess fa = (J.FieldAccess) elem;
+                } else if (elem instanceof J.FieldAccess fa && fa.getTarget().getType() instanceof JavaType.FullyQualified) {
                     return fa.getTarget().getType() != null && TypeUtils.isOfClassType(fa.getTarget().getType(), "java.math.BigDecimal");
                 }
                 return false;
@@ -117,13 +116,12 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
             @Nullable
             private String getTemplateText(J elem) {
                 String roundingName = null;
-                if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
-                    J.FieldAccess fa = (J.FieldAccess) elem;
+                if (elem instanceof J.FieldAccess fa && fa.getTarget().getType() instanceof JavaType.FullyQualified) {
                     if (fa.getTarget().getType() != null && TypeUtils.isOfClassType(fa.getTarget().getType(), "java.math.BigDecimal")) {
                         roundingName = fa.getSimpleName();
                     }
-                } else if (elem instanceof J.Literal) {
-                    roundingName = ((J.Literal) elem).getValueSource();
+                } else if (elem instanceof J.Literal literal) {
+                    roundingName = literal.getValueSource();
                 }
                 if (roundingName != null) {
                     switch (roundingName) {

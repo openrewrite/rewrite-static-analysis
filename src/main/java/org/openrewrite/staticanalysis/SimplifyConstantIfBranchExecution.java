@@ -109,7 +109,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             }
 
             // The simplification process did not result in resolving to a single 'true' or 'false' value
-            if (!compileTimeConstantBoolean.isPresent()) {
+            if (compileTimeConstantBoolean.isEmpty()) {
                 return if__; // Return the visited `if`
             } else if (compileTimeConstantBoolean.get()) {
                 // True branch

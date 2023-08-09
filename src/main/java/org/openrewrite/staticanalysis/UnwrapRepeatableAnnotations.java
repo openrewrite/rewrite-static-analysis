@@ -36,8 +36,10 @@ public class UnwrapRepeatableAnnotations extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Java 8 introduced the concept of `@Repeatable` annotations, " +
-               "making the wrapper annotation unnecessary.";
+        return """
+               Java 8 introduced the concept of `@Repeatable` annotations, \
+               making the wrapper annotation unnecessary.\
+               """;
     }
 
     @Override

@@ -73,8 +73,7 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
 
                 for (int i = 0; i < statements.size(); i++) {
                     Statement statement = statements.get(i);
-                    if (statement instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations varDecls = (J.VariableDeclarations) statement;
+                    if (statement instanceof J.VariableDeclarations varDecls) {
                         if (J.Modifier.hasModifier(varDecls.getModifiers(), J.Modifier.Type.Final)
                             && varDecls.getVariables().stream().anyMatch(v -> v.getInitializer() == null)) {
                             hasFinalUninitializedFieldVar = true;
@@ -104,8 +103,7 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
             boolean hasNoArgsConstructor = false;
             boolean hasDefaultConstructor = true;
             for (Statement statement : cd.getBody().getStatements()) {
-                if (statement instanceof J.MethodDeclaration) {
-                    J.MethodDeclaration md = (J.MethodDeclaration) statement;
+                if (statement instanceof J.MethodDeclaration md) {
                     if (md.isConstructor()) {
                         if (md.getParameters().isEmpty() || md.getParameters().get(0) instanceof J.Empty) {
                             hasNoArgsConstructor = true;

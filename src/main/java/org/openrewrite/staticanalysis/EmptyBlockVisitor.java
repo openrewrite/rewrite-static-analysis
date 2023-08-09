@@ -174,9 +174,9 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         Statement elseStatement = i.getElsePart().getBody();
         List<Statement> elseStatementBody;
-        if (elseStatement instanceof J.Block) {
+        if (elseStatement instanceof J.Block block) {
             // any else statements should already be at the correct indentation level
-            elseStatementBody = ((J.Block) elseStatement).getStatements();
+            elseStatementBody = block.getStatements();
         } else if (elseStatement instanceof J.If) {
             // J.If will typically just have a format of one space (the space between "else" and "if" in "else if")
             // we want this to be on its own line now inside its containing if block
@@ -210,8 +210,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private boolean isEmptyBlock(Statement blockNode) {
-        if (blockNode instanceof J.Block) {
-            J.Block block = (J.Block)blockNode;
+        if (blockNode instanceof J.Block block) {
             if (EmptyBlockStyle.BlockPolicy.STATEMENT.equals(emptyBlockStyle.getBlockPolicy())) {
                 return block.getStatements().isEmpty();
             } else if (EmptyBlockStyle.BlockPolicy.TEXT.equals(emptyBlockStyle.getBlockPolicy())) {

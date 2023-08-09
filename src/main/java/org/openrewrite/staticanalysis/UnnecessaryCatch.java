@@ -36,10 +36,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class UnnecessaryCatch extends Recipe {
 
     @Option(displayName = "Include `java.lang.Exception`",
-            description = "Whether to include java.lang.Exception in the list of checked exceptions to remove. " +
-                          "Unlike other checked exceptions, `java.lang.Exception` is also the superclass of unchecked exceptions. " +
-                          "So removing `catch(Exception e)` may result in changed runtime behavior in the presence of unchecked exceptions. " +
-                          "Default `false`",
+            description = """
+                          Whether to include java.lang.Exception in the list of checked exceptions to remove. \
+                          Unlike other checked exceptions, `java.lang.Exception` is also the superclass of unchecked exceptions. \
+                          So removing `catch(Exception e)` may result in changed runtime behavior in the presence of unchecked exceptions. \
+                          Default `false`\
+                          """,
             required = false)
     boolean includeJavaLangException;
 
@@ -61,9 +63,7 @@ public class UnnecessaryCatch extends Recipe {
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = super.visitBlock(block, ctx);
                 return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
-                    if (statement instanceof J.Try) {
-                        // if a try has no catches, no finally, and no resources get rid of it and merge its statements into the current block
-                        J.Try aTry = (J.Try) statement;
+                    if (statement instanceof J.Try aTry) {
                         if (aTry.getCatches().isEmpty() && aTry.getResources() == null && aTry.getFinally() == null) {
                             return ListUtils.map(aTry.getBody().getStatements(), tryStat -> autoFormat(tryStat, ctx, getCursor()));
                         }

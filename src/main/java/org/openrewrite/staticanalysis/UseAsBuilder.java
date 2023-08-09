@@ -41,8 +41,10 @@ public class UseAsBuilder extends Recipe {
 
     @Option(
             displayName = "Immutable state",
-            description = "The builder is immutable if you must assign the result of calls to intermediate variables " +
-                          "or use directly. Defaults to true as many purpose-built builders will be immutable.",
+            description = """
+                          The builder is immutable if you must assign the result of calls to intermediate variables \
+                          or use directly. Defaults to true as many purpose-built builders will be immutable.\
+                          """,
             required = false
     )
     @Nullable
@@ -106,7 +108,7 @@ public class UseAsBuilder extends Recipe {
                 for (Statement statement : block.getStatements()) {
                     if (currentBuilderCall != null) {
                         if (statement == currentBuilderCall) {
-                            if (statement instanceof J.VariableDeclarations) {
+                            if (statement instanceof J.VariableDeclarations declarations) {
                                 if (consolidatedBuilder != null) {
                                     statements.addAll(beforeBuilder);
                                     statements.add(consolidatedBuilder);
@@ -115,16 +117,15 @@ public class UseAsBuilder extends Recipe {
                                     beforeBuilder.clear();
                                     afterBuilder.clear();
                                 }
-                                consolidatedBuilder = (J.VariableDeclarations) statement;
+                                consolidatedBuilder = declarations;
                             } else {
                                 assert consolidatedBuilder != null;
-                                if (statement instanceof J.Assignment) {
-                                    J.Assignment assign = (J.Assignment) statement;
+                                if (statement instanceof J.Assignment assign) {
                                     consolidatedBuilder = consolidateBuilder(consolidatedBuilder,
                                             (J.MethodInvocation) assign.getAssignment());
-                                } else if (statement instanceof J.MethodInvocation) {
+                                } else if (statement instanceof J.MethodInvocation invocation) {
                                     consolidatedBuilder = consolidateBuilder(consolidatedBuilder,
-                                            (J.MethodInvocation) statement);
+                                            invocation);
                                 }
 
                                 beforeBuilder.addAll(afterBuilder);
@@ -154,23 +155,20 @@ public class UseAsBuilder extends Recipe {
             private Map<String, List<Statement>> collectBuilderMethodsByVariable(J.Block b) {
                 Map<String, List<Statement>> builderCalls = new LinkedHashMap<>();
                 for (Statement stat : b.getStatements()) {
-                    if (stat instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations varDecs = (J.VariableDeclarations) stat;
+                    if (stat instanceof J.VariableDeclarations varDecs) {
                         for (J.VariableDeclarations.NamedVariable namedVar : varDecs.getVariables()) {
                             if (matchesBuilder(namedVar.getInitializer())) {
                                 builderCalls.computeIfAbsent(namedVar.getSimpleName(), n -> new ArrayList<>())
                                         .add(stat);
                             }
                         }
-                    } else if (stat instanceof J.Assignment) {
-                        J.Assignment assign = (J.Assignment) stat;
+                    } else if (stat instanceof J.Assignment assign) {
                         if (matchesBuilder(assign.getAssignment())) {
                             builderCalls.computeIfAbsent(assign.getVariable().printTrimmed(getCursor()),
                                     n -> new ArrayList<>()).add(stat);
                         }
                     } else if (!Boolean.FALSE.equals(immutable)) {
-                        if (stat instanceof J.MethodInvocation) {
-                            J.MethodInvocation method = (J.MethodInvocation) stat;
+                        if (stat instanceof J.MethodInvocation method) {
                             if (matchesBuilder(method) && method.getSelect() != null) {
                                 builderCalls.computeIfAbsent(method.getSelect().printTrimmed(getCursor()),
                                         n -> new ArrayList<>()).add(stat);

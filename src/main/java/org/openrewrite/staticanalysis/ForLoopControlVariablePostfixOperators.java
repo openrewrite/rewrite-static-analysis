@@ -30,8 +30,10 @@ public class ForLoopControlVariablePostfixOperators extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Replace `for` loop control variables using pre-increment (`++i`) or pre-decrement (`--i`) operators " +
-                "with their post-increment (`i++`) or post-decrement (`i++`) notation equivalents.";
+        return """
+                Replace `for` loop control variables using pre-increment (`++i`) or pre-decrement (`--i`) operators \
+                with their post-increment (`i++`) or post-decrement (`i++`) notation equivalents.\
+                """;
     }
 
     @Override
@@ -42,12 +44,11 @@ public class ForLoopControlVariablePostfixOperators extends Recipe {
                 forLoop = forLoop.withControl(
                         forLoop.getControl().withUpdate(
                                 ListUtils.map(forLoop.getControl().getUpdate(), update -> {
-                                    if (update instanceof J.Unary) {
-                                        J.Unary u = (J.Unary) update;
+                                    if (update instanceof J.Unary u) {
                                         if (u.getOperator() == J.Unary.Type.PreIncrement) {
-                                            return ((J.Unary) update).withOperator(J.Unary.Type.PostIncrement);
+                                            return u.withOperator(J.Unary.Type.PostIncrement);
                                         } else if (u.getOperator() == J.Unary.Type.PreDecrement) {
-                                            return ((J.Unary) update).withOperator(J.Unary.Type.PostDecrement);
+                                            return u.withOperator(J.Unary.Type.PostDecrement);
                                         }
                                     }
 

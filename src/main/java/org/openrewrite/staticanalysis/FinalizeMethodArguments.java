@@ -77,8 +77,7 @@ public class FinalizeMethodArguments extends Recipe {
             }
 
             private void checkIfAssigned(final AtomicBoolean assigned, final Statement p) {
-                if (p instanceof VariableDeclarations) {
-                    VariableDeclarations variableDeclarations = (VariableDeclarations) p;
+                if (p instanceof VariableDeclarations variableDeclarations) {
                     if (variableDeclarations.getVariables().stream()
                             .anyMatch(namedVariable ->
                                     FindAssignmentReferencesToVariable.find(getCursor()
@@ -148,10 +147,9 @@ public class FinalizeMethodArguments extends Recipe {
     }
 
     private static Statement updateParam(final Statement p) {
-        if (p instanceof VariableDeclarations) {
-            VariableDeclarations variableDeclarations = (VariableDeclarations) p;
+        if (p instanceof VariableDeclarations variableDeclarations) {
             if (variableDeclarations.getModifiers().isEmpty()) {
-                variableDeclarations = updateModifiers(variableDeclarations, !((VariableDeclarations) p).getLeadingAnnotations().isEmpty());
+                variableDeclarations = updateModifiers(variableDeclarations, !variableDeclarations.getLeadingAnnotations().isEmpty());
                 variableDeclarations = updateDeclarations(variableDeclarations);
                 return variableDeclarations;
             }
@@ -180,8 +178,8 @@ public class FinalizeMethodArguments extends Recipe {
 
     private boolean hasFinalModifiers(final List<Statement> parameters) {
         return parameters.stream().allMatch(p -> {
-            if (p instanceof VariableDeclarations) {
-                final List<Modifier> modifiers = ((VariableDeclarations) p).getModifiers();
+            if (p instanceof VariableDeclarations declarations) {
+                final List<Modifier> modifiers = declarations.getModifiers();
                 return !modifiers.isEmpty()
                        && modifiers.stream()
                                .allMatch(m -> m.getType().equals(Type.Final));

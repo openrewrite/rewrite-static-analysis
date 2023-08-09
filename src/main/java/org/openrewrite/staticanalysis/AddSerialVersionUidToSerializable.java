@@ -41,9 +41,11 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
     @Override
     public String getDescription() {
-        return "A `serialVersionUID` field is strongly recommended in all `Serializable` classes. If this is not " +
-                "defined on a `Serializable` class, the compiler will generate this value. If a change is later made " +
-                "to the class, the generated value will change and attempts to deserialize the class will fail.";
+        return """
+                A `serialVersionUID` field is strongly recommended in all `Serializable` classes. If this is not \
+                defined on a `Serializable` class, the compiler will generate this value. If a change is later made \
+                to the class, the generated value will change and attempts to deserialize the class will fail.\
+                """;
     }
 
     @Override
@@ -118,10 +120,9 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                     return false;
                 } else if (type instanceof JavaType.Primitive) {
                     return true;
-                } else if (type instanceof JavaType.Array) {
-                    return requiresSerialVersionField(((JavaType.Array) type).getElemType());
-                } else if (type instanceof JavaType.Parameterized) {
-                    JavaType.Parameterized parameterized = (JavaType.Parameterized) type;
+                } else if (type instanceof JavaType.Array array) {
+                    return requiresSerialVersionField(array.getElemType());
+                } else if (type instanceof JavaType.Parameterized parameterized) {
                     if (parameterized.isAssignableTo("java.util.Collection") || parameterized.isAssignableTo("java.util.Map")) {
                         //If the type is either a collection or a map, make sure the type parameters are serializable. We
                         //force all type parameters to be checked to correctly scoop up all non-serializable candidates.
@@ -132,8 +133,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                         return typeParametersSerializable;
                     }
                     //All other parameterized types fall through
-                } else if (type instanceof JavaType.FullyQualified) {
-                    JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
+                } else if (type instanceof JavaType.FullyQualified fq) {
                     if (fq.getKind() == JavaType.Class.Kind.Enum) return false;
 
                     if (fq.getKind() != JavaType.Class.Kind.Interface &&

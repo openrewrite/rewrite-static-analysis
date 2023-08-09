@@ -131,8 +131,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
         private static class FindLastLineBreaksOrFallsThroughCommentsVisitor extends JavaIsoVisitor<Set<J>> {
             private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
-                    comment instanceof TextComment &&
-                    RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
+                    comment instanceof TextComment tc &&
+                    RELIEF_PATTERN.matcher(tc.getText()).find();
             private final J.Case scope;
 
             public FindLastLineBreaksOrFallsThroughCommentsVisitor(J.Case scope) {

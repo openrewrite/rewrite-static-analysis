@@ -88,7 +88,7 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
-                    if (!sourceSet.isPresent()) {
+                    if (sourceSet.isEmpty()) {
                         stopAfterPreVisit();
                     } else if (!Boolean.TRUE.equals(includeTestSources) && !"main".equals(sourceSet.get().getName())) {
                         stopAfterPreVisit();

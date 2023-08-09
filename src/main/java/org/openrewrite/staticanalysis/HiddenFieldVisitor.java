@@ -233,7 +233,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
 
                 boolean isIgnorableConstructorParam = hiddenFieldStyle.getIgnoreConstructorParameter();
                 if (isIgnorableConstructorParam) {
-                    isIgnorableConstructorParam = maybeMethodDecl instanceof J.MethodDeclaration && ((J.MethodDeclaration) maybeMethodDecl).isConstructor();
+                    isIgnorableConstructorParam = maybeMethodDecl instanceof J.MethodDeclaration md && md.isConstructor();
                 }
 
                 boolean isIgnorableSetter = hiddenFieldStyle.getIgnoreSetter();
@@ -249,7 +249,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
 
                 boolean isIgnorableAbstractMethod = hiddenFieldStyle.getIgnoreAbstractMethods();
                 if (isIgnorableAbstractMethod) {
-                    isIgnorableAbstractMethod = maybeMethodDecl instanceof J.MethodDeclaration && ((J.MethodDeclaration) maybeMethodDecl).isAbstract();
+                    isIgnorableAbstractMethod = maybeMethodDecl instanceof J.MethodDeclaration md && md.isAbstract();
                 }
 
                 if (!isIgnorableSetter && !isIgnorableConstructorParam && !isIgnorableAbstractMethod) {

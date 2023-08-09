@@ -66,8 +66,7 @@ public class RenameExceptionInEmptyCatch extends Recipe {
                 if (variableScope != null) {
                     // Collect class fields first since the name space is available anywhere in the class.
                     for (Statement o : classDecl.getBody().getStatements()) {
-                        if (o instanceof J.VariableDeclarations) {
-                            J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) o;
+                        if (o instanceof J.VariableDeclarations variableDeclarations) {
                             for (J.VariableDeclarations.NamedVariable v : variableDeclarations.getVariables()) {
                                 variableScope.computeIfAbsent(getCursor(), k -> new HashSet<>()).add(v.getSimpleName());
                             }

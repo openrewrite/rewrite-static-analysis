@@ -58,8 +58,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
                 if (md.getComments().stream().anyMatch(it -> it instanceof Javadoc.DocComment)) {
                     md = md.withComments(ListUtils.map(md.getComments(), it -> {
-                        if (it instanceof Javadoc.DocComment) {
-                            Javadoc.DocComment docComment = (Javadoc.DocComment) it;
+                        if (it instanceof Javadoc.DocComment docComment) {
                             return (Comment) removeEmptyParamVisitor.visitDocComment(docComment, ctx);
                         }
                         return it;
@@ -87,8 +86,8 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                         boolean skipCurrentDoc = false;
                         if (i + 1 < body.size()) {
                             Javadoc nextDoc = body.get(i + 1);
-                            if (nextDoc instanceof Javadoc.Parameter) {
-                                Javadoc.Parameter parameter = (Javadoc.Parameter) visitParameter((Javadoc.Parameter) nextDoc, ctx);
+                            if (nextDoc instanceof Javadoc.Parameter .Parameter) {
+                                Javadoc.Parameter parameter = (Javadoc.Parameter) visitParameter(.Parameter, ctx);
                                 if (parameter == null) {
                                     // The `@param` being removed is the last item in the JavaDoc body, and contains
                                     // relevant whitespace via the JavaDoc.LineBreak.
@@ -102,8 +101,8 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                                     useNewBody = true;
                                     skipCurrentDoc = true;
                                 }
-                            } else if (nextDoc instanceof Javadoc.Return) {
-                                Javadoc.Return aReturn = (Javadoc.Return) visitReturn((Javadoc.Return) nextDoc, ctx);
+                            } else if (nextDoc instanceof Javadoc.Return return1) {
+                                Javadoc.Return aReturn = (Javadoc.Return) visitReturn(return1, ctx);
                                 if (aReturn == null) {
                                     if (!newBody.isEmpty() && newBody.get(newBody.size() - 1) instanceof Javadoc.LineBreak) {
                                         newBody.remove(newBody.size() - 1);
@@ -121,8 +120,8 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                                     useNewBody = true;
                                     skipCurrentDoc = true;
                                 }
-                            } else if (nextDoc instanceof Javadoc.Erroneous) {
-                                Javadoc.Erroneous erroneous = (Javadoc.Erroneous) visitErroneous((Javadoc.Erroneous) nextDoc, ctx);
+                            } else if (nextDoc instanceof Javadoc.Erroneous .Erroneous) {
+                                Javadoc.Erroneous erroneous = (Javadoc.Erroneous) visitErroneous(.Erroneous, ctx);
                                 if (erroneous == null) {
                                     if (!newBody.isEmpty() && newBody.get(newBody.size() - 1) instanceof Javadoc.LineBreak) {
                                         newBody.remove(newBody.size() - 1);
