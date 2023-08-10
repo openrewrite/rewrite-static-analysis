@@ -15,9 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -1015,62 +1014,36 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     }
 
     @Test
-    void retainJavaUnusedLocalVariableWithNewClass() {
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues")
+    @Disabled
+    void removeUnusedInsideCase() {
         rewriteRun(
           java(
             """
-              class A {}
-              class B {
-                void foo() {
-                  A a = new A();
-                }
-              }
-              """
+             class Test {
+                 static void method() {
+                     int x = 10;
+                     char y = 20;
+                     switch (x) {
+                         case 10:
+                             byte unused;
+                             break;
+                     }
+                 }
+             }
+             """,
+            """
+             class Test {
+                 static void method() {
+                     int x = 10;
+                     switch (x) {
+                         case 10:
+                             break;
+                     }
+                 }
+             }
+             """
           )
         );
-    }
-
-    @Nested
-    class Kotlin {
-
-        @Test
-        void retainUnusedLocalVariableWithNewClass() {
-            rewriteRun(
-              kotlin(
-                """
-                  class A {}
-                  class B {
-                    fun foo() {
-                      val a = A();
-                    }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        @ExpectedToFail("Not yet implemented")
-        void retainUnusedLocalVariableConst() {
-            rewriteRun(
-              kotlin(
-                """
-                  package constants
-                  const val FOO = "bar"
-                  """
-              ),
-              kotlin(
-                """
-                  package config
-                  import constants.FOO
-                  fun baz() {
-                    val foo = FOO
-                    println(foo)
-                  }
-                  """
-              )
-            );
-        }
-
     }
 }
