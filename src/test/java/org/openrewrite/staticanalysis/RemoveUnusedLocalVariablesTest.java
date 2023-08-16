@@ -1017,6 +1017,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void retainJavaUnusedLocalVariableWithNewClass() {
         rewriteRun(
+          //language=java
           java(
             """
               class A {}
@@ -1024,6 +1025,41 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                 void foo() {
                   A a = new A();
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/152")
+    void retainUnusedInsideCase() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method() {
+                      int x = 10;
+                      char y = 20;
+                      switch (x) {
+                          case 10:
+                              byte unused;
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method() {
+                      int x = 10;
+                      switch (x) {
+                          case 10:
+                              byte unused;
+                              break;
+                      }
+                  }
               }
               """
           )
@@ -1053,12 +1089,14 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         @ExpectedToFail("Not yet implemented")
         void retainUnusedLocalVariableConst() {
             rewriteRun(
+              //language=kotlin
               kotlin(
                 """
                   package constants
                   const val FOO = "bar"
                   """
               ),
+              //language=kotlin
               kotlin(
                 """
                   package config
