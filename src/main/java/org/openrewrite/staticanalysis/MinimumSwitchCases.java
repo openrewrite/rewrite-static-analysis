@@ -26,6 +26,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.RecipeRunException;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 
@@ -184,6 +185,7 @@ public class MinimumSwitchCases extends Recipe {
                             } else {
                                 generatedIf = ifElseIfEnum.apply(getCursor(), switch_.getCoordinates().replace(), tree, enumIdentToFieldAccessString(cases[0].getPattern()), tree, enumIdentToFieldAccessString(cases[1].getPattern()));
                             }
+                            doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
                         } else {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
@@ -251,7 +253,7 @@ public class MinimumSwitchCases extends Recipe {
 
             private String enumIdentToFieldAccessString(Expression casePattern) {
                 JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(casePattern.getType());
-                String caseType = requireNonNull(fullyQualified).getClassName();
+                String caseType = requireNonNull(fullyQualified).getFullyQualifiedName();
                 maybeAddImport(fullyQualified);
                 if (casePattern instanceof J.FieldAccess) {
                     // may be a field access in Groovy

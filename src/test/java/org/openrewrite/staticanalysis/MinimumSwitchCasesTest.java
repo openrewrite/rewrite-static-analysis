@@ -512,8 +512,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
               }
               """,
             """
-              import java.time.LocalDate;
               import java.time.DayOfWeek;
+              import java.time.LocalDate;
 
               class Test {
                   void test(LocalDate date) {
