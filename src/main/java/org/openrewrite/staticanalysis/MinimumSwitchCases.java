@@ -252,9 +252,7 @@ public class MinimumSwitchCases extends Recipe {
             }
 
             private String enumIdentToFieldAccessString(Expression casePattern) {
-                JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(casePattern.getType());
-                String caseType = requireNonNull(fullyQualified).getFullyQualifiedName();
-                maybeAddImport(fullyQualified);
+                String caseType = requireNonNull(TypeUtils.asFullyQualified(casePattern.getType())).getFullyQualifiedName();
                 if (casePattern instanceof J.FieldAccess) {
                     // may be a field access in Groovy
                     return caseType + "." + ((J.FieldAccess) casePattern).getSimpleName();
