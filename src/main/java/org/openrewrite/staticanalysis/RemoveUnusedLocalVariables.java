@@ -114,6 +114,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     parent instanceof J.MethodDeclaration ||
                     // skip if defined in an enhanced or standard for loop, since there isn't much we can do about the semantics at that point
                     parent instanceof J.ForLoop.Control || parent instanceof J.ForEachLoop.Control ||
+                    // skip if defined in a switch case
+                    parent instanceof J.Case ||
                     // skip if defined in a try's catch clause as an Exception variable declaration
                     parent instanceof J.Try.Resource || parent instanceof J.Try.Catch || parent instanceof J.MultiCatch ||
                     // skip if defined as a parameter to a lambda expression
