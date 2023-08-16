@@ -22,10 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Collections.emptyList;
 import static org.openrewrite.Tree.randomId;
@@ -112,7 +109,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
             J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
             if (cd.getType() != null && typesToFinalize.remove(cd.getType().getFullyQualifiedName())) {
                 List<J.Modifier> modifiers = new ArrayList<>(cd.getModifiers());
-                modifiers.add(new J.Modifier(randomId(), Space.EMPTY, Markers.EMPTY, J.Modifier.Type.Final, emptyList()));
+                modifiers.add(new J.Modifier(randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()));
                 modifiers = sortModifiers(modifiers);
                 cd = cd.withModifiers(modifiers);
                 if (cd.getType() instanceof JavaType.Class && !cd.getType().hasFlags(Flag.Final)) {

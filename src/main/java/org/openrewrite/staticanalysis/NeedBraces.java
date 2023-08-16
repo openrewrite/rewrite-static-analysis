@@ -152,6 +152,5 @@ public class NeedBraces extends Recipe {
             }
             return elem;
         }
-
-    }
+    };
 }

@@ -21,10 +21,12 @@ import lombok.With;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.RecipeRunException;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 
@@ -61,7 +63,7 @@ public class MinimumSwitchCases extends Recipe {
     }
 
     @Override
-    public JavaVisitor<ExecutionContext> getVisitor() {
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
@@ -183,6 +185,7 @@ public class MinimumSwitchCases extends Recipe {
                             } else {
                                 generatedIf = ifElseIfEnum.apply(getCursor(), switch_.getCoordinates().replace(), tree, enumIdentToFieldAccessString(cases[0].getPattern()), tree, enumIdentToFieldAccessString(cases[1].getPattern()));
                             }
+                            doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
                         } else {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
@@ -249,7 +252,7 @@ public class MinimumSwitchCases extends Recipe {
             }
 
             private String enumIdentToFieldAccessString(Expression casePattern) {
-                String caseType = requireNonNull(TypeUtils.asFullyQualified(casePattern.getType())).getClassName();
+                String caseType = requireNonNull(TypeUtils.asFullyQualified(casePattern.getType())).getFullyQualifiedName();
                 if (casePattern instanceof J.FieldAccess) {
                     // may be a field access in Groovy
                     return caseType + "." + ((J.FieldAccess) casePattern).getSimpleName();

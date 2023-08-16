@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -126,6 +127,7 @@ public class UseCollectionInterfaces extends Recipe {
                                         randomId(),
                                         m.getReturnTypeExpression().getPrefix(),
                                         Markers.EMPTY,
+                                        emptyList(),
                                         newType.getClassName(),
                                         newType,
                                         null
@@ -136,6 +138,7 @@ public class UseCollectionInterfaces extends Recipe {
                                         randomId(),
                                         Space.EMPTY,
                                         Markers.EMPTY,
+                                        emptyList(),
                                         newType.getClassName(),
                                         newType,
                                         null);
@@ -176,6 +179,7 @@ public class UseCollectionInterfaces extends Recipe {
                                     randomId(),
                                     mv.getTypeExpression().getPrefix(),
                                     Markers.EMPTY,
+                                    emptyList(),
                                     newType.getClassName(),
                                     newType,
                                     null
@@ -186,6 +190,7 @@ public class UseCollectionInterfaces extends Recipe {
                                     randomId(),
                                     Space.EMPTY,
                                     Markers.EMPTY,
+                                    emptyList(),
                                     newType.getClassName(),
                                     newType,
                                     null

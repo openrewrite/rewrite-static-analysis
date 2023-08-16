@@ -22,8 +22,8 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.cleanup.SimplifyBooleanExpression;
-import org.openrewrite.java.cleanup.UnnecessaryParentheses;
+import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.EmptyBlockStyle;
 import org.openrewrite.java.tree.Expression;
@@ -75,9 +75,9 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 E expression, ExecutionContext context
         ) {
             E ex1 =
-                    (E) new UnnecessaryParentheses().getVisitor()
+                    (E) new UnnecessaryParenthesesVisitor()
                             .visitNonNull(expression, context, getCursor().getParentOrThrow());
-            ex1 = (E) new SimplifyBooleanExpression().getVisitor()
+            ex1 = (E) new SimplifyBooleanExpressionVisitor()
                     .visitNonNull(ex1, context, getCursor().getParentTreeCursor());
             if (expression == ex1 || isLiteralFalse(ex1) || isLiteralTrue(ex1)) {
                 return ex1;

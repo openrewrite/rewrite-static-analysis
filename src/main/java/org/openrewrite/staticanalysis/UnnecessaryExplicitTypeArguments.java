@@ -15,12 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.kotlin.tree.K;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -41,23 +39,27 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
 
+                if (m.getTypeParameters() == null || m.getTypeParameters().isEmpty()) {
+                    return m;
+                }
+
                 if (m.getMethodType() != null) {
                     Object enclosing = getCursor().getParentTreeCursor().getValue();
                     JavaType enclosingType = null;
 
-                    if(enclosing instanceof J.MethodInvocation) {
+                    if (enclosing instanceof J.MethodInvocation) {
                         // Cannot remove type parameters if it would introduce ambiguity about which method should be called
                         J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
-                        if(enclosingMethod.getMethodType() == null) {
+                        if (enclosingMethod.getMethodType() == null) {
                             return m;
                         }
-                        if(!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
+                        if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
                             return m;
                         }
                         JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
                         // If there's another method on the class with the same name, skip removing type parameters
                         // More nuanced detection of ambiguity introduction is possible
-                        if(declaringClass.getMethods().stream()
+                        if (declaringClass.getMethods().stream()
                                 .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
                                 .count() > 1) {
                             return m;
@@ -86,6 +88,25 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     }
 
                     if (enclosingType != null && TypeUtils.isOfType(enclosingType, m.getMethodType().getReturnType())) {
+                        boolean isKotlinFile = getCursor().dropParentUntil(it -> it instanceof K.CompilationUnit ||
+                                        it == Cursor.ROOT_VALUE)
+                                .getValue() instanceof K.CompilationUnit;
+
+                        if (isKotlinFile) {
+                            // For Kotlin, avoid omitting explicit type arguments only when the method invocation includes
+                            // arguments, as the compiler cannot perform type inference without the presence of arguments.
+                            boolean hasArguments = false;
+                            for (Expression arg : m.getArguments()) {
+                                if (!(arg instanceof J.Empty)) {
+                                    hasArguments = true;
+                                    break;
+                                }
+                            }
+
+                            if (!hasArguments) {
+                                return m;
+                            }
+                        }
                         m = m.withTypeParameters(null);
                     }
                 }

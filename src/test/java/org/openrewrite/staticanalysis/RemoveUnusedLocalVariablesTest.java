@@ -15,7 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -23,6 +25,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
   "ConstantConditions",
@@ -558,6 +561,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("All")
     @Test
     void ignoreAnonymousClassVariables() {
         rewriteRun(
@@ -987,5 +991,124 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
               """
           ), 17)
         );
+    }
+
+    @Test
+    void removeKotlinUnusedLocalVariable() {
+        rewriteRun(
+          kotlin(
+            """
+              class A (val b: String) {
+                  fun foo() {
+                      val bar = b;
+                  }
+              }
+              """,
+            """
+              class A (val b: String) {
+                  fun foo() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainJavaUnusedLocalVariableWithNewClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {}
+              class B {
+                void foo() {
+                  A a = new A();
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/152")
+    void retainUnusedInsideCase() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method() {
+                      int x = 10;
+                      char y = 20;
+                      switch (x) {
+                          case 10:
+                              byte unused;
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method() {
+                      int x = 10;
+                      switch (x) {
+                          case 10:
+                              byte unused;
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Nested
+    class Kotlin {
+
+        @Test
+        void retainUnusedLocalVariableWithNewClass() {
+            rewriteRun(
+              kotlin(
+                """
+                  class A {}
+                  class B {
+                    fun foo() {
+                      val a = A();
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @ExpectedToFail("Not yet implemented")
+        void retainUnusedLocalVariableConst() {
+            rewriteRun(
+              //language=kotlin
+              kotlin(
+                """
+                  package constants
+                  const val FOO = "bar"
+                  """
+              ),
+              //language=kotlin
+              kotlin(
+                """
+                  package config
+                  import constants.FOO
+                  fun baz() {
+                    val foo = FOO
+                    println(foo)
+                  }
+                  """
+              )
+            );
+        }
+
     }
 }

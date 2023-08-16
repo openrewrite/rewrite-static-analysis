@@ -20,7 +20,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.cleanup.UnnecessaryParentheses;
+import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -89,7 +89,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 } while (combined != b);
 
                 if (b != block) {
-                    b = (J.Block) new UnnecessaryParentheses().getVisitor()
+                    b = (J.Block) new UnnecessaryParenthesesVisitor()
                             .visitNonNull(b, ctx, getCursor().getParentOrThrow());
                 }
 
