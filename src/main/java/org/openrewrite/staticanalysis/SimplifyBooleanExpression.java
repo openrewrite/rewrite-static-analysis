@@ -19,6 +19,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.UnwrapParentheses;
 import org.openrewrite.java.format.AutoFormatVisitor;
 import org.openrewrite.java.tree.*;
@@ -177,6 +178,21 @@ public class SimplifyBooleanExpression extends Recipe {
                 return j;
             }
 
+            private final MethodMatcher isEmpty = new MethodMatcher("java.lang.String isEmpty()");
+
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+                J j = super.visitMethodInvocation(method, executionContext);
+                J.MethodInvocation asMethod = (J.MethodInvocation) j;
+                if (isEmpty.matches(asMethod)) {
+                    Expression receiver = asMethod.getSelect();
+                    if (J.Literal.isLiteralValue(receiver, "")) {
+                        return booleanLiteral(method, true);
+                    }
+                }
+                return j;
+            }
+
             /**
              * Specifically for removing immediately-enclosing parentheses on Identifiers and Literals.
              * This queues a potential unwrap operation for the next visit. After unwrapping something, it's possible
@@ -228,10 +244,10 @@ public class SimplifyBooleanExpression extends Recipe {
                 return asBinary;
             }
 
-            private J.Literal booleanLiteral(J.Binary asBinary, boolean value) {
+            private J.Literal booleanLiteral(J j, boolean value) {
                 return new J.Literal(Tree.randomId(),
-                        asBinary.getPrefix(),
-                        asBinary.getMarkers(),
+                        j.getPrefix(),
+                        j.getMarkers(),
                         value,
                         String.valueOf(value),
                         Collections.emptyList(),
@@ -250,7 +266,7 @@ public class SimplifyBooleanExpression extends Recipe {
 
             // Comparing Kotlin nullable type `?` with tree/false can not be simplified,
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
-            private boolean isNotKotlinNullableType(@Nullable  J j) {
+            private boolean isNotKotlinNullableType(@Nullable J j) {
                 if (j == null) {
                     return true;
                 }

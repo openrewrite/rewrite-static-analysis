@@ -355,22 +355,40 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
       a == null || !a.isEmpty()                                // a == null || !a.isEmpty() 
       a != null && a.isEmpty()                                 // a != null && a.isEmpty() 
       a != null && !a.isEmpty()                                // a != null && !a.isEmpty() 
-      a == null || a.isEmpty() || "" == null || "".isEmpty()   // a == null || a.isEmpty() || "".isEmpty()
-      a == null || a.isEmpty() || "" == null || !"".isEmpty()  // a == null || a.isEmpty() || !"".isEmpty()
-      a == null || a.isEmpty() || "" != null && "".isEmpty()   // a == null || a.isEmpty() || "".isEmpty()
-      a == null || a.isEmpty() || "" != null && !"".isEmpty()  // a == null || a.isEmpty() || !"".isEmpty()
-      a == null || a.isEmpty() && "" == null || "".isEmpty()   // a == null || "".isEmpty()
-      a == null || a.isEmpty() && "" == null || !"".isEmpty()  // a == null || !"".isEmpty()
-      a == null || a.isEmpty() && "" != null && "".isEmpty()   // a == null || a.isEmpty() && "".isEmpty()
-      a == null || a.isEmpty() && "" != null && !"".isEmpty()  // a == null || a.isEmpty() && !"".isEmpty()
-      a == null || !a.isEmpty() || "" == null || "".isEmpty()  // a == null || !a.isEmpty() || "".isEmpty()
-      a == null || !a.isEmpty() || "" == null || !"".isEmpty() // a == null || !a.isEmpty() || !"".isEmpty()
-      a == null || !a.isEmpty() || "" != null && "".isEmpty()  // a == null || !a.isEmpty() || "".isEmpty()
-      a == null || !a.isEmpty() || "" != null && !"".isEmpty() // a == null || !a.isEmpty() || !"".isEmpty()
-      a == null || !a.isEmpty() && "" == null || "".isEmpty()  // a == null || "".isEmpty() 
-      a == null || !a.isEmpty() && "" == null || !"".isEmpty() // a == null || !"".isEmpty()
-      a == null || !a.isEmpty() && "" != null && "".isEmpty()  // a == null || !a.isEmpty() && "".isEmpty() 
-      a == null || !a.isEmpty() && "" != null && !"".isEmpty() // a == null || !a.isEmpty() && !"".isEmpty()
+
+      a == null || a.isEmpty() || "" == null || "".isEmpty()   // true
+      a == null || a.isEmpty() || "" == null || !"".isEmpty()  // a == null || a.isEmpty()
+      a == null || a.isEmpty() || "" != null && "".isEmpty()   // true
+      a == null || a.isEmpty() || "" != null && !"".isEmpty()  // a == null || a.isEmpty()
+      a == null || a.isEmpty() && "" == null || "".isEmpty()   // true
+      a == null || a.isEmpty() && "" == null || !"".isEmpty()  // a == null
+      a == null || a.isEmpty() && "" != null && "".isEmpty()   // a == null || a.isEmpty()
+      a == null || a.isEmpty() && "" != null && !"".isEmpty()  // a == null
+      a == null || !a.isEmpty() || "" == null || "".isEmpty()  // true
+      a == null || !a.isEmpty() || "" == null || !"".isEmpty() // a == null || !a.isEmpty()
+      a == null || !a.isEmpty() || "" != null && "".isEmpty()  // true
+      a == null || !a.isEmpty() || "" != null && !"".isEmpty() // a == null || !a.isEmpty()
+      a == null || !a.isEmpty() && "" == null || "".isEmpty()  // true 
+      a == null || !a.isEmpty() && "" == null || !"".isEmpty() // a == null
+      a == null || !a.isEmpty() && "" != null && "".isEmpty()  // a == null || !a.isEmpty() 
+      a == null || !a.isEmpty() && "" != null && !"".isEmpty() // a == null
+
+      a == null || a.isEmpty() || "b" == null || "b".isEmpty()   // a == null || a.isEmpty() || "b".isEmpty()
+      a == null || a.isEmpty() || "b" == null || !"b".isEmpty()  // a == null || a.isEmpty() || !"b".isEmpty()
+      a == null || a.isEmpty() || "b" != null && "b".isEmpty()   // a == null || a.isEmpty() || "b".isEmpty()
+      a == null || a.isEmpty() || "b" != null && !"b".isEmpty()  // a == null || a.isEmpty() || !"b".isEmpty()
+      a == null || a.isEmpty() && "b" == null || "b".isEmpty()   // a == null || "b".isEmpty()
+      a == null || a.isEmpty() && "b" == null || !"b".isEmpty()  // a == null || !"b".isEmpty()
+      a == null || a.isEmpty() && "b" != null && "b".isEmpty()   // a == null || a.isEmpty() && "b".isEmpty()
+      a == null || a.isEmpty() && "b" != null && !"b".isEmpty()  // a == null || a.isEmpty() && !"b".isEmpty()
+      a == null || !a.isEmpty() || "b" == null || "b".isEmpty()  // a == null || !a.isEmpty() || "b".isEmpty()
+      a == null || !a.isEmpty() || "b" == null || !"b".isEmpty() // a == null || !a.isEmpty() || !"b".isEmpty()
+      a == null || !a.isEmpty() || "b" != null && "b".isEmpty()  // a == null || !a.isEmpty() || "b".isEmpty()
+      a == null || !a.isEmpty() || "b" != null && !"b".isEmpty() // a == null || !a.isEmpty() || !"b".isEmpty()
+      a == null || !a.isEmpty() && "b" == null || "b".isEmpty()  // a == null || "b".isEmpty() 
+      a == null || !a.isEmpty() && "b" == null || !"b".isEmpty() // a == null || !"b".isEmpty()
+      a == null || !a.isEmpty() && "b" != null && "b".isEmpty()  // a == null || !a.isEmpty() && "b".isEmpty() 
+      a == null || !a.isEmpty() && "b" != null && !"b".isEmpty() // a == null || !a.isEmpty() && !"b".isEmpty()
       """)
     void simplifyLiteralNull(String before, String after) {
         //language=java
