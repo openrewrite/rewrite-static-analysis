@@ -184,11 +184,9 @@ public class SimplifyBooleanExpression extends Recipe {
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
                 J j = super.visitMethodInvocation(method, executionContext);
                 J.MethodInvocation asMethod = (J.MethodInvocation) j;
-                if (isEmpty.matches(asMethod)) {
-                    Expression receiver = asMethod.getSelect();
-                    if (J.Literal.isLiteralValue(receiver, "")) {
-                        return booleanLiteral(method, true);
-                    }
+                if (isEmpty.matches(asMethod) && J.Literal.isLiteralValue(asMethod.getSelect(), "")) {
+                    maybeUnwrapParentheses();
+                    return booleanLiteral(method, true);
                 }
                 return j;
             }
