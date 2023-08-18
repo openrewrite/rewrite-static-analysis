@@ -21,10 +21,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.UnwrapParentheses;
 import org.openrewrite.java.format.AutoFormatVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
-import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -84,6 +81,12 @@ public class SimplifyBooleanExpression extends Recipe {
                     } else if (isLiteralFalse(asBinary.getRight())) {
                         maybeUnwrapParentheses();
                         j = asBinary.getRight().withPrefix(asBinary.getRight().getPrefix().withWhitespace(""));
+                    } else if (isLiteralTrue(asBinary.getLeft())) {
+                        maybeUnwrapParentheses();
+                        j = asBinary.getRight();
+                    } else if (isLiteralTrue(asBinary.getRight())) {
+                        maybeUnwrapParentheses();
+                        j = asBinary.getLeft().withPrefix(asBinary.getLeft().getPrefix().withWhitespace(""));
                     } else if (removeAllSpace(asBinary.getLeft()).printTrimmed(getCursor())
                             .equals(removeAllSpace(asBinary.getRight()).printTrimmed(getCursor()))) {
                         maybeUnwrapParentheses();
@@ -96,6 +99,12 @@ public class SimplifyBooleanExpression extends Recipe {
                     } else if (isLiteralTrue(asBinary.getRight())) {
                         maybeUnwrapParentheses();
                         j = asBinary.getRight().withPrefix(asBinary.getRight().getPrefix().withWhitespace(""));
+                    } else if (isLiteralFalse(asBinary.getLeft())) {
+                        maybeUnwrapParentheses();
+                        j = asBinary.getRight();
+                    } else if (isLiteralFalse(asBinary.getRight())) {
+                        maybeUnwrapParentheses();
+                        j = asBinary.getLeft().withPrefix(asBinary.getLeft().getPrefix().withWhitespace(""));
                     } else if (removeAllSpace(asBinary.getLeft()).printTrimmed(getCursor())
                             .equals(removeAllSpace(asBinary.getRight()).printTrimmed(getCursor()))) {
                         maybeUnwrapParentheses();
@@ -112,6 +121,8 @@ public class SimplifyBooleanExpression extends Recipe {
                             maybeUnwrapParentheses();
                             j = asBinary.getLeft().withPrefix(asBinary.getLeft().getPrefix().withWhitespace(" "));
                         }
+                    } else {
+                        j = maybeReplaceCompareWithNull(asBinary, true);
                     }
                 } else if (asBinary.getOperator() == J.Binary.Type.NotEqual) {
                     if (isLiteralFalse(asBinary.getLeft())) {
@@ -124,6 +135,8 @@ public class SimplifyBooleanExpression extends Recipe {
                             maybeUnwrapParentheses();
                             j = asBinary.getLeft().withPrefix(asBinary.getLeft().getPrefix().withWhitespace(" "));
                         }
+                    } else {
+                        j = maybeReplaceCompareWithNull(asBinary, false);
                     }
                 }
                 if (asBinary != j) {
@@ -185,6 +198,44 @@ public class SimplifyBooleanExpression extends Recipe {
 
             private boolean isLiteralFalse(@Nullable Expression expression) {
                 return expression instanceof J.Literal && ((J.Literal) expression).getValue() == Boolean.valueOf(false);
+            }
+
+            private boolean isNullLiteral(Expression expression) {
+                return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
+            }
+
+            private boolean isNonNullLiteral(Expression expression) {
+                return expression instanceof J.Literal && ((J.Literal) expression).getType() != JavaType.Primitive.Null;
+            }
+
+            private J maybeReplaceCompareWithNull(J.Binary asBinary, boolean valueIfEqual) {
+                Expression left = asBinary.getLeft();
+                Expression right = asBinary.getRight();
+
+                boolean leftIsNull = isNullLiteral(left);
+                boolean rightIsNull = isNullLiteral(right);
+                if (leftIsNull && rightIsNull) {
+                    maybeUnwrapParentheses();
+                    return booleanLiteral(asBinary, valueIfEqual);
+                }
+                boolean leftIsNonNullLiteral = isNonNullLiteral(left);
+                boolean rightIsNonNullLiteral = isNonNullLiteral(right);
+                if ((leftIsNull && rightIsNonNullLiteral) || (rightIsNull && leftIsNonNullLiteral)) {
+                    maybeUnwrapParentheses();
+                    return booleanLiteral(asBinary, !valueIfEqual);
+                }
+
+                return asBinary;
+            }
+
+            private J.Literal booleanLiteral(J.Binary asBinary, boolean value) {
+                return new J.Literal(Tree.randomId(),
+                        asBinary.getPrefix(),
+                        asBinary.getMarkers(),
+                        value,
+                        String.valueOf(value),
+                        Collections.emptyList(),
+                        JavaType.Primitive.Boolean);
             }
 
             private J removeAllSpace(J j) {

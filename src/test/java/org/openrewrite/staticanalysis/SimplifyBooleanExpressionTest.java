@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -344,5 +346,46 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @ParameterizedTest
+    @Issue("https://github.com/openrewrite/rewrite-templating/issues/28")
+    @CsvSource(delimiterString = "//", textBlock = """
+      a == null || a.isEmpty()                                 // a == null || a.isEmpty() 
+      a == null || !a.isEmpty()                                // a == null || !a.isEmpty() 
+      a != null && a.isEmpty()                                 // a != null && a.isEmpty() 
+      a != null && !a.isEmpty()                                // a != null && !a.isEmpty() 
+      a == null || a.isEmpty() || "" == null || "".isEmpty()   // a == null || a.isEmpty() || "".isEmpty()
+      a == null || a.isEmpty() || "" == null || !"".isEmpty()  // a == null || a.isEmpty() || !"".isEmpty()
+      a == null || a.isEmpty() || "" != null && "".isEmpty()   // a == null || a.isEmpty() || "".isEmpty()
+      a == null || a.isEmpty() || "" != null && !"".isEmpty()  // a == null || a.isEmpty() || !"".isEmpty()
+      a == null || a.isEmpty() && "" == null || "".isEmpty()   // a == null || "".isEmpty()
+      a == null || a.isEmpty() && "" == null || !"".isEmpty()  // a == null || !"".isEmpty()
+      a == null || a.isEmpty() && "" != null && "".isEmpty()   // a == null || a.isEmpty() && "".isEmpty()
+      a == null || a.isEmpty() && "" != null && !"".isEmpty()  // a == null || a.isEmpty() && !"".isEmpty()
+      a == null || !a.isEmpty() || "" == null || "".isEmpty()  // a == null || !a.isEmpty() || "".isEmpty()
+      a == null || !a.isEmpty() || "" == null || !"".isEmpty() // a == null || !a.isEmpty() || !"".isEmpty()
+      a == null || !a.isEmpty() || "" != null && "".isEmpty()  // a == null || !a.isEmpty() || "".isEmpty()
+      a == null || !a.isEmpty() || "" != null && !"".isEmpty() // a == null || !a.isEmpty() || !"".isEmpty()
+      a == null || !a.isEmpty() && "" == null || "".isEmpty()  // a == null || "".isEmpty() 
+      a == null || !a.isEmpty() && "" == null || !"".isEmpty() // a == null || !"".isEmpty()
+      a == null || !a.isEmpty() && "" != null && "".isEmpty()  // a == null || !a.isEmpty() && "".isEmpty() 
+      a == null || !a.isEmpty() && "" != null && !"".isEmpty() // a == null || !a.isEmpty() && !"".isEmpty()
+      """)
+    void simplifyLiteralNull(String before, String after) {
+        //language=java
+        String template = """
+          class A {
+              void foo(String a) {
+                  boolean c = %s;
+              }
+          }
+          """;
+        String beforeJava = template.formatted(before);
+        if (before.equals(after)) {
+            rewriteRun(java(beforeJava));
+        } else {
+            rewriteRun(java(beforeJava, template.formatted(after)));
+        }
     }
 }
