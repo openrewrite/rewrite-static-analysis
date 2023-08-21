@@ -23,6 +23,7 @@ import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.kotlin.marker.IsNullSafe;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -78,7 +79,7 @@ public class SimplifyBooleanExpression extends Recipe {
 
                 if (j instanceof J.MethodInvocation) {
                     J.MethodInvocation m = (J.MethodInvocation) j;
-                    return m.getSelect() != null && !m.getSelect().getMarkers().findFirst(org.openrewrite.kotlin.marker.IsNullSafe.class).isPresent();
+                    return m.getSelect() != null && !m.getSelect().getMarkers().findFirst(IsNullSafe.class).isPresent();
                 }
 
                 return true;
