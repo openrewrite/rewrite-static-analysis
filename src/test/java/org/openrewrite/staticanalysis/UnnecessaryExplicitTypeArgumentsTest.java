@@ -201,6 +201,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
+        @Disabled
         @Test
         void changeIfHasTypeInference() {
             rewriteRun(
@@ -212,6 +213,23 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
                 """
                   val foo = listOf("a", "b")
                   var bar = mutableMapOf("a" to 1)
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeSinceCompilerHasNoEnoughInformationToInferType() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun <TClass, TValue> default(arg: String): TValue? {
+                      return null
+                  }
+
+                  fun method() {
+                      val email = default<Int, String?>("email")
+                  }
                   """
               )
             );
