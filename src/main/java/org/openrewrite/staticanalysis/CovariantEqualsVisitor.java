@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.openrewrite.Cursor;
 import org.openrewrite.Incubating;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -45,8 +46,8 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
         private static final AnnotationMatcher OVERRIDE_ANNOTATION = new AnnotationMatcher("@java.lang.Override");
         private static final String EQUALS_BODY_PREFIX_TEMPLATE =
                 "if (#{} == this) return true;\n" +
-                        "if (#{} == null || getClass() != #{}.getClass()) return false;\n" +
-                        "#{} #{} = (#{}) #{};\n";
+                "if (#{} == null || getClass() != #{}.getClass()) return false;\n" +
+                "#{} #{} = (#{}) #{};\n";
 
         private final J.ClassDeclaration enclosingClass;
 
@@ -69,16 +70,14 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
 
             String ecfqn = type.getFullyQualifiedName();
             if (new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass) &&
-                    m.hasModifier(J.Modifier.Type.Public) &&
-                    m.getReturnTypeExpression() != null &&
-                    JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType())) {
+                m.hasModifier(J.Modifier.Type.Public) &&
+                m.getReturnTypeExpression() != null &&
+                JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType())) {
 
                 if (m.getAllAnnotations().stream().noneMatch(OVERRIDE_ANNOTATION::matches)) {
-                    m = m.withTemplate(
-                            JavaTemplate.builder("@Override").build(),
-                            getCursor(),
-                            m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName))
-                    );
+                    m = JavaTemplate.builder("@Override").build()
+                            .apply(updateCursor(m),
+                                    m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                 }
 
                 /*
@@ -88,18 +87,17 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
                  */
                 J.VariableDeclarations.NamedVariable oldParamName = ((J.VariableDeclarations) m.getParameters().iterator().next()).getVariables().iterator().next();
                 String paramName = "obj".equals(oldParamName.getSimpleName()) ? "other" : "obj";
-                m = m.withTemplate(
-                        JavaTemplate.builder("Object #{}").context(() -> getCursor().getParentOrThrow()).build(),
-                        getCursor(),
-                        m.getCoordinates().replaceParameters(),
-                        paramName);
+                m = JavaTemplate.builder("Object #{}").contextSensitive().build()
+                        .apply(updateCursor(m),
+                                m.getCoordinates().replaceParameters(),
+                                paramName);
 
                 /*
                  * We'll prepend this type-check and type-cast to the beginning of the existing
                  * equals(..) method body statements, and let the existing equals(..) method definition continue
                  * with the logic doing what it was doing.
                  */
-                JavaTemplate equalsBodySnippet = JavaTemplate.builder(EQUALS_BODY_PREFIX_TEMPLATE).context(this::getCursor).build();
+                JavaTemplate equalsBodySnippet = JavaTemplate.builder(EQUALS_BODY_PREFIX_TEMPLATE).contextSensitive().build();
 
                 assert m.getBody() != null;
                 Object[] params = new Object[]{
@@ -112,9 +110,7 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
                         paramName
                 };
 
-                m = m.withTemplate(
-                        equalsBodySnippet,
-                        getCursor(),
+                m = equalsBodySnippet.apply(new Cursor(getCursor().getParent(), m),
                         m.getBody().getStatements().get(0).getCoordinates().before(),
                         params);
             }

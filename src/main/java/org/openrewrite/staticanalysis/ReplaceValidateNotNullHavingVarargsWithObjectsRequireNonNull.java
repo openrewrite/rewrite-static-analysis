@@ -65,14 +65,10 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 maybeRemoveImport("org.apache.commons.lang3.Validate");
                 maybeAddImport("java.util.Objects");
 
-                mi = mi.withTemplate(
-                        JavaTemplate.builder(template)
-                                .context(getCursor())
-                                .imports("java.util.Objects")
-                                .build(),
-                        getCursor(),
-                        mi.getCoordinates().replace(),
-                        arguments.toArray());
+                mi = JavaTemplate.builder(template)
+                        .contextSensitive()
+                        .imports("java.util.Objects")
+                        .build().apply(updateCursor(mi), mi.getCoordinates().replace(), arguments.toArray());
 
                 if (arguments.size() == 2) {
                     return maybeAutoFormat(mi, mi.withArguments(

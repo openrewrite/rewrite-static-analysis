@@ -88,6 +88,7 @@ public class NoDoubleBraceInitialization extends Recipe {
         @Override
         public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
             J.NewClass nc = super.visitNewClass(newClass, executionContext);
+            updateCursor(nc);
             if (isSupportedDoubleBraceInitialization(newClass)) {
                 Cursor parentBlockCursor = getCursor().dropParentUntil(J.Block.class::isInstance);
                 J.VariableDeclarations.NamedVariable var = getCursor().firstEnclosing(J.VariableDeclarations.NamedVariable.class);
@@ -121,7 +122,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                             fq = fq.getSupertype();
                             String newInitializer = " new " + fq.getClassName() + "<>();";
                             JavaTemplate template = JavaTemplate.builder(newInitializer).imports(fq.getFullyQualifiedName()).build();
-                            nc = nc.withTemplate(template, getCursor(), nc.getCoordinates().replace());
+                            nc = template.apply(getCursor(), nc.getCoordinates().replace());
                             initStatements = addSelectToInitStatements(initStatements, var.getName(), executionContext);
                             initStatements.add(0, new J.Assignment(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, var.getName().withId(UUID.randomUUID()), JLeftPadded.build(nc), fq));
                             parentBlockCursor.computeMessageIfAbsent("INIT_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);

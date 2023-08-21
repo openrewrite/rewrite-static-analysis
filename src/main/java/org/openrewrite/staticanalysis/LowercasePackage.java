@@ -15,10 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.ScanningRecipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.ChangePackage;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -79,7 +76,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor(Map<String, String> acc) {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(!acc.isEmpty(), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
@@ -96,7 +93,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
                 }
                 return tree;
             }
-        };
+        });
     }
 
     private String getPackageText(Cursor cursor, J.Package pkg) {

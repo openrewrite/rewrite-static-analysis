@@ -19,7 +19,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.cleanup.SimplifyBooleanExpression;
+import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
@@ -70,9 +70,9 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
 
     @SuppressWarnings("unchecked")
     private <E extends Expression> E cleanupBooleanExpression(E expression, ExecutionContext ctx) {
-        E ex1 = (E) new SimplifyBooleanExpression().getVisitor()
+        E ex1 = (E) new SimplifyBooleanExpressionVisitor()
                 .visitNonNull(expression, ctx, getCursor().getParentOrThrow());
-        return (E) new SimplifyBooleanExpression().getVisitor()
+        return (E) new SimplifyBooleanExpressionVisitor()
                 .visitNonNull(ex1, ctx, getCursor().getParentOrThrow());
     }
 

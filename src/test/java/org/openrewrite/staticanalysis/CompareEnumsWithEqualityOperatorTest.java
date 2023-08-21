@@ -29,6 +29,7 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         spec.recipe(new CompareEnumsWithEqualityOperator());
     }
 
+    //language=java
     SourceSpecs enumA = java(
       """
         package a;
@@ -197,5 +198,22 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
               }
               """
           ));
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/143")
+    void noSelect() {
+        rewriteRun(
+          //language=java
+          java("""
+            package a;
+            public enum A {
+                FOO, BAR, BUZ;
+                boolean isFoo() {
+                    return equals(FOO);
+                }
+            }
+            """)
+        );
     }
 }

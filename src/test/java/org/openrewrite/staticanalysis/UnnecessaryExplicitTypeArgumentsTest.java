@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -23,6 +24,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"RedundantTypeArguments", "InfiniteRecursion", "CodeBlock2Expr"})
 class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
@@ -135,6 +137,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("UnnecessaryLocalVariable")
     @Issue("https://github.com/openrewrite/rewrite/issues/2818")
     @Test
     void assignedToVar() {
@@ -154,5 +157,82 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void containerInitialization() {
+        rewriteRun(
+          java(
+            """
+              import java.util.List;
+
+              public class Test {
+                  List<String> test() {
+                      List<String> l = List.<String> of("x");
+                      return l;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              public class Test {
+                  List<String> test() {
+                      List<String> l = List. of("x");
+                      return l;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Nested
+    class kotlinTest {
+        @Test
+        void doNotChangeIfHasNotTypeInference() {
+            rewriteRun(
+              kotlin(
+                """
+                  val foo = listOf<String>()
+                  var bar = mutableMapOf<String, String>()
+                  """
+              )
+            );
+        }
+
+        @Disabled
+        @Test
+        void changeIfHasTypeInference() {
+            rewriteRun(
+              kotlin(
+                """
+                  val foo = listOf<String>("a", "b")
+                  var bar = mutableMapOf<String, Int>("a" to 1)
+                  """,
+                """
+                  val foo = listOf("a", "b")
+                  var bar = mutableMapOf("a" to 1)
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeSinceCompilerHasNoEnoughInformationToInferType() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun <TClass, TValue> default(arg: String): TValue? {
+                      return null
+                  }
+
+                  fun method() {
+                      val email = default<Int, String?>("email")
+                  }
+                  """
+              )
+            );
+        }
     }
 }

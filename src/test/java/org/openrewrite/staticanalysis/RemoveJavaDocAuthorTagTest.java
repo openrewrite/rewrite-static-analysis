@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -40,8 +41,24 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
               class Test {}
               """,
             """
+              class Test {}
+              """
+          )
+        );
+    }
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/119")
+    void tagOnSecondLine() {
+        rewriteRun(
+          //language=java
+          java(
+            """
               /**
+               * @author foo.bar
                */
+              class Test {}
+              """,
+            """
               class Test {}
               """
           )
@@ -50,6 +67,7 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite/issues/1640")
     @Test
+    @DocumentExample
     void preserveDocsBeforeTag() {
         rewriteRun(
           //language=java

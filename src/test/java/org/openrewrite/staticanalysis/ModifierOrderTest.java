@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -22,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("UnnecessaryModifier")
 @Issue("https://github.com/openrewrite/rewrite/issues/466")
@@ -69,5 +71,40 @@ class ModifierOrderTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class KotlinTest {
+        @Test
+        void constModifier() {
+            rewriteRun(
+              kotlin(
+                """
+                  object Test {
+                      private const val CLIENT = "ABC"
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void overrideModifier() {
+            rewriteRun(
+              kotlin(
+                """
+                  open class Shape {
+                      public open fun draw() {
+                      }
+                  }
+
+                  class Circle : Shape() {
+                      public override fun draw() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

@@ -836,4 +836,24 @@ class FinalizePrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/121")
+    void mustNotChangeVolatileFields() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              public final class Reproducer {
+              
+                  private Reproducer() {
+                  }
+              
+                  private static volatile String foo = "this becomes final volatile, which is invalid";
+              
+              }
+              """
+          )
+        );
+    }
 }

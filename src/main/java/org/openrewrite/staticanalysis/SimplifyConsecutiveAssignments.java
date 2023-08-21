@@ -15,15 +15,12 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.cleanup.UnnecessaryParentheses;
+import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -52,7 +49,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
             // TODO if we had a `replace()` coordinate on every `Expression`, we wouldn't need the left side of this
             final JavaTemplate combinedAssignment = JavaTemplate
                     .builder("o = (#{any()} #{} #{any()});")
-                    .context(this::getCursor)
+                    .contextSensitive()
                     // ok to ignore invalid type info on left-hand side of assignment.
                     .build();
 
@@ -62,6 +59,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 J.Block combined = b;
                 do {
                     b = combined;
+                    updateCursor(b);
                     J.Block b2 = b;
                     AtomicInteger skip = new AtomicInteger(-1);
 
@@ -82,7 +80,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                             if (acc != null && op != null) {
                                 skip.set(i + 1);
                                 // combine this statement with the following statement into one binary expression
-                                return combine(stat, op, acc);
+                                return combine(new Cursor(getCursor(), stat), op, acc);
                             }
                         }
 
@@ -91,7 +89,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 } while (combined != b);
 
                 if (b != block) {
-                    b = (J.Block) new UnnecessaryParentheses().getVisitor()
+                    b = (J.Block) new UnnecessaryParenthesesVisitor()
                             .visitNonNull(b, ctx, getCursor().getParentOrThrow());
                 }
 
@@ -185,16 +183,15 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                         null;
             }
 
-            private Statement combine(Statement s, String op, Expression right) {
+            private Statement combine(Cursor cursor, String op, Expression right) {
+                Statement s = cursor.getValue();
                 if (s instanceof J.Assignment) {
                     J.Assignment assign = (J.Assignment) s;
-                    J.Assignment after = s.withTemplate(combinedAssignment, getCursor(), s.getCoordinates().replace(),
-                            assign.getAssignment(), op, right);
+                    J.Assignment after = combinedAssignment.apply(cursor, s.getCoordinates().replace(), assign.getAssignment(), op, right);
                     return assign.withAssignment(after.getAssignment());
                 } else if (s instanceof J.VariableDeclarations) {
                     J.VariableDeclarations variables = (J.VariableDeclarations) s;
-                    J.Assignment after = s.withTemplate(combinedAssignment, getCursor(), s.getCoordinates().replace(),
-                            variables.getVariables().get(0).getInitializer(), op, right);
+                    J.Assignment after = combinedAssignment.apply(cursor, s.getCoordinates().replace(), variables.getVariables().get(0).getInitializer(), op, right);
                     return variables.withVariables(ListUtils.map(variables.getVariables(), (i, namedVar) -> i == 0 ?
                             namedVar.withInitializer(after.getAssignment()) : namedVar));
                 }

@@ -1,4 +1,10 @@
 rootProject.name = "rewrite-static-analysis"
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+    }
+}
 
 plugins {
     id("com.gradle.enterprise") version "latest.release"

@@ -124,9 +124,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                                 // Temporary work around due to an issue in the JavaTemplate related to BlockStatementTemplateGenerator#enumClassDeclaration.
                                 Space singleSpace = Space.build(" ", emptyList());
                                 Expression literal = duplicateLiteralsMap.get(valueOfLiteral).toArray(new J.Literal[0])[0].withId(randomId());
-                                J.Modifier privateModifier = new J.Modifier(randomId(), Space.build("\n", emptyList()), Markers.EMPTY, J.Modifier.Type.Private, emptyList());
-                                J.Modifier staticModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, J.Modifier.Type.Static, emptyList());
-                                J.Modifier finalModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, J.Modifier.Type.Final, emptyList());
+                                J.Modifier privateModifier = new J.Modifier(randomId(), Space.build("\n", emptyList()), Markers.EMPTY, null, J.Modifier.Type.Private, emptyList());
+                                J.Modifier staticModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Static, emptyList());
+                                J.Modifier finalModifier = new J.Modifier(randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList());
                                 J.VariableDeclarations variableDeclarations = autoFormat(new J.VariableDeclarations(
                                         randomId(),
                                         Space.EMPTY,
@@ -137,6 +137,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                                                 randomId(),
                                                 singleSpace,
                                                 Markers.EMPTY,
+                                                emptyList(),
                                                 "String",
                                                 JavaType.ShallowClass.build("java.lang.String"),
                                                 null),
@@ -150,6 +151,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                                                         randomId(),
                                                         Space.EMPTY,
                                                         Markers.EMPTY,
+                                                        emptyList(),
                                                         variableName,
                                                         JavaType.ShallowClass.build("java.lang.String"),
                                                         null),
@@ -172,10 +174,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             }
                         } else {
                             classDecl = classDecl.withBody(
-                                    classDecl.getBody().withTemplate(
-                                            JavaTemplate.builder(insertStatement).context(getCursor()).build(),
-                                            getCursor(),
-                                            classDecl.getBody().getCoordinates().firstStatement(), replaceLiteral));
+                                    JavaTemplate.builder(insertStatement).contextSensitive().build()
+                                            .apply(new Cursor(getCursor(), classDecl.getBody()), classDecl.getBody().getCoordinates().firstStatement(), replaceLiteral));
                         }
                     }
                     variableNames.add(variableName);
@@ -366,6 +366,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         Tree.randomId(),
                         literal.getPrefix(),
                         literal.getMarkers(),
+                        emptyList(),
                         variableName,
                         JavaType.Primitive.String,
                         new JavaType.Variable(

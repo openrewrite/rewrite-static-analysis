@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -23,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"Convert2Diamond", "unchecked", "rawtypes"})
 class UseDiamondOperatorTest implements RewriteTest {
@@ -401,4 +403,25 @@ class UseDiamondOperatorTest implements RewriteTest {
           )
         );
     }
+
+    @Nested
+    class kotlinTest {
+        @Test
+        void doNotChange() {
+            rewriteRun(
+              kotlin(
+                """
+                  class test {
+                      fun method() {
+                         val foo = listOf<String>()
+                         var schemaPaths = mutableListOf<Any>("a")
+                         var typeMapping = mutableMapOf<String, String>()
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
 }

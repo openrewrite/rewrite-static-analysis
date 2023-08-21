@@ -67,11 +67,12 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
                     b.getRight() instanceof J.Literal && isValueNotCompliant((J.Literal) b.getRight())) {
 
                     J.MethodInvocation m = (J.MethodInvocation) b.getLeft();
-                    b = b.withLeft(m.withTemplate(JavaTemplate.builder("#{any(java.lang.String)}, #{any(int)}").build(),
-                            getCursor(),
-                            m.getCoordinates().replaceArguments(),
-                            m.getArguments().get(0),
-                            b.getRight()));
+                    Cursor cursor = new Cursor(getCursor(), b.getLeft());
+                    b = b.withLeft(JavaTemplate.builder("#{any(java.lang.String)}, #{any(int)}").build()
+                            .apply(cursor,
+                                    m.getCoordinates().replaceArguments(),
+                                    m.getArguments().get(0),
+                                    b.getRight()));
 
                     b = b.withRight(new J.Literal(
                             Tree.randomId(),

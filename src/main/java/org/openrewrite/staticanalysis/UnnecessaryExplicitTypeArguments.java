@@ -15,15 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.NameTree;
+import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -39,28 +34,32 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
+
+                if (m.getTypeParameters() == null || m.getTypeParameters().isEmpty()) {
+                    return m;
+                }
 
                 if (m.getMethodType() != null) {
                     Object enclosing = getCursor().getParentTreeCursor().getValue();
                     JavaType enclosingType = null;
 
-                    if(enclosing instanceof J.MethodInvocation) {
+                    if (enclosing instanceof J.MethodInvocation) {
                         // Cannot remove type parameters if it would introduce ambiguity about which method should be called
                         J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
-                        if(enclosingMethod.getMethodType() == null) {
+                        if (enclosingMethod.getMethodType() == null) {
                             return m;
                         }
-                        if(!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
+                        if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
                             return m;
                         }
                         JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
                         // If there's another method on the class with the same name, skip removing type parameters
                         // More nuanced detection of ambiguity introduction is possible
-                        if(declaringClass.getMethods().stream()
+                        if (declaringClass.getMethods().stream()
                                 .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
                                 .count() > 1) {
                             return m;
@@ -88,13 +87,13 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         }
                     }
 
-                    if (enclosingType != null && enclosingType.equals(m.getMethodType().getReturnType())) {
+                    if (enclosingType != null && TypeUtils.isOfType(enclosingType, m.getMethodType().getReturnType())) {
                         m = m.withTypeParameters(null);
                     }
                 }
 
                 return m;
             }
-        };
+        });
     }
 }

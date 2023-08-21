@@ -33,6 +33,8 @@ import org.openrewrite.marker.Markers;
 import java.time.Duration;
 import java.util.*;
 
+import static java.util.Collections.emptyList;
+
 public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     private static final MethodMatcher NUMBER_TO_STRING_MATCHER = new MethodMatcher("java.lang.Number toString()", true);
     private static final MethodMatcher BOOLEAN_TO_STRING_MATCHER = new MethodMatcher("java.lang.Boolean toString()", true);
@@ -95,7 +97,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                     }
                     if (arg != null && !TypeUtils.isString(arg.getType()) && mi.getSelect() != null) {
                         JavaType.FullyQualified fq = mi.getMethodType().getDeclaringType();
-                        mi = mi.withSelect(new J.Identifier(UUID.randomUUID(), mi.getSelect().getPrefix(), Markers.EMPTY, fq.getClassName(), fq, null));
+                        mi = mi.withSelect(new J.Identifier(UUID.randomUUID(), mi.getSelect().getPrefix(), Markers.EMPTY, emptyList(), fq.getClassName(), fq, null));
                         //noinspection ArraysAsListWithZeroOrOneArgument
                         mi = mi.withArguments(Arrays.asList(arg));
                     }
@@ -112,7 +114,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
 
                     if (arg != null && !TypeUtils.isString(arg.getType()) && mi.getSelect() != null) {
                         JavaType.FullyQualified fq = mi.getMethodType().getDeclaringType();
-                        mi = mi.withSelect(new J.Identifier(UUID.randomUUID(), mi.getSelect().getPrefix(), Markers.EMPTY, fq.getClassName(), fq, null));
+                        mi = mi.withSelect(new J.Identifier(UUID.randomUUID(), mi.getSelect().getPrefix(), Markers.EMPTY, emptyList(), fq.getClassName(), fq, null));
                         mi = mi.withArguments(ListUtils.concat(arg, mi.getArguments()));
                         mi = maybeAutoFormat(mi, mi.withName(mi.getName().withSimpleName("compare")), executionContext);
                     }

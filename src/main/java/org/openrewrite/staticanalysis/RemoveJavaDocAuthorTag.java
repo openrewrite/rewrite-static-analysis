@@ -15,9 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
+import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.Javadoc;
@@ -72,6 +71,9 @@ public class RemoveJavaDocAuthorTag extends Recipe {
 
                         if (isChanged) {
                             Collections.reverse(newBody);
+                            if (isBlank(getCursor(), newBody)) {
+                                return null;
+                            }
                             dc = dc.withBody(newBody);
                         }
                         return dc;
@@ -79,5 +81,13 @@ public class RemoveJavaDocAuthorTag extends Recipe {
                 };
             }
         };
+    }
+
+    static boolean isBlank(Cursor cursor, List<Javadoc> newBody) {
+        return newBody.stream().allMatch(jd -> {
+            PrintOutputCapture<Object> p = new PrintOutputCapture<>(null);
+            jd.printer(cursor).visit(jd, p);
+            return StringUtils.isBlank(p.getOut());
+        });
     }
 }

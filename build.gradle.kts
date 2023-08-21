@@ -15,12 +15,14 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
-    // TODO remove `${rewriteVersion}` once 8.0 has been released
+    implementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
+    implementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
     testImplementation("org.openrewrite:rewrite-groovy")
-    testImplementation("org.junit-pioneer:junit-pioneer:2.0.0")
+    testImplementation("org.junit-pioneer:junit-pioneer:2.0.1")
+    testImplementation("junit:junit:4.13.2")
 
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")

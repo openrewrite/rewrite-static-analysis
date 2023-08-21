@@ -15,10 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 
@@ -114,7 +111,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
              * J.* types that may only reference an existing name and do not create a new name scope are excluded.
              */
             private Cursor getCursorToParentScope(Cursor cursor) {
-                return cursor.dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.Block);
+                return cursor.dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.Block || is instanceof SourceFile);
             }
         };
     }

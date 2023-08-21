@@ -55,22 +55,18 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, executionContext);
-                if (enumEquals.matches(m)) {
+                if (enumEquals.matches(m) && m.getSelect() != null) {
                     Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.Unary || is instanceof J.Block);
                     boolean isNot = parent.getValue() instanceof J.Unary && ((J.Unary) parent.getValue()).getOperator() == J.Unary.Type.Not;
                     if (isNot) {
                         executionContext.putMessage("REMOVE_UNARY_NOT", parent.getValue());
                     }
                     String code = "#{any()} " + (isNot ? "!=" : "==") + " #{any()}";
-                    return autoFormat(m.withTemplate(
-                            JavaTemplate
-                                    .builder(code)
-                                    .context(getCursor())
-                                    .build(),
-                            getCursor(),
-                            m.getCoordinates().replace(),
-                            m.getSelect(), m.getArguments().get(0)
-                    ), executionContext);
+                    return autoFormat(JavaTemplate
+                            .builder(code)
+                            .contextSensitive()
+                            .build()
+                            .apply(updateCursor(m), m.getCoordinates().replace(), m.getSelect(), m.getArguments().get(0)), executionContext);
                 }
                 return m;
             }
