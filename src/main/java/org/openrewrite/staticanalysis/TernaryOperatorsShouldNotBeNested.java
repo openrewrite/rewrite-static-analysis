@@ -290,12 +290,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 if (!inv.getSimpleName().equals("equals")) {
                     return Optional.empty();
                 }
-                if (isObjectsEquals(inv)) {
-                    //one has to be constant, other not
-                    J first = inv.getArguments().get(0);
-                    J second = inv.getArguments().get(1);
-                    result = xorVariable(first, second);
-                } else if (inv.getArguments().size() == 1) {
+                if (inv.getArguments().size() == 1) {
                     J other = null;
                     if (isVariable(inv.getSelect())) {
                         result = (J.Identifier) inv.getSelect();

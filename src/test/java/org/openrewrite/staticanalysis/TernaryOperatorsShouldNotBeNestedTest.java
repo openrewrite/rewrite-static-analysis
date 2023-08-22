@@ -759,6 +759,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
+        @ExpectedToFail("switch(null) is not supported before Java 18. This would break null safety.")
+        @Issue("todo")
         @Test
         void doReplaceNestedOrTernaryWithSwitchExpressionNullSafeEquals() {
             rewriteRun(
@@ -787,6 +789,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
+        @ExpectedToFail("switch(null) is not supported before Java 18. This would break null safety.")
+        @Issue("todo")
         @Test
         void doReplaceNestedOrTernaryWithSwitchExpressionNullSafeEqualsInverted() {
             rewriteRun(
@@ -986,6 +990,34 @@ class TernaryOperatorsShouldNotBeNestedTest {
                             default -> "nope";
                         };
                         System.out.println(result);
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceNestedOrTernaryWithSwitchExpressionButUseIfWhenUsingNullSafeEquals() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Objects;
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                      return Objects.equals(a, "a") ? "a" : Objects.equals(a, "b") ? b : "nope";
+                    }
+                  }
+                  """,
+                """
+                  import java.util.Objects;
+                  class Test {
+                    public String determineSomething(String a, String b) {
+                        if (Objects.equals(a, "a")) {
+                            return "a";
+                        }
+                        return Objects.equals(a, "b") ? b : "nope";
                     }
                   }
                   """
