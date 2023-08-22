@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,12 +59,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         return "Nested ternary operators can be hard to read quickly. Prefer simpler constructs for improved readability. " +
                 "If supported, this recipe will try to replace nested ternaries with switch expressions.";
     }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-3358");
@@ -100,7 +93,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 return super.visitLambda(lambda, executionContext);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
-            return autoFormat(lambda.withBody(result.withPrefix(lambda.getBody().getPrefix())), executionContext);
+            return autoFormat(lambda.withBody(result.withPrefix(Space.SINGLE_SPACE)), executionContext);
         }
 
         @Override
@@ -128,7 +121,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         private J.If ifOf(final J.Ternary ternary) {
             return new J.If(
                     Tree.randomId(),
-                    Space.EMPTY,
+                    ternary.getPrefix(),
                     Markers.EMPTY,
                     new J.ControlParentheses<>(Tree.randomId(), Space.EMPTY, Markers.EMPTY,
                             JRightPadded.build(ternary.getCondition())

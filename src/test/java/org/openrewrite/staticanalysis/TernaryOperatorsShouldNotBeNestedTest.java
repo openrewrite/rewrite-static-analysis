@@ -420,9 +420,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
                   class Test {
                     public Set<String> makeASet() {
                         List<String> s = Arrays.asList("a","b","c","nope");
-                        return s.stream().map( /* look a lambda */ item ->
-                                //look a ternary
-                                {
+                        return s.stream().map( /* look a lambda */ item -> {
+                                    //look a ternary
                                     if (item.startsWith("a")) {
                                         return "a";
                                     }
