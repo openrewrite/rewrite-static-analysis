@@ -79,7 +79,7 @@ public class SimplifyBooleanExpression extends Recipe {
 
                 if (j instanceof J.MethodInvocation) {
                     J.MethodInvocation m = (J.MethodInvocation) j;
-                    return m.getSelect() != null && !m.getSelect().getMarkers().findFirst(IsNullSafe.class).isPresent();
+                    return !m.getMarkers().findFirst(IsNullSafe.class).isPresent();
                 }
 
                 return true;
