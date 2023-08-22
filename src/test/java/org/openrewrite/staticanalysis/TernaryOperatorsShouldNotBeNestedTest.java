@@ -766,7 +766,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
             }
 
             @ExpectedToFail("switch(null) is not supported before Java 18. This would break null safety.")
-            @Issue("todo")
+            @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/157")
             @Test
             void doReplaceNestedOrTernaryWithSwitchExpressionNullSafeEquals() {
                 rewriteRun(
@@ -796,7 +796,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
             }
 
             @ExpectedToFail("switch(null) is not supported before Java 18. This would break null safety.")
-            @Issue("todo")
+            @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/157")
             @Test
             void doReplaceNestedOrTernaryWithSwitchExpressionNullSafeEqualsInverted() {
                 rewriteRun(
@@ -1122,7 +1122,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
             }
 
             @ExpectedToFail("Pattern matching not yet implemented")
-            @Issue("todo")
+            @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/158")
             @Test
             void doReplaceNestedOrTernaryInStreamWithPatternMatchingSwitch() {
                 rewriteRun(
@@ -1163,7 +1163,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
             }
 
             @ExpectedToFail("not yet implemented collapsing cases")
-            @Issue("todo")
+            @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/159")
             @Test
             void doReplaceNestedOrTernaryContainingNullCollapsingSameCases() {
                 rewriteRun(
