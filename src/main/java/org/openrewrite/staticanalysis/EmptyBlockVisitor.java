@@ -82,7 +82,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
             J.Block nestedBlock = (J.Block) s;
             if (isEmptyBlock(nestedBlock) && ((Boolean.TRUE.equals(emptyBlockStyle.getStaticInit()) && nestedBlock.isStatic()) ||
-                    (Boolean.TRUE.equals(emptyBlockStyle.getInstanceInit()) && !nestedBlock.isStatic()))) {
+                                              (Boolean.TRUE.equals(emptyBlockStyle.getInstanceInit()) && !nestedBlock.isStatic()))) {
                 filtered.set(true);
                 return null;
             }
@@ -97,7 +97,9 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     public J.Try visitTry(J.Try tryable, P p) {
         J.Try t = super.visitTry(tryable, p);
 
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralTry()) && isEmptyBlock(t.getBody())) {
+        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralTry()) &&
+            isEmptyBlock(t.getBody()) &&
+            (t.getResources() == null || t.getResources().isEmpty())) {
             doAfterVisit(new DeleteStatement<>(tryable));
         } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null
                    && !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
@@ -211,7 +213,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
     private boolean isEmptyBlock(Statement blockNode) {
         if (blockNode instanceof J.Block) {
-            J.Block block = (J.Block)blockNode;
+            J.Block block = (J.Block) blockNode;
             if (EmptyBlockStyle.BlockPolicy.STATEMENT.equals(emptyBlockStyle.getBlockPolicy())) {
                 return block.getStatements().isEmpty();
             } else if (EmptyBlockStyle.BlockPolicy.TEXT.equals(emptyBlockStyle.getBlockPolicy())) {

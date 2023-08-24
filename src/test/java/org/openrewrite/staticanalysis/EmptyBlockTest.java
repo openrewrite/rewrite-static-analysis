@@ -414,4 +414,27 @@ class EmptyBlockTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void emptyTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;import java.io.IOException;import java.io.UncheckedIOException;public class A {
+                  private final InputStream stdin = new FileInputStream("test.in");
+                  private final InputStream stdout = new FileInputStream("test.out");
+                  
+                  public void destroy() {
+                      // close all streams in a try-with-resources
+                      try (stdin; stdout) {
+                      } catch (IOException e) {
+                          throw new UncheckedIOException(e);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
