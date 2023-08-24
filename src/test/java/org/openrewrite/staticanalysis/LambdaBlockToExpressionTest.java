@@ -15,22 +15,28 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
 class LambdaBlockToExpressionTest implements RewriteTest {
 
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new LambdaBlockToExpression())
+            .parser(JavaParser.fromJavaVersion().logCompilationWarningsAndErrors(true));
+    }
+
     @DocumentExample
     @SuppressWarnings("CodeBlock2Expr")
     @Test
     void simplifyLambdaBlockToExpression() {
         rewriteRun(
-          spec -> spec.recipe(new LambdaBlockToExpression()),
           //language=java
           java(
             """
@@ -55,7 +61,6 @@ class LambdaBlockToExpressionTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
     void simplifyLambdaBlockToExpressionWithComments() {
         rewriteRun(
-          spec -> spec.recipe(new LambdaBlockToExpression()),
           //language=java
           java(
             """
@@ -78,4 +83,44 @@ class LambdaBlockToExpressionTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/162")
+    void simplifyLambdaBlockWithAmbiguousMethod() {
+        //language=java
+        rewriteRun(
+          java("""
+            import java.util.function.Function;
+            import java.util.function.Consumer;
+            class A {
+                void aMethod(Consumer<Integer> consumer){
+                }
+                
+                void aMethod(Function<Integer,String> function){
+                }
+            }
+            """),
+          java(
+            """
+              class Test {
+                  void doTest() {
+                      A a = new A();
+                      a.aMethod(value -> {
+                        return value.toString();
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void doTest() {
+                      A a = new A();
+                      a.aMethod(value -> value.toString());
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
