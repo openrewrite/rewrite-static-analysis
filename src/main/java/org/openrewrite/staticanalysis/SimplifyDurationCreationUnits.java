@@ -113,7 +113,7 @@ public class SimplifyDurationCreationUnits extends Recipe {
     }
 
     @Nullable
-    private static Long getConstantIntegralValue(Expression expression) {
+    public static Long getConstantIntegralValue(Expression expression) {
         if (expression instanceof J.Literal) {
             J.Literal literal = (J.Literal) expression;
             if (literal.getType() != JavaType.Primitive.Int && literal.getType() != JavaType.Primitive.Long) {
