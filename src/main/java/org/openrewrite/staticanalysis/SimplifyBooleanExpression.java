@@ -69,7 +69,7 @@ public class SimplifyBooleanExpression extends Recipe {
                 return super.visit(tree, ctx);
             }
 
-            // Comparing Kotlin nullable type `?` with tree/false can not be simplified,
+            // Comparing Kotlin nullable type `?` with true/false can not be simplified,
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
