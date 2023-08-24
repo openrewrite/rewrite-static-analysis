@@ -116,7 +116,7 @@ class EmptyBlockTest implements RewriteTest {
               public class A {
                   {
                       final String fileName = "fileName";
-                      try(FileInputStream fis = new FileInputStream(fileName)) {
+                      try {
                       } catch (IOException e) {
                       }
                   }
@@ -416,20 +416,18 @@ class EmptyBlockTest implements RewriteTest {
     }
 
     @Test
-    void emptyTryWithResourcesWithExternalResources() {
+    void emptyTryWithResources() {
         rewriteRun(
           //language=java
           java(
             """
-              import java.io.FileInputStream;import java.io.IOException;import java.io.UncheckedIOException;public class A {
-                  private final InputStream stdin = new FileInputStream("test.in");
-                  private final InputStream stdout = new FileInputStream("test.out");
-                  
-                  public void destroy() {
-                      // close all streams in a try-with-resources
-                      try (stdin; stdout) {
+              import java.io.*;
+
+              public class A {
+                  {
+                      final String fileName = "fileName";
+                      try (FileInputStream fis = new FileInputStream(fileName)) {
                       } catch (IOException e) {
-                          throw new UncheckedIOException(e);
                       }
                   }
               }
@@ -437,53 +435,4 @@ class EmptyBlockTest implements RewriteTest {
           )
         );
     }
-
-    @Test
-    void emptyTryWithResourcesWithVariableInitializationOfExternalResource() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.FileInputStream;import java.io.IOException;import java.io.InputStream;import java.io.UncheckedIOException;public class A {
-                  private final InputStream stdin = new FileInputStream("test.in");
-                  
-                  public void destroy() {
-                      // close stream in a try-with-resources
-                      try (InputStream s = stdin) {
-                      } catch (IOException e) {
-                          throw new UncheckedIOException(e);
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void emptyTryWithResourcesWithVariableInitializationMethodInvocation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.FileInputStream;import java.io.IOException;import java.io.InputStream;import java.io.UncheckedIOException;public class A {
-                  private final InputStream stdin = new FileInputStream("test.in");
-                  
-                  private InputStream getStdin() {
-                     return stdin;
-                  }
-                  
-                  public void destroy() {
-                      // close stream in a try-with-resources
-                      try (InputStream s = getStdin()) {
-                      } catch (IOException e) {
-                          throw new UncheckedIOException(e);
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
 }

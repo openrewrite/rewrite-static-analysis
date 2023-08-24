@@ -225,26 +225,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private boolean isEmptyResources(@Nullable List<J.Try.Resource> resources) {
-        if (resources == null || resources.isEmpty()) {
-            return true;
-        }
-        // Searching for access to instances from outside the scope to detect potential side effects.
-        // If that's the case, we cannot remove this resources block.
-        for (J.Try.Resource resource : resources) {
-            // Any reference to an identifier used here comes from outside the scope.
-            if (resource.getVariableDeclarations() instanceof J.Identifier) {
-                return false;
-            } else if (resource.getVariableDeclarations() instanceof J.VariableDeclarations) {
-                J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) resource.getVariableDeclarations();
-                for (J.VariableDeclarations.NamedVariable variable : variableDeclarations.getVariables()) {
-                    // If the variable is not initialized with a new instance, it means it can come from outside the scope.
-                    if (!(variable.getInitializer() instanceof J.NewClass)) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
+        return resources == null || resources.isEmpty();
     }
 
     private static class ExtractSideEffectsOfIfCondition<P> extends JavaVisitor<P> {
