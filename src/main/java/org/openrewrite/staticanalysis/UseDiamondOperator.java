@@ -116,9 +116,27 @@ public class UseDiamondOperator extends Recipe {
 
             J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
             JavaType.Method methodType = mi.getMethodType();
-            if (methodType != null) {
+
+            if (methodType != null &&
+                    !mi.getArguments().isEmpty() &&
+                    methodType.getParameterTypes().size() <= mi.getArguments().size()) {
                 mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
                     if (arg instanceof J.NewClass) {
+                        boolean isGenericType = false;
+                        boolean isVarArg = methodType.getParameterTypes().size() == 1 &&
+                                methodType.getParameterTypes().get(0) instanceof JavaType.Array;
+
+                        if (isVarArg) {
+                            isGenericType = isGenericType(((JavaType.Array) methodType.getParameterTypes().get(0)).getElemType());
+                        } else if (i < methodType.getParameterTypes().size()) {
+                            JavaType parameterType = methodType.getParameterTypes().get(i);
+                            isGenericType = isGenericType(parameterType);
+                        }
+
+                        if (isGenericType) {
+                            return arg;
+                        }
+
                         J.NewClass nc = (J.NewClass) arg;
                         if ((java9 || nc.getBody() == null) && !methodType.getParameterTypes().isEmpty()) {
                             JavaType.Parameterized paramType = TypeUtils.asParameterized(getMethodParamType(methodType, i));
@@ -131,6 +149,27 @@ public class UseDiamondOperator extends Recipe {
                 }));
             }
             return mi;
+        }
+
+        private boolean isGenericType(@Nullable JavaType type) {
+            if (type == null) {
+                return false;
+            }
+
+            boolean isGeneric = false;
+            JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
+            if (parameterized != null) {
+                List<JavaType> types = parameterized.getTypeParameters();
+
+                for (JavaType tp : types) {
+                    if (tp instanceof JavaType.GenericTypeVariable) {
+                        isGeneric = true;
+                        break;
+                    }
+                }
+            }
+
+            return isGeneric;
         }
 
         private JavaType getMethodParamType(JavaType.Method methodType, int paramIndex) {
