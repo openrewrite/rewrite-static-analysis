@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -97,7 +98,9 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     public J.Try visitTry(J.Try tryable, P p) {
         J.Try t = super.visitTry(tryable, p);
 
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralTry()) && isEmptyBlock(t.getBody())) {
+        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralTry()) &&
+            isEmptyBlock(t.getBody()) &&
+            isEmptyResources(t.getResources())) {
             doAfterVisit(new DeleteStatement<>(tryable));
         } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null
                    && !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
@@ -211,7 +214,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
     private boolean isEmptyBlock(Statement blockNode) {
         if (blockNode instanceof J.Block) {
-            J.Block block = (J.Block)blockNode;
+            J.Block block = (J.Block) blockNode;
             if (EmptyBlockStyle.BlockPolicy.STATEMENT.equals(emptyBlockStyle.getBlockPolicy())) {
                 return block.getStatements().isEmpty();
             } else if (EmptyBlockStyle.BlockPolicy.TEXT.equals(emptyBlockStyle.getBlockPolicy())) {
@@ -219,6 +222,10 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
         return false;
+    }
+
+    private boolean isEmptyResources(@Nullable List<J.Try.Resource> resources) {
+        return resources == null || resources.isEmpty();
     }
 
     private static class ExtractSideEffectsOfIfCondition<P> extends JavaVisitor<P> {

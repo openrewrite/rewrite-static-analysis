@@ -116,7 +116,7 @@ class EmptyBlockTest implements RewriteTest {
               public class A {
                   {
                       final String fileName = "fileName";
-                      try(FileInputStream fis = new FileInputStream(fileName)) {
+                      try {
                       } catch (IOException e) {
                       }
                   }
@@ -407,6 +407,27 @@ class EmptyBlockTest implements RewriteTest {
                   {
                       if (true) {
                           System.out.println("this");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              public class A {
+                  {
+                      final String fileName = "fileName";
+                      try (FileInputStream fis = new FileInputStream(fileName)) {
+                      } catch (IOException e) {
                       }
                   }
               }
