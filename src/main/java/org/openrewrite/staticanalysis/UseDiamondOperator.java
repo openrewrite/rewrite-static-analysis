@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 public class UseDiamondOperator extends Recipe {
@@ -57,21 +57,12 @@ public class UseDiamondOperator extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new UseDiamondOperatorVisitor();
+        // don't try to do this for Groovy or Kotlin sources
+        return Preconditions.check(new JavaFileChecker<>(), new UseDiamondOperatorVisitor());
     }
 
     private static class UseDiamondOperatorVisitor extends JavaIsoVisitor<ExecutionContext> {
         private boolean java9;
-
-        @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                // don't try to do this for Groovy or Kotlin sources
-                return cu instanceof J.CompilationUnit ? visitCompilationUnit((J.CompilationUnit) cu, ctx) : cu;
-            }
-            return super.visit(tree, ctx);
-        }
 
         @Override
         public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
