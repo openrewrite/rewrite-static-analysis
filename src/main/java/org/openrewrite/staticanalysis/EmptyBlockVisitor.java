@@ -82,7 +82,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
             J.Block nestedBlock = (J.Block) s;
             if (isEmptyBlock(nestedBlock) && ((Boolean.TRUE.equals(emptyBlockStyle.getStaticInit()) && nestedBlock.isStatic()) ||
-                                              (Boolean.TRUE.equals(emptyBlockStyle.getInstanceInit()) && !nestedBlock.isStatic()))) {
+                    (Boolean.TRUE.equals(emptyBlockStyle.getInstanceInit()) && !nestedBlock.isStatic()))) {
                 filtered.set(true);
                 return null;
             }
