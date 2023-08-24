@@ -18,16 +18,14 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.style.EmptyBlockStyle;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
@@ -99,7 +97,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralTry()) &&
             isEmptyBlock(t.getBody()) &&
-            (t.getResources() == null || t.getResources().isEmpty())) {
+            isEmptyResources(t.getResources())) {
             doAfterVisit(new DeleteStatement<>(tryable));
         } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null
                    && !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
@@ -221,6 +219,29 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
         return false;
+    }
+
+    private boolean isEmptyResources(@Nullable List<J.Try.Resource> resources) {
+        if (resources == null || resources.isEmpty()) {
+            return true;
+        }
+        // Searching for access to instances from outside the scope to detect potential side effects.
+        // If that's the case, we cannot remove this resources block.
+        for (J.Try.Resource resource : resources) {
+            // Any reference to an identifier used here comes from outside the scope.
+            if (resource.getVariableDeclarations() instanceof J.Identifier) {
+                return false;
+            } else if (resource.getVariableDeclarations() instanceof J.VariableDeclarations) {
+                J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) resource.getVariableDeclarations();
+                for (J.VariableDeclarations.NamedVariable variable : variableDeclarations.getVariables()) {
+                    // If the variable is not initialized with a new instance, it means it can come from outside the scope.
+                    if (!(variable.getInitializer() instanceof J.NewClass)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private static class ExtractSideEffectsOfIfCondition<P> extends JavaVisitor<P> {
