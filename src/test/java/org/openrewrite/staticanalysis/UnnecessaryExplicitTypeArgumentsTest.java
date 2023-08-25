@@ -143,25 +143,25 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     @Test
     void doesNotRemoveNecessaryTypeArguments() {
         rewriteRun(
-                //language=java
-                java(
-                        """
-                          import java.util.Optional;
-                          import java.util.stream.Stream;
-                          public class Test {
-                              void test(){
-                                  Stream.of("hi")
-                                          .map(it -> it == null ? Optional.<String>empty() : Optional.of(it))
-                                          .flatMap(Optional::stream)
-                                          .map(this::mapper); //this requires the type information
-                              }
-                              Optional<String> mapper(String value){
-                                  return Optional.ofNullable(value)
-                                          .filter("hi"::equals);
-                              }
-                          }
-                          """
-                )
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.stream.Stream;
+              public class Test {
+                  void test() {
+                      Stream.of("hi")
+                              .map(it -> it == null ? Optional.<String>empty() : Optional.of(it))
+                              .flatMap(Optional::stream)
+                              .map(this::mapper); //this requires the type information
+                  }
+                  Optional<String> mapper(String value) {
+                      return Optional.ofNullable(value)
+                              .filter("hi"::equals);
+                  }
+              }
+              """
+          )
         );
     }
 
