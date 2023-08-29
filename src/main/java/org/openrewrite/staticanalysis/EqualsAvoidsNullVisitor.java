@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -48,7 +49,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
         if ((STRING_EQUALS.matches(m) || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && STRING_EQUALS_IGNORE_CASE.matches(m))) &&
                 m.getArguments().get(0) instanceof J.Literal &&
                 !(m.getSelect() instanceof J.Literal)) {
-            J parent = getCursor().getParentTreeCursor().getValue();
+            Tree parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
                 J.Binary binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
@@ -84,7 +85,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
 
         @Override
         public J visitBinary(J.Binary binary, P p) {
-            J parens = getCursor().getParentTreeCursor().getValue();
+            Tree parens = getCursor().getParentTreeCursor().getValue();
             if(parens instanceof J.Parentheses) {
                 doAfterVisit(new UnwrapParentheses<>((J.Parentheses<?>) parens));
             }
