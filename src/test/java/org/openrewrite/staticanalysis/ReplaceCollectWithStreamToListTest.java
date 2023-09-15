@@ -19,6 +19,7 @@ import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -39,6 +40,7 @@ class ReplaceCollectWithStreamToListTest implements RewriteTest {
               """
               import java.util.stream.Collectors;
               import java.util.stream.Stream;
+              import java.util.List;
 
               class Example {
                   public List<String> test(Stream<String> stream) {
@@ -48,6 +50,7 @@ class ReplaceCollectWithStreamToListTest implements RewriteTest {
               """,
               """
               import java.util.stream.Stream;
+              import java.util.List;
 
               class Example {
                   public List<String> test(Stream<String> stream) {

@@ -16,6 +16,9 @@
 package org.openrewrite.staticanalysis;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.openrewrite.ExecutionContext;
@@ -37,12 +40,12 @@ import org.openrewrite.java.tree.JRightPadded;
 @Value
 public class ReplaceCollectWithStreamToList extends Recipe {
 
-    private static final MethodMatcher STREAM_COLLECT_TO_LIST = new MethodMatcher("java.util.stream.Stream collect(java.util.stream.Collector)");
-    private static final MethodMatcher COLLECTORS_TO_LIST = new MethodMatcher("java.util.stream.Collectors toList()");
-    private static final MethodMatcher COLLECTORS_TO_UNMODIFIABLE_LIST = new MethodMatcher("java.util.stream.Collectors toUnmodifiableList()");
+  private static final MethodMatcher STREAM_COLLECT = new MethodMatcher("java.util.stream.Stream collect(java.util.stream.Collector)");
+  private static final MethodMatcher COLLECT_TO_UNMODIFIABLE_LIST = new MethodMatcher("java.util.stream.Collectors toUnmodifiableList()");
+  private static final MethodMatcher COLLECT_TO_LIST = new MethodMatcher("java.util.stream.Collectors toList()");
 
     @Option(displayName = "Should the recipe also apply to mutable toList?",
-        description = "Also replace Java 11 `Stream.collect(Collectors.toList())` with Java 16 `Stream.toList()`.",
+        description = "Also replace Java 11 `Stream.collect(Collectors.toList())` with Java 16 `Stream.toList()`. BEWARE: Enabling this potentially causes exceptions at runtime!",
         required = false)
     @Nullable
     Boolean includeMutable;
@@ -69,8 +72,15 @@ public class ReplaceCollectWithStreamToList extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.and(new UsesJavaVersion<>(16),
-                new UsesMethod<>(STREAM_COLLECT_TO_LIST)), new JavaVisitor<ExecutionContext>() {
+    return Preconditions.check(
+        Preconditions.and(
+            new UsesJavaVersion<>(16),
+            new UsesMethod<>(STREAM_COLLECT),
+            Preconditions.or(
+                new UsesMethod<>(COLLECT_TO_UNMODIFIABLE_LIST),
+                new UsesMethod<>(COLLECT_TO_LIST))
+        ),
+        new JavaVisitor<ExecutionContext>() {
 
             private final JavaTemplate template = JavaTemplate
                     .builder("#{any(java.util.stream.Stream)}.toList()")
@@ -79,11 +89,11 @@ public class ReplaceCollectWithStreamToList extends Recipe {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation result = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (STREAM_COLLECT_TO_LIST.matches(method)) {
+                if (STREAM_COLLECT.matches(method)) {
                     Expression command = method.getArguments().get(0);
-                    if (COLLECTORS_TO_UNMODIFIABLE_LIST.matches(command)){
+                    if (COLLECT_TO_UNMODIFIABLE_LIST.matches(command)){
                         result = replaceCollector(result);
-                    } else if (COLLECTORS_TO_LIST.matches(command) && Boolean.TRUE.equals(includeMutable)) {
+                    } else if (COLLECT_TO_LIST.matches(command) && Boolean.TRUE.equals(includeMutable)) {
                         result = replaceCollector(result);
                     }
                 }
