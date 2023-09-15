@@ -30,31 +30,28 @@ class ReplaceCollectWithStreamToListTest implements RewriteTest {
     }
 
     @Test
+    @DocumentExample
     void replacesToUnmodifiableList() {
         rewriteRun(
           version(
             //language=java
             java(
               """
-              package com.example;
-
               import java.util.stream.Collectors;
               import java.util.stream.Stream;
 
               class Example {
-                  public void test() {
-                      Stream.of().collect(Collectors.toUnmodifiableList());
+                  public List<String> test(Stream<String> stream) {
+                      return stream.collect(Collectors.toUnmodifiableList());
                   }
               }
               """,
               """
-              package com.example;
-
               import java.util.stream.Stream;
 
               class Example {
-                  public void test() {
-                      Stream.of().toList();
+                  public List<String> test(Stream<String> stream) {
+                      return stream.toList();
                   }
               }
               """),
