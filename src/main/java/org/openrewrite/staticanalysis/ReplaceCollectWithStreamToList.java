@@ -63,6 +63,11 @@ public class ReplaceCollectWithStreamToList extends Recipe {
     }
 
     @Override
+    public Set<String> getTags() {
+        return new HashSet<>(Arrays.asList("RSPEC-6204"));
+    }
+
+    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.and(new UsesJavaVersion<>(16),
                 new UsesMethod<>(STREAM_COLLECT_TO_LIST)), new JavaVisitor<ExecutionContext>() {
