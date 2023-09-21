@@ -59,7 +59,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
-    void removeUnnecessaryNullCheckAndParens() {
+    void removeUnnecessaryNullCheck() {
         rewriteRun(
           //language=java
           java(
@@ -67,7 +67,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if((s != null && s.equals("test"))) {}
                       if(s != null && s.equals("test")) {}
                       if(null != s && s.equals("test")) {}
                   }
@@ -79,47 +78,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       String s = null;
                       if("test".equals(s)) {}
                       if("test".equals(s)) {}
-                      if("test".equals(s)) {}
                   }
               }
               """
-          )
-        );
-    }
-
-    @Test
-    void removeUnnecessaryNullCheckAndKeepNecessaryParens() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-            import java.util.Collection;
-            
-            public class A {
-                public void triggersRecipe(String toCheck) {
-                    if (toCheck != null && toCheck.equals("stringLiteral")) { }
-                }
-            
-                public boolean needsToKeepParentheses() {
-                    Collection<Object> set = System.getProperties().keySet();
-                    return !(set == null || set.isEmpty());
-                }
-            }
-            """,
-            """
-            import java.util.Collection;
-            
-            public class A {
-                public void triggersRecipe(String toCheck) {
-                    if ("stringLiteral".equals(toCheck)) { }
-                }
-            
-                public boolean needsToKeepParentheses() {
-                    Collection<Object> set = System.getProperties().keySet();
-                    return !(set == null || set.isEmpty());
-                }
-            }
-            """
           )
         );
     }

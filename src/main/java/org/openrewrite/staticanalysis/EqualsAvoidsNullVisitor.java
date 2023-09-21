@@ -17,13 +17,11 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -80,24 +78,24 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
 
     private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {
         private final J.Binary scope;
+        boolean done;
+
+        @Override
+        public @Nullable J visit(@Nullable Tree tree, P p) {
+            if(done) {
+                return (J) tree;
+            }
+            return super.visit(tree, p);
+        }
 
         public RemoveUnnecessaryNullCheck(J.Binary scope) {
             this.scope = scope;
         }
 
         @Override
-        public @Nullable J postVisit(J j, P p) {
-            if(getCursor().pollMessage("simplify") != null) {
-                j = new UnnecessaryParenthesesVisitor<P>().visit(j, p, getCursor());
-            }
-            return j;
-        }
-
-        @Override
         public J visitBinary(J.Binary binary, P p) {
             if (scope.isScope(binary)) {
-                Cursor parent = getCursor().dropParentUntil(it -> it instanceof J && !(it instanceof J.Parentheses) && !(it instanceof J.ControlParentheses));
-                parent.putMessage("simplify", true);
+                done = true;
                 return binary.getRight().withPrefix(Space.EMPTY);
             }
 
