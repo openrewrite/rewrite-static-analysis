@@ -84,7 +84,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         p
                 );
                 statements.add(breakToAdd);
-                c = c.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p)));
+                c = c.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
             }
             return c;
         }
@@ -104,7 +104,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         p
                 );
                 statements.add(breakToAdd);
-                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p)));
+                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
             }
             return b;
         }

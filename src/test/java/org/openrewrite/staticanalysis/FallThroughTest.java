@@ -319,4 +319,52 @@ class FallThroughTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void nestedSwitch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                          default:
+                            switch(a) {
+                                case B:
+                                    System.out.println("B");
+                                default:
+                                    System.out.print("other");
+                            }
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                          default:
+                            switch(a) {
+                                case B:
+                                    System.out.println("B");
+                                    break;
+                                default:
+                                    System.out.print("other");
+                            }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
