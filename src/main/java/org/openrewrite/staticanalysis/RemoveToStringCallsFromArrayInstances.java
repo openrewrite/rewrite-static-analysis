@@ -82,7 +82,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                         break;
                     }
                 }
-            }else if (OBJECTS_TOSTRING_MATCHER.matches(mi) || VALUEOF_MATCHER.matches(mi)) {
+            } else if (OBJECTS_TOSTRING_MATCHER.matches(mi) || VALUEOF_MATCHER.matches(mi)) {
                 // method is static
                 Expression select = mi.getArguments().get(0);
                 maybeRemoveImport("java.util.Objects");

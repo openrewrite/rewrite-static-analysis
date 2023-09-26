@@ -42,7 +42,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = super.visitMethodInvocation(method, p);
 
-        if(m.getSelect() == null) {
+        if (m.getSelect() == null) {
             return m;
         }
 
@@ -82,7 +82,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
 
         @Override
         public @Nullable J visit(@Nullable Tree tree, P p) {
-            if(done) {
+            if (done) {
                 return (J) tree;
             }
             return super.visit(tree, p);

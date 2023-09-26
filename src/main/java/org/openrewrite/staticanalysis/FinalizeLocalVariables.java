@@ -58,7 +58,7 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                if(isDeclaredInForLoopControl(getCursor())) {
+                if (isDeclaredInForLoopControl(getCursor())) {
                     return mv;
                 }
 

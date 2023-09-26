@@ -80,7 +80,7 @@ public class ControlFlowIndentation extends Recipe {
                 J.Block b = super.visitBlock(block, executionContext);
                 AtomicBoolean foundControlFlowRequiringReformatting = new AtomicBoolean(false);
                 return b.withStatements(ListUtils.map(b.getStatements(), (i, statement) -> {
-                    if(foundControlFlowRequiringReformatting.get() || shouldReformat(statement)) {
+                    if (foundControlFlowRequiringReformatting.get() || shouldReformat(statement)) {
                         foundControlFlowRequiringReformatting.set(true);
                         return (Statement) new TabsAndIndentsVisitor<>(tabsAndIndentsStyle).visit(statement, executionContext, getCursor());
                     }
@@ -89,9 +89,9 @@ public class ControlFlowIndentation extends Recipe {
             }
 
             boolean shouldReformat(Statement s) {
-                if(s instanceof J.If) {
+                if (s instanceof J.If) {
                     return shouldReformat((J.If) s);
-                } else if(s instanceof Loop) {
+                } else if (s instanceof Loop) {
                     Statement body = ((Loop) s).getBody();
                     return !(body instanceof J.Block);
                 }

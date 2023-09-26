@@ -37,11 +37,11 @@ public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<Executio
         J.Block b = super.visitBlock(block, ctx);
 
         return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
-            if(!(statement instanceof J.VariableDeclarations)) {
+            if (!(statement instanceof J.VariableDeclarations)) {
                 return statement;
             }
             J.VariableDeclarations mv = (J.VariableDeclarations) statement;
-            if(mv.getVariables().size() <= 1) {
+            if (mv.getVariables().size() <= 1) {
                 return mv;
             }
 

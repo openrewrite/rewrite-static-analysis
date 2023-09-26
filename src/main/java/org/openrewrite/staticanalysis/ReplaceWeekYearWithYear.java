@@ -91,7 +91,7 @@ public class ReplaceWeekYearWithYear extends Recipe {
                         return li;
                     }
 
-                    return li.withValueSource("\""+newValue+"\"").withValue(newValue);
+                    return li.withValueSource("\"" + newValue + "\"").withValue(newValue);
                 }
             }
 

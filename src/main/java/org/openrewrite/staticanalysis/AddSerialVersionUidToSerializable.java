@@ -71,18 +71,18 @@ public class AddSerialVersionUidToSerializable extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration c = super.visitClassDeclaration(classDecl, ctx);
-                if(c.getKind() != J.ClassDeclaration.Kind.Type.Class || !requiresSerialVersionField(classDecl.getType())) {
+                if (c.getKind() != J.ClassDeclaration.Kind.Type.Class || !requiresSerialVersionField(classDecl.getType())) {
                     return c;
                 }
                 AtomicBoolean needsSerialVersionId = new AtomicBoolean(true);
                 J.Block body = c.getBody();
                 c = c.withBody(c.getBody().withStatements(ListUtils.map(c.getBody().getStatements(), s -> {
-                    if(!(s instanceof J.VariableDeclarations)) {
+                    if (!(s instanceof J.VariableDeclarations)) {
                         return s;
                     }
                     J.VariableDeclarations varDecls = (J.VariableDeclarations) s;
-                    for(J.VariableDeclarations.NamedVariable v : varDecls.getVariables()) {
-                        if("serialVersionUID".equals(v.getSimpleName())) {
+                    for (J.VariableDeclarations.NamedVariable v : varDecls.getVariables()) {
+                        if ("serialVersionUID".equals(v.getSimpleName())) {
                             needsSerialVersionId.set(false);
                             return maybeAutoFormat(varDecls, maybeFixVariableDeclarations(varDecls), ctx, new Cursor(getCursor(), body));
                         }
@@ -104,7 +104,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                     varDecls = varDecls.withModifiers(Arrays.asList(
                             new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Private, Collections.emptyList()),
                             new J.Modifier(Tree.randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()),
-                            new J.Modifier(Tree.randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Final,   Collections.emptyList())
+                            new J.Modifier(Tree.randomId(), singleSpace, Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList())
                     ));
                 }
                 if (TypeUtils.asPrimitive(varDecls.getType()) != JavaType.Primitive.Long) {

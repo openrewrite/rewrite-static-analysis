@@ -174,7 +174,7 @@ public class UseDiamondOperator extends Recipe {
         @Override
         public J.Return visitReturn(J.Return _return, ExecutionContext executionContext) {
             J.Return return_ = super.visitReturn(_return, executionContext);
-            J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass)return_.getExpression() : null;
+            J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass) return_.getExpression() : null;
             if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
                 J parentBlock = getCursor().dropParentUntil(v -> v instanceof J.MethodDeclaration || v instanceof J.Lambda).getValue();
                 if (parentBlock instanceof J.MethodDeclaration) {

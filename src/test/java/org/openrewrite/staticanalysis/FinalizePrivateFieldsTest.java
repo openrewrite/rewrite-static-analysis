@@ -396,7 +396,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Disabled ("Doesn't support multiple constructors, to be enhanced")
+    @Disabled("Doesn't support multiple constructors, to be enhanced")
     @Test
     void fieldAssignedInAllAlternateConstructors() {
         rewriteRun(
