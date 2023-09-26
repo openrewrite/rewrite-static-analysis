@@ -47,6 +47,15 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
         ).validate().isInvalid()).isTrue();
     }
 
+    @Test
+    void validationWhenNull() {
+        assertThat(new DeclarationSiteTypeVariance(
+          null,
+          null,
+          null
+        ).validate().isInvalid()).isTrue();
+    }
+
     @DocumentExample
     @Test
     void inOutVariance() {
