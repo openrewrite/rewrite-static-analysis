@@ -73,7 +73,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
             J.Lambda after = l.withParameters(
                     l.getParameters().withParameters(
-                            ListUtils.map(l.getParameters().getParameters(), (parameter) -> {
+                            ListUtils.map(l.getParameters().getParameters(), parameter -> {
                                 if (parameter instanceof J.VariableDeclarations) {
                                     return maybeAddTypeExpression((J.VariableDeclarations) parameter);
                                 }
@@ -167,13 +167,13 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     return identifier;
                 }
             } else if (type instanceof JavaType.Array) {
-                return (buildTypeTree(((JavaType.Array) type).getElemType(), space));
+                return buildTypeTree(((JavaType.Array) type).getElemType(), space);
             } else if(type instanceof JavaType.Variable) {
                 return buildTypeTree(((JavaType.Variable) type).getType(), space);
             } else if (type instanceof JavaType.GenericTypeVariable) {
                 JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
 
-                if (!genericType.getName().equals("?")) {
+                if (!"?".equals(genericType.getName())) {
                     return new J.Identifier(Tree.randomId(),
                             space,
                             Markers.EMPTY,

@@ -59,8 +59,8 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
                 J.NewClass nc = super.visitNewClass(newClass, executionContext);
-                if ((TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuilder") ||
-                     TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuffer"))) {
+                if (TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuilder") ||
+                     TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuffer")) {
                     nc.getArguments();
                     if (nc.getArguments().get(0).getType() == JavaType.Primitive.Char) {
                         nc = nc.withArguments(ListUtils.mapFirst(nc.getArguments(), arg -> {

@@ -115,8 +115,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         String insertStatement = "private static final String " + variableName + " = #{any(String)};";
                         if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Enum) {
                             J.EnumValueSet enumValueSet = classDecl.getBody().getStatements().stream()
-                                    .filter(it -> it instanceof J.EnumValueSet)
-                                    .map(it -> (J.EnumValueSet) it)
+                                    .filter(org.openrewrite.java.tree.J.EnumValueSet.class::isInstance)
+                                    .map(org.openrewrite.java.tree.J.EnumValueSet.class::cast)
                                     .findFirst()
                                     .orElse(null);
 
@@ -347,7 +347,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     /**
      * ReplaceStringLiterals in a class with a reference to a `private static final String` with the provided variable name.
      */
-    private static class ReplaceStringLiterals extends JavaVisitor<ExecutionContext> {
+    private static final class ReplaceStringLiterals extends JavaVisitor<ExecutionContext> {
         private final J.ClassDeclaration isClass;
         private final String variableName;
         private final Set<J.Literal> literals;

@@ -238,7 +238,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                         }
                     } else {
                         if (equivalentCatch.getParameter().getTree().getTypeExpression() != null) {
-                            J.Identifier identifier = ((J.Identifier) equivalentCatch.getParameter().getTree().getTypeExpression());
+                            J.Identifier identifier = (J.Identifier) equivalentCatch.getParameter().getTree().getTypeExpression();
                             identifier = identifier.withPrefix(Space.EMPTY);
                             JRightPadded<NameTree> rightPadded = JRightPadded.build(identifier);
                             combinedCatches.add(rightPadded);
@@ -295,7 +295,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             private final boolean compareMethodArguments = false;
 
             private boolean nullMissMatch(Object obj1, Object obj2) {
-                return (obj1 == null && obj2 != null || obj1 != null && obj2 == null);
+                return obj1 == null && obj2 != null || obj1 != null && obj2 == null;
             }
 
             private boolean doesNotContainSameComments(Space space1, Space space2) {
@@ -1500,22 +1500,22 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             @Override
-            public J.Synchronized visitSynchronized(J.Synchronized _sync, J j) {
+            public J.Synchronized visitSynchronized(J.Synchronized sync, J j) {
                 if (isEqual.get()) {
                     if (!(j instanceof J.Synchronized)) {
                         isEqual.set(false);
-                        return _sync;
+                        return sync;
                     }
 
                     J.Synchronized compareTo = (J.Synchronized) j;
-                    if (doesNotContainSameComments(_sync.getPrefix(), compareTo.getPrefix())) {
+                    if (doesNotContainSameComments(sync.getPrefix(), compareTo.getPrefix())) {
                         isEqual.set(false);
-                        return _sync;
+                        return sync;
                     }
-                    this.visit(_sync.getLock(), compareTo.getLock());
-                    this.visit(_sync.getBody(), compareTo.getBody());
+                    this.visit(sync.getLock(), compareTo.getLock());
+                    this.visit(sync.getBody(), compareTo.getBody());
                 }
-                return _sync;
+                return sync;
             }
 
             @Override

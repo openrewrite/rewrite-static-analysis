@@ -96,7 +96,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (classLiteral != null) {
                         //noinspection DataFlowIssue
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
-                        Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> m.getName().equals("isInstance")).findFirst();
+                        Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> "isInstance".equals(m.getName())).findFirst();
                         if (isInstanceMethod.isPresent()) {
                             return newInstanceMethodReference(isInstanceMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
                         }
@@ -112,7 +112,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         if (classLiteral != null) {
                             //noinspection DataFlowIssue
                             JavaType.FullyQualified classType = ((JavaType.Parameterized) classLiteral.getType()).getType();
-                            Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> m.getName().equals("cast")).findFirst();
+                            Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
                             if (castMethod.isPresent()) {
                                 return newInstanceMethodReference(castMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
                             }
@@ -252,7 +252,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         private boolean isMethodReferenceAmbiguous(JavaType.Method _method) {
             return _method.getDeclaringType().getMethods().stream()
                            .filter(meth -> meth.getName().equals(_method.getName()))
-                           .filter(meth -> !meth.getName().equals("println"))
+                           .filter(meth -> !"println".equals(meth.getName()))
                            .filter(meth -> !meth.isConstructor())
                            .count() > 1;
         }

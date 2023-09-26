@@ -234,7 +234,7 @@ public class InstanceOfPatternMatch extends Recipe {
                         ? VariableNameStrategy.exact(variable.getSimpleName())
                         : VariableNameStrategy.normal(contextScopes.get(instanceOf));
             } else {
-                strategy = VariableNameStrategy.short_();
+                strategy = VariableNameStrategy.short();
             }
             String baseName = variableBaseName((TypeTree) instanceOf.getClazz(), strategy);
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
@@ -333,7 +333,7 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
-    private static class VariableNameStrategy {
+    private static final class VariableNameStrategy {
         public static final Pattern NAME_SPLIT_PATTERN = Pattern.compile("[$._]*(?=\\p{Upper}+[\\p{Lower}\\p{Digit}]*)");
         private final Style style;
         @Nullable
@@ -350,7 +350,7 @@ public class InstanceOfPatternMatch extends Recipe {
             this.contextScopes = contextScopes;
         }
 
-        static VariableNameStrategy short_() {
+        static VariableNameStrategy short() {
             return new VariableNameStrategy(Style.SHORT, null, Collections.emptySet());
         }
 

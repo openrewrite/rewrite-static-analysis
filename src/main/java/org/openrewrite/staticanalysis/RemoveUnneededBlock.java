@@ -81,7 +81,7 @@ public class RemoveUnneededBlock extends Recipe {
                 }
 
                 // blocks are relevant for scoping, so don't flatten them if they contain variable declarations
-                if (i < statements.size() - 1 && nested.getStatements().stream().anyMatch(s -> s instanceof J.VariableDeclarations)) {
+                if (i < statements.size() - 1 && nested.getStatements().stream().anyMatch(org.openrewrite.java.tree.J.VariableDeclarations.class::isInstance)) {
                     return stmt;
                 }
 

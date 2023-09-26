@@ -66,7 +66,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         // All methods that start with 'get' matching this InvocationMatcher will be considered non-side effecting.
-        MethodMatcher SAFE_GETTER_METHODS = new MethodMatcher("java.io.File get*(..)");
+        MethodMatcher safeGetterMethods = new MethodMatcher("java.io.File get*(..)");
 
         Set<String> ignoreVariableNames;
         if (ignoreVariablesNamed == null) {
@@ -159,7 +159,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 if (mv.getVariables().isEmpty()) {
                     if (!mv.getPrefix().getComments().isEmpty()) {
-                        getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
+                        getCursor().dropParentUntil(org.openrewrite.java.tree.J.ClassDeclaration.class::isInstance).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
                     }
                     doAfterVisit(new DeleteStatement<>(mv));
                 }
@@ -174,7 +174,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, AtomicBoolean result) {
-                        if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
+                        if (safeGetterMethods.matches(methodInvocation)) {
                             return methodInvocation;
                         }
                         result.set(true);
@@ -280,7 +280,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 J.AssignmentOperation assignmentOperation = parent.getValue();
                 if (assignmentOperation.getVariable() == tree.getValue()) {
                     Tree grandParent = parent.getParentTreeCursor().getValue();
-                    return (grandParent instanceof Expression || grandParent instanceof J.Return);
+                    return grandParent instanceof Expression || grandParent instanceof J.Return;
                 }
             }
 

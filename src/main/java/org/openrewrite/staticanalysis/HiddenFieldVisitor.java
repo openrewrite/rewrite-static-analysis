@@ -81,7 +81,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
         return super.visitClassDeclaration(classDecl, p);
     }
 
-    private static class FindExistingVariableDeclarations extends JavaIsoVisitor<Set<J.VariableDeclarations.NamedVariable>> {
+    private static final class FindExistingVariableDeclarations extends JavaIsoVisitor<Set<J.VariableDeclarations.NamedVariable>> {
         private final Cursor childTargetReference;
         private final String childTargetName;
 
@@ -152,8 +152,8 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
                 doAfterVisit(new RenameVariable<>(v, nextName));
                 if (parentScope.getValue() instanceof J.MethodDeclaration) {
                     Optional<J.VariableDeclarations> variableParameter = ((J.MethodDeclaration) parentScope.getValue()).getParameters().stream()
-                            .filter(it -> it instanceof J.VariableDeclarations)
-                            .map(it -> (J.VariableDeclarations) it)
+                            .filter(org.openrewrite.java.tree.J.VariableDeclarations.class::isInstance)
+                            .map(org.openrewrite.java.tree.J.VariableDeclarations.class::cast)
                             .filter(it -> it.getVariables().contains(v))
                             .findFirst();
                     if (variableParameter.isPresent()) {

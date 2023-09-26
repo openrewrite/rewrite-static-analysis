@@ -143,8 +143,8 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
         }
 
         private boolean hasThisIdentifier(J.Binary binary) {
-            return ((binary.getRight() instanceof J.Identifier && "this".equals(((J.Identifier)binary.getRight()).getSimpleName()))
-                    || ((binary.getLeft() instanceof J.Identifier && "this".equals(((J.Identifier)binary.getLeft()).getSimpleName()))));
+            return (binary.getRight() instanceof J.Identifier && "this".equals(((J.Identifier)binary.getRight()).getSimpleName()))
+                    || (binary.getLeft() instanceof J.Identifier && "this".equals(((J.Identifier)binary.getLeft()).getSimpleName()));
         }
 
         private boolean isBoxedTypeComparison(J.Binary binary) {

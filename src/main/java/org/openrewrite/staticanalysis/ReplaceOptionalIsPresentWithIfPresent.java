@@ -213,7 +213,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
             return classDecl.getBody()
                     .getStatements()
                     .stream()
-                    .filter(statement -> statement instanceof J.VariableDeclarations)
+                    .filter(org.openrewrite.java.tree.J.VariableDeclarations.class::isInstance)
                     .map(J.VariableDeclarations.class::cast)
                     .map(J.VariableDeclarations::getVariables)
                     .flatMap(Collection::stream)
@@ -239,9 +239,10 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
             if (OPTIONAL_GET.matches(mi) && mi.getSelect() instanceof J.Identifier) {
                 J.Identifier selectToBeReplaced = (J.Identifier) mi.getSelect();
                 if (methodSelector.getSimpleName().equals(selectToBeReplaced.getSimpleName()) &&
-                    methodSelector.getFieldType() != null &&
-                    methodSelector.getFieldType().equals(selectToBeReplaced.getFieldType()))
+                        methodSelector.getFieldType() != null &&
+                        methodSelector.getFieldType().equals(selectToBeReplaced.getFieldType())) {
                     return lambdaParameterIdentifier.withPrefix(method.getPrefix());
+                }
             }
             return mi;
         }

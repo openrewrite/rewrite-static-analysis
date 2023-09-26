@@ -182,7 +182,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private boolean isDefaultCase(J.Case case_) {
         Expression elem = case_.getPattern();
-        return elem instanceof J.Identifier && ((J.Identifier) elem).getSimpleName().equals("default");
+        return elem instanceof J.Identifier && "default".equals(((J.Identifier) elem).getSimpleName());
     }
 
 }
