@@ -24,6 +24,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
@@ -301,6 +302,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.List;
+              import java.util.Optional;
               import java.util.stream.Collectors;
 
               import org.test.CheckType;
@@ -846,6 +848,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     @Test
     void returnExpressionIsNotAMethodInvocation() {
         rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.builder().methodInvocations(false).build()),
           //language=java
           java(
             """
@@ -981,7 +984,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       f = i -> new ArrayList(i) {};
 
                       Object o;
-                      o = i -> new ArrayList(i);
+                      o = i -> new ArrayList(1);
                   }
               }
               """

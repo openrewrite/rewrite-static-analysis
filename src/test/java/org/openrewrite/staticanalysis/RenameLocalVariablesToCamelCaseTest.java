@@ -228,7 +228,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
                           Integer.valueOf(value);
                       // Rule does not apply to catch variables with 1 character.
                       } catch (Exception E){
-                          throw new NumberFormatException("Test", E);
+                          throw new IllegalArgumentException("Test", E);
                       }
                       return DoNoTChange + 10;
                   }

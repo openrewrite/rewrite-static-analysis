@@ -139,9 +139,9 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
           java(
             """
               class Test {
-                  void method(Object someData) {
+                  void method(java.util.Scanner reader, Object someData) {
                       String a = "";
-                      while((a = reader.nexLine()) != null) {
+                      while((a = reader.nextLine()) != null) {
                           System.out.println(a);
                       }
                   }

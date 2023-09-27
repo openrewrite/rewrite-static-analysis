@@ -66,7 +66,7 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
             """
               class SomeClass {
                 public static void main(String[] args) {
-                  int number = 5;
+                  Integer number = 5;
                   System.out.println(number.toString());
                 }
               }
@@ -204,7 +204,7 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
           java(
             """
               class SomeClass {
-                public static void main(Stringp[] args) {
+                public static void main(String[] args) {
                   String strOne = "hello, ";
                   String strTwo = "world!";
                   System.out.print(strOne + strTwo);

@@ -909,5 +909,27 @@ class UnnecessaryParenthesesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void ternaryCondition() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String test(String s) {
+                      return (s.isEmpty()) ? "true" : "false";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(String s) {
+                      return s.isEmpty() ? "true" : "false";
+                  }
+              }
+              """
+          )
+        );
+    }
 }
 

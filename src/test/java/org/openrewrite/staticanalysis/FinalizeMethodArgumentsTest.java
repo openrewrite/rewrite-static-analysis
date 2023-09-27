@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -173,6 +174,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void doNotReplaceWithFinalModifier() {
         rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
           //language=java
           java(
             """
