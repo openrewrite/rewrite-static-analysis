@@ -38,6 +38,47 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     class If {
 
         @Test
+        void ifTwoDifferentInstanceOf() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    public class A {
+                        void test(Object o, Object o2) {
+                            Object s = 1;
+                            if (o instanceof String && o2 instanceof String) {
+                                if (((String) o).length() > 1) {
+                                    System.out.println(o);
+                                }
+                                if (((String) o2).length() > 1) {
+                                    System.out.println(o2);
+                                }
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    public class A {
+                        void test(Object o, Object o2) {
+                            Object s = 1;
+                            if (o instanceof String string && o2 instanceof String string2) {
+                                if (string.length() > 1) {
+                                    System.out.println(string);
+                                }
+                                if (string2.length() > 1) {
+                                    System.out.println(string2);
+                                }
+                            }
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Test
         void ifConditionWithoutPattern() {
             rewriteRun(
               version(
