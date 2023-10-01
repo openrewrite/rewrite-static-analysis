@@ -36,15 +36,15 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @SuppressWarnings({"ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable"})
     @Nested
     class If {
-
         @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
         void ifTwoDifferentInstanceOf() {
             rewriteRun(
               version(
                 //language=java
                 java(
                   """
-                    public class A {
+                    class A {
                         void test(Object o, Object o2) {
                             Object s = 1;
                             if (o instanceof String && o2 instanceof String) {
@@ -59,12 +59,12 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                     }
                     """,
                   """
-                    public class A {
+                    class A {
                         void test(Object o, Object o2) {
                             Object s = 1;
-                            if (o instanceof String string && o2 instanceof String string2) {
-                                if (string.length() > 1) {
-                                    System.out.println(string);
+                            if (o instanceof String string1 && o2 instanceof String string2) {
+                                if (string1.length() > 1) {
+                                    System.out.println(string1);
                                 }
                                 if (string2.length() > 1) {
                                     System.out.println(string2);
