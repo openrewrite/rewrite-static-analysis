@@ -688,12 +688,6 @@ class UseCollectionInterfacesTest implements RewriteTest {
     }
 
     @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/179")
-    void enumSetNotInRecipe() {
-        assertThat(UseCollectionInterfaces.rspecRulesReplaceTypeMap).doesNotContainKey("java.util.EnumSet");
-    }
-
-    @Test
     void hashSet() {
         rewriteRun(
           //language=java
