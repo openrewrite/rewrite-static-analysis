@@ -438,4 +438,33 @@ class FinalizeLocalVariablesTest implements RewriteTest {
                 )
         );
     }
+
+    @Test
+    void shouldNotFinalizeVariablesWhichAreAssignedInAnonymousClasses() {
+        this.rewriteRun(
+          // language=java
+          java("""
+            package Test;
+
+            import javafx.beans.property.IntegerProperty;
+            import javafx.beans.property.SimpleIntegerProperty;
+
+                class Test {
+
+                  private final IntegerProperty cellCount = new SimpleIntegerProperty(this, "cellCount", 0) {
+                    private int oldCount = 0;
+
+                    @Override
+                    protected void invalidated() {
+                      final int currentCellCount = this.get();
+
+                      final boolean countChanged = this.oldCount != currentCellCount;
+                      if (countChanged) {
+                        this.oldCount = currentCellCount;
+                      }
+                    }
+                  };
+                }
+                """));
+    }
 }

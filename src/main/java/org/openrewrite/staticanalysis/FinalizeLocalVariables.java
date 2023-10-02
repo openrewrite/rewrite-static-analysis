@@ -21,6 +21,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
@@ -67,6 +68,12 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
+                // ignores anonymous class fields
+                // @Issue(https://github.com/openrewrite/rewrite-static-analysis/issues/181)
+                if (this.isAnonymousClassField(mv)) {
+                    return mv;
+                }
+
                 if (mv.getVariables().stream()
                         .noneMatch(v -> {
                             Cursor declaringCursor = v.getDeclaringScope(getCursor());
@@ -79,6 +86,20 @@ public class FinalizeLocalVariables extends Recipe {
                 }
 
                 return mv;
+            }
+
+            private boolean isAnonymousClassField(final J.VariableDeclarations multiVariable) {
+                return multiVariable.getVariables().stream().anyMatch(v -> {
+                    if (v.getVariableType() == null) {
+                        return false;
+                    }
+                    final JavaType ownClassFQN = v.getVariableType().getOwner();
+                    if (ownClassFQN == null) {
+                        return false;
+                    }
+                    final String[] typeFQNSplit = ownClassFQN.toString().split("\\.");
+                    return typeFQNSplit[typeFQNSplit.length - 1].contains("$");
+                });
             }
         };
     }
