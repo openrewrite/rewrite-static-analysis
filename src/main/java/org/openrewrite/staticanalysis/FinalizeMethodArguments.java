@@ -12,7 +12,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.jetbrains.annotations.NotNull;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -147,9 +146,8 @@ public class FinalizeMethodArguments extends Recipe {
             return assignment;
         }
 
-        // contributed as a fix for issue #176
         @Override
-        public J.@NotNull Unary visitUnary(final J.@NotNull Unary unary, final AtomicBoolean hasAssignment) {
+        public J.Unary visitUnary(final J.Unary unary, final AtomicBoolean hasAssignment) {
             if (hasAssignment.get()) {
                 return unary;
             }
@@ -164,7 +162,6 @@ public class FinalizeMethodArguments extends Recipe {
             return u;
         }
 
-        // contributed as a fix for issue  #176
         @Override
         public J.AssignmentOperation visitAssignmentOperation(final J.AssignmentOperation assignOp, final AtomicBoolean hasAssignment) {
             if (hasAssignment.get()) {
