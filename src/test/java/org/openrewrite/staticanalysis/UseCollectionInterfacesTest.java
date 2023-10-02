@@ -25,6 +25,7 @@ import org.openrewrite.test.RewriteTest;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("rawtypes")
@@ -42,7 +43,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.Set;
-              
+
               class Test {
                   Set<Integer> method() {
                       return Collections.emptySet();
@@ -61,7 +62,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set<Integer> method() {
                       return new HashSet<>();
@@ -80,7 +81,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   public HashSet method() {
                       return new HashSet<>();
@@ -90,7 +91,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set method() {
                       return new HashSet<>();
@@ -108,7 +109,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   public HashSet<Integer> method() {
                       return new HashSet<>();
@@ -118,7 +119,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set<Integer> method() {
                       return new HashSet<>();
@@ -136,7 +137,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   public HashSet<Integer> method(int primitive, Integer integer) {
                       return new HashSet<>();
@@ -146,7 +147,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set<Integer> method(int primitive, Integer integer) {
                       return new HashSet<>();
@@ -165,7 +166,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set<Integer> values = new HashSet<>();
               }
@@ -181,7 +182,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   public HashSet values = new HashSet();
               }
@@ -189,7 +190,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set values = new HashSet();
               }
@@ -205,7 +206,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   public HashSet<Integer> values = new HashSet<>();
               }
@@ -213,7 +214,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set<Integer> values = new HashSet<>();
               }
@@ -229,7 +230,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.ArrayDeque;
-              
+
               class Test {
                   public ArrayDeque values = new ArrayDeque();
               }
@@ -237,7 +238,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayDeque;
               import java.util.Deque;
-              
+
               class Test {
                   public Deque values = new ArrayDeque();
               }
@@ -253,7 +254,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.ConcurrentLinkedDeque;
-              
+
               class Test {
                   public ConcurrentLinkedDeque values = new ConcurrentLinkedDeque();
               }
@@ -261,7 +262,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Deque;
               import java.util.concurrent.ConcurrentLinkedDeque;
-              
+
               class Test {
                   public Deque values = new ConcurrentLinkedDeque();
               }
@@ -278,7 +279,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.AbstractList;
-              
+
               class Test {
                   public AbstractList values = new ArrayList();
               }
@@ -286,7 +287,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.List;
-              
+
               class Test {
                   public List values = new ArrayList();
               }
@@ -303,7 +304,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.AbstractSequentialList;
               import java.util.LinkedList;
-              
+
               class Test {
                   public AbstractSequentialList values = new LinkedList();
               }
@@ -311,7 +312,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.LinkedList;
               import java.util.List;
-              
+
               class Test {
                   public List values = new LinkedList();
               }
@@ -327,7 +328,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.ArrayList;
-              
+
               class Test {
                   public ArrayList values = new ArrayList();
               }
@@ -335,7 +336,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.List;
-              
+
               class Test {
                   public List values = new ArrayList();
               }
@@ -351,7 +352,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.CopyOnWriteArrayList;
-              
+
               class Test {
                   public CopyOnWriteArrayList values = new CopyOnWriteArrayList();
               }
@@ -359,7 +360,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.List;
               import java.util.concurrent.CopyOnWriteArrayList;
-              
+
               class Test {
                   public List values = new CopyOnWriteArrayList();
               }
@@ -376,7 +377,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.AbstractMap;
               import java.util.HashMap;
-              
+
               class Test {
                   public AbstractMap values = new HashMap();
               }
@@ -384,7 +385,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashMap;
               import java.util.Map;
-              
+
               class Test {
                   public Map values = new HashMap();
               }
@@ -403,7 +404,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.EnumMap;
-              
+
               class Test {
                   public EnumMap values = new EnumMap(A.class);
               }
@@ -411,7 +412,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.EnumMap;
               import java.util.Map;
-              
+
               class Test {
                   public Map values = new EnumMap(A.class);
               }
@@ -427,7 +428,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashMap;
-              
+
               class Test {
                   public HashMap values = new HashMap();
               }
@@ -435,7 +436,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashMap;
               import java.util.Map;
-              
+
               class Test {
                   public Map values = new HashMap();
               }
@@ -451,7 +452,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.Hashtable;
-              
+
               class Test {
                   public Hashtable values = new Hashtable();
               }
@@ -459,7 +460,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Hashtable;
               import java.util.Map;
-              
+
               class Test {
                   public Map values = new Hashtable();
               }
@@ -475,7 +476,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.IdentityHashMap;
-              
+
               class Test {
                   public IdentityHashMap values = new IdentityHashMap();
               }
@@ -483,7 +484,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.IdentityHashMap;
               import java.util.Map;
-              
+
               class Test {
                   public Map values = new IdentityHashMap();
               }
@@ -499,7 +500,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.LinkedHashMap;
-              
+
               class Test {
                   public LinkedHashMap values = new LinkedHashMap();
               }
@@ -507,7 +508,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.LinkedHashMap;
               import java.util.Map;
-              
+
               class Test {
                   public Map values = new LinkedHashMap();
               }
@@ -523,7 +524,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.WeakHashMap;
-              
+
               class Test {
                   public WeakHashMap values = new WeakHashMap();
               }
@@ -531,7 +532,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Map;
               import java.util.WeakHashMap;
-              
+
               class Test {
                   public Map values = new WeakHashMap();
               }
@@ -547,7 +548,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.ConcurrentHashMap;
-              
+
               class Test {
                   public ConcurrentHashMap values = new ConcurrentHashMap();
               }
@@ -555,7 +556,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.concurrent.ConcurrentHashMap;
               import java.util.concurrent.ConcurrentMap;
-              
+
               class Test {
                   public ConcurrentMap values = new ConcurrentHashMap();
               }
@@ -571,7 +572,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.ConcurrentSkipListMap;
-              
+
               class Test {
                   public ConcurrentSkipListMap values = new ConcurrentSkipListMap();
               }
@@ -579,7 +580,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.concurrent.ConcurrentMap;
               import java.util.concurrent.ConcurrentSkipListMap;
-              
+
               class Test {
                   public ConcurrentMap values = new ConcurrentSkipListMap();
               }
@@ -596,7 +597,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.AbstractQueue;
               import java.util.PriorityQueue;
-              
+
               class Test {
                   public AbstractQueue values = new PriorityQueue();
               }
@@ -604,7 +605,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.PriorityQueue;
               import java.util.Queue;
-              
+
               class Test {
                   public Queue values = new PriorityQueue();
               }
@@ -620,7 +621,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.ConcurrentLinkedQueue;
-              
+
               class Test {
                   public ConcurrentLinkedQueue values = new ConcurrentLinkedQueue();
               }
@@ -628,7 +629,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Queue;
               import java.util.concurrent.ConcurrentLinkedQueue;
-              
+
               class Test {
                   public Queue values = new ConcurrentLinkedQueue();
               }
@@ -645,7 +646,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.AbstractSet;
               import java.util.HashSet;
-              
+
               class Test {
                   public AbstractSet values = new HashSet();
               }
@@ -653,7 +654,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set values = new HashSet();
               }
@@ -663,7 +664,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
     }
 
     @Test
-    void enumSet() {
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/179")
+    void enumSetHasDifferentGenericTypeThanSet() {
         rewriteRun(
           //language=java
           java("public enum A {}"),
@@ -671,17 +673,14 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.EnumSet;
-              
+
               class Test {
                   public EnumSet values = EnumSet.allOf(A.class);
-              }
-              """,
-            """
-              import java.util.EnumSet;
-              import java.util.Set;
-              
-              class Test {
-                  public Set values = EnumSet.allOf(A.class);
+                  void iterate() {
+                      for (Enum<?> e : values) {
+                          // the for loop wouldn't compile anymore if the EnumSet declaration were changed
+                      }
+                  }
               }
               """
           )
@@ -695,7 +694,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   public HashSet values = new HashSet();
               }
@@ -703,7 +702,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set values = new HashSet();
               }
@@ -719,7 +718,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.LinkedHashSet;
-              
+
               class Test {
                   public LinkedHashSet values = new LinkedHashSet();
               }
@@ -727,7 +726,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.LinkedHashSet;
               import java.util.Set;
-              
+
               class Test {
                   public Set values = new LinkedHashSet();
               }
@@ -743,7 +742,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.CopyOnWriteArraySet;
-              
+
               class Test {
                   public CopyOnWriteArraySet values = new CopyOnWriteArraySet();
               }
@@ -751,7 +750,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Set;
               import java.util.concurrent.CopyOnWriteArraySet;
-              
+
               class Test {
                   public Set values = new CopyOnWriteArraySet();
               }
@@ -768,7 +767,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.ArrayList;
-              
+
               class Test {
                   private ArrayList<Integer> values = new ArrayList<>();
               }
@@ -776,7 +775,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.List;
-              
+
               class Test {
                   private List<Integer> values = new ArrayList<>();
               }
@@ -793,7 +792,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.ArrayList;
-              
+
               class Test {
                   ArrayList<Integer> values = new ArrayList<>();
               }
@@ -801,7 +800,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.List;
-              
+
               class Test {
                   List<Integer> values = new ArrayList<>();
               }
@@ -818,7 +817,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   private HashSet<Integer> method() {
                       return new HashSet<>();
@@ -828,7 +827,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   private Set<Integer> method() {
                       return new HashSet<>();
@@ -847,7 +846,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.HashSet;
-              
+
               class Test {
                   HashSet<Integer> method() {
                       return new HashSet<>();
@@ -857,7 +856,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.HashSet;
               import java.util.Set;
-              
+
               class Test {
                   Set<Integer> method() {
                       return new HashSet<>();
@@ -878,7 +877,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.List;
-              
+
               class Test {
                   List<Integer> m() {
                       List<Integer> result = new ArrayList<>();
@@ -907,7 +906,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               java(
                 """
                   import java.util.ArrayList;
-                              
+
                   class Test {
                       public void method() {
                           var list = new ArrayList<>();
