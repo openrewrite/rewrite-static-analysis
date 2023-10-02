@@ -239,4 +239,73 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
           )
         );
     }
+    
+    @Test
+    void doNotReplaceIfAssignedThroughUnaryOrAccumulator(){
+        rewriteRun(java("""
+          package Test;
+                    
+          class Test {
+                    
+            protected int addFinalToThisVar(int unalteredVariable) {
+              return unalteredVariable;
+            }
+                    
+            protected int increment(int variableToIncrement) {
+              variableToIncrement++;
+              return variableToIncrement;
+            }
+                    
+            protected int preIncrement(int variableToPreIncrement) {
+              return ++variableToPreIncrement;
+            }
+                    
+            protected int decrement(int variableToDecrement) {
+              variableToDecrement--;
+              return variableToDecrement;
+            }
+                    
+            protected int preDecrement(int variableToPreDecrement) {
+              return --variableToPreDecrement;
+            }
+                    
+            protected int accumulate(int add, int accumulator) {
+              accumulator += add;
+              return accumulator;
+            }
+          }
+          """, """
+          package Test;
+                    
+          class Test {
+                    
+            protected int addFinalToThisVar(final int unalteredVariable) {
+              return unalteredVariable;
+            }
+                    
+            protected int increment(int variableToIncrement) {
+              variableToIncrement++;
+              return variableToIncrement;
+            }
+                    
+            protected int preIncrement(int variableToPreIncrement) {
+              return ++variableToPreIncrement;
+            }
+                    
+            protected int decrement(int variableToDecrement) {
+              variableToDecrement--;
+              return variableToDecrement;
+            }
+                    
+            protected int preDecrement(int variableToPreDecrement) {
+              return --variableToPreDecrement;
+            }
+                    
+            protected int accumulate(int add, int accumulator) {
+              accumulator += add;
+              return accumulator;
+            }
+          }
+          """));
+    }
 }

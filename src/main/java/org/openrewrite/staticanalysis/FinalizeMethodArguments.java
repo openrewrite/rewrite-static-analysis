@@ -12,6 +12,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -144,6 +145,38 @@ public class FinalizeMethodArguments extends Recipe {
             }
 
             return assignment;
+        }
+
+        @Override
+        public J.@NotNull Unary visitUnary(final J.@NotNull Unary unary, final AtomicBoolean hasAssignment) {
+            if (hasAssignment.get()) {
+                return unary;
+            }
+
+            final J.Unary u = super.visitUnary(unary, hasAssignment);
+            if (u.getOperator().isModifying() && u.getExpression() instanceof J.Identifier) {
+                final J.Identifier i = (J.Identifier) u.getExpression();
+                if (i.getSimpleName().equals(this.variable.getSimpleName())) {
+                    hasAssignment.set(true);
+                }
+            }
+            return u;
+        }
+
+        @Override
+        public J.AssignmentOperation visitAssignmentOperation(final J.AssignmentOperation assignOp, final AtomicBoolean hasAssignment) {
+            if (hasAssignment.get()) {
+                return assignOp;
+            }
+
+            final J.AssignmentOperation a = super.visitAssignmentOperation(assignOp, hasAssignment);
+            if (a.getVariable() instanceof J.Identifier) {
+                final J.Identifier i = (J.Identifier) a.getVariable();
+                if (i.getSimpleName().equals(this.variable.getSimpleName())) {
+                    hasAssignment.set(true);
+                }
+            }
+            return a;
         }
     }
 
