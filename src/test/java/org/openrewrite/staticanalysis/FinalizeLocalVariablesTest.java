@@ -225,14 +225,14 @@ class FinalizeLocalVariablesTest implements RewriteTest {
               }
               """,
             """
-            class Test {
-                static {
-                    final int n = 1;
-                    for(int i = 0; i < n; i++) {
-                    }
-                }
-            }
-            """
+              class Test {
+                  static {
+                      final int n = 1;
+                      for(int i = 0; i < n; i++) {
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -282,7 +282,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.FutureTask;
-              
+                            
               class A {
                   void f() {
                       for(FutureTask<?> future; (future = new FutureTask<>(() -> "hello world")) != null;) { }
@@ -296,34 +296,36 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     @Test
     void shouldNotFinalizeForCounterWhichIsReassignedWithinForHeader() {
         rewriteRun(
-                //language=java
-                java("""
-                class A {             
-                    static {
-                        for (int i = 0; i < 10; i++) {
-                            // no-op
-                        }
-                    }
-                }
-                """
-                )
+          //language=java
+          java(
+            """
+              class A {             
+                  static {
+                      for (int i = 0; i < 10; i++) {
+                          // no-op
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 
     @Test
     void shouldNotFinalizeForCounterWhichIsReassignedWithinForBody() {
         rewriteRun(
-                //language=java
-                java("""
-                class A {             
-                    static {
-                        for (int i = 0; i < 10;) {
-                            i = 11;
-                        }
-                    }
-                }
-                """
-                )
+          //language=java
+          java(
+            """
+              class A {             
+                  static {
+                      for (int i = 0; i < 10;) {
+                          i = 11;
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 
@@ -394,48 +396,71 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     void recordShouldNotIntroduceExtraClosingParenthesis() {
         rewriteRun(
           version(
-          //language=java
-          java(
-            """
-            public class Main {
-                public static void test() {
-                    var myVar = "";
-                }
-                public record EmptyRecord() {
-                }
-            }
-              """,
-            """
-            public class Main {
-                public static void test() {
-                    final var myVar = "";
-                }
-                public record EmptyRecord() {
-                }
-            }
+            //language=java
+            java(
               """
-          ), 17)
+                public class Main {
+                    public static void test() {
+                        var myVar = "";
+                    }
+                    public record EmptyRecord() {
+                    }
+                }
+                  """,
+              """
+                public class Main {
+                    public static void test() {
+                        final var myVar = "";
+                    }
+                    public record EmptyRecord() {
+                    }
+                }
+                  """
+            ), 17)
         );
     }
 
     @Test
     void shouldNotFinalizeVariableWhichIsReassignedInAnotherSwitchBranch() {
         rewriteRun(
-                //language=java
-                java("""
-                class A {             
-                    static int variable = 0;
-                    static {
-                        switch (variable) {
-                          case 0:
-                              int notFinalized = 0;
-                          default:
-                              notFinalized = 1;
-                        }
+          //language=java
+          java(
+            """
+            class A {
+                static int variable = 0;
+                static {
+                    switch (variable) {
+                      case 0:
+                          int notFinalized = 0;
+                      default:
+                          notFinalized = 1;
                     }
                 }
-                """
-                )
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/181")
+    void shouldNotFinalizeVariablesWhichAreAssignedInAnonymousClasses() {
+        this.rewriteRun(
+          // language=java
+          java(
+            """
+              class Test {
+                private final Object objectWithInnerField = new Object() {
+                  private int count = 0;
+                  @Override
+                  public String toString() {
+                    this.count++;
+                    return super.toString() + this.count;
+                  }
+                };
+              }
+              """
+          )
         );
     }
 }

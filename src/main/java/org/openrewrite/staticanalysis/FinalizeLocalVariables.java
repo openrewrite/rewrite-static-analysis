@@ -44,8 +44,8 @@ public class FinalizeLocalVariables extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
 
-                @Override
-                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
+            @Override
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, p);
 
                 // if this already has "final", we don't need to bother going any further; we're done
@@ -67,6 +67,11 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
+                // ignores anonymous class fields, contributed code for issue #181    
+                if (this.getCursorToParentScope(this.getCursor()).getValue() instanceof J.NewClass) {
+                    return mv;
+                }
+
                 if (mv.getVariables().stream()
                         .noneMatch(v -> {
                             Cursor declaringCursor = v.getDeclaringScope(getCursor());
@@ -79,6 +84,10 @@ public class FinalizeLocalVariables extends Recipe {
                 }
 
                 return mv;
+            }
+
+            private Cursor getCursorToParentScope(final Cursor cursor) {
+                return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration);
             }
         };
     }
