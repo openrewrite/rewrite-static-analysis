@@ -69,9 +69,9 @@ public class FinalizeLocalVariables extends Recipe {
                 }
 
                 // ignores anonymous class fields, contributed code for issue #181    
-                if (this.isAnonymousClassField(mv)) {
-                    return mv;
-                }
+                    if (this.getCursorToParentScope(this.getCursor()).getValue() instanceof J.NewClass) {
+                        return mv;
+                    }
 
                 if (mv.getVariables().stream()
                         .noneMatch(v -> {
@@ -87,18 +87,8 @@ public class FinalizeLocalVariables extends Recipe {
                 return mv;
             }
 
-            private boolean isAnonymousClassField(final J.VariableDeclarations multiVariable) {
-                return multiVariable.getVariables().stream().anyMatch(v -> {
-                    if (v.getVariableType() == null) {
-                        return false;
-                    }
-                    final JavaType ownClassFQN = v.getVariableType().getOwner();
-                    if (ownClassFQN == null) {
-                        return false;
-                    }
-                    final String[] typeFQNSplit = ownClassFQN.toString().split("\\.");
-                    return typeFQNSplit[typeFQNSplit.length - 1].contains("$");
-                });
+            private Cursor getCursorToParentScope(final Cursor cursor) {
+                return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration);
             }
         };
     }
