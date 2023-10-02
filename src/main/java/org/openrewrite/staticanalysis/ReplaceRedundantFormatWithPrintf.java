@@ -133,7 +133,20 @@ public class ReplaceRedundantFormatWithPrintf extends Recipe {
                     if (i != 0) {
                         code.append(", ");
                     }
-                    code.append("#{any(").append(argType).append(")}");
+                    code.append("#{any(");
+                    if (argType instanceof JavaType.GenericTypeVariable) {
+                        List<JavaType> bounds = ((JavaType.GenericTypeVariable) argType).getBounds();
+                        if (bounds.isEmpty()) {
+                            code.append("Object");
+                        } else {
+                            code.append(bounds.get(0));
+                        }
+                    } else if (argType instanceof JavaType.Parameterized) {
+                        code.append(((JavaType.Parameterized) argType).getType());
+                    } else {
+                        code.append(argType);
+                    }
+                    code.append(")}");
                 }
                 code.append(")");
 
