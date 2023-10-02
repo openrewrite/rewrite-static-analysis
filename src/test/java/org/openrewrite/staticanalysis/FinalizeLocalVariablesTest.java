@@ -440,6 +440,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/181")
     void shouldNotFinalizeVariablesWhichAreAssignedInAnonymousClasses() {
         this.rewriteRun(
           // language=java
