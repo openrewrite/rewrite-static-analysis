@@ -424,7 +424,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
     void shouldNotFinalizeVariableWhichIsReassignedInAnotherSwitchBranch() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+            """
             class A {
                 static int variable = 0;
                 static {
