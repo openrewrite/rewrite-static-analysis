@@ -242,6 +242,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     
     @Test
     void doNotReplaceIfAssignedThroughUnaryOrAccumulator(){
+        //language=java
         rewriteRun(java("""
           package Test;
                     
