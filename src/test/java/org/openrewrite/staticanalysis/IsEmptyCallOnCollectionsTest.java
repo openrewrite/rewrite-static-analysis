@@ -75,7 +75,7 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
     }
 
     @Test
-    void isEmptyCallOnCollections() {
+    void comparisonWithZero() {
         rewriteRun(
           //language=java
           java(
@@ -84,7 +84,7 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
 
               class Test {
                   static void method(List<String> l) {
-                      if (l.isEmpty() || 0 == l.size()) {
+                      if (l.size() == 0 || 0 == l.size()) {
                           // empty body
                       } else if (l.size() != 0 || 0 != l.size()) {
                           // empty body
@@ -108,6 +108,49 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
                       } else if (!l.isEmpty() || l.size() < 0) {
                           // empty body
                       } else if (!l.isEmpty() || 0 > l.size()) {
+                          // empty body
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void comparisonWithOne() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Test {
+                  static void method(List<String> l) {
+                      if (l.size() < 1 || 1 > l.size()) {
+                          // empty body
+                      } else if (l.size() > 1 || 1 < l.size()) {
+                          // empty body
+                      } else if (l.size() >= 1 || 1 <= l.size()) {
+                          // empty body
+                      } else if (l.size() <= 1 || 1 >= l.size()) {
+                          // empty body
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+                  static void method(List<String> l) {
+                      if (l.isEmpty() || l.isEmpty()) {
+                          // empty body
+                      } else if (l.size() > 1 || 1 < l.size()) {
+                          // empty body
+                      } else if (!l.isEmpty() || !l.isEmpty()) {
+                          // empty body
+                      } else if (l.size() <= 1 || 1 >= l.size()) {
                           // empty body
                       }
                   }
