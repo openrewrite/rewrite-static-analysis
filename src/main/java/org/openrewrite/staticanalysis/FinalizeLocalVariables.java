@@ -68,8 +68,7 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                // ignores anonymous class fields
-                // @Issue(https://github.com/openrewrite/rewrite-static-analysis/issues/181)
+                // ignores anonymous class fields, contributed code for issue #181    
                 if (this.isAnonymousClassField(mv)) {
                     return mv;
                 }
