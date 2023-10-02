@@ -21,7 +21,6 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
@@ -45,8 +44,8 @@ public class FinalizeLocalVariables extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
 
-                @Override
-                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
+            @Override
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, p);
 
                 // if this already has "final", we don't need to bother going any further; we're done
@@ -69,9 +68,9 @@ public class FinalizeLocalVariables extends Recipe {
                 }
 
                 // ignores anonymous class fields, contributed code for issue #181    
-                    if (this.getCursorToParentScope(this.getCursor()).getValue() instanceof J.NewClass) {
-                        return mv;
-                    }
+                if (this.getCursorToParentScope(this.getCursor()).getValue() instanceof J.NewClass) {
+                    return mv;
+                }
 
                 if (mv.getVariables().stream()
                         .noneMatch(v -> {
