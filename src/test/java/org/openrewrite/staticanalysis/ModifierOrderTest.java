@@ -85,11 +85,27 @@ class ModifierOrderTest implements RewriteTest {
                   public static default void bar() {
                       int i = 5;
                   }
+
+                  default private static void baz() {
+                      int i = 5;
+                  }
+
+                  static default protected void qux() {
+                      int i = 5;
+                  }
               }
               """
           , """
               interface Foo {
                   public default static void bar() {
+                      int i = 5;
+                  }
+
+                  private default static void baz() {
+                      int i = 5;
+                  }
+
+                  protected default static void qux() {
                       int i = 5;
                   }
               }
