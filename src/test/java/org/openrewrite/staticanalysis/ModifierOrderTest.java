@@ -73,6 +73,30 @@ class ModifierOrderTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/187")
+    void putDefaultModifierAtJLSRightPosition() {
+        // default modifier must be placed between abstract and static modifiers
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Foo {
+                  public static default void bar() {
+                      int i = 5;
+                  }
+              }
+              """
+          , """
+              interface Foo {
+                  public default static void bar() {
+                      int i = 5;
+                  }
+              }
+              """)
+        );
+    }
+
     @Nested
     class KotlinTest {
         @Test
