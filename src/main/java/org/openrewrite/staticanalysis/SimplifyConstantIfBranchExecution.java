@@ -15,6 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.SourceFile;
@@ -30,9 +32,6 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
-
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SimplifyConstantIfBranchExecution extends Recipe {
 
@@ -93,9 +92,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), context);
             if__ = if__.withIfCondition(cp);
 
-            if (visitsKeyWord(if__)) {
-                return if__;
-            }
+            boolean jumps = visitsKeyWord(if__);
 
             // The compile-time constant value of the if condition control parentheses.
             final Optional<Boolean> compileTimeConstantBoolean;
@@ -115,6 +112,9 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 // True branch
                 // Only keep the `then` branch, and remove the `else` branch.
                 Statement s = if__.getThenPart().withPrefix(if__.getPrefix());
+                if (jumps) {
+                    doAfterVisit(new RemoveUnreachableCodeVisitor());
+                }
                 return maybeAutoFormat(
                         if__,
                         s,
@@ -126,6 +126,9 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 if (if__.getElsePart() != null) {
                     // The `else` part needs to be kept
                     Statement s = if__.getElsePart().getBody().withPrefix(if__.getPrefix());
+                    if (jumps) {
+                        doAfterVisit(new RemoveUnreachableCodeVisitor());
+                    }
                     return maybeAutoFormat(
                             if__,
                             s,
