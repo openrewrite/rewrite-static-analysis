@@ -694,6 +694,35 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
+    void removesWhenReturnInElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      if (false) {
+                          System.out.println("true");
+                      } else {
+                          System.out.println("false");
+                          return;
+                      }
+                      System.out.println("goodbye");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("false");
+                      return;
+                  }
+              }"""
+          )
+        );
+    }
+
+    @Test
     void removesWhenThrowsInIfBlock() {
         rewriteRun(
           //language=java
