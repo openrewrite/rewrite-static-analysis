@@ -1,14 +1,15 @@
 package org.openrewrite.staticanalysis;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 @AllArgsConstructor
 public class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> {
