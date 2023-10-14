@@ -93,8 +93,6 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), context);
             if__ = if__.withIfCondition(cp);
 
-            boolean jumps = visitsKeyWord(if__);
-
             // The compile-time constant value of the if condition control parentheses.
             final Optional<Boolean> compileTimeConstantBoolean;
             if (isLiteralTrue(cp.getTree())) {
@@ -113,7 +111,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 // True branch
                 // Only keep the `then` branch, and remove the `else` branch.
                 Statement s = if__.getThenPart().withPrefix(if__.getPrefix());
-                if (jumps) {
+                if (jumps(s)) {
                     doAfterVisit(new RemoveUnreachableCodeVisitor());
                 }
                 return maybeAutoFormat(
@@ -127,7 +125,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 if (if__.getElsePart() != null) {
                     // The `else` part needs to be kept
                     Statement s = if__.getElsePart().getBody().withPrefix(if__.getPrefix());
-                    if (jumps) {
+                    if (jumps(s)) {
                         doAfterVisit(new RemoveUnreachableCodeVisitor());
                     }
                     return maybeAutoFormat(
@@ -155,11 +153,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             }
         }
 
-        private boolean visitsKeyWord(J.If iff) {
-            if (isLiteralFalse(iff.getIfCondition().getTree())) {
-                return false;
-            }
-
+        private boolean jumps(Statement statement) {
             AtomicBoolean visitedCFKeyword = new AtomicBoolean(false);
             // if there is a return, break, continue, throws in _then, then set visitedKeyword to true
             new JavaIsoVisitor<AtomicBoolean>() {
@@ -186,7 +180,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                     atomicBoolean.set(true);
                     return thrown;
                 }
-            }.visit(iff.getThenPart(), visitedCFKeyword);
+            }.visit(statement, visitedCFKeyword);
             return visitedCFKeyword.get();
         }
 
