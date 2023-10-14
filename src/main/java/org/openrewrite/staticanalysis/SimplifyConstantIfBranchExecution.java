@@ -15,8 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.SourceFile;
@@ -32,6 +30,9 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
+
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SimplifyConstantIfBranchExecution extends Recipe {
 

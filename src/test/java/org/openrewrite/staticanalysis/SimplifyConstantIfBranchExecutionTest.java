@@ -15,13 +15,13 @@
  */
 package org.openrewrite.staticanalysis;
 
-import static org.openrewrite.java.Assertions.java;
-
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+
+import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ConstantConditions", "FunctionName", "PointlessBooleanExpression", "StatementWithEmptyBody", "LoopStatementThatDoesntLoop", "InfiniteLoopStatement", "DuplicateCondition"})
 class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
@@ -681,7 +681,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                   }
               }
               """,
-                """
+            """
               public class A {
                   public void test() {
                       System.out.println("hello");
