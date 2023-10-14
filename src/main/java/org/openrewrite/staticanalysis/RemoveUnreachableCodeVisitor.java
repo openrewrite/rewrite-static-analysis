@@ -8,30 +8,28 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.J.MethodDeclaration;
+import org.openrewrite.java.tree.J.Block;
 import org.openrewrite.java.tree.J.Return;
 import org.openrewrite.java.tree.J.Throw;
 import org.openrewrite.java.tree.Statement;
 
 @AllArgsConstructor
 public class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> {
-  @Override
-  public J visitMethodDeclaration(MethodDeclaration method, ExecutionContext executionContext) {
-    method = (MethodDeclaration) super.visitMethodDeclaration(method, executionContext);
-    if (method.getBody() == null) {
-      return method;
-    }
 
-    List<Statement> statements = method.getBody().getStatements();
+  @Override
+  public J visitBlock(Block block, ExecutionContext executionContext) {
+    block = (Block) super.visitBlock(block, executionContext);
+
+    List<Statement> statements = block.getStatements();
     Optional<Integer> maybeFirstJumpIndex = findFirstJump(statements);
     if (!maybeFirstJumpIndex.isPresent()) {
-      return method;
+      return block;
     }
     int firstJumpIndex = maybeFirstJumpIndex.get();
 
     List<Statement> newStatements =
         ListUtils.flatMap(
-            method.getBody().getStatements(),
+            block.getStatements(),
             (index, statement) -> {
               if (index <= firstJumpIndex) {
                 return statement;
@@ -40,7 +38,7 @@ public class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> 
             }
         );
 
-    return method.withBody(method.getBody().withStatements(newStatements));
+    return block.withStatements(newStatements);
   }
 
   private Optional<Integer> findFirstJump(List<Statement> statements) {
