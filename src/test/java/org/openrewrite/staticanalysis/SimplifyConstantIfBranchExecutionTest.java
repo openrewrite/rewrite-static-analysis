@@ -746,7 +746,6 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                       while (true) {
                           System.out.println("hello");
                           break;
-                          System.out.println("goodbye");
                       }
                       System.out.println("goodbye");
                   }
@@ -781,7 +780,6 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                       while (true) {
                           System.out.println("hello");
                           continue;
-                          System.out.println("goodbye");
                       }
                       System.out.println("goodbye");
                   }

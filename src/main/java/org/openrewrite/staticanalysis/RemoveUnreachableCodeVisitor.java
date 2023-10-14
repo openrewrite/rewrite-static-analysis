@@ -9,6 +9,8 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.Block;
+import org.openrewrite.java.tree.J.Break;
+import org.openrewrite.java.tree.J.Continue;
 import org.openrewrite.java.tree.J.Return;
 import org.openrewrite.java.tree.J.Throw;
 import org.openrewrite.java.tree.Statement;
@@ -44,7 +46,12 @@ public class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> 
   private Optional<Integer> findFirstJump(List<Statement> statements) {
     for (int i = 0; i < statements.size(); i++) {
       Statement statement = statements.get(i);
-      if (statement instanceof Return || statement instanceof Throw) {
+      if (
+          statement instanceof Return ||
+          statement instanceof Throw ||
+          statement instanceof Break ||
+          statement instanceof Continue
+      ) {
         return Optional.of(i);
       }
     }
