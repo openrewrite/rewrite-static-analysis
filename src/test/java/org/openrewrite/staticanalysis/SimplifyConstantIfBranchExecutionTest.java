@@ -696,6 +696,32 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
+    void removesWhenReturnInThenNoBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      if (true) return;
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      return;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void removesWhenReturnInThenBlockWithElse() {
         rewriteRun(
           //language=java
@@ -750,6 +776,34 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                   public void test() {
                       System.out.println("before");
                       System.out.println("else");
+                      return;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenReturnInElseNoBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      if (false) {
+                          System.out.println("then");
+                      } else return;
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
                       return;
                   }
               }
