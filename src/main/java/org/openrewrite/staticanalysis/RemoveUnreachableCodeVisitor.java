@@ -8,19 +8,14 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.J.Block;
-import org.openrewrite.java.tree.J.Break;
-import org.openrewrite.java.tree.J.Continue;
-import org.openrewrite.java.tree.J.Return;
-import org.openrewrite.java.tree.J.Throw;
 import org.openrewrite.java.tree.Statement;
 
 @AllArgsConstructor
 public class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> {
 
   @Override
-  public J visitBlock(Block block, ExecutionContext executionContext) {
-    block = (Block) super.visitBlock(block, executionContext);
+  public J visitBlock(J.Block block, ExecutionContext executionContext) {
+    block = (J.Block) super.visitBlock(block, executionContext);
 
     List<Statement> statements = block.getStatements();
     Optional<Integer> maybeFirstJumpIndex = findFirstJump(statements);
@@ -47,10 +42,10 @@ public class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> 
     for (int i = 0; i < statements.size(); i++) {
       Statement statement = statements.get(i);
       if (
-          statement instanceof Return ||
-          statement instanceof Throw ||
-          statement instanceof Break ||
-          statement instanceof Continue
+          statement instanceof J.Return ||
+          statement instanceof J.Throw ||
+          statement instanceof J.Break ||
+          statement instanceof J.Continue
       ) {
         return Optional.of(i);
       }
