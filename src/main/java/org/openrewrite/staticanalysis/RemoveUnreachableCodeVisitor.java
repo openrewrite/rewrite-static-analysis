@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> {
+class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> {
 
   @Override
   public J visitBlock(J.Block block, ExecutionContext executionContext) {
