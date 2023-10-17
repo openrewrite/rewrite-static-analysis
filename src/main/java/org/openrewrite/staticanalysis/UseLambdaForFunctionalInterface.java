@@ -23,6 +23,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -91,7 +92,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                             return n;
                         }
 
-                        //The interface may be parameterized and that is needed to maintain type attribution:
+                        // The interface may be parameterized and that is needed to maintain type attribution:
                         JavaType.FullyQualified typedInterface = null;
                         JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
                         if (anonymousClass != null) {
@@ -123,7 +124,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                                 .build()
                                 .apply(getCursor(), n.getCoordinates().replace());
                         lambda = lambda.withType(typedInterface);
-                        lambda = (J.Lambda) new UnnecessaryParenthesesVisitor()
+                        lambda = (J.Lambda) new UnnecessaryParenthesesVisitor<>()
                                 .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
 
                         J.Block lambdaBody = methodDeclaration.getBody();
@@ -132,13 +133,48 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         lambda = lambda.withBody(lambdaBody.withPrefix(Space.format(" ")));
 
                         lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
-
                         doAfterVisit(new RemoveUnusedImports().getVisitor());
 
-                        return autoFormat(lambda, ctx);
+                        return autoFormat(maybeAddCast(lambda, newClass), ctx);
                     }
                 }
                 return n;
+            }
+
+            private J maybeAddCast(J.Lambda lambda, J.NewClass original) {
+                J parent = getCursor().getParentTreeCursor().getValue();
+
+                JavaType.FullyQualified lambdaType = TypeUtils.asFullyQualified(lambda.getType());
+                if (lambdaType == null) {
+                    return lambda;
+                }
+                String lambdaFqn = lambdaType.getFullyQualifiedName();
+
+                if (parent instanceof J.MethodInvocation) {
+                    J.MethodInvocation method = (J.MethodInvocation) parent;
+                    List<Expression> arguments = method.getArguments();
+                    for (int i = 0; i < arguments.size(); i++) {
+                        Expression argument = arguments.get(i);
+                        if (argument == original && method.getMethodType() != null &&
+                            !TypeUtils.isOfClassType(method.getMethodType().getParameterTypes().get(i), lambdaFqn) &&
+                            original.getClazz() != null) {
+                            return new J.TypeCast(
+                                    Tree.randomId(),
+                                    lambda.getPrefix(),
+                                    Markers.EMPTY,
+                                    new J.ControlParentheses<>(
+                                            Tree.randomId(),
+                                            Space.EMPTY,
+                                            Markers.EMPTY,
+                                            JRightPadded.build(original.getClazz())
+                                    ),
+                                    lambda.withPrefix(Space.format(" "))
+                            );
+                        }
+                    }
+                }
+
+                return lambda;
             }
 
             private String valueOfType(@Nullable JavaType type) {
@@ -276,7 +312,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 nameScopeBlocks.add((J.Block) p);
             }
             return p instanceof J.MethodDeclaration || p instanceof J.ClassDeclaration;
-        } ).getValue();
+        }).getValue();
         if (nameScope instanceof J.MethodDeclaration) {
             J.MethodDeclaration m = (J.MethodDeclaration) nameScope;
             localVariables.addAll(parameterNames(m));

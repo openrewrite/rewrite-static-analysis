@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -31,6 +32,49 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UseLambdaForFunctionalInterface());
     }
+
+    @SuppressWarnings("ConstantConditions")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/194")
+    @Test
+    void gson() {
+        rewriteRun(
+          spec -> spec.recipe(new UseLambdaForFunctionalInterface())
+            .parser(JavaParser.fromJavaVersion().classpath("gson")),
+          //language=java
+          java(
+            """
+              import com.google.gson.GsonBuilder;
+              import com.google.gson.JsonPrimitive;
+              import com.google.gson.JsonSerializer;
+              import java.time.LocalDateTime;
+              
+              class Test {
+                  void test() {
+                      new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
+                          @Override
+                          public JsonElement serialize(LocalDateTime object, Type type, JsonSerializationContext context) {
+                              return new JsonPrimitive(object.format(null));
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              import com.google.gson.GsonBuilder;
+              import com.google.gson.JsonPrimitive;
+              import com.google.gson.JsonSerializer;
+              import java.time.LocalDateTime;
+              
+              class Test {
+                  void test() {
+                      new GsonBuilder().registerTypeAdapter(LocalDateTime.class, (JsonSerializer<LocalDateTime>) (object, type, context) -> new JsonPrimitive(object.format(null)));
+                  }
+              }
+              """
+          )
+        );
+    }
+
 
     @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     @Test
