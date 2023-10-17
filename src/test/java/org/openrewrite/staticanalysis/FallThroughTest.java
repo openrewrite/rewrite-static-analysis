@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.FallThroughStyle;
@@ -33,6 +34,34 @@ class FallThroughTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new FallThrough());
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/173")
+    @Test
+    void switchInSwitch() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      switch (day) {
+                          case 1:
+                              int month = 1;
+                              switch (month) {
+                                  case 1:
+                                      return "January";
+                                  default:
+                                      return "no valid month";
+                              }
+                          default:
+                              return "No valid day";
+                      }
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
