@@ -77,7 +77,8 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return !hasNameKey.contains(toName);
+                Set<String> keys = computeAllKeys(toName, variable);
+                return keys.stream().noneMatch(hasNameKey::contains);
             }
 
             @Override
@@ -94,7 +95,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                     if (!LOWER_CAMEL.matches(name) && name.length() > 1) {
                         renameVariable(v, LOWER_CAMEL.format(name));
                     } else {
-                        hasNameKey(name);
+                        hasNameKey(computeKey(name, v));
                     }
                 }
                 return mv;
@@ -140,7 +141,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
-                hasNameKey(identifier.getSimpleName());
+                hasNameKey(computeKey(identifier.getSimpleName(), identifier));
                 return identifier;
             }
 

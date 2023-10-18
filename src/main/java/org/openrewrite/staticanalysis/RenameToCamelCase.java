@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.java.tree.JavaType;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -43,7 +44,7 @@ public abstract class RenameToCamelCase extends JavaIsoVisitor<ExecutionContext>
                 String toName = entry.getValue();
                 if (shouldRename(hasNameSet, variable, toName)) {
                     cu = (JavaSourceFile) new RenameVariable<>(variable, toName).visitNonNull(cu, ctx);
-                    hasNameSet.add(toName);
+                    hasNameSet.add(computeKey(toName, variable));
                 }
             }
             return cu;
@@ -64,5 +65,42 @@ public abstract class RenameToCamelCase extends JavaIsoVisitor<ExecutionContext>
         getCursor().getPathAsCursors(c -> c.getValue() instanceof JavaSourceFile).next()
                 .computeMessageIfAbsent("HAS_NAME_KEY", k -> new HashSet<>())
                 .add(variableName);
+    }
+
+    protected String computeKey(String identifier, J context) {
+        JavaType.Variable fieldType = getFieldType(context);
+        if (fieldType != null && fieldType.getOwner() != null) {
+            return fieldType.getOwner() + " " + identifier;
+        }
+        return identifier;
+    }
+
+    protected Set<String> computeAllKeys(String identifier, J context) {
+        Set<String> keys = new HashSet<>();
+        keys.add(identifier);
+        JavaType.Variable fieldType = getFieldType(context);
+        if (fieldType != null && fieldType.getOwner() != null) {
+            keys.add(fieldType.getOwner() + " " + identifier);
+            if (fieldType.getOwner() instanceof JavaType.Method) {
+                // Add all enclosing classes
+                JavaType.FullyQualified declaringType = ((JavaType.Method) fieldType.getOwner()).getDeclaringType();
+                while (declaringType != null) {
+                    keys.add(declaringType + " " + identifier);
+                    declaringType = declaringType.getOwningClass();
+                }
+            }
+        }
+        return keys;
+    }
+
+    @Nullable
+    protected JavaType.Variable getFieldType(J tree) {
+        if (tree instanceof J.Identifier) {
+            return ((J.Identifier) tree).getFieldType();
+        }
+        if (tree instanceof J.VariableDeclarations.NamedVariable) {
+            return ((J.VariableDeclarations.NamedVariable) tree).getVariableType();
+        }
+        return null;
     }
 }
