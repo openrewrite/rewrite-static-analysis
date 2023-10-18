@@ -224,5 +224,147 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void removeCommentsPrefix() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                 // Some comment
+                 private int a;
+              }
+              """, """
+              public class Test {
+              }
+              """
+          )
+        );
+    }
+    @Test
+    void removeCommentsLastExpression() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                  private int a; // Some comment
+              }
+              """, """
+              public class Test {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeCommentsSameLine() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                  private int a;
+                  private int b; // Some comment
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """, """
+              public class Test {
+                  private int a;
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeCommentsMultiLine() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                  private int a;
+                  private int b; /*
+                    Some
+                    multiline
+                    comment
+                  */
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """, """
+              public class Test {
+                  private int a;
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """
+          )
+        );
+
+    }
+
+    @Test
+    void doNotRemoveCommentsIfNewline() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                  private int a;
+                  private int b;
+                  // Some comment
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """, """
+              public class Test {
+                  private int a;
+                  // Some comment
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCommentsIfNotRemovedWholeVariableDeclarations() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                  private int a, b; // Some comment
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """, """
+              public class Test {
+                  private int a; // Some comment
+                  
+                  public void test() {
+                      a = 42;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
 
