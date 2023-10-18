@@ -77,6 +77,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 }
                 return hasNameKey.stream().noneMatch(key ->
                         key.equals(toName) ||
+                        key.equals(variable.getSimpleName()) ||
                         key.endsWith(" " + toName) ||
                         key.endsWith(" " + variable.getSimpleName())
                 );
