@@ -21,9 +21,11 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -77,7 +79,8 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return !hasNameKey.contains(toName);
+                Set<String> keys = computeAllKeys(toName, variable);
+                return keys.stream().noneMatch(hasNameKey::contains);
             }
 
             @Override
@@ -94,7 +97,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                     if (!LOWER_CAMEL.matches(name) && name.length() > 1) {
                         renameVariable(v, LOWER_CAMEL.format(name));
                     } else {
-                        hasNameKey(name);
+                        hasNameKey(computeKey(name, v));
                     }
                 }
                 return mv;
@@ -140,7 +143,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
-                hasNameKey(identifier.getSimpleName());
+                hasNameKey(computeKey(identifier.getSimpleName(), identifier));
                 return identifier;
             }
 
@@ -166,6 +169,24 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                                 is instanceof J.Lambda ||
                                 is instanceof JavaSourceFile
                 );
+            }
+
+            private Set<String> computeAllKeys(String identifier, J context) {
+                Set<String> keys = new HashSet<>();
+                keys.add(identifier);
+                JavaType.Variable fieldType = getFieldType(context);
+                if (fieldType != null && fieldType.getOwner() != null) {
+                    keys.add(fieldType.getOwner() + " " + identifier);
+                    if (fieldType.getOwner() instanceof JavaType.Method) {
+                        // Add all enclosing classes
+                        JavaType.FullyQualified declaringType = ((JavaType.Method) fieldType.getOwner()).getDeclaringType();
+                        while (declaringType != null) {
+                            keys.add(declaringType + " " + identifier);
+                            declaringType = declaringType.getOwningClass();
+                        }
+                    }
+                }
+                return keys;
             }
         };
     }
