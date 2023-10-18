@@ -31,30 +31,6 @@ class SimplifyBooleanReturnTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanReturn());
     }
 
-    @Test
-    void xxx() {
-        rewriteRun(
-          java(
-            """
-              public class A {
-                  boolean m(int i) {
-                      return !!(m == 1);
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      if (false) {
-                          System.out.println("");
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void simplifyBooleanReturn() {
