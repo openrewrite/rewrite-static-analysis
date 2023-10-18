@@ -21,9 +21,11 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -167,6 +169,24 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                                 is instanceof J.Lambda ||
                                 is instanceof JavaSourceFile
                 );
+            }
+
+            private Set<String> computeAllKeys(String identifier, J context) {
+                Set<String> keys = new HashSet<>();
+                keys.add(identifier);
+                JavaType.Variable fieldType = getFieldType(context);
+                if (fieldType != null && fieldType.getOwner() != null) {
+                    keys.add(fieldType.getOwner() + " " + identifier);
+                    if (fieldType.getOwner() instanceof JavaType.Method) {
+                        // Add all enclosing classes
+                        JavaType.FullyQualified declaringType = ((JavaType.Method) fieldType.getOwner()).getDeclaringType();
+                        while (declaringType != null) {
+                            keys.add(declaringType + " " + identifier);
+                            declaringType = declaringType.getOwningClass();
+                        }
+                    }
+                }
+                return keys;
             }
         };
     }

@@ -75,24 +75,6 @@ public abstract class RenameToCamelCase extends JavaIsoVisitor<ExecutionContext>
         return identifier;
     }
 
-    protected Set<String> computeAllKeys(String identifier, J context) {
-        Set<String> keys = new HashSet<>();
-        keys.add(identifier);
-        JavaType.Variable fieldType = getFieldType(context);
-        if (fieldType != null && fieldType.getOwner() != null) {
-            keys.add(fieldType.getOwner() + " " + identifier);
-            if (fieldType.getOwner() instanceof JavaType.Method) {
-                // Add all enclosing classes
-                JavaType.FullyQualified declaringType = ((JavaType.Method) fieldType.getOwner()).getDeclaringType();
-                while (declaringType != null) {
-                    keys.add(declaringType + " " + identifier);
-                    declaringType = declaringType.getOwningClass();
-                }
-            }
-        }
-        return keys;
-    }
-
     @Nullable
     protected JavaType.Variable getFieldType(J tree) {
         if (tree instanceof J.Identifier) {
