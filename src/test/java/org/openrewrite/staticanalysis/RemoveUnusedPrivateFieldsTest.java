@@ -228,6 +228,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void removeCommentsPrefix() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -244,6 +245,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void removeCommentsLastExpression() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -260,6 +262,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void removeCommentsSameLine() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -286,6 +289,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void removeCommentsMultiLine() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -317,6 +321,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void doNotRemoveCommentsIfNewline() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
@@ -345,6 +350,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Test
     void doNotRemoveCommentsIfNotRemovedWholeVariableDeclarations() {
         rewriteRun(
+          //language=java
           java(
             """
               public class Test {
