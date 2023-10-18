@@ -146,6 +146,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                                   s instanceof J.Break ||
                                   s instanceof J.Continue ||
                                   s instanceof J.Throw ||
+                                  s instanceof J.Switch || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
                                   ((J) s).getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
                         ).orElse(false);
             }

@@ -49,7 +49,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ConstantConditions"})
+@SuppressWarnings({"ConstantConditions", "UnusedAssignment", "IdempotentLoopBody", "ParameterCanBeLocal", "UnnecessaryLocalVariable"})
 class UnnecessaryParenthesesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
@@ -70,6 +70,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/2170")
     @Test
     void minimumSpace() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -93,6 +94,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
     @DocumentExample
     @Test
     void fullUnwrappingDefault() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -147,6 +149,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
     @Disabled
     @Test
     void unwrapExpr() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withExpr(true)),
           java(
@@ -176,6 +179,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapIdent() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withIdent(true)),
           java(
@@ -201,6 +205,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapNum() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withNumDouble(true).withNumFloat(true)
             .withNumInt(true).withNumLong(true)),
@@ -235,8 +240,10 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings({"PointlessBooleanExpression", "MismatchedStringCase"})
     @Test
     void unwrapLiteral() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withLiteralFalse(true).withLiteralTrue(true)
             .withLiteralNull(true).withStringLiteral(true)),
@@ -287,8 +294,10 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("SillyAssignment")
     @Test
     void unwrapAssignment() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withAssign(true)),
           java(
@@ -338,6 +347,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapBandAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withBitAndAssign(true)),
           java(
@@ -369,6 +379,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapBorAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withBitOrAssign(true)),
           java(
@@ -400,6 +411,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapBsrAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withBitShiftRightAssign(true)),
           java(
@@ -429,6 +441,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapBxorAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withBitXorAssign(true)),
           java(
@@ -460,6 +473,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapDivAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withDivAssign(true)),
           java(
@@ -491,6 +505,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapMinusAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withMinusAssign(true)),
           java(
@@ -523,6 +538,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/1486")
     @Test
     void unwrapMinusReturnExpression() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withExpr(true)),
           java(
@@ -577,6 +593,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapPlusAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withPlusAssign(true)),
           java(
@@ -608,6 +625,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapSlAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withShiftLeftAssign(true)),
           java(
@@ -639,6 +657,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapSrAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withShiftRightAssign(true)),
           java(
@@ -670,6 +689,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapStarAssign() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withStarAssign(true)),
           java(
@@ -701,6 +721,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapLambda() {
+        //language=java
         rewriteRun(
           unnecessaryParentheses(style -> style.withLambda(true)),
           java(
@@ -735,6 +756,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/798")
     @Test
     void unwrapDoubleParens() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -783,6 +805,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void doNotUnwrapIfNoParens() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -800,6 +823,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void doNotUnwrapNegatedIfParens() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -815,8 +839,10 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("PointlessBooleanExpression")
     @Test
     void doNotUnwrapIfParens() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -834,6 +860,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapWhileParens() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -860,6 +887,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapDoWhileParens() {
+        //language=java
         rewriteRun(
           java(
             """
@@ -886,6 +914,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     @Test
     void unwrapForControlParens() {
+        //language=java
         rewriteRun(
           java(
             """
