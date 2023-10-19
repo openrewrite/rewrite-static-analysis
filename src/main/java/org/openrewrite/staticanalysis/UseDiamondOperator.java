@@ -25,13 +25,11 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.java.tree.TypeUtils.findDeclaredMethod;
 
 public class UseDiamondOperator extends Recipe {
 
@@ -111,6 +109,16 @@ public class UseDiamondOperator extends Recipe {
             if (methodType != null &&
                     !mi.getArguments().isEmpty() &&
                     methodType.getParameterTypes().size() <= mi.getArguments().size()) {
+
+
+                Optional<JavaType.Method> declaredMethodType = findDeclaredMethod(methodType.getDeclaringType(), methodType.getName(), methodType.getParameterTypes());
+                if (!declaredMethodType.isPresent()) {
+                    // If we cannot find the method in the declaringType is because its parameter types doesn't match
+                    // due to generic type parameters being inferred on the invocation. We cannot safely apply the
+                    // diamond operator on an argument of this method, because we cannot guarantee type inference.
+                    return method;
+                }
+
                 mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
                     if (arg instanceof J.NewClass) {
                         boolean isGenericType = false;
