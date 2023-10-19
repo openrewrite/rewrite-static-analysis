@@ -16,6 +16,7 @@
 
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -35,49 +36,14 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void singleLineParam() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**@param arg0*/
-                  void method(int arg0) {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /***/
-                  void method(int arg0) {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    @Issue("https://github.com/openrewrite/rewrite/issues/3078")
-    void visitingQuarkMustNotFail() {
-        rewriteRun(
-          other(
-            """
-              foo
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeParamWithNoPrefix() {
+    void emptyParam() {
         rewriteRun(
           //language=java
           java(
             """
               class Test {
                   /**
-                   *@param arg0
+                   * @param arg0
                    */
                   void method(int arg0) {
                   }
@@ -88,6 +54,58 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   /**
                    */
                   void method(int arg0) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                   * @return
+                   */
+                  int method() {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   */
+                  int method() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                   * @throws
+                   */
+                  void method() throws IllegalStateException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   */
+                  void method() throws IllegalStateException {
                   }
               }
               """
@@ -156,76 +174,389 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         );
     }
 
-    @Test
-    void emptyReturn() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**
-                   * @return
-                   */
-                  int method() {
+    @Nested
+    class NoSpace {
+        @Test
+        void emptyParamNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**
+                       *@param arg0
+                       */
+                      void method(int arg0) {
+                      }
                   }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                   */
-                  int method() {
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      void method(int arg0) {
+                      }
                   }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
+
+        @Test
+        void emptyReturnNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**
+                       *@return
+                       */
+                      int method() {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      int method() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void emptyThrowsNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**
+                       *@throws
+                       */
+                      void method() throws IllegalStateException {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      void method() throws IllegalStateException {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+    }
+
+    @Nested
+    class SingleLine {
+        @Test
+        void singleLineParam() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /** @param arg0*/
+                      void method(int arg0) {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /***/
+                      void method(int arg0) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void singleLineReturn() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /** @return*/
+                      int method() {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /***/
+                      int method() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void singleLineThrows() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /** @throws*/
+                      void method() throws IllegalStateException {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /***/
+                      void method() throws IllegalStateException {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void singleLineParamNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**@param arg0*/
+                      void method(int arg0) {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /***/
+                      void method(int arg0) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void singleLineReturnNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**@return*/
+                      int method() {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /***/
+                      int method() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void singleLineThrowsNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**@throws*/
+                      void method() throws IllegalStateException {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /***/
+                      void method() throws IllegalStateException {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class FirstLine {
+        @Test
+        void firstLineParam() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /** @param arg0
+                       */
+                      void method(int arg0) {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      void method(int arg0) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void firstLineReturn() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /** @return
+                       */
+                      int method() {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      int method() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void firstLineThrows() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /** @throws
+                       */
+                      int method() throws IllegalStateException {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      int method() throws IllegalStateException {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void firstLineParamNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**@param arg0
+                       */
+                      void method(int arg0) {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      void method(int arg0) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void firstLineReturnNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**@return
+                       */
+                      int method() {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      int method() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void firstLineThrowsNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**@throws
+                       */
+                      int method() throws IllegalStateException {
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      /**
+                       */
+                      int method() throws IllegalStateException {
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @Test
-    void emptyThrows() {
+    @Issue("https://github.com/openrewrite/rewrite/issues/3078")
+    void visitingQuarkMustNotFail() {
         rewriteRun(
-          //language=java
-          java(
+          other(
             """
-              class Test {
-                  /**
-                   * @throws
-                   */
-                  void method() throws IllegalStateException {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                   */
-                  void method() throws IllegalStateException {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void emptyThrowsOnFirstLine() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /** @throws*/
-                  void method() throws IllegalStateException {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /***/
-                  void method() throws IllegalStateException {
-                  }
-              }
+              foo
               """
           )
         );
