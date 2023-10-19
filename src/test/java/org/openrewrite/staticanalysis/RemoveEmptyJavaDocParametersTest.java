@@ -550,6 +550,59 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         }
     }
 
+    @Nested
+    class EmptyJavaDoc {
+        @Test
+        void emptyJavaDoc() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /**
+                       */
+                      void method(int arg0) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void emptyJavaDocSingleLine() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /** */
+                      void method(int arg0) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void emptyJavaDocSingleLineNoSpace() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      /***/
+                      void method(int arg0) {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+
     @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3078")
     void visitingQuarkMustNotFail() {
