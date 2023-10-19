@@ -21,7 +21,9 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
@@ -98,8 +100,10 @@ public class InlineVariable extends Recipe {
                 Statement lastStatement = stats.get(stats.size() - 1);
                 if (lastStatement instanceof J.Return) {
                     J.Return return_ = (J.Return) lastStatement;
-                    if (return_.getExpression() instanceof J.Identifier) {
-                        return ((J.Identifier) return_.getExpression()).getSimpleName();
+                    Expression expression = return_.getExpression();
+                    if (expression instanceof J.Identifier &&
+                        !(expression.getType() instanceof JavaType.Array)) {
+                        return ((J.Identifier) expression).getSimpleName();
                     }
                 } else if (lastStatement instanceof J.Throw) {
                     J.Throw thr = (J.Throw) lastStatement;

@@ -34,6 +34,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -112,7 +113,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
               class Test {
                   public void closeable() throws IOException {
                       // URLClassLoader implements Closeable and throws IOException from its close() method
-                      try (URLClassLoader cl = new URLClassLoader(new URL.get(0))) {
+                      try (URLClassLoader cl = new URLClassLoader(new URL[0])) {
                       }
                   }
               }
@@ -293,6 +294,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
     @Test
     void preventTransformationIfAnyThrownExceptionHasNullOrUnknownType() {
         rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
           //language=java
           java(
             """

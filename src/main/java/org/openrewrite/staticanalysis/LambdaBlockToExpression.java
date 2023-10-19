@@ -20,12 +20,11 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.marker.SearchResult;
+import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.List;
+import java.util.Optional;
 
 public class LambdaBlockToExpression extends Recipe {
     @Override
@@ -40,13 +39,7 @@ public class LambdaBlockToExpression extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(
-                new JavaIsoVisitor<ExecutionContext>() {
-                    @Override
-                    public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext executionContext) {
-                        return SearchResult.found(cu);
-                    }
-                },
+        return Preconditions.check(new JavaFileChecker<>(),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext executionContext) {
@@ -64,7 +57,50 @@ public class LambdaBlockToExpression extends Recipe {
                         }
                         return l;
                     }
+
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+                        if (hasLambdaArgument(method) && hasMethodOverloading(method)) {
+                            return method;
+                        }
+                        return super.visitMethodInvocation(method, executionContext);
+                    }
                 }
         );
+    }
+
+    // Check whether a method has overloading methods in the declaring class
+    private static boolean hasMethodOverloading(J.MethodInvocation method) {
+        String methodName = method.getSimpleName();
+        return Optional.ofNullable(method.getMethodType())
+                .map(JavaType.Method::getDeclaringType)
+                .filter(JavaType.Class.class::isInstance)
+                .map(JavaType.Class.class::cast)
+                .map(JavaType.Class::getMethods)
+                .map(methods -> {
+                    int overloadingCount = 0;
+                    for (JavaType.Method dm : methods) {
+                        if (dm.getName().equals(methodName)) {
+                            overloadingCount++;
+                            if (overloadingCount > 1) {
+
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                })
+                .orElse(false);
+    }
+
+    private static boolean hasLambdaArgument(J.MethodInvocation method) {
+        boolean hasLambdaArgument = false;
+        for (Expression arg : method.getArguments()) {
+            if (arg instanceof J.Lambda) {
+                hasLambdaArgument = true;
+                break;
+            }
+        }
+        return hasLambdaArgument;
     }
 }

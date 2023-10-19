@@ -44,7 +44,7 @@ public class SimplifyBooleanReturn extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Simplifies Boolean expressions by removing redundancies, e.g.: `a && true` simplifies to `a`.";
+        return "Simplifies Boolean expressions by removing redundancies. For example, `a && true` simplifies to `a`.";
     }
 
     @Override
@@ -70,17 +70,23 @@ public class SimplifyBooleanReturn extends Recipe {
                 Cursor parent = getCursor().getParentTreeCursor();
 
                 if (parent.getValue() instanceof J.Block &&
-                        parent.getParentOrThrow().getValue() instanceof J.MethodDeclaration &&
-                        thenHasOnlyReturnStatement(iff) &&
-                        elseWithOnlyReturn(i)) {
+                    parent.getParentOrThrow().getValue() instanceof J.MethodDeclaration &&
+                    thenHasOnlyReturnStatement(iff) &&
+                    elseWithOnlyReturn(i)) {
                     List<Statement> followingStatements = followingStatements();
                     Optional<Expression> singleFollowingStatement = Optional.ofNullable(followingStatements.isEmpty() ? null : followingStatements.get(0))
                             .flatMap(stat -> Optional.ofNullable(stat instanceof J.Return ? (J.Return) stat : null))
+                            .filter(r -> r.getComments().isEmpty())
                             .map(J.Return::getExpression);
 
                     if (followingStatements.isEmpty() || singleFollowingStatement.map(r -> isLiteralFalse(r) || isLiteralTrue(r)).orElse(false)) {
                         J.Return return_ = getReturnIfOnlyStatementInThen(iff).orElse(null);
                         assert return_ != null;
+
+                        // Do not remove comments that are attached to the return statement
+                        if (!return_.getComments().isEmpty() || hasElseWithComment(i.getElsePart())) {
+                            return i;
+                        }
 
                         Expression ifCondition = i.getIfCondition().getTree();
 
@@ -89,7 +95,7 @@ public class SimplifyBooleanReturn extends Recipe {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
                                 return maybeAutoFormat(return_, return_.withExpression(ifCondition), ctx, parent);
                             } else if (!singleFollowingStatement.isPresent() &&
-                                    getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
+                                       getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
                                 }
@@ -184,6 +190,23 @@ public class SimplifyBooleanReturn extends Recipe {
                 }
 
                 return Optional.empty();
+            }
+
+            private boolean hasElseWithComment(J.If.Else else_) {
+                if (else_ == null || else_.getBody() == null) {
+                    return false;
+                }
+                if (!else_.getComments().isEmpty()) {
+                    return true;
+                }
+                if (!else_.getBody().getComments().isEmpty()) {
+                    return true;
+                }
+                if (else_.getBody() instanceof J.Block
+                    && !((J.Block) else_.getBody()).getStatements().get(0).getComments().isEmpty()) {
+                    return true;
+                }
+                return false;
             }
         };
     }

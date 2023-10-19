@@ -228,7 +228,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
                           Integer.valueOf(value);
                       // Rule does not apply to catch variables with 1 character.
                       } catch (Exception E){
-                          throw new NumberFormatException("Test", E);
+                          throw new IllegalArgumentException("Test", E);
                       }
                       return DoNoTChange + 10;
                   }
@@ -372,4 +372,68 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/171")
+    void renameMultipleOcurrencesDifferentScope() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      String ID;
+                  }
+                  void test2() {
+                      String ID;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      String id;
+                  }
+                  void test2() {
+                      String id;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameIfInParent() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String id;
+                  void test() {
+                      String ID;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameIfInParentFromInnerClass() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String id;
+                  class InnerClass {
+                      void test() {
+                          String ID;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

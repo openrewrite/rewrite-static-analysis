@@ -95,9 +95,9 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY);
                 if (typeExpression != null) {
                     // "? extends Foo" is not a valid type definition on its own. Unwrap wildcard and replace with its bound
-                    if(typeExpression instanceof J.Wildcard) {
-                        J.Wildcard wildcard = (J.Wildcard)typeExpression;
-                        if(wildcard.getBoundedType() == null) {
+                    if (typeExpression instanceof J.Wildcard) {
+                        J.Wildcard wildcard = (J.Wildcard) typeExpression;
+                        if (wildcard.getBoundedType() == null) {
                             return multiVariable;
                         }
                         typeExpression = buildTypeTree(wildcard.getBoundedType().getType(), Space.EMPTY);
@@ -168,7 +168,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 }
             } else if (type instanceof JavaType.Array) {
                 return (buildTypeTree(((JavaType.Array) type).getElemType(), space));
-            } else if(type instanceof JavaType.Variable) {
+            } else if (type instanceof JavaType.Variable) {
                 return buildTypeTree(((JavaType.Variable) type).getType(), space);
             } else if (type instanceof JavaType.GenericTypeVariable) {
                 JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;

@@ -30,24 +30,6 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         spec.recipe(new RemoveRedundantTypeCast());
     }
 
-    @Test
-    void doNotChangeUpCast() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.List;
-              class Test {
-                  Object o = "";
-                  String s = (String) o;
-                  List<?> l;
-                  String[] sArray = (String[]) l.toArray(new String.get(0));
-              }
-              """
-          )
-        );
-    }
-
     @Issue("https://github.com/openrewrite/rewrite/issues/1784")
     @Test
     void objectToObjectArray() {

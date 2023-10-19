@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -34,6 +35,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     @Test
     void simplifyBooleanReturn() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -74,6 +76,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     @Test
     void dontSimplifyToReturnUnlessLastStatement() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -105,6 +108,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     @Test
     void nestedIfsWithNoBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -123,6 +127,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     @Test
     void dontAlterWhenElseIfPresent() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -146,6 +151,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     @Test
     void dontAlterWhenElseContainsSomethingOtherThanReturn() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -167,6 +173,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     @Test
     void onlySimplifyToReturnWhenLastStatement() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.*;
@@ -188,6 +195,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     @Test
     void wrapNotReturnsOfTernaryIfConditionsInParentheses() {
         rewriteRun(
+          //language=java
           java(
             """
               public class A {
@@ -210,5 +218,93 @@ class SimplifyBooleanReturnTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class RetainComments {
+        @Test
+        void onIfReturn() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      boolean foo(int n) {
+                          if (n == 1) {
+                              // A comment that provides important context
+                              return true;
+                          } 
+                          else {
+                              return false;
+                          } 
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void onElseBlockReturn() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      boolean foo(int n) {
+                          if (n == 1) {
+                              return true;
+                          } 
+                          else {
+                              // A comment that provides important context
+                              return false;
+                          } 
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void onElseReturn() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      boolean foo(int n) {
+                          if (n == 1) {
+                              return true;
+                          } 
+                          else
+                              // A comment that provides important context
+                              return false;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void onImpliedElse() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      boolean foo(int n) {
+                          if (n == 1) {
+                              return true;
+                          }
+                          // A comment that provides important context
+                          return false;
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

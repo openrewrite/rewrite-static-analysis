@@ -78,52 +78,63 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     List<Javadoc> newBody = new ArrayList<>(javadoc.getBody().size());
                     boolean useNewBody = false;
 
-                    List<Javadoc> body = javadoc.getBody();
+                    List<Javadoc> body = new ArrayList<>(javadoc.getBody());
+                    // We add a trailing element, to fix elements on the first line without space
+                    // We can use null since this element is never going to be read, and nulls get filtered later on.
+                    body.add(0, null);
+
                     for (int i = 0; i < body.size(); i++) {
                         // JavaDocs require a look ahead, because the current element may be an element that exists on the same line as a parameter.
                         // I.E. the space that precedes `* @param` will be a `Javadoc.Text` and needs to be removed along with the empty `@param`.
                         // A `Javadoc` will always precede a parameter even if there is empty space like `*@param`.
                         Javadoc currentDoc = body.get(i);
-                        boolean skipCurrentDoc = false;
                         if (i + 1 < body.size()) {
                             Javadoc nextDoc = body.get(i + 1);
                             if (nextDoc instanceof Javadoc.Parameter) {
-                                Javadoc.Parameter parameter = (Javadoc.Parameter) visitParameter((Javadoc.Parameter) nextDoc, ctx);
-                                if (parameter == null) {
+                                Javadoc.Parameter nextParameter = (Javadoc.Parameter) nextDoc;
+                                if (isEmptyParameter(nextParameter)) {
                                     // The `@param` being removed is the last item in the JavaDoc body, and contains
                                     // relevant whitespace via the JavaDoc.LineBreak.
                                     if (i + 1 == body.size() - 1) {
-                                        newBody.add(((Javadoc.Parameter) body.get(i + 1)).getDescription().get(0));
+                                        // If we have a previous LineBreak we need to remove it before adding the new one
+                                        if (!newBody.isEmpty() && newBody.get(newBody.size() - 1) instanceof Javadoc.LineBreak) {
+                                            newBody.remove(newBody.size() - 1);
+                                        }
+                                        if (!nextParameter.getDescription().isEmpty()) {
+                                            newBody.add(nextParameter.getDescription().get(0));
+                                        }
                                     }
 
                                     // No need to reprocess the next element.
                                     i += 1;
 
                                     useNewBody = true;
-                                    skipCurrentDoc = true;
+                                    currentDoc = null;
                                 }
                             } else if (nextDoc instanceof Javadoc.Return) {
-                                Javadoc.Return aReturn = (Javadoc.Return) visitReturn((Javadoc.Return) nextDoc, ctx);
-                                if (aReturn == null) {
-                                    if (!newBody.isEmpty() && newBody.get(newBody.size() - 1) instanceof Javadoc.LineBreak) {
-                                        newBody.remove(newBody.size() - 1);
-                                    }
-
+                                Javadoc.Return nextReturn = (Javadoc.Return) nextDoc;
+                                if (isEmptyReturn(nextReturn)) {
                                     // The `@return` being removed is the last item in the JavaDoc body, and contains
                                     // relevant whitespace via the JavaDoc.LineBreak.
                                     if (i + 1 == body.size() - 1) {
-                                        newBody.add(((Javadoc.Return) body.get(i + 1)).getDescription().get(0));
+                                        // If we have a previous LineBreak we need to remove it before adding the new one
+                                        if (!newBody.isEmpty() && newBody.get(newBody.size() - 1) instanceof Javadoc.LineBreak) {
+                                            newBody.remove(newBody.size() - 1);
+                                        }
+                                        if (!nextReturn.getDescription().isEmpty()) {
+                                            newBody.add(nextReturn.getDescription().get(0));
+                                        }
                                     }
 
                                     // No need to reprocess the next element.
                                     i += 1;
 
                                     useNewBody = true;
-                                    skipCurrentDoc = true;
+                                    currentDoc = null;
                                 }
                             } else if (nextDoc instanceof Javadoc.Erroneous) {
-                                Javadoc.Erroneous erroneous = (Javadoc.Erroneous) visitErroneous((Javadoc.Erroneous) nextDoc, ctx);
-                                if (erroneous == null) {
+                                Javadoc.Erroneous nextErroneous = (Javadoc.Erroneous) nextDoc;
+                                if (isEmptyErroneous(nextErroneous)) {
                                     if (!newBody.isEmpty() && newBody.get(newBody.size() - 1) instanceof Javadoc.LineBreak) {
                                         newBody.remove(newBody.size() - 1);
                                     }
@@ -132,12 +143,12 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                                     i += 1;
 
                                     useNewBody = true;
-                                    skipCurrentDoc = true;
+                                    currentDoc = null;
                                 }
                             }
                         }
 
-                        if (!skipCurrentDoc) {
+                        if (currentDoc != null) {
                             newBody.add(currentDoc);
                         }
                     }
@@ -145,35 +156,23 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     if (useNewBody) {
                         javadoc = javadoc.withBody(newBody);
                     }
-                    return super.visitDocComment(javadoc, ctx);
+                    // No need to call super visitor, already covered all cases by adding an empty first element when needed.
+                    return javadoc;
                 }
 
-                @Override
-                public Javadoc visitParameter(Javadoc.Parameter parameter, ExecutionContext ctx) {
-                    if (parameter.getDescription().stream().allMatch(org.openrewrite.java.tree.Javadoc.LineBreak.class::isInstance)) {
-                        return null;
-                    }
-                    return super.visitParameter(parameter, ctx);
+                public boolean isEmptyParameter(Javadoc.Parameter parameter) {
+                    return parameter.getDescription().stream().allMatch(it -> it instanceof Javadoc.LineBreak);
                 }
 
-                @Override
-                public Javadoc visitReturn(Javadoc.Return aReturn, ExecutionContext ctx) {
-                    if (aReturn.getDescription().stream().allMatch(org.openrewrite.java.tree.Javadoc.LineBreak.class::isInstance)) {
-                        return null;
-                    }
-                    return super.visitReturn(aReturn, ctx);
+                public boolean isEmptyReturn(Javadoc.Return aReturn) {
+                    return aReturn.getDescription().stream().allMatch(it -> it instanceof Javadoc.LineBreak);
                 }
 
-                @Override
-                public Javadoc visitErroneous(Javadoc.Erroneous erroneous, ExecutionContext ctx) {
-                    if (erroneous.getText().size() == 1 && erroneous.getText().get(0) instanceof Javadoc.Text) {
-                        Javadoc.Text text = (Javadoc.Text) erroneous.getText().get(0);
-                        // Empty throws result in an Erroneous type.
-                        if ("@throws".equals(text.getText())) {
-                            return null;
-                        }
-                    }
-                    return super.visitErroneous(erroneous, ctx);
+                public boolean isEmptyErroneous(Javadoc.Erroneous erroneous) {
+                    // Empty throws result in an Erroneous type.
+                    return erroneous.getText().size() == 1 &&
+                           erroneous.getText().get(0) instanceof Javadoc.Text &&
+                           "@throws".equals(((Javadoc.Text) erroneous.getText().get(0)).getText());
                 }
             }
         };

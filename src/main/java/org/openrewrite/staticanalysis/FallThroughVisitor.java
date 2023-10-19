@@ -84,7 +84,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         p
                 );
                 statements.add(breakToAdd);
-                c = c.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p)));
+                c = c.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
             }
             return c;
         }
@@ -104,7 +104,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         p
                 );
                 statements.add(breakToAdd);
-                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p)));
+                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
             }
             return b;
         }
@@ -146,6 +146,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                                   s instanceof J.Break ||
                                   s instanceof J.Continue ||
                                   s instanceof J.Throw ||
+                                  s instanceof J.Switch || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
                                   ((J) s).getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
                         ).orElse(false);
             }

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -23,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"Convert2Diamond", "unchecked", "rawtypes"})
 class UseDiamondOperatorTest implements RewriteTest {
@@ -401,4 +403,88 @@ class UseDiamondOperatorTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void anonymousNewClassInferTypesJava9Plus() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(11))),
+          java(
+            """
+              interface Serializer<T> {
+                  byte[] serialize(T t);
+              }
+
+              public class Printer {
+                  public static void setSerializerGenericType(Serializer<?> serializer) {}
+                  public static void setSerializerConcreteType(Serializer<Integer> serializer) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void method() {
+                      // Generic type, no infer type, can NOT use diamond operator
+                      Printer.setSerializerGenericType(new Serializer<Integer>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+
+                      // Concrete type, OK to use diamond operator
+                      Printer.setSerializerConcreteType(new Serializer<Integer>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      // Generic type, no infer type, can NOT use diamond operator
+                      Printer.setSerializerGenericType(new Serializer<Integer>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+
+                      // Concrete type, OK to use diamond operator
+                      Printer.setSerializerConcreteType(new Serializer<>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Nested
+    class kotlinTest {
+        @Test
+        void doNotChange() {
+            rewriteRun(
+              kotlin(
+                """
+                  class test {
+                      fun method() {
+                         val foo = listOf<String>()
+                         var schemaPaths = mutableListOf<Any>("a")
+                         var typeMapping = mutableMapOf<String, String>()
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
 }

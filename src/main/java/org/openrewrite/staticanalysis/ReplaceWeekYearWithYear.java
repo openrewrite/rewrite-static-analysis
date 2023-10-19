@@ -35,7 +35,7 @@ public class ReplaceWeekYearWithYear extends Recipe {
     @Override
     public String getDescription() {
         return "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. However, on the last week of" +
-               " December and first week of January Week Year could produce unexpected results.";
+               " December and the first week of January, Week Year could produce unexpected results.";
     }
 
     @Override
@@ -91,7 +91,7 @@ public class ReplaceWeekYearWithYear extends Recipe {
                         return li;
                     }
 
-                    return li.withValueSource("\""+newValue+"\"").withValue(newValue);
+                    return li.withValueSource("\"" + newValue + "\"").withValue(newValue);
                 }
             }
 

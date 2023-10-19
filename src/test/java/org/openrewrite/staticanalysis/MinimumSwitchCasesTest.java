@@ -486,6 +486,52 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void importsOnEnumImplied() {
+        //noinspection EnhancedSwitchMigration
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.time.LocalDate;
+              
+              class Test {
+                  void test(LocalDate date) {
+                      switch(date.getDayOfWeek()) {
+                          case MONDAY:
+                              someMethod();
+                              break;
+                          default:
+                              someMethod();
+                              break;
+                      }
+                  }
+
+                  void someMethod() {
+                  }
+              }
+              """,
+            """
+              import java.time.DayOfWeek;
+              import java.time.LocalDate;
+
+              class Test {
+                  void test(LocalDate date) {
+                      if (date.getDayOfWeek() == DayOfWeek.MONDAY) {
+                          someMethod();
+                      } else {
+                          someMethod();
+                      }
+                  }
+
+                  void someMethod() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1701")
     @Test
     void removeBreaksFromCaseBody() {

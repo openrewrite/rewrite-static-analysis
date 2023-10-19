@@ -16,14 +16,17 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
+import static java.util.Collections.emptyList;
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
 /**
@@ -72,7 +75,12 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return !hasNameKey.contains(toName) && !hasNameKey.contains(variable.getSimpleName());
+                return hasNameKey.stream().noneMatch(key ->
+                        key.equals(toName) ||
+                        key.equals(variable.getSimpleName()) ||
+                        key.endsWith(" " + toName) ||
+                        key.endsWith(" " + variable.getSimpleName())
+                );
             }
 
             @SuppressWarnings("all")
@@ -85,22 +93,43 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 // Only make changes to private fields that are not constants.
                 // Does not apply for instance variables of inner classes
                 // Only make a change if the variable does not conform to lower camelcase format.
+                JavaType.Variable type = variable.getVariableType();
                 if (parentScope.getParent() != null &&
                     parentScope.getParent().getValue() instanceof J.ClassDeclaration &&
                     !(parentScope.getValue() instanceof J.ClassDeclaration) &&
-                    variable.getVariableType() != null &&
-                    variable.getVariableType().hasFlags(Flag.Private) &&
-                    !(variable.getVariableType().hasFlags(Flag.Static, Flag.Final)) &&
+                    type != null &&
+                    type.hasFlags(Flag.Private) &&
+                    !(type.hasFlags(Flag.Static, Flag.Final)) &&
                     !((J.ClassDeclaration) parentScope.getParent().getValue()).getType().getFullyQualifiedName().contains("$") &&
                     !LOWER_CAMEL.matches(variable.getSimpleName())) {
+
+                    if (variable.getSimpleName().toUpperCase(Locale.getDefault()).equals(variable.getSimpleName()) &&
+                        type.hasFlags(Flag.Private, Flag.Final) && !type.hasFlags(Flag.Static)) {
+                        // instead, add a static modifier
+                        Set<Flag> flags = new HashSet<>(type.getFlags());
+                        flags.add(Flag.Static);
+                        getCursor().getParentTreeCursor().putMessage("ADD_STATIC", true);
+                        return variable.withVariableType(type.withFlags(flags));
+                    }
 
                     String toName = LOWER_CAMEL.format(variable.getSimpleName());
                     renameVariable(variable, toName);
                 } else {
-                    hasNameKey(variable.getSimpleName());
+                    hasNameKey(computeKey(variable.getSimpleName(), variable));
                 }
 
                 return super.visitVariable(variable, ctx);
+            }
+
+            @Override
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations vds = super.visitVariableDeclarations(multiVariable, ctx);
+                if (getCursor().getMessage("ADD_STATIC", false)) {
+                    return vds.withModifiers(ListUtils.insert(vds.getModifiers(),
+                            new J.Modifier(Tree.randomId(), Space.format(" "), Markers.EMPTY,
+                                    "static", J.Modifier.Type.Static, emptyList()), 1));
+                }
+                return vds;
             }
 
             /**

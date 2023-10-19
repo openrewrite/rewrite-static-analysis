@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -75,13 +76,12 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
           //language=java
           java(
             """
-                    package a;
-                     class A {
-                         void SubeventUtils(String a) {
-                             a = "abc";
-                         }
-                     }
-                """
+              class A {
+                  void SubeventUtils(String a) {
+                      a = "abc";
+                  }
+              }
+              """
           )
         );
     }
@@ -92,12 +92,10 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
           //language=java
           java(
             """
-                    package a;
-                     public interface MarketDeleteService {
-                        
-                          void deleteMarket(Long marketId, String deletionTimestamp);
-                        }
-                """
+              public interface MarketDeleteService {
+                   void deleteMarket(Long marketId, String deletionTimestamp);
+              }
+              """
           )
         );
     }
@@ -109,25 +107,17 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.test;
-                    
-                    class TestClass {
-                    
-                        private void getAccaCouponData(String responsiveRequestConfig, String card) {
-                         
-                        }
-                    }
-                """,
+              class TestClass {
+                  private void getAccaCouponData(String responsiveRequestConfig, String card) {
+                  }
+              }
+              """,
             """
-                    package com.test;
-                    
-                    class TestClass {
-                    
-                        private void getAccaCouponData(final String responsiveRequestConfig, final String card) {
-                         
-                        }
-                    }
-                """
+              class TestClass {
+                  private void getAccaCouponData(final String responsiveRequestConfig, final String card) {
+                  }
+              }
+              """
           )
         );
     }
@@ -138,34 +128,15 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
           //language=java
           java(
             """
-                public class Test {
-                    public void test(@Override Integer test) {}
-                }
-                """,
+              class Test {
+                  public void test(@Override Integer test) {}
+              }
+              """,
             """
-                public class Test {
-                    public void test(@Override final Integer test) {}
-                }
-                """
-          )
-        );
-    }
-
-    @Test
-    void replaceWithFinalModifierNoArguments() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-                    package com.test;
-                    
-                    class TestClass {
-                    
-                        private void getAccaCouponData() {
-                         
-                        }
-                    }
-                """
+              class Test {
+                  public void test(@Override final Integer test) {}
+              }
+              """
           )
         );
     }
@@ -173,67 +144,138 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
     @Test
     void doNotReplaceWithFinalModifier() {
         rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
           //language=java
           java(
             """
-                    package responsive.utils.subevent;
-                     
-                     import responsive.enums.subevent.SubeventTypes;
-                     import responsive.model.dto.card.SubEvent;
-                     import java.util.List;
-                     import org.springframework.beans.factory.annotation.Value;
-                     import org.springframework.stereotype.Component;
-                     
-                     import static responsive.enums.matchdata.MatchDataTitleSeparator.AT;
-                     import static responsive.enums.matchdata.MatchDataTitleSeparator.VS;
-                     import static java.lang.String.format;
-                     import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
-                     
-                     /**
-                      * Created by mza05 on 13/10/2017.
-                      */
-                     @Component
-                     public class SubeventUtils {
-                     
-                         private static final String SUBEVENT_FORMAT = "%s%s%s";
-                         private final List<Integer> categoryGroupIdForChangeSubeventName;
-                     
-                         public SubeventUtils(
-                                 @Value("#{'${responsive.category.group.id.change.subevent.name}'.split(',')}")  final List<Integer> categoryGroupIdForChangeSubeventName) {
-                             this.categoryGroupIdForChangeSubeventName = categoryGroupIdForChangeSubeventName;
-                         }
-                     
-                         public static boolean isSubeventOfSpecifiedType(final SubEvent subEvent, final List<SubeventTypes> requiredTypes) {
-                     
-                             if (subEvent.getType() == null) {
-                                 return false;
-                             }
-                             return requiredTypes.stream()
-                                     .anyMatch(requiredType -> requiredType.getType().equalsIgnoreCase(subEvent.getType()));
-                     
-                         }
-                     
-                         /**
-                          * Change SubeventName by CategoryGroupId and rebub
-                          * @param subeventName
-                          * @param categoryGroupId
-                          * @return
-                          */
-                         public String getSubeventNameForCategoryGroupId(final String subeventName, final Integer categoryGroupId) {
-                     
-                             if  (subeventName != null && categoryGroupId != null
-                                     && subeventName.contains(AT.getSeparator())
-                                     && categoryGroupIdForChangeSubeventName.contains(categoryGroupId)) {
-                                 final var subeventTeamSplit = splitByWholeSeparator(subeventName, AT.getSeparator());
-                                 if (subeventTeamSplit.length > 0) {
-                                     return format(SUBEVENT_FORMAT, subeventTeamSplit[0], VS.getSeparator(), subeventTeamSplit[1]);
-                                 }
-                             }
-                     
-                             return subeventName;
-                         }
-                     }
-                """
+              package responsive.utils.subevent;
+               
+               import responsive.enums.subevent.SubeventTypes;
+               import responsive.model.dto.card.SubEvent;
+               import java.util.List;
+               import org.springframework.beans.factory.annotation.Value;
+               import org.springframework.stereotype.Component;
+               
+               import static responsive.enums.matchdata.MatchDataTitleSeparator.AT;
+               import static responsive.enums.matchdata.MatchDataTitleSeparator.VS;
+               import static java.lang.String.format;
+               import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
+               
+               /**
+                * Created by mza05 on 13/10/2017.
+                */
+               @Component
+               class SubeventUtils {
+               
+                   private static final String SUBEVENT_FORMAT = "%s%s%s";
+                   private final List<Integer> categoryGroupIdForChangeSubeventName;
+               
+                   public SubeventUtils(
+                           @Value("#{'${responsive.category.group.id.change.subevent.name}'.split(',')}")  final List<Integer> categoryGroupIdForChangeSubeventName) {
+                       this.categoryGroupIdForChangeSubeventName = categoryGroupIdForChangeSubeventName;
+                   }
+               
+                   public static boolean isSubeventOfSpecifiedType(final SubEvent subEvent, final List<SubeventTypes> requiredTypes) {
+               
+                       if (subEvent.getType() == null) {
+                           return false;
+                       }
+                       return requiredTypes.stream()
+                               .anyMatch(requiredType -> requiredType.getType().equalsIgnoreCase(subEvent.getType()));
+               
+                   }
+               
+                   /**
+                    * Change SubeventName by CategoryGroupId and rebub
+                    * @param subeventName
+                    * @param categoryGroupId
+                    * @return
+                    */
+                   public String getSubeventNameForCategoryGroupId(final String subeventName, final Integer categoryGroupId) {
+               
+                       if  (subeventName != null && categoryGroupId != null
+                               && subeventName.contains(AT.getSeparator())
+                               && categoryGroupIdForChangeSubeventName.contains(categoryGroupId)) {
+                           final var subeventTeamSplit = splitByWholeSeparator(subeventName, AT.getSeparator());
+                           if (subeventTeamSplit.length > 0) {
+                               return format(SUBEVENT_FORMAT, subeventTeamSplit[0], VS.getSeparator(), subeventTeamSplit[1]);
+                           }
+                       }
+               
+                       return subeventName;
+                   }
+               }
+               """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/176")
+    void doNotReplaceIfAssignedThroughUnaryOrAccumulator() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                protected int addFinalToThisVar(int unalteredVariable) {
+                  return unalteredVariable;
+                }
+                            
+                protected int increment(int variableToIncrement) {
+                  variableToIncrement++;
+                  return variableToIncrement;
+                }
+                            
+                protected int preIncrement(int variableToPreIncrement) {
+                  return ++variableToPreIncrement;
+                }
+                            
+                protected int decrement(int variableToDecrement) {
+                  variableToDecrement--;
+                  return variableToDecrement;
+                }
+                            
+                protected int preDecrement(int variableToPreDecrement) {
+                  return --variableToPreDecrement;
+                }
+                            
+                protected int accumulate(int add, int accumulator) {
+                  accumulator += add;
+                  return accumulator;
+                }
+              }
+              """,
+            """
+              class Test {
+                protected int addFinalToThisVar(final int unalteredVariable) {
+                  return unalteredVariable;
+                }
+                            
+                protected int increment(int variableToIncrement) {
+                  variableToIncrement++;
+                  return variableToIncrement;
+                }
+                            
+                protected int preIncrement(int variableToPreIncrement) {
+                  return ++variableToPreIncrement;
+                }
+                            
+                protected int decrement(int variableToDecrement) {
+                  variableToDecrement--;
+                  return variableToDecrement;
+                }
+                            
+                protected int preDecrement(int variableToPreDecrement) {
+                  return --variableToPreDecrement;
+                }
+                            
+                protected int accumulate(int add, int accumulator) {
+                  accumulator += add;
+                  return accumulator;
+                }
+              }
+              """
           )
         );
     }

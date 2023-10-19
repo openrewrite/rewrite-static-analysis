@@ -195,4 +195,21 @@ class InlineVariableTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void preserveArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int[] test() {
+                      int[] arr = {1, 2, 3};
+                      return arr;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

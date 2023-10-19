@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
@@ -36,17 +35,17 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Replace deprecated Runtime.Exec() methods";
+        return "Replace deprecated `Runtime#exec()` methods";
     }
 
     @Override
     public String getDescription() {
-        return "Replace `Runtime.exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
+        return "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
                "after Java 18 and is no longer recommended for use by the Java documentation.";
     }
 
     @Override
-    public @Nullable Duration getEstimatedEffortPerOccurrence() {
+    public Duration getEstimatedEffortPerOccurrence() {
         return Duration.ofMinutes(3);
     }
 
