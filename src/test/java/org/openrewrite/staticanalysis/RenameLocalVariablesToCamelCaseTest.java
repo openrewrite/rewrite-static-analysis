@@ -436,4 +436,26 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Test
+    void renameFinalLocalVariables() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      final String FINAL_VARIABLE;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      final String finalVariable;
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
