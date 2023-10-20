@@ -109,11 +109,6 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                     return false;
                 }
 
-                // Skip constant variable
-                if (mv.hasModifier(J.Modifier.Type.Final)) {
-                    return false;
-                }
-
                 // Ignore fields (aka "instance variable" or "class variable")
                 for (J.VariableDeclarations.NamedVariable v : mv.getVariables()) {
                     if (v.isField(getCursor())) {
