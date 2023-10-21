@@ -98,7 +98,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                         Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> m.getName().equals("isInstance")).findFirst();
                         if (isInstanceMethod.isPresent()) {
-                            return newInstanceMethodReference(isInstanceMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
+                            J.MemberReference updated = newInstanceMethodReference(isInstanceMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
+                            doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                            return updated;
                         }
                     }
                 }
@@ -117,7 +119,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                             JavaType.FullyQualified classType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                             Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> m.getName().equals("cast")).findFirst();
                             if (castMethod.isPresent()) {
-                                return newInstanceMethodReference(castMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
+                                J.MemberReference updated = newInstanceMethodReference(castMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
+                                doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                                return updated;
                             }
                         }
                     }

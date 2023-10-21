@@ -238,12 +238,14 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """,
             """
+              import org.test.CheckType;
+              
               import java.util.List;
               import java.util.stream.Collectors;
 
               class Test {
                   List<Object> method(List<Object> input) {
-                      return input.stream().filter(org.test.CheckType.class::isInstance).collect(Collectors.toList());
+                      return input.stream().filter(CheckType.class::isInstance).collect(Collectors.toList());
                   }
               }
               """,
@@ -594,6 +596,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """,
             """
+              import org.test.CheckType;
+              
               import java.util.List;
               import java.util.stream.Collectors;
 
@@ -601,7 +605,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   List<Object> filter(List<Object> l) {
                       return l.stream()
                           .filter(org.test.CheckType.class::isInstance)
-                          .map(org.test.CheckType.class::cast)
+                          .map(CheckType.class::cast)
                           .collect(Collectors.toList());
                   }
               }
@@ -1233,11 +1237,11 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.HashMap;
 
               class A {
-                  String m() {
+                  Boolean m() {
                       return new HashMap<String, String>()
                             .entrySet()
                             .stream()
-                            .map(e -> e.getValue())
+                            .map(e -> e instanceof java.util.Map.Entry)
                             .findFirst()
                             .orElse(null);
                   }
@@ -1248,11 +1252,11 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.Map;
 
               class A {
-                  String m() {
+                  Boolean m() {
                       return new HashMap<String, String>()
                             .entrySet()
                             .stream()
-                            .map(Map.Entry::getValue)
+                            .map(Map.Entry.class::isInstance)
                             .findFirst()
                             .orElse(null);
                   }
