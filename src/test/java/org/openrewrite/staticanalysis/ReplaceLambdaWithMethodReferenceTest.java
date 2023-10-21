@@ -143,6 +143,29 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
+    void typeCastOnConstructorCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+              import java.util.stream.Stream;
+
+              class Test {
+                  public void foo() {
+                      List<Object> bar = Stream.of("A", "b")
+                              .map(s -> (Object) new String(s + ":"))
+                              .collect(Collectors.toList());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void instanceOf() {
         rewriteRun(
           //language=java

@@ -102,9 +102,12 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         }
                     }
                 }
-            } else if (body instanceof J.TypeCast) {
-                if (!(((J.TypeCast) body).getExpression() instanceof J.MethodInvocation)) {
-                    J.ControlParentheses<TypeTree> j = ((J.TypeCast) body).getClazz();
+            } else if (body instanceof J.TypeCast && l.getParameters().getParameters().size() == 1) {
+                J.TypeCast cast = (J.TypeCast) body;
+                J param = l.getParameters().getParameters().get(0);
+                if (cast.getExpression() instanceof J.Identifier && param instanceof J.VariableDeclarations &&
+                        ((J.Identifier) cast.getExpression()).getSimpleName().equals(((J.VariableDeclarations) param).getVariables().get(0).getSimpleName())) {
+                    J.ControlParentheses<TypeTree> j = cast.getClazz();
                     J tree = j.getTree();
                     if ((tree instanceof J.Identifier || tree instanceof J.FieldAccess) &&
                         !(j.getType() instanceof JavaType.GenericTypeVariable)) {
