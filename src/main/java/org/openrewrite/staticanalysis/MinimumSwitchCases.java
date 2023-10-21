@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
-import org.jetbrains.annotations.NotNull;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -39,7 +38,6 @@ import java.util.UUID;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 public class MinimumSwitchCases extends Recipe {
@@ -247,20 +245,9 @@ public class MinimumSwitchCases extends Recipe {
                         && ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
             }
 
-            private String enumIdentToFieldAccessString(Expression casePattern) {
-                String caseType = requireNonNull(TypeUtils.asFullyQualified(casePattern.getType())).getFullyQualifiedName();
-                if (casePattern instanceof J.FieldAccess) {
-                    // may be a field access in Groovy
-                    return caseType + "." + ((J.FieldAccess) casePattern).getSimpleName();
-                }
-                // must be an identifier in Java
-                return caseType + "." + ((J.Identifier) casePattern).getSimpleName();
-            }
-
         };
     }
 
-    @NotNull
     private static J.If createIfForEnum(Expression expression, Expression enumTree) {
         J.If generatedIf;
         if (enumTree instanceof J.Identifier) {
