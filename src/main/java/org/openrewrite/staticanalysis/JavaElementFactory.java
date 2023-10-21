@@ -27,6 +27,18 @@ import static org.openrewrite.Tree.randomId;
 
 final class JavaElementFactory {
 
+    static J.Binary newLogicalExpression(J.Binary.Type operator, Expression left, Expression right) {
+        return new J.Binary(
+                randomId(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                left,
+                new JLeftPadded<>(Space.SINGLE_SPACE, operator, Markers.EMPTY),
+                right,
+                JavaType.Primitive.Boolean
+        );
+    }
+
     static J.MemberReference newStaticMethodReference(JavaType.Method method, boolean qualified, @Nullable JavaType type) {
         JavaType.FullyQualified declaringType = method.getDeclaringType();
         Expression containing = className(declaringType, qualified);
