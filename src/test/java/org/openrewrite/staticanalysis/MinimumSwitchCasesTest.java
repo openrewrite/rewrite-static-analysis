@@ -494,7 +494,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
           java(
             """
               import java.time.LocalDate;
-              
+                            
               class Test {
                   void test(LocalDate date) {
                       switch(date.getDayOfWeek()) {
@@ -641,6 +641,38 @@ class MinimumSwitchCasesTest implements RewriteTest {
                   }
                   void doSomething() {}
                   void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedEnum() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int test(java.io.ObjectInputFilter filter) {
+                      switch (filter.checkInput(null)) {
+                        case ALLOWED: return 0;
+                        default: return 1;
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.ObjectInputFilter;
+              
+              class Test {
+                  int test(java.io.ObjectInputFilter filter) {
+                      if (filter.checkInput(null) == ObjectInputFilter.Status.ALLOWED) {
+                          return 0;
+                      } else {
+                          return 1;
+                      }
+                  }
               }
               """
           )
