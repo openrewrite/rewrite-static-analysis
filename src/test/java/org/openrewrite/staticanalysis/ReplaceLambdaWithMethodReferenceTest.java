@@ -1199,6 +1199,46 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings({"ConstantValue"})
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/200")
+    void nestedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+
+              class A {
+                  String m() {
+                      return new HashMap<String, String>()
+                            .entrySet()
+                            .stream()
+                            .map(e -> e.getValue())
+                            .findFirst()
+                            .orElse(null);
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class A {
+                  String m() {
+                      return new HashMap<String, String>()
+                            .entrySet()
+                            .stream()
+                            .map(Map.Entry::getValue)
+                            .findFirst()
+                            .orElse(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
     void dontReplaceLambdaSupplierOfMethodReference() {

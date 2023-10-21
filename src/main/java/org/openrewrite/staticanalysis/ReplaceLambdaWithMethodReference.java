@@ -125,13 +125,14 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 J.Binary binary = (J.Binary) body;
                 if (isNullCheck(binary.getLeft(), binary.getRight()) ||
                     isNullCheck(binary.getRight(), binary.getLeft())) {
-                    doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
                     code = J.Binary.Type.Equal.equals(binary.getOperator()) ? "java.util.Objects::isNull" :
                             "java.util.Objects::nonNull";
-                    return JavaTemplate.builder(code)
+                    J updated = JavaTemplate.builder(code)
                             .contextSensitive()
                             .build()
                             .apply(getCursor(), l.getCoordinates().replace());
+                    doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                    return updated;
                 }
             } else if (body instanceof MethodCall) {
                 MethodCall method = (MethodCall) body;
@@ -162,8 +163,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                     if (methodType.hasFlags(Flag.Static) ||
                         methodSelectMatchesFirstLambdaParameter(method, lambda)) {
-                        doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
-                        return newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
+                        J.MemberReference updated = newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
+                        doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                        return updated;
                     } else if (method instanceof J.NewClass) {
                         return JavaTemplate.builder("#{}::new")
                                 .contextSensitive()
