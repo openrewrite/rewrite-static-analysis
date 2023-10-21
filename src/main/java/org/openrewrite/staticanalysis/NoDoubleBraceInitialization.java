@@ -97,7 +97,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                 List<Statement> initStatements = secondBlock.getStatements();
 
                 boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty()
-                                                             && initStatements.stream().allMatch(statement -> statement instanceof J.NewClass);
+                                                             && initStatements.stream().allMatch(J.NewClass.class::isInstance);
 
                 if (maybeMistakenlyMissedAddingElement) {
                     JavaType newClassType = nc.getType();
@@ -115,7 +115,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                     if (parentBlockCursor.getParent().getValue() instanceof J.ClassDeclaration) {
                         JavaType.FullyQualified fq = TypeUtils.asFullyQualified(nc.getType());
                         if (fq != null && fq.getSupertype() != null) {
-                            Cursor varDeclsCursor = getCursor().dropParentUntil(parent -> parent instanceof J.VariableDeclarations);
+                            Cursor varDeclsCursor = getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance);
                             Cursor namedVarCursor = getCursor().dropParentUntil(J.VariableDeclarations.NamedVariable.class::isInstance);
                             namedVarCursor.putMessage("DROP_INITIALIZER", Boolean.TRUE);
 
@@ -129,7 +129,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                         }
                     } else if (parentBlockCursor.getParent().getValue() instanceof J.MethodDeclaration) {
                         initStatements = addSelectToInitStatements(initStatements, var.getName(), executionContext);
-                        Cursor varDeclsCursor = getCursor().dropParentUntil(parent -> parent instanceof J.VariableDeclarations);
+                        Cursor varDeclsCursor = getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance);
                         parentBlockCursor.computeMessageIfAbsent("METHOD_DECL_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         nc = nc.withBody(null);
                     }

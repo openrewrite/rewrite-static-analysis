@@ -56,7 +56,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-                if (md.getComments().stream().anyMatch(it -> it instanceof Javadoc.DocComment)) {
+                if (md.getComments().stream().anyMatch(Javadoc.DocComment.class::isInstance)) {
                     md = md.withComments(ListUtils.map(md.getComments(), it -> {
                         if (it instanceof Javadoc.DocComment) {
                             Javadoc.DocComment docComment = (Javadoc.DocComment) it;
@@ -161,11 +161,11 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                 }
 
                 public boolean isEmptyParameter(Javadoc.Parameter parameter) {
-                    return parameter.getDescription().stream().allMatch(it -> it instanceof Javadoc.LineBreak);
+                    return parameter.getDescription().stream().allMatch(Javadoc.LineBreak.class::isInstance);
                 }
 
                 public boolean isEmptyReturn(Javadoc.Return aReturn) {
-                    return aReturn.getDescription().stream().allMatch(it -> it instanceof Javadoc.LineBreak);
+                    return aReturn.getDescription().stream().allMatch(Javadoc.LineBreak.class::isInstance);
                 }
 
                 public boolean isEmptyErroneous(Javadoc.Erroneous erroneous) {
