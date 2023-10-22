@@ -44,7 +44,7 @@ class FallThroughTest implements RewriteTest {
           java(
             """
               class Test {
-                  void test() {
+                  void test(int day) {
                       switch (day) {
                           case 1:
                               int month = 1;

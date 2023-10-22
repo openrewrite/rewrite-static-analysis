@@ -505,7 +505,7 @@ class UseDiamondOperatorTest implements RewriteTest {
                 public <S, R> R method(IVisitor<S, R> visitor) {
                     return null;
                 }
-                private void test(Tree t) {
+                private void test(Object t) {
                     String s = method(new IVisitor<Integer, String>() {
                         @Override
                         public void visit(Integer object, String ret) { }
