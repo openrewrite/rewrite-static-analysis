@@ -462,20 +462,19 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/205")
     @Test
-    void doNotRenameMethodArguments(){
+    void doNotRenameMethodArguments() {
         //language=java
         rewriteRun(
           java(
             """
-             @Controller
-             class MyController {
-                 @GetMapping
-                 String getHello(@RequestParam String your_name) {
-                     return "hello " + your_name;
-                 }
-             }
-             """
+              class MyController {
+                  String getHello(String your_name) {
+                      return "hello " + your_name;
+                  }
+              }
+              """
           )
         );
     }
