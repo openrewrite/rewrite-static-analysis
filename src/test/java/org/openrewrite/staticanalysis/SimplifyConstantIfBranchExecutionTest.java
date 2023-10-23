@@ -1178,6 +1178,54 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
+    void simplifyNestedWithReturnAndThrowInTryCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before outer if");
+                      if (true) {
+                          System.out.println("outer then");
+                          if (true) {
+                              try {
+                                  if(true) {
+                                      throw new RuntimeException("Explosion");
+                                  }
+                                  return;
+                              } catch (Exception ex) {
+                                  System.out.println("catch");
+                              }
+                          }
+                          System.out.println("after inner if");
+                      }
+                      System.out.println("after outer if");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before outer if");
+                      System.out.println("outer then");
+                      try {
+                          throw new RuntimeException("Explosion");
+                      } catch (Exception ex) {
+                          System.out.println("catch");
+                      }
+                      System.out.println("after inner if");
+                      System.out.println("after outer if");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+
+
+    @Test
     void binaryOrIsAlwaysFalse() {
         rewriteRun(
           //language=java
