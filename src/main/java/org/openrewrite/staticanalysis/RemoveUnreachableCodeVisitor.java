@@ -43,17 +43,7 @@ class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> {
       return block;
     }
 
-    List<Statement> newStatements =
-        ListUtils.flatMap(
-            block.getStatements(),
-            (index, statement) -> {
-              if (index <= firstJumpIndex) {
-                return statement;
-              }
-              return Collections.emptyList();
-            }
-        );
-
+    List<Statement> newStatements = statements.subList(0, firstJumpIndex + 1);
     return block.withStatements(newStatements);
   }
 
