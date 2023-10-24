@@ -154,8 +154,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             private J maybeAddCast(J.Lambda lambda, J.NewClass original) {
                 J parent = getCursor().getParentTreeCursor().getValue();
 
-                if (parent instanceof J.MethodInvocation) {
-                    J.MethodInvocation method = (J.MethodInvocation) parent;
+                if (parent instanceof MethodCall) {
+                    MethodCall method = (MethodCall) parent;
                     List<Expression> arguments = method.getArguments();
                     for (int i = 0; i < arguments.size(); i++) {
                         Expression argument = arguments.get(i);
@@ -180,7 +180,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return lambda;
             }
 
-            private boolean methodArgumentRequiresCast(J.Lambda lambda, J.MethodInvocation method, int argumentIndex) {
+            private boolean methodArgumentRequiresCast(J.Lambda lambda, MethodCall method, int argumentIndex) {
                 JavaType.FullyQualified lambdaType = TypeUtils.asFullyQualified(lambda.getType());
                 if (lambdaType == null) {
                     return false;
@@ -207,7 +207,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         }
                     }
                 }
-                return count >= 2;
+                if (count >= 2) {
+                    return true;
+                }
+
+                return hasGenerics(lambda);
             }
 
             private boolean areMethodsAmbiguous(@Nullable JavaType.Method m1, @Nullable JavaType.Method m2) {
@@ -418,5 +422,23 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         }.visit(n.getBody(), 0, cursor);
 
         return hasShadow.get();
+    }
+
+    private static boolean hasGenerics(J.Lambda lambda) {
+        AtomicBoolean atomicBoolean = new AtomicBoolean();
+        new JavaVisitor<AtomicBoolean>() {
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, AtomicBoolean atomicBoolean) {
+                if (method.getMethodType() != null &&
+                    method.getMethodType().getParameterTypes().stream()
+                            .anyMatch(p -> p instanceof JavaType.Parameterized &&
+                                           ((JavaType.Parameterized) p).getTypeParameters().stream().anyMatch(t -> t instanceof JavaType.GenericTypeVariable))
+                ) {
+                    atomicBoolean.set(true);
+                }
+                return super.visitMethodInvocation(method, atomicBoolean);
+            }
+        }.visit(lambda.getBody(), atomicBoolean);
+        return atomicBoolean.get();
     }
 }
