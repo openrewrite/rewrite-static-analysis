@@ -270,6 +270,46 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
+    void abortOnAbruptCompletion() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void noCase(int i) {
+                      for (;;) {
+                          switch (i) {
+                              case 0:
+                                  if (true)
+                                      return;
+                                  else
+                                      break;
+                              case 1:
+                                  if (true)
+                                      return;
+                                  else {
+                                      {
+                                          continue;
+                                      }
+                                  }
+                              case 1:
+                                  try {
+                                      return;
+                                  } catch (Exception e) {
+                                      break;
+                                  }
+                              default:
+                                  System.out.println("default");
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void addBreaksFallthroughCasesComprehensive() {
         rewriteRun(
           //language=java
