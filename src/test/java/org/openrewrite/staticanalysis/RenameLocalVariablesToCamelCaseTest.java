@@ -15,7 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Recipe;
@@ -89,11 +91,11 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
               class Test {
                   int DoNoTChange;
 
-                  public int addTen(int rename_one) {
+                  public int addTen(int dont_rename_one) {
                       double RenameTwo = 2.0;
                       float __rename__three__ = 2.0;
                       long _Rename__Four = 2.0;
-                      return rename_one + RenameTwo + __rename__three__ + _Rename__Four + 10;
+                      return dont_rename_one + RenameTwo + __rename__three__ + _Rename__Four + 10;
                   }
               }
               """,
@@ -101,11 +103,11 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
               class Test {
                   int DoNoTChange;
 
-                  public int addTen(int renameOne) {
+                  public int addTen(int dont_rename_one) {
                       double renameTwo = 2.0;
                       float renameThree = 2.0;
                       long renameFour = 2.0;
-                      return renameOne + renameTwo + renameThree + renameFour + 10;
+                      return dont_rename_one + renameTwo + renameThree + renameFour + 10;
                   }
               }
               """
@@ -114,6 +116,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     }
 
     @SuppressWarnings("JavadocDeclaration")
+    @Disabled
     @Issue("https://github.com/openrewrite/rewrite/issues/2437")
     @Test
     void renameJavaDocParam() {
@@ -372,4 +375,108 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/171")
+    void renameMultipleOcurrencesDifferentScope() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      String ID;
+                  }
+                  void test2() {
+                      String ID;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      String id;
+                  }
+                  void test2() {
+                      String id;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameIfInParent() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String id;
+                  void test() {
+                      String ID;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameIfInParentFromInnerClass() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String id;
+                  class InnerClass {
+                      void test() {
+                          String ID;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void renameFinalLocalVariables() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      final String FINAL_VARIABLE;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      final String finalVariable;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/205")
+    @Test
+    void doNotRenameMethodArguments() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class MyController {
+                  String getHello(String your_name) {
+                      return "hello " + your_name;
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

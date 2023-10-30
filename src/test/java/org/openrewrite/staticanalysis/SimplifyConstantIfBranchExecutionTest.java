@@ -666,18 +666,28 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
-    void doesNotRemoveWhenReturnInIfBlock() {
+    void removesWhenReturnInThenBlock() {
         rewriteRun(
           //language=java
           java(
             """
               public class A {
                   public void test() {
+                      System.out.println("before");
                       if (true) {
-                          System.out.println("hello");
+                          System.out.println("then");
                           return;
                       }
-                      System.out.println("goodbye");
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      System.out.println("then");
+                      return;
                   }
               }
               """
@@ -686,18 +696,145 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
-    void doesNotRemoveWhenThrowsInIfBlock() {
+    void removesWhenReturnInThenNoBlock() {
         rewriteRun(
           //language=java
           java(
             """
               public class A {
                   public void test() {
+                      System.out.println("before");
+                      if (true) return;
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      return;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenReturnInThenBlockWithElse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
                       if (true) {
-                          System.out.println("hello");
+                          System.out.println("then");
+                          return;
+                      } else {
+                        System.out.println("else");
+                      }
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      System.out.println("then");
+                      return;
+                  }
+              }"""
+          )
+        );
+    }
+
+    @Test
+    void removesWhenReturnInElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      if (false) {
+                          System.out.println("then");
+                      } else {
+                          System.out.println("else");
+                          return;
+                      }
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      System.out.println("else");
+                      return;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenReturnInElseNoBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      if (false) {
+                          System.out.println("then");
+                      } else return;
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      return;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenThrowsInThenBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      if (true) {
+                          System.out.println("then");
                           throw new RuntimeException();
                       }
-                      System.out.println("goodbye");
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      System.out.println("then");
+                      throw new RuntimeException();
                   }
               }
               """
@@ -706,21 +843,100 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
-    void doesNotRemoveWhenBreakInIfBlockWithinWhile() {
+    void removesWhenThrowsInThenBlockWithElse() {
         rewriteRun(
           //language=java
           java(
             """
               public class A {
                   public void test() {
-                      while (true){
+                      System.out.println("before");
+                      if (true) {
+                          System.out.println("then");
+                          throw new RuntimeException();
+                      } else {
+                          System.out.println("else");
+                      }
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      System.out.println("then");
+                      throw new RuntimeException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenThrowsInElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      if (false) {
+                          System.out.println("then");
+                      } else {
+                          System.out.println("else");
+                          throw new RuntimeException();
+                      }
+                      System.out.println("after");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before");
+                      System.out.println("else");
+                      throw new RuntimeException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenBreakInThenBlockWithinWhile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
                           if (true) {
-                              System.out.println("hello");
+                              System.out.println("then");
                               break;
                           }
-                          System.out.println("goodbye");
+                          System.out.println("after if");
                       }
-                      System.out.println("goodbye");
+                      System.out.println("after while");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          System.out.println("then");
+                          break;
+                      }
+                      System.out.println("after while");
                   }
               }
               """
@@ -729,27 +945,285 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
-    void doesNotRemoveWhenContinueInIfBlockWithinWhile() {
+    void removesWhenBreakInThenBlockWithElseWithinWhile() {
         rewriteRun(
           //language=java
           java(
             """
               public class A {
                   public void test() {
+                      System.out.println("before while");
                       while (true) {
+                          System.out.println("before if");
                           if (true) {
-                              System.out.println("hello");
-                              continue;
+                              System.out.println("then");
+                              break;
+                          } else {
+                              System.out.println("else");
                           }
-                          System.out.println("goodbye");
+                          System.out.println("after if");
                       }
-                      System.out.println("goodbye");
+                      System.out.println("after while");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          System.out.println("then");
+                          break;
+                      }
+                      System.out.println("after while");
                   }
               }
               """
           )
         );
     }
+
+    @Test
+    void removesWhenBreakInElseBlockWithinWhile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          if (false) {
+                              System.out.println("then");
+                          } else {
+                              System.out.println("else");
+                              break;
+                          }
+                          System.out.println("after if");
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          System.out.println("else");
+                          break;
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenContinueInThenBlockWithinWhile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          if (true) {
+                              System.out.println("then");
+                              continue;
+                          }
+                          System.out.println("after if");
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          System.out.println("then");
+                          continue;
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenContinueInThenBlockWithElseWithinWhile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          if (true) {
+                              System.out.println("then");
+                              continue;
+                          } else {
+                              System.out.println("else");
+                          }
+                          System.out.println("after if");
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          System.out.println("then");
+                          continue;
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWhenContinueInElseBlockWithinWhile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          if (false) {
+                              System.out.println("then");
+                          } else {
+                              System.out.println("else");
+                              continue;
+                          }
+                          System.out.println("after if");
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before while");
+                      while (true) {
+                          System.out.println("before if");
+                          System.out.println("else");
+                          continue;
+                      }
+                      System.out.println("after while");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesNestedWithReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before outer if");
+                      if (true) {
+                          System.out.println("outer then");
+                          if (true) {
+                              System.out.println("inner then");
+                              return;
+                          }
+                          System.out.println("after inner if");
+                      }
+                      System.out.println("after outer if");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before outer if");
+                      System.out.println("outer then");
+                      System.out.println("inner then");
+                      return;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyNestedWithReturnAndThrowInTryCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before outer if");
+                      if (true) {
+                          System.out.println("outer then");
+                          if (true) {
+                              try {
+                                  if(true) {
+                                      throw new RuntimeException("Explosion");
+                                  }
+                                  return;
+                              } catch (Exception ex) {
+                                  System.out.println("catch");
+                              }
+                          }
+                          System.out.println("after inner if");
+                      }
+                      System.out.println("after outer if");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void test() {
+                      System.out.println("before outer if");
+                      System.out.println("outer then");
+                      try {
+                          throw new RuntimeException("Explosion");
+                      } catch (Exception ex) {
+                          System.out.println("catch");
+                      }
+                      System.out.println("after inner if");
+                      System.out.println("after outer if");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+
 
     @Test
     void binaryOrIsAlwaysFalse() {

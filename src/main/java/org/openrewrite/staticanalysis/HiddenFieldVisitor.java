@@ -152,8 +152,8 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
                 doAfterVisit(new RenameVariable<>(v, nextName));
                 if (parentScope.getValue() instanceof J.MethodDeclaration) {
                     Optional<J.VariableDeclarations> variableParameter = ((J.MethodDeclaration) parentScope.getValue()).getParameters().stream()
-                            .filter(it -> it instanceof J.VariableDeclarations)
-                            .map(it -> (J.VariableDeclarations) it)
+                            .filter(J.VariableDeclarations.class::isInstance)
+                            .map(J.VariableDeclarations.class::cast)
                             .filter(it -> it.getVariables().contains(v))
                             .findFirst();
                     if (variableParameter.isPresent()) {

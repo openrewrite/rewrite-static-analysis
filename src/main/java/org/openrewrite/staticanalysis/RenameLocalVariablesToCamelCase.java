@@ -21,9 +21,11 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -53,7 +55,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
         return "Reformat local variable and method parameter names to camelCase to comply with Java naming convention. " +
                 "The recipe will not rename variables declared in for loop controls or catches with a single character. " +
                 "The first character is set to lower case and existing capital letters are preserved. " +
-                "Special characters that are allowed in java field names `$` and `_` are removed. " +
+                "Special characters that are allowed in java field names `$` and `_` are removed (unless the name starts with one). " +
                 "If a special character is removed the next valid alphanumeric will be capitalized. " +
                 "Currently, does not support renaming members of classes. " +
                 "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
@@ -77,7 +79,8 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return !hasNameKey.contains(toName);
+                Set<String> keys = computeAllKeys(toName, variable);
+                return keys.stream().noneMatch(hasNameKey::contains);
             }
 
             @Override
@@ -94,7 +97,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                     if (!LOWER_CAMEL.matches(name) && name.length() > 1) {
                         renameVariable(v, LOWER_CAMEL.format(name));
                     } else {
-                        hasNameKey(name);
+                        hasNameKey(computeKey(name, v));
                     }
                 }
                 return mv;
@@ -102,12 +105,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
             private boolean isLocalVariable(J.VariableDeclarations mv) {
                 // The recipe will not rename variables declared in for loop controls or catches.
-                if (!isInMethodDeclarationBody() || isDeclaredInForLoopControl() || isDeclaredInCatch()) {
-                    return false;
-                }
-
-                // Skip constant variable
-                if (mv.hasModifier(J.Modifier.Type.Final)) {
+                if (!isInMethodDeclarationBody() || isDeclaredInForLoopControl() || isDeclaredInCatch() || isMethodArgument()) {
                     return false;
                 }
 
@@ -119,6 +117,11 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 }
 
                 return true;
+            }
+
+            private boolean isMethodArgument() {
+                return getCursor().getParentTreeCursor()
+                        .getValue() instanceof J.MethodDeclaration;
             }
 
             private boolean isInMethodDeclarationBody() {
@@ -140,7 +143,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
-                hasNameKey(identifier.getSimpleName());
+                hasNameKey(computeKey(identifier.getSimpleName(), identifier));
                 return identifier;
             }
 
@@ -166,6 +169,24 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                                 is instanceof J.Lambda ||
                                 is instanceof JavaSourceFile
                 );
+            }
+
+            private Set<String> computeAllKeys(String identifier, J context) {
+                Set<String> keys = new HashSet<>();
+                keys.add(identifier);
+                JavaType.Variable fieldType = getFieldType(context);
+                if (fieldType != null && fieldType.getOwner() != null) {
+                    keys.add(fieldType.getOwner() + " " + identifier);
+                    if (fieldType.getOwner() instanceof JavaType.Method) {
+                        // Add all enclosing classes
+                        JavaType.FullyQualified declaringType = ((JavaType.Method) fieldType.getOwner()).getDeclaringType();
+                        while (declaringType != null) {
+                            keys.add(declaringType + " " + identifier);
+                            declaringType = declaringType.getOwningClass();
+                        }
+                    }
+                }
+                return keys;
             }
         };
     }

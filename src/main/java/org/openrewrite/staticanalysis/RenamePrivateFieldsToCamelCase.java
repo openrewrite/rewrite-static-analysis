@@ -75,7 +75,12 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return !hasNameKey.contains(toName) && !hasNameKey.contains(variable.getSimpleName());
+                return hasNameKey.stream().noneMatch(key ->
+                        key.equals(toName) ||
+                        key.equals(variable.getSimpleName()) ||
+                        key.endsWith(" " + toName) ||
+                        key.endsWith(" " + variable.getSimpleName())
+                );
             }
 
             @SuppressWarnings("all")
@@ -110,7 +115,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                     String toName = LOWER_CAMEL.format(variable.getSimpleName());
                     renameVariable(variable, toName);
                 } else {
-                    hasNameKey(variable.getSimpleName());
+                    hasNameKey(computeKey(variable.getSimpleName(), variable));
                 }
 
                 return super.visitVariable(variable, ctx);

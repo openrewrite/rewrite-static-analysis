@@ -143,6 +143,29 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
+    void typeCastOnConstructorCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+              import java.util.stream.Stream;
+
+              class Test {
+                  public void foo() {
+                      List<Object> bar = Stream.of("A", "b")
+                              .map(s -> (Object) new String(s + ":"))
+                              .collect(Collectors.toList());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void instanceOf() {
         rewriteRun(
           //language=java
@@ -215,12 +238,14 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """,
             """
+              import org.test.CheckType;
+              
               import java.util.List;
               import java.util.stream.Collectors;
 
               class Test {
                   List<Object> method(List<Object> input) {
-                      return input.stream().filter(org.test.CheckType.class::isInstance).collect(Collectors.toList());
+                      return input.stream().filter(CheckType.class::isInstance).collect(Collectors.toList());
                   }
               }
               """,
@@ -571,6 +596,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               }
               """,
             """
+              import org.test.CheckType;
+              
               import java.util.List;
               import java.util.stream.Collectors;
 
@@ -578,7 +605,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   List<Object> filter(List<Object> l) {
                       return l.stream()
                           .filter(org.test.CheckType.class::isInstance)
-                          .map(org.test.CheckType.class::cast)
+                          .map(CheckType.class::cast)
                           .collect(Collectors.toList());
                   }
               }
@@ -1191,6 +1218,46 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       URI uri = Optional.ofNullable("path")
                             .map(Paths::get)
                             .map(Path::toUri)
+                            .orElse(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings({"ConstantValue"})
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/200")
+    void nestedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+
+              class A {
+                  Boolean m() {
+                      return new HashMap<String, String>()
+                            .entrySet()
+                            .stream()
+                            .map(e -> e instanceof java.util.Map.Entry)
+                            .findFirst()
+                            .orElse(null);
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class A {
+                  Boolean m() {
+                      return new HashMap<String, String>()
+                            .entrySet()
+                            .stream()
+                            .map(Map.Entry.class::isInstance)
+                            .findFirst()
                             .orElse(null);
                   }
               }
