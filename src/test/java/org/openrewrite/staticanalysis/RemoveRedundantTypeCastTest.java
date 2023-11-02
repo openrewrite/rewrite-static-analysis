@@ -58,9 +58,72 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                             
               class Test {
                   Class<? extends Collection<String>> test = (Class<? extends Collection<String>>) get();
-
+              
                   Class<?> get() {
                       return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void primitiveCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.DataOutputStream;
+                            
+              class Test {
+                  void m(DataOutputStream out) {
+                      out.writeByte((byte) 0xff);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+
+    @Test
+    void genericTypeVariableCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+              
+              class GenericNumberIterable<T extends Number> implements Iterable<T> {
+              
+                  private final Iterable<Number> wrappedIterable;
+              
+                  GenericNumberIterable(Iterable<Number> wrap) {
+                      this.wrappedIterable = wrap;
+                  }
+              
+                  @Override
+                  public Iterator<T> iterator() {
+                      final Iterator<Number> iter = wrappedIterable.iterator();
+              
+                      return new Iterator<T>() {
+                          @Override
+                          public boolean hasNext() {
+                              return iter.hasNext();
+                          }
+              
+                          @Override
+                          @SuppressWarnings("unchecked")
+                          public T next() {
+                              return (T) iter.next();
+                          }
+              
+                          @Override
+                          public void remove() {
+                              throw new UnsupportedOperationException();
+                          }
+                      };
                   }
               }
               """
@@ -80,18 +143,6 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               class Test {
                   public <T extends Collection<String>> T test() {
                       return (T) get();
-                  }
-                  public List<String> get() {
-                      return List.of("a", "b", "c");
-                  }
-              }
-              """,
-            """
-              import java.util.*;
-              
-              class Test {
-                  public <T extends Collection<String>> T test() {
-                      return get();
                   }
                   public List<String> get() {
                       return List.of("a", "b", "c");

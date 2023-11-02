@@ -94,8 +94,9 @@ public class RemoveRedundantTypeCast extends Recipe {
 
                 J.TypeCast visitedTypeCast = (J.TypeCast) visited;
                 JavaType expressionType = visitedTypeCast.getExpression().getType();
+                JavaType castType = visitedTypeCast.getType();
 
-                if (targetType == null) {
+                if (targetType == null || targetType instanceof JavaType.Primitive && castType != targetType) {
                     // Not currently supported, this will be more accurate with dataflow analysis.
                     return visitedTypeCast;
                 } else if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
