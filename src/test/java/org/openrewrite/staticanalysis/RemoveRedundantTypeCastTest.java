@@ -79,6 +79,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               class Test {
                   void m(DataOutputStream out) {
                       out.writeByte((byte) 0xff);
+                      out.writeDouble((double) 42);
                   }
               }
               """
