@@ -669,80 +669,66 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Issue("https://github.com/moderneinc/support-app/issues/17")
     void test() {
         rewriteRun(
-          //language=java
           java(
             """
-              interface IModel<T> {
-                  T getObject();
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.Map;
-              
-              class MapDropdownChoice<K, V>{
-                  public MapDropdownChoice(String id, IModel<? extends Map<K, ? extends V>> choiceMap) {
-                  }
-              }
-                """
-          ),
-          //language=java
-          java(
-            """
-              class Choice {}
-              """
-          ),
-          //language=java
-          java(
-            """
-              import java.util.Map;
-              import java.util.stream.Collectors;
               import java.util.LinkedHashMap;
+              import java.util.Map;
+              import java.util.function.Supplier;
+              import java.util.stream.Collectors;
               
               class Test {
                   void method() {
-                      Object o = new MapDropdownChoice<String, Choice>("id",
-                            new IModel<Map<String, Choice>>() {
+                      Object o = new MapDropdownChoice<String, Integer>(
+                            new Supplier<Map<String, Integer>>() {
                                 @Override
-                                public Map<String, Choice> getObject() {
-                                    Map<String, Choice> choices = Map.of("id1", new Choice());
+                                public Map<String, Integer> getObject() {
+                                    Map<String, Integer> choices = Map.of("id1", 1);
                                     return choices.entrySet().stream()
                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
                                 }
                             });
-                      Object o2 = new MapDropdownChoice<String, Choice>("id",
-                            new IModel<Map<String, Choice>>() {
+                      Object o2 = new MapDropdownChoice<String, Integer>(
+                            new Supplier<Map<String, Integer>>() {
                                 @Override
-                                public Map<String, Choice> getObject() {
-                                    Map<String, Choice> choices = Map.of("id1", new Choice());
+                                public Map<String, Integer> getObject() {
+                                    Map<String, Integer> choices = Map.of("id1", 2);
                                     return choices.entrySet().stream()
                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                                 }
                             });
                   }
               }
+              
+              class MapDropdownChoice<K, V> {
+                  public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
+                  }
+              }
               """,
             """
-              import java.util.Map;
-              import java.util.stream.Collectors;
               import java.util.LinkedHashMap;
+              import java.util.Map;
+              import java.util.function.Supplier;
+              import java.util.stream.Collectors;
               
               class Test {
                   void method() {
-                      Object o = new MapDropdownChoice<String, Choice>("id",
-                              (IModel<Map<String, Choice>>) () -> {
-                                  Map<String, Choice> choices = Map.of("id1", new Choice());
+                      Object o = new MapDropdownChoice<String, Integer>(
+                              (Supplier<Map<String, Integer>>) () -> {
+                                  Map<String, Integer> choices = Map.of("id1", 1);
                                   return choices.entrySet().stream()
                                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
                               });
-                      Object o2 = new MapDropdownChoice<String, Choice>("id",
+                      Object o2 = new MapDropdownChoice<String, Integer>(
                               () -> {
-                                  Map<String, Choice> choices = Map.of("id1", new Choice());
+                                  Map<String, Integer> choices = Map.of("id1", 2);
                                   return choices.entrySet().stream()
                                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                               });
+                  }
+              }
+              
+              class MapDropdownChoice<K, V> {
+                  public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
                   }
               }
               """
