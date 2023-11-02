@@ -81,7 +81,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
                             if (arg == typeCast) {
-                                targetType = methodType.getParameterTypes().get(i);
+                                targetType = getParameterType(methodType, i);
                                 break;
                             }
                         }
@@ -110,6 +110,16 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return visitedTypeCast.getExpression().withPrefix(visitedTypeCast.getPrefix());
                 }
                 return visitedTypeCast;
+            }
+
+            private JavaType getParameterType(JavaType.Method method, int arg) {
+                List<JavaType> parameterTypes = method.getParameterTypes();
+                if (parameterTypes.size() > arg) {
+                    return parameterTypes.get(arg);
+                }
+                // varargs?
+                JavaType type = parameterTypes.get(parameterTypes.size() - 1);
+                return type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
             }
         };
     }

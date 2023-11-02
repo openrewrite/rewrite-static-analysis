@@ -224,6 +224,33 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void varargsCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void m(String... s) {
+                  }
+                  void foo() {
+                      m("1", (String) "2");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void m(String... s) {
+                  }
+                  void foo() {
+                      m("1", "2");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
     void downCast() {
