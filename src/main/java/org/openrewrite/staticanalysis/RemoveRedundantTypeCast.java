@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
+
 @Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
     @Override
@@ -72,7 +74,9 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
-                    if (methodType != null && !methodType.getParameterTypes().isEmpty()) {
+                    if (methodType == null || hasMethodOverloading(methodType)) {
+                        return visited;
+                    } else if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
@@ -88,7 +92,8 @@ public class RemoveRedundantTypeCast extends Recipe {
                                                           is instanceof J.ClassDeclaration ||
                                                           is instanceof JavaSourceFile);
                     if (parent.getValue() instanceof J.MethodDeclaration && ((J.MethodDeclaration) parent.getValue()).getMethodType() != null) {
-                        targetType = ((J.MethodDeclaration) parent.getValue()).getMethodType().getReturnType();
+                        JavaType.Method methodType = ((J.MethodDeclaration) parent.getValue()).getMethodType();
+                        targetType = methodType.getReturnType();
                     }
                 }
 

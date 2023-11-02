@@ -201,6 +201,29 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepCastWithMethodOverloads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void visit(Integer i) {
+                      visit((Number) i);
+                  }
+                  void visit(Number n) {
+                  }
+                  void visitAll(Integer... i) {
+                      visitAll((Number[]) i);
+                  }
+                  void visitAll(Number... n) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
     void downCast() {
