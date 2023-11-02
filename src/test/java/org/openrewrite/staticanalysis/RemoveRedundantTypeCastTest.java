@@ -70,7 +70,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite/issues/1739")
     @Test
-    void doNotChangeGenericTypeCast() {
+    void changeTypeCastInReturn() {
         rewriteRun(
           //language=java
           java(
@@ -79,8 +79,19 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               
               class Test {
                   public <T extends Collection<String>> T test() {
-                      T t = (T) get();
-                      return t;
+                      return (T) get();
+                  }
+                  public List<String> get() {
+                      return List.of("a", "b", "c");
+                  }
+              }
+              """,
+            """
+              import java.util.*;
+              
+              class Test {
+                  public <T extends Collection<String>> T test() {
+                      return get();
                   }
                   public List<String> get() {
                       return List.of("a", "b", "c");
@@ -235,6 +246,60 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
             """
               class ExtendTest extends Test {
                   Test[][] extendTestArray = new ExtendTest[0][0];
+              }
+              """
+          )
+        );
+    }
+
+
+    @Test
+    @Issue("https://github.com/moderneinc/support-app/issues/17")
+    void test() {
+        rewriteRun(
+          java(
+            """
+              import java.util.LinkedHashMap;
+              import java.util.Map;
+              import java.util.function.Supplier;
+              import java.util.stream.Collectors;
+              
+              class Test {
+                  void method() {
+                      Object o2 = new MapDropdownChoice<String, Integer>(
+                              (Supplier<Map<String, Integer>>) () -> {
+                                  Map<String, Integer> choices = Map.of("id1", 2);
+                                  return choices.entrySet().stream()
+                                          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                              });
+                  }
+              }
+              
+              class MapDropdownChoice<K, V> {
+                  public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
+                  }
+              }
+              """,
+            """
+              import java.util.LinkedHashMap;
+              import java.util.Map;
+              import java.util.function.Supplier;
+              import java.util.stream.Collectors;
+              
+              class Test {
+                  void method() {
+                      Object o2 = new MapDropdownChoice<String, Integer>(
+                              () -> {
+                                  Map<String, Integer> choices = Map.of("id1", 2);
+                                  return choices.entrySet().stream()
+                                          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                              });
+                  }
+              }
+              
+              class MapDropdownChoice<K, V> {
+                  public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
+                  }
               }
               """
           )
