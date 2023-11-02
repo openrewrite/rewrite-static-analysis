@@ -132,6 +132,24 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void wildcardGenericsInTargetType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              
+              class Test {
+                  Object o = null;
+                  List<?> l = (List<?>) o;
+                  List<?> l2 = (List) o;
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
     void downCast() {
