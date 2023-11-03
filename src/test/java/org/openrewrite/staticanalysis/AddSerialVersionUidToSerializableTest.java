@@ -274,3 +274,4 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
         );
     }
 }
+
