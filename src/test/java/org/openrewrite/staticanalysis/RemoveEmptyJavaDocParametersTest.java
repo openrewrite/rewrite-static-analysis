@@ -568,6 +568,12 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                       void method(int arg0) {
                       }
                   }
+                  """,
+                """
+                  class Test {                  
+                      void method(int arg0) {
+                      }
+                  }
                   """
               )
             );
@@ -584,6 +590,12 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                       void method(int arg0) {
                       }
                   }
+                  """,
+                """
+                  class Test {                  
+                      void method(int arg0) {
+                      }
+                  }
                   """
               )
             );
@@ -597,6 +609,12 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                 """
                   class Test {
                       /***/
+                      void method(int arg0) {
+                      }
+                  }
+                  """,
+                """
+                  class Test {                  
                       void method(int arg0) {
                       }
                   }
@@ -638,7 +656,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   *
                   *
                   */
-                  void method() throws IllegalStateException {
+                  void method(int width, int height) throws IllegalStateException {
                   }
               }
               """,
@@ -651,7 +669,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   *
                   *
                   */
-                  void method() throws IllegalStateException {
+                  void method(int width, int height) throws IllegalStateException {
                   }
               }
               """
@@ -736,6 +754,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
     void issueTest() {
         rewriteRun(
           //language=java
@@ -749,7 +768,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   * @param height
                   *
                   */
-                  void method() throws IllegalStateException {
+                  void method(int width, int height) throws IllegalStateException {
                   }
               }
               """,
@@ -759,7 +778,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   * Renders this page and returns an image representation of itself.
                   *
                   */
-                  void method() throws IllegalStateException {
+                  void method(int width, int height) throws IllegalStateException {
                   }
               }
               """
@@ -812,7 +831,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   * @throws
                   *
                   */
-                  void method() throws IllegalStateException {
+                  void method(int param1) throws IllegalStateException {
                   }
               }
               """,
@@ -843,7 +862,7 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   *
                   *
                   */
-                  void method() throws IllegalStateException {
+                  void method(int param1) throws IllegalStateException {
                   }
               }
               """
