@@ -202,6 +202,251 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/3078")
+    void visitingQuarkMustNotFail() {
+        rewriteRun(
+          other(
+            """
+              foo
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeEmptyLinesWhenParam() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                  * Test not removing
+                  *
+                  * Successive newlines
+                  *
+                  *
+                  * @param width
+                  *
+                  *@param height
+                  *
+                  *
+                  */
+                  void method(int width, int height) throws IllegalStateException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                  * Test not removing
+                  *
+                  * Successive newlines
+                  *
+                  *
+                  */
+                  void method(int width, int height) throws IllegalStateException {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeEmptyLinesWhenThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                  * Test not removing
+                  *
+                  * successive newlines
+                  *
+                  *
+                  * @throws
+                  *
+                  *
+                  */
+                  void method() throws IllegalStateException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                  * Test not removing
+                  *
+                  * successive newlines
+                  *
+                  *
+                  */
+                  void method() throws IllegalStateException {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeEmptyLinesWhenReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                  * Test not removing
+                  *
+                  * successive newlines
+                  *
+                  *
+                  * @return
+                  *
+                  *
+                  */
+                  void method() throws IllegalStateException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                  * Test not removing
+                  *
+                  * successive newlines
+                  *
+                  *
+                  */
+                  void method() throws IllegalStateException {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
+    void issueTest() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                  * Renders this page and returns an image representation of itself.
+                  *
+                  * @param width
+                  * @param height
+                  *
+                  */
+                  void method(int width, int height) throws IllegalStateException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                  * Renders this page and returns an image representation of itself.
+                  *
+                  */
+                  void method(int width, int height) throws IllegalStateException {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void combinationTest() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                  * Renders only param1, return1 and IllegalStateException with description
+                  *
+                  *
+                  * and skip rest.
+                  *
+                  * @param param1 param1 description
+                  *
+                  * param1 further description
+                  *
+                  *
+                  *
+                  *@param
+                  *
+                  * @return return1 description
+                  * 
+                  * return1 further description
+                  *
+                  *
+                  *
+                  *@return
+                  *
+                  *
+                  * @throws IllegalStateException throws description
+                  *
+                  * further description
+                  *
+                  *
+                  *
+                  * @throws IllegalStateException
+                  * 
+                  *
+                  *@throws IllegalStateException
+                  *
+                  *
+                  * @throws
+                  *
+                  */
+                  void method(int param1) throws IllegalStateException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                  * Renders only param1, return1 and IllegalStateException with description
+                  *
+                  *
+                  * and skip rest.
+                  *
+                  * @param param1 param1 description
+                  *
+                  * param1 further description
+                  *
+                  *
+                  *
+                  * @return return1 description
+                  * 
+                  * return1 further description
+                  *
+                  *
+                  *
+                  * @throws IllegalStateException throws description
+                  *
+                  * further description
+                  *
+                  *
+                  *
+                  */
+                  void method(int param1) throws IllegalStateException {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class NoSpace {
         @Test
@@ -622,251 +867,5 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
               )
             );
         }
-    }
-
-
-    @Test
-    @Issue("https://github.com/openrewrite/rewrite/issues/3078")
-    void visitingQuarkMustNotFail() {
-        rewriteRun(
-          other(
-            """
-              foo
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeEmptyLinesWhenParam() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**
-                  * Test not removing
-                  *
-                  * Successive newlines
-                  *
-                  *
-                  * @param width
-                  *
-                  *@param height
-                  *
-                  *
-                  */
-                  void method(int width, int height) throws IllegalStateException {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                  * Test not removing
-                  *
-                  * Successive newlines
-                  *
-                  *
-                  */
-                  void method(int width, int height) throws IllegalStateException {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeEmptyLinesWhenThrows() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**
-                  * Test not removing
-                  *
-                  * successive newlines
-                  *
-                  *
-                  * @throws
-                  *
-                  *
-                  */
-                  void method() throws IllegalStateException {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                  * Test not removing
-                  *
-                  * successive newlines
-                  *
-                  *
-                  */
-                  void method() throws IllegalStateException {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeEmptyLinesWhenReturn() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**
-                  * Test not removing
-                  *
-                  * successive newlines
-                  *
-                  *
-                  * @return
-                  *
-                  *
-                  */
-                  void method() throws IllegalStateException {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                  * Test not removing
-                  *
-                  * successive newlines
-                  *
-                  *
-                  */
-                  void method() throws IllegalStateException {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
-    void issueTest() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**
-                  * Renders this page and returns an image representation of itself.
-                  *
-                  * @param width
-                  * @param height
-                  *
-                  */
-                  void method(int width, int height) throws IllegalStateException {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                  * Renders this page and returns an image representation of itself.
-                  *
-                  */
-                  void method(int width, int height) throws IllegalStateException {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void combinationTest() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  /**
-                  * Renders only param1, return1 and IllegalStateException with description
-                  *
-                  *
-                  * and skip rest.
-                  *
-                  * @param param1 param1 description
-                  *
-                  * param1 further description
-                  *
-                  *
-                  *
-                  *@param
-                  *
-                  * @return return1 description
-                  * 
-                  * return1 further description
-                  *
-                  *
-                  *
-                  *@return
-                  *
-                  *
-                  * @throws IllegalStateException throws description
-                  *
-                  * further description
-                  *
-                  *
-                  *
-                  * @throws IllegalStateException
-                  * 
-                  *
-                  *@throws IllegalStateException
-                  *
-                  *
-                  * @throws
-                  *
-                  */
-                  void method(int param1) throws IllegalStateException {
-                  }
-              }
-              """,
-            """
-              class Test {
-                  /**
-                  * Renders only param1, return1 and IllegalStateException with description
-                  *
-                  *
-                  * and skip rest.
-                  *
-                  * @param param1 param1 description
-                  *
-                  * param1 further description
-                  *
-                  *
-                  *
-                  * @return return1 description
-                  * 
-                  * return1 further description
-                  *
-                  *
-                  *
-                  * @throws IllegalStateException throws description
-                  *
-                  * further description
-                  *
-                  *
-                  *
-                  */
-                  void method(int param1) throws IllegalStateException {
-                  }
-              }
-              """
-          )
-        );
     }
 }
