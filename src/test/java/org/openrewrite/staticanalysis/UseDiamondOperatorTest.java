@@ -487,4 +487,34 @@ class UseDiamondOperatorTest implements RewriteTest {
         }
     }
 
+    @Test
+    void doNotChangeInferredGenericTypes() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(9))),
+          //language=java
+          java("""
+            @FunctionalInterface
+            public interface IVisitor<T, R> {
+                void visit(T object, R ret);
+            }
+            """
+          ),
+          //language=java
+          java("""
+            class Test {
+                public <S, R> R method(IVisitor<S, R> visitor) {
+                    return null;
+                }
+                private void test(Object t) {
+                    String s = method(new IVisitor<Integer, String>() {
+                        @Override
+                        public void visit(Integer object, String ret) { }
+                    });
+                }
+            }
+            """
+          )
+        );
+    }
+
 }

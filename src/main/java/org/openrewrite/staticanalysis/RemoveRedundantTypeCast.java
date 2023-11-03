@@ -17,14 +17,14 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.TypeTree;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+
+import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
 
 @Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
@@ -52,29 +52,74 @@ public class RemoveRedundantTypeCast extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visitTypeCast(J.TypeCast typeCast, ExecutionContext executionContext) {
+            public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
+                J visited = super.visitTypeCast(typeCast, ctx);
+                if (!(visited instanceof J.TypeCast)) {
+                    return visited;
+                }
+
                 Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.VariableDeclarations ||
-                        is instanceof J.NewClass ||
-                        is instanceof J.Lambda ||
-                        is instanceof J.MethodInvocation ||
-                        is instanceof J.MethodDeclaration ||
-                        is instanceof J.ClassDeclaration);
+                                                                  is instanceof J.Lambda ||
+                                                                  is instanceof J.Return ||
+                                                                  is instanceof MethodCall ||
+                                                                  is instanceof J.MethodDeclaration ||
+                                                                  is instanceof J.ClassDeclaration ||
+                                                                  is instanceof JavaSourceFile);
 
-                // Not currently supported, this will be more accurate with dataflow analysis.
-                if (!(parent.getValue() instanceof J.VariableDeclarations)) {
-                    return typeCast;
+                J parentValue = parent.getValue();
+
+                JavaType targetType = null;
+                if (parentValue instanceof J.VariableDeclarations) {
+                    targetType = ((J.VariableDeclarations) parentValue).getVariables().get(0).getType();
+                } else if (parentValue instanceof MethodCall) {
+                    MethodCall methodCall = (MethodCall) parentValue;
+                    JavaType.Method methodType = methodCall.getMethodType();
+                    if (methodType == null || hasMethodOverloading(methodType)) {
+                        return visited;
+                    } else if (!methodType.getParameterTypes().isEmpty()) {
+                        List<Expression> arguments = methodCall.getArguments();
+                        for (int i = 0; i < arguments.size(); i++) {
+                            Expression arg = arguments.get(i);
+                            if (arg == typeCast) {
+                                targetType = getParameterType(methodType, i);
+                                break;
+                            }
+                        }
+                    }
+                } else if (parentValue instanceof J.Return && ((J.Return) parentValue).getExpression() == typeCast) {
+                    parent = parent.dropParentUntil(is -> is instanceof J.Lambda ||
+                                                          is instanceof J.MethodDeclaration ||
+                                                          is instanceof J.ClassDeclaration ||
+                                                          is instanceof JavaSourceFile);
+                    if (parent.getValue() instanceof J.MethodDeclaration && ((J.MethodDeclaration) parent.getValue()).getMethodType() != null) {
+                        JavaType.Method methodType = ((J.MethodDeclaration) parent.getValue()).getMethodType();
+                        targetType = methodType.getReturnType();
+                    }
                 }
 
-                TypeTree typeTree = typeCast.getClazz().getTree();
-                JavaType expressionType = typeCast.getExpression().getType();
+                J.TypeCast visitedTypeCast = (J.TypeCast) visited;
+                JavaType expressionType = visitedTypeCast.getExpression().getType();
+                JavaType castType = visitedTypeCast.getType();
 
-                JavaType namedVariableType = ((J.VariableDeclarations) parent.getValue()).getVariables().get(0).getType();
-                if (!(namedVariableType instanceof JavaType.Array) && TypeUtils.isOfClassType(namedVariableType, "java.lang.Object") ||
-                        (!(typeTree instanceof J.ParameterizedType) && (TypeUtils.isOfType(namedVariableType, expressionType) || TypeUtils.isAssignableTo(namedVariableType, expressionType)))) {
-                    return typeCast.getExpression();
+                if (targetType == null || targetType instanceof JavaType.Primitive && castType != expressionType) {
+                    // Not currently supported, this will be more accurate with dataflow analysis.
+                    return visitedTypeCast;
+                } else if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
+                           TypeUtils.isOfType(targetType, expressionType) ||
+                           TypeUtils.isAssignableTo(targetType, expressionType)) {
+                    return visitedTypeCast.getExpression().withPrefix(visitedTypeCast.getPrefix());
                 }
+                return visitedTypeCast;
+            }
 
-                return super.visitTypeCast(typeCast, executionContext);
+            private JavaType getParameterType(JavaType.Method method, int arg) {
+                List<JavaType> parameterTypes = method.getParameterTypes();
+                if (parameterTypes.size() > arg) {
+                    return parameterTypes.get(arg);
+                }
+                // varargs?
+                JavaType type = parameterTypes.get(parameterTypes.size() - 1);
+                return type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
             }
         };
     }

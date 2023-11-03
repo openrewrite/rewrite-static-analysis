@@ -22,14 +22,11 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.kotlin.marker.IsNullSafe;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
-
-import static java.util.Objects.requireNonNull;
 
 public class SimplifyBooleanExpression extends Recipe {
 
@@ -56,16 +53,10 @@ public class SimplifyBooleanExpression extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new SimplifyBooleanExpressionVisitor() {
+
             @Override
-            public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(super.visit(tree, ctx));
-                    if (tree != cu) {
-                        // recursive simplification
-                        cu = (JavaSourceFile) getVisitor().visitNonNull(cu, ctx);
-                    }
-                    return cu;
-                }
+            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                // NOTE: This method is required here for the `TreeVisitorAdapter` to work
                 return super.visit(tree, ctx);
             }
 

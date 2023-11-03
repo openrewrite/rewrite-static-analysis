@@ -27,6 +27,18 @@ import static org.openrewrite.Tree.randomId;
 
 final class JavaElementFactory {
 
+    static J.Binary newLogicalExpression(J.Binary.Type operator, Expression left, Expression right) {
+        return new J.Binary(
+                randomId(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                left,
+                new JLeftPadded<>(Space.SINGLE_SPACE, operator, Markers.EMPTY),
+                right,
+                JavaType.Primitive.Boolean
+        );
+    }
+
     static J.MemberReference newStaticMethodReference(JavaType.Method method, boolean qualified, @Nullable JavaType type) {
         JavaType.FullyQualified declaringType = method.getDeclaringType();
         Expression containing = className(declaringType, qualified);
@@ -36,6 +48,32 @@ final class JavaElementFactory {
     static Expression className(JavaType type, boolean qualified) {
         Expression name = null;
         String qualifiedName;
+        if (type instanceof JavaType.Parameterized) {
+            type = ((JavaType.Parameterized) type).getType();
+        }
+        if (qualified && type instanceof JavaType.FullyQualified && ((JavaType.FullyQualified) type).getOwningClass() != null) {
+            J.FieldAccess expression = (J.FieldAccess) className(((JavaType.FullyQualified) type).getOwningClass(), true);
+            String simpleName = ((JavaType.FullyQualified) type).getClassName();
+            return new J.FieldAccess(
+                    randomId(),
+                    Space.EMPTY,
+                    Markers.EMPTY,
+                    expression,
+                    new JLeftPadded<>(
+                            Space.EMPTY,
+                            new J.Identifier(
+                                    randomId(),
+                                    Space.EMPTY,
+                                    Markers.EMPTY,
+                                    emptyList(),
+                                    simpleName.substring(simpleName.lastIndexOf('.') + 1),
+                                    type,
+                                    null
+                            ),
+                            Markers.EMPTY),
+                    type
+            );
+        }
         if (type instanceof JavaType.FullyQualified) {
             qualifiedName = qualified ? ((JavaType.FullyQualified) type).getFullyQualifiedName() : ((JavaType.FullyQualified) type).getClassName();
         } else {

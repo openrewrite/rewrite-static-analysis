@@ -115,8 +115,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         String insertStatement = "private static final String " + variableName + " = #{any(String)};";
                         if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Enum) {
                             J.EnumValueSet enumValueSet = classDecl.getBody().getStatements().stream()
-                                    .filter(it -> it instanceof J.EnumValueSet)
-                                    .map(it -> (J.EnumValueSet) it)
+                                    .filter(J.EnumValueSet.class::isInstance)
+                                    .map(J.EnumValueSet.class::cast)
                                     .findFirst()
                                     .orElse(null);
 
