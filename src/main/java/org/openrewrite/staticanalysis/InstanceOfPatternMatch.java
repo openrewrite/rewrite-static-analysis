@@ -26,6 +26,8 @@ import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -60,7 +62,13 @@ public class InstanceOfPatternMatch extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesJavaVersion<>(17), new JavaVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(
+                new UsesJavaVersion<>(17),
+                Preconditions.not(new KotlinFileChecker<>()),
+                Preconditions.not(new GroovyFileChecker<>())
+        );
+
+        return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
             @Override
             public @Nullable J postVisit(J tree, ExecutionContext executionContext) {
                 J result = super.postVisit(tree, executionContext);
@@ -72,8 +80,8 @@ public class InstanceOfPatternMatch extends Recipe {
             }
 
             @Override
-            public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext executionContext) {
-                instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, executionContext);
+            public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
+                instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, ctx);
                 if (instanceOf.getPattern() != null || !instanceOf.getSideEffects().isEmpty()) {
                     return instanceOf;
                 }
@@ -125,8 +133,8 @@ public class InstanceOfPatternMatch extends Recipe {
             }
 
             @Override
-            public J visitTypeCast(J.TypeCast typeCast, ExecutionContext executionContext) {
-                J result = super.visitTypeCast(typeCast, executionContext);
+            public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
+                J result = super.visitTypeCast(typeCast, ctx);
                 if (result instanceof J.TypeCast) {
                     InstanceOfPatternReplacements replacements = getCursor().getNearestMessage("flowTypeScope");
                     if (replacements != null) {
