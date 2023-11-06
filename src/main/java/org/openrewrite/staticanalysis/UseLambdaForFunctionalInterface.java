@@ -161,6 +161,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         Expression argument = arguments.get(i);
                         if (argument == original && methodArgumentRequiresCast(lambda, method, i) &&
                             original.getClazz() != null) {
+                            doAfterVisit(new RemoveRedundantTypeCast().getVisitor());
                             return new J.TypeCast(
                                     Tree.randomId(),
                                     lambda.getPrefix(),
