@@ -179,7 +179,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                                 .build()
                                 .apply(getCursor(), l.getCoordinates().replace(), className((J.NewClass) method));
                     } else if (select != null) {
-                        return newInstanceMethodReference(methodType, select, lambda.getType()).withPrefix(lambda.getPrefix());
+                        if (!(select instanceof J.NewClass)) {
+                            return newInstanceMethodReference(methodType, select, lambda.getType()).withPrefix(lambda.getPrefix());
+                        }
                     } else {
                         String templ = "#{}::#{}";
                         return JavaTemplate.builder(templ)
