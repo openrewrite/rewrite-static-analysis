@@ -1292,7 +1292,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
     @Test
-    void newInstanceMethodCall() {
+    void newClassSelector() {
         rewriteRun(
           //language=java
           java(

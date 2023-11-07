@@ -158,7 +158,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     }
                 }
 
-                if (multipleMethodInvocations(method) ||
+                if (hasSelectWithPotentialSideEffects(method) ||
                     !methodArgumentsMatchLambdaParameters(method, lambda) ||
                     method instanceof J.MemberReference) {
                     return l;
@@ -179,9 +179,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                                 .build()
                                 .apply(getCursor(), l.getCoordinates().replace(), className((J.NewClass) method));
                     } else if (select != null) {
-                        if (!(select instanceof J.NewClass)) {
-                            return newInstanceMethodReference(methodType, select, lambda.getType()).withPrefix(lambda.getPrefix());
-                        }
+                        return newInstanceMethodReference(methodType, select, lambda.getType()).withPrefix(lambda.getPrefix());
                     } else {
                         String templ = "#{}::#{}";
                         return JavaTemplate.builder(templ)
@@ -203,9 +201,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     Objects.toString(clazz);
         }
 
-        private boolean multipleMethodInvocations(MethodCall method) {
+        private boolean hasSelectWithPotentialSideEffects(MethodCall method) {
             return method instanceof J.MethodInvocation &&
-                   ((J.MethodInvocation) method).getSelect() instanceof J.MethodInvocation;
+                   ((J.MethodInvocation) method).getSelect() instanceof MethodCall;
         }
 
         private boolean methodArgumentsMatchLambdaParameters(MethodCall method, J.Lambda lambda) {
