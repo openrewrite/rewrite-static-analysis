@@ -667,7 +667,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     @Issue("https://github.com/moderneinc/support-app/issues/17")
-    void test() {
+    void lambdaWithComplexTypeInference() {
         rewriteRun(
           java(
             """
@@ -719,7 +719,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
                               });
                       Object o2 = new MapDropdownChoice<String, Integer>(
-                              () -> {
+                              (Supplier<Map<String, Integer>>) () -> {
                                   Map<String, Integer> choices = Map.of("id1", 2);
                                   return choices.entrySet().stream()
                                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

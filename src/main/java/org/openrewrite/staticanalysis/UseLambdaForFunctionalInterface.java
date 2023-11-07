@@ -426,7 +426,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     // TODO consider moving to TypeUtils
     @Nullable
-    static JavaType.Method getSamCompatible(JavaType type) {
+    private static JavaType.Method getSamCompatible(@Nullable JavaType type) {
         JavaType.Method sam = null;
         JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
         if (fullyQualified == null) {
