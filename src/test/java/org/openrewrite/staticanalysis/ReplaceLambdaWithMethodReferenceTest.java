@@ -1290,4 +1290,32 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void newClassSelector() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  int seen = 0;
+                  String lower(String s) {
+                      seen++;
+                      return s.toLowerCase();
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import java.util.stream.Stream;
+              class B {
+                  void bar(Stream<String> stream) {
+                      stream.map(s -> new A().lower(s));
+                  }
+              }
+              """
+          )
+        );
+    }
 }
