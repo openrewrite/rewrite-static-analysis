@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
+import static org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface.getSamCompatible;
 
 @Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
@@ -101,7 +102,9 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType expressionType = visitedTypeCast.getExpression().getType();
                 JavaType castType = visitedTypeCast.getType();
 
-                if (targetType == null || targetType instanceof JavaType.Primitive && castType != expressionType) {
+                if (targetType == null ||
+                    targetType instanceof JavaType.Primitive && castType != expressionType ||
+                    getSamCompatible(targetType) == null) {
                     // Not currently supported, this will be more accurate with dataflow analysis.
                     return visitedTypeCast;
                 } else if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||

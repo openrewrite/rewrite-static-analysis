@@ -132,25 +132,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return n;
             }
 
-            @Nullable
-            private JavaType.Method getSamCompatible(JavaType type) {
-                JavaType.Method sam = null;
-                JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
-                if (fullyQualified == null) {
-                    return null;
-                }
-                for (JavaType.Method method : fullyQualified.getMethods()) {
-                    if (method.hasFlags(Flag.Default) || method.hasFlags(Flag.Static)) {
-                        continue;
-                    }
-                    if (sam != null) {
-                        return null;
-                    }
-                    sam = method;
-                }
-                return sam;
-            }
-
             private J maybeAddCast(J.Lambda lambda, J.NewClass original) {
                 J parent = getCursor().getParentTreeCursor().getValue();
 
@@ -441,5 +422,25 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
         }.visit(lambda.getBody(), atomicBoolean);
         return atomicBoolean.get();
+    }
+
+    // TODO consider moving to TypeUtils
+    @Nullable
+    static JavaType.Method getSamCompatible(JavaType type) {
+        JavaType.Method sam = null;
+        JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
+        if (fullyQualified == null) {
+            return null;
+        }
+        for (JavaType.Method method : fullyQualified.getMethods()) {
+            if (method.hasFlags(Flag.Default) || method.hasFlags(Flag.Static)) {
+                continue;
+            }
+            if (sam != null) {
+                return null;
+            }
+            sam = method;
+        }
+        return sam;
     }
 }

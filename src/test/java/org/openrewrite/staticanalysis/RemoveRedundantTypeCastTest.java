@@ -154,6 +154,24 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void nonSamParameter() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+              
+              class Test {
+                  public boolean foo() {
+                      return Objects.equals("x", (Comparable<String>) (s) -> 1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
     void redundantTypeCast() {
