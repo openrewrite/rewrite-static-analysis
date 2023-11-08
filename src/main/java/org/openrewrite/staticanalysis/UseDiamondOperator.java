@@ -213,7 +213,8 @@ public class UseDiamondOperator extends Recipe {
             if (paramTypes != null && (java9 || newClass.getBody() == null) && newClass.getClazz() instanceof J.ParameterizedType) {
                 J.ParameterizedType newClassType = (J.ParameterizedType) newClass.getClazz();
                 if (newClassType.getTypeParameters() != null) {
-                    if (paramTypes.size() != newClassType.getTypeParameters().size()) {
+                    if (paramTypes.size() != newClassType.getTypeParameters().size() ||
+                        newClassType.getTypeParameters().stream().anyMatch(p -> p instanceof J.AnnotatedType)) {
                         return newClass;
                     } else {
                         for (int i = 0; i < paramTypes.size(); i++) {
