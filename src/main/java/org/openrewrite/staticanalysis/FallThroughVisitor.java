@@ -50,9 +50,9 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
-            if ((Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(c, switch_))) {
+            if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
-                    doAfterVisit(new AddBreak<>(c));
+                    c = (J.Case) new AddBreak<>(c).visit(c, p, getCursor().getParent());
                 }
             }
         }
@@ -68,34 +68,29 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
         @Override
         public J.Case visitCase(J.Case case_, P p) {
-            J.Case c = super.visitCase(case_, p);
-            if (scope.isScope(c) &&
-                    c.getStatements().stream().noneMatch(J.Break.class::isInstance) &&
-                    c.getStatements().stream()
-                            .reduce((s1, s2) -> s2)
-                            .map(s -> !(s instanceof J.Block))
-                            .orElse(true)) {
-                List<Statement> statements = new ArrayList<>(c.getStatements());
+            if (scope.isScope(case_)) {
+                List<Statement> statements = case_.getStatements();
+                if (statements.size() == 1 && statements.get(0) instanceof J.Block) {
+                    return super.visitCase(case_, p);
+                }
                 J.Break breakToAdd = autoFormat(
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
                 statements.add(breakToAdd);
-                c = c.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                return case_.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
             }
-            return c;
+            return case_;
         }
 
         @Override
         public J.Block visitBlock(J.Block block, P p) {
-            J.Block b = super.visitBlock(block, p);
-            if (getCursor().isScopeInPath(scope) &&
-                    b.getStatements().stream().noneMatch(J.Break.class::isInstance) &&
-                    b.getStatements().stream()
-                            .reduce((s1, s2) -> s2)
-                            .map(s -> !(s instanceof J.Block))
-                            .orElse(true)) {
+            J.Block b = block;
+            if (getCursor().isScopeInPath(scope)) {
                 List<Statement> statements = b.getStatements();
+                if (statements.size() == 1 && statements.get(0) instanceof J.Block) {
+                    return super.visitBlock(b, p);
+                }
                 J.Break breakToAdd = autoFormat(
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
