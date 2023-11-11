@@ -421,4 +421,38 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void returnPrimitiveIntToWrapperLong() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  Long method() {
+                      return (long) 1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void castWildcard() {
+        rewriteRun(
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+              
+              class Test {
+                  void method() {
+                      List<? extends Number> list = new ArrayList<>();
+                      List<Number> n = (List<Number>) list;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
