@@ -164,7 +164,7 @@ public class MinimumSwitchCases extends Recipe {
                                 return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                             }
 
-                            generatedIf = createIfForEnum(tree, cases[0].getPattern());
+                            generatedIf = createIfForEnum(tree, cases[0].getPattern()).withPrefix(switch_.getPrefix());
                             if (cases[1] != null) {
                                 Statement elseBody = J.Block.createEmptyBlock();
                                 if (!isDefault(cases[1])) {

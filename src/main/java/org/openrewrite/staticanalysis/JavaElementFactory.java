@@ -52,7 +52,7 @@ final class JavaElementFactory {
             type = ((JavaType.Parameterized) type).getType();
         }
         if (qualified && type instanceof JavaType.FullyQualified && ((JavaType.FullyQualified) type).getOwningClass() != null) {
-            J.FieldAccess expression = (J.FieldAccess) className(((JavaType.FullyQualified) type).getOwningClass(), true);
+            Expression expression = className(((JavaType.FullyQualified) type).getOwningClass(), true);
             String simpleName = ((JavaType.FullyQualified) type).getClassName();
             return new J.FieldAccess(
                     randomId(),
