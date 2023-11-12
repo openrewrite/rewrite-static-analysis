@@ -48,7 +48,7 @@ public class MinimumSwitchCases extends Recipe {
     @Override
     public String getDescription() {
         return "`switch` statements are useful when many code paths branch depending on the value of a single expression. " +
-                "For just one or two code paths, the code will be more readable with `if` statements.";
+               "For just one or two code paths, the code will be more readable with `if` statements.";
     }
 
     @Override
@@ -60,32 +60,32 @@ public class MinimumSwitchCases extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
-                    "if(#{any()} == #{any()}) {\n" +
-                    "} else if(#{any()} == #{any()}) {\n" +
-                    "}").build();
+                                                                        "if(#{any()} == #{any()}) {\n" +
+                                                                        "} else if(#{any()} == #{any()}) {\n" +
+                                                                        "}").build();
 
             final JavaTemplate ifElseIfString = JavaTemplate.builder("" +
-                    "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").build();
+                                                                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
+                                                                     "} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
+                                                                     "}").build();
 
             final JavaTemplate ifElsePrimitive = JavaTemplate.builder("" +
-                    "if(#{any()} == #{any()}) {\n" +
-                    "} else {\n" +
-                    "}").build();
+                                                                      "if(#{any()} == #{any()}) {\n" +
+                                                                      "} else {\n" +
+                                                                      "}").build();
 
             final JavaTemplate ifElseString = JavaTemplate.builder("" +
-                    "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "} else {\n" +
-                    "}").build();
+                                                                   "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
+                                                                   "} else {\n" +
+                                                                   "}").build();
 
             final JavaTemplate ifPrimitive = JavaTemplate.builder("" +
-                    "if(#{any()} == #{any()}) {\n" +
-                    "}").build();
+                                                                  "if(#{any()} == #{any()}) {\n" +
+                                                                  "}").build();
 
             final JavaTemplate ifString = JavaTemplate.builder("" +
-                    "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                    "}").build();
+                                                               "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
+                                                               "}").build();
 
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
@@ -236,7 +236,7 @@ public class MinimumSwitchCases extends Recipe {
             private boolean switchesOnEnum(J.Switch switch_) {
                 JavaType selectorType = switch_.getSelector().getTree().getType();
                 return selectorType instanceof JavaType.Class
-                        && ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
+                       && ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
             }
 
         };
