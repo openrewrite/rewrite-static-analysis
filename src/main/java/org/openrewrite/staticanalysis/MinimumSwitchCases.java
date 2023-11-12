@@ -30,7 +30,6 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -58,17 +57,12 @@ public class MinimumSwitchCases extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else if(#{any()} == #{any()}) {\n" +
-                    "}").contextSensitive().build();
+                    "}").build();
 
             final JavaTemplate ifElseIfString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
@@ -78,7 +72,7 @@ public class MinimumSwitchCases extends Recipe {
             final JavaTemplate ifElsePrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
                     "} else {\n" +
-                    "}").contextSensitive().build();
+                    "}").build();
 
             final JavaTemplate ifElseString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
@@ -87,17 +81,17 @@ public class MinimumSwitchCases extends Recipe {
 
             final JavaTemplate ifPrimitive = JavaTemplate.builder("" +
                     "if(#{any()} == #{any()}) {\n" +
-                    "}").contextSensitive().build();
+                    "}").build();
 
             final JavaTemplate ifString = JavaTemplate.builder("" +
                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
                     "}").build();
 
             @Override
-            public J visitBlock(J.Block block, ExecutionContext executionContext) {
+            public J visitBlock(J.Block block, ExecutionContext ctx) {
                 // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
                 return block.withStatements(ListUtils.flatMap(block.getStatements(), (statement) -> {
-                    Statement visited = (Statement) visit(statement, executionContext, getCursor());
+                    Statement visited = (Statement) visit(statement, ctx, getCursor());
                     if (!(visited instanceof J.Switch) || !visited.getMarkers().findFirst(DefaultOnly.class).isPresent()) {
                         return visited;
                     }
@@ -108,7 +102,7 @@ public class MinimumSwitchCases extends Recipe {
                         if (caseStatement instanceof J.Break) {
                             return null;
                         }
-                        return autoFormat(caseStatement, executionContext, getCursor());
+                        return autoFormat(caseStatement, ctx, getCursor());
                     });
                 }));
             }
