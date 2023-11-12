@@ -167,4 +167,8 @@ final class JavaElementFactory {
         }
         return null;
     }
+
+    public static J.Identifier newThis(JavaType type) {
+        return new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "this", type, null);
+    }
 }

@@ -73,8 +73,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
     private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
         @Override
-        public J visitLambda(J.Lambda lambda, ExecutionContext executionContext) {
-            J.Lambda l = (J.Lambda) super.visitLambda(lambda, executionContext);
+        public J visitLambda(J.Lambda lambda, ExecutionContext ctx) {
+            J.Lambda l = (J.Lambda) super.visitLambda(lambda, ctx);
             updateCursor(l);
 
             String code = "";
@@ -181,12 +181,13 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     } else if (select != null) {
                         return newInstanceMethodReference(methodType, select, lambda.getType()).withPrefix(lambda.getPrefix());
                     } else {
-                        String templ = "#{}::#{}";
-                        return JavaTemplate.builder(templ)
-                                .contextSensitive()
-                                .build()
-                                .apply(getCursor(), l.getCoordinates().replace(), "this",
-                                        method.getMethodType().getName());
+                        Cursor owner = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
+                                                                         (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) ||
+                                                                         is instanceof J.Lambda);
+                        return JavaElementFactory.newInstanceMethodReference(
+                                method.getMethodType(),
+                                JavaElementFactory.newThis(owner.<TypedTree>getValue().getType()), lambda.getType()
+                        ).withPrefix(lambda.getPrefix());
                     }
                 }
             }
