@@ -859,4 +859,22 @@ class FinalizePrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/177")
+    void staticFieldAssignedInConstructorNotMadeFinal() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              public class Reproducer {
+                  private static Reproducer instance;
+                  public Reproducer() {
+                      instance = this;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

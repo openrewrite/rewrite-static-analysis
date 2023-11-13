@@ -213,7 +213,7 @@ public class FinalizePrivateFields extends Recipe {
                 int increment;
                 if (isInLoop(cursor) || isInLambda(cursor)) {
                     increment = 2;
-                } else if (isInitializedByClass(cursor)) {
+                } else if (isInitializedByClass(cursor, privateField)) {
                     increment = 1;
                 } else {
                     increment = 2;
@@ -227,31 +227,20 @@ public class FinalizePrivateFields extends Recipe {
             return isInForLoop(cursor) || isInDoWhileLoopLoop(cursor) || isInWhileLoop(cursor);
         }
 
-        private static boolean isConstructor(Object parent) {
-            if (parent instanceof J.MethodDeclaration) {
-                return ((J.MethodDeclaration) parent).isConstructor();
-            }
-            return false;
-        }
-
-        private static boolean isInitializerBlock(Object parent) {
-            return parent instanceof J.ClassDeclaration;
-        }
-
         /**
-         * @param cursor current assignment position
+         * @param cursor       current assignment position
+         * @param privateField the private field to check
          * @return true if the cursor is in a constructor or an initializer block (both static or non-static)
          */
-        private static boolean isInitializedByClass(Cursor cursor) {
+        private static boolean isInitializedByClass(Cursor cursor, JavaType.Variable privateField) {
             Object parent = cursor.dropParentWhile(p -> p instanceof J.Block
-                    || p instanceof JRightPadded
-                    || p instanceof JLeftPadded)
-                .getValue();
-
-            if (parent instanceof J.MethodDeclaration || parent instanceof J.ClassDeclaration) {
-                return (isConstructor(parent) || isInitializerBlock(parent));
+                            || p instanceof JRightPadded
+                            || p instanceof JLeftPadded)
+                    .getValue();
+            if (parent instanceof J.MethodDeclaration) {
+                return ((J.MethodDeclaration) parent).isConstructor() && !privateField.hasFlags(Flag.Static);
             }
-            return false;
+            return parent instanceof J.ClassDeclaration;
         }
 
         /**
