@@ -102,13 +102,11 @@ public class RemoveExtraSemicolons extends Recipe {
 
     private Optional<Statement> nextNonEmptyAggregatedWithComments(Statement current, Iterator<Statement> iterator) {
         List<Comment> comments = new ArrayList<>(current.getComments());
-        StringBuilder stringBuilder = new StringBuilder();
         while (iterator.hasNext()) {
             Statement statement = iterator.next();
-            stringBuilder.append(statement.getPrefix().getWhitespace());
             comments.addAll(statement.getComments());
             if (!(statement instanceof J.Empty)) {
-                return Optional.of(statement.withPrefix(Space.build(stringBuilder.toString(), comments)));
+                return Optional.of(statement.withComments(comments));
             }
         }
         return Optional.empty();
