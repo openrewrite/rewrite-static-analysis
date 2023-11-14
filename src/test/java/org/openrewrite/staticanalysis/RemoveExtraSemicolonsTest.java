@@ -226,6 +226,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                       int b = 2;
                       int c = 3;;;
                       int d = 4;
+                      int e = 5; ;
+                      int f = 6;
                   }
               }
               """,
@@ -236,6 +238,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                       int b = 2;
                       int c = 3;
                       int d = 4;
+                      int e = 5;
+                      int f = 6;
                   }
               }
               """

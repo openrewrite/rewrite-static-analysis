@@ -21,6 +21,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
@@ -62,12 +63,12 @@ public class RemoveExtraSemicolons extends Recipe {
                     if (statement instanceof J.Empty) {
                         nextNonEmptyAggregatedWithComments(statement, iterator)
                                 .ifPresent(nextLine -> {
-                                    String semicolonPrefixWhitespace = statement.getPrefix().getWhitespace();
-                                    if (semicolonPrefixWhitespace.isEmpty()) {
+                                    String whitespace = statement.getPrefix().getWhitespace();
+                                    if (!whitespace.contains("\n") && nextLine.getComments().isEmpty())  {
                                         result.add(nextLine);
                                     } else {
-                                        result.add(nextLine.withPrefix(nextLine.getPrefix()
-                                                .withWhitespace(semicolonPrefixWhitespace)));
+                                        Space updatedPrefix = nextLine.getPrefix().withWhitespace(whitespace);
+                                        result.add(nextLine.withPrefix(updatedPrefix));
                                     }
                                 });
                     } else {
@@ -101,11 +102,13 @@ public class RemoveExtraSemicolons extends Recipe {
 
     private Optional<Statement> nextNonEmptyAggregatedWithComments(Statement current, Iterator<Statement> iterator) {
         List<Comment> comments = new ArrayList<>(current.getComments());
+        StringBuilder stringBuilder = new StringBuilder();
         while (iterator.hasNext()) {
             Statement statement = iterator.next();
+            stringBuilder.append(statement.getPrefix().getWhitespace());
             comments.addAll(statement.getComments());
             if (!(statement instanceof J.Empty)) {
-                return Optional.of(statement.withComments(comments));
+                return Optional.of(statement.withPrefix(Space.build(stringBuilder.toString(), comments)));
             }
         }
         return Optional.empty();
