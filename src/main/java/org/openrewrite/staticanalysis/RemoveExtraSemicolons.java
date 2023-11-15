@@ -15,15 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -32,6 +23,9 @@ import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+
+import java.time.Duration;
+import java.util.*;
 
 public class RemoveExtraSemicolons extends Recipe {
 
@@ -69,9 +63,13 @@ public class RemoveExtraSemicolons extends Recipe {
                     if (statement instanceof J.Empty) {
                         nextNonEmptyAggregatedWithComments(statement, iterator)
                                 .ifPresent(nextLine -> {
-                                    Space updatedPrefix = nextLine.getPrefix()
-                                            .withWhitespace(statement.getPrefix().getWhitespace());
-                                    result.add(nextLine.withPrefix(updatedPrefix));
+                                    String whitespace = statement.getPrefix().getWhitespace();
+                                    if (!whitespace.contains("\n") && nextLine.getComments().isEmpty())  {
+                                        result.add(nextLine);
+                                    } else {
+                                        Space updatedPrefix = nextLine.getPrefix().withWhitespace(whitespace);
+                                        result.add(nextLine.withPrefix(updatedPrefix));
+                                    }
                                 });
                     } else {
                         result.add(statement);
