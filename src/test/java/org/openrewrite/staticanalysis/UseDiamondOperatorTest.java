@@ -523,7 +523,7 @@ class UseDiamondOperatorTest implements RewriteTest {
         rewriteRun(
           spec -> spec
             .allSources(s -> s.markers(javaVersion(9)))
-            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.0.1")),
+            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
           //language=java
           java("""
             import org.jetbrains.annotations.Nullable;
