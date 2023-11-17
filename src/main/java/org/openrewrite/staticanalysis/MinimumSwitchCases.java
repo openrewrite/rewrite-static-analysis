@@ -25,7 +25,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.RecipeRunException;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
+import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
@@ -173,7 +173,7 @@ public class MinimumSwitchCases extends Recipe {
                                                 )
                                         );
                             }
-                            doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(generatedIf));
+                            doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(generatedIf));
                         } else {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
