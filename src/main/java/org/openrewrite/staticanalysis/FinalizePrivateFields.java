@@ -213,7 +213,7 @@ public class FinalizePrivateFields extends Recipe {
                 int increment;
                 if (isInLoop(cursor) || isInLambda(cursor)) {
                     increment = 2;
-                } else if (isInitializedByClass(cursor, privateField)) {
+                } else if (isInitializedByClass(cursor, privateField.hasFlags(Flag.Static))) {
                     increment = 1;
                 } else {
                     increment = 2;
@@ -228,17 +228,23 @@ public class FinalizePrivateFields extends Recipe {
         }
 
         /**
-         * @param cursor       current assignment position
-         * @param privateField the private field to check
+         * @param cursor               current assignment position
+         * @param privateFieldIsStatic true if the private field is static
          * @return true if the cursor is in a constructor or an initializer block (both static or non-static)
          */
-        private static boolean isInitializedByClass(Cursor cursor, JavaType.Variable privateField) {
-            Object parent = cursor.dropParentWhile(p -> p instanceof J.Block
-                            || p instanceof JRightPadded
-                            || p instanceof JLeftPadded)
+        private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
+            Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic())
+                                                        || p instanceof JRightPadded
+                                                        || p instanceof JLeftPadded)
                     .getValue();
+            if (parent instanceof J.Block) {
+                return privateFieldIsStatic;
+            }
+            if (privateFieldIsStatic) {
+                return false;
+            }
             if (parent instanceof J.MethodDeclaration) {
-                return ((J.MethodDeclaration) parent).isConstructor() && !privateField.hasFlags(Flag.Static);
+                return ((J.MethodDeclaration) parent).isConstructor();
             }
             return parent instanceof J.ClassDeclaration;
         }
@@ -252,6 +258,7 @@ public class FinalizePrivateFields extends Recipe {
 
         /**
          * Drop until meet endCondition or condition
+         *
          * @return true if meet the condition, or false if not meet the condition until the end.
          */
         private static boolean dropUntilMeetCondition(Cursor cursor,
@@ -291,6 +298,7 @@ public class FinalizePrivateFields extends Recipe {
     private static class FindLastIdentifier extends JavaIsoVisitor<List<J.Identifier>> {
         /**
          * Find the last identifier in a J.FieldAccess. The purpose is to check whether it's a private field.
+         *
          * @param j the subtree to search, supposed to be a J.FieldAccess
          * @return the last Identifier if found, otherwise null.
          */
