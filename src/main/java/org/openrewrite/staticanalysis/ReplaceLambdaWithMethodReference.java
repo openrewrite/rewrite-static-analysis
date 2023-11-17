@@ -19,7 +19,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
+import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.kotlin.KotlinVisitor;
 import org.openrewrite.kotlin.tree.K;
@@ -99,7 +99,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> m.getName().equals("isInstance")).findFirst();
                         if (isInstanceMethod.isPresent()) {
                             J.MemberReference updated = newInstanceMethodReference(isInstanceMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
-                            doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                            doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
                             return updated;
                         }
                     }
@@ -120,7 +120,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                             Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> m.getName().equals("cast")).findFirst();
                             if (castMethod.isPresent()) {
                                 J.MemberReference updated = newInstanceMethodReference(castMethod.get(), classLiteral, lambda.getType()).withPrefix(lambda.getPrefix());
-                                doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                                doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
                                 return updated;
                             }
                         }
@@ -138,7 +138,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                             .contextSensitive()
                             .build()
                             .apply(getCursor(), l.getCoordinates().replace());
-                    doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                    doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
                     return updated;
                 }
             } else if (body instanceof MethodCall) {
@@ -171,7 +171,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (methodType.hasFlags(Flag.Static) ||
                         methodSelectMatchesFirstLambdaParameter(method, lambda)) {
                         J.MemberReference updated = newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
-                        doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(updated));
+                        doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
                         return updated;
                     } else if (method instanceof J.NewClass) {
                         return JavaTemplate.builder("#{}::new")
