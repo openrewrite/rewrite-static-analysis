@@ -141,6 +141,25 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void removeUnusedPrivateFieldImport() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              public class Test {
+                  private List notUsed;
+              }
+              """,
+            """
+              public class Test {
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void nameIsShadowed() {
