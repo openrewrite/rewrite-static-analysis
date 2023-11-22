@@ -23,6 +23,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -68,18 +69,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     n.getBody().getStatements().size() == 1 &&
                     n.getBody().getStatements().get(0) instanceof J.MethodDeclaration &&
                     n.getClazz() != null) {
-                    JavaType.@Nullable FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
+                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
                     if (type != null && type.getKind().equals(JavaType.Class.Kind.Interface)) {
-                        JavaType.Method sam = null;
-                        for (JavaType.Method method : type.getMethods()) {
-                            if (method.hasFlags(Flag.Default) || method.hasFlags(Flag.Static)) {
-                                continue;
-                            }
-                            if (sam != null) {
-                                return n;
-                            }
-                            sam = method;
-                        }
+                        JavaType.Method sam = getSamCompatible(type);
                         if (sam == null) {
                             return n;
                         }
@@ -91,7 +83,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                             return n;
                         }
 
-                        //The interface may be parameterized and that is needed to maintain type attribution:
+                        // The interface may be parameterized and that is needed to maintain type attribution:
                         JavaType.FullyQualified typedInterface = null;
                         JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
                         if (anonymousClass != null) {
@@ -123,7 +115,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                                 .build()
                                 .apply(getCursor(), n.getCoordinates().replace());
                         lambda = lambda.withType(typedInterface);
-                        lambda = (J.Lambda) new UnnecessaryParenthesesVisitor()
+                        lambda = (J.Lambda) new UnnecessaryParenthesesVisitor<>()
                                 .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
 
                         J.Block lambdaBody = methodDeclaration.getBody();
@@ -132,13 +124,93 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         lambda = lambda.withBody(lambdaBody.withPrefix(Space.format(" ")));
 
                         lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
-
                         doAfterVisit(new RemoveUnusedImports().getVisitor());
 
-                        return autoFormat(lambda, ctx);
+                        return autoFormat(maybeAddCast(lambda, newClass), ctx);
                     }
                 }
                 return n;
+            }
+
+            private J maybeAddCast(J.Lambda lambda, J.NewClass original) {
+                J parent = getCursor().getParentTreeCursor().getValue();
+
+                if (parent instanceof MethodCall) {
+                    MethodCall method = (MethodCall) parent;
+                    List<Expression> arguments = method.getArguments();
+                    for (int i = 0; i < arguments.size(); i++) {
+                        Expression argument = arguments.get(i);
+                        if (argument == original && methodArgumentRequiresCast(lambda, method, i) &&
+                            original.getClazz() != null) {
+                            return new J.TypeCast(
+                                    Tree.randomId(),
+                                    lambda.getPrefix(),
+                                    Markers.EMPTY,
+                                    new J.ControlParentheses<>(
+                                            Tree.randomId(),
+                                            Space.EMPTY,
+                                            Markers.EMPTY,
+                                            JRightPadded.build(original.getClazz())
+                                    ),
+                                    lambda.withPrefix(Space.format(" "))
+                            );
+                        }
+                    }
+                }
+
+                return lambda;
+            }
+
+            private boolean methodArgumentRequiresCast(J.Lambda lambda, MethodCall method, int argumentIndex) {
+                JavaType.FullyQualified lambdaType = TypeUtils.asFullyQualified(lambda.getType());
+                if (lambdaType == null) {
+                    return false;
+                }
+                String lambdaFqn = lambdaType.getFullyQualifiedName();
+
+                JavaType.Method methodType = method.getMethodType();
+                if (methodType == null) {
+                    return false;
+                }
+                if (!TypeUtils.isOfClassType(methodType.getParameterTypes().get(argumentIndex), lambdaFqn)) {
+                    return true;
+                }
+
+                // look for ambiguous methods
+                int count = 0;
+                for (JavaType.Method maybeAmbiguous : methodType.getDeclaringType().getMethods()) {
+                    if (methodType.getName().equals(maybeAmbiguous.getName()) &&
+                        methodType.getParameterTypes().size() == maybeAmbiguous.getParameterTypes().size()) {
+                        if (areMethodsAmbiguous(
+                                getSamCompatible(methodType.getParameterTypes().get(argumentIndex)),
+                                getSamCompatible(maybeAmbiguous.getParameterTypes().get(argumentIndex)))) {
+                            count++;
+                        }
+                    }
+                }
+                if (count >= 2) {
+                    return true;
+                }
+
+                return hasGenerics(lambda);
+            }
+
+            private boolean areMethodsAmbiguous(@Nullable JavaType.Method m1, @Nullable JavaType.Method m2) {
+                if (m1 == null || m2 == null) {
+                    return false;
+                }
+                if (m1 == m2) {
+                    return true;
+                }
+                for (int i = 0; i < m1.getParameterTypes().size(); i++) {
+                    JavaType m1i = m1.getParameterTypes().get(i);
+                    JavaType m2i = m2.getParameterTypes().get(i);
+                    if (!TypeUtils.isAssignableTo(m1i, m2i) &&
+                        !TypeUtils.isAssignableTo(m2i, m1i)) {
+                        return false;
+                    }
+                }
+                return true;
             }
 
             private String valueOfType(@Nullable JavaType type) {
@@ -167,7 +239,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
                 return "null";
             }
-        };
+        }
+
+                ;
     }
 
     private static boolean usesThis(Cursor cursor) {
@@ -188,7 +262,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     private static List<String> parameterNames(J.MethodDeclaration method) {
         return method.getParameters().stream()
-                .filter(s -> s instanceof J.VariableDeclarations)
+                .filter(J.VariableDeclarations.class::isInstance)
                 .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
                 .collect(Collectors.toList());
     }
@@ -196,7 +270,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     // This does not recursive descend extended classes for inherited fields.
     private static List<String> classFields(J.ClassDeclaration classDeclaration) {
         return classDeclaration.getBody().getStatements().stream()
-                .filter(s -> s instanceof J.VariableDeclarations)
+                .filter(J.VariableDeclarations.class::isInstance)
                 .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
                 .collect(Collectors.toList());
     }
@@ -276,7 +350,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 nameScopeBlocks.add((J.Block) p);
             }
             return p instanceof J.MethodDeclaration || p instanceof J.ClassDeclaration;
-        } ).getValue();
+        }).getValue();
         if (nameScope instanceof J.MethodDeclaration) {
             J.MethodDeclaration m = (J.MethodDeclaration) nameScope;
             localVariables.addAll(parameterNames(m));
@@ -329,5 +403,43 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         }.visit(n.getBody(), 0, cursor);
 
         return hasShadow.get();
+    }
+
+    private static boolean hasGenerics(J.Lambda lambda) {
+        AtomicBoolean atomicBoolean = new AtomicBoolean();
+        new JavaVisitor<AtomicBoolean>() {
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, AtomicBoolean atomicBoolean) {
+                if (method.getMethodType() != null &&
+                    method.getMethodType().getParameterTypes().stream()
+                            .anyMatch(p -> p instanceof JavaType.Parameterized &&
+                                           ((JavaType.Parameterized) p).getTypeParameters().stream().anyMatch(t -> t instanceof JavaType.GenericTypeVariable))
+                ) {
+                    atomicBoolean.set(true);
+                }
+                return super.visitMethodInvocation(method, atomicBoolean);
+            }
+        }.visit(lambda.getBody(), atomicBoolean);
+        return atomicBoolean.get();
+    }
+
+    // TODO consider moving to TypeUtils
+    @Nullable
+    private static JavaType.Method getSamCompatible(@Nullable JavaType type) {
+        JavaType.Method sam = null;
+        JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
+        if (fullyQualified == null) {
+            return null;
+        }
+        for (JavaType.Method method : fullyQualified.getMethods()) {
+            if (method.hasFlags(Flag.Default) || method.hasFlags(Flag.Static)) {
+                continue;
+            }
+            if (sam != null) {
+                return null;
+            }
+            sam = method;
+        }
+        return sam;
     }
 }

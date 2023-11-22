@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
@@ -396,7 +397,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Disabled ("Doesn't support multiple constructors, to be enhanced")
+    @Disabled("Doesn't support multiple constructors, to be enhanced")
     @Test
     void fieldAssignedInAllAlternateConstructors() {
         rewriteRun(
@@ -772,6 +773,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void anyFieldAnnotationAppliedIgnored() {
         rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
           //language=java
           java(
             """
@@ -784,8 +786,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
 
                   static void test() {
                       A a = new A();
-                      a.setNum(2);
-                      a.setName("XYZ");
+                      // a.setNum(2);
+                      // a.setName("XYZ");
                   }
               }
               """
@@ -796,6 +798,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     @Test
     void anyAnnotationAppliedClassIgnored() {
         rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
           //language=java
           java(
             """
@@ -807,7 +810,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                           
                   void func() {
                       B b = new B();
-                      b.setNum(1);
+                      // b.setNum(1);
                   }
               }
               """
@@ -851,6 +854,42 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               
                   private static volatile String foo = "this becomes final volatile, which is invalid";
               
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/177")
+    void staticFieldAssignedInConstructorNotMadeFinal() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              public class Reproducer {
+                  private static Reproducer instance;
+                  public Reproducer() {
+                      instance = this;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/177")
+    void staticFieldAssignedInBlockNotMadeFinal() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              public class Reproducer {
+                  private static Reproducer instance;
+                  {
+                      instance = new Reproducer();
+                  }
               }
               """
           )

@@ -68,7 +68,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                         return m;
                     }
 
-                    if (flattenExpressions.stream().allMatch(exp -> exp instanceof J.Literal)) {
+                    if (flattenExpressions.stream().allMatch(J.Literal.class::isInstance)) {
                         return m;
                     }
 

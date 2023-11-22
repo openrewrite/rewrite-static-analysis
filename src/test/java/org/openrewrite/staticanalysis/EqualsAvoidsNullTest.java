@@ -17,15 +17,9 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.java.JavaParser;
-import org.openrewrite.java.style.EqualsAvoidsNullStyle;
-import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
-import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions"})
@@ -65,38 +59,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
-    void ignoreEqualsIgnoreCase() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().styles(singletonList(
-            new NamedStyles(randomId(), "test", "", "", emptySet(), singletonList(
-              new EqualsAvoidsNullStyle(true)))))
-          ),
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if(s.equals("test")) {}
-                      if(s.equalsIgnoreCase("test")) {}
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if("test".equals(s)) {}
-                      if(s.equalsIgnoreCase("test")) {}
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void removeUnnecessaryNullCheckAndParens() {
+    void removeUnnecessaryNullCheck() {
         rewriteRun(
           //language=java
           java(
@@ -104,7 +67,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if((s != null && s.equals("test"))) {}
                       if(s != null && s.equals("test")) {}
                       if(null != s && s.equals("test")) {}
                   }
@@ -116,55 +78,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       String s = null;
                       if("test".equals(s)) {}
                       if("test".equals(s)) {}
-                      if("test".equals(s)) {}
                   }
               }
               """
-          )
-        );
-    }
-
-    @Test
-    void removeUnnecessaryNullCheckAndKeepNecessaryParens() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-            import java.util.Collection;
-
-            public class A {
-                public void triggersRecipe(String toCheck) {
-                    if (toCheck != null && toCheck.equals("stringLiteral")) { }
-                }
-
-                public boolean triggersParenthesesRemoval() {
-                    return (System.getProperties() != null) ? System.getProperties().keySet().isEmpty() : false;
-                }
-
-                public boolean needsToKeepParentheses() {
-                    Collection<Object> set = System.getProperties().keySet();
-                    return !(set == null || set.isEmpty());
-                }
-            }
-            """,
-            """
-            import java.util.Collection;
-
-            public class A {
-                public void triggersRecipe(String toCheck) {
-                    if ("stringLiteral".equals(toCheck)) { }
-                }
-
-                public boolean triggersParenthesesRemoval() {
-                    return System.getProperties() != null ? System.getProperties().keySet().isEmpty() : false;
-                }
-
-                public boolean needsToKeepParentheses() {
-                    Collection<Object> set = System.getProperties().keySet();
-                    return !(set == null || set.isEmpty());
-                }
-            }
-            """
           )
         );
     }

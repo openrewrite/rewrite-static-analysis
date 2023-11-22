@@ -20,7 +20,6 @@ import org.openrewrite.Recipe;
 import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
@@ -32,7 +31,6 @@ import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SimplifyConstantIfBranchExecution extends Recipe {
 
@@ -93,10 +91,6 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), context);
             if__ = if__.withIfCondition(cp);
 
-            if (visitsKeyWord(if__)) {
-                return if__;
-            }
-
             // The compile-time constant value of the if condition control parentheses.
             final Optional<Boolean> compileTimeConstantBoolean;
             if (isLiteralTrue(cp.getTree())) {
@@ -115,6 +109,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 // True branch
                 // Only keep the `then` branch, and remove the `else` branch.
                 Statement s = if__.getThenPart().withPrefix(if__.getPrefix());
+                doAfterVisit(new RemoveUnreachableCodeVisitor());
                 return maybeAutoFormat(
                         if__,
                         s,
@@ -126,6 +121,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 if (if__.getElsePart() != null) {
                     // The `else` part needs to be kept
                     Statement s = if__.getElsePart().getBody().withPrefix(if__.getPrefix());
+                    doAfterVisit(new RemoveUnreachableCodeVisitor());
                     return maybeAutoFormat(
                             if__,
                             s,
@@ -149,41 +145,6 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                  */
                 return J.Block.createEmptyBlock();
             }
-        }
-
-        private boolean visitsKeyWord(J.If iff) {
-            if (isLiteralFalse(iff.getIfCondition().getTree())) {
-                return false;
-            }
-
-            AtomicBoolean visitedCFKeyword = new AtomicBoolean(false);
-            // if there is a return, break, continue, throws in _then, then set visitedKeyword to true
-            new JavaIsoVisitor<AtomicBoolean>() {
-                @Override
-                public J.Return visitReturn(J.Return _return, AtomicBoolean atomicBoolean) {
-                    atomicBoolean.set(true);
-                    return _return;
-                }
-
-                @Override
-                public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean atomicBoolean) {
-                    atomicBoolean.set(true);
-                    return continueStatement;
-                }
-
-                @Override
-                public J.Break visitBreak(J.Break breakStatement, AtomicBoolean atomicBoolean) {
-                    atomicBoolean.set(true);
-                    return breakStatement;
-                }
-
-                @Override
-                public J.Throw visitThrow(J.Throw thrown, AtomicBoolean atomicBoolean) {
-                    atomicBoolean.set(true);
-                    return thrown;
-                }
-            }.visit(iff.getThenPart(), visitedCFKeyword);
-            return visitedCFKeyword.get();
         }
 
         private static boolean isLiteralTrue(@Nullable Expression expression) {

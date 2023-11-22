@@ -17,10 +17,11 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.openrewrite.Tree;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.UnwrapParentheses;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -41,14 +42,14 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = super.visitMethodInvocation(method, p);
 
-        if(m.getSelect() == null) {
+        if (m.getSelect() == null) {
             return m;
         }
 
         if ((STRING_EQUALS.matches(m) || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && STRING_EQUALS_IGNORE_CASE.matches(m))) &&
                 m.getArguments().get(0) instanceof J.Literal &&
                 !(m.getSelect() instanceof J.Literal)) {
-            J parent = getCursor().getParentTreeCursor().getValue();
+            Tree parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
                 J.Binary binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
@@ -77,6 +78,15 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
 
     private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {
         private final J.Binary scope;
+        boolean done;
+
+        @Override
+        public @Nullable J visit(@Nullable Tree tree, P p) {
+            if (done) {
+                return (J) tree;
+            }
+            return super.visit(tree, p);
+        }
 
         public RemoveUnnecessaryNullCheck(J.Binary scope) {
             this.scope = scope;
@@ -84,12 +94,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
 
         @Override
         public J visitBinary(J.Binary binary, P p) {
-            J parens = getCursor().getParentTreeCursor().getValue();
-            if(parens instanceof J.Parentheses) {
-                doAfterVisit(new UnwrapParentheses<>((J.Parentheses<?>) parens));
-            }
-
             if (scope.isScope(binary)) {
+                done = true;
                 return binary.getRight().withPrefix(Space.EMPTY);
             }
 

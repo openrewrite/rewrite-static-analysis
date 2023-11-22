@@ -159,7 +159,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 if (mv.getVariables().isEmpty()) {
                     if (!mv.getPrefix().getComments().isEmpty()) {
-                        getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
+                        getCursor().dropParentUntil(J.ClassDeclaration.class::isInstance).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
                     }
                     doAfterVisit(new DeleteStatement<>(mv));
                 }
@@ -279,7 +279,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             if (parent.getValue() instanceof J.AssignmentOperation) {
                 J.AssignmentOperation assignmentOperation = parent.getValue();
                 if (assignmentOperation.getVariable() == tree.getValue()) {
-                    J grandParent = parent.getParentTreeCursor().getValue();
+                    Tree grandParent = parent.getParentTreeCursor().getValue();
                     return (grandParent instanceof Expression || grandParent instanceof J.Return);
                 }
             }

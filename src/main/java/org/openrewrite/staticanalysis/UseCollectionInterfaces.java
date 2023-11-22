@@ -84,7 +84,6 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.concurrent.ConcurrentLinkedQueue", "java.util.Queue");
         // Set
         rspecRulesReplaceTypeMap.put("java.util.AbstractSet", "java.util.Set");
-        rspecRulesReplaceTypeMap.put("java.util.EnumSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.HashSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.LinkedHashSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArraySet", "java.util.Set");

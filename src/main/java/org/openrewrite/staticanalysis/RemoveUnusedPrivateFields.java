@@ -21,14 +21,14 @@ import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -57,23 +57,32 @@ public class RemoveUnusedPrivateFields extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            @Value
+            class CheckField {
+                J.VariableDeclarations declarations;
+                @Nullable Statement nextStatement;
+            }
 
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, executionContext);
 
-                List<J.VariableDeclarations> checkFields = new ArrayList<>();
+                List<CheckField> checkFields = new ArrayList<>();
                 // Do not remove fields with `serialVersionUID` name.
                 boolean skipSerialVersionUID = cd.getType() == null ||
                         cd.getType().isAssignableTo("java.io.Serializable");
-                for (Statement statement : cd.getBody().getStatements()) {
+
+                List<Statement> statements = cd.getBody().getStatements();
+                for (int i = 0; i < statements.size(); i++) {
+                    Statement statement = statements.get(i);
                     if (statement instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) statement;
                         // RSPEC-1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
                                 vd.getLeadingAnnotations().isEmpty() &&
                                 vd.hasModifier(J.Modifier.Type.Private)) {
-                            checkFields.add(vd);
+                            Statement nextStatement = i < statements.size() - 1 ? statements.get(i + 1) : null;
+                            checkFields.add(new CheckField(vd, nextStatement));
                         }
                     } else if (statement instanceof J.MethodDeclaration) {
                         // RSPEC-1068 does not apply fields from classes with native methods.
@@ -94,12 +103,22 @@ public class RemoveUnusedPrivateFields extends Recipe {
                         outer = parent.getValue();
                     }
                 }
-                for (J.VariableDeclarations fields : checkFields) {
+                for (CheckField checkField : checkFields) {
                     // Find variable uses.
-                    Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> inUse = VariableUses.find(fields, outer);
+                    Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> inUse =
+                            VariableUses.find(checkField.declarations, outer);
                     for (Map.Entry<J.VariableDeclarations.NamedVariable, List<J.Identifier>> entry : inUse.entrySet()) {
                         if (entry.getValue().isEmpty()) {
-                            cd = (J.ClassDeclaration) new RemoveUnusedField(entry.getKey()).visitNonNull(cd, executionContext);
+                            AtomicBoolean declarationDeleted = new AtomicBoolean();
+                            J.VariableDeclarations.NamedVariable fieldToRemove = entry.getKey();
+                            cd = (J.ClassDeclaration) new RemoveUnusedField(fieldToRemove).visitNonNull(cd, declarationDeleted);
+                            if (fieldToRemove.getType() != null) {
+                                maybeRemoveImport(fieldToRemove.getType().toString());
+                            }
+                            // Maybe remove next statement comment if variable declarations is removed
+                            if (declarationDeleted.get()) {
+                                cd = (J.ClassDeclaration) new MaybeRemoveComment(checkField.nextStatement, cd).visitNonNull(cd, executionContext);
+                            }
                         }
                     }
                 }
@@ -159,7 +178,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
     }
 
-    private static class RemoveUnusedField extends JavaVisitor<ExecutionContext> {
+    private static class RemoveUnusedField extends JavaVisitor<AtomicBoolean> {
         private final J.VariableDeclarations.NamedVariable namedVariable;
 
         public RemoveUnusedField(J.VariableDeclarations.NamedVariable namedVariable) {
@@ -167,21 +186,68 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
+        public J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
             if (multiVariable.getVariables().size() == 1 && multiVariable.getVariables().contains(namedVariable)) {
+                declarationDeleted.set(true);
                 //noinspection ConstantConditions
                 return null;
             }
-            return super.visitVariableDeclarations(multiVariable, executionContext);
+            return super.visitVariableDeclarations(multiVariable, declarationDeleted);
         }
 
         @Override
-        public J visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext executionContext) {
+        public J visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
             if (variable == namedVariable) {
                 //noinspection ConstantConditions
                 return null;
             }
-            return super.visitVariable(variable, executionContext);
+            return super.visitVariable(variable, declarationDeleted);
         }
     }
+
+    private static class MaybeRemoveComment extends JavaVisitor<ExecutionContext> {
+        @Nullable
+        private final Statement statement;
+        private final J.ClassDeclaration classDeclaration;
+
+        public MaybeRemoveComment(@Nullable Statement statement, J.ClassDeclaration classDeclaration) {
+            this.statement = statement;
+            this.classDeclaration = classDeclaration;
+        }
+
+        @Override
+        public J visitStatement(Statement s, ExecutionContext executionContext) {
+            if (s == statement) {
+                Space prefix = s.getPrefix();
+                // If we have at least one comment and there is no newline
+                if (prefix.getComments().size() > 0 && !prefix.getWhitespace().contains("\n")) {
+                    return s.withPrefix(prefix
+                            // Copy suffix to prefix
+                            .withWhitespace(prefix.getComments().get(0).getSuffix())
+                            // Remove the first comment
+                            .withComments(prefix.getComments().subList(1, prefix.getComments().size())
+                    ));
+
+                }
+            }
+            return super.visitStatement(s, executionContext);
+        }
+
+        @Override
+        public J visitClassDeclaration(J.ClassDeclaration c, ExecutionContext executionContext) {
+            // We also need to remove comments attached to end of classDeclaration if it's the last statement
+            if (statement == null && c == classDeclaration) {
+                Space end = c.getBody().getEnd();
+                // If we have at least one comment and there is no newline
+                if (end.getComments().size() > 0 && !end.getWhitespace().contains("\n")) {
+                    return c.withBody(c.getBody().withEnd(end
+                            .withWhitespace(end.getComments().get(0).getSuffix())
+                            .withComments(end.getComments().subList(1, end.getComments().size()))
+                    ));
+                }
+            }
+            return super.visitClassDeclaration(c, executionContext);
+        }
+    }
+
 }

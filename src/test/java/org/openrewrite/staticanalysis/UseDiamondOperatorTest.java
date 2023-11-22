@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -404,6 +405,69 @@ class UseDiamondOperatorTest implements RewriteTest {
         );
     }
 
+    @Test
+    void anonymousNewClassInferTypesJava9Plus() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(11))),
+          java(
+            """
+              interface Serializer<T> {
+                  byte[] serialize(T t);
+              }
+
+              public class Printer {
+                  public static void setSerializerGenericType(Serializer<?> serializer) {}
+                  public static void setSerializerConcreteType(Serializer<Integer> serializer) {}
+              }
+              """
+          ),
+          java(
+            """
+              class Test {
+                  void method() {
+                      // Generic type, no infer type, can NOT use diamond operator
+                      Printer.setSerializerGenericType(new Serializer<Integer>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+
+                      // Concrete type, OK to use diamond operator
+                      Printer.setSerializerConcreteType(new Serializer<Integer>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      // Generic type, no infer type, can NOT use diamond operator
+                      Printer.setSerializerGenericType(new Serializer<Integer>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+
+                      // Concrete type, OK to use diamond operator
+                      Printer.setSerializerConcreteType(new Serializer<>() {
+                          @Override
+                          public byte[] serialize(Integer integer) {
+                              return new byte[0];
+                          }
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class kotlinTest {
         @Test
@@ -422,6 +486,58 @@ class UseDiamondOperatorTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Test
+    void doNotChangeInferredGenericTypes() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(9))),
+          //language=java
+          java("""
+            @FunctionalInterface
+            public interface IVisitor<T, R> {
+                void visit(T object, R ret);
+            }
+            """
+          ),
+          //language=java
+          java("""
+            class Test {
+                public <S, R> R method(IVisitor<S, R> visitor) {
+                    return null;
+                }
+                private void test(Object t) {
+                    String s = method(new IVisitor<Integer, String>() {
+                        @Override
+                        public void visit(Integer object, String ret) { }
+                    });
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeAnnotatedTypeParameters() {
+        rewriteRun(
+          spec -> spec
+            .allSources(s -> s.markers(javaVersion(9)))
+            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
+          //language=java
+          java("""
+            import org.jetbrains.annotations.Nullable;
+            import java.util.ArrayList;
+            import java.util.List;
+            
+            class Test {
+                private void test(Object t) {
+                    List<String> l = new ArrayList<@Nullable String>();
+                }
+            }
+            """
+          )
+        );
     }
 
 }

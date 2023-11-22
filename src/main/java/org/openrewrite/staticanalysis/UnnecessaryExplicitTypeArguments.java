@@ -18,7 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
-import org.openrewrite.kotlin.tree.K;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -29,12 +29,12 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
 
     @Override
     public String getDescription() {
-        return "When explicit type arguments are inferrable by the compiler, they may be removed.";
+        return "When explicit type arguments are inferable by the compiler, they may be removed.";
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
@@ -88,31 +88,12 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     }
 
                     if (enclosingType != null && TypeUtils.isOfType(enclosingType, m.getMethodType().getReturnType())) {
-                        boolean isKotlinFile = getCursor().dropParentUntil(it -> it instanceof K.CompilationUnit ||
-                                        it == Cursor.ROOT_VALUE)
-                                .getValue() instanceof K.CompilationUnit;
-
-                        if (isKotlinFile) {
-                            // For Kotlin, avoid omitting explicit type arguments only when the method invocation includes
-                            // arguments, as the compiler cannot perform type inference without the presence of arguments.
-                            boolean hasArguments = false;
-                            for (Expression arg : m.getArguments()) {
-                                if (!(arg instanceof J.Empty)) {
-                                    hasArguments = true;
-                                    break;
-                                }
-                            }
-
-                            if (!hasArguments) {
-                                return m;
-                            }
-                        }
                         m = m.withTypeParameters(null);
                     }
                 }
 
                 return m;
             }
-        };
+        });
     }
 }

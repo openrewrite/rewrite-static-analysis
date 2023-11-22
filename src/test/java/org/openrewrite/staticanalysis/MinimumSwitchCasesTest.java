@@ -494,7 +494,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
           java(
             """
               import java.time.LocalDate;
-              
+                            
               class Test {
                   void test(LocalDate date) {
                       switch(date.getDayOfWeek()) {
@@ -641,6 +641,89 @@ class MinimumSwitchCasesTest implements RewriteTest {
                   }
                   void doSomething() {}
                   void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedEnum() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int test(java.io.ObjectInputFilter filter) {
+                      switch (filter.checkInput(null)) {
+                        case ALLOWED: return 0;
+                        default: return 1;
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.ObjectInputFilter;
+              
+              class Test {
+                  int test(java.io.ObjectInputFilter filter) {
+                      if (filter.checkInput(null) == ObjectInputFilter.Status.ALLOWED) {
+                          return 0;
+                      } else {
+                          return 1;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings({"ConstantValue", "DataFlowIssue"})
+    @Test
+    void nestedSwitches() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int test(E e) {
+                      switch (e) {
+                        case A:
+                            switch (e) {
+                                case A:
+                                    return 0;
+                                default:
+                                    return 1;
+                            }
+                        case B:
+                        default:
+                            return 1;
+                      }
+                  }
+                  enum E {
+                      A, B
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int test(E e) {
+                      switch (e) {
+                        case A:
+                            if (e == Test.E.A) {
+                                return 0;
+                            } else {
+                                return 1;
+                            }
+                        case B:
+                        default:
+                            return 1;
+                      }
+                  }
+                  enum E {
+                      A, B
+                  }
               }
               """
           )

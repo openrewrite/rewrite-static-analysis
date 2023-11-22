@@ -38,7 +38,7 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Correct 'set.stream().sorted().collect(Collectors.toSet())' to 'set.stream().sorted().collect(LinkedHashSet::new)'.";
+        return "Converts `set.stream().sorted().collect(Collectors.toSet())` to `set.stream().sorted().collect(LinkedHashSet::new)`.";
     }
 
     private static final MethodMatcher STREAM_COLLECT_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream collect(java.util.stream.Collector)");

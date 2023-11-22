@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.FallThroughStyle;
@@ -33,6 +34,34 @@ class FallThroughTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new FallThrough());
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/173")
+    @Test
+    void switchInSwitch() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(int day) {
+                      switch (day) {
+                          case 1:
+                              int month = 1;
+                              switch (month) {
+                                  case 1:
+                                      return "January";
+                                  default:
+                                      return "no valid month";
+                              }
+                          default:
+                              return "No valid day";
+                      }
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -241,6 +270,96 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
+    void nestedBlocks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public int n(int i) {
+                      switch (i) {
+                          case 1:
+                              try {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              } catch (Exception e) {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              }
+                          default:
+                              throw new IllegalStateException();
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public int n(int i) {
+                      switch (i) {
+                          case 1:
+                              try {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              } catch (Exception e) {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              }
+                              break;
+                          default:
+                              throw new IllegalStateException();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void abortOnAbruptCompletion() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void noCase(int i) {
+                      for (;;) {
+                          switch (i) {
+                              case 0:
+                                  if (true)
+                                      return;
+                                  else
+                                      break;
+                              case 1:
+                                  if (true)
+                                      return;
+                                  else {
+                                      {
+                                          continue;
+                                      }
+                                  }
+                              case 2:
+                                  try {
+                                      return;
+                                  } catch (Exception e) {
+                                      return;
+                                  }
+                              default:
+                                  System.out.println("default");
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void addBreaksFallthroughCasesComprehensive() {
         rewriteRun(
           //language=java
@@ -312,6 +431,54 @@ class FallThroughTest implements RewriteTest {
                       }
                       case 9:
                           i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedSwitch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                          default:
+                              switch (a) {
+                                  case B:
+                                      System.out.println("B");
+                                  default:
+                                      System.out.print("other");
+                              }
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                          default:
+                              switch (a) {
+                                  case B:
+                                      System.out.println("B");
+                                      break;
+                                  default:
+                                      System.out.print("other");
+                              }
                       }
                   }
               }

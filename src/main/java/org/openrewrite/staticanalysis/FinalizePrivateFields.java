@@ -90,7 +90,7 @@ public class FinalizePrivateFields extends Recipe {
                 boolean canAllVariablesBeFinalized = mv.getVariables()
                     .stream()
                     .map(J.VariableDeclarations.NamedVariable::getVariableType)
-                    .allMatch(v -> privateFieldsToBeFinalized.contains(v));
+                    .allMatch(privateFieldsToBeFinalized::contains);
 
                 if (canAllVariablesBeFinalized) {
                     mv = autoFormat(mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
@@ -119,7 +119,7 @@ public class FinalizePrivateFields extends Recipe {
         return classDecl.getBody()
             .getStatements()
             .stream()
-            .filter(statement -> statement instanceof J.VariableDeclarations)
+            .filter(J.VariableDeclarations.class::isInstance)
             .map(J.VariableDeclarations.class::cast)
             .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
                           && !mv.hasModifier(J.Modifier.Type.Final)
@@ -134,7 +134,7 @@ public class FinalizePrivateFields extends Recipe {
         return (int) classDecl.getBody()
             .getStatements()
             .stream()
-            .filter(statement -> statement instanceof J.MethodDeclaration)
+            .filter(J.MethodDeclaration.class::isInstance)
             .map(J.MethodDeclaration.class::cast)
             .filter(J.MethodDeclaration::isConstructor)
             .count();
@@ -213,7 +213,7 @@ public class FinalizePrivateFields extends Recipe {
                 int increment;
                 if (isInLoop(cursor) || isInLambda(cursor)) {
                     increment = 2;
-                } else if (isInitializedByClass(cursor)) {
+                } else if (isInitializedByClass(cursor, privateField.hasFlags(Flag.Static))) {
                     increment = 1;
                 } else {
                     increment = 2;
@@ -227,31 +227,26 @@ public class FinalizePrivateFields extends Recipe {
             return isInForLoop(cursor) || isInDoWhileLoopLoop(cursor) || isInWhileLoop(cursor);
         }
 
-        private static boolean isConstructor(Object parent) {
+        /**
+         * @param cursor               current assignment position
+         * @param privateFieldIsStatic true if the private field is static
+         * @return true if the cursor is in a constructor or an initializer block (both static or non-static)
+         */
+        private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
+            Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic())
+                                                        || p instanceof JRightPadded
+                                                        || p instanceof JLeftPadded)
+                    .getValue();
+            if (parent instanceof J.Block) {
+                return privateFieldIsStatic;
+            }
+            if (privateFieldIsStatic) {
+                return false;
+            }
             if (parent instanceof J.MethodDeclaration) {
                 return ((J.MethodDeclaration) parent).isConstructor();
             }
-            return false;
-        }
-
-        private static boolean isInitializerBlock(Object parent) {
             return parent instanceof J.ClassDeclaration;
-        }
-
-        /**
-         * @param cursor current assignment position
-         * @return true if the cursor is in a constructor or an initializer block (both static or non-static)
-         */
-        private static boolean isInitializedByClass(Cursor cursor) {
-            Object parent = cursor.dropParentWhile(p -> p instanceof J.Block
-                    || p instanceof JRightPadded
-                    || p instanceof JLeftPadded)
-                .getValue();
-
-            if (parent instanceof J.MethodDeclaration || parent instanceof J.ClassDeclaration) {
-                return (isConstructor(parent) || isInitializerBlock(parent));
-            }
-            return false;
         }
 
         /**
@@ -263,6 +258,7 @@ public class FinalizePrivateFields extends Recipe {
 
         /**
          * Drop until meet endCondition or condition
+         *
          * @return true if meet the condition, or false if not meet the condition until the end.
          */
         private static boolean dropUntilMeetCondition(Cursor cursor,
@@ -275,25 +271,25 @@ public class FinalizePrivateFields extends Recipe {
         private static boolean isInForLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.ForLoop);
+                J.ForLoop.class::isInstance);
         }
 
         private static boolean isInDoWhileLoopLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.DoWhileLoop);
+                J.DoWhileLoop.class::isInstance);
         }
 
         private static boolean isInWhileLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.WhileLoop);
+                J.WhileLoop.class::isInstance);
         }
 
         private static boolean isInLambda(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
                 CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                parent -> parent instanceof J.Lambda);
+                J.Lambda.class::isInstance);
         }
     }
 
@@ -302,6 +298,7 @@ public class FinalizePrivateFields extends Recipe {
     private static class FindLastIdentifier extends JavaIsoVisitor<List<J.Identifier>> {
         /**
          * Find the last identifier in a J.FieldAccess. The purpose is to check whether it's a private field.
+         *
          * @param j the subtree to search, supposed to be a J.FieldAccess
          * @return the last Identifier if found, otherwise null.
          */

@@ -22,16 +22,14 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Collections.singletonList;
-import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.java.tree.TypeUtils.findDeclaredMethod;
 
 public class UseDiamondOperator extends Recipe {
 
@@ -57,21 +55,12 @@ public class UseDiamondOperator extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new UseDiamondOperatorVisitor();
+        // don't try to do this for Groovy or Kotlin sources
+        return Preconditions.check(new JavaFileChecker<>(), new UseDiamondOperatorVisitor());
     }
 
     private static class UseDiamondOperatorVisitor extends JavaIsoVisitor<ExecutionContext> {
         private boolean java9;
-
-        @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                // don't try to do this for Groovy or Kotlin sources
-                return cu instanceof J.CompilationUnit ? visitCompilationUnit((J.CompilationUnit) cu, ctx) : cu;
-            }
-            return super.visit(tree, ctx);
-        }
 
         @Override
         public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
@@ -116,9 +105,37 @@ public class UseDiamondOperator extends Recipe {
 
             J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
             JavaType.Method methodType = mi.getMethodType();
-            if (methodType != null) {
+
+            if (methodType != null &&
+                    !mi.getArguments().isEmpty() &&
+                    methodType.getParameterTypes().size() <= mi.getArguments().size()) {
+
+
+                Optional<JavaType.Method> declaredMethodType = findDeclaredMethod(methodType.getDeclaringType(), methodType.getName(), methodType.getParameterTypes());
+                if (!declaredMethodType.isPresent()) {
+                    // If we cannot find the method in the declaringType is because its parameter types doesn't match
+                    // due to generic type parameters being inferred on the invocation. We cannot safely apply the
+                    // diamond operator on an argument of this method, because we cannot guarantee type inference.
+                    return method;
+                }
+
                 mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
                     if (arg instanceof J.NewClass) {
+                        boolean isGenericType = false;
+                        boolean isVarArg = methodType.getParameterTypes().size() == 1 &&
+                                methodType.getParameterTypes().get(0) instanceof JavaType.Array;
+
+                        if (isVarArg) {
+                            isGenericType = isGenericType(((JavaType.Array) methodType.getParameterTypes().get(0)).getElemType());
+                        } else if (i < methodType.getParameterTypes().size()) {
+                            JavaType parameterType = methodType.getParameterTypes().get(i);
+                            isGenericType = isGenericType(parameterType);
+                        }
+
+                        if (isGenericType) {
+                            return arg;
+                        }
+
                         J.NewClass nc = (J.NewClass) arg;
                         if ((java9 || nc.getBody() == null) && !methodType.getParameterTypes().isEmpty()) {
                             JavaType.Parameterized paramType = TypeUtils.asParameterized(getMethodParamType(methodType, i));
@@ -133,6 +150,27 @@ public class UseDiamondOperator extends Recipe {
             return mi;
         }
 
+        private boolean isGenericType(@Nullable JavaType type) {
+            if (type == null) {
+                return false;
+            }
+
+            boolean isGeneric = false;
+            JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
+            if (parameterized != null) {
+                List<JavaType> types = parameterized.getTypeParameters();
+
+                for (JavaType tp : types) {
+                    if (tp instanceof JavaType.GenericTypeVariable) {
+                        isGeneric = true;
+                        break;
+                    }
+                }
+            }
+
+            return isGeneric;
+        }
+
         private JavaType getMethodParamType(JavaType.Method methodType, int paramIndex) {
             if (methodType.hasFlags(Flag.Varargs) && paramIndex >= methodType.getParameterTypes().size() - 1) {
                 return ((JavaType.Array) methodType.getParameterTypes().get(methodType.getParameterTypes().size() - 1)).getElemType();
@@ -144,7 +182,7 @@ public class UseDiamondOperator extends Recipe {
         @Override
         public J.Return visitReturn(J.Return _return, ExecutionContext executionContext) {
             J.Return return_ = super.visitReturn(_return, executionContext);
-            J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass)return_.getExpression() : null;
+            J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass) return_.getExpression() : null;
             if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
                 J parentBlock = getCursor().dropParentUntil(v -> v instanceof J.MethodDeclaration || v instanceof J.Lambda).getValue();
                 if (parentBlock instanceof J.MethodDeclaration) {
@@ -175,7 +213,8 @@ public class UseDiamondOperator extends Recipe {
             if (paramTypes != null && (java9 || newClass.getBody() == null) && newClass.getClazz() instanceof J.ParameterizedType) {
                 J.ParameterizedType newClassType = (J.ParameterizedType) newClass.getClazz();
                 if (newClassType.getTypeParameters() != null) {
-                    if (paramTypes.size() != newClassType.getTypeParameters().size()) {
+                    if (paramTypes.size() != newClassType.getTypeParameters().size() ||
+                        newClassType.getTypeParameters().stream().anyMatch(p -> p instanceof J.AnnotatedType)) {
                         return newClass;
                     } else {
                         for (int i = 0; i < paramTypes.size(); i++) {

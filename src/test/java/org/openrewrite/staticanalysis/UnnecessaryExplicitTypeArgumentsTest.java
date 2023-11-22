@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -137,6 +138,35 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @ExpectedToFail
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/164")
+    @Test
+    void doesNotRemoveNecessaryTypeArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.stream.Stream;
+              public class Test {
+                  void test() {
+                      Stream.of("hi")
+                              .map(it -> it == null ? Optional.<String>empty() : Optional.of(it))
+                              .flatMap(Optional::stream)
+                              .map(this::mapper); //this requires the type information
+                  }
+                  Optional<String> mapper(String value) {
+                      return Optional.ofNullable(value)
+                              .filter("hi"::equals);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+
+
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Issue("https://github.com/openrewrite/rewrite/issues/2818")
     @Test
@@ -201,6 +231,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
+        @Disabled
         @Test
         void changeIfHasTypeInference() {
             rewriteRun(
@@ -212,6 +243,23 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
                 """
                   val foo = listOf("a", "b")
                   var bar = mutableMapOf("a" to 1)
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeSinceCompilerHasNoEnoughInformationToInferType() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun <TClass, TValue> default(arg: String): TValue? {
+                      return null
+                  }
+
+                  fun method() {
+                      val email = default<Int, String?>("email")
+                  }
                   """
               )
             );

@@ -104,6 +104,7 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
           //language=java
           java("""
             import java.util.List;
+            import java.util.Set;
             import java.util.stream.Collectors;
                                             
             class A {

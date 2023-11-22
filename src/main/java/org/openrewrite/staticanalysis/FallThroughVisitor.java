@@ -24,10 +24,7 @@ import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -53,9 +50,9 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
-            if ((Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(c, switch_))) {
+            if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
-                    doAfterVisit(new AddBreak<>(c));
+                    c = (J.Case) new AddBreak<>(c).visit(c, p, getCursor().getParent());
                 }
             }
         }
@@ -71,40 +68,35 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
         @Override
         public J.Case visitCase(J.Case case_, P p) {
-            J.Case c = super.visitCase(case_, p);
-            if (scope.isScope(c) &&
-                c.getStatements().stream().noneMatch(J.Break.class::isInstance) &&
-                c.getStatements().stream()
-                        .reduce((s1, s2) -> s2)
-                        .map(s -> !(s instanceof J.Block))
-                        .orElse(true)) {
-                List<Statement> statements = new ArrayList<>(c.getStatements());
+            if (scope.isScope(case_)) {
+                List<Statement> statements = case_.getStatements();
+                if (statements.size() == 1 && statements.get(0) instanceof J.Block) {
+                    return super.visitCase(case_, p);
+                }
                 J.Break breakToAdd = autoFormat(
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
                 statements.add(breakToAdd);
-                c = c.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p)));
+                return case_.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
             }
-            return c;
+            return case_;
         }
 
         @Override
         public J.Block visitBlock(J.Block block, P p) {
-            J.Block b = super.visitBlock(block, p);
-            if (getCursor().isScopeInPath(scope) &&
-                b.getStatements().stream().noneMatch(J.Break.class::isInstance) &&
-                b.getStatements().stream()
-                        .reduce((s1, s2) -> s2)
-                        .map(s -> !(s instanceof J.Block))
-                        .orElse(true)) {
+            J.Block b = block;
+            if (getCursor().isScopeInPath(scope)) {
                 List<Statement> statements = b.getStatements();
+                if (statements.size() == 1 && statements.get(0) instanceof J.Block) {
+                    return super.visitBlock(b, p);
+                }
                 J.Break breakToAdd = autoFormat(
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
                 statements.add(breakToAdd);
-                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p)));
+                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
             }
             return b;
         }
@@ -132,22 +124,51 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         private static class FindLastLineBreaksOrFallsThroughCommentsVisitor extends JavaIsoVisitor<Set<J>> {
             private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
                     comment instanceof TextComment &&
-                    RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
+                            RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
             private final J.Case scope;
 
             public FindLastLineBreaksOrFallsThroughCommentsVisitor(J.Case scope) {
                 this.scope = scope;
             }
 
-            private static boolean lastLineBreaksOrFallsThrough(List<? extends Tree> trees) {
+            private static boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {
                 return trees.stream()
                         .reduce((s1, s2) -> s2) // last statement
-                        .map(s -> s instanceof J.Return ||
-                                  s instanceof J.Break ||
-                                  s instanceof J.Continue ||
-                                  s instanceof J.Throw ||
-                                  ((J) s).getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
+                        .map(s -> breaks(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
+                                s.getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT) ||
+                                s instanceof J.Block && ((J.Block) s).getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
                         ).orElse(false);
+            }
+
+            private static boolean breaks(Statement s) {
+                if (s instanceof J.Block) {
+                    List<Statement> statements = ((J.Block) s).getStatements();
+                    return !statements.isEmpty() && breaks(statements.get(statements.size() - 1));
+                } else if (s instanceof J.If) {
+                    J.If iff = (J.If) s;
+                    return iff.getElsePart() != null && breaks(iff.getThenPart()) && breaks(iff.getThenPart());
+                } else if (s instanceof J.Label) {
+                    return breaks(((J.Label) s).getStatement());
+                } else if (s instanceof J.Try) {
+                    J.Try try_ = (J.Try) s;
+                    if (try_.getFinally() != null && breaks(try_.getFinally())) {
+                        return true;
+                    }
+                    if (!breaks(try_.getBody())) {
+                        return false;
+                    }
+                    for (J.Try.Catch c : try_.getCatches()) {
+                        if (!breaks(c.getBody())) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                return s instanceof J.Return ||
+                        s instanceof J.Break ||
+                        s instanceof J.Continue ||
+                        s instanceof J.Throw ||
+                        s instanceof J.Switch;
             }
 
             @Override
@@ -184,24 +205,12 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
             @Override
             public J.Case visitCase(J.Case case_, Set<J> ctx) {
-                J.Case c = super.visitCase(case_, ctx);
-                if (c == scope) {
-                    if (c.getStatements().isEmpty() || lastLineBreaksOrFallsThrough(c.getStatements())) {
-                        ctx.add(c);
+                if (case_ == scope) {
+                    if (case_.getStatements().isEmpty() || lastLineBreaksOrFallsThrough(case_.getStatements())) {
+                        ctx.add(case_);
                     }
                 }
-                return c;
-            }
-
-            @Override
-            public J.Block visitBlock(J.Block block, Set<J> ctx) {
-                J.Block b = super.visitBlock(block, ctx);
-                if (getCursor().isScopeInPath(scope)) {
-                    if (lastLineBreaksOrFallsThrough(b.getStatements()) || b.getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)) {
-                        ctx.add(b);
-                    }
-                }
-                return b;
+                return case_;
             }
 
         }
