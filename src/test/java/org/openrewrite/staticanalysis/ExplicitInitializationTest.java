@@ -115,6 +115,20 @@ class ExplicitInitializationTest implements RewriteTest {
         );
     }
 
+    @Test
+    void charLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n = '0';
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void removeExplicitInitialization() {

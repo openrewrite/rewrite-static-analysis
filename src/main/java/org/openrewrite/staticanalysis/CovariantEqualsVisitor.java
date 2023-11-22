@@ -34,8 +34,10 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
     @Override
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
         J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, p);
-        Stream<J.MethodDeclaration> mds = cd.getBody().getStatements().stream().filter(J.MethodDeclaration.class::isInstance).map(J.MethodDeclaration.class::cast);
-        if (mds.noneMatch(m -> OBJECT_EQUALS.matches(m, classDecl)) && cd.getKind() != J.ClassDeclaration.Kind.Type.Interface) {
+        Stream<J.MethodDeclaration> mds = cd.getBody().getStatements().stream()
+                .filter(J.MethodDeclaration.class::isInstance)
+                .map(J.MethodDeclaration.class::cast);
+        if (cd.getKind() != J.ClassDeclaration.Kind.Type.Interface && mds.noneMatch(m -> OBJECT_EQUALS.matches(m, classDecl))) {
             cd = (J.ClassDeclaration) new ChangeCovariantEqualsMethodVisitor<>(cd).visit(cd, p, getCursor().getParentOrThrow());
             assert cd != null;
         }
@@ -64,15 +66,15 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
              * We'll replace it with "public boolean equals(Object)"
              */
             JavaType.FullyQualified type = enclosingClass.getType();
-            if (type == null || type == JavaType.Unknown.getInstance()) {
+            if (type == null || type instanceof JavaType.Unknown) {
                 return m;
             }
 
             String ecfqn = type.getFullyQualifiedName();
-            if (new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass) &&
-                m.hasModifier(J.Modifier.Type.Public) &&
+            if (m.hasModifier(J.Modifier.Type.Public) &&
                 m.getReturnTypeExpression() != null &&
-                JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType())) {
+                JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType()) &&
+                new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass)) {
 
                 if (m.getAllAnnotations().stream().noneMatch(OVERRIDE_ANNOTATION::matches)) {
                     m = JavaTemplate.builder("@Override").build()
@@ -85,9 +87,9 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
                  * This is because we prepend these type-checking replacement statements to the existing "equals(..)" body.
                  * Therefore we don't want to collide with any existing variable names.
                  */
-                J.VariableDeclarations.NamedVariable oldParamName = ((J.VariableDeclarations) m.getParameters().iterator().next()).getVariables().iterator().next();
+                J.VariableDeclarations.NamedVariable oldParamName = ((J.VariableDeclarations) m.getParameters().get(0)).getVariables().get(0);
                 String paramName = "obj".equals(oldParamName.getSimpleName()) ? "other" : "obj";
-                m = JavaTemplate.builder("Object #{}").contextSensitive().build()
+                m = JavaTemplate.builder("Object #{}").build()
                         .apply(updateCursor(m),
                                 m.getCoordinates().replaceParameters(),
                                 paramName);

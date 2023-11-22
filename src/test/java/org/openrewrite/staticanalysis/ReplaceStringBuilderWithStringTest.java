@@ -213,4 +213,25 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void builderToString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void method1() {
+                      CharSequence foo = "foo";
+                      print("foo", new StringBuilder(foo).toString());
+                  }
+
+                  void print(String str, String str2) {
+                      new StringBuilder(str).append(str2);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

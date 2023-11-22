@@ -35,6 +35,7 @@ public class MinimumSwitchCasesTest implements RewriteTest {
     @Test
     void nonIdentifierEnum() {
         rewriteRun(
+          //language=groovy
           groovy(
             """
               import java.nio.file.*
@@ -62,14 +63,46 @@ public class MinimumSwitchCasesTest implements RewriteTest {
     }
 
     @Test
-    void twoCase() {
+    void twoCases() {
         rewriteRun(
+          //language=groovy
           groovy(
             """
               def s = "prod"
               switch(s) {
                   case "prod":
                       println("prod")
+                      break
+                  default:
+                      println("default")
+                      break
+              }
+              """,
+            """
+              def s = "prod"
+              if (s == "prod") {
+                  println("prod")
+              } else {
+                  println("default")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void threeCases() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              def s = "prod"
+              switch(s) {
+                  case "prod":
+                      println("prod")
+                      break
+                  case "test":
+                      println("test")
                       break
                   default:
                       println("default")

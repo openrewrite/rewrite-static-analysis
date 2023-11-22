@@ -24,10 +24,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.*;
@@ -113,7 +110,11 @@ public class RemoveUnusedPrivateFields extends Recipe {
                     for (Map.Entry<J.VariableDeclarations.NamedVariable, List<J.Identifier>> entry : inUse.entrySet()) {
                         if (entry.getValue().isEmpty()) {
                             AtomicBoolean declarationDeleted = new AtomicBoolean();
-                            cd = (J.ClassDeclaration) new RemoveUnusedField(entry.getKey()).visitNonNull(cd, declarationDeleted);
+                            J.VariableDeclarations.NamedVariable fieldToRemove = entry.getKey();
+                            cd = (J.ClassDeclaration) new RemoveUnusedField(fieldToRemove).visitNonNull(cd, declarationDeleted);
+                            if (fieldToRemove.getType() != null) {
+                                maybeRemoveImport(fieldToRemove.getType().toString());
+                            }
                             // Maybe remove next statement comment if variable declarations is removed
                             if (declarationDeleted.get()) {
                                 cd = (J.ClassDeclaration) new MaybeRemoveComment(checkField.nextStatement, cd).visitNonNull(cd, executionContext);

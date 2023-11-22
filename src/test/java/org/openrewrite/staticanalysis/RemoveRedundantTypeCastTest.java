@@ -154,6 +154,24 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void nonSamParameter() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+              
+              class Test {
+                  public boolean foo() {
+                      return Objects.equals("x", (Comparable<String>) (s) -> 1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
     void redundantTypeCast() {
@@ -374,8 +392,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
 
 
     @Test
-    @Issue("https://github.com/moderneinc/support-app/issues/17")
-    void test() {
+    void lambdaWithComplexTypeInference() {
         rewriteRun(
           java(
             """
@@ -390,7 +407,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                               (Supplier<Map<String, Integer>>) () -> {
                                   Map<String, Integer> choices = Map.of("id1", 2);
                                   return choices.entrySet().stream()
-                                          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                                          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                                                  (e1, e2) -> e1, LinkedHashMap::new));
                               });
                   }
               }
@@ -399,26 +417,38 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
                   }
               }
-              """,
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnPrimitiveIntToWrapperLong() {
+        rewriteRun(
+          java(
             """
-              import java.util.LinkedHashMap;
-              import java.util.Map;
-              import java.util.function.Supplier;
-              import java.util.stream.Collectors;
+              class Test {
+                  Long method() {
+                      return (long) 1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void castWildcard() {
+        rewriteRun(
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
               
               class Test {
                   void method() {
-                      Object o2 = new MapDropdownChoice<String, Integer>(
-                              () -> {
-                                  Map<String, Integer> choices = Map.of("id1", 2);
-                                  return choices.entrySet().stream()
-                                          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-                              });
-                  }
-              }
-              
-              class MapDropdownChoice<K, V> {
-                  public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
+                      List<? extends Number> list = new ArrayList<>();
+                      List<Number> n = (List<Number>) list;
                   }
               }
               """

@@ -679,6 +679,57 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings({"ConstantValue", "DataFlowIssue"})
+    @Test
+    void nestedSwitches() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int test(E e) {
+                      switch (e) {
+                        case A:
+                            switch (e) {
+                                case A:
+                                    return 0;
+                                default:
+                                    return 1;
+                            }
+                        case B:
+                        default:
+                            return 1;
+                      }
+                  }
+                  enum E {
+                      A, B
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int test(E e) {
+                      switch (e) {
+                        case A:
+                            if (e == Test.E.A) {
+                                return 0;
+                            } else {
+                                return 1;
+                            }
+                        case B:
+                        default:
+                            return 1;
+                      }
+                  }
+                  enum E {
+                      A, B
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3076")
     void multipleSwitchExpressions() {
