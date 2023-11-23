@@ -53,30 +53,28 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
         MethodMatcher enumEquals = new MethodMatcher("java.lang.Enum equals(java.lang.Object)");
         return Preconditions.check(new UsesMethod<>(enumEquals), new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, executionContext);
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (enumEquals.matches(m) && m.getSelect() != null) {
                     Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.Unary || is instanceof J.Block);
                     boolean isNot = parent.getValue() instanceof J.Unary && ((J.Unary) parent.getValue()).getOperator() == J.Unary.Type.Not;
                     if (isNot) {
-                        executionContext.putMessage("REMOVE_UNARY_NOT", parent.getValue());
+                        parent.putMessage("REMOVE_UNARY_NOT", parent.getValue());
                     }
                     String code = "#{any()} " + (isNot ? "!=" : "==") + " #{any()}";
                     return autoFormat(JavaTemplate
                             .builder(code)
-                            .contextSensitive()
                             .build()
-                            .apply(updateCursor(m), m.getCoordinates().replace(), m.getSelect(), m.getArguments().get(0)), executionContext);
+                            .apply(updateCursor(m), m.getCoordinates().replace(), m.getSelect(), m.getArguments().get(0)), ctx);
                 }
                 return m;
             }
 
             @Override
-            public J visitUnary(J.Unary unary, ExecutionContext executionContext) {
-                J j = super.visitUnary(unary, executionContext);
+            public J visitUnary(J.Unary unary, ExecutionContext ctx) {
+                J j = super.visitUnary(unary, ctx);
                 J.Unary asUnary = (J.Unary) j;
-                if (executionContext.getMessage("REMOVE_UNARY_NOT") instanceof J.Unary &&
-                    asUnary.equals(executionContext.getMessage("REMOVE_UNARY_NOT"))) {
+                if (asUnary.equals(getCursor().pollMessage("REMOVE_UNARY_NOT"))) {
                     return asUnary.getExpression().unwrap().withPrefix(asUnary.getPrefix());
                 }
                 return j;
