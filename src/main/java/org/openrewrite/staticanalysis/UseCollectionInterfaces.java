@@ -198,8 +198,7 @@ public class UseCollectionInterfaces extends Recipe {
             }
 
             private TypeTree removeFromParameterizedType(JavaType.FullyQualified newType,
-                    J.ParameterizedType parameterizedType) {
-                TypeTree typeExpression;
+                                                         J.ParameterizedType parameterizedType) {
                 J.Identifier returnType = new J.Identifier(
                         randomId(),
                         Space.EMPTY,
@@ -210,11 +209,9 @@ public class UseCollectionInterfaces extends Recipe {
                         null
                 );
                 JavaType.Parameterized javaType = (JavaType.Parameterized) parameterizedType.getType();
-                typeExpression = parameterizedType.withClazz(returnType)
+                return parameterizedType.withClazz(returnType)
                         .withType(javaType != null ? javaType.withType(newType) :
-                                new JavaType.Parameterized(null, newType, null)
-                        );
-                return typeExpression;
+                                new JavaType.Parameterized(null, newType, null));
             }
         };
     }
