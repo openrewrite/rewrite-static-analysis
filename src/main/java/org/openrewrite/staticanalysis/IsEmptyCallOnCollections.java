@@ -58,7 +58,6 @@ public class IsEmptyCallOnCollections extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COLLECTION_SIZE), new JavaVisitor<ExecutionContext>() {
             final JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Collection)}.isEmpty()")
-                    .contextSensitive()
                     .build();
             final JavaTemplate isEmptyNoReceiver = JavaTemplate.builder("#{}isEmpty()")
                     .contextSensitive()

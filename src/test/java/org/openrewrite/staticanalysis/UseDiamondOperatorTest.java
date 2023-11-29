@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -510,6 +511,28 @@ class UseDiamondOperatorTest implements RewriteTest {
                         @Override
                         public void visit(Integer object, String ret) { }
                     });
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeAnnotatedTypeParameters() {
+        rewriteRun(
+          spec -> spec
+            .allSources(s -> s.markers(javaVersion(9)))
+            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
+          //language=java
+          java("""
+            import org.jetbrains.annotations.Nullable;
+            import java.util.ArrayList;
+            import java.util.List;
+            
+            class Test {
+                private void test(Object t) {
+                    List<String> l = new ArrayList<@Nullable String>();
                 }
             }
             """

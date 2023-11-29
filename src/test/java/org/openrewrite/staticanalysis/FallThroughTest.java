@@ -270,6 +270,56 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
+    void nestedBlocks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public int n(int i) {
+                      switch (i) {
+                          case 1:
+                              try {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              } catch (Exception e) {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              }
+                          default:
+                              throw new IllegalStateException();
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public int n(int i) {
+                      switch (i) {
+                          case 1:
+                              try {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              } catch (Exception e) {
+                                  if (true) {
+                                      return 1;
+                                  }
+                              }
+                              break;
+                          default:
+                              throw new IllegalStateException();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void abortOnAbruptCompletion() {
         rewriteRun(
           //language=java
@@ -292,11 +342,11 @@ class FallThroughTest implements RewriteTest {
                                           continue;
                                       }
                                   }
-                              case 1:
+                              case 2:
                                   try {
                                       return;
                                   } catch (Exception e) {
-                                      break;
+                                      return;
                                   }
                               default:
                                   System.out.println("default");
@@ -403,12 +453,12 @@ class FallThroughTest implements RewriteTest {
                       switch(a) {
                           case A:
                           default:
-                            switch(a) {
-                                case B:
-                                    System.out.println("B");
-                                default:
-                                    System.out.print("other");
-                            }
+                              switch (a) {
+                                  case B:
+                                      System.out.println("B");
+                                  default:
+                                      System.out.print("other");
+                              }
                       }
                   }
               }
@@ -422,13 +472,13 @@ class FallThroughTest implements RewriteTest {
                       switch(a) {
                           case A:
                           default:
-                            switch(a) {
-                                case B:
-                                    System.out.println("B");
-                                    break;
-                                default:
-                                    System.out.print("other");
-                            }
+                              switch (a) {
+                                  case B:
+                                      System.out.println("B");
+                                      break;
+                                  default:
+                                      System.out.print("other");
+                              }
                       }
                   }
               }

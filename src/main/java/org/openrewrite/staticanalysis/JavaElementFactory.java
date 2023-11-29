@@ -52,7 +52,7 @@ final class JavaElementFactory {
             type = ((JavaType.Parameterized) type).getType();
         }
         if (qualified && type instanceof JavaType.FullyQualified && ((JavaType.FullyQualified) type).getOwningClass() != null) {
-            J.FieldAccess expression = (J.FieldAccess) className(((JavaType.FullyQualified) type).getOwningClass(), true);
+            Expression expression = className(((JavaType.FullyQualified) type).getOwningClass(), true);
             String simpleName = ((JavaType.FullyQualified) type).getClassName();
             return new J.FieldAccess(
                     randomId(),
@@ -166,5 +166,9 @@ final class JavaElementFactory {
             return getClassType(((JavaType.Method) type).getDeclaringType());
         }
         return null;
+    }
+
+    public static J.Identifier newThis(JavaType type) {
+        return new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "this", type, null);
     }
 }

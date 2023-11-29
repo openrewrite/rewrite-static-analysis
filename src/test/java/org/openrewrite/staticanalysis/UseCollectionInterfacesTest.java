@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -27,6 +28,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 @SuppressWarnings("rawtypes")
 class UseCollectionInterfacesTest implements RewriteTest {
@@ -131,6 +133,41 @@ class UseCollectionInterfacesTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
+    void annotatedReturnType() {
+        rewriteRun(
+          spec -> spec
+            .allSources(s -> s.markers(javaVersion(9)))
+            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
+          //language=java
+          java(
+            """
+              import java.util.HashSet;
+              import org.jetbrains.annotations.Nullable;
+
+              class Test {
+                  public @Nullable HashSet<@Nullable Integer> method() {
+                      return new HashSet<>();
+                  }
+              }
+              """,
+            """
+              import java.util.HashSet;
+              import java.util.Set;
+
+              import org.jetbrains.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable Set<@Nullable Integer> method() {
+                      return new HashSet<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void preserveParameters() {
         rewriteRun(
           //language=java
@@ -217,6 +254,37 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
               class Test {
                   public Set<Integer> values = new HashSet<>();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
+    void annotatedFieldType() {
+        rewriteRun(
+          spec -> spec
+            .allSources(s -> s.markers(javaVersion(9)))
+            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
+          //language=java
+          java(
+            """
+              import java.util.HashSet;
+              import org.jetbrains.annotations.Nullable;
+
+              class Test {
+                  public @Nullable HashSet<@Nullable Integer> values = new HashSet<>();
+              }
+              """,
+            """
+              import java.util.HashSet;
+              import java.util.Set;
+
+              import org.jetbrains.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable Set<@Nullable Integer> values = new HashSet<>();
               }
               """
           )

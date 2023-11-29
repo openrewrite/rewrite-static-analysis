@@ -42,9 +42,6 @@ import static org.openrewrite.Tree.randomId;
 @EqualsAndHashCode(callSuper = true)
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     EmptyBlockStyle emptyBlockStyle;
-    JavaTemplate throwException = JavaTemplate.builder("throw new #{}(#{any(String)});")
-            .imports("java.io.UncheckedIOException")
-            .build();
     JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();
 
     @Override

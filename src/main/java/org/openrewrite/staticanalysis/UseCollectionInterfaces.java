@@ -131,21 +131,13 @@ public class UseCollectionInterfaces extends Recipe {
                                         newType,
                                         null
                                 );
+                            } else if (m.getReturnTypeExpression() instanceof J.AnnotatedType) {
+                                J.AnnotatedType annotatedType = (J.AnnotatedType) m.getReturnTypeExpression();
+                                J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedType.getTypeExpression();
+                                typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
                             } else {
                                 J.ParameterizedType parameterizedType = (J.ParameterizedType) m.getReturnTypeExpression();
-                                J.Identifier returnType = new J.Identifier(
-                                        randomId(),
-                                        Space.EMPTY,
-                                        Markers.EMPTY,
-                                        emptyList(),
-                                        newType.getClassName(),
-                                        newType,
-                                        null);
-                                JavaType.Parameterized javaType = (JavaType.Parameterized) parameterizedType.getType();
-                                typeExpression = parameterizedType.withClazz(returnType)
-                                        .withType(javaType != null ? javaType.withType(newType) :
-                                                new JavaType.Parameterized(null, newType, null)
-                                        );
+                                typeExpression = removeFromParameterizedType(newType, parameterizedType);
                             }
                             m = m.withReturnTypeExpression(typeExpression);
                         }
@@ -183,22 +175,13 @@ public class UseCollectionInterfaces extends Recipe {
                                     newType,
                                     null
                             );
+                        } else if (mv.getTypeExpression() instanceof J.AnnotatedType) {
+                            J.AnnotatedType annotatedType = (J.AnnotatedType) mv.getTypeExpression();
+                            J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedType.getTypeExpression();
+                            typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
                         } else {
                             J.ParameterizedType parameterizedType = (J.ParameterizedType) mv.getTypeExpression();
-                            J.Identifier returnType = new J.Identifier(
-                                    randomId(),
-                                    Space.EMPTY,
-                                    Markers.EMPTY,
-                                    emptyList(),
-                                    newType.getClassName(),
-                                    newType,
-                                    null
-                            );
-                            JavaType.Parameterized javaType = (JavaType.Parameterized) parameterizedType.getType();
-                            typeExpression = parameterizedType.withClazz(returnType)
-                                    .withType(javaType != null ? javaType.withType(newType) :
-                                            new JavaType.Parameterized(null, newType, null)
-                                    );
+                            typeExpression = removeFromParameterizedType(newType, parameterizedType);
                         }
 
                         mv = mv.withTypeExpression(typeExpression);
@@ -212,6 +195,23 @@ public class UseCollectionInterfaces extends Recipe {
                     }
                 }
                 return mv;
+            }
+
+            private TypeTree removeFromParameterizedType(JavaType.FullyQualified newType,
+                                                         J.ParameterizedType parameterizedType) {
+                J.Identifier returnType = new J.Identifier(
+                        randomId(),
+                        Space.EMPTY,
+                        Markers.EMPTY,
+                        emptyList(),
+                        newType.getClassName(),
+                        newType,
+                        null
+                );
+                JavaType.Parameterized javaType = (JavaType.Parameterized) parameterizedType.getType();
+                return parameterizedType.withClazz(returnType)
+                        .withType(javaType != null ? javaType.withType(newType) :
+                                new JavaType.Parameterized(null, newType, null));
             }
         };
     }

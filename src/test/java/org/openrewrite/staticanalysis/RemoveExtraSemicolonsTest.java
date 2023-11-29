@@ -213,4 +213,37 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void repeatedSemicolon() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      int a = 1;;
+                      int b = 2;
+                      int c = 3;;;
+                      int d = 4;
+                      int e = 5; ;
+                      int f = 6;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      int a = 1;
+                      int b = 2;
+                      int c = 3;
+                      int d = 4;
+                      int e = 5;
+                      int f = 6;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

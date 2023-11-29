@@ -20,6 +20,7 @@ dependencies {
     implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
+    testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.openrewrite:rewrite-groovy")
     testImplementation("org.junit-pioneer:junit-pioneer:2.0.1")
     testImplementation("junit:junit:4.13.2")

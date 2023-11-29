@@ -70,6 +70,9 @@ public class ReplaceStringBuilderWithString extends Recipe {
 
                     Collections.reverse(arguments);
                     adjustExpressions(arguments);
+                    if (arguments.isEmpty()) {
+                        return m;
+                    }
 
                     Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments)
                             .withPrefix(method.getPrefix());

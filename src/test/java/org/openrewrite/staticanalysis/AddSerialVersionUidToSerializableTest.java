@@ -255,18 +255,17 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-              public class Outer {
+              public class Outer implements Serializable {
                   public static class Inner implements Serializable {
-                  
                   }
               }
               """,
             """
               import java.io.Serializable;
-              public class Outer {
+              public class Outer implements Serializable {
+                  private static final long serialVersionUID = 1;
                   public static class Inner implements Serializable {
                       private static final long serialVersionUID = 1;
-                  
                   }
               }
               """
