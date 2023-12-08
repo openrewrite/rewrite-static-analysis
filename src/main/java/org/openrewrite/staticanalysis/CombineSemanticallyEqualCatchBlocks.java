@@ -61,8 +61,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
     private static class CombineSemanticallyEqualCatchBlocksVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
-        public J visitTry(J.Try tryable, ExecutionContext executionContext) {
-            J.Try t = (J.Try) super.visitTry(tryable, executionContext);
+        public J visitTry(J.Try tryable, ExecutionContext ctx) {
+            J.Try t = (J.Try) super.visitTry(tryable, ctx);
             Map<J.Try.Catch, List<J.Try.Catch>> semanticallyEqualCatchesMap = new LinkedHashMap<>();
             List<J.Try.Catch> catches = t.getCatches();
             // Check if the try contains semantically equal catch blocks.
@@ -149,24 +149,24 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             @Override
-            public J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext executionContext) {
+            public J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
                 Cursor parentCursor = getCursor().dropParentUntil(is -> is instanceof J.Try.Catch || is instanceof J.Try);
                 if (removeCatches != null && parentCursor.getValue() instanceof J.Try.Catch) {
                     if (removeCatches.contains((J.Try.Catch) parentCursor.getValue())) {
                         return null;
                     }
                 }
-                return super.visitMultiCatch(multiCatch, executionContext);
+                return super.visitMultiCatch(multiCatch, ctx);
             }
 
             @Override
-            public J visitCatch(J.Try.Catch _catch, ExecutionContext executionContext) {
+            public J visitCatch(J.Try.Catch _catch, ExecutionContext ctx) {
                 if (removeCatches != null) {
                     if (removeCatches.contains(_catch)) {
                         return null;
                     }
                 }
-                return super.visitCatch(_catch, executionContext);
+                return super.visitCatch(_catch, ctx);
             }
         }
 
@@ -184,29 +184,29 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             @Override
-            public J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext executionContext) {
-                J.MultiCatch m = (J.MultiCatch) super.visitMultiCatch(multiCatch, executionContext);
+            public J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
+                J.MultiCatch m = (J.MultiCatch) super.visitMultiCatch(multiCatch, ctx);
                 Cursor parentCursor = getCursor().dropParentUntil(is -> is instanceof J.Try.Catch || is instanceof J.Try);
                 if (parentCursor.getValue() instanceof J.Try.Catch) {
                     J.Try.Catch parent = parentCursor.getValue();
                     if (parent == scope) {
                         List<JRightPadded<NameTree>> combinedCatches = combineEquivalentCatches();
-                        m = maybeAutoFormat(m, m.getPadding().withAlternatives(combinedCatches), executionContext);
+                        m = maybeAutoFormat(m, m.getPadding().withAlternatives(combinedCatches), ctx);
                     }
                 }
                 return m;
             }
 
             @Override
-            public J visitCatch(J.Try.Catch _catch, ExecutionContext executionContext) {
-                J.Try.Catch c = (J.Try.Catch) super.visitCatch(_catch, executionContext);
+            public J visitCatch(J.Try.Catch _catch, ExecutionContext ctx) {
+                J.Try.Catch c = (J.Try.Catch) super.visitCatch(_catch, ctx);
                 if (c == scope && !isMultiCatch(c)) {
                     if (c.getParameter().getTree().getTypeExpression() != null) {
                         List<JRightPadded<NameTree>> combinedCatches = combineEquivalentCatches();
                         c = maybeAutoFormat(c, c.withParameter(c.getParameter()
                                 .withTree(c.getParameter().getTree()
                                         .withTypeExpression(new J.MultiCatch(Tree.randomId(), Space.EMPTY, Markers.EMPTY, combinedCatches)))),
-                                executionContext);
+                                ctx);
                     }
                 }
                 return c;

@@ -56,8 +56,8 @@ public class NoRedundantJumpStatements extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J.If visitIf(J.If iff, ExecutionContext executionContext) {
-                J.If i = super.visitIf(iff, executionContext);
+            public J.If visitIf(J.If iff, ExecutionContext ctx) {
+                J.If i = super.visitIf(iff, ctx);
 
                 boolean thenIsOnlyContinue = i.getThenPart() instanceof J.Continue;
                 if (i.getThenPart() instanceof J.Block) {
@@ -92,8 +92,8 @@ public class NoRedundantJumpStatements extends Recipe {
             }
 
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
-                J.MethodDeclaration m = super.visitMethodDeclaration(method, executionContext);
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method methodType = m.getMethodType();
                 if (m.getBody() != null && methodType != null && JavaType.Primitive.Void.equals(methodType.getReturnType())) {
                     return m.withBody(m.getBody().withStatements(ListUtils.mapLast(m.getBody().getStatements(), s -> s instanceof J.Return ? null : s)));

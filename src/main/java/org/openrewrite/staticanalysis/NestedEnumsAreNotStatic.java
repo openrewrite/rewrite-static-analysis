@@ -53,8 +53,8 @@ public class NestedEnumsAreNotStatic extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, executionContext);
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
                     cd = SearchResult.found(cd);
                 }

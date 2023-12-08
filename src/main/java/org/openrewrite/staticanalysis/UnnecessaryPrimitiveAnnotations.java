@@ -61,19 +61,19 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
                 Preconditions.or(new UsesType<>("javax.annotation.CheckForNull", false), new UsesType<>("javax.annotation.Nullable", false)),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
-                    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
-                        J.MethodDeclaration md = super.visitMethodDeclaration(method, executionContext);
+                    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                        J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
                         if (md.getReturnTypeExpression() != null
                             && !(md.getReturnTypeExpression() instanceof J.ArrayType)
                             && md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
-                            md = maybeAutoFormat(md, md.withLeadingAnnotations(filterAnnotations(md.getLeadingAnnotations())), executionContext);
+                            md = maybeAutoFormat(md, md.withLeadingAnnotations(filterAnnotations(md.getLeadingAnnotations())), ctx);
                         }
                         return md;
                     }
 
                     @Override
-                    public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-                        J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, executionContext);
+                    public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                        J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
                         if (varDecls.getType() instanceof JavaType.Primitive && varDecls.getVariables().stream().noneMatch(nv -> nv.getType() instanceof JavaType.Array)) {
                             varDecls = varDecls.withLeadingAnnotations(filterAnnotations(varDecls.getLeadingAnnotations()));
                         }

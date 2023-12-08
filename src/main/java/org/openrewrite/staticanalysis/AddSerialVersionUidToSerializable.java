@@ -57,13 +57,13 @@ public class AddSerialVersionUidToSerializable extends Recipe {
             final JavaTemplate template = JavaTemplate.builder("private static final long serialVersionUID = 1;").build();
 
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 // Anonymous classes are not of interest
                 return method;
             }
 
             @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 // Anonymous classes are not of interest
                 return multiVariable;
             }

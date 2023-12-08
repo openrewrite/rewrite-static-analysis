@@ -81,8 +81,8 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
         private static final MethodMatcher VALUE_OF_BOOLEAN_MATCHER = new MethodMatcher("java.lang.Boolean valueOf(*)", true);
 
         @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-            J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
             JavaType.Class clazz = mi.getMethodType() != null ? TypeUtils.asClass(mi.getMethodType().getDeclaringType()) : null;
             if (clazz != null && "java.lang".equals(clazz.getPackageName())) {
                 if (NUMBER_TO_STRING_MATCHER.matches(mi) || BOOLEAN_TO_STRING_MATCHER.matches(mi)) {
@@ -116,7 +116,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
                         JavaType.FullyQualified fq = mi.getMethodType().getDeclaringType();
                         mi = mi.withSelect(new J.Identifier(UUID.randomUUID(), mi.getSelect().getPrefix(), Markers.EMPTY, emptyList(), fq.getClassName(), fq, null));
                         mi = mi.withArguments(ListUtils.concat(arg, mi.getArguments()));
-                        mi = maybeAutoFormat(mi, mi.withName(mi.getName().withSimpleName("compare")), executionContext);
+                        mi = maybeAutoFormat(mi, mi.withName(mi.getName().withSimpleName("compare")), ctx);
                     }
                 }
             }

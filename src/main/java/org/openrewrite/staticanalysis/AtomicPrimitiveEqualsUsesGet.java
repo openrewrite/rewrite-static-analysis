@@ -58,8 +58,8 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
             private final MethodMatcher aiMethodMatcher = new MethodMatcher("java.lang.Object equals(java.lang.Object)");
 
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, executionContext);
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (mi.getSelect() != null && isAtomicEqualsType(mi.getSelect().getType()) && aiMethodMatcher.matches(mi)
                     && TypeUtils.isOfType(mi.getSelect().getType(), mi.getArguments().get(0).getType())) {
                     JavaType.FullyQualified fqt = TypeUtils.asFullyQualified(mi.getSelect().getType());

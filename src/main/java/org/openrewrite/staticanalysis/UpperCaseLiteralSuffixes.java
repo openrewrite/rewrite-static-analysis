@@ -62,8 +62,8 @@ public class UpperCaseLiteralSuffixes extends Recipe {
                 new UsesType<>("java.lang.Float", false)
         ), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext executionContext) {
-                J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, executionContext);
+            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+                J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
                 if (nv.getInitializer() instanceof J.Literal && nv.getInitializer().getType() != null) {
                     J.Literal initializer = (J.Literal) nv.getInitializer();
                     if (initializer.getType() == JavaType.Primitive.Double

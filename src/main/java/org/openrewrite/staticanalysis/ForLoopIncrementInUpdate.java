@@ -91,8 +91,8 @@ public class ForLoopIncrementInUpdate extends Recipe {
                                     f = f.withBody((Statement) new JavaVisitor<ExecutionContext>() {
                                         @Nullable
                                         @Override
-                                        public J visit(@Nullable Tree tree, ExecutionContext executionContext) {
-                                            return tree == unary ? null : super.visit(tree, executionContext);
+                                        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                                            return tree == unary ? null : super.visit(tree, ctx);
                                         }
                                     }.visit(f.getBody(), ctx));
 

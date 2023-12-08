@@ -70,8 +70,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
         return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
             @Override
-            public @Nullable J postVisit(J tree, ExecutionContext executionContext) {
-                J result = super.postVisit(tree, executionContext);
+            public @Nullable J postVisit(J tree, ExecutionContext ctx) {
+                J result = super.postVisit(tree, ctx);
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
                 if (original != null && !original.isEmpty()) {
                     return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow());

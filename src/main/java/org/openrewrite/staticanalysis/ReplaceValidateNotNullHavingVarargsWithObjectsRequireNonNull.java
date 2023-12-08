@@ -49,8 +49,8 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(VALIDATE_NOTNULL), new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext p) {
-                J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, p);
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (!VALIDATE_NOTNULL.matches(mi)) {
                     return mi;
                 }
@@ -72,7 +72,7 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
 
                 if (arguments.size() == 2) {
                     return maybeAutoFormat(mi, mi.withArguments(
-                            ListUtils.map(mi.getArguments(), (a, b) -> b.withPrefix(arguments.get(a).getPrefix()))), p);
+                            ListUtils.map(mi.getArguments(), (a, b) -> b.withPrefix(arguments.get(a).getPrefix()))), ctx);
                 }
 
                 // Retain comments and whitespace around lambda arguments
@@ -84,8 +84,8 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 stringFormatMi = stringFormatMi.withArguments(
                         ListUtils.map(stringFormatMi.getArguments(), (a, b) -> b.withPrefix(arguments.get(a).getPrefix())));
 
-                lambda = maybeAutoFormat(lambda, lambda.withBody(stringFormatMi), p);
-                return maybeAutoFormat(mi, mi.withArguments(Stream.of(arg0, lambda).collect(Collectors.toList())), p);
+                lambda = maybeAutoFormat(lambda, lambda.withBody(stringFormatMi), ctx);
+                return maybeAutoFormat(mi, mi.withArguments(Stream.of(arg0, lambda).collect(Collectors.toList())), ctx);
             }
         });
     }

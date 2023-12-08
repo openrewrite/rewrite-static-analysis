@@ -56,8 +56,8 @@ public class UseObjectNotifyAll extends Recipe {
         MethodMatcher objectNotify = new MethodMatcher("java.lang.Object notify()");
         return Preconditions.check(new UsesMethod<>(objectNotify), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext context) {
-                J.MethodInvocation m = super.visitMethodInvocation(method, context);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 return objectNotify.matches(method) ? m
                         .withName(m.getName().withSimpleName("notifyAll")) : m;
             }

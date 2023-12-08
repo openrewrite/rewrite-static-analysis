@@ -77,7 +77,7 @@ public class UnnecessaryThrows extends Recipe {
                         }
 
                         @Override
-                        public J.Try.Resource visitTryResource(J.Try.Resource tryResource, ExecutionContext executionContext) {
+                        public J.Try.Resource visitTryResource(J.Try.Resource tryResource, ExecutionContext ctx) {
                             TypedTree resource = tryResource.getVariableDeclarations();
 
                             JavaType.FullyQualified resourceType = TypeUtils.asFullyQualified(resource.getType());
@@ -89,11 +89,11 @@ public class UnnecessaryThrows extends Recipe {
                                 }
                             }
 
-                            return super.visitTryResource(tryResource, executionContext);
+                            return super.visitTryResource(tryResource, ctx);
                         }
 
                         @Override
-                        public J.Throw visitThrow(J.Throw thrown, ExecutionContext executionContext) {
+                        public J.Throw visitThrow(J.Throw thrown, ExecutionContext ctx) {
                             JavaType.FullyQualified type = TypeUtils.asFullyQualified(thrown.getException().getType());
                             if (type != null) {
                                 unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, type));

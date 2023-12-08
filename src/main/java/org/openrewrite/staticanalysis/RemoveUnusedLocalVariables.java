@@ -142,12 +142,12 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
-            public Statement visitStatement(Statement statement, ExecutionContext executionContext) {
+            public Statement visitStatement(Statement statement, ExecutionContext ctx) {
                 List<Comment> comments = getCursor().pollNearestMessage("COMMENTS_KEY");
                 if (comments != null) {
                     statement = statement.withComments(ListUtils.concatAll(statement.getComments(), comments));
                 }
-                return super.visitStatement(statement, executionContext);
+                return super.visitStatement(statement, ctx);
             }
 
             @Override
@@ -208,17 +208,17 @@ public class RemoveUnusedLocalVariables extends Recipe {
         J.Assignment assignment;
 
         @Override
-        public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext executionContext) {
+        public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext ctx) {
             //noinspection unchecked
             c = (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
-                    .visitNonNull(c, executionContext, getCursor().getParentOrThrow());
+                    .visitNonNull(c, ctx, getCursor().getParentOrThrow());
             return c;
         }
 
         @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext executionContext) {
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, executionContext, getCursor().getParentOrThrow())));
+            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
             return m;
         }
     }
@@ -229,7 +229,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
         J.Assignment assignment;
 
         @Override
-        public J visitAssignment(J.Assignment a, ExecutionContext executionContext) {
+        public J visitAssignment(J.Assignment a, ExecutionContext ctx) {
             if (assignment.isScope(a)) {
                 return a.getAssignment().withPrefix(a.getPrefix());
             }

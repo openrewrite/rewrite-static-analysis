@@ -205,7 +205,8 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     void noSelect() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
             package a;
             public enum A {
                 FOO, BAR, BUZ;

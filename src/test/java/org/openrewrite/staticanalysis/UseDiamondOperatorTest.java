@@ -493,7 +493,8 @@ class UseDiamondOperatorTest implements RewriteTest {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(9))),
           //language=java
-          java("""
+          java(
+                """
             @FunctionalInterface
             public interface IVisitor<T, R> {
                 void visit(T object, R ret);
@@ -501,7 +502,8 @@ class UseDiamondOperatorTest implements RewriteTest {
             """
           ),
           //language=java
-          java("""
+          java(
+                """
             class Test {
                 public <S, R> R method(IVisitor<S, R> visitor) {
                     return null;
@@ -525,7 +527,8 @@ class UseDiamondOperatorTest implements RewriteTest {
             .allSources(s -> s.markers(javaVersion(9)))
             .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
           //language=java
-          java("""
+          java(
+                """
             import org.jetbrains.annotations.Nullable;
             import java.util.ArrayList;
             import java.util.List;

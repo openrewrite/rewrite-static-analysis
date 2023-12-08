@@ -69,8 +69,8 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-            J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, executionContext);
+        public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+            J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
             final TypedTree varDeclsTypeExpression = varDecls.getTypeExpression();
             if (varDecls.getVariables().size() == 1 && varDecls.getVariables().get(0).getInitializer() != null
                 && varDecls.getTypeExpression() instanceof J.ParameterizedType) {
@@ -85,8 +85,8 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.Assignment visitAssignment(J.Assignment assignment, ExecutionContext executionContext) {
-            J.Assignment asgn = super.visitAssignment(assignment, executionContext);
+        public J.Assignment visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
+            J.Assignment asgn = super.visitAssignment(assignment, ctx);
             if (asgn.getAssignment() instanceof J.NewClass) {
                 JavaType.Parameterized assignmentType = TypeUtils.asParameterized(asgn.getType());
                 J.NewClass nc = (J.NewClass) asgn.getAssignment();
@@ -98,12 +98,12 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             if (isAParameter()) {
                 return method;
             }
 
-            J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+            J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
             JavaType.Method methodType = mi.getMethodType();
 
             if (methodType != null &&
@@ -180,8 +180,8 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.Return visitReturn(J.Return _return, ExecutionContext executionContext) {
-            J.Return return_ = super.visitReturn(_return, executionContext);
+        public J.Return visitReturn(J.Return _return, ExecutionContext ctx) {
+            J.Return return_ = super.visitReturn(_return, ctx);
             J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass) return_.getExpression() : null;
             if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
                 J parentBlock = getCursor().dropParentUntil(v -> v instanceof J.MethodDeclaration || v instanceof J.Lambda).getValue();

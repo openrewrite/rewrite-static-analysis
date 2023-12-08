@@ -57,8 +57,8 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
             private final JavaTemplate toString = JavaTemplate.builder("String.valueOf(#{any()})").build();
 
             @Override
-            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
-                J.NewClass nc = super.visitNewClass(newClass, executionContext);
+            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                J.NewClass nc = super.visitNewClass(newClass, ctx);
                 if ((TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuilder") ||
                      TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuffer"))) {
                     nc.getArguments();
