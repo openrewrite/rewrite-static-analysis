@@ -217,4 +217,34 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
             """)
         );
     }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Issue("https://github.com/moderneinc/customer-requests/issues/190")
+    @Test
+    void changeEnumInsideBooleanExpression() {
+        rewriteRun(
+          enumA,
+          //language=java
+          java(
+            """
+              import a.A;
+              class Test {
+                  void method(A arg0) {
+                      if (!(A.FOO.equals(arg0) || A.BAR.equals(arg0))) {
+                      }
+                  }
+              }
+              """,
+            """
+              import a.A;
+              class Test {
+                  void method(A arg0) {
+                      if (!(A.FOO == arg0 || A.BAR == arg0)) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
