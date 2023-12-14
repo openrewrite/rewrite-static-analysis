@@ -72,8 +72,10 @@ public class UseDiamondOperator extends Recipe {
         public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
             J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
             final TypedTree varDeclsTypeExpression = varDecls.getTypeExpression();
-            if (varDecls.getVariables().size() == 1 && varDecls.getVariables().get(0).getInitializer() != null
-                && varDecls.getTypeExpression() instanceof J.ParameterizedType) {
+            if (varDeclsTypeExpression != null &&
+                varDecls.getVariables().size() == 1 &&
+                varDecls.getVariables().get(0).getInitializer() != null &&
+                varDecls.getTypeExpression() instanceof J.ParameterizedType) {
                 varDecls = varDecls.withVariables(ListUtils.map(varDecls.getVariables(), nv -> {
                     if (nv.getInitializer() instanceof J.NewClass) {
                         nv = nv.withInitializer(maybeRemoveParams(parameterizedTypes((J.ParameterizedType) varDeclsTypeExpression), (J.NewClass) nv.getInitializer()));
@@ -213,8 +215,7 @@ public class UseDiamondOperator extends Recipe {
             if (paramTypes != null && (java9 || newClass.getBody() == null) && newClass.getClazz() instanceof J.ParameterizedType) {
                 J.ParameterizedType newClassType = (J.ParameterizedType) newClass.getClazz();
                 if (newClassType.getTypeParameters() != null) {
-                    if (paramTypes.size() != newClassType.getTypeParameters().size() ||
-                        newClassType.getTypeParameters().stream().anyMatch(p -> p instanceof J.AnnotatedType)) {
+                    if (paramTypes.size() != newClassType.getTypeParameters().size() || hasAnnotations(newClassType)) {
                         return newClass;
                     } else {
                         for (int i = 0; i < paramTypes.size(); i++) {
@@ -230,6 +231,24 @@ public class UseDiamondOperator extends Recipe {
                 }
             }
             return newClass;
+        }
+
+        private static boolean hasAnnotations(J type) {
+            if (type instanceof J.ParameterizedType) {
+                J.ParameterizedType parameterizedType = (J.ParameterizedType) type;
+                if (hasAnnotations(parameterizedType.getClazz())) {
+                    return true;
+                } else if (parameterizedType.getTypeParameters() != null) {
+                    for (Expression typeParameter : parameterizedType.getTypeParameters()) {
+                        if (hasAnnotations(typeParameter)) {
+                            return true;
+                        }
+                    }
+                }
+            } else {
+                return type instanceof J.AnnotatedType;
+            }
+            return false;
         }
 
         private boolean isAParameter() {

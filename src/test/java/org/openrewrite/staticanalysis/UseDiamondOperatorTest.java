@@ -535,7 +535,7 @@ class UseDiamondOperatorTest implements RewriteTest {
             
             class Test {
                 private void test(Object t) {
-                    List<String> l = new ArrayList<@Nullable String>();
+                    List<List<String>> l = new ArrayList<List<@Nullable String>>();
                 }
             }
             """
