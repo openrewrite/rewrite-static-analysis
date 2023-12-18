@@ -108,7 +108,8 @@ public class FinalizePrivateFields extends Recipe {
     }
 
     private static boolean anyAnnotationApplied(J.VariableDeclarations mv) {
-        return !mv.getAllAnnotations().isEmpty();
+        return !mv.getLeadingAnnotations().isEmpty()
+               || mv.getTypeExpression() instanceof J.AnnotatedType;
     }
 
     /**
