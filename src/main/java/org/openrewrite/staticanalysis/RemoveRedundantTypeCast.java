@@ -109,6 +109,10 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
                            TypeUtils.isOfType(targetType, expressionType) ||
                            TypeUtils.isAssignableTo(targetType, expressionType)) {
+                    JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(castType);
+                    if (fullyQualified != null) {
+                        maybeRemoveImport(fullyQualified.getFullyQualifiedName());
+                    }
                     return visitedTypeCast.getExpression().withPrefix(visitedTypeCast.getPrefix());
                 }
                 return visitedTypeCast;
