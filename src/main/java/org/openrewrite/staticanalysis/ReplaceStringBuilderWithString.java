@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.PartProvider;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -116,9 +115,10 @@ public class ReplaceStringBuilderWithString extends Recipe {
                         // wrap by ""
                         arguments.set(0, toStringLiteral((J.Literal) arguments.get(0)));
                     } else {
-                        J.MethodInvocation stringValueOf = getStringValueOfMethodInvocationTemplate()
-                                .withArguments(Collections.singletonList(arguments.get(0)))
-                                .withPrefix(arguments.get(0).getPrefix());
+                        JavaTemplate stringValueOf =
+                            JavaTemplate.builder("String.valueOf(1 + 2)")
+                                .build();
+                        
                         arguments.set(0, stringValueOf);
                     }
                 }
@@ -179,23 +179,12 @@ public class ReplaceStringBuilderWithString extends Recipe {
 
     public static J.Parentheses getParenthesesTemplate() {
         if (parenthesesTemplate == null) {
-            parenthesesTemplate = PartProvider.buildPart("class B { void foo() { (\"A\" + \"B\").length(); } } ", J.Parentheses.class);
+            parenthesesTemplate = PartProvider.buildPart("class B { void foo() { (\"A\" + \"B\").length(); } } ", J.Parentheses.class); // TODO: Needs to be updated to new logic ...
         }
         return parenthesesTemplate;
     }
 
-    public static J.MethodInvocation getStringValueOfMethodInvocationTemplate() {
-        if (stringValueOfTemplate == null) {
-            stringValueOfTemplate = PartProvider.buildPart("class C {\n" +
-                                                           "    void foo() {\n" +
-                                                           "        Object obj = 1 + 2;\n" +
-                                                           "        String.valueOf(obj);\n" +
-                                                           "    }\n" +
-                                                           "}",
-                    J.MethodInvocation.class);
-        }
-        return stringValueOfTemplate;
-    }
+    
 
     public static <T extends J> J.Parentheses<T> wrapExpression(Expression exp) {
         return getParenthesesTemplate().withTree(exp).withPrefix(exp.getPrefix());
