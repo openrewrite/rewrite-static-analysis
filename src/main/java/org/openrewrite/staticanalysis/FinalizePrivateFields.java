@@ -21,6 +21,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -54,7 +55,7 @@ public class FinalizePrivateFields extends Recipe {
 
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                if (!classDecl.getLeadingAnnotations().isEmpty()) {
+                if (!service(AnnotationService.class).getAllAnnotations(getCursor()).isEmpty()) {
                     // skip if a class has any annotation, since the annotation could generate some code to assign
                     // fields like Lombok @Setter.
                     return classDecl;
@@ -65,32 +66,32 @@ public class FinalizePrivateFields extends Recipe {
                     return classDecl;
                 }
 
-                List<J.VariableDeclarations.NamedVariable> privateFields = collectPrivateFields(classDecl);
+                List<J.VariableDeclarations.NamedVariable> privateFields = collectPrivateFields(getCursor());
                 Map<JavaType.Variable, Integer> privateFieldAssignCountMap = privateFields.stream()
-                    .filter(v -> v.getVariableType() != null)
-                    .collect(Collectors.toMap(J.VariableDeclarations.NamedVariable::getVariableType,
-                        v -> v.getInitializer() != null ? 1 : 0));
+                        .filter(v -> v.getVariableType() != null)
+                        .collect(Collectors.toMap(J.VariableDeclarations.NamedVariable::getVariableType,
+                                v -> v.getInitializer() != null ? 1 : 0));
 
                 CollectPrivateFieldsAssignmentCounts.collect(classDecl, privateFieldAssignCountMap);
 
                 privateFieldsToBeFinalized = privateFieldAssignCountMap.entrySet()
-                    .stream()
-                    .filter(entry -> entry.getValue() == 1)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toSet());
+                        .stream()
+                        .filter(entry -> entry.getValue() == 1)
+                        .map(Map.Entry::getKey)
+                        .collect(Collectors.toSet());
 
                 return super.visitClassDeclaration(classDecl, ctx);
             }
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable,
-                ExecutionContext ctx) {
+                                                                    ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
                 boolean canAllVariablesBeFinalized = mv.getVariables()
-                    .stream()
-                    .map(J.VariableDeclarations.NamedVariable::getVariableType)
-                    .allMatch(privateFieldsToBeFinalized::contains);
+                        .stream()
+                        .map(J.VariableDeclarations.NamedVariable::getVariableType)
+                        .allMatch(privateFieldsToBeFinalized::contains);
 
                 if (canAllVariablesBeFinalized) {
                     mv = autoFormat(mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
@@ -104,40 +105,42 @@ public class FinalizePrivateFields extends Recipe {
 
                 return mv;
             }
+
+            private boolean anyAnnotationApplied(Cursor variableCursor) {
+                return !service(AnnotationService.class).getAllAnnotations(variableCursor).isEmpty()
+                       || variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
+            }
+
+            /**
+             * Collect private and non-final fields from a class
+             */
+            private List<J.VariableDeclarations.NamedVariable> collectPrivateFields(Cursor classCursor) {
+                J.ClassDeclaration classDecl = classCursor.getValue();
+                Cursor bodyCursor = new Cursor(classCursor, classDecl.getBody());
+                return classDecl.getBody()
+                        .getStatements()
+                        .stream()
+                        .filter(J.VariableDeclarations.class::isInstance)
+                        .map(J.VariableDeclarations.class::cast)
+                        .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
+                                      && !mv.hasModifier(J.Modifier.Type.Final)
+                                      && !mv.hasModifier(J.Modifier.Type.Volatile))
+                        .filter(mv -> !anyAnnotationApplied(new Cursor(bodyCursor, mv)))
+                        .map(J.VariableDeclarations::getVariables)
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+            }
         };
-    }
-
-    private static boolean anyAnnotationApplied(J.VariableDeclarations mv) {
-        return !mv.getLeadingAnnotations().isEmpty()
-               || mv.getTypeExpression() instanceof J.AnnotatedType;
-    }
-
-    /**
-     * Collect private and non-final fields from a class
-     */
-    private static List<J.VariableDeclarations.NamedVariable> collectPrivateFields(J.ClassDeclaration classDecl) {
-        return classDecl.getBody()
-            .getStatements()
-            .stream()
-            .filter(J.VariableDeclarations.class::isInstance)
-            .map(J.VariableDeclarations.class::cast)
-            .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
-                          && !mv.hasModifier(J.Modifier.Type.Final)
-                          && !mv.hasModifier(J.Modifier.Type.Volatile))
-            .filter(mv -> !anyAnnotationApplied(mv))
-            .map(J.VariableDeclarations::getVariables)
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
     }
 
     private static int getConstructorCount(J.ClassDeclaration classDecl) {
         return (int) classDecl.getBody()
-            .getStatements()
-            .stream()
-            .filter(J.MethodDeclaration.class::isInstance)
-            .map(J.MethodDeclaration.class::cast)
-            .filter(J.MethodDeclaration::isConstructor)
-            .count();
+                .getStatements()
+                .stream()
+                .filter(J.MethodDeclaration.class::isInstance)
+                .map(J.MethodDeclaration.class::cast)
+                .filter(J.MethodDeclaration::isConstructor)
+                .count();
     }
 
     private static boolean isInnerClass(J.ClassDeclaration classDecl) {
@@ -168,7 +171,7 @@ public class FinalizePrivateFields extends Recipe {
 
         @Override
         public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp,
-            Map<JavaType.Variable, Integer> assignedCountMap) {
+                                                              Map<JavaType.Variable, Integer> assignedCountMap) {
             J.AssignmentOperation a = super.visitAssignmentOperation(assignOp, assignedCountMap);
             updateAssignmentCount(getCursor(), a.getVariable(), assignedCountMap);
             return a;
@@ -184,8 +187,8 @@ public class FinalizePrivateFields extends Recipe {
         }
 
         private static void updateAssignmentCount(Cursor cursor,
-            Expression expression,
-            Map<JavaType.Variable, Integer> assignedCountMap
+                                                  Expression expression,
+                                                  Map<JavaType.Variable, Integer> assignedCountMap
         ) {
             JavaType.Variable privateField = null;
 
@@ -262,34 +265,34 @@ public class FinalizePrivateFields extends Recipe {
          * @return true if meet the condition, or false if not meet the condition until the end.
          */
         private static boolean dropUntilMeetCondition(Cursor cursor,
-            Predicate<Object> endCondition,
-            Predicate<Object> condition) {
+                                                      Predicate<Object> endCondition,
+                                                      Predicate<Object> condition) {
             return condition.test(
-                cursor.dropParentUntil(parent -> endCondition.test(parent) || condition.test(parent)).getValue());
+                    cursor.dropParentUntil(parent -> endCondition.test(parent) || condition.test(parent)).getValue());
         }
 
         private static boolean isInForLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
-                CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                J.ForLoop.class::isInstance);
+                    CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
+                    J.ForLoop.class::isInstance);
         }
 
         private static boolean isInDoWhileLoopLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
-                CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                J.DoWhileLoop.class::isInstance);
+                    CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
+                    J.DoWhileLoop.class::isInstance);
         }
 
         private static boolean isInWhileLoop(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
-                CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                J.WhileLoop.class::isInstance);
+                    CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
+                    J.WhileLoop.class::isInstance);
         }
 
         private static boolean isInLambda(Cursor cursor) {
             return dropUntilMeetCondition(cursor,
-                CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
-                J.Lambda.class::isInstance);
+                    CollectPrivateFieldsAssignmentCounts::dropCursorEndCondition,
+                    J.Lambda.class::isInstance);
         }
     }
 
