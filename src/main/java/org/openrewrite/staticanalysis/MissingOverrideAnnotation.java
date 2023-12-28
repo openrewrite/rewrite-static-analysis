@@ -22,6 +22,7 @@ import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
@@ -77,7 +78,7 @@ public class MissingOverrideAnnotation extends Recipe {
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
             if (!method.hasModifier(J.Modifier.Type.Static)
                     && !method.isConstructor()
-                    && method.getAllAnnotations().stream().noneMatch(OVERRIDE_ANNOTATION::matches)
+                    && !service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION)
                     && TypeUtils.isOverride(method.getMethodType())
                     && !(Boolean.TRUE.equals(ignoreAnonymousClassMethods)
                     && getCursorToParentScope(getCursor()).getValue() instanceof J.NewClass)) {

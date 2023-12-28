@@ -24,6 +24,7 @@ import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
@@ -152,7 +153,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
-                if (!multiVariable.getAllAnnotations().isEmpty()) {
+                if (!service(AnnotationService.class).getAllAnnotations(getCursor()).isEmpty()) {
                     return multiVariable;
                 }
 
