@@ -432,18 +432,18 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                     J.ArrayType compareTo = (J.ArrayType) j;
                     if (!TypeUtils.isOfType(arrayType.getType(), compareTo.getType()) ||
                             doesNotContainSameComments(arrayType.getPrefix(), compareTo.getPrefix()) ||
-                            arrayType.getDimensions().size() != compareTo.getDimensions().size()) {
+                        nullMissMatch(arrayType.getAnnotations(), compareTo.getAnnotations()) ||
+                        arrayType.getAnnotations().size() != compareTo.getAnnotations().size()) {
                         isEqual.set(false);
                         return arrayType;
                     }
 
-                    for (int i = 0; i < arrayType.getDimensions().size(); i++) {
-                        if (doesNotContainSameComments(arrayType.getDimensions().get(i).getElement(), compareTo.getDimensions().get(i).getElement())) {
-                            isEqual.set(false);
+                    for (int i = 0; i < arrayType.getAnnotations().size(); i++) {
+                        this.visit(arrayType.getAnnotations().get(i), compareTo.getAnnotations().get(i));
+                        if (!isEqual.get()) {
                             return arrayType;
                         }
                     }
-
                     this.visitTypeName(arrayType.getElementType(), compareTo.getElementType());
                 }
                 return arrayType;
