@@ -33,9 +33,12 @@ class SimplifyTernaryTest implements RewriteTest {
                   boolean trueCondition1 = true ? true : false;
                   boolean trueCondition2 = false ? false : true;
                   boolean trueCondition3 = booleanExpression() ? true : false;
+                  boolean trueCondition4 = trueCondition1 && trueCondition2 ? true : false;
+                  
                   boolean falseCondition1 = true ? false : true;
                   boolean falseCondition2 = false ? true : false;
                   boolean falseCondition3 = booleanExpression() ? false : true;
+                  boolean falseCondition4 = trueCondition1 && trueCondition2 ? false : true;
                   
                   boolean unchanged1 = booleanExpression() ? booleanExpression() : !booleanExpression();
                   boolean unchanged2 = booleanExpression() ? true : !booleanExpression();
@@ -51,9 +54,12 @@ class SimplifyTernaryTest implements RewriteTest {
                   boolean trueCondition1 = true;
                   boolean trueCondition2 = true;
                   boolean trueCondition3 = booleanExpression();
+                  boolean trueCondition4 = trueCondition1 && trueCondition2;
+                  
                   boolean falseCondition1 = false;
                   boolean falseCondition2 = false;
                   boolean falseCondition3 = !booleanExpression();
+                  boolean falseCondition4 = !(trueCondition1 && trueCondition2);
                   
                   boolean unchanged1 = booleanExpression() ? booleanExpression() : !booleanExpression();
                   boolean unchanged2 = booleanExpression() ? true : !booleanExpression();
