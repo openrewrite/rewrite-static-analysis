@@ -57,8 +57,8 @@ public class RemoveCallsToSystemGc extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.or(new UsesMethod<>(SYSTEM_GC), new UsesMethod<>(RUNTIME_GC)), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext context) {
-                J.MethodInvocation invocation = super.visitMethodInvocation(method, context);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
                 if (SYSTEM_GC.matches(invocation) || RUNTIME_GC.matches(invocation)) {
                     doAfterVisit(new EmptyBlock().getVisitor());
                     //noinspection DataFlowIssue

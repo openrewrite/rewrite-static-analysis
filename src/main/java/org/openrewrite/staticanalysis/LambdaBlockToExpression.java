@@ -42,8 +42,8 @@ public class LambdaBlockToExpression extends Recipe {
         return Preconditions.check(new JavaFileChecker<>(),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
-                    public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext executionContext) {
-                        J.Lambda l = super.visitLambda(lambda, executionContext);
+                    public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
+                        J.Lambda l = super.visitLambda(lambda, ctx);
                         if (lambda.getBody() instanceof J.Block) {
                             List<Statement> statements = ((J.Block) lambda.getBody()).getStatements();
                             if (statements.size() == 1 && statements.get(0) instanceof J.Return) {
@@ -59,11 +59,11 @@ public class LambdaBlockToExpression extends Recipe {
                     }
 
                     @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         if (hasLambdaArgument(method) && hasMethodOverloading(method)) {
                             return method;
                         }
-                        return super.visitMethodInvocation(method, executionContext);
+                        return super.visitMethodInvocation(method, ctx);
                     }
                 }
         );

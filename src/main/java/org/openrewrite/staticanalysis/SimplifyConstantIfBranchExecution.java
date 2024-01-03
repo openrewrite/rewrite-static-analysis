@@ -52,43 +52,43 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
     private static class SimplifyConstantIfBranchExecutionVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
-        public J visitBlock(J.Block block, ExecutionContext executionContext) {
-            J.Block bl = (J.Block) super.visitBlock(block, executionContext);
+        public J visitBlock(J.Block block, ExecutionContext ctx) {
+            J.Block bl = (J.Block) super.visitBlock(block, ctx);
             if (bl != block) {
                 bl = (J.Block) new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor()
-                        .visitNonNull(bl, executionContext, getCursor().getParentOrThrow());
+                        .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
                 EmptyBlockStyle style = ((SourceFile) getCursor().firstEnclosingOrThrow(JavaSourceFile.class))
                         .getStyle(EmptyBlockStyle.class);
                 if (style == null) {
                     style = Checkstyle.emptyBlock();
                 }
                 bl = (J.Block) new EmptyBlockVisitor<>(style)
-                        .visitNonNull(bl, executionContext, getCursor().getParentOrThrow());
+                        .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
             }
             return bl;
         }
 
         @SuppressWarnings("unchecked")
         private <E extends Expression> E cleanupBooleanExpression(
-                E expression, ExecutionContext context
+                E expression, ExecutionContext ctx
         ) {
             E ex1 =
                     (E) new UnnecessaryParenthesesVisitor()
-                            .visitNonNull(expression, context, getCursor().getParentOrThrow());
+                            .visitNonNull(expression, ctx, getCursor().getParentOrThrow());
             ex1 = (E) new SimplifyBooleanExpressionVisitor()
-                    .visitNonNull(ex1, context, getCursor().getParentTreeCursor());
+                    .visitNonNull(ex1, ctx, getCursor().getParentTreeCursor());
             if (expression == ex1 || isLiteralFalse(ex1) || isLiteralTrue(ex1)) {
                 return ex1;
             }
             // Run recursively until no further changes are needed
-            return cleanupBooleanExpression(ex1, context);
+            return cleanupBooleanExpression(ex1, ctx);
         }
 
         @Override
-        public J visitIf(J.If if_, ExecutionContext context) {
-            J.If if__ = (J.If) super.visitIf(if_, context);
+        public J visitIf(J.If if_, ExecutionContext ctx) {
+            J.If if__ = (J.If) super.visitIf(if_, ctx);
 
-            J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), context);
+            J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), ctx);
             if__ = if__.withIfCondition(cp);
 
             // The compile-time constant value of the if condition control parentheses.
@@ -113,7 +113,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 return maybeAutoFormat(
                         if__,
                         s,
-                        context
+                        ctx
                 );
             } else {
                 // False branch
@@ -125,7 +125,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                     return maybeAutoFormat(
                             if__,
                             s,
-                            context
+                            ctx
                     );
                 }
                 /*

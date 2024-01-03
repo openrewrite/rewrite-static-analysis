@@ -73,8 +73,8 @@ public class UnnecessaryCatch extends Recipe {
             }
 
             @Override
-            public J.Try visitTry(J.Try tryable, ExecutionContext executionContext) {
-                J.Try t = super.visitTry(tryable, executionContext);
+            public J.Try visitTry(J.Try tryable, ExecutionContext ctx) {
+                J.Try t = super.visitTry(tryable, ctx);
 
                 List<JavaType.FullyQualified> thrownExceptions = new ArrayList<>();
                 AtomicBoolean missingTypeInformation = new AtomicBoolean(false);

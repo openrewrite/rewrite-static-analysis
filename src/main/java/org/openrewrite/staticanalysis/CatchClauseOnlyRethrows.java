@@ -73,8 +73,8 @@ public class CatchClauseOnlyRethrows extends Recipe {
             }
 
             @Override
-            public J.Try visitTry(J.Try tryable, ExecutionContext executionContext) {
-                J.Try t = super.visitTry(tryable, executionContext);
+            public J.Try visitTry(J.Try tryable, ExecutionContext ctx) {
+                J.Try t = super.visitTry(tryable, ctx);
                 return t.withCatches(ListUtils.map(t.getCatches(), (i, aCatch) -> {
                     if (onlyRethrows(aCatch)) {
                         // if a subsequent catch is a wider exception type and doesn't rethrow, we should

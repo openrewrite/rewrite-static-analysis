@@ -450,8 +450,8 @@ class MethodNameCasingTest implements RewriteTest {
             .recipes(
               toRecipe(() -> new JavaIsoVisitor<>() {
                   @Override
-                  public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-                      return super.visitClassDeclaration(classDecl, executionContext).withType(null);
+                  public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                      return super.visitClassDeclaration(classDecl, ctx).withType(null);
                   }
               }),
               new MethodNameCasing(true, false)

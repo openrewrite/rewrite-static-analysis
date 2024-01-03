@@ -78,8 +78,8 @@ public class UseStringReplace extends Recipe {
         private static final Pattern CHARACTER_CLASSES = Pattern.compile("\\\\d|\\\\D|\\\\s|\\\\S|\\\\w|\\\\W");
 
         @Override
-        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext context) {
-            J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, context);
+        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
             //Checks if method invocation matches with String#replaceAll
             if (REPLACE_ALL.matches(invocation)) {

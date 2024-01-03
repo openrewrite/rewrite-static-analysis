@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.openrewrite.Cursor;
 import org.openrewrite.Incubating;
 import org.openrewrite.java.*;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -66,7 +68,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
     @Override
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
         J.ClassDeclaration c = super.visitClassDeclaration(classDecl, p);
-        if (!EXCLUDE_CLASS_TYPES.contains(c.getKind()) && !c.hasModifier(J.Modifier.Type.Abstract) && utilityClassMatcher.isRefactorableUtilityClass(c)) {
+        if (!EXCLUDE_CLASS_TYPES.contains(c.getKind()) && !c.hasModifier(J.Modifier.Type.Abstract) && utilityClassMatcher.isRefactorableUtilityClass(getCursor())) {
             /*
              * Note, it's a deliberate choice to have these be their own respective visitors rather than putting
              * all the logic in one visitor. It's conceptually easier to distinguish what each are doing.
@@ -79,7 +81,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
              * But, first and foremost, the main rationale is because it's hopefully conceptually easier to distinguish the steps
              * required for HideUtilityClassConstructorVisitor to work.
              */
-            c = (J.ClassDeclaration) new UtilityClassWithImplicitDefaultConstructorVisitor<>().visit(c, p, getCursor().getParentOrThrow());
+            c = (J.ClassDeclaration) new UtilityClassWithImplicitDefaultConstructorVisitor().visit(c, p, getCursor().getParentOrThrow());
             c = (J.ClassDeclaration) new UtilityClassWithExposedConstructorInspectionVisitor<>(c).visit(c, p, getCursor().getParentOrThrow());
         }
         return c;
@@ -88,11 +90,11 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
     /**
      * Adds an empty private constructor if the class has zero explicit constructors. This hides the default implicit constructor.
      */
-    private static class UtilityClassWithImplicitDefaultConstructorVisitor<P> extends JavaIsoVisitor<P> {
+    private class UtilityClassWithImplicitDefaultConstructorVisitor extends JavaIsoVisitor<P> {
 
         @Override
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
-            if (UtilityClassMatcher.hasImplicitDefaultConstructor(classDecl) &&
+            if (utilityClassMatcher.hasImplicitDefaultConstructor(classDecl) &&
                     !J.ClassDeclaration.Kind.Type.Enum.equals(classDecl.getKind())) {
                 classDecl = JavaTemplate.builder("private #{}() {}")
                         .contextSensitive()
@@ -155,7 +157,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
      * there are other cleanup rules which could benefit from these, such as "make utility class final", etc.
      * Until then, however, we'll keep this private and unexposed.
      */
-    private static final class UtilityClassMatcher {
+    private final class UtilityClassMatcher {
         private final Collection<AnnotationMatcher> ignorableAnnotations;
 
         private UtilityClassMatcher(Collection<String> ignorableAnnotations) {
@@ -165,18 +167,17 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
 
-        boolean hasIgnorableAnnotation(J.ClassDeclaration c) {
-            for (J.Annotation classAnn : c.getAllAnnotations()) {
-                for (AnnotationMatcher ignorableAnn : ignorableAnnotations) {
-                    if (ignorableAnn.matches(classAnn)) {
-                        return true;
-                    }
+        boolean hasIgnorableAnnotation(Cursor cursor) {
+            AnnotationService service = service(AnnotationService.class);
+            for (AnnotationMatcher ignorableAnn : ignorableAnnotations) {
+                if (service.matches(cursor, ignorableAnn)) {
+                    return true;
                 }
             }
             return false;
         }
 
-        static boolean hasMainMethod(J.ClassDeclaration c) {
+        boolean hasMainMethod(J.ClassDeclaration c) {
             if (c.getType() == null) {
                 return false;
             }
@@ -207,7 +208,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
          *
          * @return true if there are zero explicit constructors, meaning the Class has an implicit default constructor.
          */
-        static boolean hasImplicitDefaultConstructor(J.ClassDeclaration c) {
+        boolean hasImplicitDefaultConstructor(J.ClassDeclaration c) {
             for (Statement statement : c.getBody().getStatements()) {
                 if (statement instanceof J.MethodDeclaration) {
                     J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) statement;
@@ -219,13 +220,14 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
             return true;
         }
 
-        boolean isRefactorableUtilityClass(J.ClassDeclaration c) {
-            return UtilityClassMatcher.isUtilityClass(c) &&
-                    !hasIgnorableAnnotation(c) &&
-                    !UtilityClassMatcher.hasMainMethod(c);
+        boolean isRefactorableUtilityClass(Cursor cursor) {
+            J.ClassDeclaration c = cursor.getValue();
+            return isUtilityClass(c) &&
+                    !hasIgnorableAnnotation(cursor) &&
+                    !hasMainMethod(c);
         }
 
-        static boolean isUtilityClass(J.ClassDeclaration c) {
+        boolean isUtilityClass(J.ClassDeclaration c) {
             if (c.getImplements() != null || c.getExtends() != null) {
                 return false;
             }
@@ -246,7 +248,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         /**
          * @return -1 if a non-static field is found, else the count of non-private static fields.
          */
-        private static int countStaticFields(J.ClassDeclaration classDeclaration) {
+        private int countStaticFields(J.ClassDeclaration classDeclaration) {
             int count = 0;
 
             for (Statement statement : classDeclaration.getBody().getStatements()) {
@@ -269,7 +271,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         /**
          * @return -1 if a non-static method is found, else the count of non-private static methods.
          */
-        private static int countStaticMethods(J.ClassDeclaration classDeclaration) {
+        private int countStaticMethods(J.ClassDeclaration classDeclaration) {
             int count = 0;
             for (Statement statement : classDeclaration.getBody().getStatements()) {
                 if (!(statement instanceof J.MethodDeclaration)) {

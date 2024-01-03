@@ -64,8 +64,8 @@ public class RemoveUnusedPrivateFields extends Recipe {
             }
 
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, executionContext);
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
 
                 List<CheckField> checkFields = new ArrayList<>();
                 // Do not remove fields with `serialVersionUID` name.
@@ -117,7 +117,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             }
                             // Maybe remove next statement comment if variable declarations is removed
                             if (declarationDeleted.get()) {
-                                cd = (J.ClassDeclaration) new MaybeRemoveComment(checkField.nextStatement, cd).visitNonNull(cd, executionContext);
+                                cd = (J.ClassDeclaration) new MaybeRemoveComment(checkField.nextStatement, cd).visitNonNull(cd, ctx);
                             }
                         }
                     }
@@ -216,7 +216,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitStatement(Statement s, ExecutionContext executionContext) {
+        public J visitStatement(Statement s, ExecutionContext ctx) {
             if (s == statement) {
                 Space prefix = s.getPrefix();
                 // If we have at least one comment and there is no newline
@@ -230,11 +230,11 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
                 }
             }
-            return super.visitStatement(s, executionContext);
+            return super.visitStatement(s, ctx);
         }
 
         @Override
-        public J visitClassDeclaration(J.ClassDeclaration c, ExecutionContext executionContext) {
+        public J visitClassDeclaration(J.ClassDeclaration c, ExecutionContext ctx) {
             // We also need to remove comments attached to end of classDeclaration if it's the last statement
             if (statement == null && c == classDeclaration) {
                 Space end = c.getBody().getEnd();
@@ -246,7 +246,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                     ));
                 }
             }
-            return super.visitClassDeclaration(c, executionContext);
+            return super.visitClassDeclaration(c, ctx);
         }
     }
 

@@ -33,7 +33,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
     void changeSortedSetStreamToLinkedHashSet() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
             import java.util.Set;
             import java.util.stream.Collectors;
                                             
@@ -59,7 +60,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
     void changeSortedSetStreamToLinkedHashSetStaticImport() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
             import java.util.Set;
             import static java.util.stream.Collectors.toSet;
             
@@ -85,7 +87,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
     void ignoreCollectToLinkedHashSet() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
             import java.util.Set;
             import java.util.LinkedHashSet;
             import java.util.stream.Collectors;
@@ -102,7 +105,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
     void ignoreCollectToList() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
             import java.util.List;
             import java.util.Set;
             import java.util.stream.Collectors;

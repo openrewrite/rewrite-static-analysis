@@ -69,11 +69,13 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-            J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, executionContext);
+        public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+            J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
             final TypedTree varDeclsTypeExpression = varDecls.getTypeExpression();
-            if (varDecls.getVariables().size() == 1 && varDecls.getVariables().get(0).getInitializer() != null
-                && varDecls.getTypeExpression() instanceof J.ParameterizedType) {
+            if (varDeclsTypeExpression != null &&
+                varDecls.getVariables().size() == 1 &&
+                varDecls.getVariables().get(0).getInitializer() != null &&
+                varDecls.getTypeExpression() instanceof J.ParameterizedType) {
                 varDecls = varDecls.withVariables(ListUtils.map(varDecls.getVariables(), nv -> {
                     if (nv.getInitializer() instanceof J.NewClass) {
                         nv = nv.withInitializer(maybeRemoveParams(parameterizedTypes((J.ParameterizedType) varDeclsTypeExpression), (J.NewClass) nv.getInitializer()));
@@ -85,8 +87,8 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.Assignment visitAssignment(J.Assignment assignment, ExecutionContext executionContext) {
-            J.Assignment asgn = super.visitAssignment(assignment, executionContext);
+        public J.Assignment visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
+            J.Assignment asgn = super.visitAssignment(assignment, ctx);
             if (asgn.getAssignment() instanceof J.NewClass) {
                 JavaType.Parameterized assignmentType = TypeUtils.asParameterized(asgn.getType());
                 J.NewClass nc = (J.NewClass) asgn.getAssignment();
@@ -98,12 +100,12 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             if (isAParameter()) {
                 return method;
             }
 
-            J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+            J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
             JavaType.Method methodType = mi.getMethodType();
 
             if (methodType != null &&
@@ -180,8 +182,8 @@ public class UseDiamondOperator extends Recipe {
         }
 
         @Override
-        public J.Return visitReturn(J.Return _return, ExecutionContext executionContext) {
-            J.Return return_ = super.visitReturn(_return, executionContext);
+        public J.Return visitReturn(J.Return _return, ExecutionContext ctx) {
+            J.Return return_ = super.visitReturn(_return, ctx);
             J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass) return_.getExpression() : null;
             if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
                 J parentBlock = getCursor().dropParentUntil(v -> v instanceof J.MethodDeclaration || v instanceof J.Lambda).getValue();
@@ -213,8 +215,7 @@ public class UseDiamondOperator extends Recipe {
             if (paramTypes != null && (java9 || newClass.getBody() == null) && newClass.getClazz() instanceof J.ParameterizedType) {
                 J.ParameterizedType newClassType = (J.ParameterizedType) newClass.getClazz();
                 if (newClassType.getTypeParameters() != null) {
-                    if (paramTypes.size() != newClassType.getTypeParameters().size() ||
-                        newClassType.getTypeParameters().stream().anyMatch(p -> p instanceof J.AnnotatedType)) {
+                    if (paramTypes.size() != newClassType.getTypeParameters().size() || hasAnnotations(newClassType)) {
                         return newClass;
                     } else {
                         for (int i = 0; i < paramTypes.size(); i++) {
@@ -230,6 +231,24 @@ public class UseDiamondOperator extends Recipe {
                 }
             }
             return newClass;
+        }
+
+        private static boolean hasAnnotations(J type) {
+            if (type instanceof J.ParameterizedType) {
+                J.ParameterizedType parameterizedType = (J.ParameterizedType) type;
+                if (hasAnnotations(parameterizedType.getClazz())) {
+                    return true;
+                } else if (parameterizedType.getTypeParameters() != null) {
+                    for (Expression typeParameter : parameterizedType.getTypeParameters()) {
+                        if (hasAnnotations(typeParameter)) {
+                            return true;
+                        }
+                    }
+                }
+            } else {
+                return type instanceof J.AnnotatedType;
+            }
+            return false;
         }
 
         private boolean isAParameter() {

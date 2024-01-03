@@ -66,13 +66,13 @@ public class NoEmptyCollectionWithRawType extends Recipe {
             }
 
             @Override
-            public J visitImport(J.Import anImport, ExecutionContext executionContext) {
+            public J visitImport(J.Import anImport, ExecutionContext ctx) {
                 J.Identifier name = anImport.getQualid().getName();
                 if (anImport.isStatic() && name.getSimpleName().startsWith("EMPTY_") &&
                     TypeUtils.isOfClassType(anImport.getQualid().getTarget().getType(), "java.util.Collections")) {
                     return anImport.withQualid(anImport.getQualid().withName(name.withSimpleName(updateFields.get(name.getSimpleName()))));
                 }
-                return super.visitImport(anImport, executionContext);
+                return super.visitImport(anImport, ctx);
             }
 
             @Override

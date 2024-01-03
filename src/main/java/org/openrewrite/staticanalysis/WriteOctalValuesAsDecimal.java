@@ -50,7 +50,7 @@ public class WriteOctalValuesAsDecimal extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visitLiteral(J.Literal literal, ExecutionContext executionContext) {
+            public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 String src = literal.getValueSource();
                 if (src != null && src.startsWith("0")) {
                     if (src.length() >= 2 &&
@@ -65,7 +65,7 @@ public class WriteOctalValuesAsDecimal extends Recipe {
                         return literal.withValueSource(literal.getValue().toString());
                     }
                 }
-                return super.visitLiteral(literal, executionContext);
+                return super.visitLiteral(literal, ctx);
             }
         };
     }

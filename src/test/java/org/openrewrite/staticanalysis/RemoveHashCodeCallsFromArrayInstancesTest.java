@@ -36,7 +36,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     void replaceHashCodeCalls() {
         //language=java
         rewriteRun(
-          java("""
+          java(
+                """
             class SomeClass {
               public static void main(String[] args) {
                 int argHash = args.hashCode();
@@ -58,7 +59,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     void selectIsAMethod() {
         //language=java
         rewriteRun(
-          java("""
+          java(
+                """
             class SomeClass {
               void foo() {
                 int hashCode = getArr().hashCode();
@@ -88,7 +90,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
     void onlyRunOnArrayInstances() {
         //language=java
         rewriteRun(
-          java("""
+          java(
+                """
             class SomeClass {
               void foo() {
                 String name = "bill";

@@ -76,13 +76,13 @@ public class ControlFlowIndentation extends Recipe {
             }
 
             @Override
-            public J.Block visitBlock(J.Block block, ExecutionContext executionContext) {
-                J.Block b = super.visitBlock(block, executionContext);
+            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block b = super.visitBlock(block, ctx);
                 AtomicBoolean foundControlFlowRequiringReformatting = new AtomicBoolean(false);
                 return b.withStatements(ListUtils.map(b.getStatements(), (i, statement) -> {
                     if (foundControlFlowRequiringReformatting.get() || shouldReformat(statement)) {
                         foundControlFlowRequiringReformatting.set(true);
-                        return (Statement) new TabsAndIndentsVisitor<>(tabsAndIndentsStyle).visit(statement, executionContext, getCursor());
+                        return (Statement) new TabsAndIndentsVisitor<>(tabsAndIndentsStyle).visit(statement, ctx, getCursor());
                     }
                     return statement;
                 }));

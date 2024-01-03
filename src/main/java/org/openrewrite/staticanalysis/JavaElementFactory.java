@@ -83,7 +83,7 @@ final class JavaElementFactory {
         Scanner scanner = new Scanner(qualifiedName.replace('$', '.')).useDelimiter("\\.");
         for (int i = 0; scanner.hasNext(); i++) {
             String part = scanner.next();
-            JavaType typeOfContaining = scanner.hasNext() ? null : type;
+            JavaType typeOfContaining = scanner.hasNext() ? JavaType.Unknown.getInstance() : type;
             if (i > 0) {
                 name = new J.FieldAccess(
                         randomId(),
