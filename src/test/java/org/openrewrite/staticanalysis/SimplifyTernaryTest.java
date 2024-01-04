@@ -34,15 +34,21 @@ class SimplifyTernaryTest implements RewriteTest {
                   boolean trueCondition2 = false ? false : true;
                   boolean trueCondition3 = booleanExpression() ? true : false;
                   boolean trueCondition4 = trueCondition1 && trueCondition2 ? true : false;
+                  boolean trueCondition5 = !true ? false : true;
+                  boolean trueCondition6 = !false ? true : false;
                   
                   boolean falseCondition1 = true ? false : true;
-                  boolean falseCondition2 = false ? true : false;
+                  boolean falseCondition2 = !false ? false : true;
                   boolean falseCondition3 = booleanExpression() ? false : true;
                   boolean falseCondition4 = trueCondition1 && trueCondition2 ? false : true;
+                  boolean falseCondition5 = !false ? false : true;
+                  boolean falseCondition6 = !true ? true : false;
                   
                   boolean unchanged1 = booleanExpression() ? booleanExpression() : !booleanExpression();
                   boolean unchanged2 = booleanExpression() ? true : !booleanExpression();
                   boolean unchanged3 = booleanExpression() ? booleanExpression() : false;
+                  boolean unchanged4 = booleanExpression() && booleanExpression() ? true : false;
+                  boolean unchanged5 = booleanExpression() && booleanExpression() ? false : true;
                   
                   boolean booleanExpression() {
                     return true;
@@ -55,15 +61,21 @@ class SimplifyTernaryTest implements RewriteTest {
                   boolean trueCondition2 = true;
                   boolean trueCondition3 = booleanExpression();
                   boolean trueCondition4 = trueCondition1 && trueCondition2;
+                  boolean trueCondition5 = true;
+                  boolean trueCondition6 = true;
                   
                   boolean falseCondition1 = false;
                   boolean falseCondition2 = false;
                   boolean falseCondition3 = !(booleanExpression());
                   boolean falseCondition4 = !(trueCondition1 && trueCondition2);
+                  boolean falseCondition5 = false;
+                  boolean falseCondition6 = false;
                   
                   boolean unchanged1 = booleanExpression() ? booleanExpression() : !booleanExpression();
                   boolean unchanged2 = booleanExpression() ? true : !booleanExpression();
                   boolean unchanged3 = booleanExpression() ? booleanExpression() : false;
+                  boolean unchanged4 = booleanExpression() && booleanExpression() ? true : false;
+                  boolean unchanged5 = booleanExpression() && booleanExpression() ? false : true;
                   
                   boolean booleanExpression() {
                     return true;
