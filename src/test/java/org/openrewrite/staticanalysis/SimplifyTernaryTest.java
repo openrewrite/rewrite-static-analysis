@@ -21,9 +21,8 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 class SimplifyTernaryTest implements RewriteTest {
-
     @Test
-    void test() {
+    void simplified() {
         rewriteRun(
           spec -> spec.recipe(new SimplifyTernaryRecipes()),
           //language=java
@@ -44,11 +43,10 @@ class SimplifyTernaryTest implements RewriteTest {
                   boolean falseCondition5 = !false ? false : true;
                   boolean falseCondition6 = !true ? true : false;
                   
-                  boolean unchanged1 = booleanExpression() ? booleanExpression() : !booleanExpression();
-                  boolean unchanged2 = booleanExpression() ? true : !booleanExpression();
-                  boolean unchanged3 = booleanExpression() ? booleanExpression() : false;
-                  boolean unchanged4 = booleanExpression() && booleanExpression() ? true : false;
-                  boolean unchanged5 = booleanExpression() && booleanExpression() ? false : true;
+                  boolean binary1 = booleanExpression() && booleanExpression() ? true : false;
+                  boolean binary2 = booleanExpression() && booleanExpression() ? false : true;
+                  boolean binary3 = booleanExpression() || booleanExpression() ? true : false;
+                  boolean binary4 = booleanExpression() || booleanExpression() ? false : true;
                   
                   boolean booleanExpression() {
                     return true;
@@ -71,11 +69,31 @@ class SimplifyTernaryTest implements RewriteTest {
                   boolean falseCondition5 = false;
                   boolean falseCondition6 = false;
                   
+                  boolean binary1 = booleanExpression() && booleanExpression();
+                  boolean binary2 = !(booleanExpression() && booleanExpression());
+                  boolean binary3 = booleanExpression() || booleanExpression();
+                  boolean binary4 = !(booleanExpression() || booleanExpression());
+                  
+                  boolean booleanExpression() {
+                    return true;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unchanged() {
+        rewriteRun(
+          spec -> spec.recipe(new SimplifyTernaryRecipes()),
+          //language=java
+          java(
+            """
+              class Test {
                   boolean unchanged1 = booleanExpression() ? booleanExpression() : !booleanExpression();
                   boolean unchanged2 = booleanExpression() ? true : !booleanExpression();
                   boolean unchanged3 = booleanExpression() ? booleanExpression() : false;
-                  boolean unchanged4 = booleanExpression() && booleanExpression() ? true : false;
-                  boolean unchanged5 = booleanExpression() && booleanExpression() ? false : true;
                   
                   boolean booleanExpression() {
                     return true;
