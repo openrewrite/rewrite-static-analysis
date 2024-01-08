@@ -20,6 +20,12 @@ dependencies {
     implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
+    annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
+    implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
+    compileOnly("com.google.errorprone:error_prone_core:2.19.1:with-dependencies") {
+        exclude("com.google.auto.service", "auto-service-annotations")
+    }
+
     testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.openrewrite:rewrite-groovy")
     testImplementation("org.junit-pioneer:junit-pioneer:2.0.1")
