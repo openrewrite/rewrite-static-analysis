@@ -170,6 +170,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                     if (methodType.hasFlags(Flag.Static) ||
                         methodSelectMatchesFirstLambdaParameter(method, lambda)) {
+                        if (method.getType() instanceof JavaType.Parameterized) {
+                            return l;
+                        }
                         J.MemberReference updated = newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
                         doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
                         return updated;
