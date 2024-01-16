@@ -47,20 +47,20 @@ public class LambdaBlockToExpression extends Recipe {
                         if (lambda.getBody() instanceof J.Block) {
                             List<Statement> statements = ((J.Block) lambda.getBody()).getStatements();
                             if (statements.size() == 1) {
-                                Space prefix = statements.get(0).getPrefix();
-                                if(statements.get(0) instanceof J.Return) {
-                                    Expression expression = ((J.Return) statements.get(0)).getExpression();
+                                Statement statement = statements.get(0);
+                                Space prefix = statement.getPrefix();
+                                if (statement instanceof J.Return) {
+                                    Expression expression = ((J.Return) statement).getExpression();
                                     if (prefix.getComments().isEmpty()) {
                                         return l.withBody(expression);
                                     } else {
                                         return l.withBody(expression.withPrefix(prefix));
                                     }
-                                } else if (statements.get(0) instanceof J.MethodInvocation) {
-                                    J.MethodInvocation invocation = (J.MethodInvocation) statements.get(0);
+                                } else if (statement instanceof J.MethodInvocation) {
                                     if (prefix.getComments().isEmpty()) {
-                                        return l.withBody(invocation);
+                                        return l.withBody(statement);
                                     } else {
-                                        return l.withBody(invocation.withPrefix(prefix));
+                                        return l.withBody(statement.withPrefix(prefix));
                                     }
                                 }
                             }
