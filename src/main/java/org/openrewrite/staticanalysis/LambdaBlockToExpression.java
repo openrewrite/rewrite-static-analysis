@@ -58,7 +58,7 @@ public class LambdaBlockToExpression extends Recipe {
                                 } else if (statements.get(0) instanceof J.MethodInvocation) {
                                     J.MethodInvocation invocation = (J.MethodInvocation) statements.get(0);
                                     if (prefix.getComments().isEmpty()) {
-                                        return l.withBody(invocation.withPrefix(invocation.getPrefix().withWhitespace(" ")));
+                                        return l.withBody(invocation);
                                     } else {
                                         return l.withBody(invocation.withPrefix(prefix));
                                     }

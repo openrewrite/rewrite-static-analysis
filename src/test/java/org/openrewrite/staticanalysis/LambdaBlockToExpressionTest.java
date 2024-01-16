@@ -22,9 +22,6 @@ import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import java.math.BigDecimal;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.openrewrite.java.Assertions.java;
 
 class LambdaBlockToExpressionTest implements RewriteTest {
@@ -138,7 +135,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
               public class Main {
               
                 public void run() {
-                  Runnable runHelloWorld = () -> System.out.println("Hello world!");
+                  Runnable runHelloWorld = () ->
+                      System.out.println("Hello world!");
                   runHelloWorld.run();
                 }
               }
