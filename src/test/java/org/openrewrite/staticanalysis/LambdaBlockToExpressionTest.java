@@ -117,69 +117,6 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    //no idea what the problem is, are external libraries not possible in tests?
-    //test output:
-    //java.lang.IllegalStateException: LST contains missing or invalid type information
-    //Identifier->Annotation->MethodDeclaration->Block->ClassDeclaration->CompilationUnit
-    ///*~~(Identifier type is missing or malformed)~~>*/Test
-    //
-    //MethodInvocation->Block->MethodDeclaration->Block->ClassDeclaration->CompilationUnit
-    ///*~~(MethodInvocation type is missing or malformed)~~>*/assertThrows(ArithmeticException.class, () -> {
-    //  BigDecimal.ONE.divide(BigDecimal.ZERO);
-    //})
-    //    at org.openrewrite.java.Assertions.assertValidTypes(Assertions.java:87)
-    //    at org.openrewrite.java.Assertions.validateTypes(Assertions.java:57)
-    //    at org.openrewrite.java.Assertions$$Lambda$438/0x00007fbb18152c28.accept(Unknown Source)
-    //    at org.openrewrite.test.RewriteTest.rewriteRun(RewriteTest.java:304)
-    //    at org.openrewrite.test.RewriteTest.rewriteRun(RewriteTest.java:132)
-    //    at org.openrewrite.test.RewriteTest.rewriteRun(RewriteTest.java:127)
-    //    at org.openrewrite.staticanalysis.LambdaBlockToExpressionTest.simplifyLambdaBlockReturningVoidAsWell(LambdaBlockToExpressionTest.java:121)
-    //    at java.base/java.lang.reflect.Method.invoke(Method.java:568)
-    //    at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
-    //    at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
-    @Test
-    void simplifyLambdaBlockReturningVoidAsWell() {
-        //language=java
-        rewriteRun(
-          java(
-            """
-              import static org.junit.jupiter.api.Assertions.assertThrows;
-              
-              import java.math.BigDecimal;
-              import org.junit.jupiter.api.Test;
-              
-              public class SimpleTest {
-              
-                @Test
-                void shouldFailOnDivisionByZero() {
-                  assertThrows(ArithmeticException.class, () -> {
-                    BigDecimal.ONE.divide(BigDecimal.ZERO);
-                  });
-                }
-              
-              }
-              """,
-            """
-              import static org.junit.jupiter.api.Assertions.assertThrows;
-              
-              import java.math.BigDecimal;
-              import org.junit.jupiter.api.Test;
-              
-              public class SimpleTest {
-              
-                @Test
-                void shouldFailOnDivisionByZero() {
-                  assertThrows(ArithmeticException.class, () -> BigDecimal.ONE.divide(BigDecimal.ZERO));
-                }
-              
-              }
-              """
-          )
-        );
-    }
-
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
     @Test
     void simplifyLambdaBlockReturningVoidAsWell2() {
