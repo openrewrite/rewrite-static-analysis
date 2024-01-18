@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
@@ -230,11 +232,11 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               public class Vehicle {
                   private VehicleUsage vehicleUsage;
-              
+                            
                   public class VehicleUsage {
                       private final String vehicleId;
                   }
-              
+                            
                   public doSomethingWithAVehicle() {
                       vehicleUsage = new VehicleUsage();
                       vehicleUsage.vehicleId = "vu50";
@@ -262,6 +264,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
     @Test
     void removeCommentsLastExpression() {
         rewriteRun(
@@ -394,20 +397,25 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
-    @Test
-    void doNotRemoveFieldsIfLombokDataAnnotationIsPresent() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+      "@lombok.Data",
+      "@lombok.Value",
+      "@lombok.Getter",
+      "@lombok.Setter",
+    })
+    void doNotRemoveFieldsIfLombokDataAnnotationIsPresent(String annotation) {
         rewriteRun(
-            spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
-            //language=java
-            java(
-                """
-                  import lombok.Data;
-                  @Data
-                  class Test {
-                      private int a = 1;
-                  }
-                  """
-            )
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              %s
+              class A {
+                  private int a = 1;
+              }
+              """.formatted(annotation)
+          )
         );
     }
 }
