@@ -393,22 +393,22 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-		@Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
-		@Test
-		void doNotRemoveFieldsIfLombokDataAnnotationIsPresent() {
-				rewriteRun(
-						spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
-						//language=java
-						java(
-								"""
-									import lombok.Data;
-									@Data
-									class Test {
-											private int a = 1;
-									}
-									"""
-						)
-				);
-		}
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
+    @Test
+    void doNotRemoveFieldsIfLombokDataAnnotationIsPresent() {
+        rewriteRun(
+            spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+            //language=java
+            java(
+                """
+                  import lombok.Data;
+                  @Data
+                  class Test {
+                      private int a = 1;
+                  }
+                  """
+            )
+        );
+    }
 }
 

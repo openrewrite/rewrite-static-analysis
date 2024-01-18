@@ -75,11 +75,11 @@ public class RemoveUnusedPrivateFields extends Recipe {
                 boolean skipSerialVersionUID = cd.getType() == null ||
                         cd.getType().isAssignableTo("java.io.Serializable");
 
-								// Do not remove fields if class has Lombok @Data annotation
-		            Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
-		            if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_DATA)) {
-				            return cd;
-		            }
+                // Do not remove fields if class has Lombok @Data annotation
+                Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
+                if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_DATA)) {
+                    return cd;
+                }
 
                 List<Statement> statements = cd.getBody().getStatements();
                 for (int i = 0; i < statements.size(); i++) {
