@@ -51,9 +51,4 @@ public class UnnecessaryParentheses extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new UnnecessaryParenthesesVisitor<>();
     }
-
-    @Override
-    public boolean causesAnotherCycle() {
-        return true;
-    }
 }

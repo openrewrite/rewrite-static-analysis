@@ -60,7 +60,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Repeat.repeatUntilStable(new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = (J.NewClass) super.visitNewClass(newClass, ctx);
@@ -239,9 +239,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
                 return "null";
             }
-        }
-
-                ;
+        });
     }
 
     private static boolean usesThis(Cursor cursor) {
