@@ -22,8 +22,10 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
@@ -33,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class RemoveUnusedPrivateFields extends Recipe {
+		private static final AnnotationMatcher LOMBOK_DATA = new AnnotationMatcher("@lombok.Data");
 
     @Override
     public String getDisplayName() {
@@ -71,6 +74,12 @@ public class RemoveUnusedPrivateFields extends Recipe {
                 // Do not remove fields with `serialVersionUID` name.
                 boolean skipSerialVersionUID = cd.getType() == null ||
                         cd.getType().isAssignableTo("java.io.Serializable");
+
+								// Do not remove fields if class has Lombok @Data annotation
+		            Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
+		            if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_DATA)) {
+				            return cd;
+		            }
 
                 List<Statement> statements = cd.getBody().getStatements();
                 for (int i = 0; i < statements.size(); i++) {

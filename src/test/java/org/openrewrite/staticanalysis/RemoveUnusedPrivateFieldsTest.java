@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -391,5 +392,23 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
+		@Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
+		@Test
+		void doNotRemoveFieldsIfLombokDataAnnotationIsPresent() {
+				rewriteRun(
+						spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+						//language=java
+						java(
+								"""
+									import lombok.Data;
+									@Data
+									class Test {
+											private int a = 1;
+									}
+									"""
+						)
+				);
+		}
 }
 
