@@ -39,10 +39,7 @@ import java.util.stream.Collectors;
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class RemoveUnusedPrivateFields extends Recipe {
-    private static final Collection<AnnotationMatcher> LOMBOK_ANNOTATIONS = Arrays.stream(new String[]{
-                    "@lombok.Data", "@lombok.Getter", "@lombok.Setter", "@lombok.Value"})
-            .map(AnnotationMatcher::new)
-            .collect(Collectors.toList());
+    private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
     @Override
     public String getDisplayName() {
@@ -79,12 +76,8 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
                 // Do not remove fields if class has Lombok @Data annotation
                 Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
-                if (clz.hasNext()) {
-                    Cursor next = clz.next();
-                    AnnotationService annotationService = service(AnnotationService.class);
-                    if (LOMBOK_ANNOTATIONS.stream().anyMatch(m -> annotationService.matches(next, m))) {
-                        return cd;
-                    }
+                if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_ANNOTATION)) {
+                    return cd;
                 }
 
                 List<CheckField> checkFields = new ArrayList<>();
