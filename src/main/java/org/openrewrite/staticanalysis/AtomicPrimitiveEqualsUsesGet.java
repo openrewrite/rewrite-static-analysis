@@ -35,7 +35,7 @@ import java.util.Set;
 
 public class AtomicPrimitiveEqualsUsesGet extends Recipe {
 
-    public static final Set<String> ATOMIC_PRIMITIVE_TYPES = new HashSet<>(Arrays.asList(
+    private static final Set<String> ATOMIC_PRIMITIVE_TYPES = new HashSet<>(Arrays.asList(
             "java.util.concurrent.atomic.AtomicBoolean",
             "java.util.concurrent.atomic.AtomicInteger",
             "java.util.concurrent.atomic.AtomicLong"

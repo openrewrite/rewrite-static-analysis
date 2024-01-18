@@ -51,7 +51,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(STRING_BUILDER_APPEND), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(STRING_BUILDER_APPEND), Repeat.repeatUntilStable(new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
@@ -116,7 +116,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
                 return m;
             }
-        });
+        }));
     }
 
     /**
