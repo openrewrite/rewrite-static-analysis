@@ -95,8 +95,8 @@ public class LambdaBlockToExpression extends Recipe {
     // Check whether a method has overloading methods in the declaring class
     static boolean hasAmbiguousMethodOverloading(MethodCall method) {
         JavaType.Method methodType = method.getMethodType();
-        String methodName = methodType.getName();
-        return methodType != null && hasAmbiguousMethodOverloading(methodType, method.getArguments(), methodName);
+        return methodType != null
+                && hasAmbiguousMethodOverloading(methodType, method.getArguments(), methodType.getName());
     }
 
     // TODO this is actually more complex in the presence of generics and inheritance
