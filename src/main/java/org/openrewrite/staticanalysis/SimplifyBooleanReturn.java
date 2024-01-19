@@ -210,10 +210,5 @@ public class SimplifyBooleanReturn extends Recipe {
             }
         };
     }
-
-    @Override
-    public boolean causesAnotherCycle() {
-        return true;
-    }
 }
 
