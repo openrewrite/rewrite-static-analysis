@@ -79,6 +79,17 @@ public class LambdaBlockToExpression extends Recipe {
         );
     }
 
+    private static boolean hasLambdaArgument(J.MethodInvocation method) {
+        boolean hasLambdaArgument = false;
+        for (Expression arg : method.getArguments()) {
+            if (arg instanceof J.Lambda) {
+                hasLambdaArgument = true;
+                break;
+            }
+        }
+        return hasLambdaArgument;
+    }
+
     // Check whether a method has overloading methods in the declaring class
     private static boolean hasMethodOverloading(J.MethodInvocation method) {
         JavaType.Method methodType = method.getMethodType();
@@ -109,14 +120,4 @@ public class LambdaBlockToExpression extends Recipe {
                 .orElse(false);
     }
 
-    private static boolean hasLambdaArgument(J.MethodInvocation method) {
-        boolean hasLambdaArgument = false;
-        for (Expression arg : method.getArguments()) {
-            if (arg instanceof J.Lambda) {
-                hasLambdaArgument = true;
-                break;
-            }
-        }
-        return hasLambdaArgument;
-    }
 }
