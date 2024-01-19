@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.kotlin.tree.K;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -69,6 +70,12 @@ public class MissingOverrideAnnotation extends Recipe {
 
     private class MissingOverrideAnnotationVisitor extends JavaIsoVisitor<ExecutionContext> {
         private final AnnotationMatcher OVERRIDE_ANNOTATION = new AnnotationMatcher("@java.lang.Override");
+
+        @Override
+        public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
+            // Kotlin has a dedicated `override` keyword which is enforced by the compiler
+            return super.isAcceptable(sourceFile, ctx) && !(sourceFile instanceof K.CompilationUnit);
+        }
 
         private Cursor getCursorToParentScope(Cursor cursor) {
             return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration);

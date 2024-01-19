@@ -299,10 +299,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   void bar(Consumer<Integer> c) {
                   }
                   void foo() {
-                      bar(i -> {
-                          bar(i2 -> {
-                          });
-                      });
+                      bar(i ->
+                              bar(i2 -> {
+                              }));
                   }
               }
               """
