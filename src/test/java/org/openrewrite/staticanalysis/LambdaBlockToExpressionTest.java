@@ -26,12 +26,11 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 class LambdaBlockToExpressionTest implements RewriteTest {
-
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new LambdaBlockToExpression())
             .parser(JavaParser.fromJavaVersion()
-              .classpathFromResources(new InMemoryExecutionContext(), "junit-jupiter-api-5.9", "junit-jupiter-params-5.9")
+              .classpathFromResources(new InMemoryExecutionContext(), "junit-jupiter-api-5.10")
               .logCompilationWarningsAndErrors(true));
     }
 
@@ -78,7 +77,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
             """
               import java.util.function.Function;
               class Test {
-                  Function<Integer, Integer> f = n -> 
+                  Function<Integer, Integer> f = n ->
                       // The buttonType will always be "cancel", even if we pressed one of the entry type buttons
                       n + 1;
               }
@@ -161,7 +160,6 @@ class LambdaBlockToExpressionTest implements RewriteTest {
               import org.junit.jupiter.api.Test;
               
               public class Main {
-              
                 @Test
                 public void test() {
                   assertThrows(ArithmeticException.class, () -> {
@@ -177,17 +175,14 @@ class LambdaBlockToExpressionTest implements RewriteTest {
               import org.junit.jupiter.api.Test;
               
               public class Main {
-              
                 @Test
                 public void test() {
                   assertThrows(ArithmeticException.class, () ->
-                    BigDecimal.ONE.divide(BigDecimal.ZERO)
-                  );
+                    BigDecimal.ONE.divide(BigDecimal.ZERO));
                 }
               }
               """
           )
         );
     }
-
 }
