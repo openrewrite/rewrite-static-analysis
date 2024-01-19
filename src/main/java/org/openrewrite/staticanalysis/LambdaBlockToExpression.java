@@ -23,8 +23,10 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class LambdaBlockToExpression extends Recipe {
     @Override
@@ -70,7 +72,7 @@ public class LambdaBlockToExpression extends Recipe {
 
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        if (hasLambdaArgument(method) && hasMethodOverloading(method)) {
+                        if (hasLambdaArgument(method) && hasAmbiguousMethodOverloading(method)) {
                             return method;
                         }
                         return super.visitMethodInvocation(method, ctx);
@@ -90,34 +92,53 @@ public class LambdaBlockToExpression extends Recipe {
         return hasLambdaArgument;
     }
 
-    // Check whether a method has overloading methods in the declaring class
-    private static boolean hasMethodOverloading(J.MethodInvocation method) {
+        // Check whether a method has overloading methods in the declaring class
+    static boolean hasAmbiguousMethodOverloading(J.MethodInvocation method) {
         JavaType.Method methodType = method.getMethodType();
+
+        if(methodType == null) {
+            return false;
+        }
         int numberOfArguments = method.getArguments().size();
-        return methodType != null && hasMethodOverloading(methodType, numberOfArguments);
-    }
 
     // TODO this is actually more complex in the presence of generics and inheritance
-    static boolean hasMethodOverloading(JavaType.Method methodType, int numberOfArguments) {
         String methodName = methodType.getName();
-        return Optional.of(methodType)
+
+        //all methods of the given type
+        List<JavaType.Method> methodsOfType = Optional.of(methodType)
                 .map(JavaType.Method::getDeclaringType)
                 .filter(JavaType.Class.class::isInstance)
                 .map(JavaType.Class.class::cast)
                 .map(JavaType.Class::getMethods)
-                .map(methods -> {
-                    int overloadingCount = 0;
-                    for (JavaType.Method dm : methods) {
-                        if (dm.getName().equals(methodName) &&
-                            dm.getParameterTypes().size() == numberOfArguments) {
-                            if (++overloadingCount > 1) {
-                                return true;
-                            }
-                        }
-                    }
+                .orElse(Collections.emptyList());
+
+        List<JavaType.Method> potentiallyOverLoadedMethods = methodsOfType.stream()
+                .filter(dm -> dm.getName().equals(methodName))
+                .filter(dm -> dm.getParameterTypes().size() == numberOfArguments)
+                .collect(Collectors.toList());
+
+        //if there are less than 2 such methods, then there is no ambiguity
+        if(potentiallyOverLoadedMethods.size() <= 1) {
+            return false;
+        }
+
+        //if there is a position where
+        //  - the argument is a lambda
+        //  - the parameters of all potential methods have the same type
+        // then there is no ambiguity
+        for (int i = 0; i < numberOfArguments; i++) {
+            int finalI = i;
+            if (method.getArguments().get(i) instanceof J.Lambda) {
+                long distinctElementsCount = potentiallyOverLoadedMethods.stream()
+                    .map(m -> m.getParameterTypes().get(finalI))
+                    .distinct().count();
+                if (distinctElementsCount == 1) {
                     return false;
-                })
-                .orElse(false);
+                }
+            }
+        }
+        //otherwise, there must be ambiguity
+        return true;
     }
 
 }
