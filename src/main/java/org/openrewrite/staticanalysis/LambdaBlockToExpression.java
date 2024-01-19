@@ -82,11 +82,12 @@ public class LambdaBlockToExpression extends Recipe {
     // Check whether a method has overloading methods in the declaring class
     private static boolean hasMethodOverloading(J.MethodInvocation method) {
         JavaType.Method methodType = method.getMethodType();
-        return methodType != null && hasMethodOverloading(methodType);
+        int numberOfArguments = method.getArguments().size();
+        return methodType != null && hasMethodOverloading(methodType, numberOfArguments);
     }
 
     // TODO this is actually more complex in the presence of generics and inheritance
-    static boolean hasMethodOverloading(JavaType.Method methodType) {
+    static boolean hasMethodOverloading(JavaType.Method methodType, int numberOfArguments) {
         String methodName = methodType.getName();
         return Optional.of(methodType)
                 .map(JavaType.Method::getDeclaringType)
@@ -96,7 +97,8 @@ public class LambdaBlockToExpression extends Recipe {
                 .map(methods -> {
                     int overloadingCount = 0;
                     for (JavaType.Method dm : methods) {
-                        if (dm.getName().equals(methodName)) {
+                        if (dm.getName().equals(methodName) &&
+                            dm.getParameterTypes().size() == numberOfArguments) {
                             if (++overloadingCount > 1) {
                                 return true;
                             }

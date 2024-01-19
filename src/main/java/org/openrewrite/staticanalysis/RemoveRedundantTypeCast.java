@@ -74,7 +74,8 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
-                    if (methodType == null || hasMethodOverloading(methodType)) {
+                    int numberOfArguments = methodCall.getArguments().size();
+                    if (methodType == null || hasMethodOverloading(methodType, numberOfArguments)) {
                         return visited;
                     } else if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
