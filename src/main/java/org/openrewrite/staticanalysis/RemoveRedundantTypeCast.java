@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
+import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasAmbiguousMethodOverloading;
 
 @Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
@@ -74,8 +74,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
-                    int numberOfArguments = methodCall.getArguments().size();
-                    if (methodType == null || hasMethodOverloading(methodType, numberOfArguments)) {
+                    if (methodType == null || hasAmbiguousMethodOverloading(methodCall)) {
                         return visited;
                     } else if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();

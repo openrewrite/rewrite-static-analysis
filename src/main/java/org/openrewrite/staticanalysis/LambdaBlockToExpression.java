@@ -92,17 +92,22 @@ public class LambdaBlockToExpression extends Recipe {
         return hasLambdaArgument;
     }
 
-        // Check whether a method has overloading methods in the declaring class
-    static boolean hasAmbiguousMethodOverloading(J.MethodInvocation method) {
+    // Check whether a method has overloading methods in the declaring class
+    private static boolean hasAmbiguousMethodOverloading(J.MethodInvocation method) {
         JavaType.Method methodType = method.getMethodType();
+        String methodName = methodType.getName();
+        return methodType != null && hasAmbiguousMethodOverloading(methodType, method.getArguments(), methodName);
+    }
 
-        if(methodType == null) {
-            return false;
-        }
-        int numberOfArguments = method.getArguments().size();
+    static boolean hasAmbiguousMethodOverloading(MethodCall method) {
+        JavaType.Method methodType = method.getMethodType();
+        String methodName = methodType.getName();
+        return methodType != null && hasAmbiguousMethodOverloading(methodType, method.getArguments(), methodName);
+    }
 
     // TODO this is actually more complex in the presence of generics and inheritance
-        String methodName = methodType.getName();
+    static boolean hasAmbiguousMethodOverloading(JavaType.Method methodType, List<Expression> arguments, String methodName) {
+        int numberOfArguments = arguments.size();
 
         //all methods of the given type
         List<JavaType.Method> methodsOfType = Optional.of(methodType)
@@ -128,7 +133,7 @@ public class LambdaBlockToExpression extends Recipe {
         // then there is no ambiguity
         for (int i = 0; i < numberOfArguments; i++) {
             int finalI = i;
-            if (method.getArguments().get(i) instanceof J.Lambda) {
+            if (arguments.get(i) instanceof J.Lambda) {
                 long distinctElementsCount = potentiallyOverLoadedMethods.stream()
                     .map(m -> m.getParameterTypes().get(finalI))
                     .distinct().count();
