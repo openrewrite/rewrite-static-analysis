@@ -490,4 +490,29 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void varargsButTwoArrays() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                String foo(Object[] array1, Object[] array2) {
+                    return String.format("%s %s", array1, array2);
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                String foo(Object[] array1, Object[] array2) {
+                    return String.format("%s %s", Arrays.toString(array1), Arrays.toString(array2));
+                }
+              }
+              """
+          )
+        );
+    }
 }
