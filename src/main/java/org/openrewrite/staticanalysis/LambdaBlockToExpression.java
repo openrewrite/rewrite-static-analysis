@@ -125,6 +125,9 @@ public class LambdaBlockToExpression extends Recipe {
         //  - the argument is a lambda
         //  - the parameters of all potential methods have the same type
         // then there is no ambiguity
+        //TODO we currently assume that there is at most one lambda among the arguments. Handing several lambdas will
+        // require a bigger rewrite because `visitMethodInvocation` can only return true or false, but not which lambda
+        // to replace
         for (int i = 0; i < numberOfArguments; i++) {
             int finalI = i;
             if (arguments.get(i) instanceof J.Lambda) {
