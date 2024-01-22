@@ -77,9 +77,4 @@ public class SimplifyBooleanExpression extends Recipe {
             }
         };
     }
-
-    @Override
-    public boolean causesAnotherCycle() {
-        return true;
-    }
 }
