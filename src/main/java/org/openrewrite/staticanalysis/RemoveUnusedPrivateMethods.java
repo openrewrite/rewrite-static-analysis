@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.NoMissingTypes;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
@@ -58,7 +59,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                 JavaType.Method methodType = method.getMethodType();
                 if (methodType != null && methodType.hasFlags(Flag.Private) &&
                     !method.isConstructor() &&
-                    method.getAllAnnotations().isEmpty()) {
+                    service(AnnotationService.class).getAllAnnotations(getCursor()).isEmpty()) {
 
                     J.ClassDeclaration classDeclaration = getCursor().firstEnclosing(J.ClassDeclaration.class);
                     if (classDeclaration == null) {

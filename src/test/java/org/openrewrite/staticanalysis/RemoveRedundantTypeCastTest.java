@@ -455,4 +455,31 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void removeImport() {
+        rewriteRun(
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+              
+              class Test {
+                  List method(List list) {
+                      return (ArrayList) list;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              
+              class Test {
+                  List method(List list) {
+                      return list;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

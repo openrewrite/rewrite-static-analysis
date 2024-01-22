@@ -67,8 +67,8 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
         );
         return Preconditions.check(condition, new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
-                J.NewClass nc = (J.NewClass) super.visitNewClass(newClass, executionContext);
+            public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                J.NewClass nc = (J.NewClass) super.visitNewClass(newClass, ctx);
                 JavaType.FullyQualified type = TypeUtils.asFullyQualified(nc.getType());
                 if (type != null && nc.getArguments().size() == 1) {
                     Expression arg = nc.getArguments().get(0);

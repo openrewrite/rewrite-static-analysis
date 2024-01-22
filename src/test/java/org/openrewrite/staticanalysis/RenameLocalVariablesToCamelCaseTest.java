@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Recipe;
@@ -307,15 +306,15 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     @Test
-    void doNotRenameUnderscoreOnly() {
+    void doNotRenameUnderscoresOnly() {
         rewriteRun(
           //language=java
           java(
             """
               class Test {
                   public int testFoo() {
-                      int _ = 20;
-                      return _;
+                      int __ = 20;
+                      return __;
                   }
               }
               """

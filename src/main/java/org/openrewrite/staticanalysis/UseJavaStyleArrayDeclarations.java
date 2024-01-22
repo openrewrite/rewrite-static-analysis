@@ -56,8 +56,8 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public VariableDeclarations visitVariableDeclarations(VariableDeclarations multiVariable, ExecutionContext executionContext) {
-                VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, executionContext);
+            public VariableDeclarations visitVariableDeclarations(VariableDeclarations multiVariable, ExecutionContext ctx) {
+                VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
                 List<JLeftPadded<Space>> dimensions = getCursor().pollMessage("VAR_DIMENSIONS");
                 if (dimensions != null) {
                     varDecls = varDecls.withDimensionsBeforeName(dimensions);
@@ -66,8 +66,8 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
             }
 
             @Override
-            public VariableDeclarations.NamedVariable visitVariable(VariableDeclarations.NamedVariable variable, ExecutionContext executionContext) {
-                VariableDeclarations.NamedVariable nv = super.visitVariable(variable, executionContext);
+            public VariableDeclarations.NamedVariable visitVariable(VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+                VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
                 if (!nv.getDimensionsAfterName().isEmpty()) {
                     getCursor().dropParentUntil(VariableDeclarations.class::isInstance).putMessage("VAR_DIMENSIONS", nv.getDimensionsAfterName());
                     nv = nv.withDimensionsAfterName(ListUtils.map(nv.getDimensionsAfterName(), dim -> null));

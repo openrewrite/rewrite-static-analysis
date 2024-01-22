@@ -114,4 +114,35 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
+    @Test
+    void simplifyLambdaBlockReturningVoidAsWell2() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              public class Main {
+              
+                public void run() {
+                  Runnable runHelloWorld = () -> {
+                      System.out.println("Hello world!");
+                  };
+                  runHelloWorld.run();
+                }
+              }
+              """,
+            """
+              public class Main {
+              
+                public void run() {
+                  Runnable runHelloWorld = () ->
+                      System.out.println("Hello world!");
+                  runHelloWorld.run();
+                }
+              }
+              """
+          )
+        );
+    }
+
 }

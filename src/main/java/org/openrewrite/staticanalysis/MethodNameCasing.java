@@ -41,6 +41,9 @@ import static java.util.Objects.requireNonNull;
 @EqualsAndHashCode(callSuper = true)
 public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
 
+    private static final Pattern STANDARD_METHOD_NAME = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
+    private static final Pattern SNAKE_CASE = Pattern.compile("^[a-zA-Z0-9]+_\\w+$");
+
     @Option(displayName = "Apply recipe to test source set",
             description = "Changes only apply to main by default. `includeTestSources` will apply the recipe to `test` source files.",
             required = false)
@@ -80,8 +83,6 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getScanner(List<ChangeMethodName> changes) {
-        Pattern standardMethodName = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
-        Pattern snakeCase = Pattern.compile("^[a-zA-Z0-9]+_\\w+$");
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
@@ -108,13 +109,13 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
                     enclosingClass.getType() != null &&
                     !method.isConstructor() &&
                     !TypeUtils.isOverride(method.getMethodType()) &&
-                    !standardMethodName.matcher(method.getSimpleName()).matches() &&
+                    !STANDARD_METHOD_NAME.matcher(method.getSimpleName()).matches() &&
                     !method.getSimpleName().startsWith("_")) {
                     StringBuilder standardized = new StringBuilder();
                     String normalized = VariableNameUtils.normalizeName(method.getSimpleName());
                     char[] name = normalized.toCharArray();
 
-                    if (snakeCase.matcher(normalized).matches()) {
+                    if (SNAKE_CASE.matcher(normalized).matches()) {
                         standardized.append(NameCaseConvention.format(NameCaseConvention.LOWER_CAMEL, normalized));
                     } else {
                         for (int i = 0; i < name.length; i++) {
@@ -167,7 +168,7 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+                    JavaSourceFile cu = (JavaSourceFile) tree;
                     for (ChangeMethodName changeMethodName : changes) {
                         cu = (JavaSourceFile) changeMethodName.getVisitor().visitNonNull(cu, ctx);
                     }

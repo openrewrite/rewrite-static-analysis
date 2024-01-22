@@ -54,8 +54,8 @@ public class FinalizeMethodArguments extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public MethodDeclaration visitMethodDeclaration(MethodDeclaration methodDeclaration, ExecutionContext executionContext) {
-                MethodDeclaration declarations = super.visitMethodDeclaration(methodDeclaration, executionContext);
+            public MethodDeclaration visitMethodDeclaration(MethodDeclaration methodDeclaration, ExecutionContext ctx) {
+                MethodDeclaration declarations = super.visitMethodDeclaration(methodDeclaration, ctx);
 
                 if (isWrongKind(methodDeclaration) ||
                     isEmpty(declarations.getParameters()) ||
@@ -92,7 +92,7 @@ public class FinalizeMethodArguments extends Recipe {
             }
 
             @Override
-            public boolean isAcceptable(final SourceFile sourceFile, final ExecutionContext executionContext) {
+            public boolean isAcceptable(final SourceFile sourceFile, final ExecutionContext ctx) {
                 return sourceFile instanceof JavaSourceFile;
             }
         };

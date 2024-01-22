@@ -524,7 +524,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
         void doReplaceNestedOrTernaryContainingMethodCall() {
             //language=java
             rewriteRun(
-              java("""
+              java(
+                    """
                 class M{
                   static String a(){return "a";}
                   static String b(){return "b";}
@@ -1090,7 +1091,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
             void doReplaceNestedOrTernaryContainingMethodCall() {
                 //language=java
                 rewriteRun(
-                  java("""
+                  java(
+                        """
                     class M{
                       static String a(){return "a";}
                       static String b(){return "b";}

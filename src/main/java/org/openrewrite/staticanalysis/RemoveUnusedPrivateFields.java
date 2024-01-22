@@ -22,17 +22,24 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.lang.Nullable;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class RemoveUnusedPrivateFields extends Recipe {
+    private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
     @Override
     public String getDisplayName() {
@@ -64,13 +71,19 @@ public class RemoveUnusedPrivateFields extends Recipe {
             }
 
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, executionContext);
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+
+                // Do not remove fields if class has Lombok @Data annotation
+                Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
+                if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_ANNOTATION)) {
+                    return cd;
+                }
 
                 List<CheckField> checkFields = new ArrayList<>();
                 // Do not remove fields with `serialVersionUID` name.
                 boolean skipSerialVersionUID = cd.getType() == null ||
-                        cd.getType().isAssignableTo("java.io.Serializable");
+                                               cd.getType().isAssignableTo("java.io.Serializable");
 
                 List<Statement> statements = cd.getBody().getStatements();
                 for (int i = 0; i < statements.size(); i++) {
@@ -79,8 +92,8 @@ public class RemoveUnusedPrivateFields extends Recipe {
                         J.VariableDeclarations vd = (J.VariableDeclarations) statement;
                         // RSPEC-1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
-                                vd.getLeadingAnnotations().isEmpty() &&
-                                vd.hasModifier(J.Modifier.Type.Private)) {
+                            vd.getLeadingAnnotations().isEmpty() &&
+                            vd.hasModifier(J.Modifier.Type.Private)) {
                             Statement nextStatement = i < statements.size() - 1 ? statements.get(i + 1) : null;
                             checkFields.add(new CheckField(vd, nextStatement));
                         }
@@ -117,7 +130,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             }
                             // Maybe remove next statement comment if variable declarations is removed
                             if (declarationDeleted.get()) {
-                                cd = (J.ClassDeclaration) new MaybeRemoveComment(checkField.nextStatement, cd).visitNonNull(cd, executionContext);
+                                cd = (J.ClassDeclaration) new MaybeRemoveComment(checkField.nextStatement, cd).visitNonNull(cd, ctx);
                             }
                         }
                     }
@@ -128,10 +141,10 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
             private boolean isSerialVersionUid(J.VariableDeclarations vd) {
                 return vd.hasModifier(J.Modifier.Type.Private) &&
-                        vd.hasModifier(J.Modifier.Type.Static) &&
-                        vd.hasModifier(J.Modifier.Type.Final) &&
-                        TypeUtils.isOfClassType(vd.getType(), "long") &&
-                        vd.getVariables().stream().anyMatch(it -> "serialVersionUID".equals(it.getSimpleName()));
+                       vd.hasModifier(J.Modifier.Type.Static) &&
+                       vd.hasModifier(J.Modifier.Type.Final) &&
+                       TypeUtils.isOfClassType(vd.getType(), "long") &&
+                       vd.getVariables().stream().anyMatch(it -> "serialVersionUID".equals(it.getSimpleName()));
             }
         };
     }
@@ -152,26 +165,26 @@ public class RemoveUnusedPrivateFields extends Recipe {
             JavaIsoVisitor<Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>>> visitor =
                     new JavaIsoVisitor<Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>>>() {
 
-                @Override
-                public J.Identifier visitIdentifier(J.Identifier identifier,
-                                                    Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> identifiers) {
-                    if (identifier.getFieldType() != null && signatureMap.containsKey(identifier.getFieldType().toString())) {
-                        Cursor parent = getCursor().dropParentUntil(is ->
-                                is instanceof J.VariableDeclarations ||
-                                is instanceof J.ClassDeclaration);
+                        @Override
+                        public J.Identifier visitIdentifier(J.Identifier identifier,
+                                                            Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> identifiers) {
+                            if (identifier.getFieldType() != null && signatureMap.containsKey(identifier.getFieldType().toString())) {
+                                Cursor parent = getCursor().dropParentUntil(is ->
+                                        is instanceof J.VariableDeclarations ||
+                                        is instanceof J.ClassDeclaration);
 
-                        if (!(parent.getValue() instanceof J.VariableDeclarations && parent.getValue() == declarations)) {
-                            J.VariableDeclarations.NamedVariable name = signatureMap.get(identifier.getFieldType().toString());
-                            if (declarations.getVariables().contains(name)) {
-                                J.VariableDeclarations.NamedVariable used = signatureMap.get(identifier.getFieldType().toString());
-                                identifiers.computeIfAbsent(used, k -> new ArrayList<>())
-                                        .add(identifier);
+                                if (!(parent.getValue() instanceof J.VariableDeclarations && parent.getValue() == declarations)) {
+                                    J.VariableDeclarations.NamedVariable name = signatureMap.get(identifier.getFieldType().toString());
+                                    if (declarations.getVariables().contains(name)) {
+                                        J.VariableDeclarations.NamedVariable used = signatureMap.get(identifier.getFieldType().toString());
+                                        identifiers.computeIfAbsent(used, k -> new ArrayList<>())
+                                                .add(identifier);
+                                    }
+                                }
                             }
+                            return super.visitIdentifier(identifier, identifiers);
                         }
-                    }
-                    return super.visitIdentifier(identifier, identifiers);
-                }
-            };
+                    };
 
             visitor.visit(parent, found);
             return found;
@@ -216,7 +229,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitStatement(Statement s, ExecutionContext executionContext) {
+        public J visitStatement(Statement s, ExecutionContext ctx) {
             if (s == statement) {
                 Space prefix = s.getPrefix();
                 // If we have at least one comment and there is no newline
@@ -226,15 +239,15 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             .withWhitespace(prefix.getComments().get(0).getSuffix())
                             // Remove the first comment
                             .withComments(prefix.getComments().subList(1, prefix.getComments().size())
-                    ));
+                            ));
 
                 }
             }
-            return super.visitStatement(s, executionContext);
+            return super.visitStatement(s, ctx);
         }
 
         @Override
-        public J visitClassDeclaration(J.ClassDeclaration c, ExecutionContext executionContext) {
+        public J visitClassDeclaration(J.ClassDeclaration c, ExecutionContext ctx) {
             // We also need to remove comments attached to end of classDeclaration if it's the last statement
             if (statement == null && c == classDeclaration) {
                 Space end = c.getBody().getEnd();
@@ -246,7 +259,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                     ));
                 }
             }
-            return super.visitClassDeclaration(c, executionContext);
+            return super.visitClassDeclaration(c, ctx);
         }
     }
 

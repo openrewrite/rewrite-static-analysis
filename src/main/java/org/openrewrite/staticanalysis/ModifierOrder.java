@@ -57,20 +57,20 @@ public class ModifierOrder extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-                J.ClassDeclaration c = super.visitClassDeclaration(classDecl, executionContext);
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                J.ClassDeclaration c = super.visitClassDeclaration(classDecl, ctx);
                 return c.withModifiers(sortModifiers(c.getModifiers()));
             }
 
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
-                J.MethodDeclaration m = super.visitMethodDeclaration(method, executionContext);
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 return m.withModifiers(sortModifiers(m.getModifiers()));
             }
 
             @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-                J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, executionContext);
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, ctx);
                 return v.withModifiers(sortModifiers(v.getModifiers()));
             }
         };

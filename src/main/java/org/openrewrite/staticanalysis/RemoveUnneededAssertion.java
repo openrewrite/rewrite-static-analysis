@@ -66,7 +66,7 @@ public class RemoveUnneededAssertion extends Recipe {
                         new UsesMethod<>(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER),
                         new JavaIsoVisitor<ExecutionContext>() {
                             @Override
-                            public J.Assert visitAssert(J.Assert _assert, ExecutionContext executionContext) {
+                            public J.Assert visitAssert(J.Assert _assert, ExecutionContext ctx) {
                                 if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
                                     return SearchResult.found(_assert);
                                 }

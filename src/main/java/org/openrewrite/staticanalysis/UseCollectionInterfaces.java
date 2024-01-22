@@ -15,10 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
+import org.openrewrite.groovy.tree.G;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -93,6 +91,12 @@ public class UseCollectionInterfaces extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
+            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
+                // TODO: proper Groovy support requires some extra work
+                return super.isAcceptable(sourceFile, ctx) && !(sourceFile instanceof G.CompilationUnit);
+            }
+
+            @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
@@ -107,8 +111,8 @@ public class UseCollectionInterfaces extends Recipe {
             }
 
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext executionContext) {
-                J.MethodDeclaration m = super.visitMethodDeclaration(method, executionContext);
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if ((m.hasModifier(J.Modifier.Type.Public) || m.hasModifier(J.Modifier.Type.Private) || m.getModifiers().isEmpty())
                     && m.getReturnTypeExpression() != null) {
                     JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(m.getReturnTypeExpression().getType());
@@ -147,8 +151,8 @@ public class UseCollectionInterfaces extends Recipe {
             }
 
             @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext executionContext) {
-                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, executionContext);
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());
                 if ((mv.hasModifier(J.Modifier.Type.Public) || mv.hasModifier(J.Modifier.Type.Private) || mv.getModifiers().isEmpty()) &&
                     originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {

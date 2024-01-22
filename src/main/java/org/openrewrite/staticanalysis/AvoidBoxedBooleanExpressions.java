@@ -67,8 +67,8 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
             }
 
             @Override
-            public J visitUnary(J.Unary unary, ExecutionContext executionContext) {
-                J.Unary un = (J.Unary) super.visitUnary(unary, executionContext);
+            public J visitUnary(J.Unary unary, ExecutionContext ctx) {
+                J.Unary un = (J.Unary) super.visitUnary(unary, ctx);
                 if (J.Unary.Type.Not == un.getOperator() && TypeUtils.isOfClassType(un.getExpression().getType(), "java.lang.Boolean")) {
                     return JavaTemplate.apply("Boolean.FALSE.equals(#{any(java.lang.Boolean)})",
                             updateCursor(un), un.getCoordinates().replace(), un.getExpression());

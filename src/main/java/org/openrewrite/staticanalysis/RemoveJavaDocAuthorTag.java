@@ -50,8 +50,8 @@ public class RemoveJavaDocAuthorTag extends Recipe {
             protected JavadocVisitor<ExecutionContext> getJavadocVisitor() {
                 return new JavadocVisitor<ExecutionContext>(this) {
                     @Override
-                    public Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext executionContext) {
-                        Javadoc.DocComment dc = (Javadoc.DocComment) super.visitDocComment(javadoc, executionContext);
+                    public Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
+                        Javadoc.DocComment dc = (Javadoc.DocComment) super.visitDocComment(javadoc, ctx);
                         List<Javadoc> newBody = new ArrayList<>();
                         boolean isChanged = false;
                         boolean removeNextLineBreak = false;

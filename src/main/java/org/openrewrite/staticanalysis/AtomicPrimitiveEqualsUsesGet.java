@@ -28,10 +28,18 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public class AtomicPrimitiveEqualsUsesGet extends Recipe {
+
+    private static final Set<String> ATOMIC_PRIMITIVE_TYPES = new HashSet<>(Arrays.asList(
+            "java.util.concurrent.atomic.AtomicBoolean",
+            "java.util.concurrent.atomic.AtomicInteger",
+            "java.util.concurrent.atomic.AtomicLong"
+    ));
 
     @Override
     public String getDisplayName() {
@@ -51,22 +59,23 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.or(
-                new UsesType<>("java.util.concurrent.atomic.AtomicBoolean", true),
-                new UsesType<>("java.util.concurrent.atomic.AtomicInteger", true),
-                new UsesType<>("java.util.concurrent.atomic.AtomicLong", true)
+                new UsesType<>("java.util.concurrent.atomic.AtomicBoolean", false),
+                new UsesType<>("java.util.concurrent.atomic.AtomicInteger", false),
+                new UsesType<>("java.util.concurrent.atomic.AtomicLong", false)
         ), new JavaVisitor<ExecutionContext>() {
             private final MethodMatcher aiMethodMatcher = new MethodMatcher("java.lang.Object equals(java.lang.Object)");
 
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, executionContext);
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (mi.getSelect() != null && isAtomicEqualsType(mi.getSelect().getType()) && aiMethodMatcher.matches(mi)
                     && TypeUtils.isOfType(mi.getSelect().getType(), mi.getArguments().get(0).getType())) {
                     JavaType.FullyQualified fqt = TypeUtils.asFullyQualified(mi.getSelect().getType());
                     if (fqt != null) {
                         String templateString = "#{any(" + fqt.getFullyQualifiedName() + ")}.get() == #{any(" + fqt.getFullyQualifiedName() + ")}.get()";
                         return JavaTemplate.builder(templateString)
-                                .imports(fqt.getFullyQualifiedName()).build()
+                                .imports(fqt.getFullyQualifiedName())
+                                .build()
                                 .apply(updateCursor(mi), mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0));
                     }
                 }
@@ -74,14 +83,8 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
             }
 
             private boolean isAtomicEqualsType(@Nullable JavaType type) {
-                if (type != null) {
-                    for (String fqn : new String[]{"java.util.concurrent.atomic.AtomicBoolean", "java.util.concurrent.atomic.AtomicInteger", "java.util.concurrent.atomic.AtomicLong"}) {
-                        if (TypeUtils.isOfClassType(type, fqn)) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
+                return type instanceof JavaType.FullyQualified &&
+                       ATOMIC_PRIMITIVE_TYPES.contains(((JavaType.FullyQualified) type).getFullyQualifiedName());
             }
         });
     }

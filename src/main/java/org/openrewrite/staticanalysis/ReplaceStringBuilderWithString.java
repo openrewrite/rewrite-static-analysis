@@ -56,8 +56,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.and(new UsesMethod<>(STRING_BUILDER_APPEND), new UsesMethod<>(STRING_BUILDER_TO_STRING)), new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, executionContext);
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
                 if (STRING_BUILDER_TO_STRING.matches(method)) {
                     List<Expression> methodCallsChain = new ArrayList<>();

@@ -75,8 +75,8 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
                     .imports("java.math.RoundingMode").build();
 
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation m = super.visitMethodInvocation(method, executionContext);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 if (BIG_DECIMAL_DIVIDE.matches(m) &&
                     isConvertibleBigDecimalConstant(m.getArguments().get(1))) {
                     String roundingModeEnum = getTemplateText(m.getArguments().get(1));

@@ -21,6 +21,7 @@ import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
@@ -60,6 +61,7 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, P p) {
             J.MethodDeclaration m = super.visitMethodDeclaration(method, p);
+            updateCursor(m);
 
             /*
              * Looking for "public boolean equals(EnclosingClassType)" as the method signature match.
@@ -76,7 +78,7 @@ public class CovariantEqualsVisitor<P> extends JavaIsoVisitor<P> {
                 JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType()) &&
                 new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass)) {
 
-                if (m.getAllAnnotations().stream().noneMatch(OVERRIDE_ANNOTATION::matches)) {
+                if (!service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION)) {
                     m = JavaTemplate.builder("@Override").build()
                             .apply(updateCursor(m),
                                     m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));

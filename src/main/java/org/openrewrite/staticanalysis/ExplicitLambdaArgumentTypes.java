@@ -142,7 +142,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                         Markers.EMPTY,
                         emptyList(),
                         fq.getClassName(),
-                        type,
+                        type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type,
                         null
                 );
 

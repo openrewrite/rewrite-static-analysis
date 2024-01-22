@@ -55,7 +55,7 @@ public class RemoveExtraSemicolons extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J.Block visitBlock(final J.Block block, final ExecutionContext executionContext) {
+            public J.Block visitBlock(final J.Block block, final ExecutionContext ctx) {
                 final Iterator<Statement> iterator = block.getStatements().iterator();
                 final List<Statement> result = new ArrayList<>();
                 while (iterator.hasNext()) {
@@ -75,11 +75,11 @@ public class RemoveExtraSemicolons extends Recipe {
                         result.add(statement);
                     }
                 }
-                return super.visitBlock(block.withStatements(result), executionContext);
+                return super.visitBlock(block.withStatements(result), ctx);
             }
 
             @Override
-            public J.Try.Resource visitTryResource(J.Try.Resource tr, ExecutionContext executionContext) {
+            public J.Try.Resource visitTryResource(J.Try.Resource tr, ExecutionContext ctx) {
                 J.Try _try = getCursor().dropParentUntil(J.Try.class::isInstance).getValue();
                 if (_try.getResources().isEmpty() ||
                         _try.getResources().get(_try.getResources().size() - 1) != tr ||
@@ -90,8 +90,8 @@ public class RemoveExtraSemicolons extends Recipe {
             }
 
             @Override
-            public J.EnumValueSet visitEnumValueSet(J.EnumValueSet enums, ExecutionContext executionContext) {
-                J.EnumValueSet e = super.visitEnumValueSet(enums, executionContext);
+            public J.EnumValueSet visitEnumValueSet(J.EnumValueSet enums, ExecutionContext ctx) {
+                J.EnumValueSet e = super.visitEnumValueSet(enums, ctx);
                 if (getCursor().firstEnclosing(J.Block.class).getStatements().size() == 1) {
                     e = e.withTerminatedWithSemicolon(false);
                 }
