@@ -21,6 +21,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -85,6 +86,10 @@ public class NeedBraces extends Recipe {
 
         @Override
         public J.If visitIf(J.If iff, ExecutionContext ctx) {
+            if (usedAsExpression()) {
+                // Kotlin has no dedicated ternary operator
+                return iff;
+            }
             J.If elem = super.visitIf(iff, ctx);
             boolean hasAllowableBodyType = elem.getThenPart() instanceof J.Block;
             if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
@@ -92,6 +97,10 @@ public class NeedBraces extends Recipe {
                 elem = maybeAutoFormat(elem, elem.withThenPart(b), ctx);
             }
             return elem;
+        }
+
+        private boolean usedAsExpression() {
+            return getCursor().getParentOrThrow().getValue() instanceof K.StatementExpression;
         }
 
         @Override
