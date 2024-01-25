@@ -26,6 +26,7 @@ import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -77,7 +78,7 @@ public class NeedBraces extends Recipe {
                 Space trailingSpace = last ? block.getEnd() : statements.get(i + 1).getPrefix();
                 if (!trailingSpace.getComments().isEmpty() && trailingSpace.getWhitespace().indexOf('\n') == -1) {
                     end = trailingSpace;
-                    getCursor().getParentTreeCursor().putMessage("replaced", i);
+                    getCursor().getParentTreeCursor().<List<Integer>>computeMessageIfAbsent("replaced", k -> new ArrayList<>()).add(i);
                 }
             }
             return new J.Block(
@@ -102,9 +103,9 @@ public class NeedBraces extends Recipe {
         @Override
         public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
             J.Block bl = super.visitBlock(block, ctx);
-            Integer index = getCursor().pollMessage("replaced");
-            if (index != null) {
-                if (index != -1) {
+            List<Integer> indexes = getCursor().pollMessage("replaced");
+            if (indexes != null) {
+                for (int index : indexes) {
                     boolean last = index == bl.getPadding().getStatements().size() - 1;
                     if (!last) {
                         bl = bl.withStatements(ListUtils.map(bl.getStatements(), (i, stmt) -> {
@@ -116,8 +117,8 @@ public class NeedBraces extends Recipe {
                     } else {
                         bl = bl.withEnd(bl.getEnd().withComments(Collections.emptyList()));
                     }
-                    bl = maybeAutoFormat(block, bl, ctx);
                 }
+                bl = maybeAutoFormat(block, bl, ctx);
             }
             return bl;
         }
@@ -199,5 +200,7 @@ public class NeedBraces extends Recipe {
             }
             return elem;
         }
-    };
+    }
+
+    ;
 }

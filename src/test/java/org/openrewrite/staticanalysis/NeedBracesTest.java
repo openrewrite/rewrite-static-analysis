@@ -307,6 +307,7 @@ class NeedBracesTest implements RewriteTest {
               class Test {
                   static void method() {
                       if (true) return; // comment
+                      if (true) return; // comment 2
                       return;
                   }
               }
@@ -316,6 +317,9 @@ class NeedBracesTest implements RewriteTest {
                   static void method() {
                       if (true) {
                           return; // comment
+                      }
+                      if (true) {
+                          return; // comment 2
                       }
                       return;
                   }
