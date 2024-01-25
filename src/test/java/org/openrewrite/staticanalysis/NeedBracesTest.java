@@ -75,6 +75,7 @@ class NeedBracesTest implements RewriteTest {
 
                   static void addToIf(int n) {
                       if (n == 1) return;
+                      // foo
                   }
 
                   static void addToIfElse(int n) {
@@ -114,6 +115,7 @@ class NeedBracesTest implements RewriteTest {
                       if (n == 1) {
                           return;
                       }
+                      // foo
                   }
 
                   static void addToIfElse(int n) {
@@ -289,6 +291,33 @@ class NeedBracesTest implements RewriteTest {
                       if (true) {
                           return;
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void trailingComment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method() {
+                      if (true) return; // comment
+                      return;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method() {
+                      if (true) {
+                          return; // comment
+                      }
+                      return;
                   }
               }
               """
