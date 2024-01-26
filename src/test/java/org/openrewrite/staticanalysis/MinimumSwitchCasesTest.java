@@ -621,8 +621,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
                   int variable;
                   void test() {
                       switch (variable) {
-                        case 0, 1: doSomething(); break;
-                        default: doSomethingElse(); break;
+                        case 0, 1 -> doSomething();
+                        default -> doSomethingElse();
                       }
                   }
                   void doSomething() {}
