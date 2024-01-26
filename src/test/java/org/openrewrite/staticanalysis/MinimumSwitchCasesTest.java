@@ -621,22 +621,30 @@ class MinimumSwitchCasesTest implements RewriteTest {
                   int variable;
                   void test() {
                       switch (variable) {
-                        case 0 -> doSomething();
-                        default -> doSomethingElse();
+                        case 0, 1: doSomething(); break;
+                        default: doSomethingElse(); break;
                       }
                   }
                   void doSomething() {}
                   void doSomethingElse() {}
               }
-              """,
+              """
+          )
+        );
+    }
+
+    @Test
+    void multipleCaseConstants() {
+        rewriteRun(
+          //language=java
+          java(
             """
               class Test {
                   int variable;
                   void test() {
-                      if (variable == 0) {
-                          doSomething();
-                      } else {
-                          doSomethingElse();
+                      switch (variable) {
+                        case 0, 1: doSomething(); break;
+                        default: doSomethingElse(); break;
                       }
                   }
                   void doSomething() {}
