@@ -111,7 +111,7 @@ public class FinalizeMethodArguments extends Recipe {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
 
         VariableDeclarations.NamedVariable variable;

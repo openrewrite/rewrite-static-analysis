@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
 public class RemoveUnusedLocalVariables extends Recipe {
     @Incubating(since = "7.17.2")
@@ -204,7 +204,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
      * and remove the assignment, leaving behind the value being assigned.
      */
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class PruneAssignmentExpression extends JavaIsoVisitor<ExecutionContext> {
         J.Assignment assignment;
 
@@ -225,7 +225,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class AssignmentToLiteral extends JavaVisitor<ExecutionContext> {
         J.Assignment assignment;
 
