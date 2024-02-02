@@ -21,6 +21,7 @@ description: Resolve common static analysis issues discovered through 3rd party 
 recipeList:
 #  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
+  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
   - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
   - org.openrewrite.staticanalysis.BooleanChecksNotInverted
   - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
