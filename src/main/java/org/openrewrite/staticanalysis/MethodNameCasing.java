@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 import static java.util.Objects.requireNonNull;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
 
     private static final Pattern STANDARD_METHOD_NAME = Pattern.compile("^[a-z][a-zA-Z0-9]*$");

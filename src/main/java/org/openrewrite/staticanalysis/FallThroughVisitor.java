@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     /**
      * Ignores any fall-through commented with a text matching the regex pattern.
