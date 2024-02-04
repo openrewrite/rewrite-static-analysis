@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis.kotlin;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -30,6 +31,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenameLocalVariablesToCamelCase());
     }
 
+    @DocumentExample
     @Test
     void regular() {
         rewriteRun(

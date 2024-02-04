@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -29,6 +30,7 @@ public class BigDecimalDoubleConstructorTest implements RewriteTest {
         spec.recipe(new BigDecimalDoubleConstructorRecipe());
     }
 
+    @DocumentExample
     @Test
     void bigDecimalDoubleConstructor() {
         rewriteRun(
