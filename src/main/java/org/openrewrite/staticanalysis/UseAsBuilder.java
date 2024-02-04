@@ -35,24 +35,23 @@ import static org.openrewrite.java.format.TabsAndIndents.formatTabsAndIndents;
 public class UseAsBuilder extends Recipe {
     @Option(
             displayName = "Builder Type",
-            description = "Fully qualified name of the Builder"
-    )
+            description = "Fully qualified name of the Builder",
+            example = "org.example.Buildable.Builder")
     String builderType;
 
     @Option(
             displayName = "Immutable state",
             description = "The builder is immutable if you must assign the result of calls to intermediate variables " +
                           "or use directly. Defaults to true as many purpose-built builders will be immutable.",
-            required = false
-    )
+            required = false)
     @Nullable
     Boolean immutable;
 
     @Option(
             displayName = "Builder creator method",
             description = "The method that creates the builder instance, which may not be a method of the builder itself.",
-            required = false
-    )
+            required = false,
+            example = "org.example.Buildable builder()")
     @Nullable
     String builderCreator;
 

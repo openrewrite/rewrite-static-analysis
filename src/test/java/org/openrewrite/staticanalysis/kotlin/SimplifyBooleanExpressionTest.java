@@ -30,6 +30,7 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanExpression());
     }
 
+    @DocumentExample
     @Test
     void regular() {
         rewriteRun(
@@ -89,7 +90,6 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
     void nullableVariable() {
         rewriteRun(
