@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Option(displayName = "Apply recipe to test source set",

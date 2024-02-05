@@ -69,7 +69,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite/issues/1740")
     @Test
-    void testSourcesEnabled() {
+    void sourcesEnabled() {
         rewriteRun(
           srcTestJava(
             //language=java

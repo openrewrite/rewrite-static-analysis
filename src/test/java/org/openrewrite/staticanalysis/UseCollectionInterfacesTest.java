@@ -938,7 +938,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/2973")
     @Test
     @ExpectedToFail
-    void testExplicitImplementationClassInApi() {
+    void explicitImplementationClassInApi() {
         rewriteRun(
           //language=java
           java(

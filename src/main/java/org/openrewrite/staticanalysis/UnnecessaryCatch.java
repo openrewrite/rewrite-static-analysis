@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class UnnecessaryCatch extends Recipe {
 
     @Option(displayName = "Include `java.lang.Exception`",

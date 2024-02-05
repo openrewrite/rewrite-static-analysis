@@ -223,7 +223,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     public static class ReplaceMethodCallWithVariableVisitor extends JavaVisitor<ExecutionContext> {
         J.Identifier lambdaParameterIdentifier;
         J.Identifier methodSelector;

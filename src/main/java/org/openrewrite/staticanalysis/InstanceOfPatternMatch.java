@@ -41,7 +41,7 @@ import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMEN
 
 @Incubating(since = "7.36.0")
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class InstanceOfPatternMatch extends Recipe {
 
     @Override
