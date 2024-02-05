@@ -15,7 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.analysis.dataflow.DataFlowNode;
 import org.openrewrite.analysis.dataflow.FindLocalFlowPaths;
 import org.openrewrite.analysis.dataflow.DataFlowSpec;

@@ -157,7 +157,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               public class A {
                   public A() {}
                   public static String foo() { return "foo"; }
-                  private static class Builder() {
+                  private static class Builder {
                       public Builder() {}
                       public static String foo() { return "foo"; }
                   }
@@ -167,7 +167,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               public class A {
                   private A() {}
                   public static String foo() { return "foo"; }
-                  private static class Builder() {
+                  private static class Builder {
                       private Builder() {}
                       public static String foo() { return "foo"; }
                   }

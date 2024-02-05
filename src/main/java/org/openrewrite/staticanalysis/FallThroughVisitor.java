@@ -24,12 +24,14 @@ import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     /**
      * Ignores any fall-through commented with a text matching the regex pattern.

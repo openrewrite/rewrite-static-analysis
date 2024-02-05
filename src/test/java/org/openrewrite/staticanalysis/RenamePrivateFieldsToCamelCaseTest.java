@@ -514,6 +514,31 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Test
+    void leaveNonConstantsNonStatic() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                private final int CONSTANT = getFortyTwo();
+                private int getFortyTwo() {
+                  return 42;
+                }
+              }
+              """,
+            """
+              class A {
+                private final int constant = getFortyTwo();
+                private int getFortyTwo() {
+                  return 42;
+                }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     @Test
     void doNotRenameUnderscoresOnly() {

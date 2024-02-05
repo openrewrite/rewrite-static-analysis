@@ -109,7 +109,7 @@ public class MinimumSwitchCases extends Recipe {
 
             @Override
             public J visitSwitch(J.Switch switch_, ExecutionContext ctx) {
-                if (switch_.getCases().getStatements().size() < 3) {
+                if (doRewrite(switch_)) {
                     J.Switch sortedSwitch = (J.Switch) new DefaultComesLast().getVisitor().visit(switch_, ctx);
                     assert sortedSwitch != null;
 
@@ -215,6 +215,14 @@ public class MinimumSwitchCases extends Recipe {
                 }
 
                 return super.visitSwitch(switch_, ctx);
+            }
+
+            private boolean doRewrite(J.Switch switch_) {
+                if (switch_.getCases().getStatements().size() > 2) {
+                    return false;
+                }
+                return switch_.getCases().getStatements().stream()
+                        .reduce(0, (a, b) -> a + ((J.Case) b).getExpressions().size(), Integer::sum) < 3;
             }
 
             private List<Statement> getStatements(J.Case aCase) {
