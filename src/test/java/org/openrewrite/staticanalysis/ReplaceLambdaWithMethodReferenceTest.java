@@ -1318,4 +1318,31 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
+    void groupingByGetClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            import java.util.*;
+            import java.util.stream.*;
+            
+            class Animal {}
+            class Cat extends Animal {}
+            class Dog extends Animal {}
+
+            class Test {
+              public void groupOnGetClass() {
+                List<Animal> animals = List.of(new Cat(), new Dog());
+                Map<Class<? extends Animal>, List<Animal>> collect;
+                collect = animals.stream().collect(Collectors.groupingBy(a -> a.getClass()));
+              }
+            }
+            """
+          )
+        );
+    }
+
 }
