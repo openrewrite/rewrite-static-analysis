@@ -63,7 +63,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             """
               import java.nio.file.Path;
               import java.nio.file.Paths;
-              import java.util.List;import java.util.stream.Collectors;
+              import java.util.List;
+              import java.util.stream.Collectors;
                             
               class Test {
                   Path path = Paths.get("");
@@ -190,6 +191,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import java.util.List;
               import java.util.stream.Collectors;
@@ -237,6 +239,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import org.test.CheckType;
               
@@ -288,6 +291,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import java.util.List;
               import java.util.stream.Stream;
@@ -595,6 +599,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import org.test.CheckType;
               
@@ -1293,8 +1298,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
     @Test
     void newClassSelector() {
+        //language=java
         rewriteRun(
-          //language=java
           java(
             """
               class A {
@@ -1345,4 +1350,22 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void dontReplaceNullableFieldReferences() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  Object field;
+                  void foo() {
+                      // Runtime exception when replaced with field::toString
+                      Supplier<String> supplier = () -> field.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
 }
