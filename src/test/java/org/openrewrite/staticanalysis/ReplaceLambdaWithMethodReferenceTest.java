@@ -413,8 +413,10 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                           Collections.singletonList(1).forEach(n -> run());
                       }
                   }
-                  Test t = new Test();
-                  Runnable r = () -> t.run();
+                  void foo() {
+                      Test t = new Test();
+                      Runnable r = () -> t.run();
+                  }
               }
               """,
             """
@@ -427,8 +429,10 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                           Collections.singletonList(1).forEach(n -> run());
                       }
                   }
-                  Test t = new Test();
-                  Runnable r = t::run;
+                  void foo() {
+                      Test t = new Test();
+                      Runnable r = t::run;
+                  }
               }
               """
           )
