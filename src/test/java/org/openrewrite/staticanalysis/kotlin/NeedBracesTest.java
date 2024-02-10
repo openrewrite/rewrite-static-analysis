@@ -34,6 +34,7 @@ class NeedBracesTest implements RewriteTest {
     @Test
     void addBracesForIfBranch() {
         rewriteRun(
+          //language=kotlin
           kotlin(
             """
               fun getSymbol(num : Int) : String {
@@ -55,35 +56,10 @@ class NeedBracesTest implements RewriteTest {
         );
     }
 
-    @Disabled("AutoFormat needs to be updated to support Kotlin")
-    @Test
-    void addBracesForElseBranch() {
-        rewriteRun(
-          kotlin(
-            """
-              fun getSymbol(num : Int) : String {
-                  return if (num > 0)
-                      "+"
-                  else "-"
-              }
-              """,
-            """
-              fun getSymbol(num : Int) : String {
-                  return if (num > 0) {
-                      "+"
-                  } else {
-                      "-"
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Disabled("AutoFormat needs to be updated to support Kotlin")
     @Test
     void doNotChangeForArguments() {
         rewriteRun(
+          //language=kotlin
           kotlin(
             """
               fun run(foo: String, bar: String) {}

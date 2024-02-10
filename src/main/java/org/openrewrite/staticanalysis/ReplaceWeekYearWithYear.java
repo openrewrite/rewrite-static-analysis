@@ -21,7 +21,8 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Set;
 
 public class ReplaceWeekYearWithYear extends Recipe {
     private static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");

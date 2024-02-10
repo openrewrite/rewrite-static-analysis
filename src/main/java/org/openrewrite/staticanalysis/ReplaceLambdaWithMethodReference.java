@@ -159,6 +159,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 }
 
                 if (hasSelectWithPotentialSideEffects(method) ||
+                    hasSelectWhoseReferenceMightChange(method) ||
                     !methodArgumentsMatchLambdaParameters(method, lambda) ||
                     method instanceof J.MemberReference) {
                     return l;
@@ -170,6 +171,11 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (methodType != null && !isMethodReferenceAmbiguous(methodType)) {
                     if (methodType.hasFlags(Flag.Static) ||
                         methodSelectMatchesFirstLambdaParameter(method, lambda)) {
+                        if (method.getType() instanceof JavaType.Parameterized &&
+                            ((JavaType.Parameterized) method.getType()).getTypeParameters().stream()
+                                    .anyMatch(JavaType.GenericTypeVariable.class::isInstance)) {
+                            return l;
+                        }
                         J.MemberReference updated = newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
                         doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
                         return updated;
@@ -205,6 +211,14 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         private boolean hasSelectWithPotentialSideEffects(MethodCall method) {
             return method instanceof J.MethodInvocation &&
                    ((J.MethodInvocation) method).getSelect() instanceof MethodCall;
+        }
+
+        private boolean hasSelectWhoseReferenceMightChange(MethodCall method) {
+            if (method instanceof J.MethodInvocation && ((J.MethodInvocation) method).getSelect() instanceof J.Identifier) {
+                JavaType.Variable fieldType = ((J.Identifier) ((J.MethodInvocation) method).getSelect()).getFieldType();
+                return fieldType != null && fieldType.getOwner() instanceof JavaType.Class && !fieldType.hasFlags(Flag.Final);
+            }
+            return false;
         }
 
         private boolean methodArgumentsMatchLambdaParameters(MethodCall method, J.Lambda lambda) {

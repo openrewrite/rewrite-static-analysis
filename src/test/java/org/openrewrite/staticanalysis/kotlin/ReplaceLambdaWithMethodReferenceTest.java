@@ -21,7 +21,6 @@ import org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
