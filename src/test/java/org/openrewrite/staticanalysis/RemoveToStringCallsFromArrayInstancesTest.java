@@ -24,7 +24,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ImplicitArrayToString", "UnnecessaryLocalVariable", "RedundantStringFormatCall", "MalformedFormatString", "PrimitiveArrayArgumentToVarargsMethod"})
-public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
+class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new RemoveToStringCallsFromArrayInstances());

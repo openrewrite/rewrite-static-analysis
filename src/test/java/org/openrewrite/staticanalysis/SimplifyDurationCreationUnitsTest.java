@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class SimplifyDurationCreationUnitsTest implements RewriteTest {
+class SimplifyDurationCreationUnitsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {

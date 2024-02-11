@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("ALL")
-public class FixStringFormatExpressionsTest implements RewriteTest {
+class FixStringFormatExpressionsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new FixStringFormatExpressions());

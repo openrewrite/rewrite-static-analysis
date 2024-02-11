@@ -25,7 +25,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 
-public class MinimumSwitchCasesTest implements RewriteTest {
+class MinimumSwitchCasesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
