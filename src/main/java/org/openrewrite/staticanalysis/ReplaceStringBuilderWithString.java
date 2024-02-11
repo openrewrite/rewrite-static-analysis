@@ -16,10 +16,10 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.PartProvider;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -64,8 +64,6 @@ public class ReplaceStringBuilderWithString extends Recipe {
 
     private static class StringBuilderToAppendVisitor extends JavaVisitor<ExecutionContext> {
         @Deprecated
-        private static J.Parentheses parenthesesTemplate;
-        @Deprecated
         private static J.MethodInvocation stringValueOfTemplate;
 
         @Override
@@ -76,21 +74,18 @@ public class ReplaceStringBuilderWithString extends Recipe {
                 List<Expression> methodCallsChain = new ArrayList<>();
                 List<Expression> arguments = new ArrayList<>();
                 boolean isFlattenable = flatMethodInvocationChain(method, methodCallsChain, arguments);
-                if (!isFlattenable) {
+                if (!isFlattenable || arguments.isEmpty()) {
                     return m;
                 }
 
                 Collections.reverse(arguments);
-                adjustExpressions(arguments);
-                if (arguments.isEmpty()) {
-                    return m;
-                }
+                arguments = adjustExpressions(method, arguments);
 
                 Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments)
                         .withPrefix(method.getPrefix());
 
                 if (isAMethodSelect(method)) {
-                    additive = JavaTemplate.builder("(#{any()})").build().apply(getCursor(), m.getCoordinates().replace(), additive);
+                    additive = new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(additive));
                 }
 
                 return additive;
@@ -117,29 +112,23 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     "\"" + value + "\"", null, JavaType.Primitive.String);
         }
 
-        private void adjustExpressions(List<Expression> arguments) {
-            for (int i = 0; i < arguments.size(); i++) {
+        private List<Expression> adjustExpressions(J.MethodInvocation method, List<Expression> arguments) {
+            return ListUtils.map(arguments, (i, arg) -> {
                 if (i == 0) {
-                    // the first expression must be a String type to support case like `new StringBuilder().append(1)`
-                    if (!TypeUtils.isString(arguments.get(0).getType())) {
-                        if (arguments.get(0) instanceof J.Literal) {
-                            // wrap by ""
-                            arguments.set(0, toStringLiteral((J.Literal) arguments.get(0)));
+                    if (!TypeUtils.isString(arg.getType())) {
+                        if (arg instanceof J.Literal) {
+                            return toStringLiteral((J.Literal) arg);
                         } else {
-                            J.MethodInvocation stringValueOf = getStringValueOfMethodInvocationTemplate()
-                                    .withArguments(Collections.singletonList(arguments.get(0)))
-                                    .withPrefix(arguments.get(0).getPrefix());
-                            arguments.set(0, stringValueOf);
+                            return JavaTemplate.builder("String.valueOf(#{any()})").build()
+                                    .apply(getCursor(), method.getCoordinates().replace(), arg)
+                                    .withPrefix(arg.getPrefix());
                         }
                     }
-                } else {
-                    // wrap by parentheses to support case like `.append(1+2)`
-                    Expression arg = arguments.get(i);
-                    if (!(arg instanceof J.Identifier || arg instanceof J.Literal || arg instanceof J.MethodInvocation)) {
-                        arguments.set(i, wrapExpression(arg));
-                    }
+                } else if (!(arg instanceof J.Identifier || arg instanceof J.Literal || arg instanceof J.MethodInvocation)) {
+                    return new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(arg));
                 }
-            }
+                return arg;
+            });
         }
 
         /**
@@ -184,28 +173,6 @@ public class ReplaceStringBuilderWithString extends Recipe {
                 return true;
             }
             return false;
-        }
-
-        @Deprecated
-        private J.MethodInvocation getStringValueOfMethodInvocationTemplate() {
-            if (stringValueOfTemplate == null) {
-                stringValueOfTemplate = PartProvider.buildPart("class C {\n" +
-                                                               "    void foo() {\n" +
-                                                               "        Object obj = 1 + 2;\n" +
-                                                               "        String.valueOf(obj);\n" +
-                                                               "    }\n" +
-                                                               "}",
-                        J.MethodInvocation.class);
-            }
-            return stringValueOfTemplate;
-        }
-
-        @Deprecated
-        private <T extends J> J.Parentheses<T> wrapExpression(Expression exp) {
-            if (parenthesesTemplate == null) {
-                parenthesesTemplate = PartProvider.buildPart("class B { void foo() { (\"A\" + \"B\").length(); } } ", J.Parentheses.class);
-            }
-            return parenthesesTemplate.withTree(exp).withPrefix(exp.getPrefix());
         }
     }
 }
