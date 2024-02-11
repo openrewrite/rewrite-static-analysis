@@ -63,9 +63,6 @@ public class ReplaceStringBuilderWithString extends Recipe {
     }
 
     private static class StringBuilderToAppendVisitor extends JavaVisitor<ExecutionContext> {
-        @Deprecated
-        private static J.MethodInvocation stringValueOfTemplate;
-
         @Override
         public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
@@ -81,9 +78,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                 Collections.reverse(arguments);
                 arguments = adjustExpressions(method, arguments);
 
-                Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments)
-                        .withPrefix(method.getPrefix());
-
+                Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments).withPrefix(method.getPrefix());
                 if (isAMethodSelect(method)) {
                     additive = new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(additive));
                 }
@@ -138,9 +133,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
          * @param methodChain output methods chain
          * @param arguments   output expression list to be chained by '+'.
          */
-        private boolean flatMethodInvocationChain(J.MethodInvocation method,
-                                                  List<Expression> methodChain,
-                                                  List<Expression> arguments) {
+        private boolean flatMethodInvocationChain(J.MethodInvocation method, List<Expression> methodChain, List<Expression> arguments) {
             Expression select = method.getSelect();
             while (select != null) {
                 methodChain.add(select);
