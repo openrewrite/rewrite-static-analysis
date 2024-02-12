@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -394,6 +395,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void lambdaWithComplexTypeInference() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.LinkedHashMap;
@@ -425,6 +427,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void returnPrimitiveIntToWrapperLong() {
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -440,6 +443,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void castWildcard() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -459,6 +463,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void removeImport() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.ArrayList;
@@ -477,6 +482,47 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   List method(List list) {
                       return list;
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainCastInMarshaller() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package org.glassfish.jaxb.core.marshaller;
+                import java.io.IOException;
+                import java.io.Writer;
+                              
+                public interface CharacterEscapeHandler {
+                    void escape( char[] ch, int start, int length, boolean isAttVal, Writer out ) throws IOException;\s
+                }
+                """,
+              """
+                package javax.xml.bind;
+
+                public interface Marshaller {
+                    void setProperty(String var1, Object var2);
+                }
+                """
+            )
+          ),
+          //language=java
+          java(
+            """
+              import javax.xml.bind.Marshaller;
+              import org.glassfish.jaxb.core.marshaller.CharacterEscapeHandler;
+                
+              class Foo {
+                void bar(Marshaller marshaller) {
+                  marshaller.setProperty("org.glassfish.jaxb.characterEscapeHandler", (CharacterEscapeHandler) (ch, start, length, isAttVal, out) -> {
+                  });
+                }
               }
               """
           )
