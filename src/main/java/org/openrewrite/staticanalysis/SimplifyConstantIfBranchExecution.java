@@ -15,10 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.SourceFile;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
@@ -57,7 +54,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             if (bl != block) {
                 bl = (J.Block) new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor()
                         .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
-                EmptyBlockStyle style = ((SourceFile) getCursor().firstEnclosingOrThrow(JavaSourceFile.class))
+                EmptyBlockStyle style = getCursor().firstEnclosingOrThrow(JavaSourceFile.class)
                         .getStyle(EmptyBlockStyle.class);
                 if (style == null) {
                     style = Checkstyle.emptyBlock();
@@ -68,27 +65,11 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             return bl;
         }
 
-        @SuppressWarnings("unchecked")
-        private <E extends Expression> E cleanupBooleanExpression(
-                E expression, ExecutionContext ctx
-        ) {
-            E ex1 =
-                    (E) new UnnecessaryParenthesesVisitor()
-                            .visitNonNull(expression, ctx, getCursor().getParentOrThrow());
-            ex1 = (E) new SimplifyBooleanExpressionVisitor()
-                    .visitNonNull(ex1, ctx, getCursor().getParentTreeCursor());
-            if (expression == ex1 || isLiteralFalse(ex1) || isLiteralTrue(ex1)) {
-                return ex1;
-            }
-            // Run recursively until no further changes are needed
-            return cleanupBooleanExpression(ex1, ctx);
-        }
-
         @Override
         public J visitIf(J.If if_, ExecutionContext ctx) {
             J.If if__ = (J.If) super.visitIf(if_, ctx);
 
-            J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), ctx);
+            J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), getCursor(), ctx);
             if__ = if__.withIfCondition(cp);
 
             // The compile-time constant value of the if condition control parentheses.
@@ -146,14 +127,30 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 return J.Block.createEmptyBlock();
             }
         }
+    }
 
-        private static boolean isLiteralTrue(@Nullable Expression expression) {
-            return J.Literal.isLiteralValue(expression, Boolean.TRUE);
+    @SuppressWarnings("unchecked")
+    static <E extends Expression> E cleanupBooleanExpression(
+            E expression, Cursor c, ExecutionContext ctx
+    ) {
+        E ex1 =
+                (E) new UnnecessaryParenthesesVisitor<>()
+                        .visitNonNull(expression, ctx, c.getParentOrThrow());
+        ex1 = (E) new SimplifyBooleanExpressionVisitor()
+                .visitNonNull(ex1, ctx, c.getParentTreeCursor());
+        if (expression == ex1 || isLiteralFalse(ex1) || isLiteralTrue(ex1)) {
+            return ex1;
         }
+        // Run recursively until no further changes are needed
+        return cleanupBooleanExpression(ex1, c, ctx);
+    }
 
-        private static boolean isLiteralFalse(@Nullable Expression expression) {
-            return J.Literal.isLiteralValue(expression, Boolean.FALSE);
-        }
+    private static boolean isLiteralTrue(@Nullable Expression expression) {
+        return J.Literal.isLiteralValue(expression, Boolean.TRUE);
+    }
+
+    private static boolean isLiteralFalse(@Nullable Expression expression) {
+        return J.Literal.isLiteralValue(expression, Boolean.FALSE);
     }
 
 }
