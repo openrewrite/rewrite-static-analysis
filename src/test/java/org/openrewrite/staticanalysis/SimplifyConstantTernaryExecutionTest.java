@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("ConstantConditionalExpression")
-public class SimplifyConstantTernaryExecutionTest implements RewriteTest {
+class SimplifyConstantTernaryExecutionTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {

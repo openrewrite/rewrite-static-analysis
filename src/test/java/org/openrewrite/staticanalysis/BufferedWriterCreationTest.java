@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("EmptyTryBlock")
-public class BufferedWriterCreationTest implements RewriteTest {
+class BufferedWriterCreationTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {

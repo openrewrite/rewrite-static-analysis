@@ -46,20 +46,30 @@ public class SimplifyConstantTernaryExecution extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         JavaVisitor<ExecutionContext> v = new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visitTernary(J.Ternary ternary, ExecutionContext executionContext) {
-                J.Ternary t = (J.Ternary) super.visitTernary(ternary, executionContext);
+            public J visitTernary(J.Ternary ternary, ExecutionContext ctx) {
+                J.Ternary t = (J.Ternary) super.visitTernary(ternary, ctx);
                 Expression condition =
                         SimplifyConstantIfBranchExecution.cleanupBooleanExpression(
                                 t.getCondition(),
                                 getCursor(),
-                                executionContext
+                                ctx
                         );
                 if (J.Literal.isLiteralValue(condition, true)) {
-                    return autoFormat(t.getTruePart(), executionContext);
+                    getCursor().getParentTreeCursor().putMessage("AUTO_FORMAT", true);
+                    return t.getTruePart();
                 } else if (J.Literal.isLiteralValue(condition, false)) {
-                    return autoFormat(t.getFalsePart(), executionContext);
+                    getCursor().getParentTreeCursor().putMessage("AUTO_FORMAT", true);
+                    return t.getFalsePart();
                 }
                 return t;
+            }
+
+            @Override
+            public @Nullable J postVisit(J tree, ExecutionContext ctx) {
+                if (getCursor().pollMessage("AUTO_FORMAT") != null) {
+                    return autoFormat(tree, ctx);
+                }
+                return super.postVisit(tree, ctx);
             }
         };
         return Repeat.repeatUntilStable(v);
