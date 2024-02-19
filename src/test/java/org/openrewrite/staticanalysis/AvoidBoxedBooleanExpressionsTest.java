@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
+class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {

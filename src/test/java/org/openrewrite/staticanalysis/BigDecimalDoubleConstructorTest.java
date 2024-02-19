@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("UnpredictableBigDecimalConstructorCall")
-public class BigDecimalDoubleConstructorTest implements RewriteTest {
+class BigDecimalDoubleConstructorTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
