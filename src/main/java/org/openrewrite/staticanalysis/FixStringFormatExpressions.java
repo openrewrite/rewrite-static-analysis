@@ -124,12 +124,12 @@ public class FixStringFormatExpressions extends Recipe {
             if (arg0 instanceof J.Literal) {
                 J.Literal fmt = (J.Literal) arg0;
                 if (fmt.getValue() != null) {
-                    fmt = fmt.withValue(fmt.getValue().toString().replace("\n", "%n"));
+                    fmt = fmt.withValue(fmt.getValue().toString().replaceAll("(?<!\\\\)\n", "%n"));
                 }
                 if (fmt.getValueSource() != null) {
-                    fmt = fmt.withValueSource(fmt.getValueSource().replace("\\n", "%n"));
+                    fmt = fmt.withValueSource(fmt.getValueSource().replaceAll("(?<!\\\\)\\\\n", "%n"));
                 }
-                arg0 = fmt;
+                return fmt;
             }
             return arg0;
         }

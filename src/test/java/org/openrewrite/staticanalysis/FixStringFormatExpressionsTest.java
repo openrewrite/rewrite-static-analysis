@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,7 +36,6 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         rewriteRun(
           //language=java
           java(
-            //language=java
             """
               class T {
                   static {
@@ -58,7 +58,6 @@ class FixStringFormatExpressionsTest implements RewriteTest {
     @Test
     void trimUnusedArguments() {
         rewriteRun(
-          //language=java
           //language=java
           java(
             """
@@ -85,13 +84,40 @@ class FixStringFormatExpressionsTest implements RewriteTest {
     void allArgsAreUsed() {
         rewriteRun(
           //language=java
-          //language=java
           java(
             """
               class T {
                   static {
                       String s = String.format("count: %d, %d, %d, %d", 1, 3, 2, 4);
                       String f = "count: %d, %d, %d, %d".formatted(1, 3, 2, 4);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/260")
+    void escapedNewline() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String foo(String bar) {
+                      return ""\"
+                              \\\\n
+                              ""\".formatted(bar);
+                  }
+              }
+              """,
+            """
+              class A {
+                  String foo(String bar) {
+                      return ""\"
+                              \\\\n
+                              ""\".formatted(bar);
                   }
               }
               """
