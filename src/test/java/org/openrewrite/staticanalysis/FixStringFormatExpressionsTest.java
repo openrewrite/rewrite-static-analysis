@@ -107,7 +107,10 @@ class FixStringFormatExpressionsTest implements RewriteTest {
               class A {
                   String foo(String bar) {
                       return ""\"
+                              \\n
                               \\\\n
+                              \\\\\\n
+                              \\\\\\\\n
                               ""\".formatted(bar);
                   }
               }
@@ -116,7 +119,10 @@ class FixStringFormatExpressionsTest implements RewriteTest {
               class A {
                   String foo(String bar) {
                       return ""\"
+                              %n
                               \\\\n
+                              \\\\\\n
+                              \\\\\\\\n
                               ""\".formatted(bar);
                   }
               }
