@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("ToArrayCallWithZeroLengthArrayArgument")
-public class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
+class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceCollectionToArrayArgWithEmptyArray());
