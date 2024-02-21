@@ -25,7 +25,10 @@ import org.openrewrite.kotlin.KotlinVisitor;
 import org.openrewrite.kotlin.tree.K;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
@@ -205,7 +208,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         private String className(J.NewClass method) {
             TypeTree clazz = method.getClazz();
             return clazz instanceof J.ParameterizedType ? ((J.ParameterizedType) clazz).getClazz().toString() :
-                    Objects.toString(clazz);
+                    String.valueOf(clazz);
         }
 
         private boolean hasSelectWithPotentialSideEffects(MethodCall method) {

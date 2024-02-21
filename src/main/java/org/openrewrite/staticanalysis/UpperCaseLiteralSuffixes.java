@@ -26,7 +26,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Set;
 
@@ -48,7 +47,7 @@ public class UpperCaseLiteralSuffixes extends Recipe {
 
     @Override
     public @Nullable Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(2, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(2);
     }
 
     @Override
