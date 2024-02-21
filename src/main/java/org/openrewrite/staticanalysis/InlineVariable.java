@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -53,7 +52,7 @@ public class InlineVariable extends Recipe {
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(2, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(2);
     }
 
     @Override

@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -51,7 +50,7 @@ public class FixStringFormatExpressions extends Recipe {
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(5, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(5);
     }
 
 
