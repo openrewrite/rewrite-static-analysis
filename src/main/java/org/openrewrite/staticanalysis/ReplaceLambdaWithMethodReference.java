@@ -217,9 +217,15 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         }
 
         private boolean hasSelectWhoseReferenceMightChange(MethodCall method) {
-            if (method instanceof J.MethodInvocation && ((J.MethodInvocation) method).getSelect() instanceof J.Identifier) {
-                JavaType.Variable fieldType = ((J.Identifier) ((J.MethodInvocation) method).getSelect()).getFieldType();
-                return fieldType != null && fieldType.getOwner() instanceof JavaType.Class && !fieldType.hasFlags(Flag.Final);
+            if (method instanceof J.MethodInvocation) {
+                Expression select = ((J.MethodInvocation) method).getSelect();
+                if (select instanceof J.Identifier) {
+                    JavaType.Variable fieldType = ((J.Identifier) select).getFieldType();
+                    return fieldType != null && fieldType.getOwner() instanceof JavaType.Class && !fieldType.hasFlags(Flag.Final);
+                } else if (select instanceof J.FieldAccess) {
+                    JavaType.Variable fieldType = ((J.FieldAccess) select).getName().getFieldType();
+                    return fieldType != null && fieldType.getOwner() instanceof JavaType.Class && !fieldType.hasFlags(Flag.Final);
+                }
             }
             return false;
         }
