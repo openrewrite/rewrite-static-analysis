@@ -35,8 +35,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static java.util.Objects.requireNonNull;
-
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
@@ -87,7 +85,7 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+                    JavaSourceFile cu = (JavaSourceFile) tree;
                     Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
                     if (!sourceSet.isPresent()) {
                         stopAfterPreVisit();
@@ -104,22 +102,22 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
                 if (enclosingClass == null || enclosingClass.getKind() != J.ClassDeclaration.Kind.Type.Class) {
                     return method;
                 }
+                String simpleName = method.getSimpleName();
                 if (containsValidModifiers(method) &&
                     method.getMethodType() != null &&
                     enclosingClass.getType() != null &&
                     !method.isConstructor() &&
-                    !TypeUtils.isOverride(method.getMethodType()) &&
-                    !STANDARD_METHOD_NAME.matcher(method.getSimpleName()).matches() &&
-                    !method.getSimpleName().startsWith("_")) {
+                    !simpleName.startsWith("_") &&
+                    !STANDARD_METHOD_NAME.matcher(simpleName).matches()) {
                     StringBuilder standardized = new StringBuilder();
-                    String normalized = VariableNameUtils.normalizeName(method.getSimpleName());
-                    char[] name = normalized.toCharArray();
+                    String normalized = VariableNameUtils.normalizeName(simpleName);
 
                     if (SNAKE_CASE.matcher(normalized).matches()) {
                         standardized.append(NameCaseConvention.format(NameCaseConvention.LOWER_CAMEL, normalized));
                     } else {
-                        for (int i = 0; i < name.length; i++) {
-                            char c = name[i];
+                        int nameLength = normalized.length();
+                        for (int i = 0; i < nameLength; i++) {
+                            char c = normalized.charAt(i);
 
                             if (i == 0) {
                                 // the java specification requires identifiers to start with [a-zA-Z$_]
@@ -128,11 +126,11 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
                                 }
                             } else {
                                 if (!Character.isLetterOrDigit(c)) {
-                                    while (i < name.length && (!Character.isLetterOrDigit(name[i]) || name[i] > 'z')) {
-                                        i++;
+                                    while (i < nameLength && (!Character.isLetterOrDigit(c) || c > 'z')) {
+                                        c = normalized.charAt(i++);
                                     }
-                                    if (i < name.length) {
-                                        standardized.append(Character.toUpperCase(name[i]));
+                                    if (i < nameLength) {
+                                        standardized.append(Character.toUpperCase(c));
                                     }
                                 } else {
                                     standardized.append(c);
@@ -140,12 +138,11 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
                             }
                         }
                     }
-                    if (!StringUtils.isBlank(standardized.toString())
-                        && !methodExists(method.getMethodType(), standardized.toString())) {
-                        String toName = standardized.toString();
-                        if (!StringUtils.isNumeric(toName)) {
-                            changes.add(new ChangeMethodName(MethodMatcher.methodPattern(method), standardized.toString(), true, false));
-                        }
+
+                    String toName = standardized.toString();
+                    if (!StringUtils.isBlank(toName) && !StringUtils.isNumeric(toName) &&
+                        !methodExists(method.getMethodType(), toName)) {
+                        changes.add(new ChangeMethodName(MethodMatcher.methodPattern(method), toName, false, false));
                     }
                 }
 
@@ -157,7 +154,7 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
             }
 
             private boolean methodExists(JavaType.Method method, String newName) {
-                return TypeUtils.findDeclaredMethod(method.getDeclaringType(), newName, method.getParameterTypes()).orElse(null) != null;
+                return TypeUtils.findDeclaredMethod(method.getDeclaringType(), newName, method.getParameterTypes()).isPresent();
             }
         };
     }
