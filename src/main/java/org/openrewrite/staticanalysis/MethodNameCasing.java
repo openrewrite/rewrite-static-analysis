@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
-public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
+public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.MethodNameChange>> {
 
     private static final Pattern STANDARD_METHOD_NAME = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
     private static final Pattern SNAKE_CASE = Pattern.compile("^[a-zA-Z0-9]+_\\w+$");
@@ -75,16 +75,18 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
     }
 
     @Override
-    public List<ChangeMethodName> getInitialValue(ExecutionContext ctx) {
+    public List<MethodNameChange> getInitialValue(ExecutionContext ctx) {
         return new ArrayList<>();
     }
 
     @Override
-    public TreeVisitor<?, ExecutionContext> getScanner(List<ChangeMethodName> changes) {
+    public TreeVisitor<?, ExecutionContext> getScanner(List<MethodNameChange> changes) {
         return new JavaIsoVisitor<ExecutionContext>() {
+            UUID scope;
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
+                    scope = tree.getId();
                     JavaSourceFile cu = (JavaSourceFile) tree;
                     Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
                     if (!sourceSet.isPresent()) {
@@ -142,7 +144,11 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
                     String toName = standardized.toString();
                     if (!StringUtils.isBlank(toName) && !StringUtils.isNumeric(toName) &&
                         !methodExists(method.getMethodType(), toName)) {
-                        changes.add(new ChangeMethodName(MethodMatcher.methodPattern(method), toName, false, false));
+                        changes.add(new MethodNameChange(
+                                scope,
+                                method.hasModifier(J.Modifier.Type.Private),
+                                new ChangeMethodName(MethodMatcher.methodPattern(method), toName, false, false))
+                        );
                     }
                 }
 
@@ -160,19 +166,28 @@ public class MethodNameCasing extends ScanningRecipe<List<ChangeMethodName>> {
     }
 
     @Override
-    public TreeVisitor<?, ExecutionContext> getVisitor(List<ChangeMethodName> changes) {
+    public TreeVisitor<?, ExecutionContext> getVisitor(List<MethodNameChange> changes) {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) tree;
-                    for (ChangeMethodName changeMethodName : changes) {
-                        cu = (JavaSourceFile) changeMethodName.getVisitor().visitNonNull(cu, ctx);
+                    for (MethodNameChange nameChange : changes) {
+                        if (!nameChange.isPrivateMethod() || tree.getId().equals(nameChange.getScope())) {
+                            cu = (JavaSourceFile) nameChange.getRecipe().getVisitor().visitNonNull(cu, ctx);
+                        }
                     }
                     return cu;
                 }
                 return (J) tree;
             }
         };
+    }
+
+    @Value
+    static class MethodNameChange {
+        UUID scope;
+        boolean privateMethod;
+        ChangeMethodName recipe;
     }
 }
