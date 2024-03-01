@@ -791,5 +791,32 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void multipleCastsInDifferentOperands() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Comparator;
+                  public class A {
+                     Comparator<Object> comparator() {
+                       return (a, b) ->
+                           (a instanceof String) && (b instanceof String) ? ((String) a).compareTo((String) b) : 0;
+                     }
+                  }
+                  """,
+                """
+                  import java.util.Comparator;
+                  public class A {
+                     Comparator<Object> comparator() {
+                       return (a, b) ->
+                            (a instanceof String s) && (b instanceof String s) ? s.compareTo(s) : 0;
+                     }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
