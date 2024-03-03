@@ -23,7 +23,7 @@ import org.openrewrite.test.SourceSpecs;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
+class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new CompareEnumsWithEqualityOperator());
@@ -205,7 +205,8 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     void noSelect() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
             package a;
             public enum A {
                 FOO, BAR, BUZ;
@@ -214,6 +215,36 @@ public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
                 }
             }
             """)
+        );
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Issue("https://github.com/moderneinc/customer-requests/issues/190")
+    @Test
+    void changeEnumInsideBooleanExpression() {
+        rewriteRun(
+          enumA,
+          //language=java
+          java(
+            """
+              import a.A;
+              class Test {
+                  void method(A arg0) {
+                      if (!(A.FOO.equals(arg0) || A.BAR.equals(arg0))) {
+                      }
+                  }
+              }
+              """,
+            """
+              import a.A;
+              class Test {
+                  void method(A arg0) {
+                      if (!(A.FOO == arg0 || A.BAR == arg0)) {
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 }

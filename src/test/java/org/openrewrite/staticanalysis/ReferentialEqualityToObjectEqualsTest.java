@@ -188,4 +188,39 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void notEquals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  void doSomething() {
+                      A a1 = new A();
+                      A a2 = new A();
+                      if (a1 != a2) {}
+                  }
+                  class A {
+                      @Override
+                      public boolean equals(Object anObject) {return true;}
+                  }
+              }
+              """,
+            """
+              class T {
+                  void doSomething() {
+                      A a1 = new A();
+                      A a2 = new A();
+                      if (!a1.equals(a2)) {}
+                  }
+                  class A {
+                      @Override
+                      public boolean equals(Object anObject) {return true;}
+                  }
+              }
+              """
+          )
+        );
+    }
 }

@@ -39,8 +39,8 @@ public class NoFinalizedLocalVariables extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
-                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, p);
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
                 // if this doesn't have "final", we don't need to bother going any further; we're done
                 if (!mv.hasModifier(J.Modifier.Type.Final)) {

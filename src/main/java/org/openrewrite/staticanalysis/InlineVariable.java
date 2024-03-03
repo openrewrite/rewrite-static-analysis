@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -53,15 +52,15 @@ public class InlineVariable extends Recipe {
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(2, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(2);
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.Block visitBlock(J.Block block, ExecutionContext executionContext) {
-                J.Block bl = super.visitBlock(block, executionContext);
+            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block bl = super.visitBlock(block, ctx);
                 List<Statement> statements = bl.getStatements();
                 if (statements.size() > 1) {
                     String identReturned = identReturned(statements);

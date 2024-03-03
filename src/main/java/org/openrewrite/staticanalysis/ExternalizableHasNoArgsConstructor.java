@@ -64,8 +64,8 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
         private static final JavaType externalizableType = JavaType.buildType("java.io.Externalizable");
 
         @Override
-        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
-            J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, executionContext);
+        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+            J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
             if (TypeUtils.isAssignableTo(externalizableType, cd.getType())) {
                 boolean hasFinalUninitializedFieldVar = false;
                 Integer firstMethodDeclarationIndex = null;

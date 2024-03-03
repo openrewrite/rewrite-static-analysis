@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 
-public class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
+class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {

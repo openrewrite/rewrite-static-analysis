@@ -26,7 +26,7 @@ import org.openrewrite.test.RewriteTest;
 
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 
@@ -938,7 +938,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite/issues/2973")
     @Test
     @ExpectedToFail
-    void testExplicitImplementationClassInApi() {
+    void explicitImplementationClassInApi() {
         rewriteRun(
           //language=java
           java(
@@ -984,5 +984,23 @@ class UseCollectionInterfacesTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Test
+    void groovyDefVariable() {
+        rewriteRun(
+          groovy(
+            //language=groovy
+            """
+              library('other-library')
+                            
+              def myMap = [
+                  myEntry: [[ key: value ]]
+              ]
+                            
+              runPipeline(myMap: myMap)
+              """
+          )
+        );
     }
 }

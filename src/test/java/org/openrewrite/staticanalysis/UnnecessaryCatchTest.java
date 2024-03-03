@@ -146,15 +146,15 @@ class UnnecessaryCatchTest implements RewriteTest {
           //language=java
           java(
             """
-                class Scratch {
-                    void method() {
-                        try {
-                            throw new RuntimeException();
-                        } catch (Exception e) {
-                            System.out.println("an exception!");
-                        }
-                    }
-                }
+              class Scratch {
+                  void method() {
+                      try {
+                          throw new RuntimeException();
+                      } catch (Exception e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
               """
           )
         );

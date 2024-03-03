@@ -42,16 +42,26 @@ public class LambdaBlockToExpression extends Recipe {
         return Preconditions.check(new JavaFileChecker<>(),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
-                    public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext executionContext) {
-                        J.Lambda l = super.visitLambda(lambda, executionContext);
+                    public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
+                        J.Lambda l = super.visitLambda(lambda, ctx);
                         if (lambda.getBody() instanceof J.Block) {
                             List<Statement> statements = ((J.Block) lambda.getBody()).getStatements();
-                            if (statements.size() == 1 && statements.get(0) instanceof J.Return) {
-                                Space prefix = statements.get(0).getPrefix();
-                                if (prefix.getComments().isEmpty()) {
-                                    return l.withBody(((J.Return) statements.get(0)).getExpression());
-                                } else {
-                                    return l.withBody(((J.Return) statements.get(0)).getExpression().withPrefix(prefix));
+                            if (statements.size() == 1) {
+                                Statement statement = statements.get(0);
+                                Space prefix = statement.getPrefix();
+                                if (statement instanceof J.Return) {
+                                    Expression expression = ((J.Return) statement).getExpression();
+                                    if (prefix.getComments().isEmpty()) {
+                                        return l.withBody(expression);
+                                    } else {
+                                        return l.withBody(expression.withPrefix(prefix));
+                                    }
+                                } else if (statement instanceof J.MethodInvocation) {
+                                    if (prefix.getComments().isEmpty()) {
+                                        return l.withBody(statement);
+                                    } else {
+                                        return l.withBody(statement.withPrefix(prefix));
+                                    }
                                 }
                             }
                         }
@@ -59,11 +69,11 @@ public class LambdaBlockToExpression extends Recipe {
                     }
 
                     @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         if (hasLambdaArgument(method) && hasMethodOverloading(method)) {
                             return method;
                         }
-                        return super.visitMethodInvocation(method, executionContext);
+                        return super.visitMethodInvocation(method, ctx);
                     }
                 }
         );

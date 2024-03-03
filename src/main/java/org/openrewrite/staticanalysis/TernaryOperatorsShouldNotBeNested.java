@@ -15,19 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import static org.openrewrite.Tree.randomId;
-import static org.openrewrite.java.tree.J.Binary.Type.Equal;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -36,15 +23,15 @@ import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JContainer;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 
 
 public class TernaryOperatorsShouldNotBeNested extends Recipe {
@@ -70,7 +57,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             @Override
             public J.CompilationUnit visitCompilationUnit(
                     final J.CompilationUnit cu,
-                    final ExecutionContext executionContext
+                    final ExecutionContext ctx
             ) {
                 if (cu.getMarkers()
                         .findFirst(JavaVersion.class)
@@ -87,23 +74,23 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     private static class UseIfVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
-        public J visitLambda(final J.Lambda lambda, final ExecutionContext executionContext) {
+        public J visitLambda(final J.Lambda lambda, final ExecutionContext ctx) {
             J result = rewriteNestedTernary(lambda);
             if (result == lambda) {
-                return super.visitLambda(lambda, executionContext);
+                return super.visitLambda(lambda, ctx);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
-            return autoFormat(lambda.withBody(result.withPrefix(Space.SINGLE_SPACE)), executionContext);
+            return autoFormat(lambda.withBody(result.withPrefix(Space.SINGLE_SPACE)), ctx);
         }
 
         @Override
-        public J visitReturn(final J.Return retrn, final ExecutionContext executionContext) {
+        public J visitReturn(final J.Return retrn, final ExecutionContext ctx) {
             J result = rewriteNestedTernary(retrn);
             if (result == retrn) {
-                return super.visitReturn(retrn, executionContext);
+                return super.visitReturn(retrn, ctx);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
-            return autoFormat(result, executionContext);
+            return autoFormat(result, ctx);
         }
 
         private Statement rewriteNestedTernary(final Statement parent) {
@@ -166,15 +153,15 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     static class UseSwitchExpressionVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
-        public J visitTernary(final J.Ternary ternary, final ExecutionContext executionContext) {
+        public J visitTernary(final J.Ternary ternary, final ExecutionContext ctx) {
             return findConditionIdentifier(ternary).map(switchVar -> {
                         List<J.Ternary> nestList = findNestedTernaries(ternary, switchVar);
                         if (nestList.size() < 2) {
                             return null;
                         }
-                        return autoFormat(toSwitch(switchVar, nestList), executionContext);
+                        return autoFormat(toSwitch(switchVar, nestList), ctx);
                     }).map(J.class::cast)
-                    .orElseGet(() -> super.visitTernary(ternary, executionContext));
+                    .orElseGet(() -> super.visitTernary(ternary, ctx));
         }
 
         private List<J.Ternary> findNestedTernaries(final J.Ternary ternary, final J.Identifier switchVar) {

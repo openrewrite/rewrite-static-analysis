@@ -104,7 +104,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                     !LOWER_CAMEL.matches(variable.getSimpleName())) {
 
                     if (variable.getSimpleName().toUpperCase(Locale.getDefault()).equals(variable.getSimpleName()) &&
-                        type.hasFlags(Flag.Private, Flag.Final) && !type.hasFlags(Flag.Static)) {
+                        type.hasFlags(Flag.Private, Flag.Final) && !type.hasFlags(Flag.Static) && variable.getInitializer() instanceof J.Literal) {
                         // instead, add a static modifier
                         Set<Flag> flags = new HashSet<>(type.getFlags());
                         flags.add(Flag.Static);

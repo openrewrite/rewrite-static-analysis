@@ -24,7 +24,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -48,7 +47,7 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(5, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(5);
     }
 
     @Override
@@ -67,8 +66,8 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
             }
 
             @Override
-            public J visitUnary(J.Unary unary, ExecutionContext executionContext) {
-                J.Unary un = (J.Unary) super.visitUnary(unary, executionContext);
+            public J visitUnary(J.Unary unary, ExecutionContext ctx) {
+                J.Unary un = (J.Unary) super.visitUnary(unary, ctx);
                 if (J.Unary.Type.Not == un.getOperator() && TypeUtils.isOfClassType(un.getExpression().getType(), "java.lang.Boolean")) {
                     return JavaTemplate.apply("Boolean.FALSE.equals(#{any(java.lang.Boolean)})",
                             updateCursor(un), un.getCoordinates().replace(), un.getExpression());

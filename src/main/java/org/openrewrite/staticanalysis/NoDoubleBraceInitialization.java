@@ -86,8 +86,8 @@ public class NoDoubleBraceInitialization extends Recipe {
         }
 
         @Override
-        public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
-            J.NewClass nc = super.visitNewClass(newClass, executionContext);
+        public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+            J.NewClass nc = super.visitNewClass(newClass, ctx);
             updateCursor(nc);
             if (isSupportedDoubleBraceInitialization(newClass)) {
                 Cursor parentBlockCursor = getCursor().dropParentUntil(J.Block.class::isInstance);
@@ -123,12 +123,12 @@ public class NoDoubleBraceInitialization extends Recipe {
                             String newInitializer = " new " + fq.getClassName() + "<>();";
                             JavaTemplate template = JavaTemplate.builder(newInitializer).imports(fq.getFullyQualifiedName()).build();
                             nc = template.apply(getCursor(), nc.getCoordinates().replace());
-                            initStatements = addSelectToInitStatements(initStatements, var.getName(), executionContext);
-                            initStatements.add(0, new J.Assignment(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, var.getName().withId(UUID.randomUUID()), JLeftPadded.build(nc), fq));
+                            initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
+                            initStatements.add(0, new J.Assignment(Tree.randomId(), Space.EMPTY, Markers.EMPTY, var.getName().withId(UUID.randomUUID()), JLeftPadded.build(nc), fq));
                             parentBlockCursor.computeMessageIfAbsent("INIT_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         }
                     } else if (parentBlockCursor.getParent().getValue() instanceof J.MethodDeclaration) {
-                        initStatements = addSelectToInitStatements(initStatements, var.getName(), executionContext);
+                        initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
                         Cursor varDeclsCursor = getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance);
                         parentBlockCursor.computeMessageIfAbsent("METHOD_DECL_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         nc = nc.withBody(null);
@@ -156,8 +156,8 @@ public class NoDoubleBraceInitialization extends Recipe {
             }
 
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
                 if (mi.getMethodType() != null && identifier.getFieldType() != null && mi.getSelect() == null
                     || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
                     if (identifier.getFieldType() == null) {
@@ -180,8 +180,8 @@ public class NoDoubleBraceInitialization extends Recipe {
         }
 
         @Override
-        public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext executionContext) {
-            J.VariableDeclarations.NamedVariable var = super.visitVariable(variable, executionContext);
+        public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+            J.VariableDeclarations.NamedVariable var = super.visitVariable(variable, ctx);
             if (getCursor().pollMessage("DROP_INITIALIZER") != null) {
                 var = var.withInitializer(null);
             }

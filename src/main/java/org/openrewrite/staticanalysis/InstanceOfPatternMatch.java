@@ -41,7 +41,7 @@ import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMEN
 
 @Incubating(since = "7.36.0")
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class InstanceOfPatternMatch extends Recipe {
 
     @Override
@@ -70,8 +70,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
         return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
             @Override
-            public @Nullable J postVisit(J tree, ExecutionContext executionContext) {
-                J result = super.postVisit(tree, executionContext);
+            public @Nullable J postVisit(J tree, ExecutionContext ctx) {
+                J result = super.postVisit(tree, ctx);
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
                 if (original != null && !original.isEmpty()) {
                     return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow());
@@ -163,7 +163,7 @@ public class InstanceOfPatternMatch extends Recipe {
 
         public void registerInstanceOf(J.InstanceOf instanceOf, Set<J> contexts) {
             Expression expression = instanceOf.getExpression();
-            JavaType type = toJavaType((TypedTree) instanceOf.getClazz());
+            JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
 
             Optional<ExpressionAndType> existing = instanceOfs.keySet().stream()
                     .filter(k -> TypeUtils.isAssignableTo(type, k.getType())
@@ -178,7 +178,7 @@ public class InstanceOfPatternMatch extends Recipe {
         @SuppressWarnings("SuspiciousMethodCalls")
         public void registerTypeCast(J.TypeCast typeCast, Cursor cursor) {
             Expression expression = typeCast.getExpression();
-            JavaType type = toJavaType(typeCast.getClazz().getTree());
+            JavaType type = typeCast.getClazz().getTree().getType();
 
             Optional<ExpressionAndType> match = instanceOfs.keySet().stream()
                     .filter(k -> TypeUtils.isAssignableTo(type, k.getType())
@@ -214,7 +214,7 @@ public class InstanceOfPatternMatch extends Recipe {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
             }
-            @Nullable JavaType type = toJavaType((TypeTree) instanceOf.getClazz());
+            @Nullable JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             String name = patternVariableName(instanceOf, cursor);
             J.InstanceOf result = instanceOf.withPattern(new J.Identifier(
                     randomId(),
@@ -274,21 +274,8 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
-    // FIXME remove this method when https://github.com/openrewrite/rewrite/issues/2713 is addressed and use `TypedTree#getType()`
-    @Nullable
-    private static JavaType toJavaType(TypedTree typeTree) {
-        if (typeTree instanceof J.ArrayType) {
-            JavaType.Array result = new JavaType.Array(null, ((J.ArrayType) typeTree).getElementType().getType());
-            for (int i = 0; i < ((J.ArrayType) typeTree).getDimensions().size() - 1; i++) {
-                result = new JavaType.Array(null, result);
-            }
-            return result;
-        }
-        return typeTree.getType();
-    }
-
     private static String variableBaseName(TypeTree typeTree, VariableNameStrategy nameStrategy) {
-        return nameStrategy.variableName(toJavaType(typeTree));
+        return nameStrategy.variableName(typeTree.getType());
     }
 
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {

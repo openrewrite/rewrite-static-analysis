@@ -26,7 +26,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Set;
 
@@ -48,7 +47,7 @@ public class UpperCaseLiteralSuffixes extends Recipe {
 
     @Override
     public @Nullable Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(2, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(2);
     }
 
     @Override
@@ -62,8 +61,8 @@ public class UpperCaseLiteralSuffixes extends Recipe {
                 new UsesType<>("java.lang.Float", false)
         ), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext executionContext) {
-                J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, executionContext);
+            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+                J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
                 if (nv.getInitializer() instanceof J.Literal && nv.getInitializer().getType() != null) {
                     J.Literal initializer = (J.Literal) nv.getInitializer();
                     if (initializer.getType() == JavaType.Primitive.Double

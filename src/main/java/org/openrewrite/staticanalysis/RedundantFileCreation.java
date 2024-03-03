@@ -40,8 +40,8 @@ public class RedundantFileCreation extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("java.io.FileInputStream", true), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext executionContext) {
-                J.NewClass n = super.visitNewClass(newClass, executionContext);
+            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                J.NewClass n = super.visitNewClass(newClass, ctx);
                 if (n.getClazz() != null && TypeUtils.isOfClassType(n.getClazz().getType(),
                         "java.io.FileInputStream")) {
                     n = n.withArguments(ListUtils.map(n.getArguments(), arg -> {

@@ -61,9 +61,9 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
         }
 
         @Override
-        public J visitIf(J.If _if, ExecutionContext context) {
+        public J visitIf(J.If _if, ExecutionContext ctx) {
             J.If before = _if;
-            J.If after = (J.If) super.visitIf(_if, context);
+            J.If after = (J.If) super.visitIf(_if, ctx);
             boolean updated = after != before;
             _if = after;
             if (!(_if.getIfCondition().getTree() instanceof J.MethodInvocation) ||
@@ -118,7 +118,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                     ((J.VariableDeclarations) ((J.Lambda) ((J.MethodInvocation) ifPresentMi).getArguments().get(0))
                             .getParameters().getParameters().get(0)).getVariables().get(0).getName();
             lambdaAccessibleVariables.add(lambdaParameterIdentifier);
-            return ReplaceMethodCallWithVariableVisitor.replace(ifPresentMi, context, lambdaParameterIdentifier,
+            return ReplaceMethodCallWithVariableVisitor.replace(ifPresentMi, ctx, lambdaParameterIdentifier,
                     optionalVariable);
         }
 
@@ -223,18 +223,18 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     public static class ReplaceMethodCallWithVariableVisitor extends JavaVisitor<ExecutionContext> {
         J.Identifier lambdaParameterIdentifier;
         J.Identifier methodSelector;
 
-        static J replace(J subtree, ExecutionContext p, J.Identifier lambdaParameterIdentifier, J.Identifier methodSelector) {
-            return new ReplaceMethodCallWithVariableVisitor(lambdaParameterIdentifier, methodSelector).visitNonNull(subtree, p);
+        static J replace(J subtree, ExecutionContext ctx, J.Identifier lambdaParameterIdentifier, J.Identifier methodSelector) {
+            return new ReplaceMethodCallWithVariableVisitor(lambdaParameterIdentifier, methodSelector).visitNonNull(subtree, ctx);
         }
 
         @Override
-        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext p) {
-            J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, p);
+        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
             /* Only replace method invocations that has same method selector as present in if condition */
             if (OPTIONAL_GET.matches(mi) && mi.getSelect() instanceof J.Identifier) {
                 J.Identifier selectToBeReplaced = (J.Identifier) mi.getSelect();

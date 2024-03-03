@@ -19,7 +19,10 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypedTree;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -75,9 +78,17 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                 return buildReplacement(select, mi);
             } else if (METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(mi))) {
                 // deals with edge cases where .toString() is called implicitly
+                JavaType.Method methodType = mi.getMethodType();
+                if (methodType == null) {
+                    return mi;
+                }
+                List<JavaType> parameterTypes = methodType.getParameterTypes();
                 List<Expression> arguments = mi.getArguments();
-                for (Expression arg : arguments) {
-                    if (arg.getType() instanceof JavaType.Array) {
+                for (int i = 0; i < arguments.size(); i++) {
+                    Expression arg = arguments.get(i);
+                    if (arg.getType() instanceof JavaType.Array &&
+                        (i > parameterTypes.size() - 1 ||
+                         !(parameterTypes.get(i) instanceof JavaType.Array))) {
                         getCursor().putMessage("METHOD_KEY", mi);
                         break;
                     }

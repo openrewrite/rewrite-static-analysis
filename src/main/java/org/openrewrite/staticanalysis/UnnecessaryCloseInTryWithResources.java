@@ -57,8 +57,8 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
         private static final MethodMatcher AUTO_CLOSEABLE_METHOD_MATCHER = new MethodMatcher("java.lang.AutoCloseable close()", true);
 
         @Override
-        public J.Try visitTry(J.Try aTry, ExecutionContext executionContext) {
-            J.Try tr = super.visitTry(aTry, executionContext);
+        public J.Try visitTry(J.Try aTry, ExecutionContext ctx) {
+            J.Try tr = super.visitTry(aTry, ctx);
             if (tr.getResources() != null) {
                 String[] resourceNames = new String[tr.getResources().size()];
                 for (int i = 0; i < tr.getResources().size(); i++) {

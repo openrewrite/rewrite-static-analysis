@@ -55,8 +55,8 @@ public class UseStandardCharset extends Recipe {
             final MethodMatcher CHARSET_FOR_NAME = new MethodMatcher("java.nio.charset.Charset forName(java.lang.String)");
 
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, executionContext);
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (CHARSET_FOR_NAME.matches(m)) {
                     Expression charsetName = m.getArguments().get(0);
                     if (!(charsetName instanceof J.Literal)) {

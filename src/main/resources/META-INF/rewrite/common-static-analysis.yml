@@ -21,6 +21,7 @@ description: Resolve common static analysis issues discovered through 3rd party 
 recipeList:
 #  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
+  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
   - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
   - org.openrewrite.staticanalysis.BooleanChecksNotInverted
   - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
@@ -75,6 +76,7 @@ recipeList:
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
   - org.openrewrite.staticanalysis.SimplifyBooleanExpression
   - org.openrewrite.staticanalysis.SimplifyBooleanReturn
+#  - org.openrewrite.staticanalysis.SimplifyTernaryRecipes
   - org.openrewrite.staticanalysis.StaticMethodNotFinal
   - org.openrewrite.staticanalysis.StringLiteralEquality
   - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
@@ -89,71 +91,6 @@ recipeList:
 # https://github.com/openrewrite/rewrite-static-analysis/issues/10
 #  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
 #  - org.openrewrite.staticanalysis.UseStringReplace
-  - org.openrewrite.staticanalysis.WhileInsteadOfFor
-  - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
----
-type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.kotlin.StaticAnalysis
-displayName: Kotlin Common Static Analysis
-description: Static analysis fixes for Kotlin sources.
-recipeList:
-  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
-  - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
-  - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
-  - org.openrewrite.staticanalysis.BooleanChecksNotInverted
-  - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
-  - org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
-  - org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
-  - org.openrewrite.staticanalysis.CovariantEquals
-  - org.openrewrite.staticanalysis.DefaultComesLast
-  - org.openrewrite.staticanalysis.EmptyBlock
-  - org.openrewrite.staticanalysis.EqualsAvoidsNull
-  - org.openrewrite.staticanalysis.ExplicitInitialization
-  - org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
-  - org.openrewrite.staticanalysis.FinalizePrivateFields
-  - org.openrewrite.staticanalysis.FallThrough
-  - org.openrewrite.staticanalysis.FixStringFormatExpressions
-  - org.openrewrite.staticanalysis.ForLoopIncrementInUpdate
-  - org.openrewrite.staticanalysis.IndexOfChecksShouldUseAStartPosition
-  - org.openrewrite.staticanalysis.IndexOfReplaceableByContains
-  - org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero
-  - org.openrewrite.staticanalysis.InlineVariable
-  - org.openrewrite.staticanalysis.IsEmptyCallOnCollections
-  - org.openrewrite.staticanalysis.LambdaBlockToExpression
-  - org.openrewrite.staticanalysis.LowercasePackage
-  - org.openrewrite.staticanalysis.MethodNameCasing
-  - org.openrewrite.staticanalysis.MinimumSwitchCases
-  - org.openrewrite.staticanalysis.ModifierOrder
-  - org.openrewrite.staticanalysis.NeedBraces
-  - org.openrewrite.staticanalysis.NestedEnumsAreNotStatic
-  - org.openrewrite.staticanalysis.NewStringBuilderBufferWithCharArgument
-  - org.openrewrite.staticanalysis.NoDoubleBraceInitialization
-  - org.openrewrite.staticanalysis.NoEmptyCollectionWithRawType
-  - org.openrewrite.staticanalysis.NoEqualityInForCondition
-  - org.openrewrite.staticanalysis.NoFinalizer
-  - org.openrewrite.staticanalysis.NoPrimitiveWrappersForToStringOrCompareTo
-  - org.openrewrite.staticanalysis.NoRedundantJumpStatements
-  - org.openrewrite.staticanalysis.NoToStringOnStringType
-  - org.openrewrite.staticanalysis.NoValueOfOnStringType
-  - org.openrewrite.staticanalysis.ObjectFinalizeCallsSuper
-  - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
-  - org.openrewrite.staticanalysis.RedundantFileCreation
-  - org.openrewrite.staticanalysis.RemoveExtraSemicolons
-  - org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
-  - org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrTostring
-  - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
-  - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
-  - org.openrewrite.staticanalysis.SimplifyBooleanExpression
-  - org.openrewrite.staticanalysis.SimplifyBooleanReturn
-  - org.openrewrite.staticanalysis.StaticMethodNotFinal
-  - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
-  - org.openrewrite.staticanalysis.UnnecessaryParentheses
-  - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
-  - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
-  - org.openrewrite.staticanalysis.UseDiamondOperator
-  - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
-# https://github.com/openrewrite/rewrite-static-analysis/issues/10
-#  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
   - org.openrewrite.staticanalysis.WhileInsteadOfFor
   - org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
   - org.openrewrite.kotlin.cleanup.EqualsMethodUsage

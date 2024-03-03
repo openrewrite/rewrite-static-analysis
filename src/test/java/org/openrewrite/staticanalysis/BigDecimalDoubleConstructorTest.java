@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,32 +22,37 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-class RemoveSystemOutPrintlnTest implements RewriteTest {
+@SuppressWarnings("UnpredictableBigDecimalConstructorCall")
+class BigDecimalDoubleConstructorTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new RemoveSystemOutPrintln());
+        spec.recipe(new BigDecimalDoubleConstructorRecipe());
     }
 
     @DocumentExample
     @Test
-    void removePrintln() {
+    void bigDecimalDoubleConstructor() {
         rewriteRun(
-          //language=java
           java(
             """
-              class Test {
-                  void test() {
-                        System.out.println("Hello, world!");
-                  }
-              }
-              """,
+            import java.math.BigDecimal;
+            class Test {
+                void test(double d) {
+                    BigDecimal bd = new BigDecimal(1.0);
+                    BigDecimal bd2 = new BigDecimal(d);
+                }
+            }
+            """,
             """
-              class Test {
-                  void test() {
-                  }
-              }
-              """
+            import java.math.BigDecimal;
+            class Test {
+                void test(double d) {
+                    BigDecimal bd = BigDecimal.valueOf(1.0);
+                    BigDecimal bd2 = BigDecimal.valueOf(d);
+                }
+            }
+            """
           )
         );
     }

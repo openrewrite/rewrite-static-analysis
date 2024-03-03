@@ -16,8 +16,11 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -229,12 +232,12 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               public class Vehicle {
                   private VehicleUsage vehicleUsage;
-              
+                            
                   public class VehicleUsage {
                       private final String vehicleId;
                   }
-              
-                  public doSomethingWithAVehicle() {
+                            
+                  public void doSomethingWithAVehicle() {
                       vehicleUsage = new VehicleUsage();
                       vehicleUsage.vehicleId = "vu50";
                   }
@@ -261,6 +264,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
     @Test
     void removeCommentsLastExpression() {
         rewriteRun(
@@ -386,6 +390,51 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                   public void test() {
                       a = 42;
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
+    @ParameterizedTest
+    @ValueSource(strings = {
+      "@lombok.Data",
+      "@lombok.Value",
+      "@lombok.Getter",
+      "@lombok.Setter",
+    })
+    void doNotRemoveFieldsIfLombokDataAnnotationIsPresent(String annotation) {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              %s
+              class A {
+                  private int a = 1;
+              }
+              """.formatted(annotation)
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
+    @Test
+    void doRemoveFieldsIfLombokLoggingAnnotationIsPresent() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              @lombok.extern.slf4j.Slf4j
+              class A {
+                  private int a = 1;
+              }
+              """,
+            """
+              @lombok.extern.slf4j.Slf4j
+              class A {
               }
               """
           )

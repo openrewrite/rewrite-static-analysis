@@ -63,7 +63,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             """
               import java.nio.file.Path;
               import java.nio.file.Paths;
-              import java.util.List;import java.util.stream.Collectors;
+              import java.util.List;
+              import java.util.stream.Collectors;
                             
               class Test {
                   Path path = Paths.get("");
@@ -190,6 +191,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import java.util.List;
               import java.util.stream.Collectors;
@@ -237,6 +239,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import org.test.CheckType;
               
@@ -288,6 +291,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import java.util.List;
               import java.util.stream.Stream;
@@ -409,8 +413,10 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                           Collections.singletonList(1).forEach(n -> run());
                       }
                   }
-                  Test t = new Test();
-                  Runnable r = () -> t.run();
+                  void foo() {
+                      Test t = new Test();
+                      Runnable r = () -> t.run();
+                  }
               }
               """,
             """
@@ -423,8 +429,10 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                           Collections.singletonList(1).forEach(n -> run());
                       }
                   }
-                  Test t = new Test();
-                  Runnable r = t::run;
+                  void foo() {
+                      Test t = new Test();
+                      Runnable r = t::run;
+                  }
               }
               """
           )
@@ -595,6 +603,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   }
               }
               """,
+            //language=java
             """
               import org.test.CheckType;
               
@@ -1293,8 +1302,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
     @Test
     void newClassSelector() {
+        //language=java
         rewriteRun(
-          //language=java
           java(
             """
               class A {
@@ -1312,6 +1321,52 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               class B {
                   void bar(Stream<String> stream) {
                       stream.map(s -> new A().lower(s));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
+    void groupingByGetClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            import java.util.*;
+            import java.util.stream.*;
+            
+            class Animal {}
+            class Cat extends Animal {}
+            class Dog extends Animal {}
+
+            class Test {
+              public void groupOnGetClass() {
+                List<Animal> animals = List.of(new Cat(), new Dog());
+                Map<Class<? extends Animal>, List<Animal>> collect;
+                collect = animals.stream().collect(Collectors.groupingBy(a -> a.getClass()));
+              }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void dontReplaceNullableFieldReferences() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.function.Supplier;
+              class A {
+                  Object field;
+                  void foo() {
+                      // Runtime exception when replaced with field::toString
+                      Supplier<String> supplier = () -> field.toString();
+                      Supplier<String> supplier = () -> this.field.toString();
                   }
               }
               """

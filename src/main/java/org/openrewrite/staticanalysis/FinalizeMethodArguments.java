@@ -15,18 +15,7 @@ import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.J.Empty;
-import org.openrewrite.java.tree.J.MethodDeclaration;
-import org.openrewrite.java.tree.J.Modifier;
-import org.openrewrite.java.tree.J.Modifier.Type;
-import org.openrewrite.java.tree.J.VariableDeclarations;
-import org.openrewrite.java.tree.JavaSourceFile;
-import org.openrewrite.java.tree.JavaType.FullyQualified;
-import org.openrewrite.java.tree.JavaType.FullyQualified.Kind;
-import org.openrewrite.java.tree.JavaType.Method;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.List;
@@ -54,8 +43,8 @@ public class FinalizeMethodArguments extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public MethodDeclaration visitMethodDeclaration(MethodDeclaration methodDeclaration, ExecutionContext executionContext) {
-                MethodDeclaration declarations = super.visitMethodDeclaration(methodDeclaration, executionContext);
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
+                J.MethodDeclaration declarations = super.visitMethodDeclaration(methodDeclaration, ctx);
 
                 if (isWrongKind(methodDeclaration) ||
                     isEmpty(declarations.getParameters()) ||
@@ -77,8 +66,8 @@ public class FinalizeMethodArguments extends Recipe {
             }
 
             private void checkIfAssigned(final AtomicBoolean assigned, final Statement p) {
-                if (p instanceof VariableDeclarations) {
-                    VariableDeclarations variableDeclarations = (VariableDeclarations) p;
+                if (p instanceof J.VariableDeclarations) {
+                    J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) p;
                     if (variableDeclarations.getVariables().stream()
                             .anyMatch(namedVariable ->
                                     FindAssignmentReferencesToVariable.find(getCursor()
@@ -90,38 +79,33 @@ public class FinalizeMethodArguments extends Recipe {
                     }
                 }
             }
-
-            @Override
-            public boolean isAcceptable(final SourceFile sourceFile, final ExecutionContext executionContext) {
-                return sourceFile instanceof JavaSourceFile;
-            }
         };
     }
 
-    private static boolean isWrongKind(final MethodDeclaration methodDeclaration) {
+    private static boolean isWrongKind(final J.MethodDeclaration methodDeclaration) {
         return Optional.ofNullable(methodDeclaration.getMethodType())
-                .map(Method::getDeclaringType)
-                .map(FullyQualified::getKind)
-                .filter(Kind.Interface::equals)
+                .map(JavaType.Method::getDeclaringType)
+                .map(JavaType.FullyQualified::getKind)
+                .filter(JavaType.FullyQualified.Kind.Interface::equals)
                 .isPresent();
     }
 
-    private static boolean isAbstractMethod(MethodDeclaration method) {
-        return method.getModifiers().stream().anyMatch(modifier -> modifier.getType() == Type.Abstract);
+    private static boolean isAbstractMethod(J.MethodDeclaration method) {
+        return method.getModifiers().stream().anyMatch(modifier -> modifier.getType() == J.Modifier.Type.Abstract);
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
 
-        VariableDeclarations.NamedVariable variable;
+        J.VariableDeclarations.NamedVariable variable;
 
         /**
          * @param subtree  The subtree to search.
-         * @param variable A {@link VariableDeclarations.NamedVariable} to check for any reassignment calls.
+         * @param variable A {@link J.VariableDeclarations.NamedVariable} to check for any reassignment calls.
          * @return An {@link AtomicBoolean} that is true if the variable has been reassigned and false otherwise.
          */
-        static AtomicBoolean find(J subtree, VariableDeclarations.NamedVariable variable) {
+        static AtomicBoolean find(J subtree, J.VariableDeclarations.NamedVariable variable) {
             return new FindAssignmentReferencesToVariable(variable)
                     .reduce(subtree, new AtomicBoolean());
         }
@@ -180,10 +164,10 @@ public class FinalizeMethodArguments extends Recipe {
     }
 
     private static Statement updateParam(final Statement p) {
-        if (p instanceof VariableDeclarations) {
-            VariableDeclarations variableDeclarations = (VariableDeclarations) p;
+        if (p instanceof J.VariableDeclarations) {
+            J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) p;
             if (variableDeclarations.getModifiers().isEmpty()) {
-                variableDeclarations = updateModifiers(variableDeclarations, !((VariableDeclarations) p).getLeadingAnnotations().isEmpty());
+                variableDeclarations = updateModifiers(variableDeclarations, !((J.VariableDeclarations) p).getLeadingAnnotations().isEmpty());
                 variableDeclarations = updateDeclarations(variableDeclarations);
                 return variableDeclarations;
             }
@@ -191,18 +175,18 @@ public class FinalizeMethodArguments extends Recipe {
         return p;
     }
 
-    private static VariableDeclarations updateDeclarations(final VariableDeclarations variableDeclarations) {
+    private static J.VariableDeclarations updateDeclarations(final J.VariableDeclarations variableDeclarations) {
         return variableDeclarations.withTypeExpression(variableDeclarations.getTypeExpression() != null ?
                 variableDeclarations.getTypeExpression().withPrefix(Space.SINGLE_SPACE) : null);
     }
 
-    private static VariableDeclarations updateModifiers(final VariableDeclarations variableDeclarations, final boolean leadingAnnotations) {
-        List<Modifier> modifiers = variableDeclarations.getModifiers();
-        Modifier finalModifier = new Modifier(Tree.randomId(),
+    private static J.VariableDeclarations updateModifiers(final J.VariableDeclarations variableDeclarations, final boolean leadingAnnotations) {
+        List<J.Modifier> modifiers = variableDeclarations.getModifiers();
+        J.Modifier finalModifier = new J.Modifier(Tree.randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
                 null,
-                Type.Final,
+                J.Modifier.Type.Final,
                 emptyList());
         if (leadingAnnotations) {
             finalModifier = finalModifier.withPrefix(Space.SINGLE_SPACE);
@@ -212,17 +196,17 @@ public class FinalizeMethodArguments extends Recipe {
 
     private boolean hasFinalModifiers(final List<Statement> parameters) {
         return parameters.stream().allMatch(p -> {
-            if (p instanceof VariableDeclarations) {
-                final List<Modifier> modifiers = ((VariableDeclarations) p).getModifiers();
+            if (p instanceof J.VariableDeclarations) {
+                final List<J.Modifier> modifiers = ((J.VariableDeclarations) p).getModifiers();
                 return !modifiers.isEmpty()
                        && modifiers.stream()
-                               .allMatch(m -> m.getType().equals(Type.Final));
+                               .allMatch(m -> m.getType().equals(J.Modifier.Type.Final));
             }
             return false;
         });
     }
 
     private boolean isEmpty(final List<Statement> parameters) {
-        return parameters.size() == 1 && (parameters.get(0) instanceof Empty);
+        return parameters.size() == 1 && (parameters.get(0) instanceof J.Empty);
     }
 }

@@ -24,6 +24,7 @@ import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
@@ -32,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
 public class RemoveUnusedLocalVariables extends Recipe {
     @Incubating(since = "7.17.2")
@@ -142,17 +143,17 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
-            public Statement visitStatement(Statement statement, ExecutionContext executionContext) {
+            public Statement visitStatement(Statement statement, ExecutionContext ctx) {
                 List<Comment> comments = getCursor().pollNearestMessage("COMMENTS_KEY");
                 if (comments != null) {
                     statement = statement.withComments(ListUtils.concatAll(statement.getComments(), comments));
                 }
-                return super.visitStatement(statement, executionContext);
+                return super.visitStatement(statement, ctx);
             }
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
-                if (!multiVariable.getAllAnnotations().isEmpty()) {
+                if (!service(AnnotationService.class).getAllAnnotations(getCursor()).isEmpty()) {
                     return multiVariable;
                 }
 
@@ -203,33 +204,33 @@ public class RemoveUnusedLocalVariables extends Recipe {
      * and remove the assignment, leaving behind the value being assigned.
      */
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class PruneAssignmentExpression extends JavaIsoVisitor<ExecutionContext> {
         J.Assignment assignment;
 
         @Override
-        public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext executionContext) {
+        public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext ctx) {
             //noinspection unchecked
             c = (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
-                    .visitNonNull(c, executionContext, getCursor().getParentOrThrow());
+                    .visitNonNull(c, ctx, getCursor().getParentOrThrow());
             return c;
         }
 
         @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext executionContext) {
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, executionContext, getCursor().getParentOrThrow())));
+            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
             return m;
         }
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class AssignmentToLiteral extends JavaVisitor<ExecutionContext> {
         J.Assignment assignment;
 
         @Override
-        public J visitAssignment(J.Assignment a, ExecutionContext executionContext) {
+        public J visitAssignment(J.Assignment a, ExecutionContext ctx) {
             if (assignment.isScope(a)) {
                 return a.getAssignment().withPrefix(a.getPrefix());
             }

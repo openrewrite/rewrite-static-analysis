@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Tree;
@@ -261,6 +262,42 @@ class FallThroughTest implements RewriteTest {
                       switch (i) {
                           case 0:
                               i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/229")
+    @ExpectedToFail
+    void switchAsLastStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public int m(int i) {
+                      switch (i) {
+                          case 0:
+                              if (true) return i;
+                          default:
+                              throw new IllegalStateException();
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public int m(int i) {
+                      switch (i) {
+                          case 0:
+                              if (true) return i;
+                              // fall through
+                          default:
+                              throw new IllegalStateException();
                       }
                   }
               }

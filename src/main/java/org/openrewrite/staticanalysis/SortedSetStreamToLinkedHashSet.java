@@ -53,8 +53,8 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
                     .build();
 
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
                 if (STREAM_COLLECT_METHOD_MATCHER.matches(mi)
                     && STREAM_SORTED_METHOD_MATCHER.matches(mi.getSelect())
                     && COLLECTORS_TO_SET_METHOD_MATCHER.matches(mi.getArguments().get(0))) {

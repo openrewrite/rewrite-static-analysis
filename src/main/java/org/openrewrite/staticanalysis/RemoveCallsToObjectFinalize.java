@@ -56,8 +56,8 @@ public class RemoveCallsToObjectFinalize extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(OBJECT_FINALIZE), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext context) {
-                J.MethodInvocation invocation = super.visitMethodInvocation(method, context);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
 
                 if (invocation.getMethodType() != null && "finalize".equals(invocation.getMethodType().getName())
                     && (invocation.getMethodType().getDeclaringType().getSupertype() != null && Object.class.getName().equals(invocation.getMethodType().getDeclaringType().getSupertype().getFullyQualifiedName()))) {

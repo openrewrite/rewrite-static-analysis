@@ -21,14 +21,17 @@ import org.openrewrite.Cursor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.style.ExplicitInitializationStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.util.Iterator;
+
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
     private static final AnnotationMatcher LOMBOK_VALUE = new AnnotationMatcher("@lombok.Value");
     private static final AnnotationMatcher LOMBOK_BUILDER_DEFAULT = new AnnotationMatcher("@lombok.Builder.Default");
@@ -53,15 +56,15 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
                 return v;
             }
         }
-        J.ClassDeclaration clz = getCursor().firstEnclosing(J.ClassDeclaration.class);
-        if (clz != null && clz.getAllAnnotations().stream().anyMatch(LOMBOK_VALUE::matches)) {
+        Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
+        if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_VALUE)) {
             return v;
         }
         JavaType.Primitive primitive = TypeUtils.asPrimitive(variable.getType());
         JavaType.Array array = TypeUtils.asArray(variable.getType());
 
         J.VariableDeclarations variableDecls = variableDeclsCursor.getValue();
-        if (variableDecls.getAllAnnotations().stream().anyMatch(LOMBOK_BUILDER_DEFAULT::matches)) {
+        if (service(AnnotationService.class).matches(variableDeclsCursor, LOMBOK_BUILDER_DEFAULT)) {
             return v;
         }
         J.Literal literalInit = variable.getInitializer() instanceof J.Literal

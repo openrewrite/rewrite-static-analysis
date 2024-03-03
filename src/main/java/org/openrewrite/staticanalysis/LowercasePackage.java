@@ -56,7 +56,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
     public TreeVisitor<?, ExecutionContext> getScanner(Map<String, String> acc) {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public @Nullable J preVisit(J tree, ExecutionContext executionContext) {
+            public @Nullable J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     J.Package pkg = cu.getPackageDeclaration();
@@ -69,7 +69,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
                     }
                     stopAfterPreVisit();
                 }
-                return super.preVisit(tree, executionContext);
+                return super.preVisit(tree, ctx);
             }
         };
     }

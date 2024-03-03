@@ -45,8 +45,8 @@ public class FinalizeLocalVariables extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext p) {
-                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, p);
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
                 // if this already has "final", we don't need to bother going any further; we're done
                 if (mv.hasModifier(J.Modifier.Type.Final)) {
@@ -80,7 +80,7 @@ public class FinalizeLocalVariables extends Recipe {
                     mv = autoFormat(
                             mv.withModifiers(
                                     ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()))
-                            ), p);
+                            ), ctx);
                 }
 
                 return mv;
@@ -98,7 +98,7 @@ public class FinalizeLocalVariables extends Recipe {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
 
         J.VariableDeclarations.NamedVariable variable;

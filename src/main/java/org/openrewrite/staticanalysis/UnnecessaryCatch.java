@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class UnnecessaryCatch extends Recipe {
 
     @Option(displayName = "Include `java.lang.Exception`",
@@ -73,8 +73,8 @@ public class UnnecessaryCatch extends Recipe {
             }
 
             @Override
-            public J.Try visitTry(J.Try tryable, ExecutionContext executionContext) {
-                J.Try t = super.visitTry(tryable, executionContext);
+            public J.Try visitTry(J.Try tryable, ExecutionContext ctx) {
+                J.Try t = super.visitTry(tryable, ctx);
 
                 List<JavaType.FullyQualified> thrownExceptions = new ArrayList<>();
                 AtomicBoolean missingTypeInformation = new AtomicBoolean(false);
