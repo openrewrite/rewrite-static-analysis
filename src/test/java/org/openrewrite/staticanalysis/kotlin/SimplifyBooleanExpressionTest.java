@@ -53,6 +53,27 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
     }
 
     @Test
+    void simplifyEqualsFalse() {
+        rewriteRun(
+          kotlin(
+            """
+              fun getSymbol() : String? {
+                  return null
+              }
+              """
+          ),
+          kotlin(
+            """
+              val isPositive = getSymbol().equals("+") == false
+              """,
+            """
+              val isPositive = !getSymbol().equals("+")
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeWithNullable() {
         rewriteRun(
           kotlin(
