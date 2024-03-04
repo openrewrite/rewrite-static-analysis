@@ -17,6 +17,8 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.AnnotationMatcher;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -40,6 +42,7 @@ import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
  * - The recipe will not rename fields if the result already exists in a class or the result will be a java reserved keyword.
  */
 public class RenamePrivateFieldsToCamelCase extends Recipe {
+    private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
     @Override
     public String getDisplayName() {
@@ -83,6 +86,15 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                 );
             }
 
+            @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                // Skip classes annotated with Lombok annotations, as their fields might be set or exposed by Lombok.
+                if (service(AnnotationService.class).matches(getCursor(), LOMBOK_ANNOTATION)) {
+                    return classDecl;
+                }
+                return super.visitClassDeclaration(classDecl, ctx);
+            }
+
             @SuppressWarnings("all")
             @Override
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
@@ -123,6 +135,10 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                if (service(AnnotationService.class).matches(getCursor(), LOMBOK_ANNOTATION)) {
+                    return multiVariable;
+                }
+
                 J.VariableDeclarations vds = super.visitVariableDeclarations(multiVariable, ctx);
                 if (getCursor().getMessage("ADD_STATIC", false)) {
                     return vds.withModifiers(ListUtils.insert(vds.getModifiers(),
