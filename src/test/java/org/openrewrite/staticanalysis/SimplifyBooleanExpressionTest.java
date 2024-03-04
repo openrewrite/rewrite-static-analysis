@@ -315,6 +315,14 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
                       boolean i=a!=true;
                   }
               }
+              """,
+            """
+              public class A {
+                  {
+                      boolean a=true;
+                      boolean i=!a;
+                  }
+              }
               """
           )
         );
