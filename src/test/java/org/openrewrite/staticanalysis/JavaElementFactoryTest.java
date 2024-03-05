@@ -76,7 +76,7 @@ class JavaElementFactoryTest implements RewriteTest {
         }.reduce(sourceFile, new AtomicReference<>(null)).get();
         assertThat(reference).isNotNull();
 
-        J.MemberReference methodReference = newInstanceMethodReference(fooMethod, reference.getContaining(), reference.getType());
+        J.MemberReference methodReference = newInstanceMethodReference(reference.getContaining(), fooMethod, reference.getType());
         assertThat(SemanticallyEqual.areEqual(reference, methodReference)).isTrue();
     }
 
