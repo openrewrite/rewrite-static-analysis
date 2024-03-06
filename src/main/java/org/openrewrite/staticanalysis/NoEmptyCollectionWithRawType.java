@@ -22,6 +22,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesField;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
@@ -56,7 +57,10 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesField<>("java.util.Collections", "EMPTY_*"), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.and(
+                new UsesType<>("java.util.Collections", false),
+                new UsesField<>("java.util.Collections", "EMPTY_*")
+        ), new JavaVisitor<ExecutionContext>() {
             final Map<String, String> updateFields = new HashMap<>();
 
             {
