@@ -58,7 +58,6 @@ public class NoEmptyCollectionWithRawType extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("java.util.Collections", false), new JavaVisitor<ExecutionContext>() {
             final Map<String, String> updateFields = new HashMap<>();
-
             {
                 updateFields.put("EMPTY_LIST", "emptyList");
                 updateFields.put("EMPTY_MAP", "emptyMap");
@@ -79,13 +78,13 @@ public class NoEmptyCollectionWithRawType extends Recipe {
             public J visitFieldAccess(J.FieldAccess fieldAccess, ExecutionContext ctx) {
                 J.Identifier name = fieldAccess.getName();
                 JavaType.Variable varType = name.getFieldType();
-                if (varType != null && TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections") &&
-                    varType.getName().startsWith("EMPTY_")) {
-                    return JavaTemplate.builder("#{any(java.util.Collections)}." + updateFields.get(varType.getName()) + "()")
+                if (varType != null && varType.getName().startsWith("EMPTY_") &&
+                    TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections")) {
+                    return JavaTemplate.builder("java.util.Collections." + updateFields.get(varType.getName()) + "()")
                             .contextSensitive() // context sensitive due to generics
-                            .imports("java.util.Collections")
                             .build()
-                            .apply(getCursor(), fieldAccess.getCoordinates().replace(), fieldAccess.getTarget());
+                            .<J.MethodInvocation>apply(getCursor(), fieldAccess.getCoordinates().replace())
+                            .withSelect(fieldAccess.getTarget());
                 }
                 return super.visitFieldAccess(fieldAccess, ctx);
             }
