@@ -56,12 +56,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        TreeVisitor<?, ExecutionContext> precondition = Preconditions.or(
-                new UsesField<>("java.util.Collections", "EMPTY_LIST"),
-                new UsesField<>("java.util.Collections", "EMPTY_MAP"),
-                new UsesField<>("java.util.Collections", "EMPTY_SET")
-        );
-        return Preconditions.check(precondition, new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesField<>("java.util.Collections", "EMPTY_*"), new JavaVisitor<ExecutionContext>() {
             final Map<String, String> updateFields = new HashMap<>();
 
             {
