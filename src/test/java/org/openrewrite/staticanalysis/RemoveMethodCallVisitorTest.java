@@ -85,6 +85,33 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
     }
 
     @Test
+    void removeConstructor() {
+        rewriteRun(
+          spec -> spec.recipe(toRecipe(() -> new RemoveMethodCallVisitor<>(new MethodMatcher("A <constructor>()"), (arg, expr) -> true))),
+          java("public class A { void a() {} }"),
+          //language=java
+          java(
+            """
+              class B {
+                void test() {
+                  A a = new A();
+                  a.a();
+                }
+              }
+              """,
+            """
+              class B {
+                void test() {
+                  A a;
+                  a.a();
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void assertTrueTwoArgIsRemoved() {
         rewriteRun(
           spec -> spec.recipe(toRecipe(() -> new RemoveMethodCallVisitor<>(
