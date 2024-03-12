@@ -45,6 +45,7 @@ public class EqualsToContentEquals extends Recipe {
         return "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`.";
     }
 
+    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(PRECONDITION, new EqualsToContentEqualsVisitor());
     }
