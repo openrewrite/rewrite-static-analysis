@@ -315,6 +315,14 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
                       boolean i=a!=true;
                   }
               }
+              """,
+            """
+              public class A {
+                  {
+                      boolean a=true;
+                      boolean i=!a;
+                  }
+              }
               """
           )
         );
@@ -322,6 +330,32 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
 
     @Test
     void binaryOrBothFalse() {
+        rewriteRun(
+          java(
+            """
+              public class A {
+                  {
+                      if (!true || !true) {
+                          System.out.println("");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      if (false) {
+                          System.out.println("");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ternary() {
         rewriteRun(
           java(
             """

@@ -49,6 +49,7 @@ public class UseSystemLineSeparator extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(GET_PROPERTY), new JavaVisitor<ExecutionContext>() {
+            @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
