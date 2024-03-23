@@ -72,7 +72,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
             @Override
             public J visitImport(J.Import anImport, ExecutionContext ctx) {
                 J.Identifier name = anImport.getQualid().getName();
-                if (anImport.isStatic() && name.getSimpleName().startsWith("EMPTY_") &&
+                if (anImport.isStatic() && updateFields.containsKey(name.getSimpleName()) &&
                     TypeUtils.isOfClassType(anImport.getQualid().getTarget().getType(), "java.util.Collections")) {
                     return anImport.withQualid(anImport.getQualid().withName(name.withSimpleName(updateFields.get(name.getSimpleName()))));
                 }
@@ -83,7 +83,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
             public J visitFieldAccess(J.FieldAccess fieldAccess, ExecutionContext ctx) {
                 J.Identifier name = fieldAccess.getName();
                 JavaType.Variable varType = name.getFieldType();
-                if (varType != null && varType.getName().startsWith("EMPTY_") &&
+                if (varType != null && updateFields.containsKey(varType.getName()) &&
                     TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections")) {
                     return JavaTemplate.builder("java.util.Collections." + updateFields.get(varType.getName()) + "()")
                             .contextSensitive() // context sensitive due to generics
@@ -97,7 +97,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
             @Override
             public J visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
                 JavaType.Variable varType = identifier.getFieldType();
-                if (varType != null && varType.getName().startsWith("EMPTY_") &&
+                if (varType != null && updateFields.containsKey(varType.getName()) &&
                     TypeUtils.isOfClassType(varType.getOwner(), "java.util.Collections")) {
 
                     return JavaTemplate.builder(updateFields.get(varType.getName()) + "()")
