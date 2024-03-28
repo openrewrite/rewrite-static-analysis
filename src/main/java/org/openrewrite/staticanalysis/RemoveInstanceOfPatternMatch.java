@@ -272,7 +272,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
      * Analyzes variable usage. Only variables declared using instanceof
      * pattern matching are considered.
      */
-    private static class VariableUsageAnalyzer extends JavaIsoVisitor<J> {
+    private static final class VariableUsageAnalyzer extends JavaIsoVisitor<J> {
 
         /**
          * Names of variables in the current scope mapped to "instanceof" expressions

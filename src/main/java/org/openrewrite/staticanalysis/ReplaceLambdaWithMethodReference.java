@@ -95,7 +95,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (classLiteral != null) {
                         //noinspection DataFlowIssue
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
-                        Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> m.getName().equals("isInstance")).findFirst();
+                        Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> "isInstance".equals(m.getName())).findFirst();
                         if (isInstanceMethod.isPresent()) {
                             J.MemberReference updated = newInstanceMethodReference(classLiteral, isInstanceMethod.get(), lambda.getType()).withPrefix(lambda.getPrefix());
                             doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
@@ -117,7 +117,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         if (classLiteral != null) {
                             //noinspection DataFlowIssue
                             JavaType.FullyQualified classType = ((JavaType.Parameterized) classLiteral.getType()).getType();
-                            Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> m.getName().equals("cast")).findFirst();
+                            Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
                             if (castMethod.isPresent()) {
                                 J.MemberReference updated = newInstanceMethodReference(classLiteral, castMethod.get(), lambda.getType()).withPrefix(lambda.getPrefix());
                                 doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
@@ -313,7 +313,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
         private boolean isMethodReferenceAmbiguous(JavaType.Method method) {
             int count = 0;
             for (JavaType.Method meth : method.getDeclaringType().getMethods()) {
-                if (meth.getName().equals(method.getName()) && !meth.getName().equals("println") && !meth.isConstructor()) {
+                if (meth.getName().equals(method.getName()) && !"println".equals(meth.getName()) && !meth.isConstructor()) {
                     if (++count > 1) {
                         return true;
                     }

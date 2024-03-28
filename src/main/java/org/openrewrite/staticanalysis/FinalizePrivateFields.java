@@ -308,7 +308,7 @@ public class FinalizePrivateFields extends Recipe {
         @Nullable
         static J.Identifier getLastIdentifier(J j) {
             List<J.Identifier> ids = new FindLastIdentifier().reduce(j, new ArrayList<>());
-            return !ids.isEmpty() ? ids.get(ids.size() - 1) : null;
+            return ids.isEmpty() ? null : ids.get(ids.size() - 1);
         }
 
         @Override

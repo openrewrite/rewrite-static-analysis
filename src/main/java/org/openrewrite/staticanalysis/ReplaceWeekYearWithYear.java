@@ -105,7 +105,7 @@ public class ReplaceWeekYearWithYear extends Recipe {
 
             for (int i = 0; i < input.length(); i++) {
                 char currentChar = input.charAt(i);
-                char nextChar = (i < input.length() - 1) ? input.charAt(i + 1) : '\0';
+                char nextChar = i < input.length() - 1 ? input.charAt(i + 1) : '\0';
 
                 if (currentChar == '\'') {
                     insideQuotes = !insideQuotes;

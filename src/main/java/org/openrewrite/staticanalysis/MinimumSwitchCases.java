@@ -90,7 +90,7 @@ public class MinimumSwitchCases extends Recipe {
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
                 // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
-                return block.withStatements(ListUtils.flatMap(block.getStatements(), (statement) -> {
+                return block.withStatements(ListUtils.flatMap(block.getStatements(), statement -> {
                     Statement visited = (Statement) visit(statement, ctx, getCursor());
                     if (!(visited instanceof J.Switch) || !visited.getMarkers().findFirst(DefaultOnly.class).isPresent()) {
                         return visited;
@@ -238,7 +238,7 @@ public class MinimumSwitchCases extends Recipe {
             }
 
             private boolean isDefault(J.Case case_) {
-                return case_.getPattern() instanceof J.Identifier && ((J.Identifier) case_.getPattern()).getSimpleName().equals("default");
+                return case_.getPattern() instanceof J.Identifier && "default".equals(((J.Identifier) case_.getPattern()).getSimpleName());
             }
 
             private boolean switchesOnEnum(J.Switch switch_) {

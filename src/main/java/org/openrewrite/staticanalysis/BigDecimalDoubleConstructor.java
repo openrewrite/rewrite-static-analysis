@@ -33,7 +33,7 @@ public class BigDecimalDoubleConstructor {
 
     @BeforeTemplate
     BigDecimal bigDecimalDoubleConstructor(double d) {
-        return new BigDecimal(d);
+        return BigDecimal.valueOf(d);
     }
 
     @AfterTemplate

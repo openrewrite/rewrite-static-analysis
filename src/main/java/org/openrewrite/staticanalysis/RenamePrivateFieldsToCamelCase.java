@@ -111,7 +111,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
                     !(parentScope.getValue() instanceof J.ClassDeclaration) &&
                     type != null &&
                     type.hasFlags(Flag.Private) &&
-                    !(type.hasFlags(Flag.Static, Flag.Final)) &&
+                    !type.hasFlags(Flag.Static, Flag.Final) &&
                     !((J.ClassDeclaration) parentScope.getParent().getValue()).getType().getFullyQualifiedName().contains("$") &&
                     !LOWER_CAMEL.matches(variable.getSimpleName())) {
 

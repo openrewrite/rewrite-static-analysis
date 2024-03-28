@@ -88,7 +88,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
                     return JavaTemplate.builder("java.util.Collections." + updateFields.get(varType.getName()) + "()")
                             .contextSensitive() // context sensitive due to generics
                             .build()
-                            .<J.MethodInvocation>apply(getCursor(), fieldAccess.getCoordinates().replace())
+                            .apply(getCursor(), fieldAccess.getCoordinates().replace())
                             .withSelect(fieldAccess.getTarget());
                 }
                 return super.visitFieldAccess(fieldAccess, ctx);

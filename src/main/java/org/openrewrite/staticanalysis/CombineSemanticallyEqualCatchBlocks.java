@@ -238,7 +238,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                         }
                     } else {
                         if (equivalentCatch.getParameter().getTree().getTypeExpression() != null) {
-                            J.Identifier identifier = ((J.Identifier) equivalentCatch.getParameter().getTree().getTypeExpression());
+                            J.Identifier identifier = (J.Identifier) equivalentCatch.getParameter().getTree().getTypeExpression();
                             identifier = identifier.withPrefix(Space.EMPTY);
                             JRightPadded<NameTree> rightPadded = JRightPadded.build(identifier);
                             combinedCatches.add(rightPadded);
@@ -295,7 +295,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             private final boolean compareMethodArguments = false;
 
             private boolean nullMissMatch(Object obj1, Object obj2) {
-                return (obj1 == null && obj2 != null || obj1 != null && obj2 == null);
+                return obj1 == null && obj2 != null || obj1 != null && obj2 == null;
             }
 
             private boolean doesNotContainSameComments(Space space1, Space space2) {

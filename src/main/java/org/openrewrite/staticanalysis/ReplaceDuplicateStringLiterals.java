@@ -347,7 +347,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     /**
      * ReplaceStringLiterals in a class with a reference to a `private static final String` with the provided variable name.
      */
-    private static class ReplaceStringLiterals extends JavaVisitor<ExecutionContext> {
+    private static final class ReplaceStringLiterals extends JavaVisitor<ExecutionContext> {
         private final J.ClassDeclaration isClass;
         private final String variableName;
         private final Set<J.Literal> literals;

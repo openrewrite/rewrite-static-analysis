@@ -81,7 +81,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
         return super.visitClassDeclaration(classDecl, p);
     }
 
-    private static class FindExistingVariableDeclarations extends JavaIsoVisitor<Set<J.VariableDeclarations.NamedVariable>> {
+    private static final class FindExistingVariableDeclarations extends JavaIsoVisitor<Set<J.VariableDeclarations.NamedVariable>> {
         private final Cursor childTargetReference;
         private final String childTargetName;
 
@@ -196,7 +196,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
         @Override
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, Set<J.VariableDeclarations.NamedVariable> ctx) {
             // do not go into static inner classes, interfaces, or enums which have a different name scope
-            if (!(classDecl.getKind().equals(J.ClassDeclaration.Kind.Type.Class)) || classDecl.hasModifier(J.Modifier.Type.Static)) {
+            if (!classDecl.getKind().equals(J.ClassDeclaration.Kind.Type.Class) || classDecl.hasModifier(J.Modifier.Type.Static)) {
                 return classDecl;
             }
             return super.visitClassDeclaration(classDecl, ctx);

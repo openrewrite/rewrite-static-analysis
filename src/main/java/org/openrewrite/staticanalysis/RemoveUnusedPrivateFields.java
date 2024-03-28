@@ -233,7 +233,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
             if (s == statement) {
                 Space prefix = s.getPrefix();
                 // If we have at least one comment and there is no newline
-                if (prefix.getComments().size() > 0 && !prefix.getWhitespace().contains("\n")) {
+                if (!prefix.getComments().isEmpty() && !prefix.getWhitespace().contains("\n")) {
                     return s.withPrefix(prefix
                             // Copy suffix to prefix
                             .withWhitespace(prefix.getComments().get(0).getSuffix())
@@ -252,7 +252,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
             if (statement == null && c == classDeclaration) {
                 Space end = c.getBody().getEnd();
                 // If we have at least one comment and there is no newline
-                if (end.getComments().size() > 0 && !end.getWhitespace().contains("\n")) {
+                if (!end.getComments().isEmpty() && !end.getWhitespace().contains("\n")) {
                     return c.withBody(c.getBody().withEnd(end
                             .withWhitespace(end.getComments().get(0).getSuffix())
                             .withComments(end.getComments().subList(1, end.getComments().size()))

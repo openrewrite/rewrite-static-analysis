@@ -32,7 +32,7 @@ import static java.util.Collections.singletonList;
 
 public class ChainStringBuilderAppendCalls extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(String)");
-    private static J.Binary additiveBinaryTemplate = null;
+    private static J.Binary additiveBinaryTemplate;
 
     @Override
     public String getDisplayName() {
@@ -93,7 +93,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                                 appendToString = true;
                             } else if ((exp instanceof J.Identifier || exp instanceof J.MethodInvocation) && exp.getType() != null) {
                                 JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(exp.getType());
-                                if (fullyQualified != null && fullyQualified.getFullyQualifiedName().equals("java.lang.String")) {
+                                if (fullyQualified != null && "java.lang.String".equals(fullyQualified.getFullyQualifiedName())) {
                                     addToGroups(group, groups);
                                     appendToString = true;
                                 }
@@ -137,7 +137,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         Expression expression = null;
         for (Expression element : expressions) {
             if (element != null) {
-                expression = (expression == null) ? element : concatAdditionBinary(expression, element);
+                expression = expression == null ? element : concatAdditionBinary(expression, element);
             }
         }
         return expression;

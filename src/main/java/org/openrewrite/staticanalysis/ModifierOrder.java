@@ -94,13 +94,13 @@ public class ModifierOrder extends Recipe {
     }
     
     private static ToIntFunction<Type> createModifierTypeToPositionFunction() {
-        final int DEFAULT_MOD_POSITION = 4;
+        final int defaultModPosition = 4;
         return type -> {
             if (type == Type.Default) {
-                return DEFAULT_MOD_POSITION;
+                return defaultModPosition;
             }
             int ordinal = type.ordinal();
-            if (ordinal <= DEFAULT_MOD_POSITION) {
+            if (ordinal <= defaultModPosition) {
                 return ordinal - 1;
             }
             return ordinal;

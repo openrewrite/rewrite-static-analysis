@@ -104,7 +104,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         }
     }
 
-    private static class FindLastLineBreaksOrFallsThroughComments {
+    private static final class FindLastLineBreaksOrFallsThroughComments {
         private FindLastLineBreaksOrFallsThroughComments() {
         }
 
