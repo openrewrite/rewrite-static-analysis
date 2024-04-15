@@ -1,4 +1,4 @@
-#
+x#
 # Copyright 2021 the original author or authors.
 # <p>
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.CommonStaticAnalysis
 displayName: Common static analysis issues
-description: Resolve common static analysis issues discovered through 3rd party tools.
+description: Resolve common static analysis issues (also known as SAST issues).
 recipeList:
 #  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet

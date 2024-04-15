@@ -74,11 +74,11 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new RenameToCamelCase() {
             @Override
-            protected boolean shouldRename(Set<String> hasNameKey, J.VariableDeclarations.NamedVariable variable, String toName) {
+            protected boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable, String toName) {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return hasNameKey.stream().noneMatch(key ->
+                return hasNameSet.stream().noneMatch(key ->
                         key.equals(toName) ||
                         key.equals(variable.getSimpleName()) ||
                         key.endsWith(" " + toName) ||
