@@ -49,7 +49,6 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
                 "according to benchmarking and JVM developers due to a number of implementation details in both Java and the virtual machine.\n" +
                 "\n" +
                 "H2 achieved significant performance gains by [switching to empty arrays instead pre-sized ones](https://github.com/h2database/h2database/issues/311).";
-
     }
 
     @Override
@@ -67,8 +66,7 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
         @Override
         public J.NewArray visitNewArray(J.NewArray newArray, P p) {
             if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && newArray.getDimensions().size() == 1) {
-                J.NewArray newArray1 = newArray.withDimensions(ListUtils.mapFirst(newArray.getDimensions(), d -> {
-
+                J.NewArray newArrayZero = newArray.withDimensions(ListUtils.mapFirst(newArray.getDimensions(), d -> {
                     if (d.getIndex() instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) d.getIndex()).getValue())) {
                         return d;
                     }
@@ -82,7 +80,7 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
                             (JavaType.Primitive) requireNonNull(d.getIndex().getType())
                     ));
                 }));
-                return maybeAutoFormat(newArray, newArray1, p);
+                return maybeAutoFormat(newArray, newArrayZero, p);
             }
             return super.visitNewArray(newArray, p);
         }
