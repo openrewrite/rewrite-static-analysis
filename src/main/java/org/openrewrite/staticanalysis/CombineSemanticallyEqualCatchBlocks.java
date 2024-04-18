@@ -1692,7 +1692,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                             nullMissMatch(multiVariable.getTypeExpression(), compareTo.getTypeExpression()) ||
                             multiVariable.getVariables().size() != compareTo.getVariables().size() ||
                             multiVariable.getLeadingAnnotations().size() != compareTo.getLeadingAnnotations().size() ||
-                            doesNotContainSameComments(multiVariable.getPrefix(), compareTo.getPrefix())) {
+                            doesNotContainSameComments(multiVariable.getPrefix(), compareTo.getPrefix()) ||
+                            doesNotContainSameComments(multiVariable.getVarargs(), compareTo.getVarargs())) {
                         isEqual.set(false);
                         return multiVariable;
                     }
