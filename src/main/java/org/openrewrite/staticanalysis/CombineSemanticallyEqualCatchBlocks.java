@@ -299,7 +299,11 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             private boolean doesNotContainSameComments(Space space1, Space space2) {
-                if (space1.getComments().size() != space2.getComments().size()) {
+                if (space1 == null && space2 == null) {
+                    return false;
+                }
+
+                if (space1 == null || space2 == null || space1.getComments().size() != space2.getComments().size()) {
                     return true;
                 }
 
