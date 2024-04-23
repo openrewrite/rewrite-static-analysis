@@ -47,7 +47,7 @@ public class InlineVariable extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1488");
+        return Collections.singleton("RSPEC-S1488");
     }
 
     @Override

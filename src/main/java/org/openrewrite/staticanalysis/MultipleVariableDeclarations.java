@@ -39,7 +39,7 @@ public class MultipleVariableDeclarations extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1659");
+        return Collections.singleton("RSPEC-S1659");
     }
 
     @Override

@@ -43,7 +43,7 @@ public class NoRedundantJumpStatements extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3626");
+        return Collections.singleton("RSPEC-S3626");
     }
 
     @Override

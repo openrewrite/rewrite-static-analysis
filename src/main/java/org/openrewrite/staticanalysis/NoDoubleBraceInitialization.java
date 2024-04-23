@@ -46,7 +46,7 @@ public class NoDoubleBraceInitialization extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-1171", "RSPEC-3599"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1171", "RSPEC-S3599"));
     }
 
     @Override

@@ -43,7 +43,7 @@ public class HiddenField extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1117");
+        return Collections.singleton("RSPEC-S1117");
     }
 
     @Override

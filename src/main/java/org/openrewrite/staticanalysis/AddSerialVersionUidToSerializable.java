@@ -48,7 +48,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2057");
+        return Collections.singleton("RSPEC-S2057");
     }
 
     @Override

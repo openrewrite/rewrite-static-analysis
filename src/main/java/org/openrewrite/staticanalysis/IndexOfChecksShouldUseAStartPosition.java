@@ -43,7 +43,7 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2912");
+        return Collections.singleton("RSPEC-S2912");
     }
 
     @Override

@@ -42,7 +42,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1144");
+        return Collections.singleton("RSPEC-S1144");
     }
 
     @Override

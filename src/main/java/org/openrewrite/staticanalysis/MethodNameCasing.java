@@ -66,7 +66,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-100");
+        return Collections.singleton("RSPEC-S100");
     }
 
     @Override

@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  * method each time it is called even if the first argument is not a regular expression. This has a significant
  * performance cost and therefore should be used with care.
  *
- * @see <a href="https://rules.sonarsource.com/java/RSPEC-5361"></a>
+ * @see <a href="https://rules.sonarsource.com/java/RSPEC-S5361"></a>
  * @see <a href="https://docs.oracle.com/javase/tutorial/essential/regex/index.html"></a>
  */
 public class UseStringReplace extends Recipe {
@@ -57,7 +57,7 @@ public class UseStringReplace extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-5361");
+        return Collections.singleton("RSPEC-S5361");
     }
 
     @Override

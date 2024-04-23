@@ -53,7 +53,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1068");
+        return Collections.singleton("RSPEC-S1068");
     }
 
     @Override
@@ -90,7 +90,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                     Statement statement = statements.get(i);
                     if (statement instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) statement;
-                        // RSPEC-1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
+                        // RSPEC-S1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
                             vd.getLeadingAnnotations().isEmpty() &&
                             vd.hasModifier(J.Modifier.Type.Private)) {
@@ -98,7 +98,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             checkFields.add(new CheckField(vd, nextStatement));
                         }
                     } else if (statement instanceof J.MethodDeclaration) {
-                        // RSPEC-1068 does not apply fields from classes with native methods.
+                        // RSPEC-S1068 does not apply fields from classes with native methods.
                         J.MethodDeclaration md = (J.MethodDeclaration) statement;
                         if (md.hasModifier(J.Modifier.Type.Native)) {
                             return cd;

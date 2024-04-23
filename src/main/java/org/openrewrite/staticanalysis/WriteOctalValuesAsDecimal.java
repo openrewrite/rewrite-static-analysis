@@ -38,7 +38,7 @@ public class WriteOctalValuesAsDecimal extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1314");
+        return Collections.singleton("RSPEC-S1314");
     }
 
     @Override

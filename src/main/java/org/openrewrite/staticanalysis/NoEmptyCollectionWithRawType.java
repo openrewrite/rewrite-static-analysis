@@ -47,7 +47,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1596");
+        return Collections.singleton("RSPEC-S1596");
     }
 
     @Override

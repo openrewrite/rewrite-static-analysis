@@ -48,7 +48,7 @@ public class IsEmptyCallOnCollections extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-1155", "RSPEC-3981"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
     }
 
     @Override

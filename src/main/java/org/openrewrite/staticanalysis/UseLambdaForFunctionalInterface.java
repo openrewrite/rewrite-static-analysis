@@ -50,7 +50,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-1604");
+        return singleton("RSPEC-S1604");
     }
 
     @Override

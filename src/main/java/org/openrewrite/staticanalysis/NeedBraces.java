@@ -46,7 +46,7 @@ public class NeedBraces extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-121");
+        return Collections.singleton("RSPEC-S121");
     }
 
     @Override

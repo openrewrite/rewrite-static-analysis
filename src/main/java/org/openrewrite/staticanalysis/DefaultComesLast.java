@@ -43,7 +43,7 @@ public class DefaultComesLast extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-4524");
+        return Collections.singleton("RSPEC-S4524");
     }
 
     @Override

@@ -48,7 +48,7 @@ public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1221");
+        return Collections.singleton("RSPEC-S1221");
     }
 
     @Override

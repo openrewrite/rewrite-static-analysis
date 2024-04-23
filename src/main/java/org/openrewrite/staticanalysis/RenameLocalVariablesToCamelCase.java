@@ -62,7 +62,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-117");
+        return Collections.singleton("RSPEC-S117");
     }
 
     @Override

@@ -62,7 +62,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-116", "RSPEC-3008"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
     }
 
     @Override

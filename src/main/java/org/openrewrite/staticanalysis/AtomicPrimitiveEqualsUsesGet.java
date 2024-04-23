@@ -53,7 +53,7 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2204");
+        return Collections.singleton("RSPEC-S2204");
     }
 
     @Override

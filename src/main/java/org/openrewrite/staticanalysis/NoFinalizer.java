@@ -40,7 +40,7 @@ public class NoFinalizer extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1111");
+        return Collections.singleton("RSPEC-S1111");
     }
 
     @Override

@@ -56,7 +56,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1192");
+        return Collections.singleton("RSPEC-S1192");
     }
 
     @Override

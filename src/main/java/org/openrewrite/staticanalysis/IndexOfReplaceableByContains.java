@@ -43,7 +43,7 @@ public class IndexOfReplaceableByContains extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2692");
+        return Collections.singleton("RSPEC-S2692");
     }
 
     @Override

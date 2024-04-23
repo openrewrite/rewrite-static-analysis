@@ -43,7 +43,7 @@ public class EqualsAvoidsNull extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1132");
+        return Collections.singleton("RSPEC-S1132");
     }
 
     @Override

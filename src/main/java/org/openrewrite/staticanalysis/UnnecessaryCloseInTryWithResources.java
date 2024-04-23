@@ -45,7 +45,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-4087");
+        return Collections.singleton("RSPEC-S4087");
     }
 
     @Override

@@ -43,7 +43,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1612");
+        return Collections.singleton("RSPEC-S1612");
     }
 
     @Override

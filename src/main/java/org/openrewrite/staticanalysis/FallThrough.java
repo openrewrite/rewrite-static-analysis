@@ -42,7 +42,7 @@ public class FallThrough extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-128");
+        return Collections.singleton("RSPEC-S128");
     }
 
     @Override

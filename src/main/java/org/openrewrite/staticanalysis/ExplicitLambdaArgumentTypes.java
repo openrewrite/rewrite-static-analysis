@@ -48,7 +48,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2211");
+        return Collections.singleton("RSPEC-S2211");
     }
 
     @Override

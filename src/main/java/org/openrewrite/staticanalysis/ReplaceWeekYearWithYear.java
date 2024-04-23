@@ -41,7 +41,7 @@ public class ReplaceWeekYearWithYear extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3986");
+        return Collections.singleton("RSPEC-S3986");
     }
 
     @Override

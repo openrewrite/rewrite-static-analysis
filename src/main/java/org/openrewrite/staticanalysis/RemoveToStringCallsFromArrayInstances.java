@@ -48,7 +48,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2116");
+        return Collections.singleton("RSPEC-S2116");
     }
 
     @Override
