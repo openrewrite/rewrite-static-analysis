@@ -211,4 +211,3 @@ public class SimplifyBooleanReturn extends Recipe {
         };
     }
 }
-
