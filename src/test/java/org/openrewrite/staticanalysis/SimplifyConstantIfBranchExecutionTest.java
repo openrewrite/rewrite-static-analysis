@@ -49,6 +49,26 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/286")
+    void doNotChangeParenthesisOnly() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      boolean b = true;
+                      if (!(b)) {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void simplifyConstantIfTrue() {

@@ -87,6 +87,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
         @Override
         public J visitIf(J.If if_, ExecutionContext ctx) {
             J.If if__ = (J.If) super.visitIf(if_, ctx);
+            J.If ifBeforeCleanup = if__;
 
             J.ControlParentheses<Expression> cp = cleanupBooleanExpression(if__.getIfCondition(), ctx);
             if__ = if__.withIfCondition(cp);
@@ -104,7 +105,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
 
             // The simplification process did not result in resolving to a single 'true' or 'false' value
             if (!compileTimeConstantBoolean.isPresent()) {
-                return if__; // Return the visited `if`
+                return ifBeforeCleanup; // Return the visited `if`
             } else if (compileTimeConstantBoolean.get()) {
                 // True branch
                 // Only keep the `then` branch, and remove the `else` branch.
