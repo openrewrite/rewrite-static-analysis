@@ -221,6 +221,41 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+        @Test
+        void conflictingVariableOfNestedType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Map;
+                  
+                  public class A {
+                      void test(Object o) {
+                          Map.Entry entry = null;
+                          if (o instanceof Map.Entry) {
+                            entry = (Map.Entry) o;
+                          }
+                          System.out.println(entry);
+                      }
+                  }
+                  """,
+                """
+                  import java.util.Map;
+                  
+                  public class A {
+                      void test(Object o) {
+                          Map.Entry entry = null;
+                          if (o instanceof Map.Entry entry1) {
+                            entry = entry1;
+                          }
+                          System.out.println(entry);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @Issue("https://github.com/openrewrite/rewrite/issues/2787")
         @Disabled
         @Test
