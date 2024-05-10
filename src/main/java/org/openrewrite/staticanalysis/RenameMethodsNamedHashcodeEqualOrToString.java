@@ -31,7 +31,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
-public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
+public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
     private static final MethodMatcher NO_ARGS = new MethodMatcher("*..* *()", true);
     private static final MethodMatcher OBJECT_ARG = new MethodMatcher("*..* *(java.lang.Object)", true);
 
