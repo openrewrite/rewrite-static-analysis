@@ -62,8 +62,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     @Override
     public String getDescription() {
         return "Fixes method names that do not follow standard naming conventions. " +
-                "For example, `private String getFoo_bar()` would be adjusted to `private String getFooBar()` " +
-                "and `public int DoSomething()` would be adjusted to `private int doSomething()`.";
+                "For example, `String getFoo_bar()` would be adjusted to `String getFooBar()` " +
+                "and `int DoSomething()` would be adjusted to `int doSomething()`.";
     }
 
     @Override
