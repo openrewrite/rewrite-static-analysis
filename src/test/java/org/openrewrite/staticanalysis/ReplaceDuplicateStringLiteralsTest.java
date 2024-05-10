@@ -305,7 +305,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
                   final String val1 = "value";
                   final String val2 = "value";
                   final String val3 = "value";
-                  
+              
                   private static class B {
                       // Do not change inner class value.
                       private static final String CONSTANT = "value";
@@ -318,7 +318,7 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
                   final String val1 = CONSTANT;
                   final String val2 = CONSTANT;
                   final String val3 = CONSTANT;
-                  
+              
                   private static class B {
                       // Do not change inner class value.
                       private static final String CONSTANT = "value";
@@ -531,13 +531,13 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
               enum A {
                   /**/
                   ONE, TWO, THREE;
-                  
+              
                   public void example() {
                       final String val1 = "value";
                       final String val2 = "value";
                       final String val3 = "value";
                   }
-                  
+              
                   public void bar() {}
               }
               """,
@@ -546,13 +546,13 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
                   /**/
                   ONE, TWO, THREE;
                   private static final String VALUE = "value";
-                  
+              
                   public void example() {
                       final String val1 = VALUE;
                       final String val2 = VALUE;
                       final String val3 = VALUE;
                   }
-                  
+              
                   public void bar() {}
               }
               """
