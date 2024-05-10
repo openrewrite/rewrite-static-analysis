@@ -364,9 +364,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 return name;
             } else if (type instanceof JavaType.FullyQualified) {
                 String className = ((JavaType.FullyQualified) type).getClassName();
-                if (className.indexOf('.') > 0) {
-                    className = className.substring(className.lastIndexOf('.'));
-                }
+                className = className.substring(className.lastIndexOf('.') + 1);
                 String baseName = null;
                 switch (style) {
                     case SHORT:
