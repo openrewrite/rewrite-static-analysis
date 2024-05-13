@@ -127,4 +127,27 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.params.provider.MethodSource;
+              import java.util.stream.Stream;
+              
+              @SuppressWarnings("unused")
+              class Test {
+                  void test(String input) {
+                  }
+                  private Stream<Object> unused() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
