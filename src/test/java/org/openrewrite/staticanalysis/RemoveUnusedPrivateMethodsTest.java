@@ -130,13 +130,12 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
 
     @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/4076")
-    void doNotRemoveMethodsOnClassInnerClass() {
+    void doNotRemoveMethodsOnClassNestedClass() {
         rewriteRun(
           //language=java
           java(
             """
-              import org.junit.jupiter.params.provider.MethodSource;
-              import java.util.stream.Stream;
+                            import java.util.stream.Stream;
               
               class Test {
                   void test(String input) {
@@ -144,7 +143,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                   private Stream<Object> unused() {
                       return null;
                   }
-    
+              
                   class InnerTest {
                       void test(String input) {
                       }
@@ -161,7 +160,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
               class Test {
                   void test(String input) {
                   }
-    
+              
                   class InnerTest {
                       void test(String input) {
                       }
@@ -200,7 +199,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
 
     @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/4076")
-    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassInnerClass() {
+    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassNestedClass() {
         rewriteRun(
           //language=java
           java(
@@ -215,7 +214,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                   private Stream<Object> unused() {
                       return null;
                   }
-    
+              
                   class InnerTest {
                       void test(String input) {
                       }
@@ -236,7 +235,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                   private Stream<Object> unused() {
                       return null;
                   }
-    
+              
                   class InnerTest {
                       void test(String input) {
                       }
