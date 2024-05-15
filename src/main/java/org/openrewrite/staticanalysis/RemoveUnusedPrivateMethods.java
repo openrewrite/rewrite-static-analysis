@@ -15,18 +15,22 @@
  */
 package org.openrewrite.staticanalysis;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.NoMissingTypes;
+import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
+import org.openrewrite.java.tree.J.ClassDeclaration;
 
 public class RemoveUnusedPrivateMethods extends Recipe {
 
@@ -53,8 +57,10 @@ public class RemoveUnusedPrivateMethods extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new NoMissingTypes(), new JavaIsoVisitor<ExecutionContext>() {
+
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method,
+                    ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method methodType = method.getMethodType();
                 if (methodType != null && methodType.hasFlags(Flag.Private) &&
@@ -63,6 +69,9 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
                     J.ClassDeclaration classDeclaration = getCursor().firstEnclosing(J.ClassDeclaration.class);
                     if (classDeclaration == null) {
+                        return m;
+                    }
+                    if (isClassMarkedUnused(classDeclaration)) {
                         return m;
                     }
                     if (TypeUtils.isAssignableTo("java.io.Serializable", classDeclaration.getType())) {
@@ -102,6 +111,29 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
                 return m;
             }
+
+            private final Map<ClassDeclaration, Boolean> processedClasses = new HashMap<>();
+
+            private boolean isClassMarkedUnused(J.ClassDeclaration classDeclaration) {
+                if (processedClasses.containsKey(classDeclaration)) {
+                    return processedClasses.get(classDeclaration);
+                }
+
+                Set<J.Annotation> suppressWarningAnnotations =
+                        FindAnnotations.find(classDeclaration, SuppressWarnings.class.getName());
+
+                if (suppressWarningAnnotations.isEmpty()) {
+                    processedClasses.put(classDeclaration, false);
+                }
+
+                processedClasses.put(classDeclaration, suppressWarningAnnotations.stream()
+                        .anyMatch(annotation -> annotation.getArguments().stream()
+                                .anyMatch(argument -> J.Literal.isLiteralValue(argument, "unused"))
+                        ));
+
+                return processedClasses.get(classDeclaration);
+            }
         });
     }
+
 }

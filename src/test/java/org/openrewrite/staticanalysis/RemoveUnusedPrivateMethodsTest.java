@@ -130,6 +130,50 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
 
     @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    void doNotRemoveMethodsOnClassInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.params.provider.MethodSource;
+              import java.util.stream.Stream;
+              
+              class Test {
+                  void test(String input) {
+                  }
+                  private Stream<Object> unused() {
+                      return null;
+                  }
+    
+                  class InnerTest {
+                      void test(String input) {
+                      }
+                      private Stream<Object> unused() {
+                          return null;
+                      }
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.params.provider.MethodSource;
+              import java.util.stream.Stream;
+              
+              class Test {
+                  void test(String input) {
+                  }
+    
+                  class InnerTest {
+                      void test(String input) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
     void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
         rewriteRun(
           //language=java
@@ -145,9 +189,62 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                   private Stream<Object> unused() {
                       return null;
                   }
+                  private Stream<Object> anotherUnused() {
+                      return null;
+                  }
               }
               """
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.params.provider.MethodSource;
+              import java.util.stream.Stream;
+              
+              @SuppressWarnings("unused")
+              class Test {
+                  void test(String input) {
+                  }
+                  private Stream<Object> unused() {
+                      return null;
+                  }
+    
+                  class InnerTest {
+                      void test(String input) {
+                      }
+                      private Stream<Object> unused() {
+                          return null;
+                      }
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.params.provider.MethodSource;
+              import java.util.stream.Stream;
+              
+              @SuppressWarnings("unused")
+              class Test {
+                  void test(String input) {
+                  }
+                  private Stream<Object> unused() {
+                      return null;
+                  }
+    
+                  class InnerTest {
+                      void test(String input) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
