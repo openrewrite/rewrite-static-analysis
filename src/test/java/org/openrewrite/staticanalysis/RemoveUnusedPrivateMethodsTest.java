@@ -129,13 +129,12 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
     }
 
     @Test
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
     void doNotRemoveMethodsOnClassNestedClass() {
         rewriteRun(
           //language=java
           java(
             """
-                            import java.util.stream.Stream;
+              import java.util.stream.Stream;
               
               class Test {
                   void test(String input) {
@@ -154,7 +153,6 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
               }
               """,
             """
-              import org.junit.jupiter.params.provider.MethodSource;
               import java.util.stream.Stream;
               
               class Test {
@@ -178,7 +176,6 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           //language=java
           java(
             """
-              import org.junit.jupiter.params.provider.MethodSource;
               import java.util.stream.Stream;
               
               @SuppressWarnings("unused")
@@ -204,7 +201,6 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           //language=java
           java(
             """
-              import org.junit.jupiter.params.provider.MethodSource;
               import java.util.stream.Stream;
               
               @SuppressWarnings("unused")
@@ -220,24 +216,6 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                       }
                       private Stream<Object> unused() {
                           return null;
-                      }
-                  }
-              }
-              """,
-            """
-              import org.junit.jupiter.params.provider.MethodSource;
-              import java.util.stream.Stream;
-              
-              @SuppressWarnings("unused")
-              class Test {
-                  void test(String input) {
-                  }
-                  private Stream<Object> unused() {
-                      return null;
-                  }
-              
-                  class InnerTest {
-                      void test(String input) {
                       }
                   }
               }
