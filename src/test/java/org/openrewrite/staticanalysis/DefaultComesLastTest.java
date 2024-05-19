@@ -289,9 +289,9 @@ class DefaultComesLastTest implements RewriteTest {
                   boolean foo() {
                       switch (n) {
                           case DERIVATION_MODE:
+                          default:
                             System.out.println("default");
                             break;
-                          default:
                       }
                   }
               }
