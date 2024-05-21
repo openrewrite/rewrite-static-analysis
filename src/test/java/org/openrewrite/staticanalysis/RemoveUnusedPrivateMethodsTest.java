@@ -42,22 +42,22 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
               class Test {
                   private void unused() {
                   }
-                            
+              
                   public void dontRemove() {
                       dontRemove2();
                   }
-                  
+              
                   private void dontRemove2() {
                   }
               }
               """,
             """
               class Test {
-                            
+              
                   public void dontRemove() {
                       dontRemove2();
                   }
-                  
+              
                   private void dontRemove2() {
                   }
               }
@@ -129,7 +129,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
     }
 
     @Test
-    void doNotRemoveMethodsOnClassNestedClass() {
+    void removeMethodsOnNestedClass() {
         rewriteRun(
           //language=java
           java(
@@ -223,5 +223,4 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           )
         );
     }
-
 }

@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -28,9 +28,6 @@ import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Set;
-import org.openrewrite.java.tree.J.ClassDeclaration;
 
 public class RemoveUnusedPrivateMethods extends Recipe {
 
@@ -59,27 +56,25 @@ public class RemoveUnusedPrivateMethods extends Recipe {
         return Preconditions.check(new NoMissingTypes(), new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDeclaration,
-                    ExecutionContext executionContext) {
-
-                if (isClassMarkedUnused(classDeclaration)) {
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDeclaration, ExecutionContext ctx) {
+                if (unusedWarningsSuppressed(classDeclaration)) {
                     return classDeclaration;
                 }
-
-                return super.visitClassDeclaration(classDeclaration, executionContext);
+                return super.visitClassDeclaration(classDeclaration, ctx);
             }
 
-            private boolean isClassMarkedUnused(J.ClassDeclaration classDeclaration) {
-                Set<J.Annotation> suppressWarningAnnotations =
-                        FindAnnotations.find(classDeclaration, SuppressWarnings.class.getName());
-
-                if (suppressWarningAnnotations.isEmpty()) {
-                    return false;
+            private boolean unusedWarningsSuppressed(J classDeclaration) {
+                for (J.Annotation annotation : FindAnnotations.find(classDeclaration, "java.lang.SuppressWarnings")) {
+                    List<Expression> arguments = annotation.getArguments();
+                    if (arguments != null) {
+                        for (Expression argument : arguments) {
+                            if (J.Literal.isLiteralValue(argument, "unused")) {
+                                return true;
+                            }
+                        }
+                    }
                 }
-
-                return suppressWarningAnnotations.stream()
-                        .anyMatch(annotation -> annotation.getArguments().stream()
-                                .anyMatch(argument -> J.Literal.isLiteralValue(argument, "unused")));
+                return false;
             }
 
             @Override
