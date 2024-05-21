@@ -15,8 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import java.util.*;
-
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -28,6 +26,9 @@ import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 public class RemoveUnusedPrivateMethods extends Recipe {
 
