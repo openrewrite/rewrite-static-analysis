@@ -87,7 +87,8 @@ public class RemoveJavaDocAuthorTag extends Recipe {
         return newBody.stream().allMatch(jd -> {
             PrintOutputCapture<Object> p = new PrintOutputCapture<>(null);
             jd.printer(cursor).visit(jd, p);
-            return StringUtils.isBlank(p.getOut());
+            String currentLine = p.getOut().trim();
+            return StringUtils.isBlank(currentLine) || "*".equals(currentLine);
         });
     }
 }
