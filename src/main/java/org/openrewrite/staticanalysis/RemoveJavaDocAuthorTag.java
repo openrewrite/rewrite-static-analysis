@@ -70,10 +70,10 @@ public class RemoveJavaDocAuthorTag extends Recipe {
                         }
 
                         if (isChanged) {
-                            Collections.reverse(newBody);
                             if (isBlank(getCursor(), newBody)) {
                                 return null;
                             }
+                            Collections.reverse(newBody);
                             dc = dc.withBody(newBody);
                         }
                         return dc;
