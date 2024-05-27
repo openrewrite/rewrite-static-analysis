@@ -154,6 +154,9 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     }
 
                     if (useNewBody) {
+                        if (RemoveJavaDocAuthorTag.isBlank(getCursor(), newBody)) {
+                            return null;
+                        }
                         javadoc = javadoc.withBody(newBody);
                     }
                     // No need to call super visitor, already covered all cases by adding an empty first element when needed.
