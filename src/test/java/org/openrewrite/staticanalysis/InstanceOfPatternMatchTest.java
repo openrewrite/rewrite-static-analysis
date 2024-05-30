@@ -303,7 +303,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   public class A {
                       void test(Object o) {
                           Map.Entry entry = null;
-                          if (o instanceof Map.Entry entry1) {
+                          if (o instanceof Map.Entry<?,?> entry1) {
                             entry = entry1;
                           }
                           System.out.println(entry);
@@ -758,7 +758,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List l ? l.get(0) : o.toString();
+                          return o instanceof List<?> l ? l.get(0) : o.toString();
                       }
                   }
                   """
@@ -783,7 +783,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List l ? l.get(0) : o.toString();
+                          return o instanceof List<?> l ? l.get(0) : o.toString();
                       }
                   }
                   """

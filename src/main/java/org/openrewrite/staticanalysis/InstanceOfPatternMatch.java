@@ -224,6 +224,21 @@ public class InstanceOfPatternMatch extends Recipe {
                     name,
                     type,
                     null));
+            JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(type);
+            if (fqType != null && !fqType.getTypeParameters().isEmpty() && !(instanceOf.getClazz() instanceof J.ParameterizedType)) {
+                TypedTree oldTypeTree = (TypedTree) instanceOf.getClazz();
+
+                J.ParameterizedType newTypeTree = new J.ParameterizedType(
+                        randomId(),
+                        oldTypeTree.getPrefix(),
+                        Markers.EMPTY,
+                        oldTypeTree.withPrefix(Space.EMPTY),
+                        null,
+                        oldTypeTree.getType()
+                ).withTypeParameters(fqType.getTypeParameters().stream().map(p -> new J.Wildcard(randomId(), Space.EMPTY, Markers.EMPTY, null, null)).collect(Collectors.toList())
+                );
+                result = result.withClazz(newTypeTree);
+            }
 
             // update entry in replacements to share the pattern variable name
             for (Map.Entry<J.TypeCast, J.InstanceOf> entry : replacements.entrySet()) {
