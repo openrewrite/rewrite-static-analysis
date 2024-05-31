@@ -231,7 +231,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 TypedTree oldTypeTree = (TypedTree) instanceOf.getClazz();
 
                 // Each type parameter is turned into a wildcard, i.e. `List` -> `List<?>` or `Map.Entry` -> `Map.Entry<?,?>`
-                List<Expression> wildcardsList = IntStream.of(fqType.getTypeParameters().size())
+                List<Expression> wildcardsList = IntStream.range(0, fqType.getTypeParameters().size())
                         .mapToObj(i -> new J.Wildcard(randomId(), Space.EMPTY, Markers.EMPTY, null, null))
                         .collect(Collectors.toList());
 
