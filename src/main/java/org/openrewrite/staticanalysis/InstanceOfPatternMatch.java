@@ -19,6 +19,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
@@ -33,6 +34,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -228,6 +230,11 @@ public class InstanceOfPatternMatch extends Recipe {
             if (fqType != null && !fqType.getTypeParameters().isEmpty() && !(instanceOf.getClazz() instanceof J.ParameterizedType)) {
                 TypedTree oldTypeTree = (TypedTree) instanceOf.getClazz();
 
+                // Each type parameter is turned into a wildcard, i.e. `List` -> `List<?>` or `Map.Entry` -> `Map.Entry<?,?>`
+                List<Expression> wildcardsList = IntStream.of(fqType.getTypeParameters().size())
+                        .mapToObj(i -> new J.Wildcard(randomId(), Space.EMPTY, Markers.EMPTY, null, null))
+                        .collect(Collectors.toList());
+
                 J.ParameterizedType newTypeTree = new J.ParameterizedType(
                         randomId(),
                         oldTypeTree.getPrefix(),
@@ -235,8 +242,7 @@ public class InstanceOfPatternMatch extends Recipe {
                         oldTypeTree.withPrefix(Space.EMPTY),
                         null,
                         oldTypeTree.getType()
-                ).withTypeParameters(fqType.getTypeParameters().stream().map(p -> new J.Wildcard(randomId(), Space.EMPTY, Markers.EMPTY, null, null)).collect(Collectors.toList())
-                );
+                ).withTypeParameters(wildcardsList);
                 result = result.withClazz(newTypeTree);
             }
 
