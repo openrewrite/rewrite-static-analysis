@@ -25,6 +25,7 @@ import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Javadoc;
+import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -168,9 +169,14 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                  * Removes all empty lines from body
                  */
                 private void trim(List<Javadoc> body) {
+                    Javadoc currentDoc;
+                    Javadoc.LineBreak firstLineBreak = null;
                     while (!body.isEmpty()) {
-                        Javadoc currentDoc = body.get(body.size() - 1);
+                        currentDoc = body.get(body.size() - 1);
                         boolean isLineBreak = currentDoc instanceof Javadoc.LineBreak;
+                        if (isLineBreak && firstLineBreak == null) {
+                            firstLineBreak = (Javadoc.LineBreak) currentDoc;
+                        }
                         boolean isEmptyText = false;
                         if (currentDoc instanceof Javadoc.Text) {
                             String currentText = ((Javadoc.Text) currentDoc).getText().trim();
@@ -180,7 +186,14 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                             break;
                         }
                         body.remove(body.size()-1);
-                        break;
+                    }
+                    if (!body.isEmpty() && firstLineBreak != null) {
+                        // ensure proper "ending" of JavaDoc including OS-specific newlines
+                        String margin = firstLineBreak.getMargin();
+                        if (margin.endsWith("*")) {
+                            firstLineBreak = firstLineBreak.withMargin(margin.substring(0, margin.length() - 1));
+                        }
+                        body.add(firstLineBreak);
                     }
                 }
 
