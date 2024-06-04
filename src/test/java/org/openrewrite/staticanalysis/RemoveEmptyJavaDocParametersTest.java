@@ -200,6 +200,37 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         );
     }
 
+    @Test
+    void removeTrailingEmptyLinesWindowsEOL() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+               class Test {
+                   /**
+                    * Text text text
+                    *
+                    * @param arg0
+                    * @param arg1
+                    *
+                    */
+                    void method(int arg0, int arg1) {
+                    }
+                }
+                """.replace("\n", "\r\n"),
+            """
+               class Test {
+                   /**
+                    * Text text text
+                    */
+                    void method(int arg0, int arg1) {
+                    }
+                }
+                """.replace("\n", "\r\n")
+          )
+        );
+    }
+
     @Nested
     class NoSpace {
         @Test
