@@ -154,13 +154,34 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     }
 
                     if (useNewBody) {
-                        if (RemoveJavaDocAuthorTag.isBlank(getCursor(), newBody)) {
+                        trim(newBody);
+                        if (newBody.isEmpty()) {
                             return null;
                         }
                         javadoc = javadoc.withBody(newBody);
                     }
                     // No need to call super visitor, already covered all cases by adding an empty first element when needed.
                     return javadoc;
+                }
+
+                /**
+                 * Removes all empty lines from body
+                 */
+                private void trim(List<Javadoc> body) {
+                    while (!body.isEmpty()) {
+                        Javadoc currentDoc = body.get(body.size() - 1);
+                        boolean isLineBreak = currentDoc instanceof Javadoc.LineBreak;
+                        boolean isEmptyText = false;
+                        if (currentDoc instanceof Javadoc.Text) {
+                            String currentText = ((Javadoc.Text) currentDoc).getText().trim();
+                            isEmptyText = currentText.isEmpty();
+                        }
+                        if (!isLineBreak && !isEmptyText) {
+                            break;
+                        }
+                        body.remove(body.size()-1);
+                        break;
+                    }
                 }
 
                 public boolean isEmptyParameter(Javadoc.Parameter parameter) {

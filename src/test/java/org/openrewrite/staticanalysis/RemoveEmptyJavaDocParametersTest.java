@@ -168,6 +168,38 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
+    void removeTrailingEmptyLines() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+               class Test {
+                   /**
+                    * Text text text
+                    *
+                    * @param arg0
+                    * @param arg1
+                    *
+                    */
+                    void method(int arg0, int arg1) {
+                    }
+                }
+                """,
+            """
+               class Test {
+                   /**
+                    * Text text text
+                    */
+                    void method(int arg0, int arg1) {
+                    }
+                }
+                """
+          )
+        );
+    }
+
     @Nested
     class NoSpace {
         @Test
