@@ -141,11 +141,7 @@ public class NoDoubleBraceInitialization extends Recipe {
 
         private List<Statement> addSelectToInitStatements(List<Statement> statements, J.Identifier identifier, ExecutionContext ctx) {
             AddSelectVisitor selectVisitor = new AddSelectVisitor(identifier);
-            List<Statement> statementList = new ArrayList<>();
-            for (Statement statement : statements) {
-                statementList.add((Statement) selectVisitor.visit(statement, ctx));
-            }
-            return statementList;
+            return ListUtils.map(statements, statement -> (Statement) selectVisitor.visitNonNull(statement, ctx));
         }
 
         private static class AddSelectVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -158,22 +154,8 @@ public class NoDoubleBraceInitialization extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-                if (mi.getMethodType() != null && identifier.getFieldType() != null && mi.getSelect() == null
-                    || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
-                    if (identifier.getFieldType() == null) {
-                        return mi;
-                    }
-                    JavaType rawFieldType = identifier.getFieldType().getType();
-                    rawFieldType = rawFieldType instanceof JavaType.Parameterized ? ((JavaType.Parameterized) rawFieldType).getType() : rawFieldType;
-                    if (mi.getMethodType() == null) {
-                        return mi;
-                    }
-                    JavaType rawMethodDeclaringType = mi.getMethodType().getDeclaringType();
-                    rawMethodDeclaringType = rawMethodDeclaringType instanceof JavaType.Parameterized ? ((JavaType.Parameterized) rawMethodDeclaringType).getType() : rawMethodDeclaringType;
-
-                    if (TypeUtils.isAssignableTo(rawFieldType, rawMethodDeclaringType)) {
-                        return mi.withSelect(identifier);
-                    }
+                if (mi.getSelect() == null || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
+                    return mi.withSelect(identifier);
                 }
                 return mi;
             }
