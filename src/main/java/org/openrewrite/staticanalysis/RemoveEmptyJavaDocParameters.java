@@ -25,7 +25,6 @@ import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Javadoc;
-import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -185,7 +184,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                         if (!isLineBreak && !isEmptyText) {
                             break;
                         }
-                        body.remove(body.size()-1);
+                        body.remove(body.size() - 1);
                     }
                     if (!body.isEmpty() && firstLineBreak != null) {
                         // ensure proper "ending" of JavaDoc including OS-specific newlines
