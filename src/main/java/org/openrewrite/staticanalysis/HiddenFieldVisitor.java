@@ -262,4 +262,3 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
     }
 
 }
-
