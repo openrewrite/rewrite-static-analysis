@@ -67,6 +67,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
             @Value
             class CheckField {
                 J.VariableDeclarations declarations;
+
                 @Nullable Statement nextStatement;
             }
 
@@ -221,6 +222,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
     private static class MaybeRemoveComment extends JavaVisitor<ExecutionContext> {
         @Nullable
         private final Statement statement;
+
         private final J.ClassDeclaration classDeclaration;
 
         public MaybeRemoveComment(@Nullable Statement statement, J.ClassDeclaration classDeclaration) {

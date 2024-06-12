@@ -352,8 +352,10 @@ public class InstanceOfPatternMatch extends Recipe {
     private static class VariableNameStrategy {
         public static final Pattern NAME_SPLIT_PATTERN = Pattern.compile("[$._]*(?=\\p{Upper}+[\\p{Lower}\\p{Digit}]*)");
         private final Style style;
+
         @Nullable
         private final String name;
+
         private final Set<Cursor> contextScopes;
 
         enum Style {
