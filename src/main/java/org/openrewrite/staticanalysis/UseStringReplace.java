@@ -83,6 +83,21 @@ public class UseStringReplace extends Recipe {
 
             //Checks if method invocation matches with String#replaceAll
             if (REPLACE_ALL.matches(invocation)) {
+                Expression secondArgument = invocation.getArguments().get(1);
+
+                //Checks if the second argument is a string literal with $ or \ in it as this has special meaning and
+                // should not be rewritten:
+                //https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/regex/Matcher.html#replaceAll(java.lang.String)
+                if (isStringLiteral(secondArgument)) {
+                    J.Literal literal = (J.Literal) secondArgument;
+                    String value = (String) literal.getValue();
+
+                    if (Objects.nonNull(value) && (value.contains("$") || value.contains("\\"))) {
+                        // do not rewrite
+                        return invocation;
+                    }
+                }
+
                 Expression firstArgument = invocation.getArguments().get(0);
 
                 //Checks if the first argument is a String literal
