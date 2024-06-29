@@ -174,8 +174,13 @@ class UseStringReplaceTest implements RewriteTest {
           java(
             """
               class Test {
-                public String method() {
+                public String method1() {
                   return "abc".replaceAll("b", "$0");
+                }
+
+                public String method2() {
+                  String s = "$0";
+                  return "abc".replaceAll("b", s);
                 }
               }
               """
