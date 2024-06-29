@@ -47,8 +47,8 @@ public class MaskCreditCardNumbers extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.Literal visitLiteral(J.Literal literal, ExecutionContext executionContext) {
-                J.Literal l = super.visitLiteral(literal, executionContext);
+            public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
+                J.Literal l = super.visitLiteral(literal, ctx);
                 if(l.getValue() instanceof String) {
                     String value = (String) l.getValue();
                     Matcher m = CC_PATTERN.matcher(value);

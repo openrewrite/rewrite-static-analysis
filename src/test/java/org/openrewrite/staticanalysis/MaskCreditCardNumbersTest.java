@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -29,20 +30,23 @@ class MaskCreditCardNumbersTest implements RewriteTest {
         spec.recipe(new MaskCreditCardNumbers());
     }
 
+    @DocumentExample
     @Test
     void noSpaces() {
         rewriteRun(
           //language=java
-          java("""
-          class A {
-              String cc = "1234567890123456";
-          }
-          """,
+          java(
             """
-            class A {
-                String cc = "12345678XXXXXXXX";
-            }
-            """)
+              class A {
+                  String cc = "1234567890123456";
+              }
+              """,
+            """
+              class A {
+                  String cc = "12345678XXXXXXXX";
+              }
+              """
+          )
         );
     }
 
@@ -50,16 +54,18 @@ class MaskCreditCardNumbersTest implements RewriteTest {
     void withSpaces() {
         rewriteRun(
           //language=java
-          java("""
-          class A {
-              String cc = "1234 5678 9012 3456";
-          }
-          """,
-          """
-          class A {
-              String cc = "1234 5678 XXXX XXXX";
-          }
-          """)
+          java(
+            """
+              class A {
+                  String cc = "1234 5678 9012 3456";
+              }
+              """,
+            """
+              class A {
+                  String cc = "1234 5678 XXXX XXXX";
+              }
+              """
+          )
         );
     }
 }
