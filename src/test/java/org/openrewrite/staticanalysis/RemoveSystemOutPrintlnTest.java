@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class RemoveSystemOutPrintlnTest implements RewriteTest {
+class RemoveSystemOutPrintlnTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {

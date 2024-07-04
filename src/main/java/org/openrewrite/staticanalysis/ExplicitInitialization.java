@@ -22,6 +22,7 @@ import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.ExplicitInitializationStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -47,7 +48,7 @@ public class ExplicitInitialization extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3052");
+        return Collections.singleton("RSPEC-S3052");
     }
 
     @Override
@@ -57,7 +58,7 @@ public class ExplicitInitialization extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
@@ -70,6 +71,6 @@ public class ExplicitInitialization extends Recipe {
                 }
                 return (J) tree;
             }
-        };
+        });
     }
 }

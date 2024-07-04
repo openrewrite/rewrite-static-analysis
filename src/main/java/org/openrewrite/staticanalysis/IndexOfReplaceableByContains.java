@@ -43,7 +43,7 @@ public class IndexOfReplaceableByContains extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2692");
+        return Collections.singleton("RSPEC-S2692");
     }
 
     @Override
@@ -72,7 +72,7 @@ public class IndexOfReplaceableByContains extends Recipe {
             J.Binary asBinary = (J.Binary) j;
             if (asBinary.getLeft() instanceof J.MethodInvocation) {
                 J.MethodInvocation mi = (J.MethodInvocation) asBinary.getLeft();
-                if (STRING_INDEX_MATCHER.matches(mi) || LIST_INDEX_MATCHER.matches(mi)) {
+                if (STRING_INDEX_MATCHER.matches(mi) || mi.getSelect() != null && LIST_INDEX_MATCHER.matches(mi)) {
                     if (asBinary.getRight() instanceof J.Literal) {
                         String valueSource = ((J.Literal) asBinary.getRight()).getValueSource();
                         boolean isGreaterThanNegativeOne = asBinary.getOperator() == J.Binary.Type.GreaterThan && "-1".equals(valueSource);

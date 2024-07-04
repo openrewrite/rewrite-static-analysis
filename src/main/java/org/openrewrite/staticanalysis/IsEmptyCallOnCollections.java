@@ -25,10 +25,12 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaCoordinates;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class IsEmptyCallOnCollections extends Recipe {
@@ -46,7 +48,7 @@ public class IsEmptyCallOnCollections extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-1155", "RSPEC-3981"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
     }
 
     @Override
@@ -57,11 +59,6 @@ public class IsEmptyCallOnCollections extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COLLECTION_SIZE), new JavaVisitor<ExecutionContext>() {
-            final JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Collection)}.isEmpty()")
-                    .build();
-            final JavaTemplate isEmptyNoReceiver = JavaTemplate.builder("#{}isEmpty()")
-                    .contextSensitive()
-                    .build();
 
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
@@ -73,17 +70,13 @@ public class IsEmptyCallOnCollections extends Recipe {
                         J maybeSizeCall = zeroRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod)) {
-                                String op = binary.getOperator() == J.Binary.Type.Equal ? "" : "!";
-                                return (maybeSizeCallMethod.getSelect() == null ?
-                                        isEmptyNoReceiver.apply(getCursor(), binary.getCoordinates().replace(), op) :
-                                        isEmpty.apply(getCursor(), binary.getCoordinates().replace(), op, maybeSizeCallMethod.getSelect())
-                                ).withPrefix(binary.getPrefix());
+                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                                return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(), binary.getOperator() != J.Binary.Type.Equal)
+                                        .withPrefix(binary.getPrefix());
                             }
                         }
                     }
-                }
-                if (isOne(binary.getLeft()) || isOne(binary.getRight())) {
+                } else if (isOne(binary.getLeft()) || isOne(binary.getRight())) {
                     boolean oneRight = isOne(binary.getRight());
                     if ((oneRight && binary.getOperator() == J.Binary.Type.LessThan)
                         || (!oneRight && binary.getOperator() == J.Binary.Type.GreaterThan)
@@ -92,30 +85,39 @@ public class IsEmptyCallOnCollections extends Recipe {
                         J maybeSizeCall = oneRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod)) {
-                                String op = "";
-                                if (binary.getOperator() == J.Binary.Type.GreaterThanOrEqual || binary.getOperator() == J.Binary.Type.LessThanOrEqual) {
-                                    op = "!";
-                                }
-                                return (maybeSizeCallMethod.getSelect() == null ?
-                                        isEmptyNoReceiver.apply(getCursor(), binary.getCoordinates().replace(), op) :
-                                        isEmpty.apply(getCursor(), binary.getCoordinates().replace(), op, maybeSizeCallMethod.getSelect())
-                                ).withPrefix(binary.getPrefix());
+                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                                return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(),
+                                        binary.getOperator() == J.Binary.Type.GreaterThanOrEqual || binary.getOperator() == J.Binary.Type.LessThanOrEqual)
+                                        .withPrefix(binary.getPrefix());
                             }
                         }
                     }
                 }
                 return super.visitBinary(binary, ctx);
             }
+
+            private J newIsEmptyCall(J.MethodInvocation method, JavaCoordinates coordinates, boolean negate) {
+                JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Collection)}.isEmpty()").build();
+                if (method.getSelect() == null) {
+                    assert method.getMethodType() != null;
+                    J.Identifier this_ = JavaElementFactory.newThis(method.getMethodType().getDeclaringType());
+                    J isEmptyCall = isEmpty.apply(getCursor(), coordinates, negate ? "!" : "", this_);
+                    if (negate) {
+                        return ((J.Unary) isEmptyCall).withExpression(((J.MethodInvocation) ((J.Unary) isEmptyCall).getExpression()).withSelect(null));
+                    }
+                    return ((J.MethodInvocation) isEmptyCall).withSelect(null);
+                }
+                return isEmpty.apply(getCursor(), coordinates, negate ? "!" : "", method.getSelect());
+            }
         });
     }
 
     private static boolean isZero(Expression expression) {
-        return expression instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) expression).getValue());
+        return expression instanceof J.Literal && Objects.equals(0, ((J.Literal) expression).getValue());
     }
 
     private static boolean isOne(Expression expression) {
-        return expression instanceof J.Literal && Integer.valueOf(1).equals(((J.Literal) expression).getValue());
+        return expression instanceof J.Literal && Objects.equals(1, ((J.Literal) expression).getValue());
     }
 
 }

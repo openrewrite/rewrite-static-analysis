@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class CommonStaticAnalysisIssuesPerformanceTest implements RewriteTest {
+class CommonStaticAnalysisIssuesPerformanceTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {

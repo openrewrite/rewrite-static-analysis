@@ -15,7 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
@@ -42,7 +45,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1114");
+        return Collections.singleton("RSPEC-S1114");
     }
 
     @Override

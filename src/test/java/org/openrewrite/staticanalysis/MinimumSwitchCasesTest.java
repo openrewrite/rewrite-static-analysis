@@ -648,6 +648,28 @@ class MinimumSwitchCasesTest implements RewriteTest {
     }
 
     @Test
+    void multipleCaseConstants() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int variable;
+                  void test() {
+                      switch (variable) {
+                        case 0, 1: doSomething(); break;
+                        default: doSomethingElse(); break;
+                      }
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void nestedEnum() {
         rewriteRun(
           //language=java

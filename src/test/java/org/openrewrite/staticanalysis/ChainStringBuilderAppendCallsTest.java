@@ -161,7 +161,6 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     @Test
     void runMultipleTimes() {
         rewriteRun(
-          spec -> spec.expectedCyclesThatMakeChanges(2),
           //language=java
           java(
             """

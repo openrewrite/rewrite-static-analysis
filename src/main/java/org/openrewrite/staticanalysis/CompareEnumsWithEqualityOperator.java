@@ -40,7 +40,7 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-4551");
+        return Collections.singleton("RSPEC-S4551");
     }
 
     @Override

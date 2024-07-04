@@ -45,7 +45,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1905");
+        return Collections.singleton("RSPEC-S1905");
     }
 
     @Override
@@ -101,14 +101,20 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType expressionType = visitedTypeCast.getExpression().getType();
                 JavaType castType = visitedTypeCast.getType();
 
-                if (targetType == null ||
-                    (targetType instanceof JavaType.Primitive || castType instanceof JavaType.Primitive) && castType != expressionType ||
-                    (typeCast.getExpression() instanceof J.Lambda || typeCast.getExpression() instanceof J.MemberReference) && castType instanceof JavaType.Parameterized) {
+                if (targetType == null) {
+                    return visitedTypeCast;
+                }
+                if ((targetType instanceof JavaType.Primitive || castType instanceof JavaType.Primitive) && castType != expressionType) {
+                    return visitedTypeCast;
+                }
+                if (typeCast.getExpression() instanceof J.Lambda || typeCast.getExpression() instanceof J.MemberReference) {
                     // Not currently supported, this will be more accurate with dataflow analysis.
                     return visitedTypeCast;
-                } else if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
-                           TypeUtils.isOfType(targetType, expressionType) ||
-                           TypeUtils.isAssignableTo(targetType, expressionType)) {
+                }
+
+                if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
+                    TypeUtils.isOfType(targetType, expressionType) ||
+                    TypeUtils.isAssignableTo(targetType, expressionType)) {
                     JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(castType);
                     if (fullyQualified != null) {
                         maybeRemoveImport(fullyQualified.getFullyQualifiedName());

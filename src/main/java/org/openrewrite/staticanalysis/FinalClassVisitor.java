@@ -22,7 +22,10 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static java.util.Collections.emptyList;
 import static org.openrewrite.Tree.randomId;
@@ -121,7 +124,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
                 // Temporary work around until issue https://github.com/openrewrite/rewrite/issues/2348 is implemented.
                 if (!cd.getLeadingAnnotations().isEmpty()) {
                     // Setting the prefix to empty will cause the `Spaces` visitor to fix the formatting.
-                    cd = cd.getAnnotations().withKind(cd.getAnnotations().getKind().withPrefix(Space.EMPTY));
+                    cd = cd.getPadding().withKind(cd.getPadding().getKind().withPrefix(Space.EMPTY));
                 }
 
                 assert getCursor().getParent() != null;

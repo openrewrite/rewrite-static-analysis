@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.Recipe;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -514,6 +515,31 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Test
+    void leaveNonConstantsNonStatic() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                private final int CONSTANT = getFortyTwo();
+                private int getFortyTwo() {
+                  return 42;
+                }
+              }
+              """,
+            """
+              class A {
+                private final int constant = getFortyTwo();
+                private int getFortyTwo() {
+                  return 42;
+                }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     @Test
     void doNotRenameUnderscoresOnly() {
@@ -555,6 +581,40 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
                         foo = "defaultValue";
                     }
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+    void doNotChangeLombokAnnotatedClasses() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              @lombok.RequiredArgsConstructor
+              class Test {
+                  private String D_TYPE_CONNECT = "";
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+    void doNotChangeLombokAnnotatedFields() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          //language=java
+          java(
+            """
+              class Test {
+                  @lombok.Setter
+                  private String D_TYPE_CONNECT = "";
               }
               """
           )

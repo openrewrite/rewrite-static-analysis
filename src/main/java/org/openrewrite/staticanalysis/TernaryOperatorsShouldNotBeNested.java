@@ -15,19 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import static org.openrewrite.Tree.randomId;
-import static org.openrewrite.java.tree.J.Binary.Type.Equal;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -36,15 +23,15 @@ import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JContainer;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 
 
 public class TernaryOperatorsShouldNotBeNested extends Recipe {
@@ -61,7 +48,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     }
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3358");
+        return Collections.singleton("RSPEC-S3358");
     }
 
     @Override

@@ -23,7 +23,7 @@ import org.openrewrite.test.SourceSpecs;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
+class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new CompareEnumsWithEqualityOperator());

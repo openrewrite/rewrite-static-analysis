@@ -43,7 +43,7 @@ public class NoToStringOnStringType extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1858");
+        return Collections.singleton("RSPEC-S1858");
     }
 
     @Override

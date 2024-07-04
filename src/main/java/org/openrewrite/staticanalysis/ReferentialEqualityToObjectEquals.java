@@ -48,7 +48,7 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1698");
+        return Collections.singleton("RSPEC-S1698");
     }
 
     @Override

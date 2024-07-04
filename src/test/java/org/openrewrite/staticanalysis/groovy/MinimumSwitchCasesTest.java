@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis.groovy;
 
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.staticanalysis.MinimumSwitchCases;
 import org.openrewrite.test.RecipeSpec;
@@ -24,7 +25,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 
-public class MinimumSwitchCasesTest implements RewriteTest {
+class MinimumSwitchCasesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
@@ -63,6 +64,7 @@ public class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @DocumentExample
     @ExpectedToFail("Temporarily until we have investigated why the behavior has changed here")
     @Test
     void twoCases() {

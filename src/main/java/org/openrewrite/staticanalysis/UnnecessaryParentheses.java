@@ -39,7 +39,7 @@ public class UnnecessaryParentheses extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-1110", "RSPEC-1611"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1110", "RSPEC-S1611"));
     }
 
     @Override

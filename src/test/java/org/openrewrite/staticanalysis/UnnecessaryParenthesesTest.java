@@ -961,4 +961,3 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 }
-

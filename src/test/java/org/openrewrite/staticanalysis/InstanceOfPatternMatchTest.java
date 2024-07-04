@@ -134,6 +134,64 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
+        void genericsWithoutParameters() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List) {
+                              List<Object> routesList = (List<Object>) routes;
+                              if (routesList.isEmpty()) {
+                                  return Collections.emptyList();
+                              }
+                              if (routesList.stream()
+                                            .anyMatch(route -> !(route instanceof Map))) {
+                                  return Collections.emptyList();
+                              }
+                              return routesList.stream()
+                                               .map(route -> (Map<String, Object>) route)
+                                               .collect(Collectors.toList());
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """,
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List<?> routesList) {
+                              if (routesList.isEmpty()) {
+                                  return Collections.emptyList();
+                              }
+                              if (routesList.stream()
+                                            .anyMatch(route -> !(route instanceof Map))) {
+                                  return Collections.emptyList();
+                              }
+                              return routesList.stream()
+                                               .map(route -> (Map<String, Object>) route)
+                                               .collect(Collectors.toList());
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void primitiveArray() {
             rewriteRun(
               //language=java
@@ -214,6 +272,41 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                               System.out.println(string1);
                   //            String string1 = "y";
                           }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void conflictingVariableOfNestedType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Map;
+                  
+                  public class A {
+                      void test(Object o) {
+                          Map.Entry entry = null;
+                          if (o instanceof Map.Entry) {
+                            entry = (Map.Entry) o;
+                          }
+                          System.out.println(entry);
+                      }
+                  }
+                  """,
+                """
+                  import java.util.Map;
+                  
+                  public class A {
+                      void test(Object o) {
+                          Map.Entry entry = null;
+                          if (o instanceof Map.Entry<?,?> entry1) {
+                            entry = entry1;
+                          }
+                          System.out.println(entry);
                       }
                   }
                   """
@@ -665,7 +758,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List l ? l.get(0) : o.toString();
+                          return o instanceof List<?> l ? l.get(0) : o.toString();
                       }
                   }
                   """
@@ -690,7 +783,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List l ? l.get(0) : o.toString();
+                          return o instanceof List<?> l ? l.get(0) : o.toString();
                       }
                   }
                   """

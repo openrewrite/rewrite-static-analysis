@@ -25,7 +25,6 @@ import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -63,7 +62,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-117");
+        return Collections.singleton("RSPEC-S117");
     }
 
     @Override
@@ -75,12 +74,11 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new RenameToCamelCase() {
             @Override
-            protected boolean shouldRename(Set<String> hasNameKey, J.VariableDeclarations.NamedVariable variable, String toName) {
+            protected boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable, String toName) {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                Set<String> keys = computeAllKeys(toName, variable);
-                return keys.stream().noneMatch(hasNameKey::contains);
+                return isAvailableIdentifier(toName, variable, hasNameSet);
             }
 
             @Override
@@ -171,22 +169,27 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 );
             }
 
-            private Set<String> computeAllKeys(String identifier, J context) {
-                Set<String> keys = new HashSet<>();
-                keys.add(identifier);
+            private boolean isAvailableIdentifier(String identifier, J context, Set<String> hasNameSet) {
+                if (hasNameSet.contains(identifier)) {
+                    return false;
+                }
                 JavaType.Variable fieldType = getFieldType(context);
                 if (fieldType != null && fieldType.getOwner() != null) {
-                    keys.add(fieldType.getOwner() + " " + identifier);
+                    if (hasNameSet.contains(fieldType.getOwner() + " " + identifier)) {
+                        return false;
+                    }
                     if (fieldType.getOwner() instanceof JavaType.Method) {
                         // Add all enclosing classes
                         JavaType.FullyQualified declaringType = ((JavaType.Method) fieldType.getOwner()).getDeclaringType();
                         while (declaringType != null) {
-                            keys.add(declaringType + " " + identifier);
+                            if (hasNameSet.contains(declaringType + " " + identifier)) {
+                                return false;
+                            }
                             declaringType = declaringType.getOwningClass();
                         }
                     }
                 }
-                return keys;
+                return true;
             }
         };
     }

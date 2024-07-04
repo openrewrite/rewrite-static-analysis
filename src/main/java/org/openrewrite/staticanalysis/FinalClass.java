@@ -16,8 +16,10 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -36,7 +38,7 @@ public class FinalClass extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2974");
+        return Collections.singleton("RSPEC-S2974");
     }
 
     @Override
@@ -46,6 +48,6 @@ public class FinalClass extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new FinalClassVisitor();
+        return Preconditions.check(new JavaFileChecker<>(), new FinalClassVisitor());
     }
 }

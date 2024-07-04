@@ -39,7 +39,7 @@ public class NoEqualityInForCondition extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-888");
+        return Collections.singleton("RSPEC-S888");
     }
 
     @Override

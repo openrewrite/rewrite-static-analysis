@@ -48,7 +48,7 @@ public class UnnecessaryThrows extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1130");
+        return Collections.singleton("RSPEC-S1130");
     }
 
     @Override

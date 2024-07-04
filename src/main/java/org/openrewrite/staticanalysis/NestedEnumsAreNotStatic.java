@@ -41,7 +41,7 @@ public class NestedEnumsAreNotStatic extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2786");
+        return Collections.singleton("RSPEC-S2786");
     }
 
     @Override

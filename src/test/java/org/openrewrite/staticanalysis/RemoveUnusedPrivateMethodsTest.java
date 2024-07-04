@@ -42,22 +42,22 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
               class Test {
                   private void unused() {
                   }
-                            
+              
                   public void dontRemove() {
                       dontRemove2();
                   }
-                  
+              
                   private void dontRemove2() {
                   }
               }
               """,
             """
               class Test {
-                            
+              
                   public void dontRemove() {
                       dontRemove2();
                   }
-                  
+              
                   private void dontRemove2() {
                   }
               }
@@ -121,6 +121,102 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                   }
 
                   private static <T> void checkMethodInUse(String arg0, T arg1) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeMethodsOnNestedClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.stream.Stream;
+              
+              class Test {
+                  void test(String input) {
+                  }
+                  private Stream<Object> unused() {
+                      return null;
+                  }
+              
+                  class InnerTest {
+                      void test(String input) {
+                      }
+                      private Stream<Object> unused() {
+                          return null;
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.stream.Stream;
+              
+              class Test {
+                  void test(String input) {
+                  }
+              
+                  class InnerTest {
+                      void test(String input) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.stream.Stream;
+              
+              @SuppressWarnings("unused")
+              class Test {
+                  void test(String input) {
+                  }
+                  private Stream<Object> unused() {
+                      return null;
+                  }
+                  private Stream<Object> anotherUnused() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
+    void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassNestedClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.stream.Stream;
+              
+              @SuppressWarnings("unused")
+              class Test {
+                  void test(String input) {
+                  }
+                  private Stream<Object> unused() {
+                      return null;
+                  }
+              
+                  class InnerTest {
+                      void test(String input) {
+                      }
+                      private Stream<Object> unused() {
+                          return null;
+                      }
                   }
               }
               """

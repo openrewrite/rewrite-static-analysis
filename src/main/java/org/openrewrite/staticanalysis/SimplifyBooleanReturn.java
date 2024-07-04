@@ -49,7 +49,7 @@ public class SimplifyBooleanReturn extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1126");
+        return Collections.singleton("RSPEC-S1126");
     }
 
     @Override
@@ -211,4 +211,3 @@ public class SimplifyBooleanReturn extends Recipe {
         };
     }
 }
-

@@ -48,7 +48,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2057");
+        return Collections.singleton("RSPEC-S2057");
     }
 
     @Override
@@ -133,7 +133,9 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                     //All other parameterized types fall through
                 } else if (type instanceof JavaType.FullyQualified) {
                     JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
-                    if (fq.getKind() == JavaType.Class.Kind.Enum) return false;
+                    if (fq.getKind() == JavaType.Class.Kind.Enum) {
+                        return false;
+                    }
 
                     if (fq.getKind() != JavaType.Class.Kind.Interface &&
                             !fq.isAssignableTo("java.lang.Throwable")) {
