@@ -247,6 +247,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     private static class DuplicateLiteralInfo {
         Set<String> variableNames;
         Map<String, String> fieldValueToFieldName;
+
         @NonFinal
         Map<String, List<J.Literal>> duplicateLiterals;
 
