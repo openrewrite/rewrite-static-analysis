@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jetbrains.annotations.NotNull;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -101,8 +100,6 @@ public class AddSerialAnnotationToserialVersionUID extends Recipe {
                         // Yes I know deprecated: varDecls.getAllAnnotations()
                         List<J.Annotation> allAnnotations = varDecls.getAllAnnotations();
                         long count = allAnnotations.stream().count();
-                        System.out.println("Nr of annotations: " + count);
-
                         AtomicBoolean hasSerialAnnotation = new AtomicBoolean(false);
                         for (J.Annotation annotation : allAnnotations) {
                             String simpleName = annotation.getSimpleName();
@@ -114,7 +111,6 @@ public class AddSerialAnnotationToserialVersionUID extends Recipe {
 
 
                         for (J.VariableDeclarations.NamedVariable v : varDecls.getVariables()) {
-                            System.out.println("Variable: " + v.getSimpleName());
                             if ("serialVersionUID".equals(v.getSimpleName())) {
 
                                 JavaType type = v.getType();
@@ -122,7 +118,6 @@ public class AddSerialAnnotationToserialVersionUID extends Recipe {
                                 if (type instanceof JavaType.Primitive) {
                                     if (TypeUtils.asPrimitive(v.getType()) == JavaType.Primitive.Long) {
                                         if (hasSerialAnnotation.get()) {
-                                            System.out.println("Found serialVersionUID WITH @Serial annotation");
                                             needsSerialAnnotation.set(false);
                                         } else {
                                             System.out.println("Found serialVersionUID");

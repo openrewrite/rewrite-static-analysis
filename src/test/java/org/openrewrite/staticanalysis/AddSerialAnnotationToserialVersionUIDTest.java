@@ -48,7 +48,7 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
         );
     }
 
-    @Disabled
+    @DocumentExample
     @Test
     void addSerialAnnotation() {
         rewriteRun(
