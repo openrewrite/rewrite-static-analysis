@@ -41,21 +41,18 @@ public class AddSerialAnnotationToserialVersionUID extends Recipe {
     @Override
     @NotNull
     public String getDisplayName() {
-        System.out.println("Entering getDisplayName");
         return "Add @Serial annotation to serialVersionUID";
     }
 
     @Override
     @NotNull
     public String getDescription() {
-        System.out.println("Entering getDescription");
         return "Add a @Serial annotation above a serialVersionUID attribute identifier line.";
     }
 
     @Override
     @NotNull
     public Duration getEstimatedEffortPerOccurrence() {
-        System.out.println("Entering getEstimatedEffortPerOccurrence");
         return Duration.ofMinutes(1);
     }
 

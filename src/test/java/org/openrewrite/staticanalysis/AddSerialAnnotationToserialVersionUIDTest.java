@@ -80,8 +80,6 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
         );
     }
 
-
-    // Borowed from AddSerialVersionUidToSerializableTest of recipe AddSerialVersionUidToSerializableTest
     @Disabled
     @Test
     void methodDeclarationsAreNotVisited() {
@@ -103,7 +101,6 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
         );
     }
 
-    // Borowed from AddSerialVersionUidToSerializableTest of recipe AddSerialVersionUidToSerializableTest
     @Disabled
     @Test
     void serializableInnerClass() {
