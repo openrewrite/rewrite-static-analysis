@@ -184,10 +184,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         });
     }
 
-    private static boolean isPrivateStaticFinalVariable(J.VariableDeclarations declaration) {
-        return declaration.hasModifier(J.Modifier.Type.Private) &&
-               declaration.hasModifier(J.Modifier.Type.Static) &&
-               declaration.hasModifier(J.Modifier.Type.Final);
+    private static boolean isPrivateStaticFinalVariable(J.VariableDeclarations.NamedVariable variable) {
+        return variable.getVariableType() != null && variable.getVariableType().hasFlags(Flag.Private, Flag.Static, Flag.Final);
     }
 
     @Value
@@ -212,8 +210,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, Integer integer) {
                     J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, integer);
                     Cursor parentScope = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.MethodDeclaration);
-                    J.VariableDeclarations declaration = getCursor().firstEnclosingOrThrow(J.VariableDeclarations.class);
-                    boolean privateStaticFinalVariable = isPrivateStaticFinalVariable(declaration);
+                    boolean privateStaticFinalVariable = isPrivateStaticFinalVariable(variable);
                     // `private static final String`(s) are handled separately by `FindExistingPrivateStaticFinalFields`.
                     if (parentScope.getValue() instanceof J.MethodDeclaration ||
                         parentScope.getValue() instanceof J.ClassDeclaration &&
@@ -238,7 +235,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
                         Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
                                                                           is instanceof J.Annotation ||
-                                                                          is instanceof J.VariableDeclarations ||
+                                                                          is instanceof J.VariableDeclarations.NamedVariable ||
                                                                           is instanceof J.NewClass ||
                                                                           is instanceof J.MethodInvocation);
                         // EnumValue can accept constructor arguments, including string literals
@@ -247,11 +244,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             return literal;
                         }
 
-                        if ((parent.getValue() instanceof J.VariableDeclarations &&
-                             ((J.VariableDeclarations) parent.getValue()).hasModifier(J.Modifier.Type.Final) &&
-                             !(((J.VariableDeclarations) parent.getValue()).hasModifier(J.Modifier.Type.Private) && ((J.VariableDeclarations) parent.getValue()).hasModifier(J.Modifier.Type.Static))) ||
-                            parent.getValue() instanceof J.NewClass ||
-                            parent.getValue() instanceof J.MethodInvocation) {
+                        if ((parent.getValue() instanceof J.VariableDeclarations.NamedVariable && !isPrivateStaticFinalVariable(parent.getValue())) ||
+                             parent.getValue() instanceof J.NewClass ||
+                             parent.getValue() instanceof J.MethodInvocation) {
 
                             result.duplicateLiterals.computeIfAbsent(((String) literal.getValue()), k -> new ArrayList<>(1)).add(literal);
                         }
