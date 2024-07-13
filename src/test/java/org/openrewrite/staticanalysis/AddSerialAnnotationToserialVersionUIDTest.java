@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -34,16 +35,16 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
           //language=java
           java(
             """
-                             import java.io.Serializable;
-                             import java.io.Serial;
-                                         
-                             public class Example implements Serializable {
-                                 String var1 = "first variable";
-                                 @Serial
-                                 private static final long serialVersionUID = 1L;
-                                 int var3 = 666;
-                                 }
-                    """
+              import java.io.Serializable;
+              import java.io.Serial;
+
+              class Example implements Serializable {
+                  String var1 = "first variable";
+                  @Serial
+                  private static final long serialVersionUID = 1L;
+                  int var3 = 666;
+              }
+              """
           )
         );
     }
@@ -55,27 +56,27 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
           //language=java
           java(
             """
-                    import java.io.Serializable;
-                    import java.io.Serial;
-                                
-                    public class Example implements Serializable {
-                        String var1 = "first variable";
-                        private static final long serialVersionUID = 1L;
-                        int var3 = 666;
-                    }
-                    """,
+              import java.io.Serializable;
+              import java.io.Serial;
+
+              class Example implements Serializable {
+                  String var1 = "first variable";
+                  private static final long serialVersionUID = 1L;
+                  int var3 = 666;
+              }
+              """,
             """
-                    import java.io.Serializable;
-                    import java.io.Serial;
-                                
-                    public class Example implements Serializable {  
-                        String var1 = "first variable";                        
-                        @Serial 
-                        private static final long serialVersionUID = 1L;
-                        int var3 = 666;
-                        String wolvie = "wolverine"; 
-                    }
-                    """
+              import java.io.Serializable;
+              import java.io.Serial;
+
+              class Example implements Serializable {  
+                  String var1 = "first variable";                        
+                  @Serial 
+                  private static final long serialVersionUID = 1L;
+                  int var3 = 666;
+                  String wolvie = "wolverine"; 
+              }
+              """
           )
         );
     }
@@ -87,16 +88,16 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
           //language=java
           java(
             """
-                    import java.io.Serializable;
-                                
-                    public class Example implements Serializable {
-                        private String fred;
-                        private int numberOfFreds;
-                        void doSomething() {
-                            long serialVersionUID = 1L;
-                        }
-                    }
-                    """
+              import java.io.Serializable;
+
+              class Example implements Serializable {
+                  private String fred;
+                  private int numberOfFreds;
+                  void doSomething() {
+                      long serialVersionUID = 1L;
+                  }
+              }
+              """
           )
         );
     }
@@ -108,23 +109,22 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
           //language=java
           java(
             """
-                    import java.io.Serializable;
-                    public class Outer implements Serializable {
-                        public static class Inner implements Serializable {
-                        }
-                    }
-                    """,
+              import java.io.Serializable;
+              public class Outer implements Serializable {
+                  public static class Inner implements Serializable {
+                  }
+              }
+              """,
             """
-                    import java.io.Serializable;
-                    public class Outer implements Serializable {
-                        private static final long serialVersionUID = 1;
-                        public static class Inner implements Serializable {
-                            private static final long serialVersionUID = 1;
-                        }
-                    }
-                    """
+              import java.io.Serializable;
+              class Outer implements Serializable {
+                  private static final long serialVersionUID = 1;
+                  static class Inner implements Serializable {
+                      private static final long serialVersionUID = 1;
+                  }
+              }
+              """
           )
         );
     }
-
 }
