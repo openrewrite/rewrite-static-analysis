@@ -736,7 +736,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Disabled
     @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/309")
     void dontUseLambdaForMethodWithTypeParameter() {

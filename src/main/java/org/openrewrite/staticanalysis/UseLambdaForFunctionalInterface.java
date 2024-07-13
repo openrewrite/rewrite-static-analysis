@@ -96,6 +96,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         StringBuilder templateBuilder = new StringBuilder();
                         J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
 
+                        // If the functional interface method has type parameters, we can't replace it with a lambda.
+                        if (methodDeclaration.getTypeParameters() != null && !methodDeclaration.getTypeParameters().isEmpty()) {
+                            return n;
+                        }
+
                         if (methodDeclaration.getParameters().get(0) instanceof J.Empty) {
                             templateBuilder.append("() -> {");
                         } else {
