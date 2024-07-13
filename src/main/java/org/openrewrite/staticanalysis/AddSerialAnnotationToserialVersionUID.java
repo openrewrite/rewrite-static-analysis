@@ -58,9 +58,9 @@ public class AddSerialAnnotationToserialVersionUID extends Recipe {
                 ),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
-                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                         if (TypeUtils.isAssignableTo("java.io.Serializable", classDecl.getType())) {
-                            return super.visitClassDeclaration(classDecl, executionContext);
+                            return super.visitClassDeclaration(classDecl, ctx);
                         }
                         return classDecl;
                     }
