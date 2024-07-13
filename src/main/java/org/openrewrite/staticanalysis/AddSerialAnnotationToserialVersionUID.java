@@ -24,6 +24,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.UsesJavaVersion;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
@@ -51,8 +52,19 @@ public class AddSerialAnnotationToserialVersionUID extends Recipe {
     @NonNull
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                new UsesJavaVersion<>(14),
+                Preconditions.and(
+                        new UsesJavaVersion<>(14),
+                        new UsesType<>("java.io.Serializable", true)
+                ),
                 new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
+                        if (TypeUtils.isAssignableTo("java.io.Serializable", classDecl.getType())) {
+                            return super.visitClassDeclaration(classDecl, executionContext);
+                        }
+                        return classDecl;
+                    }
+
                     @Override
                     public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                         J.VariableDeclarations vd = super.visitVariableDeclarations(multiVariable, ctx);

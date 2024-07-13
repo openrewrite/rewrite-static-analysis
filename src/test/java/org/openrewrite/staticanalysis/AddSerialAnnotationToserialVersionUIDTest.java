@@ -28,7 +28,6 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new AddSerialAnnotationToserialVersionUID())
-          .parser(JavaParser.fromJavaVersion())
           .allSources(sourceSpec -> sourceSpec.markers(javaVersion(17)));
     }
 
@@ -72,6 +71,20 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
                   @Serial
                   private static final long serialVersionUID = 1L;
                   int var3 = 666;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void shouldNotAnnotateNonSerializableClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Example {
+                  private static final long serialVersionUID = 1L;
               }
               """
           )
