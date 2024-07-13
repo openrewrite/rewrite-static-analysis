@@ -15,22 +15,51 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new AddSerialAnnotationToserialVersionUID());
+        spec.recipe(new AddSerialAnnotationToserialVersionUID())
+          .parser(JavaParser.fromJavaVersion())
+          .allSources(sourceSpec -> sourceSpec.markers(javaVersion(17)));
+    }
+
+    @DocumentExample
+    @Test
+    void addSerialAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              class Example implements Serializable {
+                  private static final long serialVersionUID = 1L;
+              }
+              """,
+            """
+              import java.io.Serial;
+              import java.io.Serializable;
+
+              class Example implements Serializable {
+                  @Serial
+                  private static final long serialVersionUID = 1L;
+              }
+              """
+          )
+        );
     }
 
     @Test
-    void serialAnnotationAlreadyPresent() {
+    void shouldNoopIfAlreadyPresent() {
         rewriteRun(
           //language=java
           java(
@@ -49,41 +78,25 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
-    void addSerialAnnotation() {
+    void shouldNotAnnotateOnJava11() {
         rewriteRun(
           //language=java
           java(
             """
               import java.io.Serializable;
-              import java.io.Serial;
 
               class Example implements Serializable {
-                  String var1 = "first variable";
                   private static final long serialVersionUID = 1L;
-                  int var3 = 666;
               }
               """,
-            """
-              import java.io.Serializable;
-              import java.io.Serial;
-
-              class Example implements Serializable {  
-                  String var1 = "first variable";                        
-                  @Serial 
-                  private static final long serialVersionUID = 1L;
-                  int var3 = 666;
-                  String wolvie = "wolverine"; 
-              }
-              """
+            spec -> spec.markers(javaVersion(11))
           )
         );
     }
 
-    @Disabled
     @Test
-    void methodDeclarationsAreNotVisited() {
+    void shouldNotAnnotateOtherFields() {
         rewriteRun(
           //language=java
           java(
@@ -91,8 +104,12 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
               import java.io.Serializable;
 
               class Example implements Serializable {
-                  private String fred;
-                  private int numberOfFreds;
+                  static final long serialVersionUID = 1L;
+                  private final long serialVersionUID = 1L;
+                  private static long serialVersionUID = 1L;
+                  private static final int serialVersionUID = 1L;
+                  private static final long foo = 1L;
+
                   void doSomething() {
                       long serialVersionUID = 1L;
                   }
@@ -102,24 +119,30 @@ class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
         );
     }
 
-    @Disabled
     @Test
-    void serializableInnerClass() {
+    void shouldAnnotatedFieldsInInnerClasses() {
         rewriteRun(
           //language=java
           java(
             """
               import java.io.Serializable;
-              public class Outer implements Serializable {
-                  public static class Inner implements Serializable {
+
+              class Outer implements Serializable {
+                  private static final long serialVersionUID = 1;
+                  static class Inner implements Serializable {
+                      private static final long serialVersionUID = 1;
                   }
               }
               """,
             """
+              import java.io.Serial;
               import java.io.Serializable;
+
               class Outer implements Serializable {
+                  @Serial
                   private static final long serialVersionUID = 1;
                   static class Inner implements Serializable {
+                      @Serial
                       private static final long serialVersionUID = 1;
                   }
               }

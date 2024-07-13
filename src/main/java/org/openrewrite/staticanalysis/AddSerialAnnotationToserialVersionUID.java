@@ -19,21 +19,17 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.NonNull;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.UnaryOperator;
 
 public class AddSerialAnnotationToserialVersionUID extends Recipe {
     @Override
@@ -58,58 +54,26 @@ public class AddSerialAnnotationToserialVersionUID extends Recipe {
                 new UsesJavaVersion<>(14),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
-                    @NonNull
-                    public J.ClassDeclaration visitClassDeclaration(J.@NonNull ClassDeclaration classDecl, @NonNull ExecutionContext ctx) {
-                        J.ClassDeclaration c = super.visitClassDeclaration(classDecl, ctx);
-                        if (c.getKind() != J.ClassDeclaration.Kind.Type.Class) {
-                            return c;
-                        }
-
-                        AtomicBoolean needsSerialAnnotation = new AtomicBoolean(false);
-                        c = c.withBody(c.getBody().withStatements(ListUtils.map(c.getBody().getStatements(), new UnaryOperator<Statement>() {
-                            @Override
-                            public Statement apply(Statement s) {
-                                if (!(s instanceof J.VariableDeclarations)) {
-                                    return s;
-                                }
-                                J.VariableDeclarations varDecls = (J.VariableDeclarations) s;
-                                // Yes I know deprecated: varDecls.getAllAnnotations()
-                                List<J.Annotation> allAnnotations = varDecls.getAllAnnotations();
-                                long count = allAnnotations.stream().count();
-                                AtomicBoolean hasSerialAnnotation = new AtomicBoolean(false);
-                                for (J.Annotation annotation : allAnnotations) {
-                                    String simpleName = annotation.getSimpleName();
-                                    if (simpleName.equals("Serial")) {
-                                        hasSerialAnnotation.set(true);
-                                    }
-                                }
-
-
-                                for (J.VariableDeclarations.NamedVariable v : varDecls.getVariables()) {
-                                    if ("serialVersionUID".equals(v.getSimpleName())) {
-                                        JavaType type = v.getType();
-
-                                        if (type instanceof JavaType.Primitive) {
-                                            if (TypeUtils.asPrimitive(v.getType()) == JavaType.Primitive.Long) {
-                                                if (hasSerialAnnotation.get()) {
-                                                    needsSerialAnnotation.set(false);
-                                                } else {
-                                                    needsSerialAnnotation.set(true);
-                                                }
-                                                return s;
-                                            }
-                                        }
-                                    }
-                                }
-                                return s;
-                            }
-                        })));
-                        if (needsSerialAnnotation.get()) {
-                            c = JavaTemplate.apply("@Serial", getCursor(), c.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
-                            // It HAS to be added. This method seems to be the easiest way to do it. Does NOT work
+                    public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                        J.VariableDeclarations vd = super.visitVariableDeclarations(multiVariable, ctx);
+                        if (isPrivateStaticFinalLongSerialVersionUID(vd) &&
+                            FindAnnotations.find(vd, "@java.io.Serial").isEmpty()) {
                             maybeAddImport("java.io.Serial");
+                            return JavaTemplate.builder("@Serial")
+                                    .imports("java.io.Serial")
+                                    .build()
+                                    .apply(getCursor(), vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                         }
-                        return c;
+                        return vd;
+                    }
+
+                    private boolean isPrivateStaticFinalLongSerialVersionUID(J.VariableDeclarations vd) {
+                        return vd.hasModifier(J.Modifier.Type.Private) &&
+                               vd.hasModifier(J.Modifier.Type.Static) &&
+                               vd.hasModifier(J.Modifier.Type.Final) &&
+                               TypeUtils.asPrimitive(vd.getType()) == JavaType.Primitive.Long &&
+                               vd.getVariables().size() == 1 &&
+                               "serialVersionUID".equals(vd.getVariables().get(0).getSimpleName());
                     }
                 }
         );
