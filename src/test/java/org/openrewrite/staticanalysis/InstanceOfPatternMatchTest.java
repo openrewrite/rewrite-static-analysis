@@ -37,7 +37,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @SuppressWarnings({"ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable"})
     @Nested
     class If {
-
         @Test
         void ifConditionWithoutPattern() {
             rewriteRun(
@@ -468,6 +467,71 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        void ifTwoDifferentInstanceOf() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String && o2 instanceof String) {
+                                return ((String) o).length() + ((String) o2).length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String string && o2 instanceof String string1) {
+                                return string.length() + string1.length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Disabled("Not handled correctly yet")
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        void ifTwoDifferentInstanceOfWithParentheses() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String && (o2 instanceof String)) {
+                                return ((String) o).length() + ((String) o2).length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String string && (o2 instanceof String string1)) {
+                                return string.length() + string1.length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
     }
 
     @SuppressWarnings({"CastCanBeRemovedNarrowingVariableType", "ClassInitializerMayBeStatic"})
@@ -565,6 +629,34 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                       String test(Object o) {
                           return o instanceof String ? o.toString() : ((String) o).substring(1);
                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/265")
+        void multipleCastsInDifferentOperands() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Comparator;
+                  public class A {
+                     Comparator<Object> comparator() {
+                       return (a, b) ->
+                           a instanceof String && b instanceof String ? ((String) a).compareTo((String) b) : 0;
+                     }
+                  }
+                  """,
+                """
+                  import java.util.Comparator;
+                  public class A {
+                     Comparator<Object> comparator() {
+                       return (a, b) ->
+                           a instanceof String s && b instanceof String s1 ? s.compareTo(s1) : 0;
+                     }
                   }
                   """
               )

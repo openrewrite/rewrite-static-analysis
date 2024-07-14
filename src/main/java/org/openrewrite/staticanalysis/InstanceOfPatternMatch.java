@@ -19,7 +19,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
@@ -265,7 +264,7 @@ public class InstanceOfPatternMatch extends Recipe {
             } else {
                 strategy = VariableNameStrategy.short_();
             }
-            String baseName = variableBaseName((TypeTree) instanceOf.getClazz(), strategy);
+            String baseName = strategy.variableName(((TypeTree) instanceOf.getClazz()).getType());
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
@@ -295,10 +294,6 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
-    private static String variableBaseName(TypeTree typeTree, VariableNameStrategy nameStrategy) {
-        return nameStrategy.variableName(typeTree.getType());
-    }
-
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {
 
         private final InstanceOfPatternReplacements replacements;
@@ -310,6 +305,26 @@ public class InstanceOfPatternMatch extends Recipe {
         @Nullable
         static J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
             return new UseInstanceOfPatternMatching(replacements).visit(tree, 0, cursor);
+        }
+
+        @Override
+        public J visitBinary(J.Binary original, Integer integer) {
+            Expression newLeft = (Expression) super.visitNonNull(original.getLeft(), integer);
+            if (newLeft != original.getLeft()) {
+                // The left side changed, so the right side should see any introduced variable names
+                J.Binary replacement = original.withLeft(newLeft);
+                Cursor widenedCursor = updateCursor(replacement);
+
+                Expression newRight;
+                if (original.getRight() instanceof J.InstanceOf) {
+                    newRight = replacements.processInstanceOf((J.InstanceOf) original.getRight(), widenedCursor);
+                } else {
+                    newRight = (Expression) super.visitNonNull(original.getRight(), integer, widenedCursor);
+                }
+                return replacement.withRight(newRight);
+            }
+            // The left side didn't change, so the right side doesn't need to see any introduced variable names
+            return super.visitBinary(original, integer);
         }
 
         @Override
