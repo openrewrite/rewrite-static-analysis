@@ -54,7 +54,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1158");
+        return Collections.singleton("RSPEC-S1158");
     }
 
     @Override

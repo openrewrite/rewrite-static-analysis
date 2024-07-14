@@ -353,4 +353,30 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void ternary() {
+        rewriteRun(
+          java(
+            """
+              public class A {
+                  {
+                      if (!true || !true) {
+                          System.out.println("");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      if (false) {
+                          System.out.println("");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

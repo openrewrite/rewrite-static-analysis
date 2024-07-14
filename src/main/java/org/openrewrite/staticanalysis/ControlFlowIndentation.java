@@ -49,7 +49,7 @@ public class ControlFlowIndentation extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-2681");
+        return singleton("RSPEC-S2681");
     }
 
     @Override

@@ -45,7 +45,7 @@ public class ModifierOrder extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1124");
+        return Collections.singleton("RSPEC-S1124");
     }
 
     @Override

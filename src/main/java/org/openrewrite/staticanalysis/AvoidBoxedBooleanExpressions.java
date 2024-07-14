@@ -42,7 +42,7 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-5411");
+        return singleton("RSPEC-S5411");
     }
 
     @Override

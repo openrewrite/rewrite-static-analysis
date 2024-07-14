@@ -47,7 +47,7 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1317");
+        return Collections.singleton("RSPEC-S1317");
     }
 
     @Override

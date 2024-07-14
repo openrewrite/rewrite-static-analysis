@@ -43,7 +43,7 @@ public class UseObjectNotifyAll extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2446");
+        return Collections.singleton("RSPEC-S2446");
     }
 
     @Override

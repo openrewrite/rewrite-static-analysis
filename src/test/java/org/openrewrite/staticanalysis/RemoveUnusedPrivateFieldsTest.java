@@ -441,4 +441,3 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 }
-

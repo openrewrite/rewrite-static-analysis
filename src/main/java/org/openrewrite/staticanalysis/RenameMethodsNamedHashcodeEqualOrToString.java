@@ -31,7 +31,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
-public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
+public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
     private static final MethodMatcher NO_ARGS = new MethodMatcher("*..* *()", true);
     private static final MethodMatcher OBJECT_ARG = new MethodMatcher("*..* *(java.lang.Object)", true);
 
@@ -48,7 +48,7 @@ public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1221");
+        return Collections.singleton("RSPEC-S1221");
     }
 
     @Override

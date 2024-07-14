@@ -42,7 +42,7 @@ public class CatchClauseOnlyRethrows extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-2737");
+        return singleton("RSPEC-S2737");
     }
 
     @Override

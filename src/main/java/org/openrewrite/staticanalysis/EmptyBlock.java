@@ -43,7 +43,7 @@ public class EmptyBlock extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-108");
+        return Collections.singleton("RSPEC-S108");
     }
 
     @Override

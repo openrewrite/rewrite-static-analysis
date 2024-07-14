@@ -19,6 +19,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
@@ -33,6 +34,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -224,6 +226,25 @@ public class InstanceOfPatternMatch extends Recipe {
                     name,
                     type,
                     null));
+            JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(type);
+            if (fqType != null && !fqType.getTypeParameters().isEmpty() && !(instanceOf.getClazz() instanceof J.ParameterizedType)) {
+                TypedTree oldTypeTree = (TypedTree) instanceOf.getClazz();
+
+                // Each type parameter is turned into a wildcard, i.e. `List` -> `List<?>` or `Map.Entry` -> `Map.Entry<?,?>`
+                List<Expression> wildcardsList = IntStream.range(0, fqType.getTypeParameters().size())
+                        .mapToObj(i -> new J.Wildcard(randomId(), Space.EMPTY, Markers.EMPTY, null, null))
+                        .collect(Collectors.toList());
+
+                J.ParameterizedType newTypeTree = new J.ParameterizedType(
+                        randomId(),
+                        oldTypeTree.getPrefix(),
+                        Markers.EMPTY,
+                        oldTypeTree.withPrefix(Space.EMPTY),
+                        null,
+                        oldTypeTree.getType()
+                ).withTypeParameters(wildcardsList);
+                result = result.withClazz(newTypeTree);
+            }
 
             // update entry in replacements to share the pattern variable name
             for (Map.Entry<J.TypeCast, J.InstanceOf> entry : replacements.entrySet()) {
@@ -331,8 +352,10 @@ public class InstanceOfPatternMatch extends Recipe {
     private static class VariableNameStrategy {
         public static final Pattern NAME_SPLIT_PATTERN = Pattern.compile("[$._]*(?=\\p{Upper}+[\\p{Lower}\\p{Digit}]*)");
         private final Style style;
+
         @Nullable
         private final String name;
+
         private final Set<Cursor> contextScopes;
 
         enum Style {
@@ -364,9 +387,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 return name;
             } else if (type instanceof JavaType.FullyQualified) {
                 String className = ((JavaType.FullyQualified) type).getClassName();
-                if (className.indexOf('.') > 0) {
-                    className = className.substring(className.lastIndexOf('.'));
-                }
+                className = className.substring(className.lastIndexOf('.') + 1);
                 String baseName = null;
                 switch (style) {
                     case SHORT:

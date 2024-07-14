@@ -46,8 +46,9 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
           )
         );
     }
-    @Test
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/119")
+    @Test
     void tagOnSecondLine() {
         rewriteRun(
           //language=java
@@ -55,6 +56,27 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
             """
               /**
                * @author foo.bar
+               */
+              class Test {}
+              """,
+            """
+              class Test {}
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/119")
+    @Test
+    void tagOnSecondLineSourroundedByEmptyLines() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              /**
+               *
+               * @author foo.bar
+               *
                */
               class Test {}
               """,

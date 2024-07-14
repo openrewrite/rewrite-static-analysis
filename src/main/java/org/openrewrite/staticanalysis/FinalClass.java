@@ -38,7 +38,7 @@ public class FinalClass extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2974");
+        return Collections.singleton("RSPEC-S2974");
     }
 
     @Override

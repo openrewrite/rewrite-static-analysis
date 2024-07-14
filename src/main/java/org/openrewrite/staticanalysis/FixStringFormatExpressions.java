@@ -45,7 +45,7 @@ public class FixStringFormatExpressions extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3457");
+        return Collections.singleton("RSPEC-S3457");
     }
 
     @Override

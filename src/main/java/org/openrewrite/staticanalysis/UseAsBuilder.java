@@ -57,12 +57,12 @@ public class UseAsBuilder extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Use the builder pattern where possible";
+        return "Chain calls to builder methods";
     }
 
     @Override
     public String getDescription() {
-        return "When an API has been designed as a builder, use it that way rather than as a series of setter calls.";
+        return "Chain calls to builder methods that are on separate lines into one chain of builder calls.";
     }
 
     @Override

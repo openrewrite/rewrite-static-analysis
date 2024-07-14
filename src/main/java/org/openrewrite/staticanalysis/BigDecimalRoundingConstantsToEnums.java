@@ -49,7 +49,7 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2111");
+        return Collections.singleton("RSPEC-S2111");
     }
 
     @Override

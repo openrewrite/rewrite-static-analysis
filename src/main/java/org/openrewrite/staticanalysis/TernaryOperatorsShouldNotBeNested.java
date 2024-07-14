@@ -48,7 +48,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     }
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3358");
+        return Collections.singleton("RSPEC-S3358");
     }
 
     @Override

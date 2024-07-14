@@ -42,7 +42,7 @@ public class UpperCaseLiteralSuffixes extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-818");
+        return Collections.singleton("RSPEC-S818");
     }
 
     @Override

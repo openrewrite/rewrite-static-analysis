@@ -44,7 +44,7 @@ public class HideUtilityClassConstructor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1118");
+        return Collections.singleton("RSPEC-S1118");
     }
 
     @Override

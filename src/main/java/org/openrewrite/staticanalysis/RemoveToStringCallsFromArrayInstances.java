@@ -48,7 +48,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2116");
+        return Collections.singleton("RSPEC-S2116");
     }
 
     @Override
@@ -62,6 +62,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                " the contents of the array. `Arrays.toString(array)` should be used instead as it gives the contents of the array.";
     }
 
+    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new RemoveToStringFromArraysVisitor();
     }

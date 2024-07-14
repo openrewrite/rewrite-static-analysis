@@ -44,7 +44,7 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1197");
+        return Collections.singleton("RSPEC-S1197");
     }
 
     @Override
