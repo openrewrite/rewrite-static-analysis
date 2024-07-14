@@ -499,6 +499,39 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Disabled("Not handled correctly yet")
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        void ifTwoDifferentInstanceOfWithParentheses() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String && (o2 instanceof String)) {
+                                return ((String) o).length() + ((String) o2).length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String string && (o2 instanceof String string1)) {
+                                return string.length() + string1.length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
     }
 
     @SuppressWarnings({"CastCanBeRemovedNarrowingVariableType", "ClassInitializerMayBeStatic"})

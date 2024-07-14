@@ -37,7 +37,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
@@ -309,26 +308,29 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         @Override
-        public J visitBinary(J.Binary binary, Integer integer) {
-            Expression left1 = binary.getLeft();
-            if (left1 instanceof J.InstanceOf) {
-                binary = binary.withLeft(replacements.processInstanceOf((J.InstanceOf) left1, getCursor()));
-            } else {
-                binary = binary.withLeft(requireNonNull(visitAndCast(left1, integer)));
+        public J visitBinary(J.Binary original, Integer integer) {
+            Expression newLeft = (Expression) super.visitNonNull(original.getLeft(), integer);
+            if (newLeft != original.getLeft()) {
+                // The left side changed, so the right side should see any introduced variable names
+                J.Binary replacement = original.withLeft(newLeft);
+                Cursor widenedCursor = updateCursor(replacement);
+
+                Expression newRight;
+                if (original.getRight() instanceof J.InstanceOf) {
+                    newRight = replacements.processInstanceOf((J.InstanceOf) original.getRight(), widenedCursor);
+                } else {
+                    newRight = (Expression) super.visitNonNull(original.getRight(), integer, widenedCursor);
+                }
+                return replacement.withRight(newRight);
             }
-            Expression right = binary.getRight();
-            if (right instanceof J.InstanceOf) {
-                binary = binary.withRight(replacements.processInstanceOf((J.InstanceOf) right, updateCursor(binary)));
-            } else {
-                binary = binary.withRight(requireNonNull(visitAndCast(right, integer)));
-            }
-            return binary;
+            // The left side didn't change, so the right side doesn't need to see any introduced variable names
+            return super.visitBinary(original, integer);
         }
 
         @Override
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer executionContext) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, executionContext);
-            instanceOf = replacements.processInstanceOf(instanceOf, updateCursor(instanceOf));
+            instanceOf = replacements.processInstanceOf(instanceOf, getCursor());
             return instanceOf;
         }
 
