@@ -19,7 +19,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
@@ -38,6 +37,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
@@ -265,7 +265,7 @@ public class InstanceOfPatternMatch extends Recipe {
             } else {
                 strategy = VariableNameStrategy.short_();
             }
-            String baseName = variableBaseName((TypeTree) instanceOf.getClazz(), strategy);
+            String baseName = strategy.variableName(((TypeTree) instanceOf.getClazz()).getType());
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
@@ -295,10 +295,6 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
-    private static String variableBaseName(TypeTree typeTree, VariableNameStrategy nameStrategy) {
-        return nameStrategy.variableName(typeTree.getType());
-    }
-
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {
 
         private final InstanceOfPatternReplacements replacements;
@@ -313,9 +309,26 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         @Override
+        public J visitBinary(J.Binary binary, Integer integer) {
+            Expression left1 = binary.getLeft();
+            if (left1 instanceof J.InstanceOf) {
+                binary = binary.withLeft(replacements.processInstanceOf((J.InstanceOf) left1, getCursor()));
+            } else {
+                binary = binary.withLeft(requireNonNull(visitAndCast(left1, integer)));
+            }
+            Expression right = binary.getRight();
+            if (right instanceof J.InstanceOf) {
+                binary = binary.withRight(replacements.processInstanceOf((J.InstanceOf) right, updateCursor(binary)));
+            } else {
+                binary = binary.withRight(requireNonNull(visitAndCast(right, integer)));
+            }
+            return binary;
+        }
+
+        @Override
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer executionContext) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, executionContext);
-            instanceOf = replacements.processInstanceOf(instanceOf, getCursor());
+            instanceOf = replacements.processInstanceOf(instanceOf, updateCursor(instanceOf));
             return instanceOf;
         }
 

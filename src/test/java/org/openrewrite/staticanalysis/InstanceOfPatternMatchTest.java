@@ -488,8 +488,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   """
                     class A {
                         int combinedLength(Object o, Object o2) {
-                            if (o instanceof String string && o2 instanceof String string2) {
-                                return string.length() + string2.length();
+                            if (o instanceof String string && o2 instanceof String string1) {
+                                return string.length() + string1.length();
                             }
                             return -1;
                         }
@@ -613,7 +613,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   public class A {
                      Comparator<Object> comparator() {
                        return (a, b) ->
-                           (a instanceof String) && (b instanceof String) ? ((String) a).compareTo((String) b) : 0;
+                           a instanceof String && b instanceof String ? ((String) a).compareTo((String) b) : 0;
                      }
                   }
                   """,
@@ -622,7 +622,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   public class A {
                      Comparator<Object> comparator() {
                        return (a, b) ->
-                           (a instanceof String s) && (b instanceof String s2) ? s.compareTo(s2) : 0;
+                           a instanceof String s && b instanceof String s1 ? s.compareTo(s1) : 0;
                      }
                   }
                   """
