@@ -318,6 +318,11 @@ public class InstanceOfPatternMatch extends Recipe {
                 Expression newRight;
                 if (original.getRight() instanceof J.InstanceOf) {
                     newRight = replacements.processInstanceOf((J.InstanceOf) original.getRight(), widenedCursor);
+                } else if (original.getRight() instanceof J.Parentheses &&
+                           ((J.Parentheses<?>) original.getRight()).getTree() instanceof J.InstanceOf) {
+                    @SuppressWarnings("unchecked")
+                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) original.getRight();
+                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
                 } else {
                     newRight = (Expression) super.visitNonNull(original.getRight(), integer, widenedCursor);
                 }
@@ -443,7 +448,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 OUTER:
                 while (true) {
                     for (Cursor scope : contextScopes) {
-                        String newCandidate = VariableNameUtils.generateVariableName(candidate, scope, VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER);
+                        String newCandidate = VariableNameUtils.generateVariableName(candidate, scope, INCREMENT_NUMBER);
                         if (!newCandidate.equals(candidate)) {
                             candidate = newCandidate;
                             continue OUTER;

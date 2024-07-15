@@ -385,7 +385,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                   """
+                  """
               )
             );
         }
@@ -405,7 +405,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                   """
+                  """
               )
             );
         }
@@ -423,7 +423,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                   """
+                  """
               )
             );
         }
@@ -500,7 +500,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Disabled("Not handled correctly yet")
         @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
         void ifTwoDifferentInstanceOfWithParentheses() {
@@ -799,7 +798,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @Nested
     class Generics {
         @Test
