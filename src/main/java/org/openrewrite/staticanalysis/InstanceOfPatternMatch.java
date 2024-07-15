@@ -344,7 +344,7 @@ public class InstanceOfPatternMatch extends Recipe {
             if (parens.getTree() instanceof J.TypeCast) {
                 J replacement = replacements.processTypeCast((J.TypeCast) parens.getTree(), getCursor());
                 if (replacement != null) {
-                    return replacement;
+                    return replacement.withPrefix(parens.getPrefix());
                 }
             }
             return super.visitParentheses(parens, executionContext);

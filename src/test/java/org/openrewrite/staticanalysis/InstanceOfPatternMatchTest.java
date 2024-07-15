@@ -976,4 +976,65 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
     }
+
+    @Nested
+    class Throws {
+        @Test
+        void throwsException() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof RuntimeException) {
+                              throw (RuntimeException) t;
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof RuntimeException exception) {
+                              throw exception;
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/307")
+        void throwsExceptionWithExtraParentheses() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof Exception) {
+                              // Extra parentheses trips up the replacement
+                              throw ((Exception) t);
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof Exception exception) {
+                              // Extra parentheses trips up the replacement
+                              throw exception;
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+    }
 }
