@@ -85,8 +85,7 @@ public abstract class RenameToCamelCase extends JavaIsoVisitor<ExecutionContext>
         return identifier;
     }
 
-    @Nullable
-    protected JavaType.Variable getFieldType(J tree) {
+    protected @Nullable JavaType.Variable getFieldType(J tree) {
         if (tree instanceof J.Identifier) {
             return ((J.Identifier) tree).getFieldType();
         }

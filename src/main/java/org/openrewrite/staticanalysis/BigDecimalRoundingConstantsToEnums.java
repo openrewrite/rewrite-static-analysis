@@ -114,8 +114,7 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
                 return false;
             }
 
-            @Nullable
-            private String getTemplateText(J elem) {
+            private @Nullable String getTemplateText(J elem) {
                 String roundingName = null;
                 if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
                     J.FieldAccess fa = (J.FieldAccess) elem;

@@ -94,8 +94,7 @@ public class InlineVariable extends Recipe {
                 return bl;
             }
 
-            @Nullable
-            private String identReturned(List<Statement> stats) {
+            private @Nullable String identReturned(List<Statement> stats) {
                 Statement lastStatement = stats.get(stats.size() - 1);
                 if (lastStatement instanceof J.Return) {
                     J.Return return_ = (J.Return) lastStatement;

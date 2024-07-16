@@ -46,21 +46,18 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     private final BiPredicate<Integer, Expression> argumentPredicate;
 
     @SuppressWarnings("NullableProblems")
-    @Nullable
     @Override
-    public J.NewClass visitNewClass(J.NewClass newClass, P p) {
+    public @Nullable J.NewClass visitNewClass(J.NewClass newClass, P p) {
         return visitMethodCall(newClass, () -> super.visitNewClass(newClass, p));
     }
 
     @SuppressWarnings("NullableProblems")
-    @Nullable
     @Override
-    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
+    public @Nullable J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
         return visitMethodCall(method, () -> super.visitMethodInvocation(method, p));
     }
 
-    @Nullable
-    private <M extends MethodCall> M visitMethodCall(M methodCall, Supplier<M> visitSuper) {
+    private <M extends MethodCall> @Nullable M visitMethodCall(M methodCall, Supplier<M> visitSuper) {
         if (!methodMatcher.matches(methodCall)) {
             return visitSuper.get();
         }

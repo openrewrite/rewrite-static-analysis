@@ -385,9 +385,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return newClass;
             }
 
-            @Nullable
             @Override
-            public J visit(@Nullable Tree tree, List<String> variables) {
+            public @Nullable J visit(@Nullable Tree tree, List<String> variables) {
                 if (getCursor().getNearestMessage("stop") != null) {
                     return (J) tree;
                 }
@@ -427,8 +426,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     // TODO consider moving to TypeUtils
-    @Nullable
-    private static JavaType.Method getSamCompatible(@Nullable JavaType type) {
+    private static @Nullable JavaType.Method getSamCompatible(@Nullable JavaType type) {
         JavaType.Method sam = null;
         JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
         if (fullyQualified == null) {

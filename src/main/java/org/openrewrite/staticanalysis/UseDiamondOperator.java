@@ -198,8 +198,7 @@ public class UseDiamondOperator extends Recipe {
             return return_;
         }
 
-        @Nullable
-        private List<JavaType> parameterizedTypes(J.ParameterizedType parameterizedType) {
+        private @Nullable List<JavaType> parameterizedTypes(J.ParameterizedType parameterizedType) {
             if (parameterizedType.getTypeParameters() == null) {
                 return null;
             }

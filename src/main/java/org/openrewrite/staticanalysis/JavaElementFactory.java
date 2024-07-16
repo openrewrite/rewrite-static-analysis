@@ -120,8 +120,7 @@ final class JavaElementFactory {
         );
     }
 
-    @Nullable
-    static J.FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
+    static @Nullable J.FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
         JavaType.Class classType = getClassType(type);
         if (classType == null) {
             return null;
@@ -142,8 +141,7 @@ final class JavaElementFactory {
         );
     }
 
-    @Nullable
-    private static JavaType.Class getClassType(@Nullable JavaType type) {
+    private static @Nullable JavaType.Class getClassType(@Nullable JavaType type) {
         if (type instanceof JavaType.Class) {
             JavaType.Class classType = (JavaType.Class) type;
             if (classType.getFullyQualifiedName().equals("java.lang.Class")) {

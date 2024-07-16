@@ -268,8 +268,7 @@ public class InstanceOfPatternMatch extends Recipe {
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
-        @Nullable
-        public J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
+        public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
             J.InstanceOf instanceOf = replacements.get(typeCast);
             if (instanceOf != null && instanceOf.getPattern() != null) {
                 String name = ((J.Identifier) instanceOf.getPattern()).getSimpleName();
@@ -288,8 +287,7 @@ public class InstanceOfPatternMatch extends Recipe {
             return null;
         }
 
-        @Nullable
-        public J processVariableDeclarations(J.VariableDeclarations multiVariable) {
+        public @Nullable J processVariableDeclarations(J.VariableDeclarations multiVariable) {
             return multiVariable.getVariables().stream().anyMatch(variablesToDelete::containsValue) ? null : multiVariable;
         }
     }
@@ -302,8 +300,7 @@ public class InstanceOfPatternMatch extends Recipe {
             this.replacements = replacements;
         }
 
-        @Nullable
-        static J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
+        static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
             return new UseInstanceOfPatternMatching(replacements).visit(tree, 0, cursor);
         }
 
@@ -362,8 +359,7 @@ public class InstanceOfPatternMatch extends Recipe {
 
         @SuppressWarnings("NullableProblems")
         @Override
-        @Nullable
-        public J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
+        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
             multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, integer);
             return replacements.processVariableDeclarations(multiVariable);
         }

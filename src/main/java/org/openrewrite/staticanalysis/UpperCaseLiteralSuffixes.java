@@ -77,8 +77,7 @@ public class UpperCaseLiteralSuffixes extends Recipe {
                 return nv;
             }
 
-            @Nullable
-            private String upperCaseSuffix(@Nullable String valueSource) {
+            private @Nullable String upperCaseSuffix(@Nullable String valueSource) {
                 if (valueSource == null || valueSource.length() < 2) {
                     return valueSource;
                 }

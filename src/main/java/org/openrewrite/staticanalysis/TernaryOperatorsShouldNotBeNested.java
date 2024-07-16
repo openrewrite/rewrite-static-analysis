@@ -299,8 +299,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         }
 
-        @Nullable
-        private static J.Identifier xorVariable(J first, J second) {
+        private static @Nullable J.Identifier xorVariable(J first, J second) {
             J.Identifier result = null;
             if (isVariable(first) && isVariable(second)) {
                 return null;
