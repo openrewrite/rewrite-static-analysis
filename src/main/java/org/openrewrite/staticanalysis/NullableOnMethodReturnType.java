@@ -63,7 +63,7 @@ public class NullableOnMethodReturnType extends Recipe {
                                         Tree.randomId(),
                                         Space.SINGLE_SPACE,
                                         Markers.EMPTY,
-                                        Collections.singletonList(nullable.getTree().withPrefix(Space.SINGLE_SPACE)),
+                                        Collections.singletonList(nullable.getTree().withPrefix(Space.EMPTY)),
                                         m2.getReturnTypeExpression()
                                 ));
                                 m2 = autoFormat(m2, m2.getReturnTypeExpression(), ctx, getCursor().getParentOrThrow());

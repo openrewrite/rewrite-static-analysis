@@ -44,6 +44,7 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
             """
               import org.openrewrite.internal.lang.Nullable;
               class Test {
+
                   public @Nullable String test() {
                   }
               }
