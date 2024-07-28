@@ -46,7 +46,7 @@ public class StringLiteralEquality extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-4973");
+        return Collections.singleton("RSPEC-S4973");
     }
 
     @Override
@@ -57,7 +57,7 @@ public class StringLiteralEquality extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         // Don't change for Kotlin because In Kotlin, `==` means structural equality, so it's redundant to call equals().
-        // see https://rules.sonarsource.com/kotlin/RSPEC-6519/
+        // see https://rules.sonarsource.com/kotlin/RSPEC-S6519/
         TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(
                 Preconditions.and(
                         Preconditions.not(new KotlinFileChecker<>()),

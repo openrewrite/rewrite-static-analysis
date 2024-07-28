@@ -132,8 +132,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
     /**
      * Concat expressions to an expression with '+' connected.
      */
-    @Nullable
-    public static Expression additiveExpression(Expression... expressions) {
+    public static @Nullable Expression additiveExpression(Expression... expressions) {
         Expression expression = null;
         for (Expression element : expressions) {
             if (element != null) {
@@ -143,8 +142,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         return expression;
     }
 
-    @Nullable
-    public static Expression additiveExpression(List<Expression> expressions) {
+    public static @Nullable Expression additiveExpression(List<Expression> expressions) {
         return additiveExpression(expressions.toArray(new Expression[0]));
     }
 

@@ -23,11 +23,11 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"MethodMayBeStatic", "MisspelledEquals", "BooleanMethodNameMustStartWithQuestion"})
-class RenameMethodsNamedHashcodeEqualOrTostringTest implements RewriteTest {
+class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new RenameMethodsNamedHashcodeEqualOrTostring());
+        spec.recipe(new RenameMethodsNamedHashcodeEqualOrToString());
     }
 
     @DocumentExample

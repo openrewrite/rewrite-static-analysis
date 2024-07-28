@@ -299,14 +299,14 @@ public class FinalizePrivateFields extends Recipe {
     @Value
     @EqualsAndHashCode(callSuper = false)
     private static class FindLastIdentifier extends JavaIsoVisitor<List<J.Identifier>> {
+
         /**
          * Find the last identifier in a J.FieldAccess. The purpose is to check whether it's a private field.
          *
          * @param j the subtree to search, supposed to be a J.FieldAccess
          * @return the last Identifier if found, otherwise null.
          */
-        @Nullable
-        static J.Identifier getLastIdentifier(J j) {
+        static @Nullable J.Identifier getLastIdentifier(J j) {
             List<J.Identifier> ids = new FindLastIdentifier().reduce(j, new ArrayList<>());
             return !ids.isEmpty() ? ids.get(ids.size() - 1) : null;
         }

@@ -48,7 +48,7 @@ public class ExplicitInitialization extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3052");
+        return Collections.singleton("RSPEC-S3052");
     }
 
     @Override

@@ -55,7 +55,7 @@ public class MissingOverrideAnnotation extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1161");
+        return Collections.singleton("RSPEC-S1161");
     }
 
     @Override

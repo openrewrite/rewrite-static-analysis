@@ -51,8 +51,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
               """,
             """
               class Test {
-                  /**
-                   */
                   void method(int arg0) {
                   }
               }
@@ -77,8 +75,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
               """,
             """
               class Test {
-                  /**
-                   */
                   int method() {
                   }
               }
@@ -103,8 +99,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
               """,
             """
               class Test {
-                  /**
-                   */
                   void method() throws IllegalStateException {
                   }
               }
@@ -174,6 +168,69 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
+    void removeTrailingEmptyLines() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                   * Text text text
+                   *
+                   * @param arg0
+                   * @param arg1
+                   *
+                   */
+                   void method(int arg0, int arg1) {
+                   }
+               }
+               """,
+            """
+              class Test {
+                  /**
+                   * Text text text
+                   */
+                   void method(int arg0, int arg1) {
+                   }
+               }
+               """
+          )
+        );
+    }
+
+    @Test
+    void removeTrailingEmptyLinesWindowsEOL() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  /**
+                   * Text text text
+                   *
+                   * @param arg0
+                   * @param arg1
+                   *
+                   */
+                   void method(int arg0, int arg1) {
+                   }
+               }
+               """.replace("\n", "\r\n"),
+            """
+              class Test {
+                  /**
+                   * Text text text
+                   */
+                   void method(int arg0, int arg1) {
+                   }
+               }
+               """.replace("\n", "\r\n")
+          )
+        );
+    }
+
     @Nested
     class NoSpace {
         @Test
@@ -192,8 +249,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       void method(int arg0) {
                       }
                   }
@@ -218,8 +273,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       int method() {
                       }
                   }
@@ -244,8 +297,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       void method() throws IllegalStateException {
                       }
                   }
@@ -272,7 +323,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /***/
                       void method(int arg0) {
                       }
                   }
@@ -295,7 +345,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /***/
                       int method() {
                       }
                   }
@@ -318,7 +367,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /***/
                       void method() throws IllegalStateException {
                       }
                   }
@@ -341,7 +389,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /***/
                       void method(int arg0) {
                       }
                   }
@@ -364,7 +411,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /***/
                       int method() {
                       }
                   }
@@ -387,7 +433,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /***/
                       void method() throws IllegalStateException {
                       }
                   }
@@ -414,8 +459,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       void method(int arg0) {
                       }
                   }
@@ -439,8 +482,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       int method() {
                       }
                   }
@@ -464,8 +505,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       int method() throws IllegalStateException {
                       }
                   }
@@ -489,8 +528,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       void method(int arg0) {
                       }
                   }
@@ -514,8 +551,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       int method() {
                       }
                   }
@@ -539,8 +574,6 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      /**
-                       */
                       int method() throws IllegalStateException {
                       }
                   }

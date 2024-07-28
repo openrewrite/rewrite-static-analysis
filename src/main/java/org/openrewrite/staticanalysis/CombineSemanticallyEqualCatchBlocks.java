@@ -45,7 +45,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2147");
+        return Collections.singleton("RSPEC-S2147");
     }
 
     @Override
@@ -299,7 +299,11 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             private boolean doesNotContainSameComments(Space space1, Space space2) {
-                if (space1.getComments().size() != space2.getComments().size()) {
+                if (space1 == null && space2 == null) {
+                    return false;
+                }
+
+                if (space1 == null || space2 == null || space1.getComments().size() != space2.getComments().size()) {
                     return true;
                 }
 

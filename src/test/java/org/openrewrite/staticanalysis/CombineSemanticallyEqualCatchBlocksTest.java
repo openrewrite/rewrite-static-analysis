@@ -448,4 +448,40 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
           )
         );
     }
+
+
+    @Test
+    void combineSameCatchBlocksWithVariableDeclaration() {
+        rewriteRun(
+          //language=java
+          java("class A extends RuntimeException {}"),
+          //language=java
+          java("class B extends RuntimeException {}"),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (A ex) {
+                          String s = "foo";
+                      } catch (B ex) {
+                          String s = "foo";
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (A | B ex) {
+                          String s = "foo";
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

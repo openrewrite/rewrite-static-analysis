@@ -45,7 +45,7 @@ public class RemoveCallsToSystemGc extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1215");
+        return Collections.singleton("RSPEC-S1215");
     }
 
     @Override

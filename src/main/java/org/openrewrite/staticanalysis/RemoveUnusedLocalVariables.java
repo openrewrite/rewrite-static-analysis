@@ -56,7 +56,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1481");
+        return Collections.singleton("RSPEC-S1481");
     }
 
     @Override

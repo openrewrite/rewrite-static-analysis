@@ -44,7 +44,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-120");
+        return Collections.singleton("RSPEC-S120");
     }
 
     @Override

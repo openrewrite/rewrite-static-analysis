@@ -45,7 +45,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1905");
+        return Collections.singleton("RSPEC-S1905");
     }
 
     @Override

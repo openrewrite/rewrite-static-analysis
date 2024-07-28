@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -224,6 +225,25 @@ public class InstanceOfPatternMatch extends Recipe {
                     name,
                     type,
                     null));
+            JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(type);
+            if (fqType != null && !fqType.getTypeParameters().isEmpty() && !(instanceOf.getClazz() instanceof J.ParameterizedType)) {
+                TypedTree oldTypeTree = (TypedTree) instanceOf.getClazz();
+
+                // Each type parameter is turned into a wildcard, i.e. `List` -> `List<?>` or `Map.Entry` -> `Map.Entry<?,?>`
+                List<Expression> wildcardsList = IntStream.range(0, fqType.getTypeParameters().size())
+                        .mapToObj(i -> new J.Wildcard(randomId(), Space.EMPTY, Markers.EMPTY, null, null))
+                        .collect(Collectors.toList());
+
+                J.ParameterizedType newTypeTree = new J.ParameterizedType(
+                        randomId(),
+                        oldTypeTree.getPrefix(),
+                        Markers.EMPTY,
+                        oldTypeTree.withPrefix(Space.EMPTY),
+                        null,
+                        oldTypeTree.getType()
+                ).withTypeParameters(wildcardsList);
+                result = result.withClazz(newTypeTree);
+            }
 
             // update entry in replacements to share the pattern variable name
             for (Map.Entry<J.TypeCast, J.InstanceOf> entry : replacements.entrySet()) {
@@ -244,12 +264,11 @@ public class InstanceOfPatternMatch extends Recipe {
             } else {
                 strategy = VariableNameStrategy.short_();
             }
-            String baseName = variableBaseName((TypeTree) instanceOf.getClazz(), strategy);
+            String baseName = strategy.variableName(((TypeTree) instanceOf.getClazz()).getType());
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
-        @Nullable
-        public J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
+        public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
             J.InstanceOf instanceOf = replacements.get(typeCast);
             if (instanceOf != null && instanceOf.getPattern() != null) {
                 String name = ((J.Identifier) instanceOf.getPattern()).getSimpleName();
@@ -268,14 +287,9 @@ public class InstanceOfPatternMatch extends Recipe {
             return null;
         }
 
-        @Nullable
-        public J processVariableDeclarations(J.VariableDeclarations multiVariable) {
+        public @Nullable J processVariableDeclarations(J.VariableDeclarations multiVariable) {
             return multiVariable.getVariables().stream().anyMatch(variablesToDelete::containsValue) ? null : multiVariable;
         }
-    }
-
-    private static String variableBaseName(TypeTree typeTree, VariableNameStrategy nameStrategy) {
-        return nameStrategy.variableName(typeTree.getType());
     }
 
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {
@@ -286,9 +300,33 @@ public class InstanceOfPatternMatch extends Recipe {
             this.replacements = replacements;
         }
 
-        @Nullable
-        static J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
+        static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
             return new UseInstanceOfPatternMatching(replacements).visit(tree, 0, cursor);
+        }
+
+        @Override
+        public J visitBinary(J.Binary original, Integer integer) {
+            Expression newLeft = (Expression) super.visitNonNull(original.getLeft(), integer);
+            if (newLeft != original.getLeft()) {
+                // The left side changed, so the right side should see any introduced variable names
+                J.Binary replacement = original.withLeft(newLeft);
+                Cursor widenedCursor = updateCursor(replacement);
+
+                Expression newRight;
+                if (original.getRight() instanceof J.InstanceOf) {
+                    newRight = replacements.processInstanceOf((J.InstanceOf) original.getRight(), widenedCursor);
+                } else if (original.getRight() instanceof J.Parentheses &&
+                           ((J.Parentheses<?>) original.getRight()).getTree() instanceof J.InstanceOf) {
+                    @SuppressWarnings("unchecked")
+                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) original.getRight();
+                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
+                } else {
+                    newRight = (Expression) super.visitNonNull(original.getRight(), integer, widenedCursor);
+                }
+                return replacement.withRight(newRight);
+            }
+            // The left side didn't change, so the right side doesn't need to see any introduced variable names
+            return super.visitBinary(original, integer);
         }
 
         @Override
@@ -303,7 +341,7 @@ public class InstanceOfPatternMatch extends Recipe {
             if (parens.getTree() instanceof J.TypeCast) {
                 J replacement = replacements.processTypeCast((J.TypeCast) parens.getTree(), getCursor());
                 if (replacement != null) {
-                    return replacement;
+                    return replacement.withPrefix(parens.getPrefix());
                 }
             }
             return super.visitParentheses(parens, executionContext);
@@ -321,8 +359,7 @@ public class InstanceOfPatternMatch extends Recipe {
 
         @SuppressWarnings("NullableProblems")
         @Override
-        @Nullable
-        public J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
+        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
             multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, integer);
             return replacements.processVariableDeclarations(multiVariable);
         }
@@ -331,8 +368,10 @@ public class InstanceOfPatternMatch extends Recipe {
     private static class VariableNameStrategy {
         public static final Pattern NAME_SPLIT_PATTERN = Pattern.compile("[$._]*(?=\\p{Upper}+[\\p{Lower}\\p{Digit}]*)");
         private final Style style;
+
         @Nullable
         private final String name;
+
         private final Set<Cursor> contextScopes;
 
         enum Style {
@@ -364,9 +403,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 return name;
             } else if (type instanceof JavaType.FullyQualified) {
                 String className = ((JavaType.FullyQualified) type).getClassName();
-                if (className.indexOf('.') > 0) {
-                    className = className.substring(className.lastIndexOf('.'));
-                }
+                className = className.substring(className.lastIndexOf('.') + 1);
                 String baseName = null;
                 switch (style) {
                     case SHORT:
@@ -407,7 +444,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 OUTER:
                 while (true) {
                     for (Cursor scope : contextScopes) {
-                        String newCandidate = VariableNameUtils.generateVariableName(candidate, scope, VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER);
+                        String newCandidate = VariableNameUtils.generateVariableName(candidate, scope, INCREMENT_NUMBER);
                         if (!newCandidate.equals(candidate)) {
                             candidate = newCandidate;
                             continue OUTER;

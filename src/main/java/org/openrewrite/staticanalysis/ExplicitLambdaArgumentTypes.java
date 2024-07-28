@@ -48,7 +48,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2211");
+        return Collections.singleton("RSPEC-S2211");
     }
 
     @Override
@@ -122,8 +122,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             return multiVariable;
         }
 
-        @Nullable
-        private TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
+        private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
             if (type == null || type instanceof JavaType.Unknown) {
                 return null;
             } else if (type instanceof JavaType.Primitive) {
@@ -209,8 +208,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             return null;
         }
 
-        @Nullable
-        private JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters) {
+        private @Nullable JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters) {
             List<JRightPadded<Expression>> typeExpressions = new ArrayList<>();
 
             for (JavaType type : typeParameters) {

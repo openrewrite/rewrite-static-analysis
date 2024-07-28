@@ -48,7 +48,7 @@ public class UnnecessaryThrows extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1130");
+        return Collections.singleton("RSPEC-S1130");
     }
 
     @Override
@@ -67,9 +67,9 @@ public class UnnecessaryThrows extends Recipe {
                 if (!unusedThrows.isEmpty()) {
 
                     new JavaIsoVisitor<ExecutionContext>() {
-                        @Nullable
+
                         @Override
-                        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                             if (unusedThrows.isEmpty()) {
                                 return (J) tree;
                             }

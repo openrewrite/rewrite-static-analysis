@@ -46,7 +46,7 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1994");
+        return Collections.singleton("RSPEC-S1994");
     }
 
     @Override
@@ -89,9 +89,9 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
                                     //noinspection ConstantConditions
                                     f = f.withBody((Statement) new JavaVisitor<ExecutionContext>() {
-                                        @Nullable
+
                                         @Override
-                                        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                                        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                                             return tree == unary ? null : super.visit(tree, ctx);
                                         }
                                     }.visit(f.getBody(), ctx));

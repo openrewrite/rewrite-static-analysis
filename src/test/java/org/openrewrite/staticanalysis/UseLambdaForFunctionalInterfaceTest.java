@@ -45,7 +45,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               import java.security.AccessController;
               import java.security.PrivilegedAction;
               import java.security.PrivilegedExceptionAction;
-                            
+
               class Test {
                   void test() {
                       AccessController.doPrivileged(new PrivilegedAction<Integer>() {
@@ -65,7 +65,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               import java.security.AccessController;
               import java.security.PrivilegedAction;
               import java.security.PrivilegedExceptionAction;
-                            
+
               class Test {
                   void test() {
                       AccessController.doPrivileged((PrivilegedAction<Integer>) () -> 0);
@@ -95,7 +95,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               import com.google.gson.JsonSerializer;
               import java.time.LocalDateTime;
               import java.lang.reflect.Type;
-                            
+
               class Test {
                   void test() {
                       new GsonBuilder().registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
@@ -112,7 +112,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               import com.google.gson.JsonPrimitive;
               import com.google.gson.JsonSerializer;
               import java.time.LocalDateTime;
-                            
+
               class Test {
                   void test() {
                       new GsonBuilder().registerTypeAdapter(LocalDateTime.class, (JsonSerializer<LocalDateTime>) (object, type, context) -> new JsonPrimitive(object.format(null)));
@@ -163,14 +163,14 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                           Test.this.execute();
                       }
                   };
-                  
+
                   void execute() {}
               }
               """,
             """
               class Test {
                   Runnable r = Test.this::execute;
-                  
+
                   void execute() {}
               }
               """
@@ -239,7 +239,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
           java(
             """
               import java.util.function.Consumer;
-                            
+
               class Test {
                   void foo() {
                       Consumer<Integer> s;
@@ -253,7 +253,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               """,
             """
               import java.util.function.Consumer;
-                            
+
               class Test {
                   void foo() {
                       Consumer<Integer> s;
@@ -274,7 +274,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
           java(
             """
               import java.util.function.Consumer;
-                            
+
               class Test {
                   void bar(Consumer<Integer> c) {
                   }
@@ -294,7 +294,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               """,
             """
               import java.util.function.Consumer;
-                            
+
               class Test {
                   void bar(Consumer<Integer> c) {
                   }
@@ -646,7 +646,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                               }
                           });
                       }
-                      
+
                       int j = 0;
                       while (j < 20) {
                           run(new Runnable() {
@@ -668,13 +668,14 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Issue("https://github.com/moderneinc/support-app/issues/17")
     void lambdaWithComplexTypeInference() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.LinkedHashMap;
               import java.util.Map;
               import java.util.function.Supplier;
               import java.util.stream.Collectors;
-              
+
               class Test {
                   void method() {
                       Object o = new MapDropdownChoice<String, Integer>(
@@ -697,7 +698,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                             });
                   }
               }
-              
+
               class MapDropdownChoice<K, V> {
                   public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
                   }
@@ -708,7 +709,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               import java.util.Map;
               import java.util.function.Supplier;
               import java.util.stream.Collectors;
-              
+
               class Test {
                   void method() {
                       Object o = new MapDropdownChoice<String, Integer>(
@@ -725,10 +726,49 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                               });
                   }
               }
-              
+
               class MapDropdownChoice<K, V> {
                   public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/309")
+    void dontUseLambdaForMethodWithTypeParameter() {
+        //language=java
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package com.helloworld;
+
+              import java.util.List;
+
+              public interface I {
+                <T> List<T> call();
+              }
+              """
+          )),
+          java(
+            // can't transform to lambda because of the type argument of I#call()
+            """
+              package com.helloworld;
+
+              import java.util.List;
+
+              class Hello {
+                public void hello() {
+                  final I i = new I() {
+                    @Override
+                    public <T> List<T> call() {
+                      return null;
+                    }
+                  };
+                  final List<String> list = i.call();
+                }
               }
               """
           )

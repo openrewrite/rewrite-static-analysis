@@ -53,7 +53,7 @@ public class MinimumSwitchCases extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-1301");
+        return singleton("RSPEC-S1301");
     }
 
     @Override

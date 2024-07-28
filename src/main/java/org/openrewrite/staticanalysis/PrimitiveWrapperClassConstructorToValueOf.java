@@ -45,7 +45,7 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2129");
+        return Collections.singleton("RSPEC-S2129");
     }
 
     @Override

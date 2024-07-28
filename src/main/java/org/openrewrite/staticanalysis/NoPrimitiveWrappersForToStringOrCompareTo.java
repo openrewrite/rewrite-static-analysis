@@ -54,7 +54,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1158");
+        return Collections.singleton("RSPEC-S1158");
     }
 
     @Override
@@ -123,8 +123,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
             return mi;
         }
 
-        @Nullable
-        private Expression getSingleArg(@Nullable List<Expression> args) {
+        private @Nullable Expression getSingleArg(@Nullable List<Expression> args) {
             if (args != null && args.size() == 1 && !(args.get(0) instanceof J.Empty)) {
                 return args.get(0);
             }

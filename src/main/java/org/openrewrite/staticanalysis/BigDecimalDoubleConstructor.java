@@ -27,7 +27,7 @@ import java.math.BigDecimal;
                       "For example writing `new BigDecimal(0.1)` does not create a `BigDecimal` which is exactly equal to `0.1`, " +
                       "but it is equal to `0.1000000000000000055511151231257827021181583404541015625`. " +
                       "This is because `0.1` cannot be represented exactly as a double (or, for that matter, as a binary fraction of any finite length).",
-        tags = {"RSPEC-2111"}
+        tags = {"RSPEC-S2111"}
 )
 public class BigDecimalDoubleConstructor {
 

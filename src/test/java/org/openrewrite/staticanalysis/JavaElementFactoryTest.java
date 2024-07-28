@@ -64,7 +64,7 @@ class JavaElementFactoryTest implements RewriteTest {
         JavaType.Class fooType = typeCache.get("foo.Foo");
         assertThat(fooType).isNotNull();
 
-        JavaType.Method fooMethod = fooType.getMethods().stream().filter(m -> m.getName().equals("foo")).findFirst().get();
+        JavaType.Method fooMethod = fooType.getMethods().stream().filter(m -> "foo".equals(m.getName())).findFirst().get();
         assertThat(fooMethod).isNotNull();
 
         J.MemberReference reference = new JavaIsoVisitor<AtomicReference<J.MemberReference>>() {
@@ -76,7 +76,7 @@ class JavaElementFactoryTest implements RewriteTest {
         }.reduce(sourceFile, new AtomicReference<>(null)).get();
         assertThat(reference).isNotNull();
 
-        J.MemberReference methodReference = newInstanceMethodReference(fooMethod, reference.getContaining(), reference.getType());
+        J.MemberReference methodReference = newInstanceMethodReference(reference.getContaining(), fooMethod, reference.getType());
         assertThat(SemanticallyEqual.areEqual(reference, methodReference)).isTrue();
     }
 
@@ -103,7 +103,7 @@ class JavaElementFactoryTest implements RewriteTest {
         JavaType.Class fooType = typeCache.get("foo.Foo");
         assertThat(fooType).isNotNull();
 
-        JavaType.Method fooMethod = fooType.getMethods().stream().filter(m -> m.getName().equals("foo")).findFirst().get();
+        JavaType.Method fooMethod = fooType.getMethods().stream().filter(m -> "foo".equals(m.getName())).findFirst().get();
         assertThat(fooMethod).isNotNull();
 
         J.MemberReference reference = new JavaIsoVisitor<AtomicReference<J.MemberReference>>() {

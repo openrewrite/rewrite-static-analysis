@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -48,12 +47,12 @@ public class InlineVariable extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1488");
+        return Collections.singleton("RSPEC-S1488");
     }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(2, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(2);
     }
 
     @Override
@@ -95,8 +94,7 @@ public class InlineVariable extends Recipe {
                 return bl;
             }
 
-            @Nullable
-            private String identReturned(List<Statement> stats) {
+            private @Nullable String identReturned(List<Statement> stats) {
                 Statement lastStatement = stats.get(stats.size() - 1);
                 if (lastStatement instanceof J.Return) {
                     J.Return return_ = (J.Return) lastStatement;

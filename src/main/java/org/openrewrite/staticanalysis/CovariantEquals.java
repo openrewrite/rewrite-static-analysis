@@ -40,7 +40,7 @@ public class CovariantEquals extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2162");
+        return Collections.singleton("RSPEC-S2162");
     }
 
     @Override

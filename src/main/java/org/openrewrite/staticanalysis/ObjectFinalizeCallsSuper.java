@@ -45,7 +45,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1114");
+        return Collections.singleton("RSPEC-S1114");
     }
 
     @Override

@@ -51,7 +51,7 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2060");
+        return Collections.singleton("RSPEC-S2060");
     }
 
     @Override

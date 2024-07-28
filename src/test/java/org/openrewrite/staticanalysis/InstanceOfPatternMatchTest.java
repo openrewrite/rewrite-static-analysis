@@ -37,7 +37,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @SuppressWarnings({"ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable"})
     @Nested
     class If {
-
         @Test
         void ifConditionWithoutPattern() {
             rewriteRun(
@@ -134,6 +133,64 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
+        void genericsWithoutParameters() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List) {
+                              List<Object> routesList = (List<Object>) routes;
+                              if (routesList.isEmpty()) {
+                                  return Collections.emptyList();
+                              }
+                              if (routesList.stream()
+                                            .anyMatch(route -> !(route instanceof Map))) {
+                                  return Collections.emptyList();
+                              }
+                              return routesList.stream()
+                                               .map(route -> (Map<String, Object>) route)
+                                               .collect(Collectors.toList());
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """,
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List<?> routesList) {
+                              if (routesList.isEmpty()) {
+                                  return Collections.emptyList();
+                              }
+                              if (routesList.stream()
+                                            .anyMatch(route -> !(route instanceof Map))) {
+                                  return Collections.emptyList();
+                              }
+                              return routesList.stream()
+                                               .map(route -> (Map<String, Object>) route)
+                                               .collect(Collectors.toList());
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void primitiveArray() {
             rewriteRun(
               //language=java
@@ -221,6 +278,41 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+        @Test
+        void conflictingVariableOfNestedType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Map;
+                  
+                  public class A {
+                      void test(Object o) {
+                          Map.Entry entry = null;
+                          if (o instanceof Map.Entry) {
+                            entry = (Map.Entry) o;
+                          }
+                          System.out.println(entry);
+                      }
+                  }
+                  """,
+                """
+                  import java.util.Map;
+                  
+                  public class A {
+                      void test(Object o) {
+                          Map.Entry entry = null;
+                          if (o instanceof Map.Entry<?,?> entry1) {
+                            entry = entry1;
+                          }
+                          System.out.println(entry);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @Issue("https://github.com/openrewrite/rewrite/issues/2787")
         @Disabled
         @Test
@@ -293,7 +385,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                   """
+                  """
               )
             );
         }
@@ -313,7 +405,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                   """
+                  """
               )
             );
         }
@@ -331,7 +423,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                   """
+                  """
               )
             );
         }
@@ -372,6 +464,70 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                       }
                   }
                   """
+              )
+            );
+        }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        void ifTwoDifferentInstanceOf() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String && o2 instanceof String) {
+                                return ((String) o).length() + ((String) o2).length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String string && o2 instanceof String string1) {
+                                return string.length() + string1.length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        void ifTwoDifferentInstanceOfWithParentheses() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String && (o2 instanceof String)) {
+                                return ((String) o).length() + ((String) o2).length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        int combinedLength(Object o, Object o2) {
+                            if (o instanceof String string && (o2 instanceof String string1)) {
+                                return string.length() + string1.length();
+                            }
+                            return -1;
+                        }
+                    }
+                    """
+                ), 17
               )
             );
         }
@@ -472,6 +628,34 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                       String test(Object o) {
                           return o instanceof String ? o.toString() : ((String) o).substring(1);
                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/265")
+        void multipleCastsInDifferentOperands() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Comparator;
+                  public class A {
+                     Comparator<Object> comparator() {
+                       return (a, b) ->
+                           a instanceof String && b instanceof String ? ((String) a).compareTo((String) b) : 0;
+                     }
+                  }
+                  """,
+                """
+                  import java.util.Comparator;
+                  public class A {
+                     Comparator<Object> comparator() {
+                       return (a, b) ->
+                           a instanceof String s && b instanceof String s1 ? s.compareTo(s1) : 0;
+                     }
                   }
                   """
               )
@@ -614,7 +798,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     @Nested
     class Generics {
         @Test
@@ -665,7 +849,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List l ? l.get(0) : o.toString();
+                          return o instanceof List<?> l ? l.get(0) : o.toString();
                       }
                   }
                   """
@@ -690,7 +874,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List l ? l.get(0) : o.toString();
+                          return o instanceof List<?> l ? l.get(0) : o.toString();
                       }
                   }
                   """
@@ -791,5 +975,66 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Nested
+    class Throws {
+        @Test
+        void throwsException() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof RuntimeException) {
+                              throw (RuntimeException) t;
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof RuntimeException exception) {
+                              throw exception;
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/307")
+        void throwsExceptionWithExtraParentheses() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof Exception) {
+                              // Extra parentheses trips up the replacement
+                              throw ((Exception) t);
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      void test(Throwable t) {
+                          if (t instanceof Exception exception) {
+                              // Extra parentheses trips up the replacement
+                              throw exception;
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
     }
 }

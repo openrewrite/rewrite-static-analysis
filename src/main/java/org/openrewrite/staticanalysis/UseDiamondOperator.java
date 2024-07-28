@@ -45,7 +45,7 @@ public class UseDiamondOperator extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2293");
+        return Collections.singleton("RSPEC-S2293");
     }
 
     @Override
@@ -198,8 +198,7 @@ public class UseDiamondOperator extends Recipe {
             return return_;
         }
 
-        @Nullable
-        private List<JavaType> parameterizedTypes(J.ParameterizedType parameterizedType) {
+        private @Nullable List<JavaType> parameterizedTypes(J.ParameterizedType parameterizedType) {
             if (parameterizedType.getTypeParameters() == null) {
                 return null;
             }
