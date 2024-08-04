@@ -37,7 +37,7 @@ public class NoValueOfOnStringType extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Unnecessary String#valueOf(..)";
+        return "Unnecessary `String#valueOf(..)`";
     }
 
     @Override

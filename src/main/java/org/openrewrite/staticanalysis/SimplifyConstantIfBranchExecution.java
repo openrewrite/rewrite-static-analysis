@@ -57,7 +57,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             if (bl != block) {
                 bl = (J.Block) new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor()
                         .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
-                EmptyBlockStyle style = ((SourceFile) getCursor().firstEnclosingOrThrow(JavaSourceFile.class))
+                EmptyBlockStyle style = getCursor().firstEnclosingOrThrow(JavaSourceFile.class)
                         .getStyle(EmptyBlockStyle.class);
                 if (style == null) {
                     style = Checkstyle.emptyBlock();

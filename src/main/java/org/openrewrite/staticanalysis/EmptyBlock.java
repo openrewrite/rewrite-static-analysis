@@ -61,7 +61,7 @@ public class EmptyBlock extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                EmptyBlockStyle style = ((SourceFile) cu).getStyle(EmptyBlockStyle.class);
+                EmptyBlockStyle style = cu.getStyle(EmptyBlockStyle.class);
                 if (style == null) {
                     style = Checkstyle.emptyBlock();
                 }

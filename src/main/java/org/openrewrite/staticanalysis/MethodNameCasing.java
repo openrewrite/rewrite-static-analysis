@@ -187,7 +187,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     }
 
     @Value
-    static class MethodNameChange {
+    public static class MethodNameChange {
         UUID scope;
         boolean privateMethod;
         ChangeMethodName recipe;

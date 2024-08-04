@@ -61,7 +61,7 @@ public class EqualsAvoidsNull extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                EqualsAvoidsNullStyle style = ((SourceFile) cu).getStyle(EqualsAvoidsNullStyle.class);
+                EqualsAvoidsNullStyle style = cu.getStyle(EqualsAvoidsNullStyle.class);
                 if (style == null) {
                     style = Checkstyle.equalsAvoidsNull();
                 }
