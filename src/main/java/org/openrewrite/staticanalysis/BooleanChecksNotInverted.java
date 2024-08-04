@@ -25,7 +25,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
-public class    BooleanChecksNotInverted extends Recipe {
+public class BooleanChecksNotInverted extends Recipe {
 
     @Override
     public String getDisplayName() {
