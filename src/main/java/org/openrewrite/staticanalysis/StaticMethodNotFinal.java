@@ -29,7 +29,7 @@ import java.util.Set;
 public class StaticMethodNotFinal extends Recipe {
     @Override
     public String getDisplayName() {
-        return "Static methods not final";
+        return "Static methods need not be final";
     }
 
     @Override

@@ -37,12 +37,12 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Remove Nullable and CheckForNull annotations from primitives";
+        return "Remove `@Nullable` and `@CheckForNull` annotations from primitives";
     }
 
     @Override
     public String getDescription() {
-        return "Remove `@Nullable` and `@CheckForNull` annotations from primitives since they can't be null.";
+        return "Primitives can't be null anyway, so these annotations are not useful in this context.";
     }
 
     @Override

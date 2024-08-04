@@ -192,7 +192,7 @@ public class SimplifyBooleanReturn extends Recipe {
                 return Optional.empty();
             }
 
-            private boolean hasElseWithComment(J.If.Else else_) {
+            private boolean hasElseWithComment(@Nullable J.If.Else else_) {
                 if (else_ == null || else_.getBody() == null) {
                     return false;
                 }
@@ -202,11 +202,8 @@ public class SimplifyBooleanReturn extends Recipe {
                 if (!else_.getBody().getComments().isEmpty()) {
                     return true;
                 }
-                if (else_.getBody() instanceof J.Block
-                    && !((J.Block) else_.getBody()).getStatements().get(0).getComments().isEmpty()) {
-                    return true;
-                }
-                return false;
+                return else_.getBody() instanceof J.Block
+                       && !((J.Block) else_.getBody()).getStatements().get(0).getComments().isEmpty();
             }
         };
     }
