@@ -82,8 +82,8 @@ public class CovariantEquals extends Recipe {
                 }
 
                 @Override
-                public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext p) {
-                    J.MethodDeclaration m = super.visitMethodDeclaration(method, p);
+                public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                    J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                     updateCursor(m);
 
                     /*
