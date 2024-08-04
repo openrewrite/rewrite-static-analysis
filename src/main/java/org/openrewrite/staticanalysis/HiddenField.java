@@ -61,7 +61,7 @@ public class HiddenField extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                HiddenFieldStyle style = ((SourceFile) cu).getStyle(HiddenFieldStyle.class);
+                HiddenFieldStyle style = cu.getStyle(HiddenFieldStyle.class);
                 if (style == null) {
                     style = Checkstyle.hiddenFieldStyle();
                 }

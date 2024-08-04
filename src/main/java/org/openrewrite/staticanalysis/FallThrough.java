@@ -60,7 +60,7 @@ public class FallThrough extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                FallThroughStyle style = ((SourceFile) cu).getStyle(FallThroughStyle.class);
+                FallThroughStyle style = cu.getStyle(FallThroughStyle.class);
                 if (style == null) {
                     style = Checkstyle.fallThrough();
                 }

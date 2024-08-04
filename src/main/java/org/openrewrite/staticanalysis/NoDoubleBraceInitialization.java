@@ -229,7 +229,7 @@ public class NoDoubleBraceInitialization extends Recipe {
 
     private static class FindMethodInvocationInDoubleBrace extends JavaIsoVisitor<AtomicBoolean> {
         /**
-         * Find whether any collection content initialization method(e.g add() or put()) is invoked in the double brace.
+         * Find whether any collection content initialization method(e.g. add() or put()) is invoked in the double brace.
          *
          * @param j The subtree to search, supposed to be the 2nd brace (J.Block)
          * @return true if any method invocation found in the double brace, otherwise false.

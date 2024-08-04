@@ -66,7 +66,7 @@ public class ControlFlowIndentation extends Recipe {
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                    TabsAndIndentsStyle style = ((SourceFile) cu).getStyle(TabsAndIndentsStyle.class);
+                    TabsAndIndentsStyle style = cu.getStyle(TabsAndIndentsStyle.class);
                     if (style == null) {
                         style = IntelliJ.tabsAndIndents();
                     }
