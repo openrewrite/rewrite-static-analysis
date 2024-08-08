@@ -96,6 +96,15 @@ class EqualsAvoidsNullTest implements RewriteTest {
                         }
                     }
                 }
+              """,
+              """
+
+              public class A {
+                    void foo(String s) {
+                        if(s == null) {
+                        }
+                    }
+                }
               """)
         );
     }
