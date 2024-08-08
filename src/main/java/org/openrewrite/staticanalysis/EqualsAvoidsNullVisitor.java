@@ -47,15 +47,16 @@ public class EqualsAvoidsNullVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         if ((STRING_EQUALS.matches(m) || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && STRING_EQUALS_IGNORE_CASE.matches(m))) &&
-                m.getArguments().get(0) instanceof J.Literal &&
-                !(m.getSelect() instanceof J.Literal)) {
+            m.getArguments().get(0) instanceof J.Literal &&
+            m.getArguments().get(0).getType() != JavaType.Primitive.Null &&
+            !(m.getSelect() instanceof J.Literal)) {
             Tree parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
                 J.Binary binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
                     J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
                     if ((isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), m.getSelect())) ||
-                            (isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect()))) {
+                        (isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect()))) {
                         doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
                     }
                 }
