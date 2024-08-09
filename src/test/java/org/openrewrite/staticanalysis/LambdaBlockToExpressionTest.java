@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
@@ -25,11 +26,12 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 class LambdaBlockToExpressionTest implements RewriteTest {
-
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new LambdaBlockToExpression())
-            .parser(JavaParser.fromJavaVersion().logCompilationWarningsAndErrors(true));
+            .parser(JavaParser.fromJavaVersion()
+              .classpathFromResources(new InMemoryExecutionContext(), "junit-jupiter-api-5.10")
+              .logCompilationWarningsAndErrors(true));
     }
 
     @DocumentExample
@@ -75,7 +77,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
             """
               import java.util.function.Function;
               class Test {
-                  Function<Integer, Integer> f = n -> 
+                  Function<Integer, Integer> f = n ->
                       // The buttonType will always be "cancel", even if we pressed one of the entry type buttons
                       n + 1;
               }
@@ -116,7 +118,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
     @Test
-    void simplifyLambdaBlockReturningVoidAsWell2() {
+    void simplifyLambdaBlockReturningVoidAsWellSimple() {
         //language=java
         rewriteRun(
           java(
@@ -145,4 +147,42 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
+    @Test
+    void simplifyLambdaBlockReturningVoidAsWellAssertThrows() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import static org.junit.jupiter.api.Assertions.assertThrows;
+              
+              import java.math.BigDecimal;
+              import org.junit.jupiter.api.Test;
+              
+              public class Main {
+                @Test
+                public void test() {
+                  assertThrows(ArithmeticException.class, () -> {
+                    BigDecimal.ONE.divide(BigDecimal.ZERO);
+                  });
+                }
+              }
+              """,
+            """
+              import static org.junit.jupiter.api.Assertions.assertThrows;
+              
+              import java.math.BigDecimal;
+              import org.junit.jupiter.api.Test;
+              
+              public class Main {
+                @Test
+                public void test() {
+                  assertThrows(ArithmeticException.class, () ->
+                    BigDecimal.ONE.divide(BigDecimal.ZERO));
+                }
+              }
+              """
+          )
+        );
+    }
 }
