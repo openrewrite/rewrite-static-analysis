@@ -75,7 +75,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
                     aCase.getStatements().isEmpty() && !foundNonEmptyCase) {
                     casesGroupedWithDefault.add(aCase);
                 } else {
-                    if (defaultCase != null && defaultCase.getStatements().isEmpty() && !foundNonEmptyCase) {
+                    if (defaultCase != null && defaultCase.getStatements().isEmpty() && foundNonEmptyCase) {
                         // the last case grouped with default can be non-empty. it will be flipped with
                         // the default case, including its statements
                         casesGroupedWithDefault.add(aCase);
