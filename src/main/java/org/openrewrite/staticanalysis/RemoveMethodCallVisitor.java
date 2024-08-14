@@ -16,7 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.Expression;
