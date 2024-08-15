@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.TabsAndIndentsVisitor;
 import org.openrewrite.java.style.IntelliJ;
@@ -108,7 +108,7 @@ public class ControlFlowIndentation extends Recipe {
                 return shouldReformat(s.getElsePart());
             }
 
-            boolean shouldReformat(@Nullable J.If.Else s) {
+            boolean shouldReformat(J.If.@Nullable Else s) {
                 if (s == null) {
                     return false;
                 }

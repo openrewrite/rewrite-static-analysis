@@ -15,7 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -120,7 +120,7 @@ final class JavaElementFactory {
         );
     }
 
-    static @Nullable J.FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
+    static J.@Nullable FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
         JavaType.Class classType = getClassType(type);
         if (classType == null) {
             return null;
@@ -141,7 +141,7 @@ final class JavaElementFactory {
         );
     }
 
-    private static @Nullable JavaType.Class getClassType(@Nullable JavaType type) {
+    private static JavaType.@Nullable Class getClassType(@Nullable JavaType type) {
         if (type instanceof JavaType.Class) {
             JavaType.Class classType = (JavaType.Class) type;
             if (classType.getFullyQualifiedName().equals("java.lang.Class")) {

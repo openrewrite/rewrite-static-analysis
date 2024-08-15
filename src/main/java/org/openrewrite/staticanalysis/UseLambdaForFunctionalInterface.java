@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -200,7 +200,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return hasGenerics(lambda);
             }
 
-            private boolean areMethodsAmbiguous(@Nullable JavaType.Method m1, @Nullable JavaType.Method m2) {
+            private boolean areMethodsAmbiguous(JavaType.@Nullable Method m1, JavaType.@Nullable Method m2) {
                 if (m1 == null || m2 == null) {
                     return false;
                 }
@@ -426,7 +426,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     // TODO consider moving to TypeUtils
-    private static @Nullable JavaType.Method getSamCompatible(@Nullable JavaType type) {
+    private static JavaType.@Nullable Method getSamCompatible(@Nullable JavaType type) {
         JavaType.Method sam = null;
         JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
         if (fullyQualified == null) {

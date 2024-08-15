@@ -16,7 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.Expression;
@@ -47,13 +47,13 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public @Nullable J.NewClass visitNewClass(J.NewClass newClass, P p) {
+    public J.@Nullable NewClass visitNewClass(J.NewClass newClass, P p) {
         return visitMethodCall(newClass, () -> super.visitNewClass(newClass, p));
     }
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public @Nullable J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
+    public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
         return visitMethodCall(method, () -> super.visitMethodInvocation(method, p));
     }
 

@@ -20,7 +20,6 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
@@ -28,6 +27,7 @@ import org.openrewrite.marker.Markers;
 
 import java.util.Collections;
 
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.trait.Traits.annotated;
 
 public class NullableOnMethodReturnType extends Recipe {
@@ -48,7 +48,7 @@ public class NullableOnMethodReturnType extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                return annotated(Nullable.class)
+                return requireNonNull(annotated("*..Nullable")
                         .lower(getCursor())
                         .findFirst()
                         .map(nullable -> {
@@ -71,7 +71,7 @@ public class NullableOnMethodReturnType extends Recipe {
                             }
                             return m2;
                         })
-                        .orElse(m);
+                        .orElse(m));
             }
         };
     }
