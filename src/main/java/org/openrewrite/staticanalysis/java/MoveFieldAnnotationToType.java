@@ -61,6 +61,32 @@ public class MoveFieldAnnotationToType extends Recipe {
             final Pattern typePattern = Pattern.compile(StringUtils.aspectjNameToPattern(annotationTypeInput));
 
             @Override
+            public J.AnnotatedType visitAnnotatedType(J.AnnotatedType annotatedType, ExecutionContext ctx) {
+                J.AnnotatedType at = super.visitAnnotatedType(annotatedType, ctx);
+
+                if (isStaticInnerClass(at.getTypeExpression())) {
+                    AtomicReference<J.Annotation> matchingAnnotation = new AtomicReference<>();
+                    at = at.withAnnotations(ListUtils.map(at.getAnnotations(), a -> {
+                        if (matchesType(a)) {
+                            matchingAnnotation.set(a);
+                            return null;
+                        }
+                        return a;
+                    }));
+                    if (at.getTypeExpression() != null && matchingAnnotation.get() != null) {
+                        TypeTree te = annotateInnerClass(at.getTypeExpression(), matchingAnnotation.get());
+                        at = at.withTypeExpression(te);
+                        // auto format should handle this, but evidently doesn't
+                        if (at.getAnnotations().isEmpty() && !(getCursor().getParentTreeCursor().getValue() instanceof J.MethodDeclaration)) {
+                            at = at.withTypeExpression(te.withPrefix(te.getPrefix().withWhitespace("")));
+                        }
+                        at = autoFormat(at, at.getTypeExpression(), ctx, getCursor().getParentOrThrow());
+                    }
+                }
+                return at;
+            }
+
+            @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 

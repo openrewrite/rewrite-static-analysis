@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis.java;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
@@ -23,10 +24,14 @@ import static org.openrewrite.java.Assertions.java;
 @SuppressWarnings("deprecation")
 public class MoveFieldAnnotationToTypeTest implements RewriteTest {
 
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new MoveFieldAnnotationToType("org.openrewrite..*"));
+    }
+
     @Test
     void alreadyOnInnerClass() {
         rewriteRun(
-          spec -> spec.recipe(new MoveFieldAnnotationToType("*..*")),
           //language=java
           java(
             """
@@ -43,7 +48,6 @@ public class MoveFieldAnnotationToTypeTest implements RewriteTest {
     @Test
     void fieldAnnotation() {
         rewriteRun(
-          spec -> spec.recipe(new MoveFieldAnnotationToType("org.openrewrite..*")),
           //language=java
           java(
             """
@@ -65,9 +69,31 @@ public class MoveFieldAnnotationToTypeTest implements RewriteTest {
     }
 
     @Test
+    void publicFieldAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  public @Nullable Xml.Tag tag;
+              }
+              """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  public Xml.@Nullable Tag tag;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void methodAnnotation() {
         rewriteRun(
-          spec -> spec.recipe(new MoveFieldAnnotationToType(null)),
           //language=java
           java(
             """
@@ -82,6 +108,29 @@ public class MoveFieldAnnotationToTypeTest implements RewriteTest {
               import org.openrewrite.xml.tree.Xml;
               interface Test {
                   Xml.@Nullable Tag tag();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void publicMethodAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              interface Test {
+                  synchronized @Nullable Xml.Tag tag();
+              }
+              """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              interface Test {
+                  synchronized Xml.@Nullable Tag tag();
               }
               """
           )
