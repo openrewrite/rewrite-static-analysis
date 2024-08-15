@@ -75,14 +75,12 @@ public class MoveFieldAnnotationToTypeTest implements RewriteTest {
           java(
             """
               import org.openrewrite.internal.lang.Nullable;
-              import org.openrewrite.xml.tree.Xml;
               class Test {
                   @Nullable java.util.List<String> l;
               }
               """,
             """
               import org.openrewrite.internal.lang.Nullable;
-              import org.openrewrite.xml.tree.Xml;
               class Test {
                   java.util.@Nullable List<String> l;
               }
@@ -98,16 +96,30 @@ public class MoveFieldAnnotationToTypeTest implements RewriteTest {
           java(
             """
               import org.openrewrite.internal.lang.Nullable;
-              import org.openrewrite.xml.tree.Xml;
               class Test {
                   @Nullable String[] l;
               }
               """,
             """
               import org.openrewrite.internal.lang.Nullable;
-              import org.openrewrite.xml.tree.Xml;
               class Test {
                   String @Nullable[] l;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void parameterizedFieldAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import java.util.List;
+              class Test {
+                  @Nullable List<String> l;
               }
               """
           )

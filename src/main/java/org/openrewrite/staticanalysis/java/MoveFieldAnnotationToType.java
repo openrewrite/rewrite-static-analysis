@@ -144,7 +144,8 @@ public class MoveFieldAnnotationToType extends Recipe {
             }
 
             private boolean isQualifiedClass(@Nullable TypeTree tree) {
-                return tree instanceof J.FieldAccess || tree instanceof J.ParameterizedType ||
+                return tree instanceof J.FieldAccess ||
+                       (tree instanceof J.ParameterizedType && ((J.ParameterizedType) tree).getClazz() instanceof J.FieldAccess) ||
                        tree instanceof J.ArrayType;
             }
 
