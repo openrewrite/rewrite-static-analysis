@@ -69,6 +69,52 @@ public class MoveFieldAnnotationToTypeTest implements RewriteTest {
     }
 
     @Test
+    void fullyQualifiedFieldAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  @Nullable java.util.List<String> l;
+              }
+              """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  java.util.@Nullable List<String> l;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void arrayFieldAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  @Nullable String[] l;
+              }
+              """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  String @Nullable[] l;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void publicFieldAnnotation() {
         rewriteRun(
           //language=java

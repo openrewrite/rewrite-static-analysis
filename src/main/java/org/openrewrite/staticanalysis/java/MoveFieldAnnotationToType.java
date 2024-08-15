@@ -64,7 +64,7 @@ public class MoveFieldAnnotationToType extends Recipe {
             public J.AnnotatedType visitAnnotatedType(J.AnnotatedType annotatedType, ExecutionContext ctx) {
                 J.AnnotatedType at = super.visitAnnotatedType(annotatedType, ctx);
 
-                if (isStaticInnerClass(at.getTypeExpression())) {
+                if (isQualifiedClass(at.getTypeExpression())) {
                     AtomicReference<J.Annotation> matchingAnnotation = new AtomicReference<>();
                     at = at.withAnnotations(ListUtils.map(at.getAnnotations(), a -> {
                         if (matchesType(a)) {
@@ -90,7 +90,7 @@ public class MoveFieldAnnotationToType extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
-                if (isStaticInnerClass(mv.getTypeExpression())) {
+                if (isQualifiedClass(mv.getTypeExpression())) {
                     AtomicReference<J.Annotation> matchingAnnotation = new AtomicReference<>();
                     mv = mv.withLeadingAnnotations(ListUtils.map(mv.getLeadingAnnotations(), a -> {
                         if (matchesType(a)) {
@@ -116,7 +116,7 @@ public class MoveFieldAnnotationToType extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
 
-                if (isStaticInnerClass(md.getReturnTypeExpression())) {
+                if (isQualifiedClass(md.getReturnTypeExpression())) {
                     AtomicReference<J.Annotation> matchingAnnotation = new AtomicReference<>();
                     md = md.withLeadingAnnotations(ListUtils.map(md.getLeadingAnnotations(), a -> {
                         if (matchesType(a)) {
@@ -143,23 +143,30 @@ public class MoveFieldAnnotationToType extends Recipe {
                 return fq != null && typePattern.matcher(fq.getFullyQualifiedName()).matches();
             }
 
-            private boolean isStaticInnerClass(@Nullable TypeTree tree) {
-                if (!(tree instanceof J.FieldAccess)) {
-                    return false;
-                }
-                JavaType.FullyQualified fq = TypeUtils.asFullyQualified(tree.getType());
-                return fq != null && fq.getOwningClass() != null &&
-                       fq.hasFlags(Flag.Static);
+            private boolean isQualifiedClass(@Nullable TypeTree tree) {
+                return tree instanceof J.FieldAccess || tree instanceof J.ParameterizedType ||
+                       tree instanceof J.ArrayType;
             }
 
-            private TypeTree annotateInnerClass(TypeTree staticInnerClassRef, J.Annotation annotation) {
-                J.FieldAccess s = (J.FieldAccess) staticInnerClassRef;
-                s = s.withName(s.getName().withAnnotations(
-                        ListUtils.concat(annotation.withPrefix(Space.EMPTY), s.getName().getAnnotations())));
-                if (s.getName().getPrefix().getWhitespace().isEmpty()) {
-                    s = s.withName(s.getName().withPrefix(s.getName().getPrefix().withWhitespace(" ")));
+            private TypeTree annotateInnerClass(TypeTree qualifiedClassRef, J.Annotation annotation) {
+                if (qualifiedClassRef instanceof J.FieldAccess) {
+                    J.FieldAccess q = (J.FieldAccess) qualifiedClassRef;
+                    q = q.withName(q.getName().withAnnotations(
+                            ListUtils.concat(annotation.withPrefix(Space.EMPTY), q.getName().getAnnotations())));
+                    if (q.getName().getPrefix().getWhitespace().isEmpty()) {
+                        q = q.withName(q.getName().withPrefix(q.getName().getPrefix().withWhitespace(" ")));
+                    }
+                    return q;
+                } else if (qualifiedClassRef instanceof J.ParameterizedType &&
+                           ((J.ParameterizedType) qualifiedClassRef).getClazz() instanceof TypeTree) {
+                    J.ParameterizedType pt = (J.ParameterizedType) qualifiedClassRef;
+                    return pt.withClazz(annotateInnerClass((TypeTree) pt.getClazz(), annotation));
+                } else if (qualifiedClassRef instanceof J.ArrayType) {
+                    J.ArrayType at = (J.ArrayType) qualifiedClassRef;
+                    at = at.withAnnotations(ListUtils.concat(annotation.withPrefix(Space.SINGLE_SPACE), at.getAnnotations()));
+                    return at;
                 }
-                return s;
+                return qualifiedClassRef;
             }
         });
     }
