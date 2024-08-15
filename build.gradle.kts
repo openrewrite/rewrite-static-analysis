@@ -7,6 +7,10 @@ plugins {
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
+recipeDependencies {
+    parserClasspath("org.junit.jupiter:junit-jupiter-api:latest.release")
+}
+
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
 dependencies {
     compileOnly("org.projectlombok:lombok:latest.release")
