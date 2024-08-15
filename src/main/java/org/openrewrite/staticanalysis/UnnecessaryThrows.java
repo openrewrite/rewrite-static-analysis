@@ -15,12 +15,12 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
@@ -113,7 +113,7 @@ public class UnnecessaryThrows extends Recipe {
                             return super.visitNewClass(newClass, ctx);
                         }
 
-                        private void removeThrownTypes(@Nullable JavaType.Method type) {
+                        private void removeThrownTypes(JavaType.@Nullable Method type) {
                             if (type != null) {
                                 for (JavaType.FullyQualified thrownException : type.getThrownExceptions()) {
                                     unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, thrownException));
@@ -140,7 +140,7 @@ public class UnnecessaryThrows extends Recipe {
     }
 
 
-    private Set<JavaType.FullyQualified> findExceptionCandidates(@Nullable J.MethodDeclaration method) {
+    private Set<JavaType.FullyQualified> findExceptionCandidates(J.@Nullable MethodDeclaration method) {
 
         if (method == null || method.getMethodType() == null || method.isAbstract()) {
             return Collections.emptySet();

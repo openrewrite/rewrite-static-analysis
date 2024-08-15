@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -192,7 +192,7 @@ public class SimplifyBooleanReturn extends Recipe {
                 return Optional.empty();
             }
 
-            private boolean hasElseWithComment(@Nullable J.If.Else else_) {
+            private boolean hasElseWithComment(J.If.@Nullable Else else_) {
                 if (else_ == null || else_.getBody() == null) {
                     return false;
                 }

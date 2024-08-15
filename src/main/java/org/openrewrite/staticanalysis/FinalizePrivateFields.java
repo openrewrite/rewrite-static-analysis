@@ -17,9 +17,9 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
@@ -306,7 +306,7 @@ public class FinalizePrivateFields extends Recipe {
          * @param j the subtree to search, supposed to be a J.FieldAccess
          * @return the last Identifier if found, otherwise null.
          */
-        static @Nullable J.Identifier getLastIdentifier(J j) {
+        static J.@Nullable Identifier getLastIdentifier(J j) {
             List<J.Identifier> ids = new FindLastIdentifier().reduce(j, new ArrayList<>());
             return !ids.isEmpty() ? ids.get(ids.size() - 1) : null;
         }
