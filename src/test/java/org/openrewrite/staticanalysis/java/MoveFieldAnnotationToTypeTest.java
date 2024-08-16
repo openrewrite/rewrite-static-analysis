@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis.java;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -46,6 +47,7 @@ public class MoveFieldAnnotationToTypeTest implements RewriteTest {
     }
 
     @Test
+    @DocumentExample
     void fieldAnnotation() {
         rewriteRun(
           //language=java
