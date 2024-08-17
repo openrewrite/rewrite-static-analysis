@@ -40,7 +40,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void unknownArgumentType() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
+          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).methodDeclarations(true).build()),
           //language=java
           java(
             """
@@ -564,7 +564,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
           java(
             """
               package javafx.beans.value;
-              
+
               @FunctionalInterface
               public interface ChangeListener<T> {
                   void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
@@ -575,7 +575,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
           java(
             """
               package example;
-                            
+
               import javafx.beans.value.ObservableValue;
               import javafx.beans.value.ChangeListener;
 
@@ -590,7 +590,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
             """
               import javafx.beans.value.ObservableValue;
               import example.Fred;
-                            
+
               class Test {
                   void foo() {
                       Fred fred = new Fred();
@@ -602,7 +602,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
             """
               import javafx.beans.value.ObservableValue;
               import example.Fred;
-                            
+
               class Test {
                   void foo() {
                       Fred fred = new Fred();
@@ -623,9 +623,9 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
           java(
             """
               package com.test;
-                            
+
               import java.util.List;
-                            
+
               class A {
                   void foo(List<? extends A> a) {
                       a.forEach(it -> { });
@@ -634,9 +634,9 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
               """,
             """
               package com.test;
-                            
+
               import java.util.List;
-                            
+
               class A {
                   void foo(List<? extends A> a) {
                       a.forEach((A it) -> { });
