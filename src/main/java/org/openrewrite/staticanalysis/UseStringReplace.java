@@ -46,7 +46,7 @@ public class UseStringReplace extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Use `String::replace()` when fist parameter is not a real regular expression";
+        return "Use `String::replace()` when first parameter is not a real regular expression";
     }
 
     @Override
