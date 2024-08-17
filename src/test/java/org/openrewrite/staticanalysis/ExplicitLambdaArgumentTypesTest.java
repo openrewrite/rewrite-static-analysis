@@ -40,7 +40,7 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
     @Test
     void unknownArgumentType() {
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).methodDeclarations(true).build()),
+          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).methodDeclarations(false).build()),
           //language=java
           java(
             """
