@@ -69,7 +69,8 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                     List<Expression> arguments = annotation.getArguments();
                     if (arguments != null) {
                         for (Expression argument : arguments) {
-                            if (J.Literal.isLiteralValue(argument, "unused")) {
+                            if (J.Literal.isLiteralValue(argument, "all") ||
+                                J.Literal.isLiteralValue(argument, "unused")) {
                                 return true;
                             }
                         }
