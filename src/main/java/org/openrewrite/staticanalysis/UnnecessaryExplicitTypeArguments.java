@@ -19,7 +19,6 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
