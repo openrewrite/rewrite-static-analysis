@@ -187,4 +187,27 @@ class UseStringReplaceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/330")
+    @DisplayName("String#replaceAll is not replaced by String#replace, because second argument has a dollar sign in it")
+    void overlyCautiousEqualsSign() {
+      java(
+        """
+          class A {
+              String foo(String bar) {
+                  return bar.replaceAll("=","|");
+              }
+          }
+          """,
+        """
+          class A {
+              String foo(String bar) {
+                  return bar.replace("=","|");
+              }
+          }
+          """
+        );
+    }
+
 }
