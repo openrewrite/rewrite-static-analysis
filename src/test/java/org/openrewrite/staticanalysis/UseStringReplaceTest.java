@@ -211,7 +211,7 @@ class UseStringReplaceTest implements RewriteTest {
           ),
           java(
             """
-              class A {
+              class B {
                   String foo(String bar) {
                       return bar.replaceAll("(?=x)", "#");
                   }
@@ -220,7 +220,7 @@ class UseStringReplaceTest implements RewriteTest {
           ),
           java(
             """
-              class A {
+              class C {
                   String foo(String bar) {
                       return bar.replaceAll("(?<=x)", "#");
                   }
