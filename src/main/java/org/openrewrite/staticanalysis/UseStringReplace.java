@@ -74,7 +74,7 @@ public class UseStringReplace extends Recipe {
 
         private static final MethodMatcher REPLACE_ALL = new MethodMatcher("java.lang.String replaceAll(..)");
         private static final Pattern ESCAPED_CHARACTER = Pattern.compile("\\\\\\.");
-        private static final Pattern METACHARACTERS = Pattern.compile("[(\\[{\\\\^\\-$!|\\]})?*+.]|\\?=|<=")
+        private static final Pattern METACHARACTERS = Pattern.compile("[(\\[{\\\\^\\-$!|\\]})?*+.]|\\?=|<=");
         private static final Pattern CHARACTER_CLASSES = Pattern.compile("\\\\d|\\\\D|\\\\s|\\\\S|\\\\w|\\\\W");
 
         @Override
