@@ -17,6 +17,7 @@ dependencies {
     implementation("org.openrewrite:rewrite-java")
     implementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    implementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
     implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
