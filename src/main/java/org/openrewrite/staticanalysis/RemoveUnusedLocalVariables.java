@@ -41,8 +41,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             description = "An array of variable identifier names for local variables to ignore, even if the local variable is unused.",
             required = false,
             example = "[unused, notUsed, IGNORE_ME]")
-    @Nullable
-    String[] ignoreVariablesNamed;
+    String @Nullable [] ignoreVariablesNamed;
 
     @Override
     public String getDisplayName() {
