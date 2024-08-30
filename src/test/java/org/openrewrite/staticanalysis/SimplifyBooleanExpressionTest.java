@@ -389,7 +389,8 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
               new SimplifyBooleanExpression()
             ),
           //language=java
-          java("""
+          java(
+                """
               class A {
                   String name;
                   boolean notOne(A a) {
