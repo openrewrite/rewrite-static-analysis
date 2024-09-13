@@ -133,7 +133,184 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
-        void genericsWithoutParameters() {
+        void genericsWithoutParameters_1() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  import java.util.stream.Stream;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static Stream<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List) {
+                              List<Object> routesList = (List<Object>) routes;
+                              if (routesList.isEmpty()) {
+                                  return Stream.empty();
+                              }
+                              if (routesList.stream()
+                                            .anyMatch(route -> !(route instanceof Map))) {
+                                  return Stream.empty();
+                              }
+                              return routesList.stream()
+                                               .map(route -> (Map<String, Object>) route);
+                          }
+                          return Stream.empty();
+                      }
+                  }
+                  """,
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  import java.util.stream.Stream;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static Stream<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List routesList) {
+                              if (routesList.isEmpty()) {
+                                  return Stream.empty();
+                              }
+                              if (routesList.stream()
+                                            .anyMatch(route -> !(route instanceof Map))) {
+                                  return Stream.empty();
+                              }
+                              return routesList.stream()
+                                               .map(route -> (Map<String, Object>) route);
+                          }
+                          return Stream.empty();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void genericsWithoutParameters_2() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List) {
+                              List routesList = (List) routes;
+                              if (routesList.isEmpty()) {
+                                  return Collections.emptyList();
+                              }
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """,
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List routesList) {
+                              if (routesList.isEmpty()) {
+                                  return Collections.emptyList();
+                              }
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void genericsWithoutParameters_3() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List) {
+                              List<Object> routesList = (List<Object>) routes;
+                              String.join(",", (List) routes);
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """, """
+                  import java.util.Collections;
+                  import java.util.List;
+                  import java.util.Map;
+                  import java.util.stream.Collectors;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static List<Map<String, Object>> applyRoutesType(Object routes) {
+                          if (routes instanceof List routesList) {
+                              String.join(",", routesList);
+                          }
+                          return Collections.emptyList();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void genericsWithoutParameters_4() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Arrays;
+                  import java.util.Collection;
+                  import java.util.List;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      private Collection<Object> addValueToList(List<String> previousValues, Object value) {
+                          if (previousValues == null) {
+                              return (value instanceof Collection) ? (Collection<Object>) value : Arrays.asList(value);
+                          }
+                          return List.of();
+                      }
+                 }
+                  """, """
+                  import java.util.Arrays;
+                  import java.util.Collection;
+                  import java.util.List;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      private Collection<Object> addValueToList(List<String> previousValues, Object value) {
+                          if (previousValues == null) {
+                              return (value instanceof Collection c) ? c : Arrays.asList(value);
+                          }
+                          return List.of();
+                      }
+                 }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void genericsWithoutParameters_5() {
             rewriteRun(
               //language=java
               java(
@@ -161,7 +338,16 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           return Collections.emptyList();
                       }
                   }
-                  """,
+                  """
+              )
+            );
+        }
+
+        @Test
+        void genericsWithoutParameters_6() {
+            rewriteRun(
+              //language=java
+              java(
                 """
                   import java.util.Collections;
                   import java.util.List;
@@ -170,19 +356,12 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   public class A {
                       @SuppressWarnings("unchecked")
                       public static List<Map<String, Object>> applyRoutesType(Object routes) {
-                          if (routes instanceof List<?> routesList) {
-                              if (routesList.isEmpty()) {
-                                  return Collections.emptyList();
-                              }
-                              if (routesList.stream()
-                                            .anyMatch(route -> !(route instanceof Map))) {
-                                  return Collections.emptyList();
-                              }
-                              return routesList.stream()
-                                               .map(route -> (Map<String, Object>) route)
-                                               .collect(Collectors.toList());
+                          if (routes instanceof List) {
+                              return ((List<?>) routes).stream()
+                                             .map(route -> (Map<String, Object>) route)
+                                             .collect(Collectors.toList());
                           }
-                          return Collections.emptyList();
+                        return Collections.emptyList();
                       }
                   }
                   """
@@ -302,7 +481,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   public class A {
                       void test(Object o) {
                           Map.Entry entry = null;
-                          if (o instanceof Map.Entry<?,?> entry1) {
+                          if (o instanceof Map.Entry entry1) {
                             entry = entry1;
                           }
                           System.out.println(entry);
@@ -849,7 +1028,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List<?> l ? l.get(0) : o.toString();
+                          return o instanceof List l ? l.get(0) : o.toString();
                       }
                   }
                   """
@@ -874,7 +1053,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.List;
                   public class A {
                       Object test(Object o) {
-                          return o instanceof List<?> l ? l.get(0) : o.toString();
+                          return o instanceof List l ? l.get(0) : o.toString();
                       }
                   }
                   """
@@ -969,6 +1148,52 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                               return else1.toString();
                           }
                           return o.toString();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+        @Test
+        void iterableParameter() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                import java.util.HashMap;
+                import java.util.List;
+                import java.util.Map;
+
+                public class ApplicationSecurityGroupsParameterHelper {
+                  
+                    static final String APPLICATION_SECURITY_GROUPS = "application-security-groups";
+                  
+                    public Map<String, Object> transformGatewayParameters(Map<String, Object> parameters) {
+                        Map<String, Object> environment = new HashMap<>();
+                        Object applicationSecurityGroups = parameters.get(APPLICATION_SECURITY_GROUPS);
+                        if (applicationSecurityGroups instanceof List) {
+                            environment.put(APPLICATION_SECURITY_GROUPS, String.join(",", (List) applicationSecurityGroups));
+                        }
+                        return environment;
+                    }
+                }
+                """,
+                  """
+                  import java.util.HashMap;
+                  import java.util.List;
+                  import java.util.Map;
+ 
+                  public class ApplicationSecurityGroupsParameterHelper {
+                    
+                      static final String APPLICATION_SECURITY_GROUPS = "application-security-groups";
+                    
+                      public Map<String, Object> transformGatewayParameters(Map<String, Object> parameters) {
+                          Map<String, Object> environment = new HashMap<>();
+                          Object applicationSecurityGroups = parameters.get(APPLICATION_SECURITY_GROUPS);
+                          if (applicationSecurityGroups instanceof List list) {
+                              environment.put(APPLICATION_SECURITY_GROUPS, String.join(",", list));
+                          }
+                          return environment;
                       }
                   }
                   """

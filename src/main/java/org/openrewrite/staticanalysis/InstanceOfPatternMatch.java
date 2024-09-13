@@ -21,6 +21,7 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
@@ -44,6 +45,8 @@ import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMEN
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class InstanceOfPatternMatch extends Recipe {
+
+    private static MethodMatcher STREAM_COLLECT_MATCHER = new MethodMatcher("java.util.stream.Stream collect(..)");
 
     @Override
     public String getDisplayName() {
@@ -74,7 +77,8 @@ public class InstanceOfPatternMatch extends Recipe {
             public @Nullable J postVisit(J tree, ExecutionContext ctx) {
                 J result = super.postVisit(tree, ctx);
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
-                if (original != null && !original.isEmpty()) {
+                boolean exclusion = getCursor().getNearestMessage("exclusionScope", false);
+                if (original != null && !original.isEmpty() && !exclusion) {
                     return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow());
                 }
                 return result;
@@ -144,6 +148,55 @@ public class InstanceOfPatternMatch extends Recipe {
                 }
                 return result;
             }
+
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+                J j = super.visitMethodInvocation(method, executionContext);
+                if (j instanceof J.MethodInvocation) {
+                    J.MethodInvocation m = (J.MethodInvocation) j;
+                    if (STREAM_COLLECT_MATCHER.matches(m, false)) {
+                        Cursor cursorWithFlowTypeScope = getNearestCursorWithMessage(getCursor(), "flowTypeScope");
+                        InstanceOfPatternReplacements replacements = cursorWithFlowTypeScope.getMessage("flowTypeScope");
+                        if (replacements != null) {
+                            Expression originalSelect = selectFromMethodInvocationChain(m);
+                            while (originalSelect instanceof J.Parentheses) {
+                                originalSelect = originalSelect.unwrap();
+                            }
+                            if (originalSelect instanceof J.Identifier) {
+                                J.Identifier varRef = (J.Identifier) originalSelect;
+                                if (replacements.variablesToDelete.values().stream().anyMatch(nv -> nv.getSimpleName().equals(varRef.getSimpleName()) && nv.getType().equals(varRef.getType()))) {
+                                    cursorWithFlowTypeScope.putMessage("exclusionScope", true);
+                                }
+                            } else if (originalSelect instanceof J.TypeCast) {
+                                J.TypeCast typeCast = (J.TypeCast) originalSelect;
+                                if (replacements.replacements.containsKey(typeCast)) {
+                                    cursorWithFlowTypeScope.putMessage("exclusionScope", true);
+                                }
+                            }
+                        }
+                    }
+                }
+                return j;
+            }
+
+            private Expression selectFromMethodInvocationChain(J.MethodInvocation method) {
+                J.MethodInvocation m = method;
+                for (; m.getSelect() instanceof J.MethodInvocation; m = (J.MethodInvocation) m.getSelect()) {}
+                return m.getSelect();
+            }
+
+            public @Nullable Cursor getNearestCursorWithMessage(Cursor cursor, String key) {
+                if (cursor == null) {
+                    return null;
+                }
+                Object msg = cursor.getMessage(key);
+                if (msg == null) {
+                    return getNearestCursorWithMessage(cursor.getParent(), key);
+                } else {
+                    return cursor;
+                }
+            }
+
         });
     }
 
@@ -215,6 +268,7 @@ public class InstanceOfPatternMatch extends Recipe {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
             }
+
             @Nullable JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             String name = patternVariableName(instanceOf, cursor);
             J.InstanceOf result = instanceOf.withPattern(new J.Identifier(
@@ -225,25 +279,6 @@ public class InstanceOfPatternMatch extends Recipe {
                     name,
                     type,
                     null));
-            JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(type);
-            if (fqType != null && !fqType.getTypeParameters().isEmpty() && !(instanceOf.getClazz() instanceof J.ParameterizedType)) {
-                TypedTree oldTypeTree = (TypedTree) instanceOf.getClazz();
-
-                // Each type parameter is turned into a wildcard, i.e. `List` -> `List<?>` or `Map.Entry` -> `Map.Entry<?,?>`
-                List<Expression> wildcardsList = IntStream.range(0, fqType.getTypeParameters().size())
-                        .mapToObj(i -> new J.Wildcard(randomId(), Space.EMPTY, Markers.EMPTY, null, null))
-                        .collect(Collectors.toList());
-
-                J.ParameterizedType newTypeTree = new J.ParameterizedType(
-                        randomId(),
-                        oldTypeTree.getPrefix(),
-                        Markers.EMPTY,
-                        oldTypeTree.withPrefix(Space.EMPTY),
-                        null,
-                        oldTypeTree.getType()
-                ).withTypeParameters(wildcardsList);
-                result = result.withClazz(newTypeTree);
-            }
 
             // update entry in replacements to share the pattern variable name
             for (Map.Entry<J.TypeCast, J.InstanceOf> entry : replacements.entrySet()) {
