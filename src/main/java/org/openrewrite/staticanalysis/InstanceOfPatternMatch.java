@@ -150,8 +150,8 @@ public class InstanceOfPatternMatch extends Recipe {
             }
 
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J j = super.visitMethodInvocation(method, executionContext);
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J j = super.visitMethodInvocation(method, ctx);
                 if (j instanceof J.MethodInvocation) {
                     J.MethodInvocation m = (J.MethodInvocation) j;
                     if (STREAM_COLLECT_MATCHER.matches(m, false)) {
