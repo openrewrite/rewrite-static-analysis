@@ -45,7 +45,7 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     @SuppressWarnings("NullableProblems")
     @Override
     public J.@Nullable NewClass visitNewClass(J.NewClass newClass, P p) {
-        if (matchesMethod(newClass) && predicateMatchesAllArguments(newClass) && isStatementInParentBlock(newClass)) {
+        if (methodMatcher.matches(newClass) && predicateMatchesAllArguments(newClass) && isStatementInParentBlock(newClass)) {
             if (newClass.getMethodType() != null) {
                 maybeRemoveImport(newClass.getMethodType().getDeclaringType());
             }
@@ -58,7 +58,7 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     @Override
     public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
         // Find method invocations that match the specified method and arguments
-        if (matchesMethod(method) && predicateMatchesAllArguments(method)) {
+        if (methodMatcher.matches(method) && predicateMatchesAllArguments(method)) {
             // If the method invocation is a standalone statement, remove it altogether
             if (isStatementInParentBlock(method)) {
                 if (method.getMethodType() != null) {
@@ -74,10 +74,6 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
         return super.visitMethodInvocation(method, p);
-    }
-
-    private boolean matchesMethod(MethodCall method) {
-        return methodMatcher.matches(method);
     }
 
     private boolean predicateMatchesAllArguments(MethodCall method) {
