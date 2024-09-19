@@ -48,33 +48,55 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     @SuppressWarnings("NullableProblems")
     @Override
     public J.@Nullable NewClass visitNewClass(J.NewClass newClass, P p) {
-        return visitMethodCall(newClass, () -> super.visitNewClass(newClass, p));
+        Supplier<J.NewClass> visitSuper = () -> super.visitNewClass(newClass, p);
+        if (!methodMatcher.matches(newClass)) {
+            return visitSuper.get();
+        }
+        J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
+        //noinspection SuspiciousMethodCalls
+        if (parentBlock != null && !parentBlock.getStatements().contains(newClass)) {
+            return visitSuper.get();
+        }
+        // Remove the method invocation when the argumentMatcherPredicate is true for all arguments
+        for (int i = 0; i < newClass.getArguments().size(); i++) {
+            if (!argumentPredicate.test(i, newClass.getArguments().get(i))) {
+                return visitSuper.get();
+            }
+        }
+        if (newClass.getMethodType() != null) {
+            maybeRemoveImport(newClass.getMethodType().getDeclaringType());
+        }
+        return null;
     }
 
     @SuppressWarnings("NullableProblems")
     @Override
     public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
-        return visitMethodCall(method, () -> super.visitMethodInvocation(method, p));
+        if (matchesMethod(method) && isInParentBlock(method) && predicateMatchesAllArguments(method)) {
+            if (method.getMethodType() != null) {
+                maybeRemoveImport(method.getMethodType().getDeclaringType());
+            }
+            return null;
+        }
+        return super.visitMethodInvocation(method, p);
     }
 
-    private <M extends MethodCall> @Nullable M visitMethodCall(M methodCall, Supplier<M> visitSuper) {
-        if (!methodMatcher.matches(methodCall)) {
-            return visitSuper.get();
-        }
+    private boolean matchesMethod(J.MethodInvocation method) {
+        return methodMatcher.matches(method);
+    }
+
+    private boolean isInParentBlock(J.MethodInvocation method) {
         J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
         //noinspection SuspiciousMethodCalls
-        if (parentBlock != null && !parentBlock.getStatements().contains(methodCall)) {
-            return visitSuper.get();
-        }
-        // Remove the method invocation when the argumentMatcherPredicate is true for all arguments
-        for (int i = 0; i < methodCall.getArguments().size(); i++) {
-            if (!argumentPredicate.test(i, methodCall.getArguments().get(i))) {
-                return visitSuper.get();
+        return parentBlock == null || parentBlock.getStatements().contains(method);
+    }
+
+    private boolean predicateMatchesAllArguments(J.MethodInvocation method) {
+        for (int i = 0; i < method.getArguments().size(); i++) {
+            if (!argumentPredicate.test(i, method.getArguments().get(i))) {
+                return false;
             }
         }
-        if (methodCall.getMethodType() != null) {
-            maybeRemoveImport(methodCall.getMethodType().getDeclaringType());
-        }
-        return null;
+        return true;
     }
 }
