@@ -19,10 +19,7 @@ import lombok.AllArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.MethodCall;
+import org.openrewrite.java.tree.*;
 
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -49,25 +46,13 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     @SuppressWarnings("NullableProblems")
     @Override
     public J.@Nullable NewClass visitNewClass(J.NewClass newClass, P p) {
-        Supplier<J.NewClass> visitSuper = () -> super.visitNewClass(newClass, p);
-        if (!methodMatcher.matches(newClass)) {
-            return visitSuper.get();
-        }
-        J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
-        //noinspection SuspiciousMethodCalls
-        if (parentBlock != null && !parentBlock.getStatements().contains(newClass)) {
-            return visitSuper.get();
-        }
-        // Remove the method invocation when the argumentMatcherPredicate is true for all arguments
-        for (int i = 0; i < newClass.getArguments().size(); i++) {
-            if (!argumentPredicate.test(i, newClass.getArguments().get(i))) {
-                return visitSuper.get();
+        if (matchesMethod(newClass) && predicateMatchesAllArguments(newClass) && isStatementInParentBlock(newClass)) {
+            if (newClass.getMethodType() != null) {
+                maybeRemoveImport(newClass.getMethodType().getDeclaringType());
             }
+            return null;
         }
-        if (newClass.getMethodType() != null) {
-            maybeRemoveImport(newClass.getMethodType().getDeclaringType());
-        }
-        return null;
+        return super.visitNewClass(newClass, p);
     }
 
     @SuppressWarnings("NullableProblems")
@@ -92,11 +77,11 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
         return super.visitMethodInvocation(method, p);
     }
 
-    private boolean matchesMethod(J.MethodInvocation method) {
+    private boolean matchesMethod(MethodCall method) {
         return methodMatcher.matches(method);
     }
 
-    private boolean predicateMatchesAllArguments(J.MethodInvocation method) {
+    private boolean predicateMatchesAllArguments(MethodCall method) {
         for (int i = 0; i < method.getArguments().size(); i++) {
             if (!argumentPredicate.test(i, method.getArguments().get(i))) {
                 return false;
@@ -105,7 +90,7 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
         return true;
     }
 
-    private boolean isStatementInParentBlock(J.MethodInvocation method) {
+    private boolean isStatementInParentBlock(Statement method) {
         J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
         return parentBlock == null || parentBlock.getStatements().contains(method);
     }
