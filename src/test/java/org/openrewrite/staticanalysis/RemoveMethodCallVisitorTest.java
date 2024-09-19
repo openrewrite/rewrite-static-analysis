@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
@@ -135,5 +136,35 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void removeMethodCallFromFluentChain() {
+        final MethodMatcher methodMatcher = new MethodMatcher("java.lang.StringBuilder append(..)");
+        final RemoveMethodCallVisitor<ExecutionContext> visitor =
+          new RemoveMethodCallVisitor<>(methodMatcher, (i, e) -> true);
+        rewriteRun(
+          spec -> spec.recipe(RewriteTest.toRecipe(() -> visitor)),
+          // language=java
+          java(
+            """
+            class Main {
+                void hello() {
+                    final String s = new StringBuilder("hello")
+                            .delete(1, 2)
+                            .append("world")
+                            .toString();
+                }
+            }
+            """,
+            """
+            class Main {
+                void hello() {
+                    final String s = new StringBuilder("hello")
+                            .delete(1, 2)
+                            .toString();
+                }
+            }
+            """));
     }
 }

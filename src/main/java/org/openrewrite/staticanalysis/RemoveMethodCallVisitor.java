@@ -21,6 +21,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.MethodCall;
 
 import java.util.function.BiPredicate;
@@ -72,23 +73,27 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     @SuppressWarnings("NullableProblems")
     @Override
     public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
-        if (matchesMethod(method) && isInParentBlock(method) && predicateMatchesAllArguments(method)) {
-            if (method.getMethodType() != null) {
-                maybeRemoveImport(method.getMethodType().getDeclaringType());
+        // Find method invocations that match the specified method and arguments
+        if (matchesMethod(method) && predicateMatchesAllArguments(method)) {
+            // If the method invocation is a standalone statement, remove it altogether
+            if (isStatementInParentBlock(method)) {
+                if (method.getMethodType() != null) {
+                    maybeRemoveImport(method.getMethodType().getDeclaringType());
+                }
+                return null;
             }
-            return null;
+
+            // If the method invocation is in a fluent chain, remove just the current invocation
+            if (isInFluentChain(method)) {
+                //noinspection ConstantConditions
+                return super.visitMethodInvocation((J.MethodInvocation) method.getSelect(), p);
+            }
         }
         return super.visitMethodInvocation(method, p);
     }
 
     private boolean matchesMethod(J.MethodInvocation method) {
         return methodMatcher.matches(method);
-    }
-
-    private boolean isInParentBlock(J.MethodInvocation method) {
-        J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
-        //noinspection SuspiciousMethodCalls
-        return parentBlock == null || parentBlock.getStatements().contains(method);
     }
 
     private boolean predicateMatchesAllArguments(J.MethodInvocation method) {
@@ -98,5 +103,25 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
         return true;
+    }
+
+    private boolean isStatementInParentBlock(J.MethodInvocation method) {
+        J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
+        return parentBlock == null || parentBlock.getStatements().contains(method);
+    }
+
+    private boolean isInFluentChain(J.MethodInvocation method) {
+        Expression select = method.getSelect();
+        if (select instanceof J.MethodInvocation) {
+            return sameReturnType(method, (J.MethodInvocation) select);
+        }
+        return false;
+    }
+
+    private boolean sameReturnType(J.MethodInvocation m1, J.MethodInvocation m2) {
+        if (m1.getMethodType() == null || m2.getMethodType() == null) {
+            return false;
+        }
+        return m1.getMethodType().getReturnType() == m2.getMethodType().getReturnType();
     }
 }
