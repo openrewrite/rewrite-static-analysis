@@ -22,7 +22,6 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
 
 import java.util.function.BiPredicate;
-import java.util.function.Supplier;
 
 /**
  * Removes all {@link MethodCall} matching both the
@@ -69,8 +68,8 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
             }
 
             // If the method invocation is in a fluent chain, remove just the current invocation
-            if (isInFluentChain(method)) {
-                //noinspection ConstantConditions
+            if (method.getSelect() instanceof J.MethodInvocation &&
+                TypeUtils.isOfType(method.getType(), method.getSelect().getType())) {
                 return super.visitMethodInvocation((J.MethodInvocation) method.getSelect(), p);
             }
         }
@@ -93,20 +92,5 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     private boolean isStatementInParentBlock(Statement method) {
         J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
         return parentBlock == null || parentBlock.getStatements().contains(method);
-    }
-
-    private boolean isInFluentChain(J.MethodInvocation method) {
-        Expression select = method.getSelect();
-        if (select instanceof J.MethodInvocation) {
-            return sameReturnType(method, (J.MethodInvocation) select);
-        }
-        return false;
-    }
-
-    private boolean sameReturnType(J.MethodInvocation m1, J.MethodInvocation m2) {
-        if (m1.getMethodType() == null || m2.getMethodType() == null) {
-            return false;
-        }
-        return m1.getMethodType().getReturnType() == m2.getMethodType().getReturnType();
     }
 }

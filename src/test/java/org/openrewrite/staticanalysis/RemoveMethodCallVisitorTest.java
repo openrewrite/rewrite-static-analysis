@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
@@ -44,7 +43,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
             """
               abstract class Test {
                   abstract void assertTrue(boolean condition);
-
+              
                   void test() {
                       System.out.println("Hello");
                       assertTrue(true);
@@ -54,7 +53,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
               """, """
               abstract class Test {
                   abstract void assertTrue(boolean condition);
-
+              
                   void test() {
                       System.out.println("Hello");
                       System.out.println("World");
@@ -73,7 +72,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
             """
               abstract class Test {
                   abstract void assertTrue(boolean condition);
-
+              
                   void test() {
                       System.out.println("Hello");
                       assertTrue(false);
@@ -96,7 +95,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
             """
               abstract class Test {
                   abstract void assertTrue(String message, boolean condition);
-
+              
                   void test() {
                       System.out.println("Hello");
                       assertTrue("message", true);
@@ -107,7 +106,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
             """
               abstract class Test {
                   abstract void assertTrue(String message, boolean condition);
-
+              
                   void test() {
                       System.out.println("Hello");
                       System.out.println("World");
@@ -126,7 +125,7 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
             """
               abstract class Test {
                   abstract int assertTrue(boolean condition);
-
+              
                   void test() {
                       System.out.println("Hello");
                       int value = assertTrue(true);
@@ -140,31 +139,31 @@ class RemoveMethodCallVisitorTest implements RewriteTest {
 
     @Test
     void removeMethodCallFromFluentChain() {
-        final MethodMatcher methodMatcher = new MethodMatcher("java.lang.StringBuilder append(..)");
-        final RemoveMethodCallVisitor<ExecutionContext> visitor =
-          new RemoveMethodCallVisitor<>(methodMatcher, (i, e) -> true);
         rewriteRun(
-          spec -> spec.recipe(RewriteTest.toRecipe(() -> visitor)),
+          spec -> spec.recipe(RewriteTest.toRecipe(() -> new RemoveMethodCallVisitor<>(
+            new MethodMatcher("java.lang.StringBuilder append(..)"), (i, e) -> true))),
           // language=java
           java(
             """
-            class Main {
-                void hello() {
-                    final String s = new StringBuilder("hello")
-                            .delete(1, 2)
-                            .append("world")
-                            .toString();
-                }
-            }
-            """,
+              class Main {
+                  void hello() {
+                      final String s = new StringBuilder("hello")
+                              .delete(1, 2)
+                              .append("world")
+                              .toString();
+                  }
+              }
+              """,
             """
-            class Main {
-                void hello() {
-                    final String s = new StringBuilder("hello")
-                            .delete(1, 2)
-                            .toString();
-                }
-            }
-            """));
+              class Main {
+                  void hello() {
+                      final String s = new StringBuilder("hello")
+                              .delete(1, 2)
+                              .toString();
+                  }
+              }
+              """
+          )
+        );
     }
 }
