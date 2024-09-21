@@ -165,10 +165,10 @@ public class UnnecessaryThrows extends Recipe {
         }
 
         //noinspection ConstantConditions
-        if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final))
-                || method.isAbstract() || method.hasModifier(J.Modifier.Type.Static)
-                || method.hasModifier(J.Modifier.Type.Private)
-                || method.hasModifier(J.Modifier.Type.Final)) {
+        if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
+                method.isAbstract() || method.hasModifier(J.Modifier.Type.Static) ||
+                method.hasModifier(J.Modifier.Type.Private) ||
+                method.hasModifier(J.Modifier.Type.Final)) {
             //Consider all checked exceptions as candidates if the type/method are final or the method is private or static.
             return candidates;
         }

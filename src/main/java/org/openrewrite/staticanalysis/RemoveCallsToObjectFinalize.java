@@ -59,8 +59,8 @@ public class RemoveCallsToObjectFinalize extends Recipe {
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
 
-                if (invocation.getMethodType() != null && "finalize".equals(invocation.getMethodType().getName())
-                    && (invocation.getMethodType().getDeclaringType().getSupertype() != null && Object.class.getName().equals(invocation.getMethodType().getDeclaringType().getSupertype().getFullyQualifiedName()))) {
+                if (invocation.getMethodType() != null && "finalize".equals(invocation.getMethodType().getName()) &&
+                    (invocation.getMethodType().getDeclaringType().getSupertype() != null && Object.class.getName().equals(invocation.getMethodType().getDeclaringType().getSupertype().getFullyQualifiedName()))) {
                     //noinspection DataFlowIssue
                     return null;
                 }

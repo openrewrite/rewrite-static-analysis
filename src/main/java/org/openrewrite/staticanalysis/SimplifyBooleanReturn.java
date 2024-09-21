@@ -202,8 +202,8 @@ public class SimplifyBooleanReturn extends Recipe {
                 if (!else_.getBody().getComments().isEmpty()) {
                     return true;
                 }
-                return else_.getBody() instanceof J.Block
-                       && !((J.Block) else_.getBody()).getStatements().get(0).getComments().isEmpty();
+                return else_.getBody() instanceof J.Block &&
+                       !((J.Block) else_.getBody()).getStatements().get(0).getComments().isEmpty();
             }
         };
     }

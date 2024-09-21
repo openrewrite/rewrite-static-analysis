@@ -52,8 +52,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`."
-               + " Currently, this recipe supports `if` statements and ternary operator expressions.";
+        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`." +
+               " Currently, this recipe supports `if` statements and ternary operator expressions.";
     }
 
     @Override
@@ -167,8 +167,8 @@ public class InstanceOfPatternMatch extends Recipe {
             JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
 
             Optional<ExpressionAndType> existing = instanceOfs.keySet().stream()
-                    .filter(k -> TypeUtils.isAssignableTo(type, k.getType())
-                                 && SemanticallyEqual.areEqual(k.getExpression(), expression))
+                    .filter(k -> TypeUtils.isAssignableTo(type, k.getType()) &&
+                                 SemanticallyEqual.areEqual(k.getExpression(), expression))
                     .findAny();
             if (!existing.isPresent()) {
                 instanceOfs.put(new ExpressionAndType(expression, type), instanceOf);
@@ -182,8 +182,8 @@ public class InstanceOfPatternMatch extends Recipe {
             JavaType type = typeCast.getClazz().getTree().getType();
 
             Optional<ExpressionAndType> match = instanceOfs.keySet().stream()
-                    .filter(k -> TypeUtils.isAssignableTo(type, k.getType())
-                                 && SemanticallyEqual.areEqual(k.getExpression(), expression))
+                    .filter(k -> TypeUtils.isAssignableTo(type, k.getType()) &&
+                                 SemanticallyEqual.areEqual(k.getExpression(), expression))
                     .findAny();
             if (match.isPresent()) {
                 Cursor parent = cursor.getParentTreeCursor();
@@ -192,8 +192,8 @@ public class InstanceOfPatternMatch extends Recipe {
                 for (Iterator<?> it = cursor.getPath(); it.hasNext(); ) {
                     Object next = it.next();
                     if (validContexts.contains(next)) {
-                        if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable
-                            && !variablesToDelete.containsKey(instanceOf)) {
+                        if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
+                            !variablesToDelete.containsKey(instanceOf)) {
                             variablesToDelete.put(instanceOf, parent.getValue());
                         } else {
                             replacements.put(typeCast, instanceOf);
@@ -258,9 +258,9 @@ public class InstanceOfPatternMatch extends Recipe {
             VariableNameStrategy strategy;
             if (root instanceof J.If) {
                 J.VariableDeclarations.NamedVariable variable = variablesToDelete.get(instanceOf);
-                strategy = variable != null
-                        ? VariableNameStrategy.exact(variable.getSimpleName())
-                        : VariableNameStrategy.normal(contextScopes.get(instanceOf));
+                strategy = variable != null ?
+                        VariableNameStrategy.exact(variable.getSimpleName()) :
+                        VariableNameStrategy.normal(contextScopes.get(instanceOf));
             } else {
                 strategy = VariableNameStrategy.short_();
             }

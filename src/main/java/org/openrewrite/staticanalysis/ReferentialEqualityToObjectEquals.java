@@ -126,8 +126,8 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
         }
 
         private boolean isExcludedBinary(J.Binary binary) {
-            return isInEqualsOverrideMethod() || isPrimitiveNull(binary.getRight()) || hasThisIdentifier(binary) || isBoxedTypeComparison(binary)
-                    || TypeUtils.isOfClassType(binary.getLeft().getType(), "java.lang.Enum") || TypeUtils.isOfClassType(binary.getRight().getType(), "java.lang.Enum");
+            return isInEqualsOverrideMethod() || isPrimitiveNull(binary.getRight()) || hasThisIdentifier(binary) || isBoxedTypeComparison(binary) ||
+                    TypeUtils.isOfClassType(binary.getLeft().getType(), "java.lang.Enum") || TypeUtils.isOfClassType(binary.getRight().getType(), "java.lang.Enum");
         }
 
         private boolean isInEqualsOverrideMethod() {
@@ -143,28 +143,28 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
         }
 
         private boolean hasThisIdentifier(J.Binary binary) {
-            return ((binary.getRight() instanceof J.Identifier && "this".equals(((J.Identifier) binary.getRight()).getSimpleName()))
-                    || ((binary.getLeft() instanceof J.Identifier && "this".equals(((J.Identifier) binary.getLeft()).getSimpleName()))));
+            return ((binary.getRight() instanceof J.Identifier && "this".equals(((J.Identifier) binary.getRight()).getSimpleName())) ||
+                    ((binary.getLeft() instanceof J.Identifier && "this".equals(((J.Identifier) binary.getLeft()).getSimpleName()))));
         }
 
         private boolean isBoxedTypeComparison(J.Binary binary) {
-            if (binary.getLeft() != null && binary.getLeft().getType() != null
-                    && binary.getRight() != null && binary.getRight().getType() != null) {
-                return  isBoxed(binary.getRight().getType())
-                        && isBoxed(binary.getLeft().getType());
+            if (binary.getLeft() != null && binary.getLeft().getType() != null &&
+                    binary.getRight() != null && binary.getRight().getType() != null) {
+                return  isBoxed(binary.getRight().getType()) &&
+                        isBoxed(binary.getLeft().getType());
             }
             return false;
         }
         private boolean isBoxed(JavaType type) {
-            return type instanceof JavaType.Primitive
-                    || TypeUtils.isOfClassType(type, "java.lang.Byte")
-                    || TypeUtils.isOfClassType(type, "java.lang.Character")
-                    || TypeUtils.isOfClassType(type, "java.lang.Short")
-                    || TypeUtils.isOfClassType(type, "java.lang.Integer")
-                    || TypeUtils.isOfClassType(type, "java.lang.Long")
-                    || TypeUtils.isOfClassType(type, "java.lang.Float")
-                    || TypeUtils.isOfClassType(type, "java.lang.Double")
-                    || TypeUtils.isOfClassType(type, "java.lang.Boolean");
+            return type instanceof JavaType.Primitive ||
+                    TypeUtils.isOfClassType(type, "java.lang.Byte") ||
+                    TypeUtils.isOfClassType(type, "java.lang.Character") ||
+                    TypeUtils.isOfClassType(type, "java.lang.Short") ||
+                    TypeUtils.isOfClassType(type, "java.lang.Integer") ||
+                    TypeUtils.isOfClassType(type, "java.lang.Long") ||
+                    TypeUtils.isOfClassType(type, "java.lang.Float") ||
+                    TypeUtils.isOfClassType(type, "java.lang.Double") ||
+                    TypeUtils.isOfClassType(type, "java.lang.Boolean");
         }
 
     }
