@@ -32,7 +32,7 @@ import org.openrewrite.java.tree.TypeUtils;
 import java.time.Duration;
 import java.util.Comparator;
 
-public class AddSerialAnnotationToserialVersionUID extends Recipe {
+public class AddSerialAnnotationToSerialVersionUID extends Recipe {
     @Override
     public String getDisplayName() {
         return "Add `@Serial` annotation to `serialVersionUID`";

@@ -23,10 +23,10 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 
-class AddSerialAnnotationToserialVersionUIDTest implements RewriteTest {
+class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new AddSerialAnnotationToserialVersionUID())
+        spec.recipe(new AddSerialAnnotationToSerialVersionUID())
           .allSources(sourceSpec -> sourceSpec.markers(javaVersion(17)));
     }
 
