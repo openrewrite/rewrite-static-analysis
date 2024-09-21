@@ -37,7 +37,8 @@ public class OperatorWrap extends Recipe {
     @Option(displayName = "Operator wrapping style",
             description = "The operator wrapping style to enforce, which may differ from the configured or detected style.",
             valid = {"EOL", "NL"},
-            example = "NL")
+            example = "NL",
+            required = false)
     OperatorWrapStyle.@Nullable WrapOption wrapOption;
 
     @Override
@@ -181,7 +182,7 @@ public class OperatorWrap extends Recipe {
                     if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
                         if (i.getClazz().getPrefix().getWhitespace().contains("\n")) {
                             i = i.getPadding().withExpr(
-                                    i.getPadding().getExpr().withAfter(
+                                    i.getPadding().getExpression().withAfter(
                                             i.getClazz().getPrefix()
                                     )
                             );
@@ -191,15 +192,15 @@ public class OperatorWrap extends Recipe {
                                     )
                             );
                         }
-                    } else if (i.getPadding().getExpr().getAfter().getWhitespace().contains("\n")) {
+                    } else if (i.getPadding().getExpression().getAfter().getWhitespace().contains("\n")) {
                         i = i.withClazz(
                                 i.getClazz().withPrefix(
-                                        i.getPadding().getExpr().getAfter()
+                                        i.getPadding().getExpression().getAfter()
                                 )
                         );
                         i = i.getPadding().withExpr(
-                                i.getPadding().getExpr().withAfter(
-                                        i.getPadding().getExpr().getAfter().withWhitespace(" ")
+                                i.getPadding().getExpression().withAfter(
+                                        i.getPadding().getExpression().getAfter().withWhitespace(" ")
                                 )
                         );
                     }
