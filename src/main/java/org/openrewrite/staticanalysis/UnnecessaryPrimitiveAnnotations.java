@@ -63,9 +63,9 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
                     @Override
                     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                         J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-                        if (md.getReturnTypeExpression() != null
-                            && !(md.getReturnTypeExpression() instanceof J.ArrayType)
-                            && md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
+                        if (md.getReturnTypeExpression() != null &&
+                            !(md.getReturnTypeExpression() instanceof J.ArrayType) &&
+                            md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
                             md = maybeAutoFormat(md, md.withLeadingAnnotations(filterAnnotations(md.getLeadingAnnotations())), ctx);
                         }
                         return md;

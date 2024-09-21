@@ -70,9 +70,9 @@ public class UpperCaseLiteralSuffixes extends Recipe {
                         J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
                         if (nv.getInitializer() instanceof J.Literal && nv.getInitializer().getType() != null) {
                             J.Literal initializer = (J.Literal) nv.getInitializer();
-                            if (initializer.getType() == JavaType.Primitive.Double
-                                || initializer.getType() == JavaType.Primitive.Float
-                                || initializer.getType() == JavaType.Primitive.Long) {
+                            if (initializer.getType() == JavaType.Primitive.Double ||
+                                initializer.getType() == JavaType.Primitive.Float ||
+                                initializer.getType() == JavaType.Primitive.Long) {
                                 String upperValueSource = upperCaseSuffix(initializer.getValueSource());
                                 if (upperValueSource != null && !upperValueSource.equals(initializer.getValueSource())) {
                                     nv = nv.withInitializer(initializer.withValueSource(upperValueSource));

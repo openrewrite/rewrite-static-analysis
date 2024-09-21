@@ -99,8 +99,8 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             isEmptyBlock(t.getBody()) &&
             isEmptyResources(t.getResources())) {
             doAfterVisit(new DeleteStatement<>(tryable));
-        } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null
-                   && !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
+        } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null &&
+                   !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
             t = t.withFinally(null);
         }
 

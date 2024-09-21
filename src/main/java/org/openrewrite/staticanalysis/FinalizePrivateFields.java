@@ -119,8 +119,8 @@ public class FinalizePrivateFields extends Recipe {
             }
 
             private boolean anyAnnotationApplied(Cursor variableCursor) {
-                return !service(AnnotationService.class).getAllAnnotations(variableCursor).isEmpty()
-                       || variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
+                return !service(AnnotationService.class).getAllAnnotations(variableCursor).isEmpty() ||
+                       variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
             }
 
             /**
@@ -134,10 +134,10 @@ public class FinalizePrivateFields extends Recipe {
                         .stream()
                         .filter(J.VariableDeclarations.class::isInstance)
                         .map(J.VariableDeclarations.class::cast)
-                        .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
-                                      && !mv.hasModifier(J.Modifier.Type.Final)
-                                      && (!(topLevel instanceof Cs) || mv.getModifiers().stream().noneMatch(m -> "readonly".equals(m.getKeyword()) || "const".equals(m.getKeyword())))
-                                      && !mv.hasModifier(J.Modifier.Type.Volatile))
+                        .filter(mv -> mv.hasModifier(J.Modifier.Type.Private) &&
+                                      !mv.hasModifier(J.Modifier.Type.Final) &&
+                                      (!(topLevel instanceof Cs) || mv.getModifiers().stream().noneMatch(m -> "readonly".equals(m.getKeyword()) || "const".equals(m.getKeyword()))) &&
+                                      !mv.hasModifier(J.Modifier.Type.Volatile))
                         .filter(mv -> !anyAnnotationApplied(new Cursor(bodyCursor, mv)))
                         .map(J.VariableDeclarations::getVariables)
                         .flatMap(Collection::stream)
@@ -249,9 +249,9 @@ public class FinalizePrivateFields extends Recipe {
          * @return true if the cursor is in a constructor or an initializer block (both static or non-static)
          */
         private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
-            Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic())
-                                                        || p instanceof JRightPadded
-                                                        || p instanceof JLeftPadded)
+            Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic()) ||
+                                                        p instanceof JRightPadded ||
+                                                        p instanceof JLeftPadded)
                     .getValue();
             if (parent instanceof J.Block) {
                 return privateFieldIsStatic;
