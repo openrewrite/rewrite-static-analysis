@@ -31,6 +31,7 @@ import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 @Value
@@ -71,7 +72,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("java.lang.String", false), new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) tree;
                     Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
@@ -117,7 +118,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             continue;
                         }
                         J.Literal replaceLiteral = duplicateLiterals.get(0).withId(randomId());
-                        JavaTemplate template = JavaTemplate.builder("private static final String " + variableName + " = #{any(String)};").build();
+                        String modifiers = (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Interface) ? "" : "private static final ";
+                        JavaTemplate template = JavaTemplate.builder(modifiers + "String " + variableName + " = #{any(String)};").build();
                         if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Enum) {
                             J.Block applied = template
                                     .apply(new Cursor(getCursor(), classDecl.getBody()), classDecl.getBody().getCoordinates().lastStatement(), replaceLiteral);
@@ -136,7 +138,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 duplicateLiteralInfo = null;
                 duplicateLiteralsMap = null;
                 return replacements.isEmpty() ? classDecl :
-                        new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, getCursor().getParent());
+                        new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, requireNonNull(getCursor().getParent()));
             }
 
             /**

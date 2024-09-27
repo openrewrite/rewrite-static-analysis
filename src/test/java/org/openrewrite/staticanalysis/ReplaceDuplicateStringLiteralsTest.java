@@ -577,4 +577,28 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void interfaceLiteralsCannotBePrivate() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface A {
+                  String val1 = "value";
+                  String val2 = "value";
+                  String val3 = "value";
+              }
+              """,
+            """
+              interface A {
+                  String VALUE = "value";
+                  String val1 = VALUE;
+                  String val2 = VALUE;
+                  String val3 = VALUE;
+              }
+              """
+          )
+        );
+    }
 }
