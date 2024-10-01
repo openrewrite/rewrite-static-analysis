@@ -65,8 +65,9 @@ public class EqualsAvoidsNull extends Recipe {
                 if (style == null) {
                     style = Checkstyle.equalsAvoidsNull();
                 }
-                return new EqualsAvoidsNullVisitor<>(style).visit(cu, ctx);
+                return new EqualsAvoidsNullVisitor<>(style).visitNonNull(cu, ctx);
             }
+            //noinspection DataFlowIssue
             return (J) tree;
         }
     }

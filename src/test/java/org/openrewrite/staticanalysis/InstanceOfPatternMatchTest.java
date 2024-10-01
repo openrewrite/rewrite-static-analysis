@@ -25,7 +25,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 
-@SuppressWarnings({"RedundantCast", "DataFlowIssue", "ConstantValue"})
+@SuppressWarnings({"RedundantCast", "DataFlowIssue", "ConstantValue", "ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable", "SizeReplaceableByIsEmpty", "rawtypes", "ResultOfMethodCallIgnored", "ArraysAsListWithZeroOrOneArgument", "DuplicateCondition"})
 class InstanceOfPatternMatchTest implements RewriteTest {
 
     @Override
@@ -34,7 +34,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           .allSources(sourceSpec -> version(sourceSpec, 17));
     }
 
-    @SuppressWarnings({"ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable"})
+
     @Nested
     class If {
         @Test
@@ -177,7 +177,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.Map;
                   import java.util.stream.Collectors;
                   public class A {
-                      @SuppressWarnings("unchecked")
                       public static List<Map<String, Object>> applyRoutesType(Object routes) {
                           if (routes instanceof List) {
                               List routesList = (List) routes;
@@ -195,7 +194,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.Map;
                   import java.util.stream.Collectors;
                   public class A {
-                      @SuppressWarnings("unchecked")
                       public static List<Map<String, Object>> applyRoutesType(Object routes) {
                           if (routes instanceof List routesList) {
                               if (routesList.isEmpty()) {
@@ -386,7 +384,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           return cl;
                       }
                  }
-                  """
+                 """
               )
             );
         }
@@ -1121,6 +1119,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Nested
     class Various {
         @Test
@@ -1176,39 +1175,36 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
         @Test
         void iterableParameter() {
             rewriteRun(
               //language=java
               java(
                 """
-                import java.util.HashMap;
-                import java.util.List;
-                import java.util.Map;
-
-                public class ApplicationSecurityGroupsParameterHelper {
-                  
-                    static final String APPLICATION_SECURITY_GROUPS = "application-security-groups";
-                  
-                    public Map<String, Object> transformGatewayParameters(Map<String, Object> parameters) {
-                        Map<String, Object> environment = new HashMap<>();
-                        Object applicationSecurityGroups = parameters.get(APPLICATION_SECURITY_GROUPS);
-                        if (applicationSecurityGroups instanceof List) {
-                            environment.put(APPLICATION_SECURITY_GROUPS, String.join(",", (List) applicationSecurityGroups));
-                        }
-                        return environment;
-                    }
-                }
-                """,
-                  """
                   import java.util.HashMap;
                   import java.util.List;
                   import java.util.Map;
- 
+                  
                   public class ApplicationSecurityGroupsParameterHelper {
-                    
                       static final String APPLICATION_SECURITY_GROUPS = "application-security-groups";
-                    
+                      public Map<String, Object> transformGatewayParameters(Map<String, Object> parameters) {
+                          Map<String, Object> environment = new HashMap<>();
+                          Object applicationSecurityGroups = parameters.get(APPLICATION_SECURITY_GROUPS);
+                          if (applicationSecurityGroups instanceof List) {
+                              environment.put(APPLICATION_SECURITY_GROUPS, String.join(",", (List) applicationSecurityGroups));
+                          }
+                          return environment;
+                      }
+                  }
+                  """,
+                """
+                  import java.util.HashMap;
+                  import java.util.List;
+                  import java.util.Map;
+                  
+                  public class ApplicationSecurityGroupsParameterHelper {
+                      static final String APPLICATION_SECURITY_GROUPS = "application-security-groups";
                       public Map<String, Object> transformGatewayParameters(Map<String, Object> parameters) {
                           Map<String, Object> environment = new HashMap<>();
                           Object applicationSecurityGroups = parameters.get(APPLICATION_SECURITY_GROUPS);

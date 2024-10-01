@@ -33,10 +33,10 @@ import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
@@ -171,6 +171,9 @@ public class InstanceOfPatternMatch extends Recipe {
         public void registerInstanceOf(J.InstanceOf instanceOf, Set<J> contexts) {
             Expression expression = instanceOf.getExpression();
             JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
+            if (type == null) {
+                return;
+            }
 
             Optional<ExpressionAndType> existing = instanceOfs.keySet().stream()
                     .filter(k -> TypeUtils.isAssignableTo(type, k.getType()) &&
@@ -200,8 +203,9 @@ public class InstanceOfPatternMatch extends Recipe {
                     if (validContexts.contains(next)) {
                         if (isAcceptableTypeCast(typeCast) && isTheSameAsOtherTypeCasts(typeCast, instanceOf)) {
                             if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
-                                    !variablesToDelete.containsKey(instanceOf)) {
-                                variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(), parent.firstEnclosing(J.VariableDeclarations.class).getTypeExpression()));
+                                !variablesToDelete.containsKey(instanceOf)) {
+                                variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
+                                        requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class).getTypeExpression())));
                             } else {
                                 replacements.put(typeCast, instanceOf);
                             }
@@ -224,7 +228,7 @@ public class InstanceOfPatternMatch extends Recipe {
         private boolean isAcceptableTypeCast(J.TypeCast typeCast) {
             TypeTree typeTree = typeCast.getClazz().getTree();
             if (typeTree instanceof J.ParameterizedType) {
-                return ((J.ParameterizedType) typeTree).getTypeParameters().stream().allMatch(J.Wildcard.class::isInstance);
+                return requireNonNull(((J.ParameterizedType) typeTree).getTypeParameters()).stream().allMatch(J.Wildcard.class::isInstance);
             }
             return true;
         }
@@ -247,7 +251,7 @@ public class InstanceOfPatternMatch extends Recipe {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
             }
-            @Nullable JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
+            JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             String name = patternVariableName(instanceOf, cursor);
             J.InstanceOf result = instanceOf.withPattern(new J.Identifier(
                     randomId(),
@@ -260,8 +264,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
             J currentTypeTree = instanceOf.getClazz();
             TypeTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
-            // If type tree from typa cast is not parameterized then NVM. Instance of should already have proper type
-            if (typeCastTypeTree != null && typeCastTypeTree instanceof J.ParameterizedType) {
+            // If type tree from type cast is not parameterized then NVM. Instance of should already have proper type
+            if (typeCastTypeTree instanceof J.ParameterizedType) {
                 J.ParameterizedType parameterizedType = (J.ParameterizedType) typeCastTypeTree;
                 result = result.withClazz(parameterizedType.withId(Tree.randomId()).withPrefix(currentTypeTree.getPrefix()));
             }
