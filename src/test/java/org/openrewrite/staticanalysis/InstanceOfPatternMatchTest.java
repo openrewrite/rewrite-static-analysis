@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
-
+import static org.junit.jupiter.api.Assertions.*;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 
@@ -37,6 +37,44 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @SuppressWarnings({"ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable"})
     @Nested
     class If {
+        //Run the Java 17 upgrade recipe on this code to migrate from Java 8 to Java 17.
+        //After applying the upgrade, the code will be modified, which leads to compilation errors when building with JDK 17
+        //Solution: Revert back to original code
+        @Test
+        void CompilationFailuresOnUpgradeToJAVA17() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Java17UpgradeCompilationTest {
+                        void testWithoutUpgrade() {
+                            Object obj1 = "abc";
+                            Object obj2 = "def";
+                            if (obj1.getClass().equals(obj2.getClass()) &&
+                                    obj1 instanceof Comparable) {
+                                int diff = ((Comparable)obj1).compareTo(obj2);
+                                assertEquals(-3, diff); 
+                            }
+                        }
+                    }
+                  """,
+                """
+                  public class Java17UpgradeCompilationTest {
+                        void testWithoutUpgrade() {
+                            Object obj1 = "abc";
+                            Object obj2 = "def";
+                            if (obj1.getClass().equals(obj2.getClass()) &&
+                                    obj1 instanceof Comparable<?> comparable) {
+                                int diff = comparable.compareTo(obj2);
+                                assertEquals(-3, diff); 
+                            }
+                        }
+                    }
+                  """
+              )
+            );
+        }
+
         @Test
         void ifConditionWithoutPattern() {
             rewriteRun(
