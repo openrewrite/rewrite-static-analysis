@@ -82,6 +82,31 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void catchShouldBePreservedBecauseLessSpecificCatchFollowsWithMultiCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (IOException e) {
+                          throw e;
+                      } catch(Exception | Throwable t) {
+                          t.printStackTrace();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void tryCanBeRemoved() {
