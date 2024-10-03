@@ -90,7 +90,12 @@ public class CatchClauseOnlyRethrows extends Recipe {
             private boolean hasWiderExceptionType(J.Try.Catch aCatch, J.Try.Catch next) {
                 if (next.getParameter().getType() instanceof JavaType.MultiCatch) {
                     JavaType.MultiCatch multiCatch = (JavaType.MultiCatch) next.getParameter().getType();
-                    return multiCatch.getThrowableTypes().stream().anyMatch(alt -> TypeUtils.isAssignableTo(alt, aCatch.getParameter().getType()));
+                    for (JavaType throwableType : multiCatch.getThrowableTypes()) {
+                        if (TypeUtils.isAssignableTo(throwableType, aCatch.getParameter().getType())) {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
                 return TypeUtils.isAssignableTo(next.getParameter().getType(), aCatch.getParameter().getType());
             }
