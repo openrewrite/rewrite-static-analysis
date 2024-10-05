@@ -77,7 +77,10 @@ public class CatchClauseOnlyRethrows extends Recipe {
                         // keep this one
                         for (int j = i + 1; j < tryable.getCatches().size(); j++) {
                             J.Try.Catch next = tryable.getCatches().get(j);
-                            if (!onlyRethrows(next) && hasWiderExceptionType(aCatch, next)) {
+                            if (hasWiderExceptionType(aCatch, next)) {
+                                if (onlyRethrows(next)) {
+                                    return null;
+                                }
                                 return aCatch;
                             }
                         }
