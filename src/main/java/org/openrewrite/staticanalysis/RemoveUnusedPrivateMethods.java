@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.NoMissingTypes;
+import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
@@ -123,6 +124,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                         }
                     }
 
+                    doAfterVisit(new RemoveUnusedImports().getVisitor());
                     //noinspection ConstantConditions
                     return null;
                 }
