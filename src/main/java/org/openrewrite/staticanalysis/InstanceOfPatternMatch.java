@@ -300,9 +300,9 @@ public class InstanceOfPatternMatch extends Recipe {
             VariableNameStrategy strategy;
             if (root instanceof J.If) {
                 VariableAndTypeTree variableData = variablesToDelete.get(instanceOf);
-                strategy = variableData != null
-                        ? VariableNameStrategy.exact(variableData.getVariable().getSimpleName())
-                        : VariableNameStrategy.normal(contextScopes.get(instanceOf));
+                strategy = variableData != null ?
+                        VariableNameStrategy.exact(variableData.getVariable().getSimpleName()) :
+                        VariableNameStrategy.normal(contextScopes.get(instanceOf));
             } else {
                 strategy = VariableNameStrategy.short_();
             }
