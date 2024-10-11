@@ -56,7 +56,7 @@ public class UseCollectionInterfaces extends Recipe {
         return Duration.ofMinutes(10);
     }
 
-    public static Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
+    public static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
 
     static {
         rspecRulesReplaceTypeMap.put("java.util.ArrayDeque", "java.util.Deque");
