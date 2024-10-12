@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -31,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 public class InlineVariable extends Recipe {
@@ -64,34 +66,38 @@ public class InlineVariable extends Recipe {
                 List<Statement> statements = bl.getStatements();
                 if (statements.size() > 1) {
                     String identReturned = identReturned(statements);
-                    if (identReturned != null) {
+                    if (nonNull(identReturned)) {
                         if (statements.get(statements.size() - 2) instanceof J.VariableDeclarations) {
                             J.VariableDeclarations varDec = (J.VariableDeclarations) statements.get(statements.size() - 2);
                             J.VariableDeclarations.NamedVariable identDefinition = varDec.getVariables().get(0);
                             if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
-                                bl = bl.withStatements(ListUtils.map(statements, (i, statement) -> {
-                                    if (i == statements.size() - 2) {
-                                        return null;
-                                    } else if (i == statements.size() - 1) {
-                                        if (statement instanceof J.Return) {
-                                            J.Return return_ = (J.Return) statement;
-                                            return return_.withExpression(requireNonNull(identDefinition.getInitializer())
-                                                            .withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
-                                                    .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), return_.getComments())));
-                                        } else if (statement instanceof J.Throw) {
-                                            J.Throw thrown = (J.Throw) statement;
-                                            return thrown.withException(requireNonNull(identDefinition.getInitializer())
-                                                            .withPrefix(requireNonNull(thrown.getException()).getPrefix()))
-                                                    .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), thrown.getComments())));
-                                        }
-                                    }
-                                    return statement;
-                                }));
+                                return getBlock(bl, statements, identDefinition, varDec);
                             }
                         }
                     }
                 }
                 return bl;
+            }
+
+            private J.@NotNull Block getBlock(final J.Block bl, final List<Statement> statements, final J.VariableDeclarations.NamedVariable identDefinition, final J.VariableDeclarations varDec) {
+                return bl.withStatements(ListUtils.map(statements, (i, statement) -> {
+                    if (i == statements.size() - 2) {
+                        return null;
+                    } else if (i == statements.size() - 1) {
+                        if (statement instanceof J.Return) {
+                            J.Return return_ = (J.Return) statement;
+                            return return_.withExpression(requireNonNull(identDefinition.getInitializer())
+                                            .withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
+                                    .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), return_.getComments())));
+                        } else if (statement instanceof J.Throw) {
+                            J.Throw thrown = (J.Throw) statement;
+                            return thrown.withException(requireNonNull(identDefinition.getInitializer())
+                                            .withPrefix(requireNonNull(thrown.getException()).getPrefix()))
+                                    .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), thrown.getComments())));
+                        }
+                    }
+                    return statement;
+                }));
             }
 
             private @Nullable String identReturned(List<Statement> stats) {
