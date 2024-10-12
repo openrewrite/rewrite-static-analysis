@@ -88,7 +88,7 @@ public class InlineVariable extends Recipe {
                 return replaceStatements(bl, statements, identDefinition, varDec);
             }
         }
-        return null;
+        return null; // no block found
     }
 
     private static J.@NotNull Block replaceStatements(J.Block bl, List<Statement> statements,
@@ -122,7 +122,7 @@ public class InlineVariable extends Recipe {
                         throwStmt.getComments())));
     }
 
-    private static String identReturned(Statement lastStatement) {
+    private static @Nullable String identReturned(Statement lastStatement) {
         return (lastStatement instanceof Return)
                 ? extractIdentifierFromReturn((Return) lastStatement)
                 : (lastStatement instanceof Throw)
@@ -130,13 +130,13 @@ public class InlineVariable extends Recipe {
                 : null;
     }
 
-    private static String extractIdentifierFromThrow(final Throw lastStatement) {
+    private static @Nullable String extractIdentifierFromThrow(final Throw lastStatement) {
         return (lastStatement.getException() instanceof Identifier)
                 ? ((Identifier) lastStatement.getException()).getSimpleName()
                 : null;
     }
 
-    private static String extractIdentifierFromReturn(final Return lastStatement) {
+    private static @Nullable String extractIdentifierFromReturn(final Return lastStatement) {
         Expression expression = lastStatement.getExpression();
         return (expression instanceof Identifier && !(expression.getType() instanceof JavaType.Array))
                 ? ((Identifier) expression).getSimpleName()
