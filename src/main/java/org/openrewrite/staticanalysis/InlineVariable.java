@@ -23,11 +23,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.J.Identifier;
-import org.openrewrite.java.tree.J.Return;
-import org.openrewrite.java.tree.J.Throw;
-import org.openrewrite.java.tree.J.VariableDeclarations;
+import org.openrewrite.java.tree.J.*;
 import org.openrewrite.java.tree.J.VariableDeclarations.NamedVariable;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
@@ -68,8 +64,8 @@ public class InlineVariable extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-                J.Block superBlock = super.visitBlock(block, ctx);
+            public Block visitBlock(Block block, ExecutionContext ctx) {
+                Block superBlock = super.visitBlock(block, ctx);
                 List<Statement> statements = superBlock.getStatements();
                 if (statements.size() > 1) {
                     return requireNonNull(defaultIfNull(getBlock(statements, superBlock), superBlock));
@@ -79,20 +75,19 @@ public class InlineVariable extends Recipe {
         };
     }
 
-    private static J.@Nullable Block getBlock(List<Statement> statements, J.Block bl) {
+    private static @Nullable Block getBlock(List<Statement> statements, Block bl) {
         if (statements.get(statements.size() - 2) instanceof VariableDeclarations) {
             VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
             NamedVariable identDefinition = varDec.getVariables().get(0);
-            String identReturned = identReturned(statements.get(statements.size() - 1));
-            if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
+            if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned(statements.get(statements.size() - 1)))) {
                 return replaceStatements(bl, statements, identDefinition, varDec);
             }
         }
         return null; // no block found
     }
 
-    private static J.@NotNull Block replaceStatements(J.Block bl, List<Statement> statements,
-                                                      NamedVariable identDefinition, VariableDeclarations varDec) {
+    private static @NotNull Block replaceStatements(Block bl, List<Statement> statements,
+                                                    NamedVariable identDefinition, VariableDeclarations varDec) {
         return bl.withStatements(map(statements, (i, statement) -> {
             if (i == statements.size() - 2) return null; // Remove the variable declaration
             if (i == statements.size() - 1) { // Last statement (return or throw)
