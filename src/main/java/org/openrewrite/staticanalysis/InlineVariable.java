@@ -20,7 +20,6 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J.*;
@@ -36,6 +35,7 @@ import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
+import static org.openrewrite.internal.ListUtils.concatAll;
 import static org.openrewrite.internal.ListUtils.map;
 
 public class InlineVariable extends Recipe {
@@ -83,33 +83,32 @@ public class InlineVariable extends Recipe {
                 return replaceStatements(bl, statements, identDefinition, varDec);
             }
         }
-        return null; // no block found
+        return null; // no found
     }
 
     private static @NotNull Block replaceStatements(Block bl, List<Statement> statements,
                                                     NamedVariable identDefinition, VariableDeclarations varDec) {
         return bl.withStatements(map(statements, (i, statement) -> i == statements.size() - 2 ? null :
                 i == statements.size() - 1 ? statement instanceof Return
-                ? updateReturnStatement((Return) statement, identDefinition, varDec)
-                : statement instanceof Throw
-                ? updateThrowStatement((Throw) statement, identDefinition, varDec)
-                : statement : statement));
+                        ? updateReturnStatement((Return) statement, identDefinition, varDec)
+                        : statement instanceof Throw
+                        ? updateThrowStatement((Throw) statement, identDefinition, varDec)
+                        : statement : statement));
     }
 
     private static Return updateReturnStatement(Return returnStmt, NamedVariable identDefinition,
                                                 VariableDeclarations varDec) {
-        return returnStmt.withExpression(requireNonNull(identDefinition.getInitializer())
+        return returnStmt
+                .withExpression(requireNonNull(identDefinition.getInitializer())
                         .withPrefix(requireNonNull(returnStmt.getExpression()).getPrefix()))
-                .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(),
-                        returnStmt.getComments())));
+                .withPrefix(varDec.getPrefix().withComments(concatAll(varDec.getComments(), returnStmt.getComments())));
     }
 
     private static Throw updateThrowStatement(Throw throwStmt, NamedVariable identDefinition,
                                               VariableDeclarations varDec) {
         return throwStmt.withException(requireNonNull(identDefinition.getInitializer())
                         .withPrefix(requireNonNull(throwStmt.getException()).getPrefix()))
-                .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(),
-                        throwStmt.getComments())));
+                .withPrefix(varDec.getPrefix().withComments(concatAll(varDec.getComments(), throwStmt.getComments())));
     }
 
     private static @Nullable String identReturned(Statement lastStatement) {
