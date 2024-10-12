@@ -38,8 +38,8 @@ import java.util.Set;
 
 import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.openrewrite.internal.ListUtils.map;
 
 public class InlineVariable extends Recipe {
@@ -69,25 +69,38 @@ public class InlineVariable extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-                J.Block bl = super.visitBlock(block, ctx);
-                List<Statement> statements = bl.getStatements();
+                J.Block superBlock = super.visitBlock(block, ctx);
+                List<Statement> statements = superBlock.getStatements();
                 if (statements.size() > 1) {
-                    String identReturned = identReturned(statements.get(statements.size() - 1));
-                    if (nonNull(identReturned) && statements.get(statements.size() - 2) instanceof VariableDeclarations) {
-                        VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
-                        NamedVariable identDefinition = varDec.getVariables().get(0);
-                        if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
-                            return getBlock(bl, statements, identDefinition, varDec);
-                        }
-                    }
+                    return requireNonNull(defaultIfNull(
+                            getBlock(requireNonNull(identReturned(statements.get(statements.size() - 1))),
+                                    statements,
+                                    superBlock),
+                            superBlock));
                 }
-                return bl;
+                return superBlock;
             }
         };
     }
 
-    private J.@NotNull Block getBlock(final J.Block bl, final List<Statement> statements,
-                                      final NamedVariable identDefinition, final VariableDeclarations varDec) {
+    private static J.@Nullable Block getBlock(final String identReturned,
+                                              final List<Statement> statements,
+                                              final J.Block bl) {
+        if (statements.get(statements.size() - 2) instanceof VariableDeclarations) {
+            VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
+            NamedVariable identDefinition = varDec.getVariables().get(0);
+            if (varDec.getLeadingAnnotations().isEmpty()
+                    && identDefinition.getSimpleName().equals(identReturned)) {
+                return getBlock(bl, statements, identDefinition, varDec);
+            }
+        }
+        return null;
+    }
+
+    private static J.@NotNull Block getBlock(final J.Block bl,
+                                             final List<Statement> statements,
+                                             final NamedVariable identDefinition,
+                                             final VariableDeclarations varDec) {
         return bl.withStatements(map(statements, (i, statement) -> {
             if (i == statements.size() - 2) {
                 return null;
