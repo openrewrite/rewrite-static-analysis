@@ -72,7 +72,7 @@ public class InlineVariable extends Recipe {
                 J.Block bl = super.visitBlock(block, ctx);
                 List<Statement> statements = bl.getStatements();
                 if (statements.size() > 1) {
-                    String identReturned = identReturned(statements);
+                    String identReturned = identReturned(statements.get(statements.size() - 1));
                     if (nonNull(identReturned) && statements.get(statements.size() - 2) instanceof VariableDeclarations) {
                         VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
                         NamedVariable identDefinition = varDec.getVariables().get(0);
@@ -110,29 +110,26 @@ public class InlineVariable extends Recipe {
         }));
     }
 
-    private @Nullable String identReturned(List<Statement> stats) {
-        Statement lastStatement = stats.get(stats.size() - 1);
-        if (lastStatement instanceof Return) {
-            return Return((Return) lastStatement);
-        } else if (lastStatement instanceof Throw) {
-            return Throw((Throw) lastStatement);
-        }
-        return null;
+    private @Nullable String identReturned(Statement lastStatement) {
+        return (lastStatement instanceof Return)
+                ? Return((Return) lastStatement)
+                : (lastStatement instanceof Throw)
+                ? Throw((Throw) lastStatement)
+                : null;
     }
 
+
     private @org.jetbrains.annotations.Nullable String Throw(final Throw lastStatement) {
-        if (lastStatement.getException() instanceof Identifier) {
-            return ((Identifier) lastStatement.getException()).getSimpleName();
-        }
-        return null;
+        return (lastStatement.getException() instanceof Identifier)
+                ? ((Identifier) lastStatement.getException()).getSimpleName()
+                : null;
     }
 
     private @org.jetbrains.annotations.Nullable String Return(final Return lastStatement) {
         Expression expression = lastStatement.getExpression();
-        if (expression instanceof Identifier &&
-                !(expression.getType() instanceof JavaType.Array)) {
-            return ((Identifier) expression).getSimpleName();
-        }
-        return null;
+        return (expression instanceof Identifier && !(expression.getType() instanceof JavaType.Array))
+                ? ((Identifier) expression).getSimpleName()
+                : null;
     }
+
 }
