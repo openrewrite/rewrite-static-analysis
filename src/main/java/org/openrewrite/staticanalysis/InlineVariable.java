@@ -3,7 +3,7 @@
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * you may obtain a copy of the License at
  * <p>
  * https://www.apache.org/licenses/LICENSE-2.0
  * <p>
@@ -72,77 +72,74 @@ public class InlineVariable extends Recipe {
                 J.Block superBlock = super.visitBlock(block, ctx);
                 List<Statement> statements = superBlock.getStatements();
                 if (statements.size() > 1) {
-                    return requireNonNull(defaultIfNull(
-                            getBlock(requireNonNull(identReturned(statements.get(statements.size() - 1))),
-                                    statements,
-                                    superBlock),
-                            superBlock));
+                    return requireNonNull(defaultIfNull(getBlock(statements, superBlock), superBlock));
                 }
                 return superBlock;
             }
         };
     }
 
-    private static J.@Nullable Block getBlock(final String identReturned,
-                                              final List<Statement> statements,
-                                              final J.Block bl) {
+    private static J.@Nullable Block getBlock(List<Statement> statements, J.Block bl) {
         if (statements.get(statements.size() - 2) instanceof VariableDeclarations) {
             VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
             NamedVariable identDefinition = varDec.getVariables().get(0);
-            if (varDec.getLeadingAnnotations().isEmpty()
-                    && identDefinition.getSimpleName().equals(identReturned)) {
-                return getBlock(bl, statements, identDefinition, varDec);
+            String identReturned = identReturned(statements.get(statements.size() - 1));
+            if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
+                return replaceStatements(bl, statements, identDefinition, varDec);
             }
         }
         return null;
     }
 
-    private static J.@NotNull Block getBlock(final J.Block bl,
-                                             final List<Statement> statements,
-                                             final NamedVariable identDefinition,
-                                             final VariableDeclarations varDec) {
+    private static J.@NotNull Block replaceStatements(J.Block bl, List<Statement> statements,
+                                                      NamedVariable identDefinition, VariableDeclarations varDec) {
         return bl.withStatements(map(statements, (i, statement) -> {
-            if (i == statements.size() - 2) {
-                return null;
-            } else if (i == statements.size() - 1) {
-                if (statement instanceof Return) {
-                    Return return_ = (Return) statement;
-                    return return_.withExpression(requireNonNull(identDefinition.getInitializer())
-                                    .withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
-                            .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(),
-                                    return_.getComments())));
-                } else if (statement instanceof Throw) {
-                    Throw thrown = (Throw) statement;
-                    return thrown.withException(requireNonNull(identDefinition.getInitializer())
-                                    .withPrefix(requireNonNull(thrown.getException()).getPrefix()))
-                            .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(),
-                                    thrown.getComments())));
-                }
+            if (i == statements.size() - 2) return null; // Remove the variable declaration
+            if (i == statements.size() - 1) { // Last statement (return or throw)
+                return statement instanceof Return
+                        ? updateReturnStatement((Return) statement, identDefinition, varDec)
+                        : statement instanceof Throw
+                        ? updateThrowStatement((Throw) statement, identDefinition, varDec)
+                        : statement;
             }
             return statement;
         }));
     }
 
-    private @Nullable String identReturned(Statement lastStatement) {
+    private static Return updateReturnStatement(Return returnStmt, NamedVariable identDefinition,
+                                                VariableDeclarations varDec) {
+        return returnStmt.withExpression(requireNonNull(identDefinition.getInitializer())
+                        .withPrefix(requireNonNull(returnStmt.getExpression()).getPrefix()))
+                .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(),
+                        returnStmt.getComments())));
+    }
+
+    private static Throw updateThrowStatement(Throw throwStmt, NamedVariable identDefinition,
+                                              VariableDeclarations varDec) {
+        return throwStmt.withException(requireNonNull(identDefinition.getInitializer())
+                        .withPrefix(requireNonNull(throwStmt.getException()).getPrefix()))
+                .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(),
+                        throwStmt.getComments())));
+    }
+
+    private static String identReturned(Statement lastStatement) {
         return (lastStatement instanceof Return)
-                ? Return((Return) lastStatement)
+                ? extractIdentifierFromReturn((Return) lastStatement)
                 : (lastStatement instanceof Throw)
-                ? Throw((Throw) lastStatement)
+                ? extractIdentifierFromThrow((Throw) lastStatement)
                 : null;
     }
 
-
-    private @org.jetbrains.annotations.Nullable String Throw(final Throw lastStatement) {
+    private static String extractIdentifierFromThrow(final Throw lastStatement) {
         return (lastStatement.getException() instanceof Identifier)
                 ? ((Identifier) lastStatement.getException()).getSimpleName()
                 : null;
     }
 
-    private @org.jetbrains.annotations.Nullable String Return(final Return lastStatement) {
+    private static String extractIdentifierFromReturn(final Return lastStatement) {
         Expression expression = lastStatement.getExpression();
         return (expression instanceof Identifier && !(expression.getType() instanceof JavaType.Array))
                 ? ((Identifier) expression).getSimpleName()
                 : null;
     }
-
 }
