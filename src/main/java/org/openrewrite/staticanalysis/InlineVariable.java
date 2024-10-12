@@ -88,17 +88,12 @@ public class InlineVariable extends Recipe {
 
     private static @NotNull Block replaceStatements(Block bl, List<Statement> statements,
                                                     NamedVariable identDefinition, VariableDeclarations varDec) {
-        return bl.withStatements(map(statements, (i, statement) -> {
-            if (i == statements.size() - 2) return null; // Remove the variable declaration
-            if (i == statements.size() - 1) { // Last statement (return or throw)
-                return statement instanceof Return
-                        ? updateReturnStatement((Return) statement, identDefinition, varDec)
-                        : statement instanceof Throw
-                        ? updateThrowStatement((Throw) statement, identDefinition, varDec)
-                        : statement;
-            }
-            return statement;
-        }));
+        return bl.withStatements(map(statements, (i, statement) -> i == statements.size() - 2 ? null :
+                i == statements.size() - 1 ? statement instanceof Return
+                ? updateReturnStatement((Return) statement, identDefinition, varDec)
+                : statement instanceof Throw
+                ? updateThrowStatement((Throw) statement, identDefinition, varDec)
+                : statement : statement));
     }
 
     private static Return updateReturnStatement(Return returnStmt, NamedVariable identDefinition,
