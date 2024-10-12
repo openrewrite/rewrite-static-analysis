@@ -24,14 +24,17 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.J.VariableDeclarations;
+import org.openrewrite.java.tree.J.VariableDeclarations.NamedVariable;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.time.Duration.ofMinutes;
+import static java.util.Collections.singleton;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
@@ -49,12 +52,12 @@ public class InlineVariable extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1488");
+        return singleton("RSPEC-S1488");
     }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
+        return ofMinutes(2);
     }
 
     @Override
@@ -66,20 +69,19 @@ public class InlineVariable extends Recipe {
                 List<Statement> statements = bl.getStatements();
                 if (statements.size() > 1) {
                     String identReturned = identReturned(statements);
-                    if (nonNull(identReturned)) {
-                        if (statements.get(statements.size() - 2) instanceof J.VariableDeclarations) {
-                            J.VariableDeclarations varDec = (J.VariableDeclarations) statements.get(statements.size() - 2);
-                            J.VariableDeclarations.NamedVariable identDefinition = varDec.getVariables().get(0);
-                            if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
-                                return getBlock(bl, statements, identDefinition, varDec);
-                            }
+                    if (nonNull(identReturned) && statements.get(statements.size() - 2) instanceof VariableDeclarations) {
+                        VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
+                        NamedVariable identDefinition = varDec.getVariables().get(0);
+                        if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
+                            return getBlock(bl, statements, identDefinition, varDec);
                         }
                     }
                 }
                 return bl;
             }
 
-            private J.@NotNull Block getBlock(final J.Block bl, final List<Statement> statements, final J.VariableDeclarations.NamedVariable identDefinition, final J.VariableDeclarations varDec) {
+            private J.@NotNull Block getBlock(final J.Block bl, final List<Statement> statements,
+                                              final NamedVariable identDefinition, final VariableDeclarations varDec) {
                 return bl.withStatements(ListUtils.map(statements, (i, statement) -> {
                     if (i == statements.size() - 2) {
                         return null;
@@ -102,7 +104,7 @@ public class InlineVariable extends Recipe {
 
             private @Nullable String identReturned(List<Statement> stats) {
                 Statement lastStatement = stats.get(stats.size() - 1);
-                if (lastStatement instanceof J.Return ) {
+                if (lastStatement instanceof J.Return) {
                     return Return((J.Return) lastStatement);
                 } else if (lastStatement instanceof J.Throw) {
                     return Throw((J.Throw) lastStatement);
@@ -120,7 +122,7 @@ public class InlineVariable extends Recipe {
             private @org.jetbrains.annotations.Nullable String Return(final J.Return lastStatement) {
                 Expression expression = lastStatement.getExpression();
                 if (expression instanceof J.Identifier &&
-                    !(expression.getType() instanceof JavaType.Array)) {
+                        !(expression.getType() instanceof JavaType.Array)) {
                     return ((J.Identifier) expression).getSimpleName();
                 }
                 return null;
