@@ -102,18 +102,26 @@ public class InlineVariable extends Recipe {
 
             private @Nullable String identReturned(List<Statement> stats) {
                 Statement lastStatement = stats.get(stats.size() - 1);
-                if (lastStatement instanceof J.Return) {
-                    J.Return return_ = (J.Return) lastStatement;
-                    Expression expression = return_.getExpression();
-                    if (expression instanceof J.Identifier &&
-                        !(expression.getType() instanceof JavaType.Array)) {
-                        return ((J.Identifier) expression).getSimpleName();
-                    }
+                if (lastStatement instanceof J.Return ) {
+                    return Return((J.Return) lastStatement);
                 } else if (lastStatement instanceof J.Throw) {
-                    J.Throw thr = (J.Throw) lastStatement;
-                    if (thr.getException() instanceof J.Identifier) {
-                        return ((J.Identifier) thr.getException()).getSimpleName();
-                    }
+                    return Throw((J.Throw) lastStatement);
+                }
+                return null;
+            }
+
+            private @org.jetbrains.annotations.Nullable String Throw(final J.Throw lastStatement) {
+                if (lastStatement.getException() instanceof J.Identifier) {
+                    return ((J.Identifier) lastStatement.getException()).getSimpleName();
+                }
+                return null;
+            }
+
+            private @org.jetbrains.annotations.Nullable String Return(final J.Return lastStatement) {
+                Expression expression = lastStatement.getExpression();
+                if (expression instanceof J.Identifier &&
+                    !(expression.getType() instanceof JavaType.Array)) {
+                    return ((J.Identifier) expression).getSimpleName();
                 }
                 return null;
             }
