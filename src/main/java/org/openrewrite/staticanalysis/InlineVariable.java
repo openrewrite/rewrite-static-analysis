@@ -101,8 +101,7 @@ public class InlineVariable extends Recipe {
 
     private static Return updateReturnStatement(Return returnStmt, NamedVariable identDefinition,
                                                 VariableDeclarations varDec) {
-        return returnStmt
-                .withExpression(requireNonNull(identDefinition.getInitializer())
+        return returnStmt.withExpression(requireNonNull(identDefinition.getInitializer())
                         .withPrefix(requireNonNull(returnStmt.getExpression()).getPrefix()))
                 .withPrefix(varDec.getPrefix().withComments(concatAll(varDec.getComments(), returnStmt.getComments())));
     }
