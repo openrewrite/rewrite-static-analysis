@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
