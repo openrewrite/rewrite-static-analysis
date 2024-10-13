@@ -52,7 +52,7 @@ public class InlineVariable extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Inline Variable";
+        return "Inline variable";
     }
 
     @Override
