@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.collect.Iterables.isEmpty;
 import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
@@ -75,17 +76,18 @@ public class InlineVariable extends Recipe {
     }
 
     private static @Nullable Block getBlock(List<Statement> statements, Block bl) {
-        return statements.get(statements.size() - 2) instanceof VariableDeclarations ?
-                getVariableDeclarationsBlock(statements, bl) : null;
+        return statements.get(statements.size() - 2) instanceof VariableDeclarations
+                ? getVariableDeclarationsBlock(statements, bl)
+                : null;
     }
 
     private static @Nullable Block getVariableDeclarationsBlock(List<Statement> statements, Block bl) {
         VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
         NamedVariable identDefinition = varDec.getVariables().get(0);
-        if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned(statements.get(statements.size() - 1)))) {
-            return replaceStatements(bl, statements, identDefinition, varDec);
-        }
-        return null;
+        return isEmpty(varDec.getLeadingAnnotations())
+                && identDefinition.getSimpleName().equals(identReturned(statements.get(statements.size() - 1)))
+                ? replaceStatements(bl, statements, identDefinition, varDec)
+                : null;
     }
 
     private static Block replaceStatements(Block bl, List<Statement> statements,
