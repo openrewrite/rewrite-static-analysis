@@ -77,8 +77,7 @@ public class InlineVariable extends Recipe {
             public Block visitBlock(Block block, ExecutionContext ctx) {
                 Block superBlock = super.visitBlock(block, ctx);
                 List<Statement> statements = superBlock.getStatements();
-                // Only consider blocks with more than one statement for inlining.
-                if (statements.size() > 1) {
+                if (statements.size() > 1) { // Only consider blocks with more than one statement
                     return requireNonNull(defaultIfNull(getBlock(statements, superBlock), superBlock));
                 }
                 return superBlock;
