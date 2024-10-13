@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -26,6 +25,7 @@ import org.openrewrite.java.tree.J.VariableDeclarations.NamedVariable;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -84,7 +84,12 @@ public class InlineVariable extends Recipe {
     private static @Nullable Block getVariableDeclarationsBlock(List<Statement> statements,
                                                                 Block bl,
                                                                 VariableDeclarations varDec) {
-        NamedVariable identDefinition = varDec.getVariables().get(0);
+        return getVariableDeclarationsBlock(statements, bl, varDec, varDec.getVariables().get(0));
+    }
+
+    private static @Nullable Block getVariableDeclarationsBlock(List<Statement> statements, Block bl,
+                                                                VariableDeclarations varDec,
+                                                                NamedVariable identDefinition) {
         return isEmpty(varDec.getLeadingAnnotations())
                 && identDefinition.getSimpleName().equals(identReturned(statements.get(statements.size() - 1)))
                 ? replaceStatements(bl, statements, identDefinition, varDec)
@@ -117,20 +122,19 @@ public class InlineVariable extends Recipe {
 
     private static @Nullable String identReturned(Statement lastStatement) {
         return (lastStatement instanceof Return)
-                ? extractIdentifierFromReturn((Return) lastStatement)
+                ? extractIdentifierFromReturn(((Return) lastStatement).getExpression())
                 : (lastStatement instanceof Throw)
                 ? extractIdentifierFromThrow((Throw) lastStatement)
                 : null;
     }
 
-    private static @Nullable String extractIdentifierFromThrow(final Throw lastStatement) {
+    private static @Nullable String extractIdentifierFromThrow(Throw lastStatement) {
         return (lastStatement.getException() instanceof Identifier)
                 ? ((Identifier) lastStatement.getException()).getSimpleName()
                 : null;
     }
 
-    private static @Nullable String extractIdentifierFromReturn(final Return lastStatement) {
-        Expression expression = lastStatement.getExpression();
+    private static @Nullable String extractIdentifierFromReturn(@Nullable Expression expression) {
         return (expression instanceof Identifier && !(expression.getType() instanceof JavaType.Array))
                 ? ((Identifier) expression).getSimpleName()
                 : null;
