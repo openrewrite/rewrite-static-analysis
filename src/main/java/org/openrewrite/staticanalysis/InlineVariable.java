@@ -34,6 +34,7 @@ import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
+import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 import static org.openrewrite.internal.ListUtils.concatAll;
 import static org.openrewrite.internal.ListUtils.map;
 
@@ -80,13 +81,14 @@ public class InlineVariable extends Recipe {
                         (VariableDeclarations) statements.get(statements.size() - 2)) : null;
     }
 
-    private static @Nullable Block getVariableDeclarationsBlock(List<Statement> statements, Block bl,
-                                                                final VariableDeclarations varDec) {
+    private static @Nullable Block getVariableDeclarationsBlock(List<Statement> statements,
+                                                                Block bl,
+                                                                VariableDeclarations varDec) {
         NamedVariable identDefinition = varDec.getVariables().get(0);
-        if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned(statements.get(statements.size() - 1)))) {
-            return replaceStatements(bl, statements, identDefinition, varDec);
-        }
-        return null;
+        return isEmpty(varDec.getLeadingAnnotations())
+                && identDefinition.getSimpleName().equals(identReturned(statements.get(statements.size() - 1)))
+                ? replaceStatements(bl, statements, identDefinition, varDec)
+                : null;
     }
 
     private static Block replaceStatements(Block bl, List<Statement> statements,
