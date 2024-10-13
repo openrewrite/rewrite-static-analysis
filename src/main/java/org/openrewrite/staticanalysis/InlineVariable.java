@@ -76,11 +76,12 @@ public class InlineVariable extends Recipe {
 
     private static @Nullable Block getBlock(List<Statement> statements, Block bl) {
         return statements.get(statements.size() - 2) instanceof VariableDeclarations ?
-                getVariableDeclarationsBlock(statements, bl) : null;
+                getVariableDeclarationsBlock(statements, bl,
+                        (VariableDeclarations) statements.get(statements.size() - 2)) : null;
     }
 
-    private static @Nullable Block getVariableDeclarationsBlock(List<Statement> statements, Block bl) {
-        VariableDeclarations varDec = (VariableDeclarations) statements.get(statements.size() - 2);
+    private static @Nullable Block getVariableDeclarationsBlock(List<Statement> statements, Block bl,
+                                                                final VariableDeclarations varDec) {
         NamedVariable identDefinition = varDec.getVariables().get(0);
         if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned(statements.get(statements.size() - 1)))) {
             return replaceStatements(bl, statements, identDefinition, varDec);
