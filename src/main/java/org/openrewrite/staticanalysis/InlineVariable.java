@@ -34,7 +34,6 @@ import java.util.Set;
 import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.apache.commons.lang3.ObjectUtils.isEmpty;
 import static org.openrewrite.internal.ListUtils.concatAll;
 import static org.openrewrite.internal.ListUtils.map;
@@ -76,11 +75,7 @@ public class InlineVariable extends Recipe {
             @Override
             public Block visitBlock(Block block, ExecutionContext ctx) {
                 Block superBlock = super.visitBlock(block, ctx);
-                List<Statement> statements = superBlock.getStatements();
-                if (statements.size() > 1) { // Only consider blocks with more than one statement
-                    return requireNonNull(defaultIfNull(getBlock(statements, superBlock), superBlock));
-                }
-                return superBlock;
+                return requireNonNull(getBlock(superBlock.getStatements(), superBlock));
             }
         };
     }
@@ -95,10 +90,12 @@ public class InlineVariable extends Recipe {
      * @return The modified block with inlined variables, or null if conditions aren't met.
      */
     private static @Nullable Block getBlock(List<Statement> statements, Block bl) {
-        return statements.get(statements.size() - 2) instanceof VariableDeclarations ?
-                getVariableDeclarationsBlock(statements, bl,
-                        (VariableDeclarations) statements.get(statements.size() - 2)) : null;
+        return statements.size() > 1 && statements.get(statements.size() - 2) instanceof VariableDeclarations
+                ? getVariableDeclarationsBlock(statements, bl,
+                (VariableDeclarations) statements.get(statements.size() - 2))
+                : bl;
     }
+
 
     /**
      * Examines variable declarations to determine if they can be inlined.
