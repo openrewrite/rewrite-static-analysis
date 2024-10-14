@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 
 @Value
@@ -47,16 +48,17 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation methodInvocation = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-        if (methodInvocation == null || methodInvocation.getSelect() == null) {
+        if (isNull(methodInvocation.getSelect())) {
             return methodInvocation;
         }
-        return (!(methodInvocation.getSelect() instanceof J.Literal)
+        return !(methodInvocation.getSelect() instanceof J.Literal)
                 && methodInvocation.getArguments().get(0) instanceof J.Literal
                 && (EQUALS.matches(methodInvocation)
-                || (!style.getIgnoreEqualsIgnoreCase() && EQUALS_IGNORE_CASE.matches(methodInvocation))
+                || !style.getIgnoreEqualsIgnoreCase()
+                && EQUALS_IGNORE_CASE.matches(methodInvocation)
                 || COMPARE_TO.matches(methodInvocation)
                 || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
-                || CONTENT_EQUALS.matches(methodInvocation)))
+                || CONTENT_EQUALS.matches(methodInvocation))
                 ? visitMethodInvocation(methodInvocation)
                 : methodInvocation;
     }
