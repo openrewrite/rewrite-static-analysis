@@ -45,7 +45,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             val parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
                 val binary = (J.Binary) parent;
-                if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
+                if (binary.getLeft() instanceof J.Binary
+                        && binary.getOperator() == J.Binary.Type.And) {
                     val potentialNullCheck = (J.Binary) binary.getLeft();
                     if (isNullLiteral(potentialNullCheck.getLeft())
                             && matchesSelect(potentialNullCheck.getRight(), m.getSelect())
