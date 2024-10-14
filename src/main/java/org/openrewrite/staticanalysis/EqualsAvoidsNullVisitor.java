@@ -51,11 +51,11 @@ import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    MethodMatcher EQUALS = new MethodMatcher("java.lang.String equals(java.lang.Object)");
-    MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String equalsIgnoreCase(java.lang.String)");
-    MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String compareTo(java.lang.String)");
-    MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String compareToIgnoreCase(java.lang.String)");
-    MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String contentEquals(java.lang.CharSequence)");
+    MethodMatcher EQUALS = getMethodMatcher("equals(java.lang.Object)");
+    MethodMatcher EQUALS_IGNORE_CASE = getMethodMatcher("equalsIgnoreCase(java.lang.String)");
+    MethodMatcher COMPARE_TO = getMethodMatcher("compareTo(java.lang.String)");
+    MethodMatcher COMPARE_TO_IGNORE_CASE = getMethodMatcher("compareToIgnoreCase(java.lang.String)");
+    MethodMatcher CONTENT_EQUALS = getMethodMatcher("contentEquals(java.lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
@@ -64,7 +64,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         return getSuperIfSelectNull((J.MethodInvocation) super.visitMethodInvocation(method, p));
     }
 
-    private J getSuperIfSelectNull(final J.MethodInvocation methodInvocation) {
+    private J getSuperIfSelectNull(J.MethodInvocation methodInvocation) {
         return isNull(methodInvocation.getSelect()) ?
                 methodInvocation :
                 !(methodInvocation.getSelect() instanceof J.Literal)
@@ -126,6 +126,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private boolean matchesSelect(Expression expression, Expression select) {
         return expression.printTrimmed(getCursor()).replaceAll("\\s", "").equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
+    }
+
+    private static MethodMatcher getMethodMatcher(String method) {
+        return new MethodMatcher("java.lang.String " + method);
     }
 
     private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {
