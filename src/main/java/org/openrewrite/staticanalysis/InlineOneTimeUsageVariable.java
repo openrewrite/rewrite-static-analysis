@@ -57,7 +57,7 @@ public class InlineOneTimeUsageVariable extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block bl = super.visitBlock(block, ctx);
@@ -66,7 +66,8 @@ public class InlineOneTimeUsageVariable extends Recipe {
                     String identReturned = identReturned(statements);
                     if (identReturned != null) {
                         if (statements.get(statements.size() - 2) instanceof J.VariableDeclarations) {
-                            J.VariableDeclarations varDec = (J.VariableDeclarations) statements.get(statements.size() - 2);
+                            J.VariableDeclarations varDec =
+                                    (J.VariableDeclarations) statements.get(statements.size() - 2);
                             J.VariableDeclarations.NamedVariable identDefinition = varDec.getVariables().get(0);
                             if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
                                 bl = bl.withStatements(ListUtils.map(statements, (i, statement) -> {

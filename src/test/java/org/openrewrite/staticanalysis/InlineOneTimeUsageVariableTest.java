@@ -25,7 +25,7 @@ import static org.openrewrite.java.Assertions.java;
 class InlineOneTimeUsageVariableTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new InlineVariable());
+        spec.recipe(new InlineOneTimeUsageVariable());
     }
 
     @DocumentExample
@@ -36,49 +36,49 @@ class InlineOneTimeUsageVariableTest implements RewriteTest {
           //language=java
           java(
             """
-               class Test {
-                   int test() {
-                       int y = 0;
-                       int n = y;
-                       return n;
-                   }
-                   int test2() {
-                       int y = 0;
-                       int n = y;
-                       System.out.println(n);
-                       return n;
-                   }
-                   int test3() {
-                       String s = "0";
-                       String s2 = s;
-                       return s2;
-                   }
-                   int test4() {
-                       String s = "0";
-                       String s2 = s;
-                       String s3 = s2;
-                       return s3;
-                   }
-               }
-              \s""",
+              class Test {
+                  int test() {
+                      int y = 0;
+                      int n = y;
+                      return n;
+                  }
+                  int test2() {
+                      int y = 0;
+                      int n = y;
+                      System.out.println(n);
+                      return n;
+                  }
+                  int test3() {
+                      String s = "0";
+                      String s2 = s;
+                      return s2;
+                  }
+                  int test4() {
+                      String s = "0";
+                      String s2 = s;
+                      String s3 = s2;
+                      return s3;
+                  }
+              }
+              """,
             """
-               class Test {
-                   int test() {
-                       return 0;
-                   }
-                   int test2() {
-                       int n = 0;
-                       System.out.println(n);
-                       return n;
-                   }
-                   int test3() {
-                       return "0";
-                   }
-                   int test4() {
+              class Test {
+                  int test() {
+                      return 0;
+                  }
+                  int test2() {
+                      int n = 0;
+                      System.out.println(n);
+                      return n;
+                  }
+                  int test3() {
                       return "0";
-                   }
-               }
-              \s"""
+                  }
+                  int test4() {
+                     return "0";
+                  }
+              }
+              """
           )
         );
     }
