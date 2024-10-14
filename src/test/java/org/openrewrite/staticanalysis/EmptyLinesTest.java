@@ -25,7 +25,7 @@ import static org.openrewrite.java.Assertions.java;
 class EmptyLinesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new InlineOneTimeUsageVariable());
+        // TODO        spec.recipe(new EmptyLines());
     }
 
     @DocumentExample
