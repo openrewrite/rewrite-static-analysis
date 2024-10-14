@@ -83,8 +83,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
             import org.jspecify.annotations.Nullable;
             
             public class Test {
-                @Nullable
-                public String getString() {
+                public @Nullable String getString() {
                     return null;
                 }
             
