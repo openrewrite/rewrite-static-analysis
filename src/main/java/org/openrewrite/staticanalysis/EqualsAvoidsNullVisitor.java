@@ -48,7 +48,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        J.MethodInvocation methodInvocation = (J.MethodInvocation) super.visitMethodInvocation(method, p);
+        return getSuperIfSelectNull((J.MethodInvocation) super.visitMethodInvocation(method, p));
+    }
+
+    private @NotNull J getSuperIfSelectNull(final J.MethodInvocation methodInvocation) {
         return isNull(methodInvocation.getSelect()) ?
                 methodInvocation :
                 !(methodInvocation.getSelect() instanceof J.Literal)
