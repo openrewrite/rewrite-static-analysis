@@ -31,17 +31,15 @@ import static java.util.Collections.singletonList;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    private static final MethodMatcher EQUALS = new MethodMatcher("String equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(
-            "String equalsIgnoreCase(java.lang.String)");
-    private static final MethodMatcher BAR_EQUALS = new MethodMatcher("String bar(java.lang.String)");
-    private static final MethodMatcher BAR_EQUALS_IGNORE_CASE =
-            new MethodMatcher("String barIgnoreCase(java.lang.String)");
-    private static final MethodMatcher BAR_COMPARE_TO = new MethodMatcher("String barCompareTo(java.lang.String)");
-    private static final MethodMatcher BAR_COMPARE_TO_IGNORE_CASE =
-            new MethodMatcher("String barCompareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher BAR_CONTENT_EQUALS =
-            new MethodMatcher("String barContentEquals(java.lang.String)");
+    private static final String STRING_PREFIX = "String ";
+    private static final MethodMatcher EQUALS = new MethodMatcher(STRING_PREFIX + "equals(java.lang.Object)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(STRING_PREFIX + "equalsIgnoreCase(java" +
+            ".lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher(STRING_PREFIX + "compareTo(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(STRING_PREFIX
+            + "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(STRING_PREFIX
+            + "contentEquals(java.lang.String)");
 
     EqualsAvoidsNullStyle style;
 
@@ -59,11 +57,9 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         if (EQUALS.matches(m)
                 || !style.getIgnoreEqualsIgnoreCase()
                 && EQUALS_IGNORE_CASE.matches(m)
-                && BAR_EQUALS.matches(m)
-                && BAR_EQUALS_IGNORE_CASE.matches(m)
-                && BAR_COMPARE_TO.matches(m)
-                && BAR_COMPARE_TO_IGNORE_CASE.matches(m)
-                && BAR_CONTENT_EQUALS.matches(m)
+                && COMPARE_TO.matches(m)
+                && COMPARE_TO_IGNORE_CASE.matches(m)
+                && CONTENT_EQUALS.matches(m)
                 && m.getArguments().get(0) instanceof J.Literal
                 && !(m.getSelect() instanceof J.Literal)) {
             Tree parent = getCursor().getParentTreeCursor().getValue();
