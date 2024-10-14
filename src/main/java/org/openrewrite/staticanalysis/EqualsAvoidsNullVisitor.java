@@ -102,11 +102,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 m.getPrefix(),
                 Markers.EMPTY,
                 requireNonNull(m.getSelect()),
-                build(J.Binary.Type.Equal)
-                        .withBefore(SINGLE_SPACE),
-                m.getArguments()
-                        .get(0)
-                        .withPrefix(SINGLE_SPACE),
+                build(J.Binary.Type.Equal).withBefore(SINGLE_SPACE),
+                m.getArguments().get(0).withPrefix(SINGLE_SPACE),
                 JavaType.Primitive.Boolean);
     }
 
@@ -116,8 +113,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             J.Binary left = (J.Binary) binary.getLeft();
             if (isNullLiteral(left.getLeft())
                     && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
-                    || (isNullLiteral(left.getRight())
-                    && matchesSelect(left.getLeft(), requireNonNull(m.getSelect())))) {
+                    || isNullLiteral(left.getRight())
+                    && matchesSelect(left.getLeft(), requireNonNull(m.getSelect()))) {
                 doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
             }
         }
