@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.jetbrains.annotations.NotNull;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -65,14 +64,14 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         return getSuperIfSelectNull((J.MethodInvocation) super.visitMethodInvocation(method, p));
     }
 
-    private J getSuperIfSelectNull(J.MethodInvocation methodInvocation) {
-        return nonNull(methodInvocation.getSelect()) ?
-                !(methodInvocation.getSelect() instanceof J.Literal)
-                        && methodInvocation.getArguments().get(0) instanceof J.Literal
-                        && isStringComparisonMethod(methodInvocation)
-                        ? literalsFirstInComparisons(methodInvocation, getCursor().getParentTreeCursor().getValue())
-                        : methodInvocation :
-                methodInvocation;
+    private J getSuperIfSelectNull(J.MethodInvocation m) {
+        return nonNull(m.getSelect()) ?
+                !(m.getSelect() instanceof J.Literal)
+                        && m.getArguments().get(0) instanceof J.Literal
+                        && isStringComparisonMethod(m)
+                        ? literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue())
+                        : m :
+                m;
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
@@ -84,14 +83,14 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 || CONTENT_EQUALS.matches(methodInvocation);
     }
 
-    private Expression literalsFirstInComparisons(J.MethodInvocation m, P parent) {
+    private Expression literalsFirstInComparisonsBinaryCheck(J.MethodInvocation m, P parent) {
         if (parent instanceof J.Binary) {
             handleBinaryExpression(m, (J.Binary) parent);
         }
         return getExpression(m, m.getArguments().get(0));
     }
 
-    private static @NotNull Expression getExpression(J.MethodInvocation m, Expression firstArgument) {
+    private static Expression getExpression(J.MethodInvocation m, Expression firstArgument) {
         return firstArgument.getType() == JavaType.Primitive.Null ?
                 literalsFirstInComparisonsNull(m, firstArgument) :
                 literalsFirstInComparisons(m, firstArgument);
