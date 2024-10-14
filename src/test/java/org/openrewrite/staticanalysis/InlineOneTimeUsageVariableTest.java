@@ -37,23 +37,23 @@ class InlineOneTimeUsageVariableTest implements RewriteTest {
           java(
             """
               class Test {
-                  int test() {
+                  Object test() {
                       int y = 0;
                       int n = y;
                       return n;
                   }
-                  int test2() {
+                  Object test2() {
                       int y = 0;
                       int n = y;
                       System.out.println(n);
                       return n;
                   }
-                  int test3() {
+                  Object test3() {
                       String s = "0";
                       String s2 = s;
                       return s2;
                   }
-                  int test4() {
+                  Object test4() {
                       String s = "0";
                       String s2 = s;
                       String s3 = s2;
@@ -63,18 +63,18 @@ class InlineOneTimeUsageVariableTest implements RewriteTest {
               """,
             """
               class Test {
-                  int test() {
+                  Object test() {
                       return 0;
                   }
-                  int test2() {
+                  Object test2() {
                       int n = 0;
                       System.out.println(n);
                       return n;
                   }
-                  int test3() {
+                  Object test3() {
                       return "0";
                   }
-                  int test4() {
+                  Object test4() {
                      return "0";
                   }
               }
