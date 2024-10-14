@@ -31,7 +31,10 @@ import static java.util.Collections.singletonList;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private static final MethodMatcher STRING_EQUALS = new MethodMatcher("String equals(java.lang.Object)");
-    private static final MethodMatcher STRING_EQUALS_IGNORE_CASE = new MethodMatcher("String equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher STRING_EQUALS_IGNORE_CASE = new MethodMatcher(
+            "String equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher STRING_EQUALS_IGNORE_CASE = new MethodMatcher(
+            "String equalsIgnoreCase(java.lang.String)");
 
     EqualsAvoidsNullStyle style;
 
@@ -46,16 +49,19 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return m;
         }
 
-        if ((STRING_EQUALS.matches(m) || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && STRING_EQUALS_IGNORE_CASE.matches(m))) &&
-            m.getArguments().get(0) instanceof J.Literal &&
-            !(m.getSelect() instanceof J.Literal)) {
+        if (STRING_EQUALS.matches(m)
+                || !style.getIgnoreEqualsIgnoreCase()
+                && STRING_EQUALS_IGNORE_CASE.matches(m)
+                && m.getArguments().get(0) instanceof J.Literal
+                && !(m.getSelect() instanceof J.Literal)) {
             Tree parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
                 J.Binary binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
                     J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
-                    if ((isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), m.getSelect())) ||
-                        (isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect()))) {
+                    if ((isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
+                            m.getSelect())) ||
+                            (isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect()))) {
                         doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
                     }
                 }
