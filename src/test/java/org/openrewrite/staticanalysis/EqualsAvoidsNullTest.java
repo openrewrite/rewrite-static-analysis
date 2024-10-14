@@ -39,24 +39,24 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
                     public class A {
                         {
-                            String s = "literalsfirstincomparisons";
-                            System.out.println(s.compareTo("literalsfirstincomparisons"));
-                            System.out.println(s.compareToIgnoreCase("literalsfirstincomparisons"));
-                            System.out.println(s.contentEquals("literalsfirstincomparisons"));
-                            System.out.println(s.equals("literalsfirstincomparisons"));
-                            System.out.println(s.equalsIgnoreCase("literalsfirstincomparisons"));
+                            String s = "LiteralsFirstInComparisons";
+                            System.out.println(s.compareTo("LiteralsFirstInComparisons"));
+                            System.out.println(s.compareToIgnoreCase("LiteralsFirstInComparisons"));
+                            System.out.println(s.contentEquals("LiteralsFirstInComparisons"));
+                            System.out.println(s.equals("LiteralsFirstInComparisons"));
+                            System.out.println(s.equalsIgnoreCase("LiteralsFirstInComparisons"));
                         }
                     }
               """,
             """
               public class A {
                   {
-                      String s = "literalsfirstincomparisons";
-                      System.out.println("literalsfirstincomparisons".compareTo(s));
-                      System.out.println("literalsfirstincomparisons".compareToIgnoreCase(s));
-                      System.out.println("literalsfirstincomparisons".contentEquals(s));
-                      System.out.println("literalsfirstincomparisons".equals(s));
-                      System.out.println("literalsfirstincomparisons".equalsIgnoreCase(s));
+                      String s = "LiteralsFirstInComparisons";
+                      System.out.println("LiteralsFirstInComparisons".compareTo(s));
+                      System.out.println("LiteralsFirstInComparisons".compareToIgnoreCase(s));
+                      System.out.println("LiteralsFirstInComparisons".contentEquals(s));
+                      System.out.println("LiteralsFirstInComparisons".equals(s));
+                      System.out.println("LiteralsFirstInComparisons".equalsIgnoreCase(s));
                   }
               }
               """
@@ -73,8 +73,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if(s != null && s.equals("literalsfirstincomparisons")) {}
-                      if(null != s && s.equals("literalsfirstincomparisons")) {}
+                      if(s != null && s.equals("LiteralsFirstInComparisons")) {}
+                      if(null != s && s.equals("LiteralsFirstInComparisons")) {}
                   }
               }
               """,
@@ -82,8 +82,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if("literalsfirstincomparisons".equals(s)) {}
-                      if("literalsfirstincomparisons".equals(s)) {}
+                      if("LiteralsFirstInComparisons".equals(s)) {}
+                      if("LiteralsFirstInComparisons".equals(s)) {}
                   }
               }
               """
