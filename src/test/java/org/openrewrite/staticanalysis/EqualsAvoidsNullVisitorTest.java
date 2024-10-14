@@ -37,16 +37,16 @@ class EqualsAvoidsNullVisitorTest implements RewriteTest {
           //language=java
           java(
             """
-                    public class A {
-                        {
-                            String s = null;
-                            if(s.equals("test")) {}
-                            if(s.equalsIgnoreCase("test")) {}
-                            System.out.println(s.compareTo("test"));
-                            System.out.println(s.compareToIgnoreCase("test"));
-                            System.out.println(s.contentEquals("test"));
-                        }
-                    }
+              public class A {
+                  {
+                      String s = null;
+                      if(s.equals("test")) {}
+                      if(s.equalsIgnoreCase("test")) {}
+                      System.out.println(s.compareTo("test"));
+                      System.out.println(s.compareToIgnoreCase("test"));
+                      System.out.println(s.contentEquals("test"));
+                  }
+              }
               """,
             """
               public class A {
