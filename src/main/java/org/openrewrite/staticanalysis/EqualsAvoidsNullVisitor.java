@@ -28,7 +28,7 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
-import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.tree.JLeftPadded.build;
 import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
@@ -65,13 +65,13 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private J getSuperIfSelectNull(J.MethodInvocation methodInvocation) {
-        return isNull(methodInvocation.getSelect()) ?
-                methodInvocation :
+        return nonNull(methodInvocation.getSelect()) ?
                 !(methodInvocation.getSelect() instanceof J.Literal)
                         && methodInvocation.getArguments().get(0) instanceof J.Literal
                         && isStringComparisonMethod(methodInvocation)
                         ? handleNullSafetyCheck(methodInvocation, getCursor().getParentTreeCursor().getValue())
-                        : methodInvocation;
+                        : methodInvocation :
+                methodInvocation;
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
