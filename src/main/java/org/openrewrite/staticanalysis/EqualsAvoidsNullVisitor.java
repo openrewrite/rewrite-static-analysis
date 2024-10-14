@@ -1,23 +1,7 @@
-/*
- * Copyright 2020 the original author or authors.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -31,15 +15,14 @@ import static java.util.Collections.singletonList;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    private static final String STRING_PREFIX = "String ";
-    private static final MethodMatcher EQUALS = new MethodMatcher(STRING_PREFIX + "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(STRING_PREFIX + "equalsIgnoreCase(java" +
+    private static final MethodMatcher EQUALS = new MethodMatcher("java.lang.String equals(java.lang.Object)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String equalsIgnoreCase(java" +
             ".lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher(STRING_PREFIX + "compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(STRING_PREFIX
-            + "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(STRING_PREFIX
-            + "contentEquals(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String compareTo(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " +
+            "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String contentEquals(java.lang" +
+            ".CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
@@ -54,27 +37,33 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return m;
         }
 
-        if (EQUALS.matches(m)
-                && !style.getIgnoreEqualsIgnoreCase()
-                || EQUALS_IGNORE_CASE.matches(m)
-                || COMPARE_TO.matches(m)
-                || COMPARE_TO_IGNORE_CASE.matches(m)
-                || CONTENT_EQUALS.matches(m)
-                && m.getArguments().get(0) instanceof J.Literal
-                && !(m.getSelect() instanceof J.Literal)) {
+        boolean isLiteralArgument = m.getArguments().get(0) instanceof J.Literal;
+        boolean isNotLiteralSelect = !(m.getSelect() instanceof J.Literal);
+
+        // Perform the swap for equals, equalsIgnoreCase, compareTo, compareToIgnoreCase
+        if (isNotLiteralSelect && isLiteralArgument &&
+                (EQUALS.matches(m)
+                        || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && EQUALS_IGNORE_CASE.matches(m))
+                        || COMPARE_TO.matches(m)
+                        || COMPARE_TO_IGNORE_CASE.matches(m)
+                        // Exclude contentEquals() from swapping, as it's a safe call with a literal on the left.
+                        || (CONTENT_EQUALS.matches(m) && isNotLiteralSelect))) {
+
             Tree parent = getCursor().getParentTreeCursor().getValue();
+            // Check for null checks
             if (parent instanceof J.Binary) {
                 J.Binary binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
                     J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
                     if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
-                            m.getSelect()) ||
-                            (isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect()))) {
+                            m.getSelect())
+                            || isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect())) {
                         doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
                     }
                 }
             }
 
+            // If the argument is null, replace with a binary null check
             if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
                 return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
                         m.getSelect(),
@@ -82,6 +71,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
                         JavaType.Primitive.Boolean);
             } else {
+                // Swap the select and argument, maintaining prefixes
                 m = m.withSelect(m.getArguments().get(0).withPrefix(m.getSelect().getPrefix()))
                         .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
             }
@@ -102,14 +92,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         private final J.Binary scope;
         boolean done;
 
-        @Override
-        public @Nullable J visit(@Nullable Tree tree, P p) {
-            if (done) {
-                return (J) tree;
-            }
-            return super.visit(tree, p);
-        }
-
         public RemoveUnnecessaryNullCheck(J.Binary scope) {
             this.scope = scope;
         }
@@ -120,7 +102,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 done = true;
                 return binary.getRight().withPrefix(Space.EMPTY);
             }
-
             return super.visitBinary(binary, p);
         }
     }
