@@ -86,10 +86,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private Expression handleNullSafetyCheck(J.MethodInvocation m, P parent) {
         if (parent instanceof J.Binary) {
             handleBinaryExpression(m, (J.Binary) parent);
-        } else if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
-            return createEqualityBinaryExpression(m);
         }
-        return inlineNullCheck(m);
+        return m.getArguments().get(0).getType() == JavaType.Primitive.Null ?
+                createEqualityBinaryExpression(m) :
+                inlineNullCheck(m);
     }
 
     private static J.MethodInvocation inlineNullCheck(J.MethodInvocation m) {
