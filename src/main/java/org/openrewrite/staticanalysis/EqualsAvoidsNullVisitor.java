@@ -27,6 +27,20 @@ import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
 
+/**
+ * A visitor that identifies and addresses potential issues related to
+ * the use of {@code equals} methods in Java, particularly to avoid
+ * null pointer exceptions when comparing strings.
+ * <p>
+ * This visitor looks for method invocations of {@code equals},
+ * {@code equalsIgnoreCase}, {@code compareTo}, and {@code contentEquals},
+ * and performs optimizations to ensure null checks are correctly applied.
+ * <p>
+ * For more details, refer to the PMD best practices:
+ * <a href="https://pmd.github.io/pmd/pmd_rules_java_bestpractices.html#literalsfirstincomparisons">Literals First in Comparisons</a>
+ *
+ * @param <P> The type of the parent context used for visiting the AST.
+ */
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
