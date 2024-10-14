@@ -37,16 +37,16 @@ class EqualsAvoidsNullTest implements RewriteTest {
           //language=java
           java(
             """
-                    public class A {
-                        {
-                            String s = "LiteralsFirstInComparisons";
-                            System.out.println(s.compareTo("LiteralsFirstInComparisons"));
-                            System.out.println(s.compareToIgnoreCase("LiteralsFirstInComparisons"));
-                            System.out.println(s.contentEquals("LiteralsFirstInComparisons"));
-                            System.out.println(s.equals("LiteralsFirstInComparisons"));
-                            System.out.println(s.equalsIgnoreCase("LiteralsFirstInComparisons"));
-                        }
-                    }
+              public class A {
+                  {
+                      String s = "LiteralsFirstInComparisons";
+                      System.out.println(s.compareTo("LiteralsFirstInComparisons"));
+                      System.out.println(s.compareToIgnoreCase("LiteralsFirstInComparisons"));
+                      System.out.println(s.contentEquals("LiteralsFirstInComparisons"));
+                      System.out.println(s.equals("LiteralsFirstInComparisons"));
+                      System.out.println(s.equalsIgnoreCase("LiteralsFirstInComparisons"));
+                  }
+              }
               """,
             """
               public class A {
