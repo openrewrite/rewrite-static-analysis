@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions"})
-class EqualsAvoidsNullTest implements RewriteTest {
+class EqualsAvoidsNullVisitorTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
@@ -88,8 +88,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void nullLiteral() {
         rewriteRun(
-            //language=java
-            java("""
+          //language=java
+          java("""
               public class A {
                     void foo(String s) {
                         if(s.equals(null)) {
@@ -97,8 +97,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                     }
                 }
               """,
-              """
-
+            """
+              
               public class A {
                     void foo(String s) {
                         if(s == null) {
