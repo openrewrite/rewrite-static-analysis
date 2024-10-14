@@ -54,9 +54,14 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return m;
         }
 
-        if (EQUALS.matches(m) || !Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && EQUALS_IGNORE_CASE.matches(m) &&
-                m.getArguments().get(0) instanceof J.Literal &&
-                !(m.getSelect() instanceof J.Literal)) {
+        if (EQUALS.matches(m)
+                || !Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase())
+                && EQUALS_IGNORE_CASE.matches(m)
+                && COMPARE_TO.matches(m)
+                && COMPARE_TO_IGNORE_CASE.matches(m)
+                && CONTENT_EQUALS.matches(m)
+                && m.getArguments().get(0) instanceof J.Literal
+                && !(m.getSelect() instanceof J.Literal)) {
             Tree parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
                 J.Binary binary = (J.Binary) parent;
