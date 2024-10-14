@@ -40,13 +40,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
         boolean isLiteralArgument = m.getArguments().get(0) instanceof J.Literal;
         boolean isNotLiteralSelect = !(m.getSelect() instanceof J.Literal);
-        if (isNotLiteralSelect && isLiteralArgument &&
-                (EQUALS.matches(m)
-                        || (!style.getIgnoreEqualsIgnoreCase()
-                        && EQUALS_IGNORE_CASE.matches(m))
-                        || COMPARE_TO.matches(m)
-                        || COMPARE_TO_IGNORE_CASE.matches(m)
-                        || (CONTENT_EQUALS.matches(m) && isNotLiteralSelect))) {
+        if (isNotLiteralSelect && isLiteralArgument && (EQUALS.matches(m) || !style.getIgnoreEqualsIgnoreCase() && EQUALS_IGNORE_CASE.matches(m) || COMPARE_TO.matches(m) || COMPARE_TO_IGNORE_CASE.matches(m) || CONTENT_EQUALS.matches(m))) {
             val parent = getCursor().getParentTreeCursor().getValue();
             // Check for null checks
             if (parent instanceof J.Binary) {
