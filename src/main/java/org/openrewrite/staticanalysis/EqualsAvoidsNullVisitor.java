@@ -31,34 +31,33 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        val j = super.visitMethodInvocation(method, p);
-        if (!(j instanceof J.MethodInvocation)) {
-            return j;
+        val superVisitMethodInvocation = super.visitMethodInvocation(method, p);
+        if (superVisitMethodInvocation instanceof J.MethodInvocation methodInvocation) {
+            if (methodInvocation.getSelect() == null) {
+                return methodInvocation;
+            } else if (!(methodInvocation.getSelect() instanceof J.Literal)
+                    && methodInvocation.getArguments().get(0) instanceof J.Literal
+                    && EQUALS.matches(methodInvocation)
+                    || !style.getIgnoreEqualsIgnoreCase()
+                    && EQUALS_IGNORE_CASE.matches(methodInvocation)
+                    || COMPARE_TO.matches(methodInvocation)
+                    || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
+                    || CONTENT_EQUALS.matches(methodInvocation)) {
+                return visitMethodInvocation(methodInvocation);
+            }
+            return methodInvocation;
         }
-        val m = (J.MethodInvocation) j;
-        if (m.getSelect() == null) {
-            return m;
-        } else if (!(m.getSelect() instanceof J.Literal)
-                && m.getArguments().get(0) instanceof J.Literal
-                && EQUALS.matches(m)
-                || !style.getIgnoreEqualsIgnoreCase()
-                && EQUALS_IGNORE_CASE.matches(m)
-                || COMPARE_TO.matches(m)
-                || COMPARE_TO_IGNORE_CASE.matches(m)
-                || CONTENT_EQUALS.matches(m)) {
-            return visitMethodInvocation(m);
-        }
-        return m;
+        return superVisitMethodInvocation;
     }
 
     private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
         val parent = getCursor().getParentTreeCursor().getValue();
-        if (parent instanceof J.Binary) {
-            val binary = (J.Binary) parent;
-            if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
-                val left = (J.Binary) binary.getLeft();
-                if ((isNullLiteral(left.getLeft()) && matchesSelect(left.getRight(), requireNonNull(m.getSelect())))
-                        || (isNullLiteral(left.getRight()) && matchesSelect(left.getLeft(),
+        if (parent instanceof final J.Binary binary) {
+            if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof final J.Binary left) {
+                if (isNullLiteral(left.getLeft())
+                        && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
+                        || (isNullLiteral(left.getRight())
+                        && matchesSelect(left.getLeft(),
                         requireNonNull(m.getSelect())))) {
                     doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
                 }
