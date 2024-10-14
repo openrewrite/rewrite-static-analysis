@@ -16,14 +16,11 @@ import static java.util.Collections.singletonList;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    private static final MethodMatcher EQUALS = new MethodMatcher("java.lang.String equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String equalsIgnoreCase(java" +
-            ".lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " +
-            "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String contentEquals(java.lang" +
-            ".CharSequence)");
+    MethodMatcher EQUALS = new MethodMatcher("java.lang.String equals(java.lang.Object)");
+    MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String equalsIgnoreCase(java.lang.String)");
+    MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String compareTo(java.lang.String)");
+    MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String compareToIgnoreCase(java.lang.String)");
+    MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String contentEquals(java.lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
@@ -37,7 +34,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         if (m.getSelect() == null) {
             return m;
         }
-
         if (!(m.getSelect() instanceof J.Literal)
                 && m.getArguments().get(0) instanceof J.Literal
                 && (EQUALS.matches(m)
@@ -51,9 +47,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 val binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
                     val potentialNullCheck = (J.Binary) binary.getLeft();
-                    if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
-                            m.getSelect())
-                            || isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect())) {
+                    if (isNullLiteral(potentialNullCheck.getLeft())
+                            && matchesSelect(potentialNullCheck.getRight(), m.getSelect())
+                            || isNullLiteral(potentialNullCheck.getRight())
+                            && matchesSelect(potentialNullCheck.getLeft(), m.getSelect())) {
                         doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
                     }
                 }
