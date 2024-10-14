@@ -55,11 +55,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         }
 
         if (EQUALS.matches(m)
-                || !style.getIgnoreEqualsIgnoreCase()
-                && EQUALS_IGNORE_CASE.matches(m)
-                && COMPARE_TO.matches(m)
-                && COMPARE_TO_IGNORE_CASE.matches(m)
-                && CONTENT_EQUALS.matches(m)
+                && !style.getIgnoreEqualsIgnoreCase()
+                || EQUALS_IGNORE_CASE.matches(m)
+                || COMPARE_TO.matches(m)
+                || COMPARE_TO_IGNORE_CASE.matches(m)
+                || CONTENT_EQUALS.matches(m)
                 && m.getArguments().get(0) instanceof J.Literal
                 && !(m.getSelect() instanceof J.Literal)) {
             Tree parent = getCursor().getParentTreeCursor().getValue();

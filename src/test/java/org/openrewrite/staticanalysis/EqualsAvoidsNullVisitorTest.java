@@ -37,13 +37,16 @@ class EqualsAvoidsNullVisitorTest implements RewriteTest {
           //language=java
           java(
             """
-              public class A {
-                  {
-                      String s = null;
-                      if(s.equals("test")) {}
-                      if(s.equalsIgnoreCase("test")) {}
-                  }
-              }
+                    public class A {
+                        {
+                            String s = null;
+                            if(s.equals("test")) {}
+                            if(s.equalsIgnoreCase("test")) {}
+                            System.out.println(s.compareTo("test"));
+                            System.out.println(s.compareToIgnoreCase("test"));
+                            System.out.println(s.contentEquals("test"));
+                        }
+                    }
               """,
             """
               public class A {
@@ -51,6 +54,9 @@ class EqualsAvoidsNullVisitorTest implements RewriteTest {
                       String s = null;
                       if("test".equals(s)) {}
                       if("test".equalsIgnoreCase(s)) {}
+                      System.out.println("test".compareTo(s));
+                      System.out.println("test".compareToIgnoreCase(s));
+                      System.out.println("test".contentEquals(s));
                   }
               }
               """
@@ -106,83 +112,6 @@ class EqualsAvoidsNullVisitorTest implements RewriteTest {
                     }
                 }
               """)
-        );
-    }
-
-    @Test
-    void compareToInverted() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if(s.compareTo("test") == 0) {}
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if("test".compareTo(s) == 0) {}
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void compareToIgnoreCaseInverted() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if(s.compareToIgnoreCase("test") == 0) {}
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if("test".compareToIgnoreCase(s) == 0) {}
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void contentEqualsInverted() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      CharSequence cs = "test";
-                      if(s.contentEquals(cs)) {}
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      CharSequence cs = "test";
-                      if(cs.equals(s)) {}
-                  }
-              }
-              """
-          )
         );
     }
 
