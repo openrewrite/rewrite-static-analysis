@@ -30,11 +30,18 @@ import static java.util.Collections.singletonList;
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
-    private static final MethodMatcher STRING_EQUALS = new MethodMatcher("String equals(java.lang.Object)");
-    private static final MethodMatcher STRING_EQUALS_IGNORE_CASE = new MethodMatcher(
+
+    private static final MethodMatcher EQUALS = new MethodMatcher("String equals(java.lang.Object)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(
             "String equalsIgnoreCase(java.lang.String)");
-    private static final MethodMatcher STRING_EQUALS_IGNORE_CASE = new MethodMatcher(
-            "String equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher BAR_EQUALS = new MethodMatcher("String bar(java.lang.String)");
+    private static final MethodMatcher BAR_EQUALS_IGNORE_CASE =
+            new MethodMatcher("String barIgnoreCase(java.lang.String)");
+    private static final MethodMatcher BAR_COMPARE_TO = new MethodMatcher("String barCompareTo(java.lang.String)");
+    private static final MethodMatcher BAR_COMPARE_TO_IGNORE_CASE =
+            new MethodMatcher("String barCompareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher BAR_CONTENT_EQUALS =
+            new MethodMatcher("String barContentEquals(java.lang.String)");
 
     EqualsAvoidsNullStyle style;
 
@@ -49,9 +56,9 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return m;
         }
 
-        if (STRING_EQUALS.matches(m)
+        if (EQUALS.matches(m)
                 || !style.getIgnoreEqualsIgnoreCase()
-                && STRING_EQUALS_IGNORE_CASE.matches(m)
+                && EQUALS_IGNORE_CASE.matches(m)
                 && m.getArguments().get(0) instanceof J.Literal
                 && !(m.getSelect() instanceof J.Literal)) {
             Tree parent = getCursor().getParentTreeCursor().getValue();
