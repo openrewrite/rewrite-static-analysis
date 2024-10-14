@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -87,23 +88,27 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         if (parent instanceof J.Binary) {
             handleBinaryExpression(m, (J.Binary) parent);
         }
-        return m.getArguments().get(0).getType() == JavaType.Primitive.Null ?
-                literalsFirstInComparisonsNull(m) :
-                literalsFirstInComparisons(m);
+        return getExpression(m, m.getArguments().get(0));
     }
 
-    private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m) {
+    private static @NotNull Expression getExpression(J.MethodInvocation m, Expression firstArgument) {
+        return firstArgument.getType() == JavaType.Primitive.Null ?
+                literalsFirstInComparisonsNull(m, firstArgument) :
+                literalsFirstInComparisons(m, firstArgument);
+    }
+
+    private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {
         return new J.Binary(Tree.randomId(),
                 m.getPrefix(),
                 Markers.EMPTY,
                 requireNonNull(m.getSelect()),
                 build(J.Binary.Type.Equal).withBefore(SINGLE_SPACE),
-                m.getArguments().get(0).withPrefix(SINGLE_SPACE),
+                firstArgument.withPrefix(SINGLE_SPACE),
                 JavaType.Primitive.Boolean);
     }
 
-    private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m) {
-        return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
+    private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
+        return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
 
