@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -31,6 +32,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           .allSources(sourceSpec -> sourceSpec.markers(javaVersion(17)));
     }
 
+    @DocumentExample
     @Test
     void methodReturnsNullLiteral() {
         rewriteRun(
@@ -78,7 +80,8 @@ class AnnotateNullableMethodsTest implements RewriteTest {
         rewriteRun(
           spec -> spec.recipe(new AnnotateNullableMethods()),
           //language=java
-          java("""
+          java(
+                """
             import org.jspecify.annotations.Nullable;
             
             public class Test {
