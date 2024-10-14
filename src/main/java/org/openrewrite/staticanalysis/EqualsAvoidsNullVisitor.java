@@ -34,14 +34,11 @@ import static java.util.Objects.requireNonNull;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    private static final MethodMatcher EQUALS = new MethodMatcher("java.lang.String equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String equalsIgnoreCase(java" +
-            ".lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " +
-            "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String contentEquals(java.lang" +
-            ".CharSequence)");
+    MethodMatcher EQUALS = new MethodMatcher("java.lang.String equals(java.lang.Object)");
+    MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String equalsIgnoreCase(java.lang.String)");
+    MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String compareTo(java.lang.String)");
+    MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String compareToIgnoreCase(java.lang.String)");
+    MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String contentEquals(java.lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
@@ -61,7 +58,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         ? visitMethodInvocation(methodInvocation)
                         : methodInvocation;
     }
-
 
     private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
         val parent = getCursor().getParentTreeCursor().getValue();
@@ -97,7 +93,9 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {
+
         private final J.Binary scope;
+
         boolean done;
 
         public RemoveUnnecessaryNullCheck(J.Binary scope) {
