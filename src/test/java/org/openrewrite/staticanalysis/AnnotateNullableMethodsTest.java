@@ -27,9 +27,7 @@ import static org.openrewrite.java.Assertions.javaVersion;
 class AnnotateNullableMethodsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new AnnotateNullableMethods()).parser(JavaParser.fromJavaVersion()
-            .classpath("jspecify"))
-          .allSources(sourceSpec -> sourceSpec.markers(javaVersion(17)));
+        spec.recipe(new AnnotateNullableMethods()).parser(JavaParser.fromJavaVersion().classpath("jspecify"));
     }
 
     @DocumentExample

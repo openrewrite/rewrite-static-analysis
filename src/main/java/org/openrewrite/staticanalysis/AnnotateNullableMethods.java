@@ -33,11 +33,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnnotateNullableMethods extends Recipe {
-    private static final String NULLABLE_ANN_PACKAGE = "org.jspecify.annotations";
-    private static final String NULLABLE_ANN_CLASS = NULLABLE_ANN_PACKAGE + ".Nullable";
+    private static final String NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
     private static final AnnotationMatcher NULLABLE_ANNOTATION_MATCHER =
             new AnnotationMatcher("@" + NULLABLE_ANN_CLASS);
-    private static final String NULLABLE_ANN_ARTIFACT = "jspecify";
 
     @Override
     public String getDisplayName() {
@@ -62,7 +60,7 @@ public class AnnotateNullableMethods extends Recipe {
     private static class AnnotateNullableMethodsVisitor extends JavaIsoVisitor<ExecutionContext> {
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration md, ExecutionContext ctx) {
-            if (md.hasModifier(J.Modifier.Type.Private)) {
+            if (!md.hasModifier(J.Modifier.Type.Public)) {
                 return md;
             }
 
@@ -81,7 +79,7 @@ public class AnnotateNullableMethods extends Recipe {
                 maybeAddImport(NULLABLE_ANN_CLASS);
                 return JavaTemplate.builder("@Nullable")
                         .imports(NULLABLE_ANN_CLASS)
-                        .javaParser(JavaParser.fromJavaVersion().classpath(NULLABLE_ANN_ARTIFACT))
+                        .javaParser(JavaParser.fromJavaVersion().classpath("jspecify"))
                         .build()
                         .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
             }
