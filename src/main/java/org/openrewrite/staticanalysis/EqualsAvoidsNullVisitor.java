@@ -53,17 +53,17 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private J getSuperIfSelectNull(final J.MethodInvocation methodInvocation) {
         return isNull(methodInvocation.getSelect()) ?
                 methodInvocation :
-                !(methodInvocation.getSelect() instanceof J.Literal)
-                        && methodInvocation.getArguments().get(0) instanceof J.Literal
-                        && isStringComparisonMethod(methodInvocation)
-                        ? handleNullSafetyCheck(methodInvocation, getCursor().getParentTreeCursor().getValue())
-                        : methodInvocation;
-    }
-
-    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-        return EQUALS.matches(methodInvocation)
-                || !style.getIgnoreEqualsIgnoreCase()
-                && EQUALS_IGNORE_CASE.matches(methodInvocation)
+                !(methodInvocation.getSelect() instanceof J.Literal) &&
+                        methodInvocation.getArguments().get(0) instanceof J.Literal &&
+                        isStringComparisonMethod(methodInvocation) ?
+                        handleNullSafetyCheck(methodInvocation, getCursor().getParentTreeCursor().getValue()) :
+                        methodInvocation;
+        return EQUALS.matches(methodInvocation) ||
+                !style.getIgnoreEqualsIgnoreCase() &&
+                EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                COMPARE_TO.matches(methodInvocation) ||
+                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
+                CONTENT_EQUALS.matches(methodInvocation);
                 || COMPARE_TO.matches(methodInvocation)
                 || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
                 || CONTENT_EQUALS.matches(methodInvocation);
