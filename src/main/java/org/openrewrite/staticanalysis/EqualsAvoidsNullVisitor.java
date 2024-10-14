@@ -47,7 +47,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         val superVisitMethodInvocation = super.visitMethodInvocation(method, p);
-        if (superVisitMethodInvocation instanceof J.MethodInvocation methodInvocation) {
+        if (superVisitMethodInvocation instanceof J.MethodInvocation) {
+            J.MethodInvocation methodInvocation = (J.MethodInvocation) superVisitMethodInvocation;
             if (methodInvocation.getSelect() == null) {
                 return methodInvocation;
             } else if (!(methodInvocation.getSelect() instanceof J.Literal)
@@ -67,8 +68,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
         val parent = getCursor().getParentTreeCursor().getValue();
-        if (parent instanceof final J.Binary binary) {
-            if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof final J.Binary left) {
+        if (parent instanceof J.Binary) {
+            J.Binary binary = (J.Binary) parent;
+            if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
+                J.Binary left = (J.Binary) binary.getLeft();
                 if (isNullLiteral(left.getLeft())
                         && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
                         || (isNullLiteral(left.getRight())
