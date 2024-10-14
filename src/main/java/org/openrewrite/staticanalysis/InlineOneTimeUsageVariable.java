@@ -27,10 +27,10 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.time.Duration.ofMinutes;
 import static java.util.Objects.requireNonNull;
 
 public class InlineOneTimeUsageVariable extends Recipe {
@@ -42,17 +42,18 @@ public class InlineOneTimeUsageVariable extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Inline variables when they are immediately used to return or throw.";
+        return "Inline ALL variables when they used only once for documentation purposes applying imperative style " +
+                "and to blow up the code like crazy.";
     }
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1488");
+        return Set.of("RSPEC-S1488");
     }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
+        return ofMinutes(2);
     }
 
     @Override
