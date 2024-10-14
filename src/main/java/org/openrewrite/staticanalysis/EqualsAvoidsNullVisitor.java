@@ -40,9 +40,15 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
         boolean isLiteralArgument = m.getArguments().get(0) instanceof J.Literal;
         boolean isNotLiteralSelect = !(m.getSelect() instanceof J.Literal);
-        if (isNotLiteralSelect && isLiteralArgument && (EQUALS.matches(m) || !style.getIgnoreEqualsIgnoreCase() && EQUALS_IGNORE_CASE.matches(m) || COMPARE_TO.matches(m) || COMPARE_TO_IGNORE_CASE.matches(m) || CONTENT_EQUALS.matches(m))) {
+        if (isNotLiteralSelect
+                && isLiteralArgument
+                && EQUALS.matches(m)
+                || !style.getIgnoreEqualsIgnoreCase()
+                && EQUALS_IGNORE_CASE.matches(m)
+                || COMPARE_TO.matches(m)
+                || COMPARE_TO_IGNORE_CASE.matches(m)
+                || CONTENT_EQUALS.matches(m)) {
             val parent = getCursor().getParentTreeCursor().getValue();
-            // Check for null checks
             if (parent instanceof J.Binary) {
                 val binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
@@ -54,7 +60,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                     }
                 }
             }
-
             if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
                 return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
                         m.getSelect(),
@@ -66,7 +71,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
             }
         }
-
         return m;
     }
 
