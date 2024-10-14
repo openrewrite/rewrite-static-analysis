@@ -38,16 +38,14 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return m;
         }
 
-        boolean isLiteralArgument = m.getArguments().get(0) instanceof J.Literal;
-        boolean isNotLiteralSelect = !(m.getSelect() instanceof J.Literal);
-        if (isNotLiteralSelect
-                && isLiteralArgument
-                && EQUALS.matches(m)
+        if (!(m.getSelect() instanceof J.Literal)
+                && m.getArguments().get(0) instanceof J.Literal
+                && (EQUALS.matches(m)
                 || !style.getIgnoreEqualsIgnoreCase()
                 && EQUALS_IGNORE_CASE.matches(m)
                 || COMPARE_TO.matches(m)
                 || COMPARE_TO_IGNORE_CASE.matches(m)
-                || CONTENT_EQUALS.matches(m)) {
+                || CONTENT_EQUALS.matches(m))) {
             val parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
                 val binary = (J.Binary) parent;
