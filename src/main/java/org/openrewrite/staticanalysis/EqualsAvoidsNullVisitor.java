@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
@@ -55,33 +54,43 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         || COMPARE_TO.matches(methodInvocation)
                         || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
                         || CONTENT_EQUALS.matches(methodInvocation))
-                        ? visitMethodInvocation(methodInvocation)
+                        ? visitMethodInvocation2(methodInvocation, getCursor().getParentTreeCursor().getValue())
                         : methodInvocation;
     }
 
-    private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
-        val parent = getCursor().getParentTreeCursor().getValue();
+    private @NotNull Expression visitMethodInvocation2(final J.MethodInvocation m, P parent) {
         if (parent instanceof J.Binary) {
-            final J.Binary binary = (J.Binary) parent;
-            if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
-                final J.Binary left = (J.Binary) binary.getLeft();
-                if (isNullLiteral(left.getLeft())
-                        && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
-                        || (isNullLiteral(left.getRight())
-                        && matchesSelect(left.getLeft(),
-                        requireNonNull(m.getSelect())))) {
-                    doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
-                }
-            }
+            extractedBin(m, (J.Binary) parent);
         } else if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
-            return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
-                    requireNonNull(m.getSelect()),
-                    JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
-                    m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
-                    JavaType.Primitive.Boolean);
+            return extractedBin2(m);
         }
+        return extractedBinDefault(m);
+    }
+
+    private static J.@NotNull MethodInvocation extractedBinDefault(final J.MethodInvocation m) {
         return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
+    }
+
+    private static J.@NotNull Binary extractedBin2(final J.MethodInvocation m) {
+        return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
+                requireNonNull(m.getSelect()),
+                JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
+                m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
+                JavaType.Primitive.Boolean);
+    }
+
+    private void extractedBin(final J.MethodInvocation m, final J.Binary binary) {
+        if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
+            final J.Binary left = (J.Binary) binary.getLeft();
+            if (isNullLiteral(left.getLeft())
+                    && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
+                    || (isNullLiteral(left.getRight())
+                    && matchesSelect(left.getLeft(),
+                    requireNonNull(m.getSelect())))) {
+                doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
+            }
+        }
     }
 
     private boolean isNullLiteral(Expression expression) {
