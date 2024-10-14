@@ -32,6 +32,7 @@ import static java.util.Collections.singletonList;
 
 public class ChainStringBuilderAppendCalls extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(String)");
+    @SuppressWarnings("ALL") // Stop NoMutableStaticFieldsInRecipes from suggesting to remove this mutable static field
     private static J.Binary additiveBinaryTemplate = null;
 
     @Override
