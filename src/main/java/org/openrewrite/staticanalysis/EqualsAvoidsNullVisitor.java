@@ -42,7 +42,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         boolean isNotLiteralSelect = !(m.getSelect() instanceof J.Literal);
         if (isNotLiteralSelect && isLiteralArgument &&
                 (EQUALS.matches(m)
-                        || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && EQUALS_IGNORE_CASE.matches(m))
+                        || (!style.getIgnoreEqualsIgnoreCase()
+                        && EQUALS_IGNORE_CASE.matches(m))
                         || COMPARE_TO.matches(m)
                         || COMPARE_TO_IGNORE_CASE.matches(m)
                         || (CONTENT_EQUALS.matches(m) && isNotLiteralSelect))) {
