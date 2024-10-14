@@ -69,7 +69,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 !(methodInvocation.getSelect() instanceof J.Literal)
                         && methodInvocation.getArguments().get(0) instanceof J.Literal
                         && isStringComparisonMethod(methodInvocation)
-                        ? handleNullSafetyCheck(methodInvocation, getCursor().getParentTreeCursor().getValue())
+                        ? literalsFirstInComparisons(methodInvocation, getCursor().getParentTreeCursor().getValue())
                         : methodInvocation :
                 methodInvocation;
     }
@@ -83,21 +83,21 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 || CONTENT_EQUALS.matches(methodInvocation);
     }
 
-    private Expression handleNullSafetyCheck(J.MethodInvocation m, P parent) {
+    private Expression literalsFirstInComparisons(J.MethodInvocation m, P parent) {
         if (parent instanceof J.Binary) {
             handleBinaryExpression(m, (J.Binary) parent);
         }
         return m.getArguments().get(0).getType() == JavaType.Primitive.Null ?
-                createEqualityBinaryExpression(m) :
-                inlineNullCheck(m);
+                literalsFirstInComparisonsNull(m) :
+                literalsFirstInComparisons(m);
     }
 
-    private static J.MethodInvocation inlineNullCheck(J.MethodInvocation m) {
+    private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m) {
         return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
 
-    private static J.Binary createEqualityBinaryExpression(J.MethodInvocation m) {
+    private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m) {
         return new J.Binary(Tree.randomId(),
                 m.getPrefix(),
                 Markers.EMPTY,
