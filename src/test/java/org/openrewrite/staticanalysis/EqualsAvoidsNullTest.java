@@ -114,5 +114,4 @@ class EqualsAvoidsNullTest implements RewriteTest {
               """)
         );
     }
-
 }
