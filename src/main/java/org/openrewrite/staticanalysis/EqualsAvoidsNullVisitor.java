@@ -72,7 +72,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                     m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
                     JavaType.Primitive.Boolean);
         } else {
-            return m.withSelect(m.getArguments().get(0).withPrefix(m.getSelect().getPrefix()))
+            return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                     .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
         }
     }
