@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
@@ -26,6 +27,8 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
+import static org.openrewrite.java.tree.Space.EMPTY;
+import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -45,16 +48,17 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        J j = super.visitMethodInvocation(method, p);
-        if (!(j instanceof J.MethodInvocation)) {
-            return j;
-        }
-        J.MethodInvocation m = (J.MethodInvocation) j;
-        if (m.getSelect() == null) {
+        J m = super.visitMethodInvocation(method, p);
+        if (!(m instanceof J.MethodInvocation)) {
             return m;
         }
+        return visitMethodInvocation((J.MethodInvocation) m);
+    }
 
-        if (EQUALS.matches(m)
+    private @NotNull TypedTree visitMethodInvocation(final J.MethodInvocation m) {
+        if (m.getSelect() == null) {
+            return m;
+        } else if (EQUALS.matches(m)
                 || !style.getIgnoreEqualsIgnoreCase()
                 && EQUALS_IGNORE_CASE.matches(m)
                 && COMPARE_TO.matches(m)
@@ -74,19 +78,21 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                     }
                 }
             }
-
             if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
-                return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
+                return new J.Binary(Tree.randomId(),
+                        m.getPrefix(),
+                        Markers.EMPTY,
                         m.getSelect(),
-                        JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
-                        m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
+                        JLeftPadded.build(J.Binary.Type.Equal).withBefore(SINGLE_SPACE),
+                        m.getArguments().get(0).withPrefix(SINGLE_SPACE),
                         JavaType.Primitive.Boolean);
             } else {
-                m = m.withSelect(((J.Literal) m.getArguments().get(0)).withPrefix(m.getSelect().getPrefix()))
-                        .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
+                return m.withSelect(m.getArguments()
+                                .get(0)
+                                .withPrefix(m.getSelect().getPrefix()))
+                        .withArguments(singletonList(m.getSelect().withPrefix(EMPTY)));
             }
         }
-
         return m;
     }
 
@@ -118,9 +124,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         public J visitBinary(J.Binary binary, P p) {
             if (scope.isScope(binary)) {
                 done = true;
-                return binary.getRight().withPrefix(Space.EMPTY);
+                return binary.getRight().withPrefix(EMPTY);
             }
-
             return super.visitBinary(binary, p);
         }
     }
