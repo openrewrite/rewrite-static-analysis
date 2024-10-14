@@ -39,12 +39,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return m;
         } else if (!(m.getSelect() instanceof J.Literal)
                 && m.getArguments().get(0) instanceof J.Literal
-                && EQUALS.matches(m)
-                || !Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase())
-                && EQUALS_IGNORE_CASE.matches(m)
+                && (EQUALS.matches(m)
+                || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && EQUALS_IGNORE_CASE.matches(m))
                 || COMPARE_TO.matches(m)
                 || COMPARE_TO_IGNORE_CASE.matches(m)
-                || CONTENT_EQUALS.matches(m)) {
+                || CONTENT_EQUALS.matches(m))) {
             return visitMethodInvocation(m);
         }
         return m;
@@ -56,25 +55,21 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             J.Binary binary = (J.Binary) parent;
             if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
                 J.Binary left = (J.Binary) binary.getLeft();
-                if (isNullLiteral(left.getLeft())
-                        && matchesSelect(left.getRight(),
-                        requireNonNull(m.getSelect()))
-                        || isNullLiteral(left.getRight())
-                        && matchesSelect(left.getLeft(), requireNonNull(m.getSelect()))) {
+                if ((isNullLiteral(left.getLeft()) && matchesSelect(left.getRight(), requireNonNull(m.getSelect())))
+                        || (isNullLiteral(left.getRight()) && matchesSelect(left.getLeft(),
+                        requireNonNull(m.getSelect())))) {
                     doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
                 }
             }
-        }
-        if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
+        } else if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
             return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
                     requireNonNull(m.getSelect()),
                     JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
                     m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
                     JavaType.Primitive.Boolean);
-        } else {
-            return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
-                    .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
         }
+        return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
+                .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
 
     private boolean isNullLiteral(Expression expression) {
