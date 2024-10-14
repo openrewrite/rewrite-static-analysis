@@ -3,13 +3,7 @@
 plugins {
     id("org.openrewrite.build.recipe-library") version "latest.release"
 }
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
+
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
@@ -20,7 +14,7 @@ dependencies {
     testImplementation("org.projectlombok:lombok:latest.release")
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
-    implementation("org.openrewrite:rewrite-java:${rewriteVersion}")
+    implementation("org.openrewrite:rewrite-java")
     implementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
