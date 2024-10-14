@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions"})
-class EqualsAvoidsNullVisitorTest implements RewriteTest {
+class EqualsAvoidsNullTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
