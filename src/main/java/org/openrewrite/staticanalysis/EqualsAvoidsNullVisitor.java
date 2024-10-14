@@ -30,9 +30,16 @@ import static java.util.Collections.singletonList;
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
-    private static final MethodMatcher STRING_EQUALS = new MethodMatcher("String equals(java.lang.Object)");
-    private static final MethodMatcher STRING_EQUALS_IGNORE_CASE = new MethodMatcher("String equalsIgnoreCasewerewr" +
-            "(java.lang.String)");
+
+    private static final String STRING_PREFIX = "String ";
+    private static final MethodMatcher EQUALS = new MethodMatcher(STRING_PREFIX + "equals(java.lang.Object)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(STRING_PREFIX + "equalsIgnoreCase(java" +
+            ".lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher(STRING_PREFIX + "compareTo(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(STRING_PREFIX
+            + "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(STRING_PREFIX
+            + "contentEquals(java.lang.String)");
 
     EqualsAvoidsNullStyle style;
 
@@ -47,7 +54,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return m;
         }
 
-        if ((STRING_EQUALS.matches(m) || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && STRING_EQUALS_IGNORE_CASE.matches(m))) &&
+        if (EQUALS.matches(m) || !Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && EQUALS_IGNORE_CASE.matches(m) &&
                 m.getArguments().get(0) instanceof J.Literal &&
                 !(m.getSelect() instanceof J.Literal)) {
             Tree parent = getCursor().getParentTreeCursor().getValue();
@@ -55,8 +62,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 J.Binary binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
                     J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
-                    if ((isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
-                            m.getSelect())) ||
+                    if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
+                            m.getSelect()) ||
                             (isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect()))) {
                         doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
                     }
@@ -70,7 +77,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
                         JavaType.Primitive.Boolean);
             } else {
-                m = m.withSelect(((J.Literal) m.getArguments().get(0)).withPrefix(m.getSelect().getPrefix()))
+                m = m.withSelect(m.getArguments().get(0).withPrefix(m.getSelect().getPrefix()))
                         .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
             }
         }
