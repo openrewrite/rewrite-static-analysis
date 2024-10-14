@@ -46,25 +46,21 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        val superVisitMethodInvocation = super.visitMethodInvocation(method, p);
-        if (superVisitMethodInvocation instanceof J.MethodInvocation) {
-            J.MethodInvocation methodInvocation = (J.MethodInvocation) superVisitMethodInvocation;
-            if (methodInvocation.getSelect() == null) {
-                return methodInvocation;
-            } else if (!(methodInvocation.getSelect() instanceof J.Literal)
-                    && methodInvocation.getArguments().get(0) instanceof J.Literal
-                    && EQUALS.matches(methodInvocation)
-                    || !style.getIgnoreEqualsIgnoreCase()
-                    && EQUALS_IGNORE_CASE.matches(methodInvocation)
-                    || COMPARE_TO.matches(methodInvocation)
-                    || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
-                    || CONTENT_EQUALS.matches(methodInvocation)) {
-                return visitMethodInvocation(methodInvocation);
-            }
+        J.MethodInvocation methodInvocation = (J.MethodInvocation) super.visitMethodInvocation(method, p);
+        if (methodInvocation == null || methodInvocation.getSelect() == null) {
             return methodInvocation;
         }
-        return superVisitMethodInvocation;
+        return (!(methodInvocation.getSelect() instanceof J.Literal)
+                && methodInvocation.getArguments().get(0) instanceof J.Literal
+                && (EQUALS.matches(methodInvocation)
+                || (!style.getIgnoreEqualsIgnoreCase() && EQUALS_IGNORE_CASE.matches(methodInvocation))
+                || COMPARE_TO.matches(methodInvocation)
+                || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
+                || CONTENT_EQUALS.matches(methodInvocation)))
+                ? visitMethodInvocation(methodInvocation)
+                : methodInvocation;
     }
+
 
     private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
         val parent = getCursor().getParentTreeCursor().getValue();
