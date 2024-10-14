@@ -108,4 +108,82 @@ class EqualsAvoidsNullVisitorTest implements RewriteTest {
               """)
         );
     }
+
+    @Test
+    void compareToInverted() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if(s.compareTo("test") == 0) {}
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if("test".compareTo(s) == 0) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void compareToIgnoreCaseInverted() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if(s.compareToIgnoreCase("test") == 0) {}
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if("test".compareToIgnoreCase(s) == 0) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void contentEqualsInverted() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      String s = null;
+                      CharSequence cs = "test";
+                      if(s.contentEquals(cs)) {}
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      CharSequence cs = "test";
+                      if(cs.equals(s)) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
