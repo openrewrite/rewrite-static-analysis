@@ -26,13 +26,13 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnnotateNullableMethods extends Recipe {
+
     private static final String NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
     private static final AnnotationMatcher NULLABLE_ANNOTATION_MATCHER =
             new AnnotationMatcher("@" + NULLABLE_ANN_CLASS);
@@ -58,6 +58,8 @@ public class AnnotateNullableMethods extends Recipe {
     }
 
     private static class AnnotateNullableMethodsVisitor extends JavaIsoVisitor<ExecutionContext> {
+        AtomicBoolean annotatedNullable = new AtomicBoolean(false);
+
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration md, ExecutionContext ctx) {
             if (!md.hasModifier(J.Modifier.Type.Public)) {
@@ -77,6 +79,9 @@ public class AnnotateNullableMethods extends Recipe {
 
             if (FindNullableReturnStatements.find(md).get()) {
                 maybeAddImport(NULLABLE_ANN_CLASS);
+                if (!annotatedNullable.getAndSet(true)) {
+                    doAfterVisit(new NullableOnMethodReturnType().getVisitor());
+                }
                 return JavaTemplate.builder("@Nullable")
                         .imports(NULLABLE_ANN_CLASS)
                         .javaParser(JavaParser.fromJavaVersion().classpath("jspecify"))
@@ -96,46 +101,43 @@ public class AnnotateNullableMethods extends Recipe {
         }
 
         private static List<MethodMatcher> getMatchersKnownNullableMethods() {
-            List<MethodMatcher> matchers = new ArrayList<>();
+            return Arrays.asList(
+                    new MethodMatcher("java.util.Map computeIfAbsent(..)"),
+                    new MethodMatcher("java.util.Map computeIfPresent(..)"),
+                    new MethodMatcher("java.util.Map get(..)"),
+                    new MethodMatcher("java.util.Map merge(..)"),
+                    new MethodMatcher("java.util.Map put(..)"),
+                    new MethodMatcher("java.util.Map putIfAbsent(..)"),
 
-            matchers.add(new MethodMatcher("java.util.Map compute(..)"));
-            matchers.add(new MethodMatcher("java.util.Map computeIfAbsent(..)"));
-            matchers.add(new MethodMatcher("java.util.Map computeIfPresent(..)"));
-            matchers.add(new MethodMatcher("java.util.Map get(..)"));
-            matchers.add(new MethodMatcher("java.util.Map merge(..)"));
-            matchers.add(new MethodMatcher("java.util.Map put(..)"));
-            matchers.add(new MethodMatcher("java.util.Map putIfAbsent(..)"));
+                    new MethodMatcher("java.util.Queue poll(..)"),
+                    new MethodMatcher("java.util.Queue peek(..)"),
 
-            matchers.add(new MethodMatcher("java.util.Queue poll(..)"));
-            matchers.add(new MethodMatcher("java.util.Queue peek(..)"));
+                    new MethodMatcher("java.util.Deque peekFirst(..)"),
+                    new MethodMatcher("java.util.Deque pollFirst(..)"),
+                    new MethodMatcher("java.util.Deque peekLast(..)"),
 
-            matchers.add(new MethodMatcher("java.util.Deque peekFirst(..)"));
-            matchers.add(new MethodMatcher("java.util.Deque pollFirst(..)"));
-            matchers.add(new MethodMatcher("java.util.Deque peekLast(..)"));
+                    new MethodMatcher("java.util.NavigableSet lower(..)"),
+                    new MethodMatcher("java.util.NavigableSet floor(..)"),
+                    new MethodMatcher("java.util.NavigableSet ceiling(..)"),
+                    new MethodMatcher("java.util.NavigableSet higher(..)"),
+                    new MethodMatcher("java.util.NavigableSet pollFirst(..)"),
+                    new MethodMatcher("java.util.NavigableSet pollLast(..)"),
 
-            matchers.add(new MethodMatcher("java.util.NavigableSet lower(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableSet floor(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableSet ceiling(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableSet higher(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableSet pollFirst(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableSet pollLast(..)"));
+                    new MethodMatcher("java.util.NavigableMap lowerEntry(..)"),
+                    new MethodMatcher("java.util.NavigableMap floorEntry(..)"),
+                    new MethodMatcher("java.util.NavigableMap ceilingEntry(..)"),
+                    new MethodMatcher("java.util.NavigableMap higherEntry(..)"),
+                    new MethodMatcher("java.util.NavigableMap lowerKey(..)"),
+                    new MethodMatcher("java.util.NavigableMap floorKey(..)"),
+                    new MethodMatcher("java.util.NavigableMap ceilingKey(..)"),
+                    new MethodMatcher("java.util.NavigableMap higherKey(..)"),
+                    new MethodMatcher("java.util.NavigableMap firstEntry(..)"),
+                    new MethodMatcher("java.util.NavigableMap lastEntry(..)"),
+                    new MethodMatcher("java.util.NavigableMap pollFirstEntry(..)"),
+                    new MethodMatcher("java.util.NavigableMap pollLastEntry(..)"),
 
-            matchers.add(new MethodMatcher("java.util.NavigableMap lowerEntry(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap floorEntry(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap ceilingEntry(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap higherEntry(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap lowerKey(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap floorKey(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap ceilingKey(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap higherKey(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap firstEntry(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap lastEntry(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap pollFirstEntry(..)"));
-            matchers.add(new MethodMatcher("java.util.NavigableMap pollLastEntry(..)"));
-
-            matchers.add(new MethodMatcher("java.util.Spliterator trySplit(..)"));
-
-            return Collections.unmodifiableList(matchers);
+                    new MethodMatcher("java.util.Spliterator trySplit(..)")
+            );
         }
 
         @Override

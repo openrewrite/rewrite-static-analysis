@@ -22,7 +22,6 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.java.Assertions.javaVersion;
 
 class AnnotateNullableMethodsTest implements RewriteTest {
     @Override
@@ -39,6 +38,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               public class Test {
+    
                   public String getString() {
                       return null;
                   }
@@ -54,9 +54,9 @@ class AnnotateNullableMethodsTest implements RewriteTest {
             """
               import org.jspecify.annotations.Nullable;
               
-              public class Test {
-                  @Nullable
-                  public String getString() {
+              public class Test {      
+    
+                  public @Nullable String getString() {
                       return null;
                   }
               
@@ -78,22 +78,22 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           spec -> spec.recipe(new AnnotateNullableMethods()),
           //language=java
           java(
-                """
-            import org.jspecify.annotations.Nullable;
-            
-            public class Test {
-                public @Nullable String getString() {
-                    return null;
-                }
-            
-                public @Nullable String getStringWithMultipleReturn() {
-                    if (System.currentTimeMillis() % 2 == 0) {
-                        return "Not null";
-                    }
-                    return null;
-                }
-            }
             """
+              import org.jspecify.annotations.Nullable;
+              
+              public class Test {
+                  public @Nullable String getString() {
+                      return null;
+                  }
+              
+                  public @Nullable String getStringWithMultipleReturn() {
+                      if (System.currentTimeMillis() % 2 == 0) {
+                          return "Not null";
+                      }
+                      return null;
+                  }
+              }
+              """
           )
         );
     }
@@ -128,6 +128,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               import java.util.Map;
               
               public class Test {
+              
                   public String getString() {
                       Map<String, String> map = new HashMap<>();
                       return map.get("key");
@@ -141,6 +142,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               import java.util.Map;
               
               public class Test {
+              
                   public @Nullable String getString() {
                       Map<String, String> map = new HashMap<>();
                       return map.get("key");
