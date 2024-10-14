@@ -40,11 +40,11 @@ class EqualsAvoidsNullTest implements RewriteTest {
                     public class A {
                         {
                             String s = null;
-                            if(s.equals("test")) {}
-                            if(s.equalsIgnoreCase("test")) {}
                             System.out.println(s.compareTo("test"));
                             System.out.println(s.compareToIgnoreCase("test"));
                             System.out.println(s.contentEquals("test"));
+                            System.out.println(s.equals("test"));
+                            System.out.println(s.equalsIgnoreCase("test"));
                         }
                     }
               """,
@@ -52,11 +52,11 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equalsIgnoreCase(s)) {}
                       System.out.println("test".compareTo(s));
                       System.out.println("test".compareToIgnoreCase(s));
                       System.out.println("test".contentEquals(s));
+                      System.out.println("test".equals(s));
+                      System.out.println("test".equalsIgnoreCase(s));
                   }
               }
               """
