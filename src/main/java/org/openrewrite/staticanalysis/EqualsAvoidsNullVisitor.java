@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import lombok.val;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -71,12 +70,12 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 || COMPARE_TO.matches(m)
                 || COMPARE_TO_IGNORE_CASE.matches(m)
                 || CONTENT_EQUALS.matches(m))) {
-            val parent = getCursor().getParentTreeCursor().getValue();
+            final Object parent = getCursor().getParentTreeCursor().getValue();
             if (parent instanceof J.Binary) {
-                val binary = (J.Binary) parent;
+                final J.Binary binary = (J.Binary) parent;
                 if (binary.getLeft() instanceof J.Binary
                         && binary.getOperator() == J.Binary.Type.And) {
-                    val potentialNullCheck = (J.Binary) binary.getLeft();
+                    final J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
                     if (isNullLiteral(potentialNullCheck.getLeft())
                             && matchesSelect(potentialNullCheck.getRight(), m.getSelect())
                             || isNullLiteral(potentialNullCheck.getRight())
