@@ -2,6 +2,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.val;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -39,22 +40,18 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
         boolean isLiteralArgument = m.getArguments().get(0) instanceof J.Literal;
         boolean isNotLiteralSelect = !(m.getSelect() instanceof J.Literal);
-
-        // Perform the swap for equals, equalsIgnoreCase, compareTo, compareToIgnoreCase
         if (isNotLiteralSelect && isLiteralArgument &&
                 (EQUALS.matches(m)
                         || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && EQUALS_IGNORE_CASE.matches(m))
                         || COMPARE_TO.matches(m)
                         || COMPARE_TO_IGNORE_CASE.matches(m)
-                        // Exclude contentEquals() from swapping, as it's a safe call with a literal on the left.
                         || (CONTENT_EQUALS.matches(m) && isNotLiteralSelect))) {
-
-            Tree parent = getCursor().getParentTreeCursor().getValue();
+            val parent = getCursor().getParentTreeCursor().getValue();
             // Check for null checks
             if (parent instanceof J.Binary) {
-                J.Binary binary = (J.Binary) parent;
+                val binary = (J.Binary) parent;
                 if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
-                    J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
+                    val potentialNullCheck = (J.Binary) binary.getLeft();
                     if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
                             m.getSelect())
                             || isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect())) {
@@ -63,7 +60,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 }
             }
 
-            // If the argument is null, replace with a binary null check
             if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
                 return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
                         m.getSelect(),
@@ -71,8 +67,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
                         JavaType.Primitive.Boolean);
             } else {
-                // Swap the select and argument, maintaining prefixes
-                m = m.withSelect(m.getArguments().get(0).withPrefix(m.getSelect().getPrefix()))
+                return m.withSelect(m.getArguments().get(0).withPrefix(m.getSelect().getPrefix()))
                         .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
             }
         }
