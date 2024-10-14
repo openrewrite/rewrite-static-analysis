@@ -92,11 +92,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 literalsFirstInComparisons(m);
     }
 
-    private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m) {
-        return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
-                .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
-    }
-
     private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m) {
         return new J.Binary(Tree.randomId(),
                 m.getPrefix(),
@@ -105,6 +100,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 build(J.Binary.Type.Equal).withBefore(SINGLE_SPACE),
                 m.getArguments().get(0).withPrefix(SINGLE_SPACE),
                 JavaType.Primitive.Boolean);
+    }
+
+    private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m) {
+        return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
+                .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
 
     private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
