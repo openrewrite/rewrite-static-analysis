@@ -60,8 +60,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
                       return null;
                   }
               
-                  @Nullable
-                  public String getStringWithMultipleReturn() {
+                  public @Nullable String getStringWithMultipleReturn() {
                       if (System.currentTimeMillis() % 2 == 0) {
                           return "Not null";
                       }
@@ -87,8 +86,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
                     return null;
                 }
             
-                @Nullable
-                public String getStringWithMultipleReturn() {
+                public @Nullable String getStringWithMultipleReturn() {
                     if (System.currentTimeMillis() % 2 == 0) {
                         return "Not null";
                     }
@@ -143,8 +141,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               import java.util.Map;
               
               public class Test {
-                  @Nullable
-                  public String getString() {
+                  public @Nullable String getString() {
                       Map<String, String> map = new HashMap<>();
                       return map.get("key");
                   }
