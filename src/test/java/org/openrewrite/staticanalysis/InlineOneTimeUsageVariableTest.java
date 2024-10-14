@@ -48,6 +48,17 @@ class InlineOneTimeUsageVariableTest implements RewriteTest {
                        System.out.println(n);
                        return n;
                    }
+                   int test3() {
+                       String s = "0";
+                       String s2 = s;
+                       return s2;
+                   }
+                   int test4() {
+                       String s = "0";
+                       String s2 = s;
+                       String s3 = s2;
+                       return s3;
+                   }
                }
               \s""",
             """
@@ -59,6 +70,12 @@ class InlineOneTimeUsageVariableTest implements RewriteTest {
                        int n = 0;
                        System.out.println(n);
                        return n;
+                   }
+                   int test3() {
+                       return "0";
+                   }
+                   int test4() {
+                      return "0";
                    }
                }
               \s"""
