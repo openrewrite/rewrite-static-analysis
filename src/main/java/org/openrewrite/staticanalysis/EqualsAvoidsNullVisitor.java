@@ -22,12 +22,17 @@ import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
+import static org.openrewrite.java.tree.JLeftPadded.build;
+import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -54,40 +59,45 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         || COMPARE_TO.matches(methodInvocation)
                         || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
                         || CONTENT_EQUALS.matches(methodInvocation))
-                        ? visitMethodInvocation2(methodInvocation, getCursor().getParentTreeCursor().getValue())
+                        ? handleNullSafetyCheck(methodInvocation, getCursor().getParentTreeCursor().getValue())
                         : methodInvocation;
     }
 
-    private @NotNull Expression visitMethodInvocation2(final J.MethodInvocation m, P parent) {
+    private @NotNull Expression handleNullSafetyCheck(J.MethodInvocation m, P parent) {
         if (parent instanceof J.Binary) {
-            extractedBin(m, (J.Binary) parent);
+            handleBinaryExpression(m, (J.Binary) parent);
         } else if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
-            return extractedBin2(m);
+            return createEqualityBinaryExpression(m);
         }
-        return extractedBinDefault(m);
+        return inlineNullCheck(m);
     }
 
-    private static J.@NotNull MethodInvocation extractedBinDefault(final J.MethodInvocation m) {
+    private static J.@NotNull MethodInvocation inlineNullCheck(J.MethodInvocation m) {
         return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
 
-    private static J.@NotNull Binary extractedBin2(final J.MethodInvocation m) {
-        return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
+    private static J.@NotNull Binary createEqualityBinaryExpression(J.MethodInvocation m) {
+        return new J.Binary(Tree.randomId(),
+                m.getPrefix(),
+                Markers.EMPTY,
                 requireNonNull(m.getSelect()),
-                JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
-                m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
+                build(J.Binary.Type.Equal)
+                        .withBefore(SINGLE_SPACE),
+                m.getArguments()
+                        .get(0)
+                        .withPrefix(SINGLE_SPACE),
                 JavaType.Primitive.Boolean);
     }
 
-    private void extractedBin(final J.MethodInvocation m, final J.Binary binary) {
-        if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
-            final J.Binary left = (J.Binary) binary.getLeft();
+    private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
+        if (binary.getOperator() == J.Binary.Type.And
+                && binary.getLeft() instanceof J.Binary) {
+            J.Binary left = (J.Binary) binary.getLeft();
             if (isNullLiteral(left.getLeft())
                     && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
                     || (isNullLiteral(left.getRight())
-                    && matchesSelect(left.getLeft(),
-                    requireNonNull(m.getSelect())))) {
+                    && matchesSelect(left.getLeft(), requireNonNull(m.getSelect())))) {
                 doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
             }
         }
