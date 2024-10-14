@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.jetbrains.annotations.NotNull;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -51,7 +50,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         return getSuperIfSelectNull((J.MethodInvocation) super.visitMethodInvocation(method, p));
     }
 
-    private @NotNull J getSuperIfSelectNull(final J.MethodInvocation methodInvocation) {
+    private J getSuperIfSelectNull(final J.MethodInvocation methodInvocation) {
         return isNull(methodInvocation.getSelect()) ?
                 methodInvocation :
                 !(methodInvocation.getSelect() instanceof J.Literal)
@@ -61,7 +60,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                         : methodInvocation;
     }
 
-    private boolean isStringComparisonMethod(final J.MethodInvocation methodInvocation) {
+    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return EQUALS.matches(methodInvocation)
                 || !style.getIgnoreEqualsIgnoreCase()
                 && EQUALS_IGNORE_CASE.matches(methodInvocation)
@@ -70,7 +69,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 || CONTENT_EQUALS.matches(methodInvocation);
     }
 
-    private @NotNull Expression handleNullSafetyCheck(J.MethodInvocation m, P parent) {
+    private Expression handleNullSafetyCheck(J.MethodInvocation m, P parent) {
         if (parent instanceof J.Binary) {
             handleBinaryExpression(m, (J.Binary) parent);
         } else if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
@@ -79,12 +78,12 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         return inlineNullCheck(m);
     }
 
-    private static J.@NotNull MethodInvocation inlineNullCheck(J.MethodInvocation m) {
+    private static J.MethodInvocation inlineNullCheck(J.MethodInvocation m) {
         return m.withSelect(m.getArguments().get(0).withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
 
-    private static J.@NotNull Binary createEqualityBinaryExpression(J.MethodInvocation m) {
+    private static J.Binary createEqualityBinaryExpression(J.MethodInvocation m) {
         return new J.Binary(Tree.randomId(),
                 m.getPrefix(),
                 Markers.EMPTY,
