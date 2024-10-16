@@ -17,63 +17,111 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
+import static org.openrewrite.java.tree.JLeftPadded.build;
+import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
 
+/**
+ * A visitor that identifies and addresses potential issues related to
+ * the use of {@code equals} methods in Java, particularly to avoid
+ * null pointer exceptions when comparing strings.
+ * <p>
+ * This visitor looks for method invocations of {@code equals},
+ * {@code equalsIgnoreCase}, {@code compareTo}, and {@code contentEquals},
+ * and performs optimizations to ensure null checks are correctly applied.
+ * <p>
+ * For more details, refer to the PMD best practices:
+ * <a href="https://pmd.github.io/pmd/pmd_rules_java_bestpractices.html#LiteralsFirstInComparisons">Literals First in Comparisons</a>
+ *
+ * @param <P> The type of the parent context used for visiting the AST.
+ */
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
-    private static final MethodMatcher STRING_EQUALS = new MethodMatcher("String equals(java.lang.Object)");
-    private static final MethodMatcher STRING_EQUALS_IGNORE_CASE = new MethodMatcher("String equalsIgnoreCase(java.lang.String)");
+
+    MethodMatcher EQUALS = getMethodMatcher("equals(java.lang.Object)");
+    MethodMatcher EQUALS_IGNORE_CASE = getMethodMatcher("equalsIgnoreCase(java.lang.String)");
+    MethodMatcher COMPARE_TO = getMethodMatcher("compareTo(java.lang.String)");
+    MethodMatcher COMPARE_TO_IGNORE_CASE = getMethodMatcher("compareToIgnoreCase(java.lang.String)");
+    MethodMatcher CONTENT_EQUALS = getMethodMatcher("contentEquals(java.lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        J j = super.visitMethodInvocation(method, p);
-        if (!(j instanceof J.MethodInvocation)) {
-            return j;
-        }
-        J.MethodInvocation m = (J.MethodInvocation) j;
-        if (m.getSelect() == null) {
-            return m;
-        }
+        return getSuperIfSelectNull((J.MethodInvocation) super.visitMethodInvocation(method, p));
+    }
 
-        if ((STRING_EQUALS.matches(m) || (!Boolean.TRUE.equals(style.getIgnoreEqualsIgnoreCase()) && STRING_EQUALS_IGNORE_CASE.matches(m))) &&
-            m.getArguments().get(0) instanceof J.Literal &&
-            !(m.getSelect() instanceof J.Literal)) {
-            Tree parent = getCursor().getParentTreeCursor().getValue();
-            if (parent instanceof J.Binary) {
-                J.Binary binary = (J.Binary) parent;
-                if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
-                    J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
-                    if ((isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), m.getSelect())) ||
-                        (isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), m.getSelect()))) {
-                        doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
-                    }
-                }
+    private J getSuperIfSelectNull(J.MethodInvocation m) {
+        return nonNull(m.getSelect()) ?
+                !(m.getSelect() instanceof J.Literal) &&
+                        m.getArguments().get(0) instanceof J.Literal &&
+                        isStringComparisonMethod(m) ?
+                        literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue()) :
+                        m :
+        return EQUALS.matches(methodInvocation) ||
+                !style.getIgnoreEqualsIgnoreCase() &&
+                EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                COMPARE_TO.matches(methodInvocation) ||
+                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
+                CONTENT_EQUALS.matches(methodInvocation);
+                && EQUALS_IGNORE_CASE.matches(methodInvocation)
+                || COMPARE_TO.matches(methodInvocation)
+                || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
+                || CONTENT_EQUALS.matches(methodInvocation);
+    }
+
+    private Expression literalsFirstInComparisonsBinaryCheck(J.MethodInvocation m, P parent) {
+        if (parent instanceof J.Binary) {
+            handleBinaryExpression(m, (J.Binary) parent);
+        }
+        return getExpression(m, m.getArguments().get(0));
+    }
+
+    private static Expression getExpression(J.MethodInvocation m, Expression firstArgument) {
+        return firstArgument.getType() == JavaType.Primitive.Null ?
+                literalsFirstInComparisonsNull(m, firstArgument) :
+                literalsFirstInComparisons(m, firstArgument);
+    }
+
+    private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {
+        return new J.Binary(Tree.randomId(),
+                m.getPrefix(),
+                Markers.EMPTY,
+                requireNonNull(m.getSelect()),
+                build(J.Binary.Type.Equal).withBefore(SINGLE_SPACE),
+                firstArgument.withPrefix(SINGLE_SPACE),
+                JavaType.Primitive.Boolean);
+    }
+
+    private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
+        return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
+                .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
+    }
+
+    private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
+        if (binary.getOperator() == J.Binary.Type.And
+                && binary.getLeft() instanceof J.Binary) {
+            J.Binary left = (J.Binary) binary.getLeft();
+            if (isNullLiteral(left.getLeft())
+                    && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
+                    || isNullLiteral(left.getRight())
+                    && matchesSelect(left.getLeft(), requireNonNull(m.getSelect()))) {
+                doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
             }
-
-            if (m.getArguments().get(0).getType() == JavaType.Primitive.Null) {
-                return new J.Binary(Tree.randomId(), m.getPrefix(), Markers.EMPTY,
-                        m.getSelect(),
-                        JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
-                        m.getArguments().get(0).withPrefix(Space.SINGLE_SPACE),
-                        JavaType.Primitive.Boolean);
-            } else {
-                m = m.withSelect(((J.Literal) m.getArguments().get(0)).withPrefix(m.getSelect().getPrefix()))
-                        .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
-            }
         }
-
-        return m;
     }
 
     private boolean isNullLiteral(Expression expression) {
@@ -84,17 +132,15 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         return expression.printTrimmed(getCursor()).replaceAll("\\s", "").equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
     }
 
-    private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {
-        private final J.Binary scope;
-        boolean done;
+    private static MethodMatcher getMethodMatcher(String method) {
+        return new MethodMatcher("java.lang.String " + method);
+    }
 
-        @Override
-        public @Nullable J visit(@Nullable Tree tree, P p) {
-            if (done) {
-                return (J) tree;
-            }
-            return super.visit(tree, p);
-        }
+    private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {
+
+        private final J.Binary scope;
+
+        boolean done;
 
         public RemoveUnnecessaryNullCheck(J.Binary scope) {
             this.scope = scope;
@@ -106,7 +152,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 done = true;
                 return binary.getRight().withPrefix(Space.EMPTY);
             }
-
             return super.visitBinary(binary, p);
         }
     }
