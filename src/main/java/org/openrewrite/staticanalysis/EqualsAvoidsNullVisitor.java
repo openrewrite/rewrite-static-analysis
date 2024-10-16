@@ -66,17 +66,17 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private J getSuperIfSelectNull(J.MethodInvocation m) {
         return nonNull(m.getSelect()) ?
-                !(m.getSelect() instanceof J.Literal)
-                        && m.getArguments().get(0) instanceof J.Literal
-                        && isStringComparisonMethod(m)
-                        ? literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue())
-                        : m :
-                m;
-    }
-
-    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-        return EQUALS.matches(methodInvocation)
-                || !style.getIgnoreEqualsIgnoreCase()
+                !(m.getSelect() instanceof J.Literal) &&
+                        m.getArguments().get(0) instanceof J.Literal &&
+                        isStringComparisonMethod(m) ?
+                        literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue()) :
+                        m :
+        return EQUALS.matches(methodInvocation) ||
+                !style.getIgnoreEqualsIgnoreCase() &&
+                EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                COMPARE_TO.matches(methodInvocation) ||
+                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
+                CONTENT_EQUALS.matches(methodInvocation);
                 && EQUALS_IGNORE_CASE.matches(methodInvocation)
                 || COMPARE_TO.matches(methodInvocation)
                 || COMPARE_TO_IGNORE_CASE.matches(methodInvocation)
