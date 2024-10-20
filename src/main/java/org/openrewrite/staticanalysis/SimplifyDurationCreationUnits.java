@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
@@ -112,8 +112,7 @@ public class SimplifyDurationCreationUnits extends Recipe {
         });
     }
 
-    @Nullable
-    public static Long getConstantIntegralValue(Expression expression) {
+    public static @Nullable Long getConstantIntegralValue(Expression expression) {
         if (expression instanceof J.Literal) {
             J.Literal literal = (J.Literal) expression;
             if (literal.getType() != JavaType.Primitive.Int && literal.getType() != JavaType.Primitive.Long) {

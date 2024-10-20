@@ -153,8 +153,6 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
               }
               """,
             """
-              import java.util.stream.Stream;
-              
               class Test {
                   void test(String input) {
                   }

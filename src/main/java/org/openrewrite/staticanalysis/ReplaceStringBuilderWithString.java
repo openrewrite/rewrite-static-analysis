@@ -37,7 +37,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Replace StringBuilder.append() with String";
+        return "Replace `StringBuilder#append` with `String`";
     }
 
     @Override
@@ -88,7 +88,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
             return m;
         }
 
-        // Check if a method call is a select of another method call
+        // Check if a method call is a "select" of another method call
         private boolean isAMethodSelect(J.MethodInvocation method) {
             Cursor parent = getCursor().getParent(2); // 2 means skip right padded cursor
             if (parent == null || !(parent.getValue() instanceof J.MethodInvocation)) {

@@ -17,11 +17,11 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
@@ -67,6 +67,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
             @Value
             class CheckField {
                 J.VariableDeclarations declarations;
+
                 @Nullable Statement nextStatement;
             }
 
@@ -221,6 +222,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
     private static class MaybeRemoveComment extends JavaVisitor<ExecutionContext> {
         @Nullable
         private final Statement statement;
+
         private final J.ClassDeclaration classDeclaration;
 
         public MaybeRemoveComment(@Nullable Statement statement, J.ClassDeclaration classDeclaration) {

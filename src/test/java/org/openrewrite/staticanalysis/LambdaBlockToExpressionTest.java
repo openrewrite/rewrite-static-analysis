@@ -75,7 +75,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
             """
               import java.util.function.Function;
               class Test {
-                  Function<Integer, Integer> f = n -> 
+                  Function<Integer, Integer> f = n ->
                       // The buttonType will always be "cancel", even if we pressed one of the entry type buttons
                       n + 1;
               }
@@ -145,4 +145,41 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-testing-frameworks/pull/582")
+    void simplifyAssertThrows() {
+        rewriteRun(
+          spec-> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+          //language=java
+          java(
+            """
+            import static org.junit.jupiter.api.Assertions.assertThrows;
+            
+            class Test {
+                void test() {
+                    assertThrows(IllegalArgumentException.class, () -> {
+                        foo();
+                    });
+                }
+                void foo() {
+                    throw new IllegalArgumentException("boom");
+                }
+            }
+            """,
+            """
+            import static org.junit.jupiter.api.Assertions.assertThrows;
+            
+            class Test {
+                void test() {
+                    assertThrows(IllegalArgumentException.class, () ->
+                        foo());
+                }
+                void foo() {
+                    throw new IllegalArgumentException("boom");
+                }
+            }
+            """
+          )
+        );
+    }
 }

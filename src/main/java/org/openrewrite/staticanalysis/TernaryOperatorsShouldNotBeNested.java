@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
@@ -220,19 +220,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 J.MethodInvocation inv = ((J.MethodInvocation) ternary.getCondition());
                 if (isObjectsEquals(inv)) {
                     maybeRemoveImport("java.util.Objects");
-                    compare = isVariable(inv.getArguments().get(0))
-                            ? inv.getArguments().get(1)
-                            : inv.getArguments().get(0);
+                    compare = isVariable(inv.getArguments().get(0)) ?
+                            inv.getArguments().get(1) :
+                            inv.getArguments().get(0);
                 } else {
-                    compare = isEqualVariable(switchVar, inv.getSelect())
-                            ? inv.getArguments().get(0)
-                            : inv.getSelect();
+                    compare = isEqualVariable(switchVar, inv.getSelect()) ?
+                            inv.getArguments().get(0) :
+                            inv.getSelect();
                 }
             } else if (isEqualsBinary(ternary.getCondition())) {
                 J.Binary bin = ((J.Binary) ternary.getCondition());
-                compare = isEqualVariable(switchVar, bin.getLeft())
-                        ? bin.getRight()
-                        : bin.getLeft();
+                compare = isEqualVariable(switchVar, bin.getLeft()) ?
+                        bin.getRight() :
+                        bin.getLeft();
             } else {
                 throw new IllegalArgumentException(
                         "Only J.Binary or J.MethodInvocation are expected as ternary conditions when creating a switch case");
@@ -299,8 +299,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         }
 
-        @Nullable
-        private static J.Identifier xorVariable(J first, J second) {
+        private static J.@Nullable Identifier xorVariable(J first, J second) {
             J.Identifier result = null;
             if (isVariable(first) && isVariable(second)) {
                 return null;

@@ -17,12 +17,13 @@ dependencies {
     implementation("org.openrewrite:rewrite-java")
     implementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    implementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
     implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
-    compileOnly("com.google.errorprone:error_prone_core:2.19.1:with-dependencies") {
+    compileOnly("com.google.errorprone:error_prone_core:2.+:with-dependencies") {
         exclude("com.google.auto.service", "auto-service-annotations")
     }
 

@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
@@ -114,8 +114,7 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
                 return false;
             }
 
-            @Nullable
-            private String getTemplateText(J elem) {
+            private @Nullable String getTemplateText(J elem) {
                 String roundingName = null;
                 if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
                     J.FieldAccess fa = (J.FieldAccess) elem;

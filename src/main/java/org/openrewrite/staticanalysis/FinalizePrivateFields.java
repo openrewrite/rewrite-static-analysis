@@ -17,9 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
@@ -52,6 +53,17 @@ public class FinalizePrivateFields extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             private Set<JavaType.Variable> privateFieldsToBeFinalized = new HashSet<>();
+
+            @Nullable
+            private SourceFile topLevel;
+
+            @Override
+            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                if (topLevel == null && tree instanceof SourceFile) {
+                    topLevel = (SourceFile) tree;
+                }
+                return super.visit(tree, ctx);
+            }
 
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
@@ -99,16 +111,16 @@ public class FinalizePrivateFields extends Recipe {
                         return type != null ? v.withVariableType(type.withFlags(
                                 Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
                     })).withModifiers(ListUtils.concat(mv.getModifiers(),
-                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null,
-                                    J.Modifier.Type.Final, emptyList()))), ctx);
+                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, topLevel instanceof Cs ? "readonly" : "final",
+                                    topLevel instanceof Cs ? J.Modifier.Type.LanguageExtension : J.Modifier.Type.Final, emptyList()))), ctx);
                 }
 
                 return mv;
             }
 
             private boolean anyAnnotationApplied(Cursor variableCursor) {
-                return !service(AnnotationService.class).getAllAnnotations(variableCursor).isEmpty()
-                       || variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
+                return !service(AnnotationService.class).getAllAnnotations(variableCursor).isEmpty() ||
+                       variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
             }
 
             /**
@@ -122,9 +134,10 @@ public class FinalizePrivateFields extends Recipe {
                         .stream()
                         .filter(J.VariableDeclarations.class::isInstance)
                         .map(J.VariableDeclarations.class::cast)
-                        .filter(mv -> mv.hasModifier(J.Modifier.Type.Private)
-                                      && !mv.hasModifier(J.Modifier.Type.Final)
-                                      && !mv.hasModifier(J.Modifier.Type.Volatile))
+                        .filter(mv -> mv.hasModifier(J.Modifier.Type.Private) &&
+                                      !mv.hasModifier(J.Modifier.Type.Final) &&
+                                      (!(topLevel instanceof Cs) || mv.getModifiers().stream().noneMatch(m -> "readonly".equals(m.getKeyword()) || "const".equals(m.getKeyword()))) &&
+                                      !mv.hasModifier(J.Modifier.Type.Volatile))
                         .filter(mv -> !anyAnnotationApplied(new Cursor(bodyCursor, mv)))
                         .map(J.VariableDeclarations::getVariables)
                         .flatMap(Collection::stream)
@@ -236,9 +249,9 @@ public class FinalizePrivateFields extends Recipe {
          * @return true if the cursor is in a constructor or an initializer block (both static or non-static)
          */
         private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
-            Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic())
-                                                        || p instanceof JRightPadded
-                                                        || p instanceof JLeftPadded)
+            Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic()) ||
+                                                        p instanceof JRightPadded ||
+                                                        p instanceof JLeftPadded)
                     .getValue();
             if (parent instanceof J.Block) {
                 return privateFieldIsStatic;
@@ -299,14 +312,14 @@ public class FinalizePrivateFields extends Recipe {
     @Value
     @EqualsAndHashCode(callSuper = false)
     private static class FindLastIdentifier extends JavaIsoVisitor<List<J.Identifier>> {
+
         /**
          * Find the last identifier in a J.FieldAccess. The purpose is to check whether it's a private field.
          *
          * @param j the subtree to search, supposed to be a J.FieldAccess
          * @return the last Identifier if found, otherwise null.
          */
-        @Nullable
-        static J.Identifier getLastIdentifier(J j) {
+        static J.@Nullable Identifier getLastIdentifier(J j) {
             List<J.Identifier> ids = new FindLastIdentifier().reduce(j, new ArrayList<>());
             return !ids.isEmpty() ? ids.get(ids.size() - 1) : null;
         }

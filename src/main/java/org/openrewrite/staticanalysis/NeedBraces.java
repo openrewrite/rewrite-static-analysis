@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
@@ -60,6 +60,8 @@ public class NeedBraces extends Recipe {
     }
 
     private static class NeedBracesVisitor extends JavaIsoVisitor<ExecutionContext> {
+
+        @SuppressWarnings("NotNullFieldNotInitialized")
         NeedBracesStyle needBracesStyle;
 
         /**
@@ -92,10 +94,16 @@ public class NeedBraces extends Recipe {
         }
 
         @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
+        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            if (tree instanceof SourceFile) {
                 SourceFile cu = (SourceFile) requireNonNull(tree);
-                needBracesStyle = cu.getStyle(NeedBracesStyle.class) == null ? Checkstyle.needBracesStyle() : cu.getStyle(NeedBracesStyle.class);
+                // Python don't need none of your curly braces
+                if (cu.getSourcePath().toString().endsWith(".py")) {
+                    return (J) tree;
+                }
+                needBracesStyle = cu.getStyle(NeedBracesStyle.class) == null ?
+                        Checkstyle.needBracesStyle() :
+                        cu.getStyle(NeedBracesStyle.class, new NeedBracesStyle(false, false));
             }
             return super.visit(tree, ctx);
         }
@@ -201,6 +209,4 @@ public class NeedBraces extends Recipe {
             return elem;
         }
     }
-
-    ;
 }

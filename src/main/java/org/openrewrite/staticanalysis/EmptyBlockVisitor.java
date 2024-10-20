@@ -17,8 +17,8 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -99,8 +99,8 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             isEmptyBlock(t.getBody()) &&
             isEmptyResources(t.getResources())) {
             doAfterVisit(new DeleteStatement<>(tryable));
-        } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null
-                   && !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
+        } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null &&
+                   !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
             t = t.withFinally(null);
         }
 

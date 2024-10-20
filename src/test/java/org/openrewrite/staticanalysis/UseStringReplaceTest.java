@@ -146,4 +146,87 @@ class UseStringReplaceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/301")
+    @DisplayName("String#replaceAll is not replaced by String#replace, because second argument has a backslash in it")
+    void replaceAllUnchangedIfBackslashInReplacementString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String method() {
+                  return "abc".replaceAll("b", "\\\\\\\\\\\\\\\\");
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/301")
+    @DisplayName("String#replaceAll is not replaced by String#replace, because second argument has a dollar sign in it")
+    void replaceAllUnchangedIfDollarInReplacementString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                public String method1() {
+                  return "abc".replaceAll("b", "$0");
+                }
+
+                public String method2() {
+                  String s = "$0";
+                  return "abc".replaceAll("b", s);
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/330")
+    void equalsSignOnlyWhenSafeToReplace() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class A {
+                  String foo(String bar) {
+                      return bar.replaceAll("=","|");
+                  }
+              }
+              """,
+            """
+              class A {
+                  String foo(String bar) {
+                      return bar.replace("=","|");
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              class B {
+                  String foo(String bar) {
+                      return bar.replaceAll("(?=x)", "#");
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              class C {
+                  String foo(String bar) {
+                      return bar.replaceAll("(?<=x)", "#");
+                  }
+              }
+              """
+          )
+        );
+    }
 }

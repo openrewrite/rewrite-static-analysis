@@ -30,7 +30,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "StatementWithEmptyBody"})
 class UseCollectionInterfacesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
@@ -45,7 +45,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.Set;
-
+              
               class Test {
                   Set<Integer> method() {
                       return Collections.emptySet();
@@ -138,7 +138,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
         rewriteRun(
           spec -> spec
             .allSources(s -> s.markers(javaVersion(9)))
-            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
+            .parser(JavaParser.fromJavaVersion().classpath("annotations")),
           //language=java
           java(
             """
@@ -266,7 +266,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
         rewriteRun(
           spec -> spec
             .allSources(s -> s.markers(javaVersion(9)))
-            .parser(JavaParser.fromJavaVersion().classpath("annotations-24.1.0")),
+            .parser(JavaParser.fromJavaVersion().classpath("annotations")),
           //language=java
           java(
             """
@@ -741,7 +741,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.EnumSet;
-
+              
               class Test {
                   public EnumSet values = EnumSet.allOf(A.class);
                   void iterate() {
@@ -993,11 +993,9 @@ class UseCollectionInterfacesTest implements RewriteTest {
             //language=groovy
             """
               library('other-library')
-                            
               def myMap = [
                   myEntry: [[ key: value ]]
               ]
-                            
               runPipeline(myMap: myMap)
               """
           )

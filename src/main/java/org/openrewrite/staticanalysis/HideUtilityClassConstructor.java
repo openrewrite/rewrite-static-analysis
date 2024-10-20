@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
@@ -62,7 +62,7 @@ public class HideUtilityClassConstructor extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                HideUtilityClassConstructorStyle style = ((SourceFile) cu).getStyle(HideUtilityClassConstructorStyle.class);
+                HideUtilityClassConstructorStyle style = cu.getStyle(HideUtilityClassConstructorStyle.class);
                 if (style == null) {
                     style = Checkstyle.hideUtilityClassConstructorStyle();
                 }

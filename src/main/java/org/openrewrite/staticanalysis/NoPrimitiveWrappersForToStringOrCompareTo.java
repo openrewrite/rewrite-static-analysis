@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
@@ -123,8 +123,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
             return mi;
         }
 
-        @Nullable
-        private Expression getSingleArg(@Nullable List<Expression> args) {
+        private @Nullable Expression getSingleArg(@Nullable List<Expression> args) {
             if (args != null && args.size() == 1 && !(args.get(0) instanceof J.Empty)) {
                 return args.get(0);
             }

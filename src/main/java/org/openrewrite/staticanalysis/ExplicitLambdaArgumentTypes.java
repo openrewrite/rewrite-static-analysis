@@ -15,12 +15,12 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -122,8 +122,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             return multiVariable;
         }
 
-        @Nullable
-        private TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
+        private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
             if (type == null || type instanceof JavaType.Unknown) {
                 return null;
             } else if (type instanceof JavaType.Primitive) {
@@ -209,8 +208,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             return null;
         }
 
-        @Nullable
-        private JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters) {
+        private @Nullable JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters) {
             List<JRightPadded<Expression>> typeExpressions = new ArrayList<>();
 
             for (JavaType type : typeParameters) {

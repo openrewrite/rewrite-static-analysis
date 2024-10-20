@@ -17,9 +17,9 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
@@ -41,8 +41,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             description = "An array of variable identifier names for local variables to ignore, even if the local variable is unused.",
             required = false,
             example = "[unused, notUsed, IGNORE_ME]")
-    @Nullable
-    String[] ignoreVariablesNamed;
+    String @Nullable [] ignoreVariablesNamed;
 
     @Override
     public String getDisplayName() {

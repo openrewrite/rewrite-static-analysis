@@ -64,9 +64,9 @@ public class IsEmptyCallOnCollections extends Recipe {
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 if (isZero(binary.getLeft()) || isZero(binary.getRight())) {
                     boolean zeroRight = isZero(binary.getRight());
-                    if (binary.getOperator() == J.Binary.Type.Equal || binary.getOperator() == J.Binary.Type.NotEqual
-                        || zeroRight && binary.getOperator() == J.Binary.Type.GreaterThan
-                        || !zeroRight && binary.getOperator() == J.Binary.Type.LessThan) {
+                    if (binary.getOperator() == J.Binary.Type.Equal || binary.getOperator() == J.Binary.Type.NotEqual ||
+                        zeroRight && binary.getOperator() == J.Binary.Type.GreaterThan ||
+                        !zeroRight && binary.getOperator() == J.Binary.Type.LessThan) {
                         J maybeSizeCall = zeroRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
@@ -78,10 +78,10 @@ public class IsEmptyCallOnCollections extends Recipe {
                     }
                 } else if (isOne(binary.getLeft()) || isOne(binary.getRight())) {
                     boolean oneRight = isOne(binary.getRight());
-                    if ((oneRight && binary.getOperator() == J.Binary.Type.LessThan)
-                        || (!oneRight && binary.getOperator() == J.Binary.Type.GreaterThan)
-                        || (oneRight && binary.getOperator() == J.Binary.Type.GreaterThanOrEqual)
-                        || (!oneRight && binary.getOperator() == J.Binary.Type.LessThanOrEqual)) {
+                    if ((oneRight && binary.getOperator() == J.Binary.Type.LessThan) ||
+                        (!oneRight && binary.getOperator() == J.Binary.Type.GreaterThan) ||
+                        (oneRight && binary.getOperator() == J.Binary.Type.GreaterThanOrEqual) ||
+                        (!oneRight && binary.getOperator() == J.Binary.Type.LessThanOrEqual)) {
                         J maybeSizeCall = oneRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;

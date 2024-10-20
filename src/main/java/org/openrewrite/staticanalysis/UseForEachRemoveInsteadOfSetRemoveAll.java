@@ -54,14 +54,14 @@ public class UseForEachRemoveInsteadOfSetRemoveAll extends Recipe {
                 Iterator<Cursor> cIterator = getCursor().getPathAsCursors();
                 while (cIterator.hasNext()) {
                     Cursor p = cIterator.next();
-                    if (p.getValue() instanceof J.ClassDeclaration
-                            || p.getValue() instanceof J.Block
-                            || p.getValue() instanceof J.Lambda) {
+                    if (p.getValue() instanceof J.ClassDeclaration ||
+                            p.getValue() instanceof J.Block ||
+                            p.getValue() instanceof J.Lambda) {
                         return false;
-                    } else if (p.getValue() instanceof J.ControlParentheses
-                            || p.getValue() instanceof J.Return
-                            || p.getValue() instanceof J.VariableDeclarations
-                            || p.getValue() instanceof J.Assignment) {
+                    } else if (p.getValue() instanceof J.ControlParentheses ||
+                            p.getValue() instanceof J.Return ||
+                            p.getValue() instanceof J.VariableDeclarations ||
+                            p.getValue() instanceof J.Assignment) {
                         return true;
                     }
                 }

@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
@@ -61,12 +61,13 @@ public class EqualsAvoidsNull extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                EqualsAvoidsNullStyle style = ((SourceFile) cu).getStyle(EqualsAvoidsNullStyle.class);
+                EqualsAvoidsNullStyle style = cu.getStyle(EqualsAvoidsNullStyle.class);
                 if (style == null) {
                     style = Checkstyle.equalsAvoidsNull();
                 }
-                return new EqualsAvoidsNullVisitor<>(style).visit(cu, ctx);
+                return new EqualsAvoidsNullVisitor<>(style).visitNonNull(cu, ctx);
             }
+            //noinspection DataFlowIssue
             return (J) tree;
         }
     }

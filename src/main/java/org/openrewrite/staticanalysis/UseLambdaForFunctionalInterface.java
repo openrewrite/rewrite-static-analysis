@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -76,10 +76,10 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                             return n;
                         }
 
-                        if (usesThis(getCursor())
-                            || shadowsLocalVariable(getCursor())
-                            || usedAsStatement(getCursor())
-                            || fieldInitializerReferencingUninitializedField(getCursor())) {
+                        if (usesThis(getCursor()) ||
+                            shadowsLocalVariable(getCursor()) ||
+                            usedAsStatement(getCursor()) ||
+                            fieldInitializerReferencingUninitializedField(getCursor())) {
                             return n;
                         }
 
@@ -95,6 +95,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
                         StringBuilder templateBuilder = new StringBuilder();
                         J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
+
+                        // If the functional interface method has type parameters, we can't replace it with a lambda.
+                        if (methodDeclaration.getTypeParameters() != null && !methodDeclaration.getTypeParameters().isEmpty()) {
+                            return n;
+                        }
 
                         if (methodDeclaration.getParameters().get(0) instanceof J.Empty) {
                             templateBuilder.append("() -> {");
@@ -195,7 +200,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return hasGenerics(lambda);
             }
 
-            private boolean areMethodsAmbiguous(@Nullable JavaType.Method m1, @Nullable JavaType.Method m2) {
+            private boolean areMethodsAmbiguous(JavaType.@Nullable Method m1, JavaType.@Nullable Method m2) {
                 if (m1 == null || m2 == null) {
                     return false;
                 }
@@ -324,9 +329,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 if (referencesUninitializedFinalField.get()) {
                     return ident;
                 }
-                if (ident.getFieldType() != null && ident.getFieldType().hasFlags(Flag.Final)
-                    && !ident.getFieldType().hasFlags(Flag.HasInit)
-                    && owner.equals(ident.getFieldType().getOwner())) {
+                if (ident.getFieldType() != null && ident.getFieldType().hasFlags(Flag.Final) &&
+                    !ident.getFieldType().hasFlags(Flag.HasInit) &&
+                    owner.equals(ident.getFieldType().getOwner())) {
                     referencesUninitializedFinalField.set(true);
                 }
                 return super.visitIdentifier(ident, integer);
@@ -380,9 +385,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return newClass;
             }
 
-            @Nullable
             @Override
-            public J visit(@Nullable Tree tree, List<String> variables) {
+            public @Nullable J visit(@Nullable Tree tree, List<String> variables) {
                 if (getCursor().getNearestMessage("stop") != null) {
                     return (J) tree;
                 }
@@ -422,8 +426,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     // TODO consider moving to TypeUtils
-    @Nullable
-    private static JavaType.Method getSamCompatible(@Nullable JavaType type) {
+    private static JavaType.@Nullable Method getSamCompatible(@Nullable JavaType type) {
         JavaType.Method sam = null;
         JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
         if (fullyQualified == null) {

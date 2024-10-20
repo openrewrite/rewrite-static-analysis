@@ -20,8 +20,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
-import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -33,7 +32,7 @@ import static java.util.Collections.singletonList;
 public class StringLiteralEquality extends Recipe {
     @Override
     public String getDisplayName() {
-        return "Use `String.equals()` on String literals";
+        return "Use `String.equals()` on `String` literals";
     }
 
     @Override
@@ -59,9 +58,7 @@ public class StringLiteralEquality extends Recipe {
         // Don't change for Kotlin because In Kotlin, `==` means structural equality, so it's redundant to call equals().
         // see https://rules.sonarsource.com/kotlin/RSPEC-S6519/
         TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(
-                Preconditions.and(
-                        Preconditions.not(new KotlinFileChecker<>()),
-                        Preconditions.not(new GroovyFileChecker<>())),
+                new JavaFileChecker<>(),
                 new UsesType<>("java.lang.String", false));
         return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
             private final JavaType.FullyQualified TYPE_STRING = TypeUtils.asFullyQualified(JavaType.buildType("java.lang.String"));

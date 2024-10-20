@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -94,8 +94,7 @@ public class InlineVariable extends Recipe {
                 return bl;
             }
 
-            @Nullable
-            private String identReturned(List<Statement> stats) {
+            private @Nullable String identReturned(List<Statement> stats) {
                 Statement lastStatement = stats.get(stats.size() - 1);
                 if (lastStatement instanceof J.Return) {
                     J.Return return_ = (J.Return) lastStatement;
