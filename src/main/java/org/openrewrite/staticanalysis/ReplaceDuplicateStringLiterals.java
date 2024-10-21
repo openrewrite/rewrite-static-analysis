@@ -44,6 +44,12 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     @Nullable
     Boolean includeTestSources;
 
+    @Option(displayName = "Maximum length of the generate variable names",
+            description = "By default this is set to 100 characters",
+            required = false)
+    @Nullable
+    Integer maxVariableLength = 100;
+
     @Override
     public String getDisplayName() {
         return "Replace duplicate `String` literals";
@@ -181,7 +187,16 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         prevIsLower = Character.isLowerCase(c);
                     }
                 }
-                return VariableNameUtils.normalizeName(newName.toString());
+                String newNameString = newName.toString();
+                while(newNameString.length() > maxVariableLength){
+                    int indexOf = newNameString.lastIndexOf("_");
+                    if(indexOf > -1) {
+                        newNameString = newNameString.substring(0, indexOf);
+                    } else{
+                        newNameString = newNameString.substring(0, maxVariableLength);
+                    }
+                }
+                return VariableNameUtils.normalizeName(newNameString);
             }
         });
     }
