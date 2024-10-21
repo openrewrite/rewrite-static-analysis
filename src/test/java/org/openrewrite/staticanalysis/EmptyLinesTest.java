@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ class EmptyLinesTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void inlineVariable() {
+    void addNewLinesAroundMethods() {
         rewriteRun(
           //language=java
           java(
@@ -57,9 +57,8 @@ class EmptyLinesTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
-    void inlineVariable2() {
+    void addNewLinesBetweenMethods() {
         rewriteRun(
           //language=java
           java(
@@ -87,9 +86,8 @@ class EmptyLinesTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
-    void inlineVariable3() {
+    void addNewLinesBeforeMethod() {
         rewriteRun(
           //language=java
           java(
@@ -117,9 +115,8 @@ class EmptyLinesTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
-    void inlineVariable4() {
+    void addNewLinesAfterMethod() {
         rewriteRun(
           //language=java
           java(
