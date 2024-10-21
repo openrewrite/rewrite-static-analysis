@@ -108,13 +108,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
-        if (binary.getOperator() == J.Binary.Type.And &&
-            binary.getLeft() instanceof J.Binary) {
-            J.Binary left = (J.Binary) binary.getLeft();
-            if (isNullLiteral(left.getLeft()) &&
-                matchesSelect(left.getRight(), requireNonNull(m.getSelect())) ||
-                isNullLiteral(left.getRight()) &&
-                matchesSelect(left.getLeft(), requireNonNull(m.getSelect()))) {
+        if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
+            J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
+            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
+                isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
                 doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
             }
         }
