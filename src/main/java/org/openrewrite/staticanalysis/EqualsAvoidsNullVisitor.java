@@ -28,7 +28,6 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.tree.JLeftPadded.build;
 import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
@@ -51,25 +50,24 @@ import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    MethodMatcher EQUALS = getMethodMatcher("equals(java.lang.Object)");
-    MethodMatcher EQUALS_IGNORE_CASE = getMethodMatcher("equalsIgnoreCase(java.lang.String)");
-    MethodMatcher COMPARE_TO = getMethodMatcher("compareTo(java.lang.String)");
-    MethodMatcher COMPARE_TO_IGNORE_CASE = getMethodMatcher("compareToIgnoreCase(java.lang.String)");
-    MethodMatcher CONTENT_EQUALS = getMethodMatcher("contentEquals(java.lang.CharSequence)");
+    MethodMatcher EQUALS = new MethodMatcher("java.lang.String " + "equals(java.lang.Object)");
+    MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " + "equalsIgnoreCase(java.lang.String)");
+    MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String " + "compareTo(java.lang.String)");
+    MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " + "compareToIgnoreCase(java.lang.String)");
+    MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java.lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        return getSuperIfSelectNull((J.MethodInvocation) super.visitMethodInvocation(method, p));
-    }
-
-    private J getSuperIfSelectNull(J.MethodInvocation m) {
-        return nonNull(m.getSelect()) ?
-                !(m.getSelect() instanceof J.Literal)
-                && m.getArguments().get(0) instanceof J.Literal
-                && isStringComparisonMethod(m) ?
-                        literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue()) : m : m;
+        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
+        if (m.getSelect() != null &&
+            !(m.getSelect() instanceof J.Literal) &&
+            m.getArguments().get(0) instanceof J.Literal &&
+            isStringComparisonMethod(m)) {
+            return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
+        }
+        return m;
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
@@ -110,13 +108,13 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
-        if (binary.getOperator() == J.Binary.Type.And
-            && binary.getLeft() instanceof J.Binary) {
+        if (binary.getOperator() == J.Binary.Type.And &&
+            binary.getLeft() instanceof J.Binary) {
             J.Binary left = (J.Binary) binary.getLeft();
-            if (isNullLiteral(left.getLeft())
-                && matchesSelect(left.getRight(), requireNonNull(m.getSelect()))
-                || isNullLiteral(left.getRight())
-                   && matchesSelect(left.getLeft(), requireNonNull(m.getSelect()))) {
+            if (isNullLiteral(left.getLeft()) &&
+                matchesSelect(left.getRight(), requireNonNull(m.getSelect())) ||
+                isNullLiteral(left.getRight()) &&
+                matchesSelect(left.getLeft(), requireNonNull(m.getSelect()))) {
                 doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
             }
         }
@@ -127,11 +125,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private boolean matchesSelect(Expression expression, Expression select) {
-        return expression.printTrimmed(getCursor()).replaceAll("\\s", "").equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
-    }
-
-    private static MethodMatcher getMethodMatcher(String method) {
-        return new MethodMatcher("java.lang.String " + method);
+        return expression.printTrimmed(getCursor()).replaceAll("\\s", "")
+                .equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
     }
 
     private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {

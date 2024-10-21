@@ -28,7 +28,6 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -90,7 +89,7 @@ public class UseStringReplace extends Recipe {
                     return invocation; // Might contain special characters; unsafe to replace
                 }
                 String secondValue = (String) ((J.Literal) secondArgument).getValue();
-                if (Objects.nonNull(secondValue) && (secondValue.contains("$") || secondValue.contains("\\"))) {
+                if (secondValue != null && (secondValue.contains("$") || secondValue.contains("\\"))) {
                     return invocation; // Does contain special characters; unsafe to replace
                 }
 
@@ -100,7 +99,7 @@ public class UseStringReplace extends Recipe {
                     // Checks if the String literal may not be a regular expression,
                     // if so, then change the method invocation name
                     String firstValue = (String) ((J.Literal) firstArgument).getValue();
-                    if (Objects.nonNull(firstValue) && !mayBeRegExp(firstValue)) {
+                    if (firstValue != null && !mayBeRegExp(firstValue)) {
                         String unEscapedLiteral = unEscapeCharacters(firstValue);
                         invocation = invocation
                                 .withName(invocation.getName().withSimpleName("replace"))
