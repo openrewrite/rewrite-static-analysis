@@ -21,16 +21,11 @@ import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static org.openrewrite.java.tree.JLeftPadded.build;
-import static org.openrewrite.java.tree.Space.SINGLE_SPACE;
 
 /**
  * A visitor that identifies and addresses potential issues related to
@@ -97,8 +92,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 m.getPrefix(),
                 Markers.EMPTY,
                 requireNonNull(m.getSelect()),
-                build(J.Binary.Type.Equal).withBefore(SINGLE_SPACE),
-                firstArgument.withPrefix(SINGLE_SPACE),
+                JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
+                firstArgument.withPrefix(Space.SINGLE_SPACE),
                 JavaType.Primitive.Boolean);
     }
 
