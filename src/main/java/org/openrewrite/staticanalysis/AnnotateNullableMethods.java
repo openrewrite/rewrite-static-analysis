@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -62,7 +63,8 @@ public class AnnotateNullableMethods extends Recipe {
                 }
 
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
-                if (FindNullableReturnStatements.find(md.getBody())) {
+                updateCursor(md);
+                if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor())) {
                     maybeAddImport(NULLABLE_ANN_CLASS);
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@Nullable")
                             .imports(NULLABLE_ANN_CLASS)
@@ -117,8 +119,8 @@ public class AnnotateNullableMethods extends Recipe {
                 new MethodMatcher("java.util.Spliterator trySplit(..)")
         );
 
-        static boolean find(@Nullable J subtree) {
-            return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean()).get();
+        static boolean find(@Nullable J subtree, Cursor parentTreeCursor) {
+            return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean(), parentTreeCursor).get();
         }
 
         @Override
