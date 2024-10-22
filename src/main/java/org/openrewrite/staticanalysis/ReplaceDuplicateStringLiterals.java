@@ -190,11 +190,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 String newNameString = newName.toString();
                 while (newNameString.length() > maxVariableLength){
                     int indexOf = newNameString.lastIndexOf("_");
-                    if (indexOf > -1) {
-                        newNameString = newNameString.substring(0, indexOf);
-                    } else {
-                        newNameString = newNameString.substring(0, maxVariableLength);
-                    }
+                    newNameString = newNameString.substring(0, indexOf > -1 ? indexOf : maxVariableLength);
                 }
                 return VariableNameUtils.normalizeName(newNameString);
             }
