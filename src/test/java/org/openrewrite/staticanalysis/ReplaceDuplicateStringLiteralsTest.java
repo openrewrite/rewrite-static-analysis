@@ -149,6 +149,68 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     }
 
     @Test
+    void fieldNameCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              class A {
+                  final String val1 = "value";
+                  final String val2 = "value";
+                  final String val3 = "value";
+                  final int VALUE = 1;
+              }
+              """,
+            """
+              package org.foo;
+              class A {
+                  private static final String VALUE_1 = "value";
+                  final String val1 = VALUE_1;
+                  final String val2 = VALUE_1;
+                  final String val3 = VALUE_1;
+                  final int VALUE = 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticImportCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              
+              import static java.lang.Long.MAX_VALUE;
+              
+              class A {
+                  final String val1 = "max_value";
+                  final String val2 = "max_value";
+                  final String val3 = "max_value";
+                  final long value = MAX_VALUE;
+              }
+              """,
+            """
+              package org.foo;
+              
+              import static java.lang.Long.MAX_VALUE;
+              
+              class A {
+                  private static final String MAX_VALUE_1 = "max_value";
+                  final String val1 = MAX_VALUE_1;
+                  final String val2 = MAX_VALUE_1;
+                  final String val3 = MAX_VALUE_1;
+                  final long value = MAX_VALUE;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void generatedNameIsVeryLong() {
         rewriteRun(
           //language=java
