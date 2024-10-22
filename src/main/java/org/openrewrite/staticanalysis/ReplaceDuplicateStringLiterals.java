@@ -97,7 +97,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 if (duplicateLiteralsMap.isEmpty()) {
                     return classDecl;
                 }
-                Set<String> variableNames = duplicateLiteralInfo.getVariableNames();
+                Set<String> usedNames = duplicateLiteralInfo.getUsedNames();
                 Map<String, String> fieldValueToFieldName = duplicateLiteralInfo.getFieldValueToFieldName();
                 String classFqn = classDecl.getType().getFullyQualifiedName();
                 Map<J.Literal, String> replacements = new HashMap<>();
@@ -107,7 +107,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     String classFieldName = fieldValueToFieldName.get(valueOfLiteral);
                     String variableName;
                     if (classFieldName != null) {
-                        variableName = getNameWithoutShadow(classFieldName, variableNames);
+                        variableName = getNameWithoutShadow(classFieldName, usedNames);
                         if (StringUtils.isBlank(variableName)) {
                             continue;
                         }
@@ -115,7 +115,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             doAfterVisit(new ChangeFieldName<>(classFqn, classFieldName, variableName));
                         }
                     } else {
-                        variableName = getNameWithoutShadow(transformToVariableName(valueOfLiteral), variableNames);
+                        variableName = getNameWithoutShadow(transformToVariableName(valueOfLiteral), usedNames);
                         if (StringUtils.isBlank(variableName)) {
                             continue;
                         }
@@ -134,7 +134,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                                             .apply(new Cursor(getCursor(), classDecl.getBody()), classDecl.getBody().getCoordinates().firstStatement(), replaceLiteral));
                         }
                     }
-                    variableNames.add(variableName);
+                    usedNames.add(variableName);
                     entry.getValue().forEach(v -> replacements.put(v, variableName));
                 }
                 duplicateLiteralInfo = null;
@@ -146,14 +146,14 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
             /**
              * Generate a variable name that does not create a name space conflict.
              * @param name variable name to replace duplicate literals with.
-             * @param variableNames variable names that exist in the compilation unit.
+             * @param usedNames variable names that exist in the compilation unit.
              * @return unique variable name.
              */
-            private String getNameWithoutShadow(String name, Set<String> variableNames) {
+            private String getNameWithoutShadow(String name, Set<String> usedNames) {
                 String transformedName = transformToVariableName(name);
                 String newName = transformedName;
                 int append = 0;
-                while (variableNames.contains(newName)) {
+                while (usedNames.contains(newName)) {
                     append++;
                     newName = transformedName + "_" + append;
                 }
@@ -184,7 +184,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     }
                 }
                 String newNameString = newName.toString();
-                while (newNameString.length() > maxVariableLength){
+                while (newNameString.length() > maxVariableLength) {
                     int indexOf = newNameString.lastIndexOf("_");
                     newNameString = newNameString.substring(0, indexOf > -1 ? indexOf : maxVariableLength);
                 }
@@ -199,7 +199,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Value
     private static class DuplicateLiteralInfo {
-        Set<String> variableNames;
+        Set<String> usedNames;
         Map<String, String> fieldValueToFieldName;
 
         @NonFinal
@@ -225,13 +225,22 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         parentScope.getValue() instanceof J.ClassDeclaration &&
                         !(privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&
                           ((J.Literal) v.getInitializer()).getValue() instanceof String)) {
-                        result.variableNames.add(v.getSimpleName());
+                        result.usedNames.add(v.getSimpleName());
                     }
                     if (parentScope.getValue() instanceof J.ClassDeclaration &&
                         privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&
                         ((J.Literal) v.getInitializer()).getValue() instanceof String) {
                         String value = (String) (((J.Literal) v.getInitializer()).getValue());
                         result.fieldValueToFieldName.putIfAbsent(value, v.getSimpleName());
+                    }
+                    return v;
+                }
+
+                public J.Identifier visitIdentifier(J.Identifier identifier, Integer i) {
+                    J.Identifier v = super.visitIdentifier(identifier, i);
+                    if (v.getType() instanceof JavaType.Class &&
+                            ((JavaType.Class) v.getType()).getKind() == JavaType.FullyQualified.Kind.Enum) {
+                        result.usedNames.add(v.getSimpleName());
                     }
                     return v;
                 }
