@@ -45,11 +45,11 @@ public class AnnotateNullableMethods extends Recipe {
     @Override
     public String getDescription() {
         return "Automatically adds the @org.jspecify.annotation.Nullable to non-private methods" +
-                "that may return null. This recipe scans for methods that do not already have a @Nullable" +
-                "annotation and checks their return statements for potential null values. It also" +
-                "identifies known methods from standard libraries that may return null, such as methods" +
-                "from Map, Queue, Deque, NavigableSet, and Spliterator. The return of streams, or lambdas" +
-                " are not taken into account.";
+               "that may return null. This recipe scans for methods that do not already have a @Nullable" +
+               "annotation and checks their return statements for potential null values. It also" +
+               "identifies known methods from standard libraries that may return null, such as methods" +
+               "from Map, Queue, Deque, NavigableSet, and Spliterator. The return of streams, or lambdas" +
+               " are not taken into account.";
     }
 
     @Override
@@ -58,6 +58,7 @@ public class AnnotateNullableMethods extends Recipe {
     }
 
     private static class AnnotateNullableMethodsVisitor extends JavaIsoVisitor<ExecutionContext> {
+
         AtomicBoolean annotatedNullable = new AtomicBoolean(false);
 
         @Override
@@ -94,6 +95,7 @@ public class AnnotateNullableMethods extends Recipe {
 
     @AllArgsConstructor
     private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
+
         private static final List<MethodMatcher> KNOWN_NULLABLE_METHODS = getMatchersKnownNullableMethods();
 
         static AtomicBoolean find(J subtree) {

@@ -24,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 class AnnotateNullableMethodsTest implements RewriteTest {
+
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new AnnotateNullableMethods()).parser(JavaParser.fromJavaVersion().classpath("jspecify"));
@@ -38,7 +39,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               public class Test {
-    
+              
                   public String getString() {
                       return null;
                   }
@@ -54,8 +55,8 @@ class AnnotateNullableMethodsTest implements RewriteTest {
             """
               import org.jspecify.annotations.Nullable;
               
-              public class Test {      
-    
+              public class Test {
+              
                   public @Nullable String getString() {
                       return null;
                   }
