@@ -15,11 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.AllArgsConstructor;
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
@@ -34,112 +30,95 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AnnotateNullableMethods extends Recipe {
 
     private static final String NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
-    private static final AnnotationMatcher NULLABLE_ANNOTATION_MATCHER =
-            new AnnotationMatcher("@" + NULLABLE_ANN_CLASS);
+    private static final AnnotationMatcher NULLABLE_ANNOTATION_MATCHER = new AnnotationMatcher("@" + NULLABLE_ANN_CLASS);
 
     @Override
     public String getDisplayName() {
-        return "Annotate methods which may return null with @Nullable";
+        return "Annotate methods which may return `null` with `@Nullable`";
     }
 
     @Override
     public String getDescription() {
-        return "Automatically adds the @org.jspecify.annotation.Nullable to non-private methods" +
-               "that may return null. This recipe scans for methods that do not already have a @Nullable" +
-               "annotation and checks their return statements for potential null values. It also" +
-               "identifies known methods from standard libraries that may return null, such as methods" +
-               "from Map, Queue, Deque, NavigableSet, and Spliterator. The return of streams, or lambdas" +
-               " are not taken into account.";
+        return "Automatically adds the `@org.jspecify.annotation.Nullable` to non-private methods " +
+               "that may return `null`. This recipe scans for methods that do not already have a `@Nullable` " +
+               "annotation and checks their return statements for potential null values. It also " +
+               "identifies known methods from standard libraries that may return null, such as methods " +
+               "from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. The return of streams, or lambdas " +
+               "are not taken into account.";
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new AnnotateNullableMethodsVisitor();
-    }
-
-    private static class AnnotateNullableMethodsVisitor extends JavaIsoVisitor<ExecutionContext> {
-
-        AtomicBoolean annotatedNullable = new AtomicBoolean(false);
-
-        @Override
-        public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration md, ExecutionContext ctx) {
-            if (!md.hasModifier(J.Modifier.Type.Public)) {
-                return md;
-            }
-
-            if (md.getMethodType() != null && md.getMethodType().getReturnType() instanceof JavaType.Primitive) {
-                return md;
-            }
-
-            if (service(AnnotationService.class).matches(getCursor(), NULLABLE_ANNOTATION_MATCHER)) {
-                return md;
-            }
-
-            md = super.visitMethodDeclaration(md, ctx);
-            updateCursor(md);
-
-            if (FindNullableReturnStatements.find(md).get()) {
-                maybeAddImport(NULLABLE_ANN_CLASS);
-                if (!annotatedNullable.getAndSet(true)) {
-                    doAfterVisit(new NullableOnMethodReturnType().getVisitor());
+        return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
+                if (!methodDeclaration.hasModifier(J.Modifier.Type.Public) ||
+                    methodDeclaration.getMethodType() == null ||
+                    methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
+                    service(AnnotationService.class).matches(getCursor(), NULLABLE_ANNOTATION_MATCHER)) {
+                    return methodDeclaration;
                 }
-                return JavaTemplate.builder("@Nullable")
-                        .imports(NULLABLE_ANN_CLASS)
-                        .javaParser(JavaParser.fromJavaVersion().classpath("jspecify"))
-                        .build()
-                        .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+
+                J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
+                updateCursor(md);
+
+                if (FindNullableReturnStatements.find(md).get()) {
+                    maybeAddImport(NULLABLE_ANN_CLASS);
+                    J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@Nullable")
+                            .imports(NULLABLE_ANN_CLASS)
+                            .javaParser(JavaParser.fromJavaVersion().dependsOn(
+                                    "package org.jspecify.annotations;public @interface Nullable {}"))
+                            .build()
+                            .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                    return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor().visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
+                }
+                return md;
             }
-            return md;
-        }
+        };
     }
 
-    @AllArgsConstructor
     private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
 
-        private static final List<MethodMatcher> KNOWN_NULLABLE_METHODS = getMatchersKnownNullableMethods();
+        private static final List<MethodMatcher> KNOWN_NULLABLE_METHODS = Arrays.asList(
+                new MethodMatcher("java.util.Map computeIfAbsent(..)"),
+                new MethodMatcher("java.util.Map computeIfPresent(..)"),
+                new MethodMatcher("java.util.Map get(..)"),
+                new MethodMatcher("java.util.Map merge(..)"),
+                new MethodMatcher("java.util.Map put(..)"),
+                new MethodMatcher("java.util.Map putIfAbsent(..)"),
+
+                new MethodMatcher("java.util.Queue poll(..)"),
+                new MethodMatcher("java.util.Queue peek(..)"),
+
+                new MethodMatcher("java.util.Deque peekFirst(..)"),
+                new MethodMatcher("java.util.Deque pollFirst(..)"),
+                new MethodMatcher("java.util.Deque peekLast(..)"),
+
+                new MethodMatcher("java.util.NavigableSet lower(..)"),
+                new MethodMatcher("java.util.NavigableSet floor(..)"),
+                new MethodMatcher("java.util.NavigableSet ceiling(..)"),
+                new MethodMatcher("java.util.NavigableSet higher(..)"),
+                new MethodMatcher("java.util.NavigableSet pollFirst(..)"),
+                new MethodMatcher("java.util.NavigableSet pollLast(..)"),
+
+                new MethodMatcher("java.util.NavigableMap lowerEntry(..)"),
+                new MethodMatcher("java.util.NavigableMap floorEntry(..)"),
+                new MethodMatcher("java.util.NavigableMap ceilingEntry(..)"),
+                new MethodMatcher("java.util.NavigableMap higherEntry(..)"),
+                new MethodMatcher("java.util.NavigableMap lowerKey(..)"),
+                new MethodMatcher("java.util.NavigableMap floorKey(..)"),
+                new MethodMatcher("java.util.NavigableMap ceilingKey(..)"),
+                new MethodMatcher("java.util.NavigableMap higherKey(..)"),
+                new MethodMatcher("java.util.NavigableMap firstEntry(..)"),
+                new MethodMatcher("java.util.NavigableMap lastEntry(..)"),
+                new MethodMatcher("java.util.NavigableMap pollFirstEntry(..)"),
+                new MethodMatcher("java.util.NavigableMap pollLastEntry(..)"),
+
+                new MethodMatcher("java.util.Spliterator trySplit(..)")
+        );
 
         static AtomicBoolean find(J subtree) {
             return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean());
-        }
-
-        private static List<MethodMatcher> getMatchersKnownNullableMethods() {
-            return Arrays.asList(
-                    new MethodMatcher("java.util.Map computeIfAbsent(..)"),
-                    new MethodMatcher("java.util.Map computeIfPresent(..)"),
-                    new MethodMatcher("java.util.Map get(..)"),
-                    new MethodMatcher("java.util.Map merge(..)"),
-                    new MethodMatcher("java.util.Map put(..)"),
-                    new MethodMatcher("java.util.Map putIfAbsent(..)"),
-
-                    new MethodMatcher("java.util.Queue poll(..)"),
-                    new MethodMatcher("java.util.Queue peek(..)"),
-
-                    new MethodMatcher("java.util.Deque peekFirst(..)"),
-                    new MethodMatcher("java.util.Deque pollFirst(..)"),
-                    new MethodMatcher("java.util.Deque peekLast(..)"),
-
-                    new MethodMatcher("java.util.NavigableSet lower(..)"),
-                    new MethodMatcher("java.util.NavigableSet floor(..)"),
-                    new MethodMatcher("java.util.NavigableSet ceiling(..)"),
-                    new MethodMatcher("java.util.NavigableSet higher(..)"),
-                    new MethodMatcher("java.util.NavigableSet pollFirst(..)"),
-                    new MethodMatcher("java.util.NavigableSet pollLast(..)"),
-
-                    new MethodMatcher("java.util.NavigableMap lowerEntry(..)"),
-                    new MethodMatcher("java.util.NavigableMap floorEntry(..)"),
-                    new MethodMatcher("java.util.NavigableMap ceilingEntry(..)"),
-                    new MethodMatcher("java.util.NavigableMap higherEntry(..)"),
-                    new MethodMatcher("java.util.NavigableMap lowerKey(..)"),
-                    new MethodMatcher("java.util.NavigableMap floorKey(..)"),
-                    new MethodMatcher("java.util.NavigableMap ceilingKey(..)"),
-                    new MethodMatcher("java.util.NavigableMap higherKey(..)"),
-                    new MethodMatcher("java.util.NavigableMap firstEntry(..)"),
-                    new MethodMatcher("java.util.NavigableMap lastEntry(..)"),
-                    new MethodMatcher("java.util.NavigableMap pollFirstEntry(..)"),
-                    new MethodMatcher("java.util.NavigableMap pollLastEntry(..)"),
-
-                    new MethodMatcher("java.util.Spliterator trySplit(..)")
-            );
         }
 
         @Override
