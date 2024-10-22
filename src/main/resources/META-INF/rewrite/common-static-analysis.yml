@@ -97,3 +97,4 @@ recipeList:
   - org.openrewrite.kotlin.cleanup.ImplicitParameterInLambda
   - org.openrewrite.kotlin.cleanup.ReplaceCharToIntWithCode
   - org.openrewrite.staticanalysis.AddStaticModifierToFinalVariables
+  - org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
