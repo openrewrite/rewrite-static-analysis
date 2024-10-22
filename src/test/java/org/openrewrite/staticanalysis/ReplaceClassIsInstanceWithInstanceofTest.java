@@ -38,21 +38,19 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
           java(
             """
               class A {
-                  boolean foo() {
+                  void foo() {
                     String s = "";
-                    String s2 = null;
                     boolean result = String.class.isInstance(s);
-                    return result;
+                    result = Integer.class.isInstance(s);
                 }
               }
               """,
             """
               class A {
-                  boolean foo() {
+                  void foo() {
                     String s = "";
-                    String s2 = null;
                     boolean result = s instanceof String;
-                    return result;
+                    result = s instanceof Integer;
                 }
               }
             """
