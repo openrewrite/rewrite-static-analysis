@@ -27,14 +27,15 @@ class AnnotateNullableMethodsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new AnnotateNullableMethods()).parser(JavaParser.fromJavaVersion().classpath("jspecify"));
+        spec
+          .recipe(new AnnotateNullableMethods())
+          .parser(JavaParser.fromJavaVersion().classpath("jspecify"));
     }
 
     @DocumentExample
     @Test
     void methodReturnsNullLiteral() {
         rewriteRun(
-          spec -> spec.recipe(new AnnotateNullableMethods()),
           //language=java
           java(
             """
@@ -76,7 +77,6 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     @Test
     void methodReturnNullButIsAlreadyAnnotated() {
         rewriteRun(
-          spec -> spec.recipe(new AnnotateNullableMethods()),
           //language=java
           java(
             """
@@ -102,7 +102,6 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     @Test
     void methodDoesNotReturnNull() {
         rewriteRun(
-          spec -> spec.recipe(new AnnotateNullableMethods()),
           //language=java
           java(
             """
@@ -121,17 +120,14 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     @Test
     void methodReturnsDelegateKnowNullableMethod() {
         rewriteRun(
-          spec -> spec.recipe(new AnnotateNullableMethods()),
           //language=java
           java(
             """
-              import java.util.HashMap;
               import java.util.Map;
               
               public class Test {
               
-                  public String getString() {
-                      Map<String, String> map = new HashMap<>();
+                  public String getString(Map<String, String> map) {
                       return map.get("key");
                   }
               }
@@ -139,13 +135,11 @@ class AnnotateNullableMethodsTest implements RewriteTest {
             """
               import org.jspecify.annotations.Nullable;
               
-              import java.util.HashMap;
               import java.util.Map;
               
               public class Test {
               
-                  public @Nullable String getString() {
-                      Map<String, String> map = new HashMap<>();
+                  public @Nullable String getString(Map<String, String> map) {
                       return map.get("key");
                   }
               }
@@ -182,7 +176,6 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     @Test
     void privateMethodsShouldNotBeAnnotated() {
         rewriteRun(
-          spec -> spec.recipe(new AnnotateNullableMethods()),
           //language=java
           java(
             """
