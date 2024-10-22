@@ -142,6 +142,71 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
+    void tryCanBeRemovedWithMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+              
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (FileNotFoundException e) {
+                          throw e;
+                      } catch(IOException | ArrayIndexOutOfBoundsException e) {
+                          throw e;
+                      } catch(Exception e) {
+                          throw e;
+                      }
+                  }
+              }
+              """,
+            """
+            import java.io.FileReader;
+            import java.io.IOException;
+            import java.io.FileNotFoundException;
+              
+            class A {
+                void foo() throws IOException {
+                    new FileReader("").read();
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void multiCatchPreservedOnDifferentThrow() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+              
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (FileNotFoundException e) {
+                          throw e;
+                      } catch(IOException | ArrayIndexOutOfBoundsException e) {
+                          throw new IOException("another message", e);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void tryShouldBePreservedBecauseFinally() {
         rewriteRun(
           //language=java

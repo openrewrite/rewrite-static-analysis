@@ -68,6 +68,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         return Duration.ofMinutes(2);
     }
 
+    int maxVariableLength = 40;
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("java.lang.String", false), new JavaVisitor<ExecutionContext>() {
@@ -181,7 +183,12 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         prevIsLower = Character.isLowerCase(c);
                     }
                 }
-                return VariableNameUtils.normalizeName(newName.toString());
+                String newNameString = newName.toString();
+                while (newNameString.length() > maxVariableLength){
+                    int indexOf = newNameString.lastIndexOf("_");
+                    newNameString = newNameString.substring(0, indexOf > -1 ? indexOf : maxVariableLength);
+                }
+                return VariableNameUtils.normalizeName(newNameString);
             }
         });
     }

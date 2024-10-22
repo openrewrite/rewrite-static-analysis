@@ -149,6 +149,32 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     }
 
     @Test
+    void generatedNameIsVeryLong() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              class A {
+                  final String val1 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val2 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val3 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+              }
+              """,
+            """
+              package org.foo;
+              class A {
+                  private static final String THIS_IS_AN_UNREASONABLY_LONG_VARIABLE = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val1 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+                  final String val2 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+                  final String val3 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void replaceRedundantLiteralInMethodInvocation() {
         rewriteRun(
           //language=java
@@ -252,17 +278,17 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
           java(
             """
               class A {
-                  final String val1 = "An example,, of a :: String with `` special __ characters.";
-                  final String val2 = "An example,, of a :: String with `` special __ characters.";
-                  final String val3 = "An example,, of a :: String with `` special __ characters.";
+                  final String val1 = "Example,, :: String with `` special __ characters.";
+                  final String val2 = "Example,, :: String with `` special __ characters.";
+                  final String val3 = "Example,, :: String with `` special __ characters.";
               }
               """,
             """
               class A {
-                  private static final String AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS = "An example,, of a :: String with `` special __ characters.";
-                  final String val1 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
-                  final String val2 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
-                  final String val3 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
+                  private static final String EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS = "Example,, :: String with `` special __ characters.";
+                  final String val1 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS;
+                  final String val2 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS; 
+                  final String val3 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS;
               }
               """
           )
