@@ -149,6 +149,44 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     }
 
     @Test
+    void enumCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              enum TYPES {
+                  VALUE, NUMBER, TEXT
+              }
+
+              class A {
+                  final String val1 = "types";
+                  final String val2 = "types";
+                  final String val3 = "types";
+                  TYPES type = TYPES.VALUE;
+              }
+
+              """,
+            """
+              package org.foo;
+              enum TYPES {
+                  VALUE, NUMBER, TEXT
+              }
+
+              class A {
+                  private static final String TYPES_1 = "types";
+                  final String val1 = TYPES_1;
+                  final String val2 = TYPES_1;
+                  final String val3 = TYPES_1;
+                  TYPES type = TYPES.VALUE;
+              }
+
+              """
+          )
+        );
+    }
+
+    @Test
     void fieldNameCollidesWithNewStringLiteral() {
         rewriteRun(
           //language=java
