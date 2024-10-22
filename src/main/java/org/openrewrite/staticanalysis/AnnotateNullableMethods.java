@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.service.AnnotationService;
@@ -62,7 +63,7 @@ public class AnnotateNullableMethods extends Recipe {
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
                 updateCursor(md);
 
-                if (FindNullableReturnStatements.find(md).get()) {
+                if (FindNullableReturnStatements.find(md)) {
                     maybeAddImport(NULLABLE_ANN_CLASS);
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@Nullable")
                             .imports(NULLABLE_ANN_CLASS)
@@ -117,36 +118,31 @@ public class AnnotateNullableMethods extends Recipe {
                 new MethodMatcher("java.util.Spliterator trySplit(..)")
         );
 
-        static AtomicBoolean find(J subtree) {
-            return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean());
+        static boolean find(J subtree) {
+            return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean()).get();
         }
 
         @Override
-        public J.Return visitReturn(J.Return retrn, AtomicBoolean containsNullableReturn) {
-            if (containsNullableReturn.get()) {
+        public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean atomicBoolean) {
+            // Do not evaluate return statements in lambdas
+            return lambda;
+        }
+
+        @Override
+        public J.Return visitReturn(J.Return retrn, AtomicBoolean found) {
+            if (found.get()) {
                 return retrn;
             }
-
-            J.Return r = super.visitReturn(retrn, containsNullableReturn);
-            updateCursor(r);
-
-            // If the returns is contained within a lambda statement, we don't consider it.
-            Cursor ex = getCursor().dropParentUntil(e -> e instanceof J.MethodDeclaration || e instanceof J.Lambda);
-            if (!(ex.getValue() instanceof J.MethodDeclaration)) {
-                return r;
-            }
-
-            if (r.getExpression() != null && maybeIsNull(r.getExpression())) {
-                containsNullableReturn.set(true);
-            }
-
+            J.Return r = super.visitReturn(retrn, found);
+            found.set(maybeIsNull(r.getExpression()));
             return r;
         }
 
-        private boolean maybeIsNull(Expression returnExpression) {
-            if (returnExpression instanceof J.Literal && ((J.Literal) returnExpression).getValue() == null) {
-                return true;
-            } else if (returnExpression instanceof J.MethodInvocation) {
+        private boolean maybeIsNull(@Nullable Expression returnExpression) {
+            if (returnExpression instanceof J.Literal) {
+                return ((J.Literal) returnExpression).getValue() == null;
+            }
+            if (returnExpression instanceof J.MethodInvocation) {
                 return isKnowNullableMethod((J.MethodInvocation) returnExpression);
             }
             return false;
