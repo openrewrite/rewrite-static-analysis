@@ -27,6 +27,8 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
+import javax.annotation.Nullable;
+
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
@@ -144,6 +146,14 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
         public RemoveUnnecessaryNullCheck(J.Binary scope) {
             this.scope = scope;
+        }
+
+        @Override
+        public @Nullable J visit(@Nullable Tree tree, P p) {
+            if (done) {
+                return (J) tree;
+            }
+            return super.visit(tree, p);
         }
 
         @Override
