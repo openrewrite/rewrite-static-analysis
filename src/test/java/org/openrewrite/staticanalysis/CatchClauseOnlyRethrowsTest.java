@@ -165,14 +165,40 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                   }
               }
               """,
-              """
+            """
+            import java.io.FileReader;
+            import java.io.IOException;
+            import java.io.FileNotFoundException;
+              
+            class A {
+                void foo() throws IOException {
+                    new FileReader("").read();
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void multiCatchPreservedOnDifferentThrow() {
+        rewriteRun(
+          //language=java
+          java(
+            """
               import java.io.FileReader;
               import java.io.IOException;
               import java.io.FileNotFoundException;
-                
+              
               class A {
                   void foo() throws IOException {
-                      new FileReader("").read();
+                      try {
+                          new FileReader("").read();
+                      } catch (FileNotFoundException e) {
+                          throw e;
+                      } catch(IOException | ArrayIndexOutOfBoundsException e) {
+                          throw new IOException("another message", e);
+                      }
                   }
               }
               """
