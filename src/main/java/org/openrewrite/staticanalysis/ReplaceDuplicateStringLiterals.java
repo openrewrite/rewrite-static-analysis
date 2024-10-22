@@ -44,12 +44,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     @Nullable
     Boolean includeTestSources;
 
-    @Option(displayName = "Maximum length of the generate variable names",
-            description = "By default this is set to 100 characters",
-            required = false)
-    @Nullable
-    Integer maxVariableLength = 100;
-
     @Override
     public String getDisplayName() {
         return "Replace duplicate `String` literals";
@@ -73,6 +67,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     public Duration getEstimatedEffortPerOccurrence() {
         return Duration.ofMinutes(2);
     }
+
+    int maxVariableLength = 40;
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
