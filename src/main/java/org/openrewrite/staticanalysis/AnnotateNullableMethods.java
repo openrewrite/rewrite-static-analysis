@@ -61,8 +61,6 @@ public class AnnotateNullableMethods extends Recipe {
                 }
 
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
-                updateCursor(md);
-
                 if (FindNullableReturnStatements.find(md)) {
                     maybeAddImport(NULLABLE_ANN_CLASS);
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@Nullable")

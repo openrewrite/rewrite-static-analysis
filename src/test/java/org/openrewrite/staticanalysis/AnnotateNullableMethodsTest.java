@@ -188,4 +188,48 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void returnWithinNewClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.Callable;
+              
+              public class Test {
+              
+                  public Callable<String> getString() {
+                      return new Callable<String>() {
+                          @Override
+                          public String call() throws Exception {
+                              return null;
+                          }
+                      };
+                  }
+              
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+              
+              import java.util.concurrent.Callable;
+              
+              public class Test {
+              
+                  public Callable<String> getString() {
+                      return new Callable<String>() {
+              
+                          @Override
+                          public @Nullable String call() throws Exception {
+                              return null;
+                          }
+                      };
+                  }
+              
+              }
+              """
+          )
+        );
+    }
 }
