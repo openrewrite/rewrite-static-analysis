@@ -188,11 +188,11 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     }
                 }
                 String newNameString = newName.toString();
-                while(newNameString.length() > maxVariableLength){
+                while (newNameString.length() > maxVariableLength){
                     int indexOf = newNameString.lastIndexOf("_");
-                    if(indexOf > -1) {
+                    if (indexOf > -1) {
                         newNameString = newNameString.substring(0, indexOf);
-                    } else{
+                    } else {
                         newNameString = newNameString.substring(0, maxVariableLength);
                     }
                 }
