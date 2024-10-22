@@ -149,6 +149,32 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     }
 
     @Test
+    void generatedNameIsVeryLong() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              class A {
+                  final String val1 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val2 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val3 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+              }
+              """,
+            """
+              package org.foo;
+              class A {
+                  private static final String THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val1 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END;
+                  final String val2 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END;
+                  final String val3 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void replaceRedundantLiteralInMethodInvocation() {
         rewriteRun(
           //language=java
