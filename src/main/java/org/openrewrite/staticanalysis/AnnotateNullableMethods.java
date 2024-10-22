@@ -42,12 +42,11 @@ public class AnnotateNullableMethods extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Automatically adds the `@org.jspecify.annotation.Nullable` to non-private methods " +
-               "that may return `null`. This recipe scans for methods that do not already have a `@Nullable` " +
-               "annotation and checks their return statements for potential null values. It also " +
-               "identifies known methods from standard libraries that may return null, such as methods " +
-               "from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. The return of streams, or lambdas " +
-               "are not taken into account.";
+        return "Add the `@org.jspecify.annotation.Nullable` to non-private methods that may return `null`. " +
+               "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
+               "statements for potential null values. It also identifies known methods from standard libraries that may " +
+               "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
+               "The return of streams, or lambdas are not taken into account.";
     }
 
     @Override
@@ -63,7 +62,7 @@ public class AnnotateNullableMethods extends Recipe {
                 }
 
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
-                if (FindNullableReturnStatements.find(md)) {
+                if (FindNullableReturnStatements.find(md.getBody())) {
                     maybeAddImport(NULLABLE_ANN_CLASS);
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@Nullable")
                             .imports(NULLABLE_ANN_CLASS)
@@ -118,7 +117,7 @@ public class AnnotateNullableMethods extends Recipe {
                 new MethodMatcher("java.util.Spliterator trySplit(..)")
         );
 
-        static boolean find(J subtree) {
+        static boolean find(@Nullable J subtree) {
             return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean()).get();
         }
 
