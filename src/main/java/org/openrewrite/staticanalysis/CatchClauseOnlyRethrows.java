@@ -20,7 +20,10 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.Set;
@@ -37,7 +40,7 @@ public class CatchClauseOnlyRethrows extends Recipe {
     @Override
     public String getDescription() {
         return "A `catch` clause that only rethrows the caught exception is unnecessary. " +
-                "Letting the exception bubble up as normal achieves the same result with less code.";
+               "Letting the exception bubble up as normal achieves the same result with less code.";
     }
 
     @Override
@@ -105,16 +108,18 @@ public class CatchClauseOnlyRethrows extends Recipe {
 
             private boolean onlyRethrows(J.Try.Catch aCatch) {
                 if (aCatch.getBody().getStatements().size() != 1 ||
-                        !(aCatch.getBody().getStatements().get(0) instanceof J.Throw)) {
+                    !(aCatch.getBody().getStatements().get(0) instanceof J.Throw)) {
                     return false;
                 }
 
                 Expression exception = ((J.Throw) aCatch.getBody().getStatements().get(0)).getException();
-                JavaType.FullyQualified catchType = TypeUtils.asFullyQualified(aCatch.getParameter().getType());
-                if (catchType == null || !catchType.equals(exception.getType())) {
-                    return false;
+                JavaType catchParameterType = aCatch.getParameter().getType();
+                if (!(catchParameterType instanceof JavaType.MultiCatch)) {
+                    JavaType.FullyQualified catchType = TypeUtils.asFullyQualified(catchParameterType);
+                    if (catchType == null || !catchType.equals(exception.getType())) {
+                        return false;
+                    }
                 }
-
                 if (exception instanceof J.Identifier) {
                     return ((J.Identifier) exception).getSimpleName().equals(aCatch.getParameter().getTree().getVariables().get(0).getSimpleName());
                 }
