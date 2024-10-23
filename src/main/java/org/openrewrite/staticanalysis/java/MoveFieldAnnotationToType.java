@@ -153,16 +153,20 @@ public class MoveFieldAnnotationToType extends Recipe {
             private TypeTree annotateInnerClass(TypeTree qualifiedClassRef, J.Annotation annotation) {
                 J.Annotation usedAnnotation = annotation;
                 if (annotation.getAnnotationType() instanceof J.FieldAccess) {
+                    J.Identifier identifier = new J.Identifier(
+                            Tree.randomId(),
+                            annotation.getAnnotationType().getPrefix(),
+                            annotation.getAnnotationType().getMarkers(),
+                            new ArrayList<>(),
+                            annotation.getSimpleName(),
+                            annotation.getType(),
+                            null
+                    );
+                    if (identifier.getType() != null) {
+                        maybeAddImport(((JavaType.Class) identifier.getType()).getFullyQualifiedName());
+                    }
                     usedAnnotation = usedAnnotation.withAnnotationType(
-                            new J.Identifier(
-                                    Tree.randomId(),
-                                    annotation.getAnnotationType().getPrefix(),
-                                    annotation.getAnnotationType().getMarkers(),
-                                    new ArrayList<>(),
-                                    annotation.getSimpleName(),
-                                    annotation.getType(),
-                                    null
-                            ));
+                            identifier);
                 }
                 if (qualifiedClassRef instanceof J.FieldAccess) {
                     J.FieldAccess q = (J.FieldAccess) qualifiedClassRef;

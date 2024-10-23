@@ -212,6 +212,8 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
             """
               package org.openrewrite;
               
+              import org.openrewrite.internal.lang.Nullable;
+              
               public class Test {
                  public void someFunction(org.openrewrite.internal.@Nullable MetricsHelper metrics) {
                  }
