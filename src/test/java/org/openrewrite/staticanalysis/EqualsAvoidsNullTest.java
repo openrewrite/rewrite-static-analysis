@@ -45,7 +45,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(s.compareTo("test"));
                       System.out.println(s.compareToIgnoreCase("test"));
                       System.out.println(s.contentEquals("test"));
-                      System.out.println(s.contentEquals("test"));
                       System.out.println(Stream.of("test").filter(item -> item.contentEquals("test")).findFirst());
                   }
 //                  boolean isFoo(final String test) {
