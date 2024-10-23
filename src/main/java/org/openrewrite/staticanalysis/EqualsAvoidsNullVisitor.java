@@ -45,15 +45,13 @@ import static java.util.Objects.requireNonNull;
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
-    private static final MethodMatcher EQUALS = new MethodMatcher("boolean " + "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("boolean " + "equalsIgnoreCase" +
-            "(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher("int " + "compareTo(java.lang" +
-            ".String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("int " +
-            "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("boolean " + "contentEquals(java" +
-            ".lang.CharSequence)");
+
+    private static final MethodMatcher EQUALS = new MethodMatcher("java.lang.String " + "equals(java.lang.Object)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " + "equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String " + "compareTo(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " + "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java.lang.CharSequence)");
+
     EqualsAvoidsNullStyle style;
 
     @Override
