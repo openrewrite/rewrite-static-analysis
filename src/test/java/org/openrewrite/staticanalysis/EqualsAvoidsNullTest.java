@@ -37,6 +37,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
           //language=java
           java(
             """
+              import java.util.stream.Stream;
               public class A {
                   {
                       String s = null;
@@ -54,6 +55,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               }
               """,
             """
+              import java.util.stream.Stream;
               public class A {
                   {
                       String s = null;
