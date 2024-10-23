@@ -196,4 +196,30 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void fullyDefinedAnnotationInMethodDeclaration() {
+        rewriteRun(
+          java(
+            """
+              package org.openrewrite;
+              
+              public class Test {
+                 public void someFunction(@org.openrewrite.internal.lang.Nullable org.openrewrite.internal.MetricsHelper metrics) {
+                 }
+              }
+              """,
+            """
+              package org.openrewrite;
+              
+              import org.openrewrite.internal.lang.Nullable;
+              
+              public class Test {
+                 public void someFunction(org.openrewrite.internal.@Nullable MetricsHelper metrics) {
+                 }
+              }
+              """
+          )
+        );
+    }
 }
