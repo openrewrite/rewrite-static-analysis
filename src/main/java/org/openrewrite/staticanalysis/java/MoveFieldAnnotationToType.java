@@ -25,6 +25,8 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
+import java.util.ArrayList;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -150,10 +152,23 @@ public class MoveFieldAnnotationToType extends Recipe {
             }
 
             private TypeTree annotateInnerClass(TypeTree qualifiedClassRef, J.Annotation annotation) {
+                J.Annotation usedAnnotation = annotation;
+                if (annotation.getAnnotationType() instanceof J.FieldAccess) {
+                    usedAnnotation = usedAnnotation.withAnnotationType(
+                            new J.Identifier(
+                                    UUID.randomUUID(),
+                                    annotation.getAnnotationType().getPrefix(),
+                                    annotation.getAnnotationType().getMarkers(),
+                                    new ArrayList<>(),
+                                    annotation.getSimpleName(),
+                                    annotation.getType(),
+                                    null
+                            ));
+                }
                 if (qualifiedClassRef instanceof J.FieldAccess) {
                     J.FieldAccess q = (J.FieldAccess) qualifiedClassRef;
                     q = q.withName(q.getName().withAnnotations(
-                            ListUtils.concat(annotation.withPrefix(Space.EMPTY), q.getName().getAnnotations())));
+                            ListUtils.concat(usedAnnotation.withPrefix(Space.EMPTY), q.getName().getAnnotations())));
                     if (q.getName().getPrefix().getWhitespace().isEmpty()) {
                         q = q.withName(q.getName().withPrefix(q.getName().getPrefix().withWhitespace(" ")));
                     }
@@ -161,7 +176,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                 } else if (qualifiedClassRef instanceof J.ParameterizedType &&
                            ((J.ParameterizedType) qualifiedClassRef).getClazz() instanceof TypeTree) {
                     J.ParameterizedType pt = (J.ParameterizedType) qualifiedClassRef;
-                    return pt.withClazz(annotateInnerClass((TypeTree) pt.getClazz(), annotation));
+                    return pt.withClazz(annotateInnerClass((TypeTree) pt.getClazz(), usedAnnotation));
                 } else if (qualifiedClassRef instanceof J.ArrayType) {
                     J.ArrayType at = (J.ArrayType) qualifiedClassRef;
                     at = at.withAnnotations(ListUtils.concat(annotation.withPrefix(Space.SINGLE_SPACE), at.getAnnotations()));
