@@ -156,7 +156,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                 if (annotation.getAnnotationType() instanceof J.FieldAccess) {
                     usedAnnotation = usedAnnotation.withAnnotationType(
                             new J.Identifier(
-                                    UUID.randomUUID(),
+                                    Tree.randomId(),
                                     annotation.getAnnotationType().getPrefix(),
                                     annotation.getAnnotationType().getMarkers(),
                                     new ArrayList<>(),
