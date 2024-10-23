@@ -26,7 +26,6 @@ import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
 import java.util.ArrayList;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
