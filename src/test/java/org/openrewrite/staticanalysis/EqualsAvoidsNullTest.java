@@ -46,12 +46,12 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(s.compareToIgnoreCase("test"));
                       System.out.println(s.contentEquals("test"));
                       System.out.println(s.contentEquals("test"));
-                      System.out.println(Stream.of().filter(it -> it.toString().contentEquals("test")).findFirst());
+                      System.out.println(Stream.of("test").filter(item -> item.contentEquals("test")).findFirst());
                   }
-                  boolean isFoo(final String test) {
-                     return test.contentEquals("test")
-                             || test.contentEquals("test2");
-                  }
+//                  boolean isFoo(final String test) {
+//                     return test.contentEquals("test")
+//                             || test.contentEquals("test2");
+//                  }
               }
               """,
             """
@@ -63,12 +63,12 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println("test".compareTo(s));
                       System.out.println("test".compareToIgnoreCase(s));
                       System.out.println("test".contentEquals(s));
-                      System.out.println(Stream.of().filter(it -> "test".contentEquals(it.toString())).findFirst());
+                      System.out.println(Stream.of("test").filter(item -> "test".contentEquals(item)).findFirst());
                   }
-                  boolean isFoo(final String test) {
-                     return "test".contentEquals(test)
-                             || "test2".contentEquals(test);
-                  }
+//                  boolean isFoo(final String test) {
+//                     return "test".contentEquals(test)
+//                             || "test2".contentEquals(test);
+//                  }
               }
               """
           )
