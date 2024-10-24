@@ -43,6 +43,12 @@ public class RemoveUnusedLocalVariables extends Recipe {
             example = "[unused, notUsed, IGNORE_ME]")
     String @Nullable [] ignoreVariablesNamed;
 
+    @Option(displayName = "Remove unused local variables with side effects in initializer",
+            description = "Whether to remove unused local variables despite side effects in the initializer. Default false.",
+            required = false)
+    @Nullable
+    Boolean withSideEffects;
+
     @Override
     public String getDisplayName() {
         return "Remove unused local variables";
@@ -177,7 +183,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        result.set(true);
+                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                            result.set(true);
+                        }
                         return methodInvocation;
                     }
 

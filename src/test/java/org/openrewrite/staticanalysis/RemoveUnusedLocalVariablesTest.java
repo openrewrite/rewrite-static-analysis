@@ -46,7 +46,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new RemoveUnusedLocalVariables(new String[0]));
+        spec.recipe(new RemoveUnusedLocalVariables(new String[0], null));
     }
 
     @Test
@@ -73,18 +73,21 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @SuppressWarnings("MethodMayBeStatic")
     void ignoreVariablesNamed() {
         rewriteRun(
-          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused", "ignoreMe"})),
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused"}, null)),
           //language=java
           java(
             """
               class Test {
                   void method(Object someData) {
-                      int unused = writeDataToTheDB(someData);
-                      int ignoreMe = writeDataToTheDB(someData);
+                      int unused = 123;
+                      int removed = 123;
                   }
-
-                  int writeDataToTheDB(Object save) {
-                      return 1;
+              }
+              """,
+            """
+              class Test {
+                  void method(Object someData) {
+                      int unused = 123;
                   }
               }
               """
@@ -1059,6 +1062,32 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                               byte unused;
                               break;
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-feature-flags/pull/35")
+    void removeDespiteSideEffects() {
+        rewriteRun(
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(null, true)),
+          //language=java
+          java(
+            """
+              class Test {
+                  int sideEffect() { return 123; }
+                  void method(Object someData) {
+                      int unused = sideEffect();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int sideEffect() { return 123; }
+                  void method(Object someData) {
                   }
               }
               """
