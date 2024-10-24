@@ -48,10 +48,19 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(s.contentEquals("test"));
                       System.out.println(Stream.of("test").filter(item -> item.contentEquals("test")).findFirst());
                   }
-//                  boolean isFoo(final String test) {
-//                     return test.contentEquals("test")
-//                             || test.contentEquals("test2");
-//                  }
+                  boolean isFoo(final String test) {
+                     return new B().getForeignEntityType().contentEquals("test")
+                             || B.getForeignEntityType2().contentEquals("test")
+                             || test.contentEquals("test2");
+                  }
+              }
+              public static class B {
+                  String getForeignEntityType(final String test) {
+                      return test;
+                  }
+                  static String getForeignEntityType2(final String test) {
+                      return test;
+                  }
               }
               """,
             """
@@ -66,10 +75,19 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println("test".contentEquals(s));
                       System.out.println(Stream.of("test").filter(item -> "test".contentEquals(item)).findFirst());
                   }
-//                  boolean isFoo(final String test) {
-//                     return "test".contentEquals(test)
-//                             || "test2".contentEquals(test);
-//                  }
+                  boolean isFoo(final String test) {
+                     return "test".contentEquals(new B().getForeignEntityType())
+                             || "test".contentEquals(B.getForeignEntityType2())
+                             || "test2".contentEquals(test);
+                  }
+              }
+              public static class B {
+                  String getForeignEntityType(final String test) {
+                      return test;
+                  }
+                  static String getForeignEntityType2(final String test) {
+                      return test;
+                  }
               }
               """
           )
