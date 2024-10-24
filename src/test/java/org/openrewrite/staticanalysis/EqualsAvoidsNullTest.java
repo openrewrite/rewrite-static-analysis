@@ -57,10 +57,10 @@ class EqualsAvoidsNullTest implements RewriteTest {
               }
               public static class B {
                   String getBar(final String test) {
-                      return test;
+                      return null;
                   }
                   static String getBar2(final String test) {
-                      return test;
+                      return null;
                   }
               }
               """,
@@ -85,10 +85,10 @@ class EqualsAvoidsNullTest implements RewriteTest {
               }
               public static class B {
                   String getBar(final String test) {
-                      return test;
+                      return null;
                   }
                   static String getBar2(final String test) {
-                      return test;
+                      return null;
                   }
               }
               """
@@ -114,8 +114,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equals(s)) {}
+                      if(EXTERNAL_KEY.equals(s)) {}
+                      if(EXTERNAL_KEY.equals(s)) {}
                   }
               }
               """
