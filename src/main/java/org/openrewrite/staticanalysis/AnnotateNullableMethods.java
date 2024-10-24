@@ -58,7 +58,8 @@ public class AnnotateNullableMethods extends Recipe {
                 if (!methodDeclaration.hasModifier(J.Modifier.Type.Public) ||
                     methodDeclaration.getMethodType() == null ||
                     methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
-                    service(AnnotationService.class).matches(getCursor(), NULLABLE_ANNOTATION_MATCHER)) {
+                    service(AnnotationService.class).matches(getCursor(), NULLABLE_ANNOTATION_MATCHER) ||
+                    service(AnnotationService.class).matches(new Cursor(null, methodDeclaration.getReturnTypeExpression()), NULLABLE_ANNOTATION_MATCHER)) {
                     return methodDeclaration;
                 }
 

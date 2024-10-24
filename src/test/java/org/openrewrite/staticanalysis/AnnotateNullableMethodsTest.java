@@ -232,4 +232,21 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void returnStaticNestInnerClassAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+              
+              public class Outer {     
+                  public static Outer.@Nullable Inner test() { return null; }
+                  static class Inner {}
+              }
+              """
+          )
+        );
+    }
 }
