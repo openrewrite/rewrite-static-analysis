@@ -114,8 +114,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if(EXTERNAL_KEY.equals(s)) {}
-                      if(EXTERNAL_KEY.equals(s)) {}
+                      if("test".equals(s)) {}
+                      if("test".equals(s)) {}
                   }
               }
               """
