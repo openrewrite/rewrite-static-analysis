@@ -39,19 +39,20 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
               import java.util.stream.Stream;
               public class A {
+                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
                   {
                       String s = null;
-                      if(s.equals("test")) {}
-                      if(s.equalsIgnoreCase("test")) {}
-                      System.out.println(s.compareTo("test"));
-                      System.out.println(s.compareToIgnoreCase("test"));
-                      System.out.println(s.contentEquals("test"));
-                      System.out.println(Stream.of("test").filter(item -> item.contentEquals("test")).findFirst());
+                      if(s.equals(EXTERNAL_KEY)) {}
+                      if(s.equalsIgnoreCase(EXTERNAL_KEY)) {}
+                      System.out.println(s.compareTo(EXTERNAL_KEY));
+                      System.out.println(s.compareToIgnoreCase(EXTERNAL_KEY));
+                      System.out.println(s.contentEquals(EXTERNAL_KEY));
+                      System.out.println(Stream.of(EXTERNAL_KEY).filter(item -> item.contentEquals(EXTERNAL_KEY)).findFirst());
                   }
                   boolean isFoo(final String test) {
-                     return new B().getBar("test").contentEquals("test")
-                             || B.getBar2("test").contentEquals("test")
-                             || test.contentEquals("test2");
+                     return new B().getBar(EXTERNAL_KEY).contentEquals(EXTERNAL_KEY)
+                             || B.getBar2(EXTERNAL_KEY).contentEquals(EXTERNAL_KEY)
+                             || test.contentEquals(EXTERNAL_KEY);
                   }
               }
               public static class B {
@@ -66,19 +67,20 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
               import java.util.stream.Stream;
               public class A {
+                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
                   {
                       String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equalsIgnoreCase(s)) {}
-                      System.out.println("test".compareTo(s));
-                      System.out.println("test".compareToIgnoreCase(s));
-                      System.out.println("test".contentEquals(s));
-                      System.out.println(Stream.of("test").filter(item -> "test".contentEquals(item)).findFirst());
+                      if(EXTERNAL_KEY.equals(s)) {}
+                      if(EXTERNAL_KEY.equalsIgnoreCase(s)) {}
+                      System.out.println(EXTERNAL_KEY.compareTo(s));
+                      System.out.println(EXTERNAL_KEY.compareToIgnoreCase(s));
+                      System.out.println(EXTERNAL_KEY.contentEquals(s));
+                      System.out.println(Stream.of(EXTERNAL_KEY).filter(item -> EXTERNAL_KEY.contentEquals(item)).findFirst());
                   }
                   boolean isFoo(final String test) {
-                     return "test".contentEquals(new B().getBar("test"))
-                             || "test".contentEquals(B.getBar2("test"))
-                             || "test2".contentEquals(test);
+                     return EXTERNAL_KEY.contentEquals(new B().getBar(EXTERNAL_KEY))
+                             || EXTERNAL_KEY.contentEquals(B.getBar2(EXTERNAL_KEY))
+                             || EXTERNAL_KEY.contentEquals(test);
                   }
               }
               public static class B {
