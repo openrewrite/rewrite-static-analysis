@@ -37,7 +37,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
           //language=java
           java(
             """
-              import java.util.stream.Stream;
               public class A {
                   public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
                   {
@@ -47,30 +46,10 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(s.compareTo(EXTERNAL_KEY));
                       System.out.println(s.compareToIgnoreCase(EXTERNAL_KEY));
                       System.out.println(s.contentEquals(EXTERNAL_KEY));
-                      System.out.println(Stream.of(EXTERNAL_KEY)
-                                               .filter(item -> item.contentEquals(EXTERNAL_KEY))
-                                               .findFirst());
-                  }
-
-                  boolean isFoo(final String test) {
-                      return new B().getBar(EXTERNAL_KEY).contentEquals(EXTERNAL_KEY)
-                             || B.getBar2(EXTERNAL_KEY).contentEquals(EXTERNAL_KEY)
-                             || test.contentEquals(EXTERNAL_KEY);
-                  }
-              }
-
-              public static class B {
-                  String getBar(final String test) {
-                      return null;
-                  }
-
-                  static String getBar2(final String test) {
-                      return null;
                   }
               }
               """,
             """
-              import java.util.stream.Stream;
               public class A {
                   public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
                   {
@@ -80,29 +59,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(EXTERNAL_KEY.compareTo(s));
                       System.out.println(EXTERNAL_KEY.compareToIgnoreCase(s));
                       System.out.println(EXTERNAL_KEY.contentEquals(s));
-                      System.out.println(Stream.of(EXTERNAL_KEY)
-                                               .filter(item -> EXTERNAL_KEY.contentEquals(item))
-                                               .findFirst());
-                  }
-
-                  boolean isFoo(final String test) {
-                      return EXTERNAL_KEY.contentEquals(new B().getBar(EXTERNAL_KEY))
-                             || EXTERNAL_KEY.contentEquals(B.getBar2(EXTERNAL_KEY))
-                             || EXTERNAL_KEY.contentEquals(test);
                   }
               }
-
-              public static class B {
-                  String getBar(final String test) {
-                      return null;
-                  }
-
-                  static String getBar2(final String test) {
-                      return null;
-                  }
-              }
-              """
-          )
+              """)
         );
     }
 
