@@ -66,13 +66,12 @@ public class AnnotateNullableMethods extends Recipe {
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
                 updateCursor(md);
                 if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor())) {
-                    maybeAddImport(NULLABLE_ANN_CLASS);
-                    J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@Nullable")
-                            .imports(NULLABLE_ANN_CLASS)
+                    J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@" + NULLABLE_ANN_CLASS)
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                     "package org.jspecify.annotations;public @interface Nullable {}"))
                             .build()
                             .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                    doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
                     return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor().visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
                 }
                 return md;
