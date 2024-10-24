@@ -71,7 +71,7 @@ public class AnnotateNullableMethods extends Recipe {
                                     "package org.jspecify.annotations;public @interface Nullable {}"))
                             .build()
                             .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
-                    doAfterVisit(new ShortenFullyQualifiedTypeReferences().getVisitor());
+                    doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotatedMethod));
                     return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor().visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
                 }
                 return md;
