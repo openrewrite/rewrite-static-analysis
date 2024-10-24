@@ -49,16 +49,16 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(Stream.of("test").filter(item -> item.contentEquals("test")).findFirst());
                   }
                   boolean isFoo(final String test) {
-                     return new B().getForeignEntityType().contentEquals("test")
-                             || B.getForeignEntityType2().contentEquals("test")
+                     return new B().getBar().contentEquals("test")
+                             || B.getBar2().contentEquals("test")
                              || test.contentEquals("test2");
                   }
               }
               public static class B {
-                  String getForeignEntityType(final String test) {
+                  String getBar(final String test) {
                       return test;
                   }
-                  static String getForeignEntityType2(final String test) {
+                  static String getBar2(final String test) {
                       return test;
                   }
               }
@@ -76,16 +76,16 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(Stream.of("test").filter(item -> "test".contentEquals(item)).findFirst());
                   }
                   boolean isFoo(final String test) {
-                     return "test".contentEquals(new B().getForeignEntityType())
-                             || "test".contentEquals(B.getForeignEntityType2())
+                     return "test".contentEquals(new B().getBar())
+                             || "test".contentEquals(B.getBar2())
                              || "test2".contentEquals(test);
                   }
               }
               public static class B {
-                  String getForeignEntityType(final String test) {
+                  String getBar(final String test) {
                       return test;
                   }
-                  static String getForeignEntityType2(final String test) {
+                  static String getBar2(final String test) {
                       return test;
                   }
               }
