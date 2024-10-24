@@ -29,6 +29,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.FieldAccess;
 import org.openrewrite.java.tree.J.Identifier;
+import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaType;
 
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
@@ -60,10 +61,11 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
 
             private final MethodMatcher matcher = new MethodMatcher("java.lang.Class isInstance(java.lang.Object)");
-            private final JavaTemplate template = JavaTemplate.builder("#{any(org.openrewrite.java.tree.Expression)} instanceof #{}").build();
+            private final JavaTemplate template = JavaTemplate.builder(
+                "#{any(org.openrewrite.java.tree.Expression)} instanceof #{}").build();
 
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            public J visitMethodInvocation(MethodInvocation method, ExecutionContext ctx) {
 
                 //make sure we find the right method and the left part is something like "SomeClass.class"
                 if (matcher.matches(method) && isObjectClass(method.getSelect())) {
@@ -73,14 +75,13 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
                     String className = ((JavaType.Class) ((Identifier) fieldAccessPart.getTarget()).getType()).getClassName();
                     
-                    return maybeAutoFormat(
-                            (J) method,
-                            (J) template.apply(updateCursor(method), method.getCoordinates().replace(), objectExpression, className),
-                            ctx
-                    );
+                    //upcast to type J, so J.MethodInfocation can be replaced by J.InstanceOf
+                    return maybeAutoFormat((J)method,
+                        (J)template.apply(updateCursor(method), method.getCoordinates().replace(), objectExpression, className),
+                            ctx);
 
                 }
-                return (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+                return (MethodInvocation) super.visitMethodInvocation(method, ctx);
             }
 
             private boolean isObjectClass(Expression expression) {
