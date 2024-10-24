@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -68,6 +69,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         return Duration.ofMinutes(2);
     }
 
+    int maxVariableLength = 40;
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("java.lang.String", false), new JavaVisitor<ExecutionContext>() {
@@ -95,8 +98,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 if (duplicateLiteralsMap.isEmpty()) {
                     return classDecl;
                 }
-                Set<String> variableNames = duplicateLiteralInfo.getVariableNames();
                 Map<String, String> fieldValueToFieldName = duplicateLiteralInfo.getFieldValueToFieldName();
+                Set<String> variableNames = VariableNameUtils.findNamesInScope(getCursor()).stream()
+                        .filter(i -> !fieldValueToFieldName.containsValue(i)).collect(Collectors.toSet());
                 String classFqn = classDecl.getType().getFullyQualifiedName();
                 Map<J.Literal, String> replacements = new HashMap<>();
                 for (Map.Entry<String, List<J.Literal>> entry : duplicateLiteralsMap.entrySet()) {
@@ -105,7 +109,13 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     String classFieldName = fieldValueToFieldName.get(valueOfLiteral);
                     String variableName;
                     if (classFieldName != null) {
-                        variableName = getNameWithoutShadow(classFieldName, variableNames);
+                        String maybeVariableName = getNameWithoutShadow(classFieldName, variableNames);
+                        if (duplicateLiteralInfo.existingFieldValueToFieldName.get(maybeVariableName) != null) {
+                            variableNames.add(maybeVariableName);
+                            maybeVariableName = getNameWithoutShadow(classFieldName, variableNames);
+                        }
+
+                        variableName = maybeVariableName;
                         if (StringUtils.isBlank(variableName)) {
                             continue;
                         }
@@ -181,7 +191,12 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         prevIsLower = Character.isLowerCase(c);
                     }
                 }
-                return VariableNameUtils.normalizeName(newName.toString());
+                String newNameString = newName.toString();
+                while (newNameString.length() > maxVariableLength){
+                    int indexOf = newNameString.lastIndexOf("_");
+                    newNameString = newNameString.substring(0, indexOf > -1 ? indexOf : maxVariableLength);
+                }
+                return VariableNameUtils.normalizeName(newNameString);
             }
         });
     }
@@ -192,14 +207,14 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Value
     private static class DuplicateLiteralInfo {
-        Set<String> variableNames;
         Map<String, String> fieldValueToFieldName;
+        Map<String, String> existingFieldValueToFieldName;
 
         @NonFinal
         Map<String, List<J.Literal>> duplicateLiterals;
 
         public static DuplicateLiteralInfo find(J.ClassDeclaration inClass) {
-            DuplicateLiteralInfo result = new DuplicateLiteralInfo(new LinkedHashSet<>(), new LinkedHashMap<>(), new HashMap<>());
+            DuplicateLiteralInfo result = new DuplicateLiteralInfo(new LinkedHashMap<>(), new LinkedHashMap<>(), new HashMap<>());
             new JavaIsoVisitor<Integer>() {
 
                 @Override
@@ -214,11 +229,11 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     Cursor parentScope = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.MethodDeclaration);
                     boolean privateStaticFinalVariable = isPrivateStaticFinalVariable(variable);
                     // `private static final String`(s) are handled separately by `FindExistingPrivateStaticFinalFields`.
-                    if (parentScope.getValue() instanceof J.MethodDeclaration ||
-                        parentScope.getValue() instanceof J.ClassDeclaration &&
-                        !(privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&
-                          ((J.Literal) v.getInitializer()).getValue() instanceof String)) {
-                        result.variableNames.add(v.getSimpleName());
+                    if (v.getInitializer() instanceof J.Literal &&
+                        (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
+                            !(privateStaticFinalVariable && ((J.Literal) v.getInitializer()).getValue() instanceof String)) {
+                        String value = (((J.Literal) v.getInitializer()).getValue()).toString();
+                        result.existingFieldValueToFieldName.put(v.getSimpleName(), value);
                     }
                     if (parentScope.getValue() instanceof J.ClassDeclaration &&
                         privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&
