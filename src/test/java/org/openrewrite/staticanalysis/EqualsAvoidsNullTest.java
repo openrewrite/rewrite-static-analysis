@@ -49,8 +49,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(Stream.of("test").filter(item -> item.contentEquals("test")).findFirst());
                   }
                   boolean isFoo(final String test) {
-                     return new B().getBar().contentEquals("test")
-                             || B.getBar2().contentEquals("test")
+                     return new B().getBar("test").contentEquals("test")
+                             || B.getBar2("test").contentEquals("test")
                              || test.contentEquals("test2");
                   }
               }
@@ -76,8 +76,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(Stream.of("test").filter(item -> "test".contentEquals(item)).findFirst());
                   }
                   boolean isFoo(final String test) {
-                     return "test".contentEquals(new B().getBar())
-                             || "test".contentEquals(B.getBar2())
+                     return "test".contentEquals(new B().getBar("test"))
+                             || "test".contentEquals(B.getBar2("test"))
                              || "test2".contentEquals(test);
                   }
               }
