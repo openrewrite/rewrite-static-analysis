@@ -38,29 +38,30 @@ class EqualsAvoidsNullTest implements RewriteTest {
           java(
             """
               public class A {
+                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
                   {
                       String s = null;
-                      if(s.equals("test")) {}
-                      if(s.equalsIgnoreCase("test")) {}
-                      System.out.println(s.compareTo("test"));
-                      System.out.println(s.compareToIgnoreCase("test"));
-                      System.out.println(s.contentEquals("test"));
+                      if (s.equals(EXTERNAL_KEY)) {}
+                      if (s.equalsIgnoreCase(EXTERNAL_KEY)) {}
+                      System.out.println(s.compareTo(EXTERNAL_KEY));
+                      System.out.println(s.compareToIgnoreCase(EXTERNAL_KEY));
+                      System.out.println(s.contentEquals(EXTERNAL_KEY));
                   }
               }
               """,
             """
               public class A {
+                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
                   {
                       String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equalsIgnoreCase(s)) {}
-                      System.out.println("test".compareTo(s));
-                      System.out.println("test".compareToIgnoreCase(s));
-                      System.out.println("test".contentEquals(s));
+                      if (EXTERNAL_KEY.equals(s)) {}
+                      if (EXTERNAL_KEY.equalsIgnoreCase(s)) {}
+                      System.out.println(EXTERNAL_KEY.compareTo(s));
+                      System.out.println(EXTERNAL_KEY.compareToIgnoreCase(s));
+                      System.out.println(EXTERNAL_KEY.contentEquals(s));
                   }
               }
-              """
-          )
+              """)
         );
     }
 
@@ -73,8 +74,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if(s != null && s.equals("test")) {}
-                      if(null != s && s.equals("test")) {}
+                      if (s != null && s.equals("test")) {}
+                      if (null != s && s.equals("test")) {}
                   }
               }
               """,
@@ -82,8 +83,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                   {
                       String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equals(s)) {}
+                      if ("test".equals(s)) {}
+                      if ("test".equals(s)) {}
                   }
               }
               """
@@ -94,24 +95,25 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void nullLiteral() {
         rewriteRun(
-            //language=java
-            java("""
+          //language=java
+          java(
+            """
               public class A {
-                    void foo(String s) {
-                        if(s.equals(null)) {
-                        }
-                    }
-                }
+                  void foo(String s) {
+                      if (s.equals(null)) {
+                      }
+                  }
+              }
               """,
-              """
-
+            """
               public class A {
-                    void foo(String s) {
-                        if(s == null) {
-                        }
-                    }
-                }
-              """)
+                  void foo(String s) {
+                      if (s == null) {
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 }
