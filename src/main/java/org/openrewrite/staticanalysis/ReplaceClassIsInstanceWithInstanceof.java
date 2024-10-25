@@ -15,12 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Set;
-
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.NlsRewrite.Description;
 import org.openrewrite.Recipe;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
