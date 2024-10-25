@@ -72,8 +72,8 @@ public class AddStaticModifierToPublicFinalConstantsAndFields extends Recipe {
                     return v.withModifiers(ModifierOrder.sortModifiers(multiVariable.getModifiers()));
 
                 }
-                return super.visitVariableDeclarations(multiVariable, executionContext);
-            }
+                return super.visitVariableDeclarations(multiVariable, ctx);
+}
         };
     }
 }
