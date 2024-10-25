@@ -32,6 +32,10 @@ import org.openrewrite.java.tree.J.Identifier;
 import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaType;
 
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Set;
+
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     @Override
