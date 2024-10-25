@@ -58,8 +58,8 @@ public class AddStaticModifierToPublicFinalConstantsAndFields extends Recipe {
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable,
-                                                                    ExecutionContext executionContext) {
-
+                                                                    ExecutionContext ctx) {
+                    J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, ctx);
                 if (multiVariable.hasModifier(Modifier.Type.Public) &&
                         multiVariable.hasModifier(Modifier.Type.Final) &&
                         !multiVariable.hasModifier(Modifier.Type.Static)) {
