@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.java.JavaTemplate;
@@ -39,8 +40,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
     }
 
     @Override
-    public
-    String getDescription() {
+    public String getDescription() {
         return "There should be no `A.class.isInstance(a)`, it should be replaced by `a instanceof A`.";
     }
 
@@ -56,34 +56,28 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     @Override
     public JavaVisitor<ExecutionContext> getVisitor() {
-        //use JavaVisitor instead of JavaIsoVisitor because we changed the type of LST
+        // use JavaVisitor instead of JavaIsoVisitor because we changed the type of LST
         return new JavaVisitor<ExecutionContext>() {
 
             private final MethodMatcher matcher = new MethodMatcher("java.lang.Class isInstance(java.lang.Object)");
-            private final JavaTemplate template = JavaTemplate.builder(
-                "#{any(org.openrewrite.java.tree.Expression)} instanceof #{}").build();
 
             @Override
             public J visitMethodInvocation(MethodInvocation method, ExecutionContext ctx) {
-
-                //make sure we find the right method and the left part is something like "SomeClass.class"
+                // make sure we find the right method and the left part is something like "SomeClass.class"
                 if (matcher.matches(method) && isObjectClass(method.getSelect())) {
-                    //for code like "A.class.isInstance(a)", select is "String.class", name is "isInstance", argument is "a"  
+                    // for code like "A.class.isInstance(a)", select is "String.class", name is "isInstance", argument is "a"
                     Identifier objectExpression = (Identifier) method.getArguments().get(0);
-                    
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
-                    String className = ((JavaType.Class) ((Identifier) fieldAccessPart.getTarget()).getType()).getClassName();
-                    
-                    //upcast to type J, so J.MethodInfocation can be replaced by J.InstanceOf
-                    return maybeAutoFormat((J)method,
-                        (J)template.apply(updateCursor(method), method.getCoordinates().replace(), objectExpression, className),
-                            ctx);
-
+                    String className = ((JavaType.Class) fieldAccessPart.getTarget().getType()).getClassName();
+                    // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
+                    J.InstanceOf instanceOf = JavaTemplate.apply("#{any(org.openrewrite.java.tree.Expression)} instanceof #{}",
+                            getCursor(), method.getCoordinates().replace(), objectExpression, className);
+                    return maybeAutoFormat(method, instanceOf, ctx);
                 }
-                return (MethodInvocation) super.visitMethodInvocation(method, ctx);
+                return super.visitMethodInvocation(method, ctx);
             }
 
-            private boolean isObjectClass(Expression expression) {
+            private boolean isObjectClass(@Nullable Expression expression) {
                 if (expression instanceof J.FieldAccess) {
                     J.FieldAccess fieldAccess = (J.FieldAccess) expression;
                     if (fieldAccess.getTarget() instanceof Identifier) {

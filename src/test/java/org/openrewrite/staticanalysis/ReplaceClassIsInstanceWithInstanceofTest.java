@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
 
@@ -31,23 +32,6 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
 
     @Test
     @DocumentExample
-    void doesNotMatchMethod() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  boolean foo() {
-                    String s = "";
-                    return s instanceof String;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void changeInstanceOf() {
         rewriteRun(
           //language=java
@@ -70,6 +54,60 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenAlreadyInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  boolean foo() {
+                    String s = "";
+                    return s instanceof String;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Class<?> clazz) {
+                      String s = "";
+                      boolean result = clazz.isInstance(s);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeInstanceOfWithVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String foo(Object obj) {
+                      if (obj instanceof String s) {
+                          return s;
+                      }
+                      return null;
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(17))
           )
         );
     }
