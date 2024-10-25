@@ -13,38 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.openrewrite.DocumentExample;
-import static org.openrewrite.java.Assertions.java;
-
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import static org.openrewrite.java.Assertions.java;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.java.Assertions.java;
+
 class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
 
-    
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new ReplaceClassIsInstanceWithInstanceof());
-        //spec.recipe(new AvoidBoxedBooleanExpressions());
     }
 
     @Test
+    @DocumentExample
     void doesNotMatchMethod() {
         rewriteRun(
           //language=java
           java(
             """
-            class A {
-                boolean foo() {
-                  String s = "";
-                  return s instanceof String;
-            }
-    @DocumentExample
+              class A {
+                  boolean foo() {
+                    String s = "";
+                    return s instanceof String;
+                  }
               }
-            """
+              """
           )
         );
     }
@@ -57,21 +55,21 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
             """
               class A {
                   void foo() {
-                    String s = "";
-                    boolean result = String.class.isInstance(s);
-                    result = Integer.class.isInstance(s);
-                }
+                      String s = "";
+                      boolean result = String.class.isInstance(s);
+                      result = Integer.class.isInstance(s);
+                  }
               }
               """,
             """
-            class A {
-                void foo() {
-                  String s = "";
-                  boolean result = s instanceof String;
-                  result = s instanceof Integer;
-            }
+              class A {
+                  void foo() {
+                      String s = "";
+                      boolean result = s instanceof String;
+                      result = s instanceof Integer;
+                  }
               }
-            """
+              """
           )
         );
     }
