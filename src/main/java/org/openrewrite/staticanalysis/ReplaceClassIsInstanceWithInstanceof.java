@@ -40,7 +40,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
     }
 
     @Override
-    public @Description
+    public
     String getDescription() {
         return "There should be no `A.class.isInstance(a)`, it should be replaced by `a instanceof A`.";
     }
