@@ -63,12 +63,12 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
               }
               """,
             """
-              class A {
-                  void foo() {
-                    String s = "";
-                    boolean result = s instanceof String;
-                    result = s instanceof Integer;
-                }
+            class A {
+                void foo() {
+                  String s = "";
+                  boolean result = s instanceof String;
+                  result = s instanceof Integer;
+            }
               }
             """
           )
