@@ -37,11 +37,12 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
           //language=java
           java(
             """
-              class A {
-                  boolean foo() {
-                    String s = "";
-                    return s instanceof String;
-                }
+            class A {
+                boolean foo() {
+                  String s = "";
+                  return s instanceof String;
+            }
+    @DocumentExample
               }
             """
           )
