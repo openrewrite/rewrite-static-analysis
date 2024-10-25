@@ -66,4 +66,65 @@ class AddStaticModifierToPublicFinalConstantsAndFieldsTest implements RewriteTes
           )
         );
     }
+
+    @Test
+    void staticInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Outer {
+                  static class Inner {
+                      final public String s1;
+                      public final String s2;
+                  }
+              }
+              """,
+            """
+              class Outer {
+                  static class Inner {
+                      public static final String s1;
+                      public static final String s2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nonStaticInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Outer {
+                  class Inner {
+                      final public String s1;
+                      public final String s2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void anonymousInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Outer {
+                  void foo() {
+                      new Runnable() {
+                          final public String s1;
+                          public final String s2;
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
 }

@@ -57,13 +57,28 @@ public class AddStaticModifierToPublicFinalConstantsAndFields extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                J.ClassDeclaration enclosing = getCursor().getParent().firstEnclosing(J.ClassDeclaration.class);
+                if (enclosing == null || classDecl.hasModifier(Modifier.Type.Static)) {
+                    return super.visitClassDeclaration(classDecl, ctx);
+                }
+                // Ignore non-static inner classes as they can't have static fields
+                return classDecl;
+            }
+
+            @Override
+            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                // Ignore anonymous inner classes as they can't have static fields
+                return newClass;
+            }
+
+            @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable,
                                                                     ExecutionContext ctx) {
-                    J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, ctx);
+                J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, ctx);
                 if (multiVariable.hasModifier(Modifier.Type.Public) &&
-                        multiVariable.hasModifier(Modifier.Type.Final) &&
-                        !multiVariable.hasModifier(Modifier.Type.Static)) {
-                    J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, executionContext);
+                    multiVariable.hasModifier(Modifier.Type.Final) &&
+                    !multiVariable.hasModifier(Modifier.Type.Static)) {
 
                     multiVariable.getModifiers().add(new J.Modifier(Tree.randomId(),
                             Space.format(" "), Markers.EMPTY, " ",
@@ -73,7 +88,7 @@ public class AddStaticModifierToPublicFinalConstantsAndFields extends Recipe {
 
                 }
                 return super.visitVariableDeclarations(multiVariable, ctx);
-}
+            }
         };
     }
 }
