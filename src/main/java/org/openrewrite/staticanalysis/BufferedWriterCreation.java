@@ -23,7 +23,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.template.Semantics;
 import org.openrewrite.java.template.internal.AbstractRefasterJavaVisitor;
 import org.openrewrite.java.tree.J;
@@ -37,7 +36,7 @@ public class BufferedWriterCreation extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Modernize BufferedWriter creation & prevent file descriptor leak";
+        return "Modernize `BufferedWriter` creation & prevent file descriptor leak";
     }
 
     @Override
@@ -148,12 +147,10 @@ public class BufferedWriterCreation extends Recipe {
                 }
                 return null;
             }
-
         };
+
         return Preconditions.check(
                 Preconditions.and(
-                        new UsesType<>("java.io.BufferedWriter", true),
-                        new UsesType<>("java.io.FileWriter", true),
                         new UsesMethod<>("java.io.BufferedWriter <constructor>(..)"),
                         new UsesMethod<>("java.io.FileWriter <constructor>(..)")
                 ),
