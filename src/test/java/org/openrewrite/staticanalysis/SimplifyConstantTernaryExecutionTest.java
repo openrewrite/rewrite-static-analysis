@@ -33,8 +33,8 @@ class SimplifyConstantTernaryExecutionTest implements RewriteTest {
     @Test
     @DocumentExample
     void simplifyConstantTernaryExecution() {
-        // Given
         rewriteRun(
+          //language=java
           java(
             """
               class Test {
@@ -56,8 +56,8 @@ class SimplifyConstantTernaryExecutionTest implements RewriteTest {
 
     @Test
     void simplifyUnnecessaryParenthesesTernary() {
-        // Given
         rewriteRun(
+          //language=java
           java(
             """
               class Test {

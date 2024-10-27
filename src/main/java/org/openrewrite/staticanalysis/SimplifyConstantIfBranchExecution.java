@@ -16,7 +16,10 @@
 package org.openrewrite.staticanalysis;
 
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.*;
+import org.openrewrite.Cursor;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
@@ -153,5 +156,4 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
     private static boolean isLiteralFalse(@Nullable Expression expression) {
         return J.Literal.isLiteralValue(expression, Boolean.FALSE);
     }
-
 }

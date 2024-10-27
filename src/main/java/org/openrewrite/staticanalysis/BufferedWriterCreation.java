@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesMethod;
@@ -101,20 +101,26 @@ public class BufferedWriterCreation extends Recipe {
 
             @Override
             public J visitNewClass(J.NewClass elem, ExecutionContext ctx) {
-                JavaTemplate.Matcher matcher;
                 J j1 = replaceOneArg(elem, ctx, beforeFile, afterFile);
-                if (j1 != null) return j1;
+                if (j1 != null) {
+                    return j1;
+                }
                 J j2 = replaceOneArg(elem, ctx, beforeString, afterString);
-                if (j2 != null) return j2;
+                if (j2 != null) {
+                    return j2;
+                }
                 J j3 = replaceTwoArg(elem, ctx, beforeFileBoolean, afterFileBoolean);
-                if (j3 != null) return j3;
+                if (j3 != null) {
+                    return j3;
+                }
                 J j4 = replaceTwoArg(elem, ctx, beforeStringBoolean, afterStringBoolean);
-                if (j4 != null) return j4;
+                if (j4 != null) {
+                    return j4;
+                }
                 return super.visitNewClass(elem, ctx);
             }
 
-            @Nullable
-            private J replaceOneArg(J.NewClass elem, ExecutionContext ctx, JavaTemplate before, JavaTemplate after) {
+            private @Nullable J replaceOneArg(J.NewClass elem, ExecutionContext ctx, JavaTemplate before, JavaTemplate after) {
                 JavaTemplate.Matcher matcher;
                 if ((matcher = before.matcher(getCursor())).find()) {
                     maybeRemoveImport("java.io.FileWriter");
@@ -128,8 +134,7 @@ public class BufferedWriterCreation extends Recipe {
                 return null;
             }
 
-            @Nullable
-            private J replaceTwoArg(J.NewClass elem, ExecutionContext ctx, JavaTemplate before, JavaTemplate after) {
+            private @Nullable J replaceTwoArg(J.NewClass elem, ExecutionContext ctx, JavaTemplate before, JavaTemplate after) {
                 JavaTemplate.Matcher matcher;
                 if ((matcher = before.matcher(getCursor())).find()) {
                     maybeRemoveImport("java.io.FileWriter");

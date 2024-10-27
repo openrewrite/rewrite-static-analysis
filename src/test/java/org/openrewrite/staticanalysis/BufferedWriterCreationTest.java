@@ -34,6 +34,7 @@ class BufferedWriterCreationTest implements RewriteTest {
     @DocumentExample
     void bufferedReaderCreation() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.BufferedWriter;
@@ -70,6 +71,7 @@ class BufferedWriterCreationTest implements RewriteTest {
     @Test
     void bufferedReaderCreationAppend() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.BufferedWriter;
@@ -107,6 +109,7 @@ class BufferedWriterCreationTest implements RewriteTest {
     @Test
     void bufferedReaderStringCreation() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.BufferedWriter;
@@ -143,6 +146,7 @@ class BufferedWriterCreationTest implements RewriteTest {
     @Test
     void bufferedReaderStringCreationAppend() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.io.BufferedWriter;
@@ -176,6 +180,4 @@ class BufferedWriterCreationTest implements RewriteTest {
           )
         );
     }
-
-
 }
