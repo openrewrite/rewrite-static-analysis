@@ -15,148 +15,86 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jspecify.annotations.Nullable;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.template.Semantics;
-import org.openrewrite.java.template.internal.AbstractRefasterJavaVisitor;
-import org.openrewrite.java.tree.J;
+import com.google.errorprone.refaster.annotation.AfterTemplate;
+import com.google.errorprone.refaster.annotation.BeforeTemplate;
+import org.openrewrite.java.template.Primitive;
+import org.openrewrite.java.template.RecipeDescriptor;
 
-import java.util.Collections;
-import java.util.Set;
+import java.io.BufferedWriter;
+import java.io.IOException;
 
-import static org.openrewrite.java.template.internal.AbstractRefasterJavaVisitor.EmbeddingOption.SHORTEN_NAMES;
-import static org.openrewrite.java.template.internal.AbstractRefasterJavaVisitor.EmbeddingOption.SIMPLIFY_BOOLEANS;
+@RecipeDescriptor(
+        name = "Modernize `BufferedWriter` creation & prevent file descriptor leaks",
+        description = "The code `new BufferedWriter(new FileWriter(f))` creates a `BufferedWriter` that does not close the underlying `FileWriter` when it is closed. " +
+                      "This can lead to file descriptor leaks as per [CWE-755](https://cwe.mitre.org/data/definitions/755.html). " +
+                      "Use `Files.newBufferedWriter` to create a `BufferedWriter` that closes the underlying file descriptor when it is closed."
+)
+public class BufferedWriterCreation {
 
-public class BufferedWriterCreation extends Recipe {
+    @RecipeDescriptor(
+            name = "Convert `new BufferedWriter(new FileWriter(File))` to `Files.newBufferedWriter(Path)`",
+            description = "Convert `new BufferedWriter(new FileWriter(f))` to `Files.newBufferedWriter(f.toPath())`."
+    )
+    static class BufferedWriterFromNewFileWriterWithFileArgument {
+        @BeforeTemplate
+        BufferedWriter before(java.io.File f) throws IOException {
+            return new BufferedWriter(new java.io.FileWriter(f));
+        }
 
-    @Override
-    public String getDisplayName() {
-        return "Modernize `BufferedWriter` creation & prevent file descriptor leak";
+        @AfterTemplate
+        BufferedWriter after(java.io.File f) throws IOException {
+            return java.nio.file.Files.newBufferedWriter(f.toPath());
+        }
     }
 
-    @Override
-    public String getDescription() {
-        return "The code `new BufferedWriter(new FileWriter(f))` creates a `BufferedWriter` that does not close the underlying `FileWriter` when it is closed. " +
-               "This can lead to file descriptor leaks. " +
-               "Use `Files.newBufferedWriter` to create a `BufferedWriter` that closes the underlying file descriptor when it is closed.";
+    @RecipeDescriptor(
+            name = "Convert `new BufferedWriter(new FileWriter(String))` to `Files.newBufferedWriter(Path)`",
+            description = "Convert `new BufferedWriter(new FileWriter(s))` to `Files.newBufferedWriter(new java.io.File(s).toPath())`."
+    )
+    static class BufferedWriterFromNewFileWriterWithStringArgument {
+        @BeforeTemplate
+        BufferedWriter before(String s) throws IOException {
+            return new BufferedWriter(new java.io.FileWriter(s));
+        }
+
+        @AfterTemplate
+        BufferedWriter after(String s) throws IOException {
+            return java.nio.file.Files.newBufferedWriter(new java.io.File(s).toPath());
+        }
     }
 
-    @Override
-    public Set<String> getTags() {
-        return Collections.singleton("CWE-755");
+    @RecipeDescriptor(
+            name = "Convert `new BufferedWriter(new FileWriter(File, boolean))` to `Files.newBufferedWriter(Path, StandardOpenOption)`",
+            description = "Convert `new BufferedWriter(new FileWriter(f, b))` to `Files.newBufferedWriter(f.toPath(), b ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)`."
+    )
+    static class BufferedWriterFromNewFileWriterWithFileAndBooleanArguments {
+        @BeforeTemplate
+        BufferedWriter before(java.io.File f, @Primitive Boolean b) throws IOException {
+            return new BufferedWriter(new java.io.FileWriter(f, b));
+        }
+
+        @AfterTemplate
+        BufferedWriter after(java.io.File f, @Primitive Boolean b) throws IOException {
+            return java.nio.file.Files.newBufferedWriter(f.toPath(), b ?
+                    java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE);
+        }
     }
 
-    @Override
-    public TreeVisitor<?, ExecutionContext> getVisitor() {
-        JavaVisitor<ExecutionContext> javaVisitor = new AbstractRefasterJavaVisitor() {
-            final JavaTemplate beforeFile = Semantics.expression(
-                    this,
-                    "beforeFile",
-                    (java.io.File f) -> new java.io.BufferedWriter(new java.io.FileWriter(f))
-            ).build();
-            final JavaTemplate afterFile = Semantics.expression(
-                    this,
-                    "afterFile",
-                    (java.io.File f) -> java.nio.file.Files.newBufferedWriter(f.toPath())
-            ).build();
+    @RecipeDescriptor(
+            name = "Convert `new BufferedWriter(new FileWriter(String, boolean))` to `Files.newBufferedWriter(Path, StandardOpenOption)`",
+            description = "Convert `new BufferedWriter(new FileWriter(s, b))` to `Files.newBufferedWriter(new java.io.File(s).toPath(), b ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)`."
+    )
+    static class BufferedWriterFromNewFileWriterWithStringAndBooleanArguments {
+        @BeforeTemplate
+        BufferedWriter before(String s, @Primitive Boolean b) throws IOException {
+            return new BufferedWriter(new java.io.FileWriter(s, b));
+        }
 
-            final JavaTemplate beforeString = Semantics.expression(
-                    this,
-                    "beforeString",
-                    (String f) -> new java.io.BufferedWriter(new java.io.FileWriter(f))
-            ).build();
-            final JavaTemplate afterString = Semantics.expression(
-                    this,
-                    "afterString",
-                    (String f) -> java.nio.file.Files.newBufferedWriter(new java.io.File(f).toPath())
-            ).build();
-
-            final JavaTemplate beforeFileBoolean = Semantics.expression(
-                    this,
-                    "beforeFileBoolean",
-                    (java.io.File f, Boolean b) -> new java.io.BufferedWriter(new java.io.FileWriter(f, b))
-            ).build();
-            final JavaTemplate afterFileBoolean = Semantics.expression(
-                    this,
-                    "afterFileBoolean",
-                    (java.io.File f, Boolean b) -> java.nio.file.Files.newBufferedWriter(f.toPath(), b ?
-                            java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE)
-            ).build();
-
-            final JavaTemplate beforeStringBoolean = Semantics.expression(
-                    this,
-                    "beforeStringBoolean",
-                    (String f, Boolean b) -> new java.io.BufferedWriter(new java.io.FileWriter(f, b))
-            ).build();
-            final JavaTemplate afterStringBoolean = Semantics.expression(
-                    this,
-                    "afterStringBoolean",
-                    (String f, Boolean b) -> java.nio.file.Files.newBufferedWriter(new java.io.File(f).toPath(), b ?
-                            java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE)
-            ).build();
-
-            @Override
-            public J visitNewClass(J.NewClass elem, ExecutionContext ctx) {
-                J j1 = replaceOneArg(elem, ctx, beforeFile, afterFile);
-                if (j1 != null) {
-                    return j1;
-                }
-                J j2 = replaceOneArg(elem, ctx, beforeString, afterString);
-                if (j2 != null) {
-                    return j2;
-                }
-                J j3 = replaceTwoArg(elem, ctx, beforeFileBoolean, afterFileBoolean);
-                if (j3 != null) {
-                    return j3;
-                }
-                J j4 = replaceTwoArg(elem, ctx, beforeStringBoolean, afterStringBoolean);
-                if (j4 != null) {
-                    return j4;
-                }
-                return super.visitNewClass(elem, ctx);
-            }
-
-            private @Nullable J replaceOneArg(J.NewClass elem, ExecutionContext ctx, JavaTemplate before, JavaTemplate after) {
-                JavaTemplate.Matcher matcher;
-                if ((matcher = before.matcher(getCursor())).find()) {
-                    maybeRemoveImport("java.io.FileWriter");
-                    return embed(
-                            after.apply(getCursor(), elem.getCoordinates().replace(), matcher.parameter(0)),
-                            getCursor(),
-                            ctx,
-                            SHORTEN_NAMES
-                    );
-                }
-                return null;
-            }
-
-            private @Nullable J replaceTwoArg(J.NewClass elem, ExecutionContext ctx, JavaTemplate before, JavaTemplate after) {
-                JavaTemplate.Matcher matcher;
-                if ((matcher = before.matcher(getCursor())).find()) {
-                    maybeRemoveImport("java.io.FileWriter");
-                    return embed(
-                            after.apply(getCursor(), elem.getCoordinates().replace(), matcher.parameter(0), matcher.parameter(1)),
-                            getCursor(),
-                            ctx,
-                            SHORTEN_NAMES, SIMPLIFY_BOOLEANS
-                    );
-                }
-                return null;
-            }
-        };
-
-        return Preconditions.check(
-                Preconditions.and(
-                        new UsesMethod<>("java.io.BufferedWriter <constructor>(..)"),
-                        new UsesMethod<>("java.io.FileWriter <constructor>(..)")
-                ),
-                javaVisitor
-        );
+        @AfterTemplate
+        BufferedWriter after(String s, @Primitive Boolean b) throws IOException {
+            return java.nio.file.Files.newBufferedWriter(new java.io.File(s).toPath(), b ?
+                    java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE);
+        }
     }
+
 }

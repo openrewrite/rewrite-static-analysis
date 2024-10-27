@@ -27,7 +27,7 @@ class BufferedWriterCreationTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new BufferedWriterCreation());
+        spec.recipe(new BufferedWriterCreationRecipes());
     }
 
     @Test
