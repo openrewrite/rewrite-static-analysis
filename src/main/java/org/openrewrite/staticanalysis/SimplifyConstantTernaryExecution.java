@@ -48,12 +48,7 @@ public class SimplifyConstantTernaryExecution extends Recipe {
             @Override
             public J visitTernary(J.Ternary ternary, ExecutionContext ctx) {
                 J.Ternary t = (J.Ternary) super.visitTernary(ternary, ctx);
-                Expression condition =
-                        SimplifyConstantIfBranchExecution.cleanupBooleanExpression(
-                                t.getCondition(),
-                                getCursor(),
-                                ctx
-                        );
+                Expression condition = SimplifyConstantIfBranchExecution.cleanupBooleanExpression(t.getCondition(), getCursor(), ctx);
                 if (J.Literal.isLiteralValue(condition, true)) {
                     getCursor().getParentTreeCursor().putMessage("AUTO_FORMAT", true);
                     return t.getTruePart();

@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -78,9 +77,9 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
 
             // The compile-time constant value of the if condition control parentheses.
             final Optional<Boolean> compileTimeConstantBoolean;
-            if (isLiteralTrue(cp.getTree())) {
+            if (J.Literal.isLiteralValue(cp.getTree(), Boolean.TRUE)) {
                 compileTimeConstantBoolean = Optional.of(true);
-            } else if (isLiteralFalse(cp.getTree())) {
+            } else if (J.Literal.isLiteralValue(cp.getTree(), Boolean.FALSE)) {
                 compileTimeConstantBoolean = Optional.of(false);
             } else {
                 // The condition is not a literal, so we can't simplify it.
@@ -134,26 +133,15 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
     }
 
     @SuppressWarnings("unchecked")
-    static <E extends Expression> E cleanupBooleanExpression(
-            E expression, Cursor c, ExecutionContext ctx
-    ) {
-        E ex1 =
-                (E) new UnnecessaryParenthesesVisitor<>()
-                        .visitNonNull(expression, ctx, c.getParentOrThrow());
-        ex1 = (E) new SimplifyBooleanExpressionVisitor()
-                .visitNonNull(ex1, ctx, c.getParentTreeCursor());
-        if (expression == ex1 || isLiteralFalse(ex1) || isLiteralTrue(ex1)) {
+    static <E extends Expression> E cleanupBooleanExpression(E expression, Cursor c, ExecutionContext ctx) {
+        E ex1 = (E) new UnnecessaryParenthesesVisitor<>().visitNonNull(expression, ctx, c.getParentOrThrow());
+        ex1 = (E) new SimplifyBooleanExpressionVisitor().visitNonNull(ex1, ctx, c.getParentTreeCursor());
+        if (expression == ex1 ||
+            J.Literal.isLiteralValue(ex1, Boolean.FALSE) ||
+            J.Literal.isLiteralValue(ex1, Boolean.TRUE)) {
             return ex1;
         }
         // Run recursively until no further changes are needed
         return cleanupBooleanExpression(ex1, c, ctx);
-    }
-
-    private static boolean isLiteralTrue(@Nullable Expression expression) {
-        return J.Literal.isLiteralValue(expression, Boolean.TRUE);
-    }
-
-    private static boolean isLiteralFalse(@Nullable Expression expression) {
-        return J.Literal.isLiteralValue(expression, Boolean.FALSE);
     }
 }

@@ -84,7 +84,8 @@ public class BufferedWriterCreation extends Recipe {
             final JavaTemplate afterFileBoolean = Semantics.expression(
                     this,
                     "afterFileBoolean",
-                    (java.io.File f, Boolean b) -> java.nio.file.Files.newBufferedWriter(f.toPath(), b ? java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE)
+                    (java.io.File f, Boolean b) -> java.nio.file.Files.newBufferedWriter(f.toPath(), b ?
+                            java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE)
             ).build();
 
             final JavaTemplate beforeStringBoolean = Semantics.expression(
@@ -95,7 +96,8 @@ public class BufferedWriterCreation extends Recipe {
             final JavaTemplate afterStringBoolean = Semantics.expression(
                     this,
                     "afterStringBoolean",
-                    (String f, Boolean b) -> java.nio.file.Files.newBufferedWriter(new java.io.File(f).toPath(), b ? java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE)
+                    (String f, Boolean b) -> java.nio.file.Files.newBufferedWriter(new java.io.File(f).toPath(), b ?
+                            java.nio.file.StandardOpenOption.APPEND : java.nio.file.StandardOpenOption.CREATE)
             ).build();
 
             @Override
