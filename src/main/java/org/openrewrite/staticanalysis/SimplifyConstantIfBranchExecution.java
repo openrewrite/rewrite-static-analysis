@@ -143,5 +143,11 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 return J.Block.createEmptyBlock();
             }
         }
+
+        @Override
+        public J visitTernary(J.Ternary ternary, ExecutionContext ctx) {
+            J.Ternary j = (J.Ternary) super.visitTernary(ternary, ctx);
+            return cleanupBooleanExpression(j, getCursor(), ctx);
+        }
     }
 }
