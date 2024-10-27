@@ -18,9 +18,9 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.StringUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.*;
 import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.search.UsesType;
@@ -28,9 +28,11 @@ import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 @Value
@@ -67,11 +69,13 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         return Duration.ofMinutes(2);
     }
 
+    int maxVariableLength = 40;
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("java.lang.String", false), new JavaVisitor<ExecutionContext>() {
             @Override
-            public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) tree;
                     Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
@@ -94,8 +98,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 if (duplicateLiteralsMap.isEmpty()) {
                     return classDecl;
                 }
-                Set<String> variableNames = duplicateLiteralInfo.getVariableNames();
                 Map<String, String> fieldValueToFieldName = duplicateLiteralInfo.getFieldValueToFieldName();
+                Set<String> variableNames = VariableNameUtils.findNamesInScope(getCursor()).stream()
+                        .filter(i -> !fieldValueToFieldName.containsValue(i)).collect(Collectors.toSet());
                 String classFqn = classDecl.getType().getFullyQualifiedName();
                 Map<J.Literal, String> replacements = new HashMap<>();
                 for (Map.Entry<String, List<J.Literal>> entry : duplicateLiteralsMap.entrySet()) {
@@ -104,7 +109,13 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     String classFieldName = fieldValueToFieldName.get(valueOfLiteral);
                     String variableName;
                     if (classFieldName != null) {
-                        variableName = getNameWithoutShadow(classFieldName, variableNames);
+                        String maybeVariableName = getNameWithoutShadow(classFieldName, variableNames);
+                        if (duplicateLiteralInfo.existingFieldValueToFieldName.get(maybeVariableName) != null) {
+                            variableNames.add(maybeVariableName);
+                            maybeVariableName = getNameWithoutShadow(classFieldName, variableNames);
+                        }
+
+                        variableName = maybeVariableName;
                         if (StringUtils.isBlank(variableName)) {
                             continue;
                         }
@@ -117,7 +128,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             continue;
                         }
                         J.Literal replaceLiteral = duplicateLiterals.get(0).withId(randomId());
-                        JavaTemplate template = JavaTemplate.builder("private static final String " + variableName + " = #{any(String)};").build();
+                        String modifiers = (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Interface) ? "" : "private static final ";
+                        JavaTemplate template = JavaTemplate.builder(modifiers + "String " + variableName + " = #{any(String)};").build();
                         if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Enum) {
                             J.Block applied = template
                                     .apply(new Cursor(getCursor(), classDecl.getBody()), classDecl.getBody().getCoordinates().lastStatement(), replaceLiteral);
@@ -136,7 +148,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 duplicateLiteralInfo = null;
                 duplicateLiteralsMap = null;
                 return replacements.isEmpty() ? classDecl :
-                        new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, getCursor().getParent());
+                        new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, requireNonNull(getCursor().getParent()));
             }
 
             /**
@@ -179,7 +191,12 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         prevIsLower = Character.isLowerCase(c);
                     }
                 }
-                return VariableNameUtils.normalizeName(newName.toString());
+                String newNameString = newName.toString();
+                while (newNameString.length() > maxVariableLength){
+                    int indexOf = newNameString.lastIndexOf("_");
+                    newNameString = newNameString.substring(0, indexOf > -1 ? indexOf : maxVariableLength);
+                }
+                return VariableNameUtils.normalizeName(newNameString);
             }
         });
     }
@@ -190,14 +207,14 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Value
     private static class DuplicateLiteralInfo {
-        Set<String> variableNames;
         Map<String, String> fieldValueToFieldName;
+        Map<String, String> existingFieldValueToFieldName;
 
         @NonFinal
         Map<String, List<J.Literal>> duplicateLiterals;
 
         public static DuplicateLiteralInfo find(J.ClassDeclaration inClass) {
-            DuplicateLiteralInfo result = new DuplicateLiteralInfo(new LinkedHashSet<>(), new LinkedHashMap<>(), new HashMap<>());
+            DuplicateLiteralInfo result = new DuplicateLiteralInfo(new LinkedHashMap<>(), new LinkedHashMap<>(), new HashMap<>());
             new JavaIsoVisitor<Integer>() {
 
                 @Override
@@ -212,11 +229,11 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     Cursor parentScope = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.MethodDeclaration);
                     boolean privateStaticFinalVariable = isPrivateStaticFinalVariable(variable);
                     // `private static final String`(s) are handled separately by `FindExistingPrivateStaticFinalFields`.
-                    if (parentScope.getValue() instanceof J.MethodDeclaration ||
-                        parentScope.getValue() instanceof J.ClassDeclaration &&
-                        !(privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&
-                          ((J.Literal) v.getInitializer()).getValue() instanceof String)) {
-                        result.variableNames.add(v.getSimpleName());
+                    if (v.getInitializer() instanceof J.Literal &&
+                        (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
+                            !(privateStaticFinalVariable && ((J.Literal) v.getInitializer()).getValue() instanceof String)) {
+                        String value = (((J.Literal) v.getInitializer()).getValue()).toString();
+                        result.existingFieldValueToFieldName.put(v.getSimpleName(), value);
                     }
                     if (parentScope.getValue() instanceof J.ClassDeclaration &&
                         privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&

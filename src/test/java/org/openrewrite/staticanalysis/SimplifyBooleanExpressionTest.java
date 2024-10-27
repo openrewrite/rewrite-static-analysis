@@ -379,4 +379,35 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void nullCheck() {
+        rewriteRun(
+          spec -> spec
+            .recipes(
+              new SimplifyBooleanReturn(),
+              new SimplifyBooleanExpression()
+            ),
+          //language=java
+          java(
+                """
+              class A {
+                  String name;
+                  boolean notOne(A a) {
+                      if (a != null ? !name.equals(a.name) : a.name != null) return false;
+                      return true;
+                  }
+              }
+              """,
+            """
+              class A {
+                  String name;
+                  boolean notOne(A a) {
+                      return a == null ? a.name != null : !name.equals(a.name);
+                  }
+              }
+              """
+            )
+        );
+    }
 }

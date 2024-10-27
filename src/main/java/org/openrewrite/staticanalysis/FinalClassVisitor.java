@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Tree;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -60,8 +60,8 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDeclaration, ExecutionContext ctx) {
         J.ClassDeclaration cd = super.visitClassDeclaration(classDeclaration, ctx);
 
-        if (cd.getKind() != J.ClassDeclaration.Kind.Type.Class || cd.hasModifier(J.Modifier.Type.Abstract)
-                || cd.hasModifier(J.Modifier.Type.Final) || cd.getType() == null) {
+        if (cd.getKind() != J.ClassDeclaration.Kind.Type.Class || cd.hasModifier(J.Modifier.Type.Abstract) ||
+                cd.hasModifier(J.Modifier.Type.Final) || cd.getType() == null) {
             return cd;
         }
 
@@ -90,8 +90,8 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
     }
 
     private void excludeSupertypes(JavaType.FullyQualified type) {
-        if (type.getSupertype() != null && type.getOwningClass() != null
-                && typesToNotFinalize.add(type.getSupertype().getFullyQualifiedName())) {
+        if (type.getSupertype() != null && type.getOwningClass() != null &&
+                typesToNotFinalize.add(type.getSupertype().getFullyQualifiedName())) {
             excludeSupertypes(type.getSupertype());
         }
     }

@@ -15,9 +15,12 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.*;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.TabsAndIndentsVisitor;
 import org.openrewrite.java.style.IntelliJ;
@@ -66,7 +69,7 @@ public class ControlFlowIndentation extends Recipe {
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                    TabsAndIndentsStyle style = ((SourceFile) cu).getStyle(TabsAndIndentsStyle.class);
+                    TabsAndIndentsStyle style = cu.getStyle(TabsAndIndentsStyle.class);
                     if (style == null) {
                         style = IntelliJ.tabsAndIndents();
                     }
@@ -108,7 +111,7 @@ public class ControlFlowIndentation extends Recipe {
                 return shouldReformat(s.getElsePart());
             }
 
-            boolean shouldReformat(@Nullable J.If.Else s) {
+            boolean shouldReformat(J.If.@Nullable Else s) {
                 if (s == null) {
                     return false;
                 }

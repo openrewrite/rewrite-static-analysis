@@ -16,15 +16,12 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.MethodCall;
+import org.openrewrite.java.tree.*;
 
 import java.util.function.BiPredicate;
-import java.util.function.Supplier;
 
 /**
  * Removes all {@link MethodCall} matching both the
@@ -47,34 +44,49 @@ public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public @Nullable J.NewClass visitNewClass(J.NewClass newClass, P p) {
-        return visitMethodCall(newClass, () -> super.visitNewClass(newClass, p));
+    public J.@Nullable NewClass visitNewClass(J.NewClass newClass, P p) {
+        if (methodMatcher.matches(newClass) && predicateMatchesAllArguments(newClass) && isStatementInParentBlock(newClass)) {
+            if (newClass.getMethodType() != null) {
+                maybeRemoveImport(newClass.getMethodType().getDeclaringType());
+            }
+            return null;
+        }
+        return super.visitNewClass(newClass, p);
     }
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public @Nullable J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
-        return visitMethodCall(method, () -> super.visitMethodInvocation(method, p));
-    }
+    public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, P p) {
+        // Find method invocations that match the specified method and arguments
+        if (methodMatcher.matches(method) && predicateMatchesAllArguments(method)) {
+            // If the method invocation is a standalone statement, remove it altogether
+            if (isStatementInParentBlock(method)) {
+                if (method.getMethodType() != null) {
+                    maybeRemoveImport(method.getMethodType().getDeclaringType());
+                }
+                return null;
+            }
 
-    private <M extends MethodCall> @Nullable M visitMethodCall(M methodCall, Supplier<M> visitSuper) {
-        if (!methodMatcher.matches(methodCall)) {
-            return visitSuper.get();
-        }
-        J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
-        //noinspection SuspiciousMethodCalls
-        if (parentBlock != null && !parentBlock.getStatements().contains(methodCall)) {
-            return visitSuper.get();
-        }
-        // Remove the method invocation when the argumentMatcherPredicate is true for all arguments
-        for (int i = 0; i < methodCall.getArguments().size(); i++) {
-            if (!argumentPredicate.test(i, methodCall.getArguments().get(i))) {
-                return visitSuper.get();
+            // If the method invocation is in a fluent chain, remove just the current invocation
+            if (method.getSelect() instanceof J.MethodInvocation &&
+                TypeUtils.isOfType(method.getType(), method.getSelect().getType())) {
+                return super.visitMethodInvocation((J.MethodInvocation) method.getSelect(), p);
             }
         }
-        if (methodCall.getMethodType() != null) {
-            maybeRemoveImport(methodCall.getMethodType().getDeclaringType());
+        return super.visitMethodInvocation(method, p);
+    }
+
+    private boolean predicateMatchesAllArguments(MethodCall method) {
+        for (int i = 0; i < method.getArguments().size(); i++) {
+            if (!argumentPredicate.test(i, method.getArguments().get(i))) {
+                return false;
+            }
         }
-        return null;
+        return true;
+    }
+
+    private boolean isStatementInParentBlock(Statement method) {
+        J.Block parentBlock = getCursor().firstEnclosing(J.Block.class);
+        return parentBlock == null || parentBlock.getStatements().contains(method);
     }
 }

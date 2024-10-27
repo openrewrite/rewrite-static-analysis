@@ -42,6 +42,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       String s = null;
                       if(s.equals("test")) {}
                       if(s.equalsIgnoreCase("test")) {}
+                      System.out.println(s.compareTo("test"));
+                      System.out.println(s.compareToIgnoreCase("test"));
+                      System.out.println(s.contentEquals("test"));
                   }
               }
               """,
@@ -51,6 +54,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       String s = null;
                       if("test".equals(s)) {}
                       if("test".equalsIgnoreCase(s)) {}
+                      System.out.println("test".compareTo(s));
+                      System.out.println("test".compareToIgnoreCase(s));
+                      System.out.println("test".contentEquals(s));
                   }
               }
               """
@@ -82,6 +88,30 @@ class EqualsAvoidsNullTest implements RewriteTest {
               }
               """
           )
+        );
+    }
+
+    @Test
+    void nullLiteral() {
+        rewriteRun(
+            //language=java
+            java("""
+              public class A {
+                    void foo(String s) {
+                        if(s.equals(null)) {
+                        }
+                    }
+                }
+              """,
+              """
+
+              public class A {
+                    void foo(String s) {
+                        if(s == null) {
+                        }
+                    }
+                }
+              """)
         );
     }
 }

@@ -75,8 +75,8 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
                     Statement statement = statements.get(i);
                     if (statement instanceof J.VariableDeclarations) {
                         J.VariableDeclarations varDecls = (J.VariableDeclarations) statement;
-                        if (J.Modifier.hasModifier(varDecls.getModifiers(), J.Modifier.Type.Final)
-                            && varDecls.getVariables().stream().anyMatch(v -> v.getInitializer() == null)) {
+                        if (J.Modifier.hasModifier(varDecls.getModifiers(), J.Modifier.Type.Final) &&
+                            varDecls.getVariables().stream().anyMatch(v -> v.getInitializer() == null)) {
                             hasFinalUninitializedFieldVar = true;
                             break;
                         }

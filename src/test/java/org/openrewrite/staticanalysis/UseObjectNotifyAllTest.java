@@ -43,14 +43,13 @@ class UseObjectNotifyAllTest implements RewriteTest {
                                          // reaches this value
                  public ProcessStep(int step) {
                    this.step = step;
-                 }           
-                
+                 }
                  @Override public void run() {
                    try {
                      synchronized (lock) {
                        while (time != step) {
                          lock.wait();
-                       }             
+                       }
                        time++;
                        lock.notify();
                        Thread.notify();
@@ -65,7 +64,7 @@ class UseObjectNotifyAllTest implements RewriteTest {
                    }
                  }
                }
-              """,
+             """,
             """
              public final class ProcessStep implements Runnable {
                  private static final Object lock = new Object();
@@ -74,14 +73,13 @@ class UseObjectNotifyAllTest implements RewriteTest {
                                          // reaches this value
                  public ProcessStep(int step) {
                    this.step = step;
-                 }           
-                
+                 }
                  @Override public void run() {
                    try {
                      synchronized (lock) {
                        while (time != step) {
                          lock.wait();
-                       }             
+                       }
                        time++;
                        lock.notifyAll();
                        Thread.notifyAll();
@@ -96,10 +94,8 @@ class UseObjectNotifyAllTest implements RewriteTest {
                    }
                  }
                }
-              """
+             """
           )
         );
     }
-
-
 }

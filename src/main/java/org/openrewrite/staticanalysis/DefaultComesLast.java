@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.DefaultComesLastStyle;
@@ -61,7 +61,7 @@ public class DefaultComesLast extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                DefaultComesLastStyle style = ((SourceFile) cu).getStyle(DefaultComesLastStyle.class);
+                DefaultComesLastStyle style = cu.getStyle(DefaultComesLastStyle.class);
                 if (style == null) {
                     style = Checkstyle.defaultComesLast();
                 }
@@ -70,5 +70,4 @@ public class DefaultComesLast extends Recipe {
             return (J) tree;
         }
     }
-
 }

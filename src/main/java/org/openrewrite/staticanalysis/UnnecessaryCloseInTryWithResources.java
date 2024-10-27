@@ -16,12 +16,16 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -50,7 +54,14 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new UnnecessaryAutoCloseableVisitor();
+        return Preconditions.check(
+                Preconditions.or(
+                        new JavaFileChecker<>(),
+                        new KotlinFileChecker<>(),
+                        new GroovyFileChecker<>()
+                ),
+                new UnnecessaryAutoCloseableVisitor()
+        );
     }
 
     private static class UnnecessaryAutoCloseableVisitor extends JavaIsoVisitor<ExecutionContext> {

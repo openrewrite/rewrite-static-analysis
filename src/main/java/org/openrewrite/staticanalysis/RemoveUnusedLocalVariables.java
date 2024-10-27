@@ -17,9 +17,9 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
@@ -41,8 +41,13 @@ public class RemoveUnusedLocalVariables extends Recipe {
             description = "An array of variable identifier names for local variables to ignore, even if the local variable is unused.",
             required = false,
             example = "[unused, notUsed, IGNORE_ME]")
+    String @Nullable [] ignoreVariablesNamed;
+
+    @Option(displayName = "Remove unused local variables with side effects in initializer",
+            description = "Whether to remove unused local variables despite side effects in the initializer. Default false.",
+            required = false)
     @Nullable
-    String[] ignoreVariablesNamed;
+    Boolean withSideEffects;
 
     @Override
     public String getDisplayName() {
@@ -178,7 +183,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        result.set(true);
+                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                            result.set(true);
+                        }
                         return methodInvocation;
                     }
 

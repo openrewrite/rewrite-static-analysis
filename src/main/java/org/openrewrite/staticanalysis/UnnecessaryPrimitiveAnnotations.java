@@ -37,12 +37,12 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Remove Nullable and CheckForNull annotations from primitives";
+        return "Remove `@Nullable` and `@CheckForNull` annotations from primitives";
     }
 
     @Override
     public String getDescription() {
-        return "Remove `@Nullable` and `@CheckForNull` annotations from primitives since they can't be null.";
+        return "Primitives can't be null anyway, so these annotations are not useful in this context.";
     }
 
     @Override
@@ -63,9 +63,9 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
                     @Override
                     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                         J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-                        if (md.getReturnTypeExpression() != null
-                            && !(md.getReturnTypeExpression() instanceof J.ArrayType)
-                            && md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
+                        if (md.getReturnTypeExpression() != null &&
+                            !(md.getReturnTypeExpression() instanceof J.ArrayType) &&
+                            md.getReturnTypeExpression().getType() instanceof JavaType.Primitive) {
                             md = maybeAutoFormat(md, md.withLeadingAnnotations(filterAnnotations(md.getLeadingAnnotations())), ctx);
                         }
                         return md;

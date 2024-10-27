@@ -69,18 +69,18 @@ public class NoDoubleBraceInitialization extends Recipe {
     private static class NoDoubleBraceInitializationVisitor extends JavaIsoVisitor<ExecutionContext> {
 
         private boolean isSupportedDoubleBraceInitialization(J.NewClass nc) {
-            if (getCursor().getParent() == null
-                || getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation
-                || getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
+            if (getCursor().getParent() == null ||
+                getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation ||
+                getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
                 return false;
             }
-            if (nc.getBody() != null && !nc.getBody().getStatements().isEmpty()
-                && nc.getBody().getStatements().size() == 1
-                && nc.getBody().getStatements().get(0) instanceof J.Block
-                && getCursor().getParent(3) != null) {
-                return TypeUtils.isAssignableTo(MAP_TYPE, nc.getType())
-                       || TypeUtils.isAssignableTo(LIST_TYPE, nc.getType())
-                       || TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
+            if (nc.getBody() != null && !nc.getBody().getStatements().isEmpty() &&
+                nc.getBody().getStatements().size() == 1 &&
+                nc.getBody().getStatements().get(0) instanceof J.Block &&
+                getCursor().getParent(3) != null) {
+                return TypeUtils.isAssignableTo(MAP_TYPE, nc.getType()) ||
+                       TypeUtils.isAssignableTo(LIST_TYPE, nc.getType()) ||
+                       TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
             }
             return false;
         }
@@ -96,8 +96,8 @@ public class NoDoubleBraceInitialization extends Recipe {
                 J.Block secondBlock = (J.Block) nc.getBody().getStatements().get(0);
                 List<Statement> initStatements = secondBlock.getStatements();
 
-                boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty()
-                                                             && initStatements.stream().allMatch(J.NewClass.class::isInstance);
+                boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty() &&
+                                                             initStatements.stream().allMatch(J.NewClass.class::isInstance);
 
                 if (maybeMistakenlyMissedAddingElement) {
                     JavaType newClassType = nc.getType();
@@ -229,7 +229,7 @@ public class NoDoubleBraceInitialization extends Recipe {
 
     private static class FindMethodInvocationInDoubleBrace extends JavaIsoVisitor<AtomicBoolean> {
         /**
-         * Find whether any collection content initialization method(e.g add() or put()) is invoked in the double brace.
+         * Find whether any collection content initialization method(e.g. add() or put()) is invoked in the double brace.
          *
          * @param j The subtree to search, supposed to be the 2nd brace (J.Block)
          * @return true if any method invocation found in the double brace, otherwise false.

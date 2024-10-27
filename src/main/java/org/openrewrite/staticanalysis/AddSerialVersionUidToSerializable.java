@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.tree.J;
@@ -97,9 +97,9 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
             private J.VariableDeclarations maybeFixVariableDeclarations(J.VariableDeclarations varDecls) {
                 List<J.Modifier> modifiers = varDecls.getModifiers();
-                if (!J.Modifier.hasModifier(modifiers, J.Modifier.Type.Private)
-                        || !J.Modifier.hasModifier(modifiers, J.Modifier.Type.Static)
-                        || !J.Modifier.hasModifier(modifiers, J.Modifier.Type.Final)) {
+                if (!J.Modifier.hasModifier(modifiers, J.Modifier.Type.Private) ||
+                        !J.Modifier.hasModifier(modifiers, J.Modifier.Type.Static) ||
+                        !J.Modifier.hasModifier(modifiers, J.Modifier.Type.Final)) {
                     varDecls = varDecls.withModifiers(Arrays.asList(
                             new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Private, Collections.emptyList()),
                             new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()),

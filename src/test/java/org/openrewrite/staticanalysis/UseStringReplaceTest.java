@@ -187,4 +187,46 @@ class UseStringReplaceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/330")
+    void equalsSignOnlyWhenSafeToReplace() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class A {
+                  String foo(String bar) {
+                      return bar.replaceAll("=","|");
+                  }
+              }
+              """,
+            """
+              class A {
+                  String foo(String bar) {
+                      return bar.replace("=","|");
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              class B {
+                  String foo(String bar) {
+                      return bar.replaceAll("(?=x)", "#");
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              class C {
+                  String foo(String bar) {
+                      return bar.replaceAll("(?<=x)", "#");
+                  }
+              }
+              """
+          )
+        );
+    }
 }

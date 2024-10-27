@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.MethodMatcher;
@@ -32,6 +32,8 @@ import static java.util.Collections.singletonList;
 
 public class ChainStringBuilderAppendCalls extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(String)");
+
+    @SuppressWarnings("ALL") // Stop NoMutableStaticFieldsInRecipes from suggesting to remove this mutable static field
     private static J.Binary additiveBinaryTemplate = null;
 
     @Override
@@ -78,8 +80,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                     boolean appendToString = false;
                     for (Expression exp : flattenExpressions) {
                         if (appendToString) {
-                            if (exp instanceof J.Literal
-                                && (((J.Literal) exp).getType() == JavaType.Primitive.String)
+                            if (exp instanceof J.Literal &&
+                                (((J.Literal) exp).getType() == JavaType.Primitive.String)
                             ) {
                                 group.add(exp);
                             } else {
@@ -87,8 +89,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                                 groups.add(exp);
                             }
                         } else {
-                            if (exp instanceof J.Literal
-                                && (((J.Literal) exp).getType() == JavaType.Primitive.String)) {
+                            if (exp instanceof J.Literal &&
+                                (((J.Literal) exp).getType() == JavaType.Primitive.String)) {
                                 addToGroups(group, groups);
                                 appendToString = true;
                             } else if ((exp instanceof J.Identifier || exp instanceof J.MethodInvocation) && exp.getType() != null) {
@@ -182,8 +184,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                 return false;
             }
 
-            return flatAdditiveExpressions(b.getLeft(), expressionList)
-                   && flatAdditiveExpressions(b.getRight(), expressionList);
+            return flatAdditiveExpressions(b.getLeft(), expressionList) &&
+                   flatAdditiveExpressions(b.getRight(), expressionList);
         } else if (expression instanceof J.Literal ||
                    expression instanceof J.Identifier ||
                    expression instanceof J.MethodInvocation ||

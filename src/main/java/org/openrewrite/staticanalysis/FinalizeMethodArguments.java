@@ -198,8 +198,8 @@ public class FinalizeMethodArguments extends Recipe {
         return parameters.stream().allMatch(p -> {
             if (p instanceof J.VariableDeclarations) {
                 final List<J.Modifier> modifiers = ((J.VariableDeclarations) p).getModifiers();
-                return !modifiers.isEmpty()
-                       && modifiers.stream()
+                return !modifiers.isEmpty() &&
+                       modifiers.stream()
                                .allMatch(m -> m.getType().equals(J.Modifier.Type.Final));
             }
             return false;

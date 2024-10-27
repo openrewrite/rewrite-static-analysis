@@ -42,7 +42,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Replaces `Collections#EMPTY_..` with methods that return generic types.";
+        return "Replaces `Collections#EMPTY_...` with methods that return generic types.";
     }
 
     @Override

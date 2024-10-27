@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @NullMarked
-package org.openrewrite.staticanalysis;
+package org.openrewrite.staticanalysis.java;
 
 import org.jspecify.annotations.NullMarked;

@@ -51,11 +51,12 @@ public class LambdaBlockToExpression extends Recipe {
                                 Space prefix = statement.getPrefix();
                                 if (statement instanceof J.Return) {
                                     Expression expression = ((J.Return) statement).getExpression();
-                                    if (prefix.getComments().isEmpty()) {
-                                        return l.withBody(expression);
-                                    } else {
-                                        return l.withBody(expression.withPrefix(prefix));
-                                    }
+                                        if (prefix.getComments().isEmpty()) {
+                                            //noinspection DataFlowIssue
+                                            return l.withBody(expression);
+                                        } else if (expression != null) {
+                                            return l.withBody(expression.withPrefix(prefix));
+                                        }
                                 } else if (statement instanceof J.MethodInvocation) {
                                     if (prefix.getComments().isEmpty()) {
                                         return l.withBody(statement);
@@ -88,6 +89,7 @@ public class LambdaBlockToExpression extends Recipe {
     // TODO this is actually more complex in the presence of generics and inheritance
     static boolean hasMethodOverloading(JavaType.Method methodType) {
         String methodName = methodType.getName();
+        int numberOfParameters = methodType.getParameterNames().size();
         return Optional.of(methodType)
                 .map(JavaType.Method::getDeclaringType)
                 .filter(JavaType.Class.class::isInstance)
@@ -96,7 +98,8 @@ public class LambdaBlockToExpression extends Recipe {
                 .map(methods -> {
                     int overloadingCount = 0;
                     for (JavaType.Method dm : methods) {
-                        if (dm.getName().equals(methodName)) {
+                        if (methodName.equals(dm.getName()) &&
+                            numberOfParameters == dm.getParameterNames().size()) {
                             if (++overloadingCount > 1) {
                                 return true;
                             }

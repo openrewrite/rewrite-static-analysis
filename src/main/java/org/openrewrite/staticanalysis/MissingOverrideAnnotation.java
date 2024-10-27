@@ -17,8 +17,8 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -83,12 +83,12 @@ public class MissingOverrideAnnotation extends Recipe {
 
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-            if (!method.hasModifier(J.Modifier.Type.Static)
-                    && !method.isConstructor()
-                    && !service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION)
-                    && TypeUtils.isOverride(method.getMethodType())
-                    && !(Boolean.TRUE.equals(ignoreAnonymousClassMethods)
-                    && getCursorToParentScope(getCursor()).getValue() instanceof J.NewClass)) {
+            if (!method.hasModifier(J.Modifier.Type.Static) &&
+                    !method.isConstructor() &&
+                    !service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION) &&
+                    TypeUtils.isOverride(method.getMethodType()) &&
+                    !(Boolean.TRUE.equals(ignoreAnonymousClassMethods) &&
+                    getCursorToParentScope(getCursor()).getValue() instanceof J.NewClass)) {
 
                 method = JavaTemplate.apply("@Override", getCursor(), method.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
             }

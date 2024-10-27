@@ -33,12 +33,12 @@ public class NoToStringOnStringType extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Unnecessary String#toString()";
+        return "Unnecessary `String#toString`";
     }
 
     @Override
     public String getDescription() {
-        return "Remove unnecessary `String#toString()` invocations on objects which are already a string.";
+        return "Remove unnecessary `String#toString` invocations on objects which are already a string.";
     }
 
     @Override

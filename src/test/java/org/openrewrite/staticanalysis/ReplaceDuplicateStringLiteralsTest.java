@@ -149,6 +149,132 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     }
 
     @Test
+    void enumCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              enum TYPES {
+                  VALUE, NUMBER, TEXT
+              }
+
+              class A {
+                  final String val1 = "types";
+                  final String val2 = "types";
+                  final String val3 = "types";
+                  TYPES type = TYPES.VALUE;
+              }
+
+              """,
+            """
+              package org.foo;
+              enum TYPES {
+                  VALUE, NUMBER, TEXT
+              }
+
+              class A {
+                  private static final String TYPES_1 = "types";
+                  final String val1 = TYPES_1;
+                  final String val2 = TYPES_1;
+                  final String val3 = TYPES_1;
+                  TYPES type = TYPES.VALUE;
+              }
+
+              """
+          )
+        );
+    }
+
+    @Test
+    void fieldNameCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              class A {
+                  final String val1 = "value";
+                  final String val2 = "value";
+                  final String val3 = "value";
+                  final int VALUE = 1;
+              }
+              """,
+            """
+              package org.foo;
+              class A {
+                  private static final String VALUE_1 = "value";
+                  final String val1 = VALUE_1;
+                  final String val2 = VALUE_1;
+                  final String val3 = VALUE_1;
+                  final int VALUE = 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticImportCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              
+              import static java.lang.Long.MAX_VALUE;
+              
+              class A {
+                  final String val1 = "max_value";
+                  final String val2 = "max_value";
+                  final String val3 = "max_value";
+                  final long value = MAX_VALUE;
+              }
+              """,
+            """
+              package org.foo;
+              
+              import static java.lang.Long.MAX_VALUE;
+              
+              class A {
+                  private static final String MAX_VALUE_1 = "max_value";
+                  final String val1 = MAX_VALUE_1;
+                  final String val2 = MAX_VALUE_1;
+                  final String val3 = MAX_VALUE_1;
+                  final long value = MAX_VALUE;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void generatedNameIsVeryLong() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              class A {
+                  final String val1 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val2 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val3 = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+              }
+              """,
+            """
+              package org.foo;
+              class A {
+                  private static final String THIS_IS_AN_UNREASONABLY_LONG_VARIABLE = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val1 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+                  final String val2 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+                  final String val3 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void replaceRedundantLiteralInMethodInvocation() {
         rewriteRun(
           //language=java
@@ -252,17 +378,17 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
           java(
             """
               class A {
-                  final String val1 = "An example,, of a :: String with `` special __ characters.";
-                  final String val2 = "An example,, of a :: String with `` special __ characters.";
-                  final String val3 = "An example,, of a :: String with `` special __ characters.";
+                  final String val1 = "Example,, :: String with `` special __ characters.";
+                  final String val2 = "Example,, :: String with `` special __ characters.";
+                  final String val3 = "Example,, :: String with `` special __ characters.";
               }
               """,
             """
               class A {
-                  private static final String AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS = "An example,, of a :: String with `` special __ characters.";
-                  final String val1 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
-                  final String val2 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
-                  final String val3 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
+                  private static final String EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS = "Example,, :: String with `` special __ characters.";
+                  final String val1 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS;
+                  final String val2 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS; 
+                  final String val3 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS;
               }
               """
           )
@@ -572,6 +698,30 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
                   C("value");
                   Scratch(String s) {
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void interfaceLiteralsCannotBePrivate() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface A {
+                  String val1 = "value";
+                  String val2 = "value";
+                  String val3 = "value";
+              }
+              """,
+            """
+              interface A {
+                  String VALUE = "value";
+                  String val1 = VALUE;
+                  String val2 = VALUE;
+                  String val3 = VALUE;
               }
               """
           )

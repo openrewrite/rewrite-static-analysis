@@ -243,8 +243,8 @@ public class MinimumSwitchCases extends Recipe {
 
             private boolean switchesOnEnum(J.Switch switch_) {
                 JavaType selectorType = switch_.getSelector().getTree().getType();
-                return selectorType instanceof JavaType.Class
-                       && ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
+                return selectorType instanceof JavaType.Class &&
+                       ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
             }
 
         };

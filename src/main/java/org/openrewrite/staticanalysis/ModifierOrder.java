@@ -92,7 +92,7 @@ public class ModifierOrder extends Recipe {
 
         return ListUtils.map(modifiers, (i, mod) -> mod.getType() == sortedTypes.get(i) ? mod : mod.withType(sortedTypes.get(i)));
     }
-    
+
     private static ToIntFunction<Type> createModifierTypeToPositionFunction() {
         final int DEFAULT_MOD_POSITION = 4;
         return type -> {

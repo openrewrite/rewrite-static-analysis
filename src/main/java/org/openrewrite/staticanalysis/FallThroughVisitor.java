@@ -54,7 +54,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
-                    c = (J.Case) new AddBreak<>(c).visit(c, p, getCursor().getParent());
+                    c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
         }
