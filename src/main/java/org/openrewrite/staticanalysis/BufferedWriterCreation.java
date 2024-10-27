@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import static org.openrewrite.java.template.internal.AbstractRefasterJavaVisitor.EmbeddingOption.SHORTEN_NAMES;
+import static org.openrewrite.java.template.internal.AbstractRefasterJavaVisitor.EmbeddingOption.SIMPLIFY_BOOLEANS;
 
 public class BufferedWriterCreation extends Recipe {
 
@@ -139,13 +140,12 @@ public class BufferedWriterCreation extends Recipe {
                 JavaTemplate.Matcher matcher;
                 if ((matcher = before.matcher(getCursor())).find()) {
                     maybeRemoveImport("java.io.FileWriter");
-                    J j = embed(
+                    return embed(
                             after.apply(getCursor(), elem.getCoordinates().replace(), matcher.parameter(0), matcher.parameter(1)),
                             getCursor(),
                             ctx,
-                            SHORTEN_NAMES
+                            SHORTEN_NAMES, SIMPLIFY_BOOLEANS
                     );
-                    return (J) new SimplifyConstantTernaryExecution().getVisitor().visitNonNull(j, ctx, getCursor().getParentOrThrow());
                 }
                 return null;
             }
