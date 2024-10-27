@@ -67,6 +67,19 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             return bl;
         }
 
+        @SuppressWarnings("unchecked")
+        private static <E extends Expression> E cleanupBooleanExpression(E expression, Cursor c, ExecutionContext ctx) {
+            E ex1 = (E) new UnnecessaryParenthesesVisitor<>().visitNonNull(expression, ctx, c.getParentOrThrow());
+            ex1 = (E) new SimplifyBooleanExpressionVisitor().visitNonNull(ex1, ctx, c.getParentTreeCursor());
+            if (expression == ex1 ||
+                J.Literal.isLiteralValue(ex1, Boolean.FALSE) ||
+                J.Literal.isLiteralValue(ex1, Boolean.TRUE)) {
+                return ex1;
+            }
+            // Run recursively until no further changes are needed
+            return cleanupBooleanExpression(ex1, c, ctx);
+        }
+
         @Override
         public J visitIf(J.If if_, ExecutionContext ctx) {
             J.If if__ = (J.If) super.visitIf(if_, ctx);
@@ -130,18 +143,5 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                 return J.Block.createEmptyBlock();
             }
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    static <E extends Expression> E cleanupBooleanExpression(E expression, Cursor c, ExecutionContext ctx) {
-        E ex1 = (E) new UnnecessaryParenthesesVisitor<>().visitNonNull(expression, ctx, c.getParentOrThrow());
-        ex1 = (E) new SimplifyBooleanExpressionVisitor().visitNonNull(ex1, ctx, c.getParentTreeCursor());
-        if (expression == ex1 ||
-            J.Literal.isLiteralValue(ex1, Boolean.FALSE) ||
-            J.Literal.isLiteralValue(ex1, Boolean.TRUE)) {
-            return ex1;
-        }
-        // Run recursively until no further changes are needed
-        return cleanupBooleanExpression(ex1, c, ctx);
     }
 }
