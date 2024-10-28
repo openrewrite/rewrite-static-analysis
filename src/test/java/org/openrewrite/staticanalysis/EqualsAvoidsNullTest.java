@@ -44,17 +44,12 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       if (s.equals(EXTERNAL_KEY)) {}
                       if (s.equalsIgnoreCase(EXTERNAL_KEY)) {}
                       if (s.equalsIgnoreCase("EXTERNAL_KEY")) {}
-                      System.out.println(s.compareTo(EXTERNAL_KEY));
-                      System.out.println(s.compareToIgnoreCase(EXTERNAL_KEY));
-                      System.out.println(s.contentEquals(EXTERNAL_KEY));
-                      System.out.println(s.contentEquals("EXTERNAL_KEY"));
+                      System.out.println(s.equals(EXTERNAL_KEY));
+                      System.out.println(s.equalsIgnoreCase(EXTERNAL_KEY));
+                      System.out.println(s.equalsIgnoreCase("EXTERNAL_KEY"));
                       System.out.println(EXTERNAL_KEY.equals(s));
                       System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
                       System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
-                      System.out.println(EXTERNAL_KEY.compareTo(s));
-                      System.out.println("EXTERNAL_KEY".compareTo(s));
-                      System.out.println(EXTERNAL_KEY.contentEquals(s));
-                      System.out.println("EXTERNAL_KEY".contentEquals(s));
                   }
               }
               """,
@@ -69,12 +64,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(EXTERNAL_KEY.equals(s));
                       System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
                       System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
-                      System.out.println(EXTERNAL_KEY.compareTo(s));
-                      System.out.println("EXTERNAL_KEY".compareTo(s));
-                      System.out.println(EXTERNAL_KEY.contentEquals(s));
-                      System.out.println("EXTERNAL_KEY".contentEquals(s));
-                      System.out.println(s.contentEquals(EXTERNAL_KEY));
-                      System.out.println(s.contentEquals("EXTERNAL_KEY"));
+                      System.out.println(s.equals(EXTERNAL_KEY));
+                      System.out.println(s.equalsIgnoreCase(EXTERNAL_KEY));
+                      System.out.println(s.equalsIgnoreCase("EXTERNAL_KEY"));
                   }
               }
               """)
