@@ -25,8 +25,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 
 public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
+
     @Override
-    public J visitAssignmentOperation(J.AssignmentOperation assignOp, ExecutionContext ctx) {
+    public @Nullable J visitAssignmentOperation(J.AssignmentOperation assignOp, ExecutionContext ctx) {
         Expression cleanedUpAssignment = cleanupBooleanExpression(assignOp.getAssignment(), ctx);
         if (assignOp.getOperator() == J.AssignmentOperation.Type.BitAnd) {
             if (isLiteralTrue(cleanedUpAssignment)) {
