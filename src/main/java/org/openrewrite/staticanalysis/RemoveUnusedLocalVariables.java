@@ -103,7 +103,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
-            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+            public  J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 // skip matching ignored variable names right away
                 if (ignoreVariableNames != null && ignoreVariableNames.contains(variable.getSimpleName())) {
                     return variable;

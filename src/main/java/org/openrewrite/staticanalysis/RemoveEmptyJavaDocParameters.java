@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
@@ -74,7 +75,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                 }
 
                 @Override
-                public Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
+                public @Nullable Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
                     List<Javadoc> newBody = new ArrayList<>(javadoc.getBody().size());
                     boolean useNewBody = false;
 
