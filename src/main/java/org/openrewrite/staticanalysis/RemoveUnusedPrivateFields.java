@@ -200,7 +200,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
+        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
             if (multiVariable.getVariables().size() == 1 && multiVariable.getVariables().contains(namedVariable)) {
                 declarationDeleted.set(true);
                 //noinspection ConstantConditions
@@ -210,7 +210,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
+        public @Nullable J visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
             if (variable == namedVariable) {
                 //noinspection ConstantConditions
                 return null;
