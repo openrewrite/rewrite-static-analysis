@@ -34,7 +34,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void invertConditional() {
         rewriteRun(
-          //language=java
+          // language=java
           java(
             """
               public class A {
@@ -48,6 +48,13 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(s.compareToIgnoreCase(EXTERNAL_KEY));
                       System.out.println(s.contentEquals(EXTERNAL_KEY));
                       System.out.println(s.contentEquals("EXTERNAL_KEY"));
+                      System.out.println(EXTERNAL_KEY.equals(s));
+                      System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
+                      System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
+                      System.out.println(EXTERNAL_KEY.compareTo(s));
+                      System.out.println("EXTERNAL_KEY".compareTo(s));
+                      System.out.println(EXTERNAL_KEY.contentEquals(s));
+                      System.out.println("EXTERNAL_KEY".contentEquals(s));
                   }
               }
               """,
@@ -59,10 +66,15 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       if (EXTERNAL_KEY.equals(s)) {}
                       if (EXTERNAL_KEY.equalsIgnoreCase(s)) {}
                       if ("EXTERNAL_KEY".equalsIgnoreCase(s)) {}
+                      System.out.println(EXTERNAL_KEY.equals(s));
+                      System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
+                      System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
                       System.out.println(EXTERNAL_KEY.compareTo(s));
-                      System.out.println(EXTERNAL_KEY.compareToIgnoreCase(s));
+                      System.out.println("EXTERNAL_KEY".compareTo(s));
                       System.out.println(EXTERNAL_KEY.contentEquals(s));
                       System.out.println("EXTERNAL_KEY".contentEquals(s));
+                      System.out.println(s.contentEquals(EXTERNAL_KEY));
+                      System.out.println(s.contentEquals("EXTERNAL_KEY"));
                   }
               }
               """)
