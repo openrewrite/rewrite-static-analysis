@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 
+@SuppressWarnings({"RedundantClassCall", "ConstantValue", "UnusedAssignment"})
 class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
 
     @Override
