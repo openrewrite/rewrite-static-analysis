@@ -38,7 +38,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
           java(
             """
               public class A {
-                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
+                  public static final String EXTERNAL_KEY = null;
                   {
                       String s = null;
                       if (s.equals(EXTERNAL_KEY)) {}
@@ -55,7 +55,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               """,
             """
               public class A {
-                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
+                  public static final String EXTERNAL_KEY = null;
                   {
                       String s = null;
                       if (EXTERNAL_KEY.equals(s)) {}
