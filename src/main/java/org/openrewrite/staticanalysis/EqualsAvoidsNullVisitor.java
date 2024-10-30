@@ -25,7 +25,10 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
+import java.util.List;
+
 import static java.util.Collections.singletonList;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -61,13 +64,16 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-        if (m.getSelect() != null &&
-                !(m.getSelect() instanceof J.Literal) &&
-                m.getArguments().get(0) instanceof J.Literal &&
-                isStringComparisonMethod(m)) {
+        final Expression select = m.getSelect();
+        final List<Expression> arguments = m.getArguments();
+        if (nonNull(select) && isStringExpression(select) && isStringComparisonMethod(m)) {
             return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
         }
         return m;
+    }
+
+    private static boolean isStringExpression(final Expression select) {
+        return String.class.toString().contains(select.getType().toString());
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {

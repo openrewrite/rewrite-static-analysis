@@ -84,7 +84,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   {
                       String EXTERNAL_KEY = "EXTERNAL_KEY";
                       String s = null;
+                      if (true) {}
                       if (s.equals(EXTERNAL_KEY)) {}
+                      if (s.equals(true)) {}
                       if (s.equalsIgnoreCase(EXTERNAL_KEY)) {}
                       if (s.equalsIgnoreCase("EXTERNAL_KEY")) {}
                       System.out.println(s.equals(EXTERNAL_KEY));
@@ -101,6 +103,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   {
                       String EXTERNAL_KEY = "EXTERNAL_KEY";
                       String s = null;
+                      if (true) {}
+                      if (EXTERNAL_KEY.equals(s)) {}
+                      if (true.equals(s)) {}
                       if (EXTERNAL_KEY.equals(s)) {}
                       if (EXTERNAL_KEY.equalsIgnoreCase(s)) {}
                       if ("EXTERNAL_KEY".equalsIgnoreCase(s)) {}
