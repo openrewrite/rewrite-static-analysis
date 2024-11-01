@@ -177,7 +177,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   static class B {
                       private boolean bar (String param) {
-                          KEY.equals();
+                          KEY.equals(param);
                           KEY.equalsIgnoreCase(param);
                           KEY.compareTo(param);
                           KEY.compareToIgnoreCase(param);
@@ -208,7 +208,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   static class B {
                       private boolean bar (String param) {
-                          "KEY".equals();
+                          "KEY".equals(param);
                           "KEY".equalsIgnoreCase(param);
                           "KEY".compareTo(param);
                           "KEY".compareToIgnoreCase(param);
