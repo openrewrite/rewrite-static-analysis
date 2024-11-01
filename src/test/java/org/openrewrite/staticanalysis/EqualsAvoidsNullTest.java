@@ -32,13 +32,14 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void invertConditionalSmall() {
+    void invertConditionalSmallNull() {
         rewriteRun(
           // language=java
           java(
             """
               public class A {
                   public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
+                  public static final String s = null;
                   {
                       if (s.equals(EXTERNAL_KEY)) {}
                   }
@@ -47,6 +48,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
               public class A {
                   public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
+                  public static final String s = null;
                   {
                       if (EXTERNAL_KEY.equals(s)) {}
                   }
