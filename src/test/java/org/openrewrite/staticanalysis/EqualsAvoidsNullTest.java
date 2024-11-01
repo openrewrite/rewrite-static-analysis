@@ -100,6 +100,39 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
+        void valueConstant() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String KEY = "null";
+                      {
+                          KEY.equals("s");
+                          KEY.equalsIgnoreCase("s");
+                          KEY.compareTo("s");
+                          KEY.compareToIgnoreCase("s");
+                          KEY.contentEquals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String KEY = "null";
+                      {
+                          KEY.equals("s");
+                          KEY.equalsIgnoreCase("s");
+                          KEY.compareTo("s");
+                          KEY.compareToIgnoreCase("s");
+                          KEY.contentEquals("s");
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
         void nullValueField() {
             rewriteRun(
               // language=java
@@ -125,37 +158,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           "s".compareTo(KEY);
                           "s".compareToIgnoreCase(KEY);
                           "s".contentEquals(KEY);
-                      }
-                  }
-                  """)
-            );
-        }
-
-        @DocumentExample
-        @Test
-        void nullValueInline() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      {
-                          null.equals("s");
-                          null.equalsIgnoreCase("s");
-                          null.compareTo("s");
-                          null.compareToIgnoreCase("s");
-                          null.contentEquals("s");
-                      }
-                  }
-                  """,
-                """
-                  public class A {
-                      {
-                          "s".equals(null);
-                          "s".equalsIgnoreCase(null);
-                          "s".compareTo(null);
-                          "s".compareToIgnoreCase(null);
-                          "s".contentEquals(null);
                       }
                   }
                   """)
