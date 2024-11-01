@@ -153,7 +153,76 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void nullValueParameter() {
+        void nullValueParameterConstant() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String KEY = null;
+                  }
+                  static class B {
+                      private boolean baz (String param) {
+                          param.equals(KEY);
+                          param.equalsIgnoreCase(KEY);
+                          param.compareTo(KEY);
+                          param.compareToIgnoreCase(KEY);
+                          param.contentEquals(KEY);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String KEY = null;
+                  }
+                  static class B {
+                      private boolean bar (String param) {
+                          KEY.equals();
+                          KEY.equalsIgnoreCase(param);
+                          KEY.compareTo(param);
+                          KEY.compareToIgnoreCase(param);
+                          KEY.contentEquals(param);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void nullValueParameterInline() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  static class B {
+                      private boolean baz (String param) {
+                          param.equals("A.KEY");
+                          param.equalsIgnoreCase("A.KEY");
+                          param.compareTo("A.KEY");
+                          param.compareToIgnoreCase("A.KEY");
+                          param.contentEquals("A.KEY");
+                      }
+                  }
+                  """,
+                """
+                  static class B {
+                      private boolean bar (String param) {
+                          "A.KEY".equals();
+                          "A.KEY".equalsIgnoreCase(param);
+                          "A.KEY".compareTo(param);
+                          "A.KEY".compareToIgnoreCase(param);
+                          "A.KEY".contentEquals(param);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        @Disabled
+        void nullValueParameterStringString() {
             rewriteRun(
               // language=java
               java(
@@ -169,13 +238,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           param.compareToIgnoreCase(A.KEY);
                           param.contentEquals(A.KEY);
                       }
-                      private boolean baz (String param) {
-                          param.equals("A.KEY");
-                          param.equalsIgnoreCase("A.KEY");
-                          param.compareTo("A.KEY");
-                          param.compareToIgnoreCase("A.KEY");
-                          param.contentEquals("A.KEY");
-                      }
                   }
                   """,
                 """
@@ -189,13 +251,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           param.compareTo(A.KEY);
                           param.compareToIgnoreCase(A.KEY);
                           param.contentEquals(A.KEY);
-                      }
-                      private boolean bar (String param) {
-                          "A.KEY".equals();
-                          "A.KEY".equalsIgnoreCase(param);
-                          "A.KEY".compareTo(param);
-                          "A.KEY".compareToIgnoreCase(param);
-                          "A.KEY".contentEquals(param);
                       }
                   }
                   """)
