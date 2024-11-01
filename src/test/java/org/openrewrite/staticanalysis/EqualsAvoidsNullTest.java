@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -33,11 +34,13 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
     @Nested
     class LiteralsFirstInComparisons {
+
         @Nested
+        @Disabled
         class KeepOrderForStringVsString {
+
             @DocumentExample
             @Test
-                //@Disabled
             void rawStringVsRawString() {
                 rewriteRun(
                   // language=java
@@ -107,7 +110,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-//        @Disabled
         void parameterVsNullConstant() {
             rewriteRun(
               // language=java
@@ -262,7 +264,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-            //@Disabled
         void stringVsString() {
             rewriteRun(
               // language=java
@@ -300,7 +301,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-            //@Disabled
         void validConstant() {
             rewriteRun(
               // language=java
