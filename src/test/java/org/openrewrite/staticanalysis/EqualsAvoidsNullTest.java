@@ -32,7 +32,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Nested
-    class SwitchArgs {
+    class LiteralsFirstInComparisons {
         @DocumentExample
         @Test
         void equals() {
@@ -77,6 +77,81 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String EXTERNAL_KEY = null;
                       {
                           if ("s".equalsIgnoreCase(EXTERNAL_KEY)) {}
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void compareTo() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if (EXTERNAL_KEY.compareTo("s") > 0) {}
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if ("s".compareTo(EXTERNAL_KEY) < 0) {}
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void compareToIgnoreCase() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if (EXTERNAL_KEY.compareToIgnoreCase("s") > 0) {}
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if ("s".compareToIgnoreCase(EXTERNAL_KEY) < 0) {}
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void contentEquals() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if (EXTERNAL_KEY.contentEquals("s")) {}
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if ("s".contentEquals(EXTERNAL_KEY)) {}
                       }
                   }
                   """)
