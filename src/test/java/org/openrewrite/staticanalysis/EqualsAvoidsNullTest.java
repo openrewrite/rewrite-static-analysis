@@ -33,6 +33,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
     @Nested
     class LiteralsFirstInComparisons {
+
         @DocumentExample
         @Test
         void equals() {
@@ -43,7 +44,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if (EXTERNAL_KEY.equals("s")) {}
+                          EXTERNAL_KEY.equals("s");
                       }
                   }
                   """,
@@ -51,7 +52,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if ("s".equals(EXTERNAL_KEY)) {}
+                          "s".equals(EXTERNAL_KEY);
                       }
                   }
                   """)
@@ -68,7 +69,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if (EXTERNAL_KEY.equalsIgnoreCase("s")) {}
+                          EXTERNAL_KEY.equalsIgnoreCase("s");
                       }
                   }
                   """,
@@ -76,7 +77,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if ("s".equalsIgnoreCase(EXTERNAL_KEY)) {}
+                          "s".equalsIgnoreCase(EXTERNAL_KEY);
                       }
                   }
                   """)
@@ -93,7 +94,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if (EXTERNAL_KEY.compareTo("s") > 0) {}
+                          EXTERNAL_KEY.compareTo("s");
                       }
                   }
                   """,
@@ -101,7 +102,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if ("s".compareTo(EXTERNAL_KEY) < 0) {}
+                          "s".compareTo(EXTERNAL_KEY);
                       }
                   }
                   """)
@@ -118,7 +119,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if (EXTERNAL_KEY.compareToIgnoreCase("s") > 0) {}
+                          EXTERNAL_KEY.compareToIgnoreCase("s");
                       }
                   }
                   """,
@@ -126,7 +127,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if ("s".compareToIgnoreCase(EXTERNAL_KEY) < 0) {}
+                          "s".compareToIgnoreCase(EXTERNAL_KEY);
                       }
                   }
                   """)
@@ -143,7 +144,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if (EXTERNAL_KEY.contentEquals("s")) {}
+                          EXTERNAL_KEY.contentEquals("s");
                       }
                   }
                   """,
@@ -151,7 +152,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class A {
                       public static final String EXTERNAL_KEY = null;
                       {
-                          if ("s".contentEquals(EXTERNAL_KEY)) {}
+                          "s".contentEquals(EXTERNAL_KEY);
                       }
                   }
                   """)
