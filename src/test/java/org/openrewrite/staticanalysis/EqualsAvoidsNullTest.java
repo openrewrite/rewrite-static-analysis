@@ -288,7 +288,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
         void nullLiteral() {
             rewriteRun(
               //language=java
-              java("""
+              java(
+                    """
                   public class A {
                       void foo(String s) {
                             if(s.equals(null)) {
