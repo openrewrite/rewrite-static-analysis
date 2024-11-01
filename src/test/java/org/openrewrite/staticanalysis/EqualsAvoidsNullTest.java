@@ -100,6 +100,39 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
+        void nullValueField() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      {
+                          final String KEY = null;
+                          KEY.equals("s");
+                          KEY.equalsIgnoreCase("s");
+                          KEY.compareTo("s");
+                          KEY.compareToIgnoreCase("s");
+                          KEY.contentEquals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      {
+                          final String KEY = null;
+                          "s".equals(KEY);
+                          "s".equalsIgnoreCase(KEY);
+                          "s".compareTo(KEY);
+                          "s".compareToIgnoreCase(KEY);
+                          "s".contentEquals(KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
         void nullValueInline() {
             rewriteRun(
               // language=java
@@ -128,7 +161,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   """)
             );
         }
-
     }
 
     @Test
