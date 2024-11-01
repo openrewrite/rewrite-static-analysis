@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
@@ -25,10 +26,8 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.List;
-
+import static java.lang.String.valueOf;
 import static java.util.Collections.singletonList;
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -63,17 +62,17 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-        final Expression select = m.getSelect();
-        final List<Expression> arguments = m.getArguments();
-        if (nonNull(select) && isStringExpression(select) && isStringComparisonMethod(m)) {
-            return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
-        }
-        return m;
+        return visitMethodInvocation((J.MethodInvocation) super.visitMethodInvocation(method, p));
+    }
+
+    private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
+        return isStringExpression(requireNonNull(m.getSelect())) && isStringComparisonMethod(m)
+                ? literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue())
+                : m;
     }
 
     private static boolean isStringExpression(final Expression select) {
-        return String.class.toString().contains(select.getType().toString());
+        return valueOf(String.class).contains(valueOf(select.getType()));
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
