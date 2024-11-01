@@ -125,6 +125,20 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           A.KEY.compareToIgnoreCase("s");
                           A.KEY.contentEquals("s");
                       }
+                      private boolean bar (String param) {
+                          param.equals(A.KEY);
+                          param.equalsIgnoreCase(A.KEY);
+                          param.compareTo(A.KEY);
+                          param.compareToIgnoreCase(A.KEY);
+                          param.contentEquals(A.KEY);
+                      }
+                      private boolean baz (String param) {
+                          param.equals("A.KEY");
+                          param.equalsIgnoreCase("A.KEY");
+                          param.compareTo("A.KEY");
+                          param.compareToIgnoreCase("A.KEY");
+                          param.contentEquals("A.KEY");
+                      }
                   }
                   """,
                 """
@@ -145,6 +159,20 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           "s".compareTo(A.KEY);
                           "s".compareToIgnoreCase(A.KEY);
                           "s".contentEquals(A.KEY);
+                      }
+                      private boolean bar (String param) {
+                          param.equals(A.KEY);
+                          param.equalsIgnoreCase(A.KEY);
+                          param.compareTo(A.KEY);
+                          param.compareToIgnoreCase(A.KEY);
+                          param.contentEquals(A.KEY);
+                      }
+                      private boolean bar (String param) {
+                          "A.KEY".equals();
+                          "A.KEY".equalsIgnoreCase(param);
+                          "A.KEY".compareTo(param);
+                          "A.KEY".compareToIgnoreCase(param);
+                          "A.KEY".contentEquals(param);
                       }
                   }
                   """)
