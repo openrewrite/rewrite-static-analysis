@@ -36,23 +36,29 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void equals() {
+        void rawValue() {
             rewriteRun(
               // language=java
               java(
                 """
                   public class A {
-                      public static final String EXTERNAL_KEY = null;
                       {
-                          EXTERNAL_KEY.equals("s");
+                          "KEY".equals("s");
+                          "KEY".equalsIgnoreCase("s");
+                          "KEY".compareTo("s");
+                          "KEY".compareToIgnoreCase("s");
+                          "KEY".contentEquals("s");
                       }
                   }
                   """,
                 """
                   public class A {
-                      public static final String EXTERNAL_KEY = null;
                       {
-                          "s".equals(EXTERNAL_KEY);
+                          "KEY".equals("s");
+                          "KEY".equalsIgnoreCase("s");
+                          "KEY".compareTo("s");
+                          "KEY".compareToIgnoreCase("s");
+                          "KEY".contentEquals("s");
                       }
                   }
                   """)
@@ -61,23 +67,31 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void equalsIgnoreCase() {
+        void nullValueConstant() {
             rewriteRun(
               // language=java
               java(
                 """
                   public class A {
-                      public static final String EXTERNAL_KEY = null;
+                      public static final String KEY = null;
                       {
-                          EXTERNAL_KEY.equalsIgnoreCase("s");
+                          KEY.equals("s");
+                          KEY.equalsIgnoreCase("s");
+                          KEY.compareTo("s");
+                          KEY.compareToIgnoreCase("s");
+                          KEY.contentEquals("s");
                       }
                   }
                   """,
                 """
                   public class A {
-                      public static final String EXTERNAL_KEY = null;
+                      public static final String KEY = null;
                       {
-                          "s".equalsIgnoreCase(EXTERNAL_KEY);
+                          "s".equals(KEY);
+                          "s".equalsIgnoreCase(KEY);
+                          "s".compareTo(KEY);
+                          "s".compareToIgnoreCase(KEY);
+                          "s".contentEquals(KEY);
                       }
                   }
                   """)
@@ -86,78 +100,35 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void compareTo() {
+        void nullValueInline() {
             rewriteRun(
               // language=java
               java(
                 """
                   public class A {
-                      public static final String EXTERNAL_KEY = null;
                       {
-                          EXTERNAL_KEY.compareTo("s");
+                          null.equals("s");
+                          null.equalsIgnoreCase("s");
+                          null.compareTo("s");
+                          null.compareToIgnoreCase("s");
+                          null.contentEquals("s");
                       }
                   }
                   """,
                 """
                   public class A {
-                      public static final String EXTERNAL_KEY = null;
                       {
-                          "s".compareTo(EXTERNAL_KEY);
+                          "s".equals(null);
+                          "s".equalsIgnoreCase(null);
+                          "s".compareTo(null);
+                          "s".compareToIgnoreCase(null);
+                          "s".contentEquals(null);
                       }
                   }
                   """)
             );
         }
 
-        @DocumentExample
-        @Test
-        void compareToIgnoreCase() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      public static final String EXTERNAL_KEY = null;
-                      {
-                          EXTERNAL_KEY.compareToIgnoreCase("s");
-                      }
-                  }
-                  """,
-                """
-                  public class A {
-                      public static final String EXTERNAL_KEY = null;
-                      {
-                          "s".compareToIgnoreCase(EXTERNAL_KEY);
-                      }
-                  }
-                  """)
-            );
-        }
-
-        @DocumentExample
-        @Test
-        void contentEquals() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      public static final String EXTERNAL_KEY = null;
-                      {
-                          EXTERNAL_KEY.contentEquals("s");
-                      }
-                  }
-                  """,
-                """
-                  public class A {
-                      public static final String EXTERNAL_KEY = null;
-                      {
-                          "s".contentEquals(EXTERNAL_KEY);
-                      }
-                  }
-                  """)
-            );
-        }
     }
 
     @Test
