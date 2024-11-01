@@ -66,7 +66,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
-        return isStringExpression(requireNonNull(m.getSelect())) && isStringComparisonMethod(m)
+        final boolean stringComparisonMethod = isStringComparisonMethod(m);
+        return isStringExpression(requireNonNull(m.getSelect())) && stringComparisonMethod
                 ? literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue())
                 : m;
     }
