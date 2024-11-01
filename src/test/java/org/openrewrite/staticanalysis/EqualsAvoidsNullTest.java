@@ -118,6 +118,13 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           A.KEY.compareToIgnoreCase("s");
                           A.KEY.contentEquals("s");
                       }
+                      private boolean foo () {
+                          A.KEY.equals("s");
+                          A.KEY.equalsIgnoreCase("s");
+                          A.KEY.compareTo("s");
+                          A.KEY.compareToIgnoreCase("s");
+                          A.KEY.contentEquals("s");
+                      }
                   }
                   """,
                 """
@@ -126,6 +133,13 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   static class B {
                       {
+                          "s".equals(A.KEY);
+                          "s".equalsIgnoreCase(A.KEY);
+                          "s".compareTo(A.KEY);
+                          "s".compareToIgnoreCase(A.KEY);
+                          "s".contentEquals(A.KEY);
+                      }
+                      private boolean foo () {
                           "s".equals(A.KEY);
                           "s".equalsIgnoreCase(A.KEY);
                           "s".compareTo(A.KEY);
