@@ -57,7 +57,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java" +
             ".lang.CharSequence)");
 
-    static EqualsAvoidsNullStyle style;
+    EqualsAvoidsNullStyle style;
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
@@ -72,12 +72,12 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 : m;
     }
 
-    private static boolean isStringExpressionAndComparisonMethod(final J.MethodInvocation m) {
+    private boolean isStringExpressionAndComparisonMethod(final J.MethodInvocation m) {
         return valueOf(String.class).contains(valueOf(requireNonNull(m.getSelect()).getType()))
                 && isStringComparisonMethod(m);
     }
 
-    private static boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
+    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return EQUALS.matches(methodInvocation) ||
                 !style.getIgnoreEqualsIgnoreCase() &&
                         EQUALS_IGNORE_CASE.matches(methodInvocation) ||
