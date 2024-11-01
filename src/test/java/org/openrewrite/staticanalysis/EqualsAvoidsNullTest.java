@@ -102,6 +102,43 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
+        void nullValueExternalConstant() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String KEY = null;
+                  }
+                  static class B {
+                      {
+                          A.KEY.equals("s");
+                          A.KEY.equalsIgnoreCase("s");
+                          A.KEY.compareTo("s");
+                          A.KEY.compareToIgnoreCase("s");
+                          A.KEY.contentEquals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String KEY = null;
+                  }
+                  static class B {
+                      {
+                          "s".equals(A.KEY);
+                          "s".equalsIgnoreCase(A.KEY);
+                          "s".compareTo(A.KEY);
+                          "s".compareToIgnoreCase(A.KEY);
+                          "s".contentEquals(A.KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
         @Disabled
         void validValueConstant() {
             rewriteRun(
