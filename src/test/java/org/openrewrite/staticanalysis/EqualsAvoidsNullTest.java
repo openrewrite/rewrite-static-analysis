@@ -163,11 +163,11 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   static class B {
                       private boolean bar (String param) {
-                          param.equals(KEY);
-                          param.equalsIgnoreCase(KEY);
-                          param.compareTo(KEY);
-                          param.compareToIgnoreCase(KEY);
-                          param.contentEquals(KEY);
+                          param.equals(A.KEY);
+                          param.equalsIgnoreCase(A.KEY);
+                          param.compareTo(A.KEY);
+                          param.compareToIgnoreCase(A.KEY);
+                          param.contentEquals(A.KEY);
                       }
                   }
                   """,
@@ -177,11 +177,11 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   static class B {
                       private boolean bar (String param) {
-                          KEY.equals(param);
-                          KEY.equalsIgnoreCase(param);
-                          KEY.compareTo(param);
-                          KEY.compareToIgnoreCase(param);
-                          KEY.contentEquals(param);
+                          param.equals(A.KEY);
+                          param.equalsIgnoreCase(A.KEY);
+                          param.compareTo(A.KEY);
+                          param.compareToIgnoreCase(A.KEY);
+                          param.contentEquals(A.KEY);
                       }
                   }
                   """)
