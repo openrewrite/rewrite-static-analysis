@@ -152,7 +152,44 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void parameter() {
+        void parameterVsConstant() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String KEY = "KEY";
+                  }
+                  static class B {
+                      private boolean bar (String param) {
+                          param.equals(A.KEY);
+                          param.equalsIgnoreCase(A.KEY);
+                          param.compareTo(A.KEY);
+                          param.compareToIgnoreCase(A.KEY);
+                          param.contentEquals(A.KEY);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String KEY = "KEY";
+                  }
+                  static class B {
+                      private boolean bar (String param) {
+                          param.equals(A.KEY);
+                          param.equalsIgnoreCase(A.KEY);
+                          param.compareTo(A.KEY);
+                          param.compareToIgnoreCase(A.KEY);
+                          param.contentEquals(A.KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void parameterVsNullConstant() {
             rewriteRun(
               // language=java
               java(
