@@ -256,57 +256,56 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   """)
             );
         }
-    }
 
-    @Test
-    void removeUnnecessaryNullCheck() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if (s != null && s.equals("test")) {}
-                      if (null != s && s.equals("test")) {}
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if ("test".equals(s)) {}
-                      if ("test".equals(s)) {}
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void nullLiteral() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  void foo(String s) {
-                      if (s.equals(null)) {
+        @Test
+        void removeUnnecessaryNullCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      {
+                          String s = null;
+                          if(s != null && s.equals("test")) {}
+                          if(null != s && s.equals("test")) {}
                       }
                   }
-              }
-              """,
-            """
-              public class A {
-                  void foo(String s) {
-                      if (s == null) {
+                  """,
+                """
+                  public class A {
+                      {
+                          String s = null;
+                          if("test".equals(s)) {}
+                          if("test".equals(s)) {}
                       }
                   }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
+
+        @Test
+        void nullLiteral() {
+            rewriteRun(
+              //language=java
+              java("""
+                  public class A {
+                      void foo(String s) {
+                            if(s.equals(null)) {
+                          }
+                      }
+                  }
+                  """,
+                """
+                  
+                  public class A {
+                      void foo(String s) {
+                            if(s == null) {
+                          }
+                      }
+                  }
+                  """)
+            );
+        }
     }
 }
