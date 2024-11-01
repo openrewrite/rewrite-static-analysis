@@ -38,7 +38,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         @DocumentExample
         @Test
         @Disabled
-        void rawValue() {
+        void raw() {
             rewriteRun(
               // language=java
               java(
@@ -69,7 +69,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void nullValueConstant() {
+        void constant() {
             rewriteRun(
               // language=java
               java(
@@ -102,7 +102,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void nullValueExternalConstant() {
+        void externalConstant() {
             rewriteRun(
               // language=java
               java(
@@ -153,7 +153,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void nullValueParameterConstant() {
+        void parameter() {
             rewriteRun(
               // language=java
               java(
@@ -190,7 +190,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void nullValueParameterInline() {
+        void inline() {
             rewriteRun(
               // language=java
               java(
@@ -222,7 +222,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         @DocumentExample
         @Test
         @Disabled
-        void nullValueParameterStringString() {
+        void stringVsStringKeepOrder() {
             rewriteRun(
               // language=java
               java(
@@ -260,7 +260,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         @DocumentExample
         @Test
         @Disabled
-        void validValueConstant() {
+        void validConstant() {
             rewriteRun(
               // language=java
               java(
@@ -293,7 +293,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void nullValueField() {
+        void field() {
             rewriteRun(
               // language=java
               java(
