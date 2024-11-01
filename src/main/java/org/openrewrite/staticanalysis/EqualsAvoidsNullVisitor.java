@@ -25,6 +25,7 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
+import static java.lang.String.valueOf;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -60,14 +61,20 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-        if (m.getSelect() != null &&
-                !(m.getSelect() instanceof J.Literal) &&
-                m.getArguments().get(0) instanceof J.Literal &&
-                isStringComparisonMethod(m)) {
-            return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
-        }
-        return m;
+        return visitMethodInvocation((J.MethodInvocation) super.visitMethodInvocation(method, p));
+    }
+
+    private Expression visitMethodInvocation(final J.MethodInvocation m) {
+        final boolean stringComparisonMethod = isStringComparisonMethod(m);
+        final Expression expression = literalsFirstInComparisonsBinaryCheck(m,
+                getCursor().getParentTreeCursor().getValue());
+        return isStringExpression(requireNonNull(m.getSelect())) && stringComparisonMethod
+                ? expression
+                : m;
+    }
+
+    private static boolean isStringExpression(final Expression select) {
+        return valueOf(String.class).contains(valueOf(select.getType()));
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
