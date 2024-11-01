@@ -37,7 +37,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         @DocumentExample
         @Test
             //@Disabled
-        void rawStringVsStringKeepOrder() {
+        void rawStringVsRawStringKeepOrder() {
             rewriteRun(
               // language=java
               java(
