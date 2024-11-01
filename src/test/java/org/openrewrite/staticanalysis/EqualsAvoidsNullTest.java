@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -30,117 +31,57 @@ class EqualsAvoidsNullTest implements RewriteTest {
         spec.recipe(new EqualsAvoidsNull());
     }
 
-    @DocumentExample
-    @Test
-    void invertConditionalSmallNull() {
-        rewriteRun(
-          // language=java
-          java(
-            """
-              public class A {
-                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
-                  public static final String s = null;
-                  {
-                      if (s.equals(EXTERNAL_KEY)) {}
+    @Nested
+    class SwitchArgs {
+        @DocumentExample
+        @Test
+        void equals() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if (EXTERNAL_KEY.equals("s")) {}
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
-                  public static final String s = null;
-                  {
-                      if (EXTERNAL_KEY.equals(s)) {}
+                  """,
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if ("s".equals(EXTERNAL_KEY)) {}
+                      }
                   }
-              }
-              """)
-        );
-    }
+                  """)
+            );
+        }
 
-    @DocumentExample
-    @Test
-    void invertConditional() {
-        rewriteRun(
-          // language=java
-          java(
-            """
-              public class A {
-                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
-                  public static final String s = null;
-                  {
-                      if (s.equals(EXTERNAL_KEY)) {}
-                      if (s.equalsIgnoreCase(EXTERNAL_KEY)) {}
-                      if (s.equalsIgnoreCase("EXTERNAL_KEY")) {}
-                      System.out.println(s.equals(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase("EXTERNAL_KEY"));
-                      System.out.println(s.equals(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase("EXTERNAL_KEY"));
+        @DocumentExample
+        @Test
+        void equalsIgnoreCase() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if (EXTERNAL_KEY.equalsIgnoreCase("s")) {}
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public static final String EXTERNAL_KEY = "EXTERNAL_KEY";
-                  public static final String s = null;
-                  {
-                      if (EXTERNAL_KEY.equals(s)) {}
-                      if (EXTERNAL_KEY.equalsIgnoreCase(s)) {}
-                      if ("EXTERNAL_KEY".equalsIgnoreCase(s)) {}
-                      System.out.println(EXTERNAL_KEY.equals(s));
-                      System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
-                      System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
-                      System.out.println(EXTERNAL_KEY.equals(s));
-                      System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
-                      System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
+                  """,
+                """
+                  public class A {
+                      public static final String EXTERNAL_KEY = null;
+                      {
+                          if ("s".equalsIgnoreCase(EXTERNAL_KEY)) {}
+                      }
                   }
-              }
-              """)
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void invertConditionalInline() {
-        rewriteRun(
-          // language=java
-          java(
-            """
-              public class A {
-                  {
-                      final String EXTERNAL_KEY = "EXTERNAL_KEY";
-                      final String s = null;
-                      if (s.equals(EXTERNAL_KEY)) {}
-                      if (s.equalsIgnoreCase(EXTERNAL_KEY)) {}
-                      if (s.equalsIgnoreCase("EXTERNAL_KEY")) {}
-                      System.out.println(s.equals(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase("EXTERNAL_KEY"));
-                      System.out.println(s.equals(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase(EXTERNAL_KEY));
-                      System.out.println(s.equalsIgnoreCase("EXTERNAL_KEY"));
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      final String EXTERNAL_KEY = "EXTERNAL_KEY";
-                      final String s = null;
-                      if (EXTERNAL_KEY.equals(s)) {}
-                      if (EXTERNAL_KEY.equalsIgnoreCase(s)) {}
-                      if ("EXTERNAL_KEY".equalsIgnoreCase(s)) {}
-                      System.out.println(EXTERNAL_KEY.equals(s));
-                      System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
-                      System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
-                      System.out.println(EXTERNAL_KEY.equals(s));
-                      System.out.println(EXTERNAL_KEY.equalsIgnoreCase(s));
-                      System.out.println("EXTERNAL_KEY".equalsIgnoreCase(s));
-                  }
-              }
-              """)
-        );
+                  """)
+            );
+        }
     }
 
     @Test

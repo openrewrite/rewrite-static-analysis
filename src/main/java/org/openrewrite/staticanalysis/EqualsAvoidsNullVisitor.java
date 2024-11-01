@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaVisitor;
@@ -26,9 +25,6 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.List;
-
-import static java.lang.String.valueOf;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -64,20 +60,14 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        return visitMethodInvocation((J.MethodInvocation) super.visitMethodInvocation(method, p));
-    }
-
-    private @NotNull Expression visitMethodInvocation(final J.MethodInvocation m) {
-        final boolean stringComparisonMethod = isStringComparisonMethod(m);
-        final Expression expression = literalsFirstInComparisonsBinaryCheck(m,
-                getCursor().getParentTreeCursor().getValue());
-        return isStringExpression(requireNonNull(m.getSelect())) && stringComparisonMethod
-                ? expression
-                : m;
-    }
-
-    private static boolean isStringExpression(final Expression select) {
-        return valueOf(String.class).contains(valueOf(select.getType()));
+        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
+        if (m.getSelect() != null &&
+                !(m.getSelect() instanceof J.Literal) &&
+                m.getArguments().get(0) instanceof J.Literal &&
+                isStringComparisonMethod(m)) {
+            return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
+        }
+        return m;
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
@@ -113,11 +103,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
-        final List<Expression> arguments = singletonList(m.getSelect().withPrefix(Space.EMPTY));
-        final Expression select = firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()); // TODO bug
-        // select is s but needts to be external_key
-        final J.MethodInvocation methodInvocation = m.withSelect(select).withArguments(arguments);
-        return methodInvocation;
+        return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
+                .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
 
     private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
