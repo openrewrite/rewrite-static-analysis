@@ -73,81 +73,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void parameterVsConstant() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      public static final String KEY = "KEY";
-                  }
-                  static class B {
-                      private boolean bar (String param) {
-                          param.equals(A.KEY);
-                          param.equalsIgnoreCase(A.KEY);
-                          param.compareTo(A.KEY);
-                          param.compareToIgnoreCase(A.KEY);
-                          param.contentEquals(A.KEY);
-                      }
-                  }
-                  """,
-                """
-                  public class A {
-                      public static final String KEY = "KEY";
-                  }
-                  static class B {
-                      private boolean bar (String param) {
-                          param.equals(A.KEY);
-                          param.equalsIgnoreCase(A.KEY);
-                          param.compareTo(A.KEY);
-                          param.compareToIgnoreCase(A.KEY);
-                          param.contentEquals(A.KEY);
-                      }
-                  }
-                  """)
-            );
-        }
-
-        @DocumentExample
-        @Test
-        void parameterVsNullConstant() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      public static final String KEY = null;
-                  }
-                  static class B {
-                      private boolean bar (String param) {
-                          param.equals(A.KEY);
-                          param.equalsIgnoreCase(A.KEY);
-                          param.compareTo(A.KEY);
-                          param.compareToIgnoreCase(A.KEY);
-                          param.contentEquals(A.KEY);
-                      }
-                  }
-                  """,
-                """
-                  public class A {
-                      public static final String KEY = null;
-                  }
-                  static class B {
-                      private boolean bar (String param) {
-                          param.equals(A.KEY);
-                          param.equalsIgnoreCase(A.KEY);
-                          param.compareTo(A.KEY);
-                          param.compareToIgnoreCase(A.KEY);
-                          param.contentEquals(A.KEY);
-                      }
-                  }
-                  """)
-            );
-        }
-
-
-        @DocumentExample
-        @Test
         void constant() {
             rewriteRun(
               // language=java
@@ -230,106 +155,73 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
+        @Nested
+        class Parameter {
 
-        @DocumentExample
-        @Test
-        void inline() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  static class B {
-                      private boolean bar (String param) {
-                          param.equals("KEY");
-                          param.equalsIgnoreCase("KEY");
-                          param.compareTo("KEY");
-                          param.compareToIgnoreCase("KEY");
-                          param.contentEquals("KEY");
-                      }
-                  }
-                  """,
-                """
-                  static class B {
-                      private boolean bar (String param) {
-                          "KEY".equals(param);
-                          "KEY".equalsIgnoreCase(param);
-                          "KEY".compareTo(param);
-                          "KEY".compareToIgnoreCase(param);
-                          "KEY".contentEquals(param);
-                      }
-                  }
-                  """)
-            );
-        }
 
-        @DocumentExample
-        @Test
-        void stringVsString() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      public static final String KEY = null;
-                  }
-                  static class B {
-                      private boolean bar (String param) {
-                          param.equals(A.KEY);
-                          param.equalsIgnoreCase(A.KEY);
-                          param.compareTo(A.KEY);
-                          param.compareToIgnoreCase(A.KEY);
-                          param.contentEquals(A.KEY);
+            @DocumentExample
+            @Test
+            void rawInline() {
+                rewriteRun(
+                  // language=java
+                  java(
+                    """
+                      static class B {
+                          private boolean bar (String param) {
+                              param.equals("KEY");
+                              param.equalsIgnoreCase("KEY");
+                              param.compareTo("KEY");
+                              param.compareToIgnoreCase("KEY");
+                              param.contentEquals("KEY");
+                          }
                       }
-                  }
-                  """,
-                """
-                  public class A {
-                      public static final String KEY = null;
-                  }
-                  static class B {
-                      private boolean bar (String param) {
-                          param.equals(A.KEY);
-                          param.equalsIgnoreCase(A.KEY);
-                          param.compareTo(A.KEY);
-                          param.compareToIgnoreCase(A.KEY);
-                          param.contentEquals(A.KEY);
+                      """,
+                    """
+                      static class B {
+                          private boolean bar (String param) {
+                              "KEY".equals(param);
+                              "KEY".equalsIgnoreCase(param);
+                              "KEY".compareTo(param);
+                              "KEY".compareToIgnoreCase(param);
+                              "KEY".contentEquals(param);
+                          }
                       }
-                  }
-                  """)
-            );
-        }
+                      """)
+                );
+            }
 
-        @DocumentExample
-        @Test
-        void validConstant() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      public static final String KEY = "null";
-                      {
-                          KEY.equals("s");
-                          KEY.equalsIgnoreCase("s");
-                          KEY.compareTo("s");
-                          KEY.compareToIgnoreCase("s");
-                          KEY.contentEquals("s");
+            @DocumentExample
+            @Test
+            void onConstant() {
+                rewriteRun(
+                  // language=java
+                  java(
+                    """
+                      static class B {
+                          final String KEY = "KEY";
+                          private boolean bar (String param) {
+                              param.equals(KEY);
+                              param.equalsIgnoreCase(KEY);
+                              param.compareTo(KEY);
+                              param.compareToIgnoreCase(KEY);
+                              param.contentEquals(KEY);
+                          }
                       }
-                  }
-                  """,
-                """
-                  public class A {
-                      public static final String KEY = "null";
-                      {
-                          KEY.equals("s");
-                          KEY.equalsIgnoreCase("s");
-                          KEY.compareTo("s");
-                          KEY.compareToIgnoreCase("s");
-                          KEY.contentEquals("s");
+                      """,
+                    """
+                      static class B {
+                          final String KEY = "KEY";
+                          private boolean bar (String param) {
+                              KEY.equals(param);
+                              KEY.equalsIgnoreCase(param);
+                              KEY.compareTo(param);
+                              KEY.compareToIgnoreCase(param);
+                              KEY.contentEquals(param);
+                          }
                       }
-                  }
-                  """)
-            );
+                      """)
+                );
+            }
         }
 
         @DocumentExample
