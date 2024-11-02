@@ -29,6 +29,7 @@ import org.openrewrite.java.tree.JavaType;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnnotateNullableMethods extends Recipe {
@@ -83,12 +84,15 @@ public class AnnotateNullableMethods extends Recipe {
     private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
 
         private static final List<MethodMatcher> KNOWN_NULLABLE_METHODS = Arrays.asList(
-                new MethodMatcher("java.util.Map computeIfAbsent(..)"),
-                new MethodMatcher("java.util.Map computeIfPresent(..)"),
+                // These mostly return a nullable current or  previous value, which is more often null
                 new MethodMatcher("java.util.Map get(..)"),
                 new MethodMatcher("java.util.Map merge(..)"),
                 new MethodMatcher("java.util.Map put(..)"),
                 new MethodMatcher("java.util.Map putIfAbsent(..)"),
+
+                // These two return the current or computed value, which is less likely to be null in common usage
+                //new MethodMatcher("java.util.Map computeIfAbsent(..)"),
+                //new MethodMatcher("java.util.Map computeIfPresent(..)"),
 
                 new MethodMatcher("java.util.Queue poll(..)"),
                 new MethodMatcher("java.util.Queue peek(..)"),
