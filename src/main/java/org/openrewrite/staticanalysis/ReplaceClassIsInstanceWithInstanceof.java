@@ -60,11 +60,11 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                 // make sure we find the right method and the left part is something like "SomeClass.class"
                 if (matcher.matches(method) && isObjectClass(method.getSelect())) {
                     // for code like "A.class.isInstance(a)", select is "String.class", name is "isInstance", argument is "a"
-                    Identifier objectExpression = (Identifier) method.getArguments().get(0);
+                    Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
                     String className = ((JavaType.Class) fieldAccessPart.getTarget().getType()).getClassName();
                     // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
-                    J.InstanceOf instanceOf = JavaTemplate.apply("#{any(org.openrewrite.java.tree.Expression)} instanceof #{}",
+                    J.InstanceOf instanceOf = JavaTemplate.apply("#{any()} instanceof #{}",
                             getCursor(), method.getCoordinates().replace(), objectExpression, className);
                     return maybeAutoFormat(method, instanceOf, ctx);
                 }

@@ -113,4 +113,52 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
         );
     }
 
+    @Test
+    void methodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  boolean foo(Object obj) {
+                      return String.class.isInstance(obj.hashCode());
+                  }
+              }
+              """,
+            """
+              class A {
+                  boolean foo(Object obj) {
+                      return obj.hashCode() instanceof String;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void fieldAccess() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Object content;
+                  boolean foo(Object obj) {
+                      return String.class.isInstance(this.content);
+                  }
+              }
+              """,
+            """
+              class A {
+                  Object content;
+                  boolean foo(Object obj) {
+                      return this.content instanceof String;
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
