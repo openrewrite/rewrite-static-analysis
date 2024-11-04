@@ -29,7 +29,6 @@ import org.openrewrite.java.tree.JavaType;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnnotateNullableMethods extends Recipe {
