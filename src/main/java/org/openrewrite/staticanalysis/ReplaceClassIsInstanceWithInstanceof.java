@@ -21,12 +21,10 @@ import org.openrewrite.Recipe;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.FieldAccess;
 import org.openrewrite.java.tree.J.Identifier;
 import org.openrewrite.java.tree.J.MethodInvocation;
-import org.openrewrite.java.tree.JavaType;
 
 import java.util.Collections;
 import java.util.Set;
@@ -62,10 +60,13 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     // for code like "A.class.isInstance(a)", select is "String.class", name is "isInstance", argument is "a"
                     Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
-                    String className = ((JavaType.Class) fieldAccessPart.getTarget().getType()).getClassName();
+                    String className = fieldAccessPart.getTarget().toString();
                     // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
-                    J.InstanceOf instanceOf = JavaTemplate.apply("#{any()} instanceof #{}",
-                            getCursor(), method.getCoordinates().replace(), objectExpression, className);
+                    JavaCoordinates coordinates = method.getCoordinates().replace();
+                    J.InstanceOf instanceOf = JavaTemplate.builder("#{any()} instanceof #{}")
+                            .build()
+                            .apply(getCursor(), coordinates, new Object[]{objectExpression, className});
+                    instanceOf = instanceOf.withClazz(fieldAccessPart.getTarget().withPrefix(instanceOf.getClazz().getPrefix()));
                     return maybeAutoFormat(method, instanceOf, ctx);
                 }
                 return super.visitMethodInvocation(method, ctx);

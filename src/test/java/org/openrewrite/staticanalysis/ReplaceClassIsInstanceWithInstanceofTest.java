@@ -161,4 +161,108 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
         );
     }
 
+    @Test
+    void imported() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+
+              class A {
+                  boolean foo(Object obj) {
+                      return Map.class.isInstance(obj);
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class A {
+                  boolean foo(Object obj) {
+                      return obj instanceof Map;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void importedNested() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map.Entry;
+
+              class A {
+                  boolean foo(Object obj) {
+                      return Entry.class.isInstance(obj);
+                  }
+              }
+              """,
+            """
+              import java.util.Map.Entry;
+
+              class A {
+                  boolean foo(Object obj) {
+                      return obj instanceof Entry;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typeFromSourcePath() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package a;
+
+              class A {
+                  boolean foo(Object obj) {
+                      return A.class.isInstance(obj);
+                  }
+              }
+              """,
+            """
+              package a;
+
+              class A {
+                  boolean foo(Object obj) {
+                      return obj instanceof A;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defaultPackage() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  boolean foo(Object obj) {
+                      return A.class.isInstance(obj);
+                  }
+              }
+              """,
+            """
+              class A {
+                  boolean foo(Object obj) {
+                      return obj instanceof A;
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
