@@ -265,4 +265,21 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
         );
     }
 
+    @Test
+    void typeVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Class<?> clazz;
+                  boolean foo(Object obj) {
+                      return this.clazz.isInstance(obj);
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
