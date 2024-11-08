@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -137,7 +138,7 @@ public class RemoveUnneededAssertion extends Recipe {
         }
 
         @Override
-        public J.Assert visitAssert(J.Assert anAssert, ExecutionContext ctx) {
+        public  J.@Nullable Assert visitAssert(J.Assert anAssert, ExecutionContext ctx) {
             if (anAssert.getCondition() instanceof J.Literal) {
                 if (J.Literal.isLiteralValue(anAssert.getCondition(), true)) {
                     //noinspection ConstantConditions
