@@ -134,6 +134,12 @@ public class AnnotateNullableMethods extends Recipe {
         }
 
         @Override
+        public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean atomicBoolean) {
+            // Do not evaluate return statements in new class expressions
+            return newClass;
+        }
+
+        @Override
         public J.Return visitReturn(J.Return retrn, AtomicBoolean found) {
             if (found.get()) {
                 return retrn;
