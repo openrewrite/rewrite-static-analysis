@@ -77,9 +77,6 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                if (m == null) {
-                    return m;
-                }
                 return m.withBody(maybeRemoveReturnAsLastStatement(m.getBody()));
             }
         };
