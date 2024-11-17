@@ -81,9 +81,8 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if (TypeUtils.asPrimitive(m.getType()) == JavaType.Primitive.Void) {
                     return m.withBody(maybeRemoveReturnAsLastStatement(m.getBody()));
-                } else {
-                    return m;
                 }
+               return m;
             }
         };
     }
