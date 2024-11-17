@@ -105,4 +105,19 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
               }
               """));
     }
+
+    @Test
+    void notChangingNonVoidMethods() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Hello {
+                  int world(int i) {
+                      return i + 436;
+                  }
+              }
+              """));
+    }
+
 }

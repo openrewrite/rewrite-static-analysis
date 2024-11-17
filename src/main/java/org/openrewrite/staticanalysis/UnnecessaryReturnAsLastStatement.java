@@ -20,7 +20,9 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +60,7 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                 }
                 Statement lastStatement = statements.get(statements.size() - 1);
                 List<Statement> allButLast = statements.subList(0, statements.size() - 1);
-                if (lastStatement instanceof J.Return) {
+                if (lastStatement instanceof J.Return && ((J.Return) lastStatement).getExpression() == null) {
                     return b.withStatements(allButLast);
                 } else if (lastStatement instanceof J.If) {
                     J.If ifStatement = (J.If) lastStatement;
@@ -77,7 +79,11 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                return m.withBody(maybeRemoveReturnAsLastStatement(m.getBody()));
+                if (TypeUtils.asPrimitive(m.getType()) == JavaType.Primitive.Void) {
+                    return m.withBody(maybeRemoveReturnAsLastStatement(m.getBody()));
+                } else {
+                    return m;
+                }
             }
         };
     }
