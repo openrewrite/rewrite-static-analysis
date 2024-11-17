@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
+class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UnnecessaryReturnAsLastStatement());
