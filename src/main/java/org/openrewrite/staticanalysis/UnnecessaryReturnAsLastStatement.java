@@ -25,9 +25,6 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class UnnecessaryReturnAsLastStatement extends Recipe {
     @Override
     public String getDisplayName() {
