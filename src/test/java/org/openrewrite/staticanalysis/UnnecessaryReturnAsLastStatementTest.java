@@ -120,4 +120,69 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
               """));
     }
 
+    @Test
+    void notChangingLambdas() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Hello {
+                java.util.function.Consumer<Integer> c = i -> {
+                    return;
+                };
+              }
+              """));
+    }
+
+    @Test
+    void notChangingLoops() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Main {
+                public static void main(String[] argv) {
+                  while (true) {
+                      return;
+                  }
+                }
+              }
+              """));
+    }
+
+    @Test
+    void newClass() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.concurrent.Callable;
+              class Hello {
+                      Callable<String> callable = new Callable<>() {
+                          @Override
+                          public String call() throws Exception {
+                              otherMethod();
+                              return "success";
+                          }
+                          private void otherMethod() {
+                              return;
+                          }
+                      };
+              }
+              """,
+            """
+              import java.util.concurrent.Callable;
+              class Hello {
+                      Callable<String> callable = new Callable<>() {
+                          @Override
+                          public String call() throws Exception {
+                              otherMethod();
+                              return "success";
+                          }
+                          private void otherMethod() {
+                          }
+                      };
+              }
+              """));
+    }
 }
