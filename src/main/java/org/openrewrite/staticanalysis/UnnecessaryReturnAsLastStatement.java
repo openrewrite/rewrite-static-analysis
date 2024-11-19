@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -54,26 +55,19 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                     return null;
                 }
 
-                List<Statement> statements = b.getStatements();
-                if (statements.isEmpty()) {
-                    return b;
-                }
-                Statement lastStatement = statements.get(statements.size() - 1);
-                List<Statement> allButLast = statements.subList(0, statements.size() - 1);
-                if (lastStatement instanceof J.Return && ((J.Return) lastStatement).getExpression() == null) {
-                    return b.withStatements(allButLast);
-                } else if (lastStatement instanceof J.If) {
-                    J.If ifStatement = (J.If) lastStatement;
-                    J.If.Else elze = ifStatement.getElsePart();
-                    J.If newIf = ifStatement
-                            .withThenPart(maybeRemoveReturnAsLastStatement(ifStatement.getThenPart()))
-                            .withElsePart(elze.withBody(maybeRemoveReturnAsLastStatement(elze.getBody())));
-                    List<Statement> newStatements = new ArrayList<>(allButLast);
-                    newStatements.add(newIf);
-                    return b.withStatements(newStatements);
-                } else {
-                    return b;
-                }
+                return b.withStatements(ListUtils.mapLast(b.getStatements(), lastStatement -> {
+                    if (lastStatement instanceof J.Return && ((J.Return) lastStatement).getExpression() == null) {
+                        return null;
+                    } else if (lastStatement instanceof J.If) {
+                        J.If ifStatement = (J.If) lastStatement;
+                        J.If.Else elze = ifStatement.getElsePart();
+                        return ifStatement
+                                .withThenPart(maybeRemoveReturnAsLastStatement(ifStatement.getThenPart()))
+                                .withElsePart(elze.withBody(maybeRemoveReturnAsLastStatement(elze.getBody())));
+                    } else {
+                        return lastStatement;
+                    }
+                }));
             }
 
             @Override
