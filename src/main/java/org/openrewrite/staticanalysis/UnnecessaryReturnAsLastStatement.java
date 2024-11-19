@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -39,15 +40,16 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
-            private Statement maybeRemoveReturnAsLastStatement(Statement s) {
-                if (s instanceof J.Block) {
-                    return maybeRemoveReturnAsLastStatement((J.Block) s);
-                } else {
-                    return s;
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
+                if (TypeUtils.asPrimitive(m.getType()) == JavaType.Primitive.Void) {
+                    return m.withBody(maybeRemoveReturnAsLastStatement(m.getBody()));
                 }
+                return m;
             }
 
-            private J.Block maybeRemoveReturnAsLastStatement(J.Block b) {
+            private J.@Nullable Block maybeRemoveReturnAsLastStatement(J.@Nullable Block b) {
                 if (b == null) {
                     return null;
                 }
@@ -57,23 +59,20 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                         return null;
                     } else if (lastStatement instanceof J.If) {
                         J.If ifStatement = (J.If) lastStatement;
+                        ifStatement = ifStatement.withThenPart(maybeRemoveReturnAsLastStatement(ifStatement.getThenPart()));
                         J.If.Else elze = ifStatement.getElsePart();
-                        return ifStatement
-                                .withThenPart(maybeRemoveReturnAsLastStatement(ifStatement.getThenPart()))
-                                .withElsePart(elze.withBody(maybeRemoveReturnAsLastStatement(elze.getBody())));
+                        if (elze != null) {
+                            return ifStatement.withElsePart(elze.withBody(maybeRemoveReturnAsLastStatement(elze.getBody())));
+                        }
+                        return ifStatement;
                     } else {
                         return lastStatement;
                     }
                 }));
             }
 
-            @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                if (TypeUtils.asPrimitive(m.getType()) == JavaType.Primitive.Void) {
-                    return m.withBody(maybeRemoveReturnAsLastStatement(m.getBody()));
-                }
-               return m;
+            private Statement maybeRemoveReturnAsLastStatement(Statement s) {
+                return s instanceof J.Block ? maybeRemoveReturnAsLastStatement((J.Block) s) : s;
             }
         };
     }

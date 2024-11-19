@@ -87,6 +87,72 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
     }
 
     @Test
+    void ifWithoutElse() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                        System.out.println("Positive");
+                        return;
+                      }
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                        System.out.println("Positive");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ifElseIf() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                        System.out.println("Positive");
+                        return;
+                      } else if (i == 0) {
+                        System.out.println("Zero");
+                        return;
+                      } else {
+                        System.out.println("Negative");
+                        return;
+                      }
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                        System.out.println("Positive");
+                      } else if (i == 0) {
+                        System.out.println("Zero");
+                      } else {
+                        System.out.println("Negative");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void ifIsNotTheLast() {
         //language=java
         rewriteRun(
@@ -103,7 +169,9 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
                       System.out.println("Some extra logic");
                   }
               }
-              """));
+              """
+          )
+        );
     }
 
     @Test
@@ -117,7 +185,9 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
                       return i + 436;
                   }
               }
-              """));
+              """
+          )
+        );
     }
 
     @Test
@@ -131,7 +201,9 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
                     return;
                 };
               }
-              """));
+              """
+          )
+        );
     }
 
     @Test
@@ -147,7 +219,9 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
                   }
                 }
               }
-              """));
+              """
+          )
+        );
     }
 
     @Test
@@ -183,6 +257,8 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
                           }
                       };
               }
-              """));
+              """
+          )
+        );
     }
 }
