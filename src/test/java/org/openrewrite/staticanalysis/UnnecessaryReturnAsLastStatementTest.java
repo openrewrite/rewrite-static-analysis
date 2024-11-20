@@ -194,7 +194,7 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
                   void world(int i) {
                       if (i > 0) {
                         System.out.println("Positive");
-                      } else return;
+                      }
                   }
               }
               """
