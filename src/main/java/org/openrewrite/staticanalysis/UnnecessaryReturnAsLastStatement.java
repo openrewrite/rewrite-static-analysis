@@ -64,7 +64,12 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                     }
                     if (ifStatement.getElsePart() != null) {
                         Statement trimmedElse = maybeRemoveReturn(ifStatement.getElsePart().getBody());
-                        return ifStatement.withElsePart(trimmedElse == null ? null : ifStatement.getElsePart().withBody(trimmedElse));
+                        if (trimmedElse == null) {
+                            return ifStatement.withElsePart(null);
+                        }
+                        if (trimmedElse != ifStatement.getElsePart().getBody()) {
+                            return ifStatement.withElsePart(ifStatement.getElsePart().withBody(trimmedElse));
+                        }
                     }
                     return ifStatement;
                 }
