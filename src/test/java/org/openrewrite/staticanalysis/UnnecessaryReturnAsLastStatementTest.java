@@ -175,6 +175,62 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
     }
 
     @Test
+    void elseWithJustAReturnStatement() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                        System.out.println("Positive");
+                        return;
+                      } else return;
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i > 0) {
+                        System.out.println("Positive");
+                      } else return;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ifThenBeingJustAReturnStatement() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i == 436) return; else {
+                        System.out.println("I don't like it");
+                        return;
+                      }
+                  }
+              }
+              """,
+            """
+              class Hello {
+                  void world(int i) {
+                      if (i == 436) return; else {
+                        System.out.println("I don't like it");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void notChangingNonVoidMethods() {
         //language=java
         rewriteRun(
