@@ -58,21 +58,30 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                     if (lastStatement instanceof J.Return && ((J.Return) lastStatement).getExpression() == null) {
                         return null;
                     } else if (lastStatement instanceof J.If) {
-                        J.If ifStatement = (J.If) lastStatement;
-                        ifStatement = ifStatement.withThenPart(maybeRemoveReturnAsLastStatement(ifStatement.getThenPart()));
-                        J.If.Else elze = ifStatement.getElsePart();
-                        if (elze != null) {
-                            return ifStatement.withElsePart(elze.withBody(maybeRemoveReturnAsLastStatement(elze.getBody())));
-                        }
-                        return ifStatement;
+                        return maybeRemoveReturnAsLastStatement((J.If) lastStatement);
                     } else {
                         return lastStatement;
                     }
                 }));
             }
 
+            private J.If maybeRemoveReturnAsLastStatement(J.If ifStatement) {
+                ifStatement = ifStatement.withThenPart(maybeRemoveReturnAsLastStatement(ifStatement.getThenPart()));
+                J.If.Else elze = ifStatement.getElsePart();
+                if (elze != null) {
+                    return ifStatement.withElsePart(elze.withBody(maybeRemoveReturnAsLastStatement(elze.getBody())));
+                }
+                return ifStatement;
+            }
+
             private Statement maybeRemoveReturnAsLastStatement(Statement s) {
-                return s instanceof J.Block ? maybeRemoveReturnAsLastStatement((J.Block) s) : s;
+                if (s instanceof J.Block) {
+                    return maybeRemoveReturnAsLastStatement((J.Block) s);
+                } else if (s instanceof J.If) {
+                    return maybeRemoveReturnAsLastStatement((J.If) s);
+                } else {
+                    return s;
+                }
             }
         };
     }
