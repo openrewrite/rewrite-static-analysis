@@ -44,12 +44,12 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if (TypeUtils.asPrimitive(m.getType()) == JavaType.Primitive.Void) {
-                    return m.withBody(maybeRemoveReturnAsLastStatement(m.getBody()));
+                    return m.withBody(maybeRemoveReturnFromBlock(m.getBody()));
                 }
                 return m;
             }
 
-            private J.@Nullable Block maybeRemoveReturnAsLastStatement(J.@Nullable Block b) {
+            private J.@Nullable Block maybeRemoveReturnFromBlock(J.@Nullable Block b) {
                 if (b == null) {
                     return null;
                 }
@@ -58,27 +58,27 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
                     if (lastStatement instanceof J.Return && ((J.Return) lastStatement).getExpression() == null) {
                         return null;
                     } else if (lastStatement instanceof J.If) {
-                        return maybeRemoveReturnAsLastStatement((J.If) lastStatement);
+                        return maybeRemoveReturnFromIf((J.If) lastStatement);
                     } else {
                         return lastStatement;
                     }
                 }));
             }
 
-            private J.If maybeRemoveReturnAsLastStatement(J.If ifStatement) {
-                ifStatement = ifStatement.withThenPart(maybeRemoveReturnAsLastStatement(ifStatement.getThenPart()));
+            private J.If maybeRemoveReturnFromIf(J.If ifStatement) {
+                ifStatement = ifStatement.withThenPart(maybeRemoveReturnFromStatement(ifStatement.getThenPart()));
                 J.If.Else elze = ifStatement.getElsePart();
                 if (elze != null) {
-                    return ifStatement.withElsePart(elze.withBody(maybeRemoveReturnAsLastStatement(elze.getBody())));
+                    return ifStatement.withElsePart(elze.withBody(maybeRemoveReturnFromStatement(elze.getBody())));
                 }
                 return ifStatement;
             }
 
-            private Statement maybeRemoveReturnAsLastStatement(Statement s) {
+            private Statement maybeRemoveReturnFromStatement(Statement s) {
                 if (s instanceof J.Block) {
-                    return maybeRemoveReturnAsLastStatement((J.Block) s);
+                    return maybeRemoveReturnFromBlock((J.Block) s);
                 } else if (s instanceof J.If) {
-                    return maybeRemoveReturnAsLastStatement((J.If) s);
+                    return maybeRemoveReturnFromIf((J.If) s);
                 } else {
                     return s;
                 }
