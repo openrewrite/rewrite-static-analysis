@@ -70,8 +70,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         return isStringExpressionAndComparisonMethod(m) ?
                 expression :
                 m;
-        return valueOf(String.class).contains(valueOf(requireNonNull(m.getSelect()).getType())) &&
-                isStringComparisonMethod(m);
+    }
+
     private boolean isStringExpressionAndComparisonMethod(final J.MethodInvocation m) {
         return valueOf(String.class).contains(valueOf(requireNonNull(m.getSelect()).getType()))
                 && isStringComparisonMethod(m);
