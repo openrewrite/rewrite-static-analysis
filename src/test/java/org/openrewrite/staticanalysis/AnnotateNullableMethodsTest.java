@@ -40,11 +40,11 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               public class Test {
-              
+
                   public String getString() {
                       return null;
                   }
-              
+
                   public String getStringWithMultipleReturn() {
                       if (System.currentTimeMillis() % 2 == 0) {
                           return "Not null";
@@ -55,13 +55,13 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               """,
             """
               import org.jspecify.annotations.Nullable;
-              
+
               public class Test {
-              
+
                   public @Nullable String getString() {
                       return null;
                   }
-              
+
                   public @Nullable String getStringWithMultipleReturn() {
                       if (System.currentTimeMillis() % 2 == 0) {
                           return "Not null";
@@ -81,12 +81,12 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               import org.jspecify.annotations.Nullable;
-              
+
               public class Test {
                   public @Nullable String getString() {
                       return null;
                   }
-              
+
                   public @Nullable String getStringWithMultipleReturn() {
                       if (System.currentTimeMillis() % 2 == 0) {
                           return "Not null";
@@ -106,7 +106,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               package org.example;
-              
+
               public class Test {
                   public String getString() {
                       return "Hello";
@@ -124,9 +124,9 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               import java.util.Map;
-              
+
               public class Test {
-              
+
                   public String getString(Map<String, String> map) {
                       return map.get("key");
                   }
@@ -134,11 +134,11 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               """,
             """
               import org.jspecify.annotations.Nullable;
-              
+
               import java.util.Map;
-              
+
               public class Test {
-              
+
                   public @Nullable String getString(Map<String, String> map) {
                       return map.get("key");
                   }
@@ -159,7 +159,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
                   public Runnable getRunnable() {
                       return () -> null;
                   }
-              
+
                   public Integer someStream(){
                       // Stream with lambda class.
                         return Stream.of(1, 2, 3)
@@ -196,37 +196,39 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.Callable;
-              
+
               public class Test {
-              
+
                   public Callable<String> getString() {
-                      return new Callable<String>() {
+                      Callable<String> callable = new Callable<>() {
                           @Override
                           public String call() throws Exception {
                               return null;
                           }
                       };
+                      return callable;
                   }
-              
+
               }
               """,
             """
               import org.jspecify.annotations.Nullable;
-              
+
               import java.util.concurrent.Callable;
-              
+
               public class Test {
-              
+
                   public Callable<String> getString() {
-                      return new Callable<String>() {
-              
+                      Callable<String> callable = new Callable<>() {
+
                           @Override
                           public @Nullable String call() throws Exception {
                               return null;
                           }
                       };
+                      return callable;
                   }
-              
+
               }
               """
           )
@@ -240,8 +242,8 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           java(
             """
               import org.jspecify.annotations.Nullable;
-              
-              public class Outer {     
+
+              public class Outer {
                   public static Outer.@Nullable Inner test() { return null; }
                   static class Inner {}
               }
