@@ -225,6 +225,19 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
+                  """,
+                """
+                  import java.util.Collections;
+                  import java.util.List;
+                  public class A {
+                      @SuppressWarnings("unchecked")
+                      public static void applyRoutesType(Object routes) {
+                          if (routes instanceof List list) {
+                              List<Object> routesList = (List<Object>) routes;
+                              String.join(",", list);
+                          }
+                      }
+                  }
                   """
               )
             );
@@ -484,7 +497,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               java(
                 """
                   import java.util.Map;
-                  
+
                   public class A {
                       void test(Object o) {
                           Map.Entry entry = null;
@@ -497,7 +510,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   """,
                 """
                   import java.util.Map;
-                  
+
                   public class A {
                       void test(Object o) {
                           Map.Entry entry = null;
@@ -1185,7 +1198,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.HashMap;
                   import java.util.List;
                   import java.util.Map;
-                  
+
                   public class ApplicationSecurityGroupsParameterHelper {
                       static final String APPLICATION_SECURITY_GROUPS = "application-security-groups";
                       public Map<String, Object> transformGatewayParameters(Map<String, Object> parameters) {
@@ -1202,7 +1215,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   import java.util.HashMap;
                   import java.util.List;
                   import java.util.Map;
-                  
+
                   public class ApplicationSecurityGroupsParameterHelper {
                       static final String APPLICATION_SECURITY_GROUPS = "application-security-groups";
                       public Map<String, Object> transformGatewayParameters(Map<String, Object> parameters) {
