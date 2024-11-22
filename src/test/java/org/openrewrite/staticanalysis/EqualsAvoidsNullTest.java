@@ -73,7 +73,32 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void constant() {
+        void constantSingular() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String KEY = null;
+                      {
+                          KEY.equals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String KEY = null;
+                      {
+                          "s".equals(KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void constantMulti() {
             rewriteRun(
               // language=java
               java(
@@ -289,7 +314,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
             rewriteRun(
               //language=java
               java(
-                    """
+                """
                   public class A {
                       void foo(String s) {
                             if(s.equals(null)) {
@@ -298,7 +323,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   """,
                 """
-                  
+
                   public class A {
                       void foo(String s) {
                             if(s == null) {
