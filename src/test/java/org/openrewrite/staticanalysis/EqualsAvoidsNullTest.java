@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -30,88 +31,343 @@ class EqualsAvoidsNullTest implements RewriteTest {
         spec.recipe(new EqualsAvoidsNull());
     }
 
-    @DocumentExample
-    @Test
-    void invertConditional() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if(s.equals("test")) {}
-                      if(s.equalsIgnoreCase("test")) {}
-                      System.out.println(s.compareTo("test"));
-                      System.out.println(s.compareToIgnoreCase("test"));
-                      System.out.println(s.contentEquals("test"));
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equalsIgnoreCase(s)) {}
-                      System.out.println("test".compareTo(s));
-                      System.out.println("test".compareToIgnoreCase(s));
-                      System.out.println("test".contentEquals(s));
-                  }
-              }
-              """
-          )
-        );
-    }
+    @Nested
+    class LiteralsFirstInComparisons {
 
-    @Test
-    void removeUnnecessaryNullCheck() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if(s != null && s.equals("test")) {}
-                      if(null != s && s.equals("test")) {}
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equals(s)) {}
-                  }
-              }
-              """
-          )
-        );
-    }
+        @Nested
+        class KeepOrderForStringVsString {
 
-    @Test
-    void nullLiteral() {
-        rewriteRun(
-            //language=java
-            java("""
-              public class A {
-                    void foo(String s) {
-                        if(s.equals(null)) {
-                        }
-                    }
-                }
-              """,
-              """
+            @DocumentExample
+            @Test
+            void rawStringVsRawString() {
+                rewriteRun(
+                  // language=java
+                  java(
+                    """
+                      public class A {
+                          {
+                              "KEY".equals("s");
+                              "KEY".equalsIgnoreCase("s");
+                              "KEY".compareTo("s");
+                              "KEY".compareToIgnoreCase("s");
+                              "KEY".contentEquals("s");
+                          }
+                      }
+                      """,
+                    """
+                      public class A {
+                          {
+                              "KEY".equals("s");
+                              "KEY".equalsIgnoreCase("s");
+                              "KEY".compareTo("s");
+                              "KEY".compareToIgnoreCase("s");
+                              "KEY".contentEquals("s");
+                          }
+                      }
+                      """)
+                );
+            }
+        }
 
-              public class A {
-                    void foo(String s) {
-                        if(s == null) {
-                        }
-                    }
-                }
-              """)
-        );
+        @DocumentExample
+        @Test
+        void constantMulti() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String KEY = null;
+                      {
+                          KEY.equals("s");
+                          KEY.equalsIgnoreCase("s");
+                          KEY.compareTo("s");
+                          KEY.compareToIgnoreCase("s");
+                          KEY.contentEquals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String KEY = null;
+                      {
+                          "s".equals(KEY);
+                          "s".equalsIgnoreCase(KEY);
+                          "s".compareTo(KEY);
+                          "s".compareToIgnoreCase(KEY);
+                          "s".contentEquals(KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        void constantList() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  import java.util.List;
+                  public class A {
+                      public static final List<String> KEYS = null;
+                      {
+                          KEYS.get(0).equals("s");
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class A {
+                      public static final List<String> KEYS = null;
+                      {
+                          "s".equals(KEYS.get(0));
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void constantMultiExternal() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class AB {
+                      public static final String KEY = null;
+                  }
+                  public class A {
+                      {
+                          AB.KEY.equals("s");
+                          AB.KEY.equalsIgnoreCase("s");
+                          AB.KEY.compareTo("s");
+                          AB.KEY.compareToIgnoreCase("s");
+                          AB.KEY.contentEquals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class AB {
+                      public static final String KEY = null;
+                  }
+                  public class A {
+                      {
+                          "s".equals(AB.KEY);
+                          "s".equalsIgnoreCase(AB.KEY);
+                          "s".compareTo(AB.KEY);
+                          "s".compareToIgnoreCase(AB.KEY);
+                          "s".contentEquals(AB.KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void externalConstant() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      public static final String KEY = null;
+                  }
+                  static class B {
+                      {
+                          A.KEY.equals("s");
+                          A.KEY.equalsIgnoreCase("s");
+                          A.KEY.compareTo("s");
+                          A.KEY.compareToIgnoreCase("s");
+                          A.KEY.contentEquals("s");
+                      }
+                      private boolean foo () {
+                          A.KEY.equals("s");
+                          A.KEY.equalsIgnoreCase("s");
+                          A.KEY.compareTo("s");
+                          A.KEY.compareToIgnoreCase("s");
+                          A.KEY.contentEquals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public static final String KEY = null;
+                  }
+                  static class B {
+                      {
+                          "s".equals(A.KEY);
+                          "s".equalsIgnoreCase(A.KEY);
+                          "s".compareTo(A.KEY);
+                          "s".compareToIgnoreCase(A.KEY);
+                          "s".contentEquals(A.KEY);
+                      }
+                      private boolean foo () {
+                          "s".equals(A.KEY);
+                          "s".equalsIgnoreCase(A.KEY);
+                          "s".compareTo(A.KEY);
+                          "s".compareToIgnoreCase(A.KEY);
+                          "s".contentEquals(A.KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Nested
+        class Parameter {
+
+
+            @DocumentExample
+            @Test
+            void rawInline() {
+                rewriteRun(
+                  // language=java
+                  java(
+                    """
+                      static class B {
+                          private boolean bar (String param) {
+                              param.equals("KEY");
+                              param.equalsIgnoreCase("KEY");
+                              param.compareTo("KEY");
+                              param.compareToIgnoreCase("KEY");
+                              param.contentEquals("KEY");
+                          }
+                      }
+                      """,
+                    """
+                      static class B {
+                          private boolean bar (String param) {
+                              "KEY".equals(param);
+                              "KEY".equalsIgnoreCase(param);
+                              "KEY".compareTo(param);
+                              "KEY".compareToIgnoreCase(param);
+                              "KEY".contentEquals(param);
+                          }
+                      }
+                      """)
+                );
+            }
+
+            @DocumentExample
+            @Test
+            void onConstant() {
+                rewriteRun(
+                  // language=java
+                  java(
+                    """
+                      static class B {
+                          final String KEY = "KEY";
+                          private boolean bar (String param) {
+                              param.equals(KEY);
+                              param.equalsIgnoreCase(KEY);
+                              param.compareTo(KEY);
+                              param.compareToIgnoreCase(KEY);
+                              param.contentEquals(KEY);
+                          }
+                      }
+                      """,
+                    """
+                      static class B {
+                          final String KEY = "KEY";
+                          private boolean bar (String param) {
+                              KEY.equals(param);
+                              KEY.equalsIgnoreCase(param);
+                              KEY.compareTo(param);
+                              KEY.compareToIgnoreCase(param);
+                              KEY.contentEquals(param);
+                          }
+                      }
+                      """)
+                );
+            }
+        }
+
+        @DocumentExample
+        @Test
+        void field() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      {
+                          final String KEY = null;
+                          KEY.equals("s");
+                          KEY.equalsIgnoreCase("s");
+                          KEY.compareTo("s");
+                          KEY.compareToIgnoreCase("s");
+                          KEY.contentEquals("s");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      {
+                          final String KEY = null;
+                          "s".equals(KEY);
+                          "s".equalsIgnoreCase(KEY);
+                          "s".compareTo(KEY);
+                          "s".compareToIgnoreCase(KEY);
+                          "s".contentEquals(KEY);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        void removeUnnecessaryNullCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      {
+                          String s = null;
+                          if(s != null && s.equals("test")) {}
+                          if(null != s && s.equals("test")) {}
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      {
+                          String s = null;
+                          if("test".equals(s)) {}
+                          if("test".equals(s)) {}
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void nullLiteral() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class A {
+                      void foo(String s) {
+                            if(s.equals(null)) {
+                          }
+                      }
+                  }
+                  """,
+                """
+
+                  public class A {
+                      void foo(String s) {
+                            if(s == null) {
+                          }
+                      }
+                  }
+                  """)
+            );
+        }
     }
 }
