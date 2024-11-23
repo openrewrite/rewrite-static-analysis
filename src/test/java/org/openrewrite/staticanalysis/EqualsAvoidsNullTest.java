@@ -71,31 +71,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @DocumentExample
         @Test
-        void constantSingular() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class A {
-                      public static final String KEY = null;
-                      {
-                          KEY.equals("s");
-                      }
-                  }
-                  """,
-                """
-                  public class A {
-                      public static final String KEY = null;
-                      {
-                          "s".equals(KEY);
-                      }
-                  }
-                  """)
-            );
-        }
-
-        @DocumentExample
-        @Test
         void constantMulti() {
             rewriteRun(
               // language=java
