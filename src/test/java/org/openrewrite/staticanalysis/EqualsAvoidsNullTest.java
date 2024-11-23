@@ -102,6 +102,32 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
+        @Test
+        void constantList() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  import java.util.List;
+                  public class A {
+                      public static final List<String> KEYS = null;
+                      {
+                          KEYS.get(0).equals("s");
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class A {
+                      public static final List<String> KEYS = null;
+                      {
+                          "s".equals(KEYS.get(0));
+                      }
+                  }
+                  """)
+            );
+        }
+
         @DocumentExample
         @Test
         void constantMultiExternal() {
