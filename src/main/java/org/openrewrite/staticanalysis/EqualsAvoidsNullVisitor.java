@@ -25,6 +25,7 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
+import static java.lang.String.valueOf;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -47,23 +48,33 @@ import static java.util.Objects.requireNonNull;
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private static final MethodMatcher EQUALS = new MethodMatcher("java.lang.String " + "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " + "equalsIgnoreCase(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String " + "compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " + "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java.lang.CharSequence)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " + "equalsIgnoreCase" +
+            "(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String " + "compareTo(java.lang" +
+            ".String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " +
+            "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java" +
+            ".lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
-        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-        if (m.getSelect() != null &&
-                !(m.getSelect() instanceof J.Literal) &&
-                m.getArguments().get(0) instanceof J.Literal &&
-                isStringComparisonMethod(m)) {
-            return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
-        }
-        return m;
+        return visitMethodInvocation((J.MethodInvocation) super.visitMethodInvocation(method, p));
+    }
+
+    private Expression visitMethodInvocation(final J.MethodInvocation m) {
+        final Expression expression = literalsFirstInComparisonsBinaryCheck(m,
+                getCursor().getParentTreeCursor().getValue());
+        return isStringExpressionAndComparisonMethod(m) ?
+                expression :
+                m;
+    }
+
+    private boolean isStringExpressionAndComparisonMethod(final J.MethodInvocation m) {
+        return valueOf(String.class).contains(valueOf(requireNonNull(m.getSelect()).getType()))
+                && isStringComparisonMethod(m);
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
@@ -106,8 +117,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
         if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
             J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
-            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
+                    requireNonNull(m.getSelect())) ||
+                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(),
+                            requireNonNull(m.getSelect()))) {
                 doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
             }
         }
