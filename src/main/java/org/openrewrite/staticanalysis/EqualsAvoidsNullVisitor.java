@@ -47,14 +47,10 @@ import static java.util.Objects.requireNonNull;
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private static final MethodMatcher EQUALS = new MethodMatcher("java.lang.String " + "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " + "equalsIgnoreCase" +
-            "(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String " + "compareTo(java.lang" +
-            ".String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " +
-            "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java" +
-            ".lang.CharSequence)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " + "equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String " + "compareTo(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " + "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java.lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
@@ -110,10 +106,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
         if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
             J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
-            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
-                    requireNonNull(m.getSelect())) ||
-                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(),
-                            requireNonNull(m.getSelect()))) {
+            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
+                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
                 doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
             }
         }
