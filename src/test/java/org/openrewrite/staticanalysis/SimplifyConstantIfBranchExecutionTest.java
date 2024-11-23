@@ -1322,4 +1322,39 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void constantTernarySimplfied() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean trueCondition1 = true ? true : false;
+                  boolean trueCondition2 = false ? false : true;
+                  boolean trueCondition3 = !true ? false : true;
+                  boolean trueCondition4 = !false ? true : false;
+              
+                  boolean falseCondition1 = true ? false : true;
+                  boolean falseCondition2 = false ? true : false;
+                  boolean falseCondition3 = !false ? false : true;
+                  boolean falseCondition4 = !true ? true : false;
+              }
+              """,
+            """
+              class Test {
+                  boolean trueCondition1 = true;
+                  boolean trueCondition2 = true;
+                  boolean trueCondition3 = true;
+                  boolean trueCondition4 = true;
+              
+                  boolean falseCondition1 = false;
+                  boolean falseCondition2 = false;
+                  boolean falseCondition3 = false;
+                  boolean falseCondition4 = false;
+              }
+              """
+          )
+        );
+    }
 }
