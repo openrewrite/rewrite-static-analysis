@@ -41,10 +41,10 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public static final String FOO = "FOO";
               }
               class A {
-                  private boolean isFoo(String foo) {
+                  private boolean isFoo(String foo, String bar) {
                       return foo.contentEquals(Constants.FOO)
                           || foo.equalsIgnoreCase(Constants.FOO)
-                          || foo.compareToIgnoreCase(Constants.FOO);
+                          || bar.compareToIgnoreCase(Constants.FOO);
                   }
               }
               """,
@@ -56,7 +56,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   private boolean isFoo(String foo) {
                       return Constants.FOO.contentEquals(foo)
                           || Constants.FOO.equalsIgnoreCase(foo)
-                          || Constants.FOO.compareToIgnoreCase(foo);
+                          || Constants.FOO.compareToIgnoreCase(bar);
                   }
               }
               """)

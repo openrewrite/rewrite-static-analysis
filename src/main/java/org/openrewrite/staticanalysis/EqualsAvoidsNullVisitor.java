@@ -61,7 +61,9 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             !(m.getSelect() instanceof J.Literal) &&
             m.getArguments().get(0) instanceof J.Literal &&
             isStringComparisonMethod(m)) {
-            return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
+            final Expression expression = literalsFirstInComparisonsBinaryCheck(m,
+                    getCursor().getParentTreeCursor().getValue());
+            return expression;
         }
         return m;
     }
