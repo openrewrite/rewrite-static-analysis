@@ -57,10 +57,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
+        final boolean stringComparisonMethod = isStringComparisonMethod(m);
         if (m.getSelect() != null &&
             !(m.getSelect() instanceof J.Literal) &&
             m.getArguments().get(0) instanceof J.Literal &&
-            isStringComparisonMethod(m)) {
+                stringComparisonMethod) {
             final Expression expression = literalsFirstInComparisonsBinaryCheck(m,
                     getCursor().getParentTreeCursor().getValue());
             return expression;

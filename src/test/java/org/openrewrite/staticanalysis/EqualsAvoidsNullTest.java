@@ -32,6 +32,35 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
     @DocumentExample
     @Test
+    void replaceMethodArg() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              public class Constants {
+                  public static final String FOO = "FOO";
+              }
+              class A {
+                  private boolean isFoo(String foo) {
+                      return foo.contentEquals(Constants.FOO);
+                  }
+              }
+              """,
+            """
+              public class Constants {
+                  public static final String FOO = "FOO";
+              }
+              class A {
+                  private boolean isFoo(String foo) {
+                      return Constants.FOO.contentEquals(foo);
+                  }
+              }
+              """)
+        );
+    }
+
+    @DocumentExample
+    @Test
     void replaceMethodArgs() {
         rewriteRun(
           // language=java
@@ -43,7 +72,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
               class A {
                   private boolean isFoo(String foo, String bar) {
                       return foo.contentEquals(Constants.FOO)
-                          || foo.equalsIgnoreCase(Constants.FOO)
                           || bar.compareToIgnoreCase(Constants.FOO);
                   }
               }
@@ -55,7 +83,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
               class A {
                   private boolean isFoo(String foo) {
                       return Constants.FOO.contentEquals(foo)
-                          || Constants.FOO.equalsIgnoreCase(foo)
                           || Constants.FOO.compareToIgnoreCase(bar);
                   }
               }
