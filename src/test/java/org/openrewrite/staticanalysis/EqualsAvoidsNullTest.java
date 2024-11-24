@@ -81,7 +81,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public static final String FOO = "FOO";
               }
               class A {
-                  private boolean isFoo(String foo) {
+                  private boolean isFoo(String foo, String bar) {
                       return Constants.FOO.contentEquals(foo)
                           || Constants.FOO.compareToIgnoreCase(bar);
                   }
