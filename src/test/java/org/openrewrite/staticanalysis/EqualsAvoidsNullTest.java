@@ -34,39 +34,35 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Nested
     class LiteralsFirstInComparisons {
 
-        @Nested
-        class KeepOrderForStringVsString {
-
-            @DocumentExample
-            @Test
-            void rawStringVsRawString() {
-                rewriteRun(
-                  // language=java
-                  java(
-                    """
-                      public class A {
-                          {
-                              "KEY".equals("s");
-                              "KEY".equalsIgnoreCase("s");
-                              "KEY".compareTo("s");
-                              "KEY".compareToIgnoreCase("s");
-                              "KEY".contentEquals("s");
-                          }
+        @DocumentExample
+        @Test
+        void keepOrderForStringVsString() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class A {
+                      {
+                          "KEY".equals("s");
+                          "KEY".equalsIgnoreCase("s");
+                          "KEY".compareTo("s");
+                          "KEY".compareToIgnoreCase("s");
+                          "KEY".contentEquals("s");
                       }
-                      """,
-                    """
-                      public class A {
-                          {
-                              "KEY".equals("s");
-                              "KEY".equalsIgnoreCase("s");
-                              "KEY".compareTo("s");
-                              "KEY".compareToIgnoreCase("s");
-                              "KEY".contentEquals("s");
-                          }
+                  }
+                  """,
+                """
+                  public class A {
+                      {
+                          "KEY".equals("s");
+                          "KEY".equalsIgnoreCase("s");
+                          "KEY".compareTo("s");
+                          "KEY".compareToIgnoreCase("s");
+                          "KEY".contentEquals("s");
                       }
-                      """)
-                );
-            }
+                  }
+                  """)
+            );
         }
 
         @DocumentExample
