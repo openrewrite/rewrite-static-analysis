@@ -42,7 +42,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class Constants {
                   public static final String FOO = "FOO";
               }
-              public class A {
+              class A {
                   private boolean isFoo(String foo) {
                       return foo.contentEquals(Constants.FOO)
                           || foo.equalsIgnoreCase(Constants.FOO)
@@ -54,7 +54,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class Constants {
                   public static final String FOO = "FOO";
               }
-              public class A {
+              class A {
                   private boolean isFoo(String foo) {
                       return Constants.FOO.contentEquals(foo)
                           || Constants.FOO.equalsIgnoreCase(foo)
