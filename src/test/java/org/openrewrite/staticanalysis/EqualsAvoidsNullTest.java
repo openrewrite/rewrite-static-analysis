@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -28,6 +29,40 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new EqualsAvoidsNull());
+    }
+
+    @DocumentExample
+    @Test
+    @Disabled
+    void replaceMethodArgs() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              public class Constants {
+                  public static final String FOO = "FOO";
+              }
+              public class A {
+                  private boolean isFoo(String foo) {
+                      return foo.contentEquals(Constants.FOO)
+                          || foo.equalsIgnoreCase(Constants.FOO)
+                          || foo.compareToIgnoreCase(Constants.FOO);
+                  }
+              }
+              """,
+            """
+              public class Constants {
+                  public static final String FOO = "FOO";
+              }
+              public class A {
+                  private boolean isFoo(String foo) {
+                      return Constants.FOO.contentEquals(foo)
+                          || Constants.FOO.equalsIgnoreCase(foo)
+                          || Constants.FOO.compareToIgnoreCase(foo);
+                  }
+              }
+              """)
+        );
     }
 
     @DocumentExample
