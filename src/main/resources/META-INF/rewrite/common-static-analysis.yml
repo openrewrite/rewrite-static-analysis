@@ -84,6 +84,7 @@ recipeList:
   - org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
+  - org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
 #  - org.openrewrite.staticanalysis.UnnecessaryThrows
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces
