@@ -60,8 +60,8 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COMPARE_IGNORE_CASE_METHOD_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-                J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
                 if (COMPARE_IGNORE_CASE_METHOD_MATCHER.matches(mi)) {
                     mi = mi.withArguments(ListUtils.map(mi.getArguments(), arg -> {
                         if (arg instanceof J.MethodInvocation && isChangeCaseMethod(arg)) {
