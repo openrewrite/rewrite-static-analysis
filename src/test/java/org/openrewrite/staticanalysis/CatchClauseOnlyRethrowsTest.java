@@ -339,7 +339,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void testCsharpImplicitThrow() {
+    void verifyCsharpImplicitThrow() {
         Cs.CompilationUnit compilationUnit = new Cs.CompilationUnit(Tree.randomId(), Space.EMPTY,
           Markers.EMPTY, Path.of("test.cs"),
           new FileAttributes(null, null, null, true, true, true, 0l),
