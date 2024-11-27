@@ -19,18 +19,16 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.NameCaseConvention;
+import org.openrewrite.internal.NamingService;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.ChangeMethodName;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.VariableNameUtils;
-import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
-import org.openrewrite.staticanalysis.nameconvention.NameConventionFactory;
 
 import java.time.Duration;
 import java.util.*;
@@ -61,8 +59,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     @Override
     public String getDescription() {
         return "Fixes method names that do not follow standard naming conventions. " +
-                "For example, `String getFoo_bar()` would be adjusted to `String getFooBar()` " +
-                "and `int DoSomething()` would be adjusted to `int doSomething()`.";
+               "For example, `String getFoo_bar()` would be adjusted to `String getFooBar()` " +
+               "and `int DoSomething()` would be adjusted to `int doSomething()`.";
     }
 
     @Override
@@ -84,6 +82,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     public TreeVisitor<?, ExecutionContext> getScanner(List<MethodNameChange> changes) {
         return new JavaIsoVisitor<ExecutionContext>() {
             UUID scope;
+
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
@@ -106,7 +105,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                     !simpleName.startsWith("_") &&
                     !STANDARD_METHOD_NAME.matcher(simpleName).matches()) {
                     String normalized = VariableNameUtils.normalizeName(simpleName);
-                    String toName = NameConventionFactory.getNameConvention(getCursor().firstEnclosing(SourceFile.class)).applyNameConvention(normalized);
+                    NamingService service = getCursor().firstEnclosing(SourceFile.class).service(NamingService.class);
+                    String toName = service.getMethodName(normalized);
                     if (!StringUtils.isBlank(toName) && !StringUtils.isNumeric(toName) &&
                         !methodExists(method.getMethodType(), toName)) {
                         changes.add(new MethodNameChange(
