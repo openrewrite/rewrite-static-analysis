@@ -49,11 +49,6 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         TreeVisitor<?, ExecutionContext> condition = Preconditions.or(
                 new UsesType<>("java.lang.Boolean", false),

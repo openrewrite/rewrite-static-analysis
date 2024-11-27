@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
@@ -24,8 +24,8 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J.VariableDeclarations;
 import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -48,13 +48,8 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
     }
 
     @Override
-    public @Nullable Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public VariableDeclarations visitVariableDeclarations(VariableDeclarations multiVariable, ExecutionContext ctx) {
                 VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
@@ -74,6 +69,6 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
                 }
                 return nv;
             }
-        };
+        });
     }
 }

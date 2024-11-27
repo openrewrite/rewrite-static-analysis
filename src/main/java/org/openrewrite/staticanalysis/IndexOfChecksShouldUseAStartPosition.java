@@ -47,18 +47,8 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(STRING_INDEX_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
-
-            private boolean isValueNotCompliant(J.Literal literal) {
-                return !(literal.getValue() instanceof Integer && ((Integer) (literal.getValue()) <= 0));
-            }
-
             @Override
             public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
                 J.Binary b = super.visitBinary(binary, ctx);
@@ -84,6 +74,10 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
                             JavaType.Primitive.Int));
                 }
                 return b;
+            }
+
+            private boolean isValueNotCompliant(J.Literal literal) {
+                return !(literal.getValue() instanceof Integer && ((Integer) (literal.getValue()) <= 0));
             }
         });
     }
