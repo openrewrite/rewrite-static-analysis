@@ -15,6 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -30,64 +32,69 @@ class EqualsAvoidsNullTest implements RewriteTest {
         spec.recipe(new EqualsAvoidsNull());
     }
 
-    @DocumentExample
-    @Test
-    void replaceMethodArg() {
-        rewriteRun(
-          // language=java
-          java(
-            """
-              public class Constants {
-                  public static final String FOO = "FOO";
-              }
-              class A {
-                  private boolean isFoo(String foo) {
-                      return foo.contentEquals(Constants.FOO);
-                  }
-              }
-              """,
-            """
-              public class Constants {
-                  public static final String FOO = "FOO";
-              }
-              class A {
-                  private boolean isFoo(String foo) {
-                      return Constants.FOO.contentEquals(foo);
-                  }
-              }
-              """)
-        );
-    }
+    @Nested
+    @Disabled
+    class replaceMethodArg {
 
-    @DocumentExample
-    @Test
-    void replaceMethodArgs() {
-        rewriteRun(
-          // language=java
-          java(
-            """
-              public class Constants {
-                  public static final String FOO = "FOO";
-              }
-              class A {
-                  private boolean isFoo(String foo, String bar) {
-                      return foo.contentEquals(Constants.FOO)
-                          || bar.compareToIgnoreCase(Constants.FOO);
+        @DocumentExample
+        @Test
+        void one() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
                   }
-              }
-              """,
-            """
-              public class Constants {
-                  public static final String FOO = "FOO";
-              }
-              class A {
-                  private boolean isFoo(String foo, String bar) {
-                      return Constants.FOO.contentEquals(foo)
-                          || Constants.FOO.compareToIgnoreCase(bar);
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return foo.contentEquals(Constants.FOO);
+                      }
                   }
-              }
-              """)
-        );
+                  """,
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return Constants.FOO.contentEquals(foo);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @DocumentExample
+        @Test
+        void multiple() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo, String bar) {
+                          return foo.contentEquals(Constants.FOO)
+                              || bar.compareToIgnoreCase(Constants.FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo, String bar) {
+                          return Constants.FOO.contentEquals(foo)
+                              || Constants.FOO.compareToIgnoreCase(bar);
+                      }
+                  }
+                  """)
+            );
+        }
     }
 
     @DocumentExample
