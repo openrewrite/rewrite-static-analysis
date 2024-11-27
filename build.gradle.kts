@@ -29,6 +29,7 @@ dependencies {
 
     testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.openrewrite:rewrite-groovy")
+    testImplementation("org.openrewrite:rewrite-test")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("junit:junit:4.13.2")
 
