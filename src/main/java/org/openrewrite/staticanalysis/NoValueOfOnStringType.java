@@ -43,8 +43,8 @@ public class NoValueOfOnStringType extends Recipe {
     @Override
     public String getDescription() {
         return "Replace unnecessary `String#valueOf(..)` method invocations with the argument directly. " +
-                "This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf(\"example\")`. " +
-                "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`.";
+               "This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf(\"example\")`. " +
+               "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`.";
     }
 
     @Override
