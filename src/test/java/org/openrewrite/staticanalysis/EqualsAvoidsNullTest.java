@@ -69,7 +69,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         @Test
         void multiple() {
             rewriteRun(
-              // language=java
+              //language=java
               java(
                 """
                   public class Constants {
