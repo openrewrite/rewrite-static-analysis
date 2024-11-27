@@ -78,4 +78,40 @@ class NoEqualityInForConditionTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void retainCharComparison() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int[] arr;
+                  void test() {
+                      for (int i = 0; arr[i] != '\\n'; i++) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainMismatchedComparison() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      int y = 9;
+                      for (int x = 0; y != 10; x++) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

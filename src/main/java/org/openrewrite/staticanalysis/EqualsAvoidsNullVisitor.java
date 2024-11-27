@@ -58,9 +58,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
         if (m.getSelect() != null &&
-                !(m.getSelect() instanceof J.Literal) &&
-                m.getArguments().get(0) instanceof J.Literal &&
-                isStringComparisonMethod(m)) {
+            !(m.getSelect() instanceof J.Literal) &&
+            !m.getArguments().isEmpty() &&
+            m.getArguments().get(0) instanceof J.Literal &&
+            isStringComparisonMethod(m)) {
             return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
         }
         return m;
@@ -68,11 +69,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return EQUALS.matches(methodInvocation) ||
-                !style.getIgnoreEqualsIgnoreCase() &&
-                        EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-                COMPARE_TO.matches(methodInvocation) ||
-                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
-                CONTENT_EQUALS.matches(methodInvocation);
+               !style.getIgnoreEqualsIgnoreCase() &&
+               EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+               COMPARE_TO.matches(methodInvocation) ||
+               COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
+               CONTENT_EQUALS.matches(methodInvocation);
     }
 
     private Expression literalsFirstInComparisonsBinaryCheck(J.MethodInvocation m, P parent) {
