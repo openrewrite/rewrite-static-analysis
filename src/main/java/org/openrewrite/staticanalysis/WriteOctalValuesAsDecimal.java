@@ -23,7 +23,6 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
