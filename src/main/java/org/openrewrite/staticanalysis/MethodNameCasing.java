@@ -30,6 +30,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.nameconvention.NameConventionFactory;
 
 import java.time.Duration;
 import java.util.*;
@@ -40,8 +41,6 @@ import java.util.regex.Pattern;
 public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.MethodNameChange>> {
 
     private static final Pattern STANDARD_METHOD_NAME = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
-    private static final Pattern SNAKE_CASE = Pattern.compile("^[a-zA-Z0-9]+_\\w+$");
-
     @Option(displayName = "Apply recipe to test source set",
             description = "Changes only apply to main by default. `includeTestSources` will apply the recipe to `test` source files.",
             required = false)
@@ -89,13 +88,6 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
             public J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     scope = tree.getId();
-                    JavaSourceFile cu = (JavaSourceFile) tree;
-                    Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
-                    if (!sourceSet.isPresent()) {
-                        stopAfterPreVisit();
-                    } else if (!Boolean.TRUE.equals(includeTestSources) && !"main".equals(sourceSet.get().getName())) {
-                        stopAfterPreVisit();
-                    }
                 }
                 return super.preVisit(tree, ctx);
             }
@@ -113,37 +105,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                     !method.isConstructor() &&
                     !simpleName.startsWith("_") &&
                     !STANDARD_METHOD_NAME.matcher(simpleName).matches()) {
-                    StringBuilder standardized = new StringBuilder();
                     String normalized = VariableNameUtils.normalizeName(simpleName);
-
-                    if (SNAKE_CASE.matcher(normalized).matches()) {
-                        standardized.append(NameCaseConvention.format(NameCaseConvention.LOWER_CAMEL, normalized));
-                    } else {
-                        int nameLength = normalized.length();
-                        for (int i = 0; i < nameLength; i++) {
-                            char c = normalized.charAt(i);
-
-                            if (i == 0) {
-                                // the java specification requires identifiers to start with [a-zA-Z$_]
-                                if (c != '$' && c != '_') {
-                                    standardized.append(Character.toLowerCase(c));
-                                }
-                            } else {
-                                if (!Character.isLetterOrDigit(c)) {
-                                    while (i < nameLength && (!Character.isLetterOrDigit(c) || c > 'z')) {
-                                        c = normalized.charAt(i++);
-                                    }
-                                    if (i < nameLength) {
-                                        standardized.append(Character.toUpperCase(c));
-                                    }
-                                } else {
-                                    standardized.append(c);
-                                }
-                            }
-                        }
-                    }
-
-                    String toName = standardized.toString();
+                    String toName = NameConventionFactory.getNameConvention(getCursor().firstEnclosing(SourceFile.class)).applyNameConvention(normalized);
                     if (!StringUtils.isBlank(toName) && !StringUtils.isNumeric(toName) &&
                         !methodExists(method.getMethodType(), toName)) {
                         changes.add(new MethodNameChange(
