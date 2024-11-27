@@ -344,7 +344,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                       try {
                           throw new IllegalAccessException();
                       } catch (Exception e) {
-                          throw e;
+                          throw e; // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
                       }
                   }
               }"""
