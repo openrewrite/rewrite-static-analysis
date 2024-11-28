@@ -21,8 +21,6 @@ import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 import static java.util.stream.Collectors.toList;
 
 public class JavaToCsharp {
