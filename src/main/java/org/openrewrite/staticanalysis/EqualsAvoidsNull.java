@@ -53,22 +53,20 @@ public class EqualsAvoidsNull extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new EqualsAvoidsNullFromCompilationUnitStyle();
-    }
-
-    private static class EqualsAvoidsNullFromCompilationUnitStyle extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                EqualsAvoidsNullStyle style = cu.getStyle(EqualsAvoidsNullStyle.class);
-                if (style == null) {
-                    style = Checkstyle.equalsAvoidsNull();
+        return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                if (tree instanceof JavaSourceFile) {
+                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+                    EqualsAvoidsNullStyle style = cu.getStyle(EqualsAvoidsNullStyle.class);
+                    if (style == null) {
+                        style = Checkstyle.equalsAvoidsNull();
+                    }
+                    return new EqualsAvoidsNullVisitor<>(style).visitNonNull(cu, ctx);
                 }
-                return new EqualsAvoidsNullVisitor<>(style).visitNonNull(cu, ctx);
+                //noinspection DataFlowIssue
+                return (J) tree;
             }
-            //noinspection DataFlowIssue
-            return (J) tree;
-        }
+        };
     }
 }

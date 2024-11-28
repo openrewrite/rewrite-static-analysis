@@ -15,13 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -72,7 +70,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new RenameToCamelCase() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new RenameToCamelCase() {
             @Override
             protected boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable, String toName) {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
@@ -191,6 +189,6 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
                 }
                 return true;
             }
-        };
+        });
     }
 }

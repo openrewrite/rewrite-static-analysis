@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -46,11 +45,6 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S2129");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
