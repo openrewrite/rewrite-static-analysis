@@ -15,10 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -30,71 +30,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new EqualsAvoidsNull());
-    }
-
-    @Nested
-    @Disabled
-    class replaceMethodArg {
-
-        @DocumentExample
-        @Test
-        void one() {
-            rewriteRun(
-              // language=java
-              java(
-                """
-                  public class Constants {
-                      public static final String FOO = "FOO";
-                  }
-                  class A {
-                      private boolean isFoo(String foo) {
-                          return foo.contentEquals(Constants.FOO);
-                      }
-                  }
-                  """,
-                """
-                  public class Constants {
-                      public static final String FOO = "FOO";
-                  }
-                  class A {
-                      private boolean isFoo(String foo) {
-                          return Constants.FOO.contentEquals(foo);
-                      }
-                  }
-                  """)
-            );
-        }
-
-        @DocumentExample
-        @Test
-        void multiple() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  public class Constants {
-                      public static final String FOO = "FOO";
-                  }
-                  class A {
-                      private boolean isFoo(String foo, String bar) {
-                          return foo.contentEquals(Constants.FOO)
-                              || bar.compareToIgnoreCase(Constants.FOO);
-                      }
-                  }
-                  """,
-                """
-                  public class Constants {
-                      public static final String FOO = "FOO";
-                  }
-                  class A {
-                      private boolean isFoo(String foo, String bar) {
-                          return Constants.FOO.contentEquals(foo)
-                              || Constants.FOO.compareToIgnoreCase(bar);
-                      }
-                  }
-                  """)
-            );
-        }
     }
 
     @DocumentExample
@@ -161,8 +96,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void nullLiteral() {
         rewriteRun(
-            //language=java
-            java("""
+          //language=java
+          java("""
               public class A {
                     void foo(String s) {
                         if(s.equals(null)) {
@@ -170,7 +105,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                     }
                 }
               """,
-              """
+            """
 
               public class A {
                     void foo(String s) {
@@ -180,5 +115,68 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 }
               """)
         );
+    }
+
+    @Nested
+    class ReplaceConstantMethodArg {
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/398")
+        @Test
+        void one() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return foo.contentEquals(Constants.FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return Constants.FOO.contentEquals(foo);
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        void multiple() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo, String bar) {
+                          return foo.contentEquals(Constants.FOO)
+                              || bar.compareToIgnoreCase(Constants.FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo, String bar) {
+                          return Constants.FOO.contentEquals(foo)
+                              || Constants.FOO.compareToIgnoreCase(bar);
+                      }
+                  }
+                  """)
+            );
+        }
     }
 }
