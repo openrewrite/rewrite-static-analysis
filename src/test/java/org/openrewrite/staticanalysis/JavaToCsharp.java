@@ -21,7 +21,6 @@ import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
-import static java.util.stream.Collectors.toList;
 
 public class JavaToCsharp {
 
@@ -41,7 +40,7 @@ public class JavaToCsharp {
           cu.getClasses().stream()
             .map(Statement.class::cast)
             .map(JRightPadded::build)
-            .collect(toList()),
+            .toList(),
           cu.getEof());
     }
 }
