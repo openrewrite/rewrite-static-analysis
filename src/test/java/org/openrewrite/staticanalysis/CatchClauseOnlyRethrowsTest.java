@@ -345,42 +345,37 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                       try {
                           throw new IllegalAccessException();
                       } catch (Exception e) {
-                          throw e; // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
+                          throw e; // `e` is removed below
                       }
                   }
-              }"""
-            , spec -> spec.beforeRecipe(compUnit -> {
+              }
+              """,
+            spec -> spec.beforeRecipe(compUnit -> {
+                  // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
                   Cs.CompilationUnit cSharpCompUnit = (Cs.CompilationUnit) new JavaVisitor<ExecutionContext>() {
-                    @Override
-                    public J visitThrow(J.Throw thrown, ExecutionContext ctx) {
-                        if (thrown.getException() instanceof J.Identifier) {
-                            return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
-                        }
-                        return thrown;
-                    }
-                }.visit(JavaToCsharp.compilationUnit(compUnit), new InMemoryExecutionContext());
+                      @Override
+                      public J visitThrow(J.Throw thrown, ExecutionContext ctx) {
+                          if (thrown.getException() instanceof J.Identifier) {
+                              return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
+                          }
+                          return thrown;
+                      }
+                  }.visit(JavaToCsharp.compilationUnit(compUnit), new InMemoryExecutionContext());
 
-                  assertThat(cSharpCompUnit.getMembers().get(0)).isInstanceOf(J.ClassDeclaration.class);
-                  assertThat(((J.ClassDeclaration)cSharpCompUnit.getMembers().get(0)).getBody().getStatements().get(0)).isInstanceOf(J.MethodDeclaration.class);
-                  J.MethodDeclaration md = (J.MethodDeclaration) ((J.ClassDeclaration)cSharpCompUnit.getMembers().get(0)).getBody().getStatements().get(0);
-                  assertThat(md.getBody().getStatements().get(0)).isInstanceOf(J.Try.class);
+                  Cs.CompilationUnit after = (Cs.CompilationUnit) new CatchClauseOnlyRethrows().getVisitor()
+                    .visit(cSharpCompUnit, new InMemoryExecutionContext());
 
-                  Cs.CompilationUnit output = (Cs.CompilationUnit) new CatchClauseOnlyRethrows().getVisitor().visit(cSharpCompUnit, new InMemoryExecutionContext());
-
-                  assertThat(output.getMembers().get(0)).isInstanceOf(J.ClassDeclaration.class);
-                  assertThat(((J.ClassDeclaration)output.getMembers().get(0)).getBody().getStatements().get(0)).isInstanceOf(J.MethodDeclaration.class);
-                   md = (J.MethodDeclaration) ((J.ClassDeclaration)output.getMembers().get(0)).getBody().getStatements().get(0);
-                  assertThat(md.getBody().getStatements().get(0)).isInstanceOf(J.Throw.class);
-            }
+                  var classA = (J.ClassDeclaration) after.getMembers().get(0);
+                  var methodFoo = (J.MethodDeclaration) classA.getBody().getStatements().get(0);
+                  var firstStatement = methodFoo.getBody().getStatements().get(0);
+                  assertThat(firstStatement)
+                    .isInstanceOf(J.Throw.class) // The `try/catch` block removed
+                    .extracting(s -> ((J.Throw) s).getException())
+                    .isInstanceOf(J.NewClass.class);
+              }
             )
           )
         );
     }
 
-    public JavaVisitor<ExecutionContext> getJavaToCsharpVisitor() {
-        return new JavaVisitor<>() {
-
-
-        };
-    }
 }
