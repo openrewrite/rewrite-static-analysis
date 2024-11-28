@@ -16,7 +16,10 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.*;
+import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.Tree;
 import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
@@ -25,8 +28,8 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.test.RewriteTest.toRecipe;
 
 @SuppressWarnings("ALL")
 class CatchClauseOnlyRethrowsTest implements RewriteTest {
@@ -336,7 +339,24 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void verifyCsharpImplicitThrow() {
         rewriteRun(
-          spec -> spec.recipe(Recipe.noop()),
+          spec -> spec.recipe(toRecipe(() -> new JavaVisitor<>() {
+              @Override
+              public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
+                  // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
+                  Cs.CompilationUnit cscu = JavaToCsharp.compilationUnit(cu);
+                  cscu = (Cs.CompilationUnit) new JavaVisitor<ExecutionContext>() {
+                      @Override
+                      public J visitThrow(J.Throw thrown, ExecutionContext ctx) {
+                          if (thrown.getException() instanceof J.Identifier) {
+                              return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
+                          }
+                          return thrown;
+                      }
+                  }.visit(cscu, new InMemoryExecutionContext());
+                  // Exercise the regular recipe with the now modified CSharp compilation unit
+                  return (J) new CatchClauseOnlyRethrows().getVisitor().visit(cscu, ctx);
+              }
+          })),
           //language=java
           java(
             """
@@ -350,32 +370,14 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                   }
               }
               """,
-            spec -> spec.beforeRecipe(compUnit -> {
-                  // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
-                  Cs.CompilationUnit cSharpCompUnit = (Cs.CompilationUnit) new JavaVisitor<ExecutionContext>() {
-                      @Override
-                      public J visitThrow(J.Throw thrown, ExecutionContext ctx) {
-                          if (thrown.getException() instanceof J.Identifier) {
-                              return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
-                          }
-                          return thrown;
-                      }
-                  }.visit(JavaToCsharp.compilationUnit(compUnit), new InMemoryExecutionContext());
-
-                  Cs.CompilationUnit after = (Cs.CompilationUnit) new CatchClauseOnlyRethrows().getVisitor()
-                    .visit(cSharpCompUnit, new InMemoryExecutionContext());
-
-                  var classA = (J.ClassDeclaration) after.getMembers().get(0);
-                  var methodFoo = (J.MethodDeclaration) classA.getBody().getStatements().get(0);
-                  var firstStatement = methodFoo.getBody().getStatements().get(0);
-                  assertThat(firstStatement)
-                    .isInstanceOf(J.Throw.class) // The `try/catch` block removed
-                    .extracting(s -> ((J.Throw) s).getException())
-                    .isInstanceOf(J.NewClass.class);
+            """
+              class A {
+                  void foo() throws IllegalAccessException {
+                      throw new IllegalAccessException();
+                  }
               }
-            )
+              """
           )
         );
     }
-
 }
