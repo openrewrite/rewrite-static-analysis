@@ -38,7 +38,6 @@ import java.util.regex.Pattern;
 @EqualsAndHashCode(callSuper = false)
 public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.MethodNameChange>> {
 
-    private static final Pattern STANDARD_METHOD_NAME = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
     @Option(displayName = "Apply recipe to test source set",
             description = "Changes only apply to main by default. `includeTestSources` will apply the recipe to `test` source files.",
             required = false)
@@ -101,12 +100,10 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                 if (containsValidModifiers(method) &&
                     method.getMethodType() != null &&
                     enclosingClass.getType() != null &&
-                    !method.isConstructor() &&
-                    !simpleName.startsWith("_") &&
-                    !STANDARD_METHOD_NAME.matcher(simpleName).matches()) {
+                    !method.isConstructor()) {
                     String normalized = VariableNameUtils.normalizeName(simpleName);
-                    NamingService service = getCursor().firstEnclosing(SourceFile.class).service(NamingService.class);
-                    String toName = service.getMethodName(normalized);
+                    NamingService service = service(NamingService.class);
+                    String toName = service.standardizeMethodName(normalized);
                     if (!StringUtils.isBlank(toName) && !StringUtils.isNumeric(toName) &&
                         !methodExists(method.getMethodType(), toName)) {
                         changes.add(new MethodNameChange(
