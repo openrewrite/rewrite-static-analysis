@@ -19,7 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.*;
 import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -351,7 +352,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             , spec -> spec.beforeRecipe(compUnit -> {
                   Cs.CompilationUnit cSharpCompUnit = (Cs.CompilationUnit) new JavaVisitor<ExecutionContext>() {
                     @Override
-                    public J visitThrow(J.Throw thrown, ExecutionContext executionContext) {
+                    public J visitThrow(J.Throw thrown, ExecutionContext ctx) {
                         if (thrown.getException() instanceof J.Identifier) {
                             return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
                         }
@@ -377,7 +378,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     public JavaVisitor<ExecutionContext> getJavaToCsharpVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaVisitor<>() {
 
 
         };
