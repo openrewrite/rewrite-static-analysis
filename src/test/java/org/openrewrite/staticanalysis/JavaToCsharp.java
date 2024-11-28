@@ -23,10 +23,27 @@ import org.openrewrite.java.tree.Statement;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+
 public class JavaToCsharp {
 
     public static Cs.CompilationUnit compilationUnit(J.CompilationUnit cu) {
-        return new Cs.CompilationUnit(cu.getId(), cu.getPrefix(), cu.getMarkers(), cu.getSourcePath(),
-          cu.getFileAttributes(), cu.getCharset().name(), cu.isCharsetBomMarked(), cu.getChecksum(), List.of(), List.of(), List.of(), cu.getClasses().stream().map(Statement.class::cast).map(cd -> JRightPadded.build(cd)).collect(Collectors.toList()), cu.getEof());
+        return new Cs.CompilationUnit(
+          cu.getId(),
+          cu.getPrefix(),
+          cu.getMarkers(),
+          cu.getSourcePath(),
+          cu.getFileAttributes(),
+          cu.getCharset().name(),
+          cu.isCharsetBomMarked(),
+          cu.getChecksum(),
+          List.of(),
+          List.of(),
+          List.of(),
+          cu.getClasses().stream()
+            .map(Statement.class::cast)
+            .map(JRightPadded::build)
+            .collect(toList()),
+          cu.getEof());
     }
 }
