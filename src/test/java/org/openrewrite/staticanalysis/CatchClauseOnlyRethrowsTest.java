@@ -17,10 +17,19 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
+import org.openrewrite.Tree;
+import org.openrewrite.csharp.tree.Cs;
+import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.marker.Markers;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.test.RewriteTest.toRecipe;
 
 @SuppressWarnings("ALL")
 class CatchClauseOnlyRethrowsTest implements RewriteTest {
@@ -38,7 +47,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -63,7 +72,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -90,7 +99,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -116,7 +125,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -130,7 +139,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       new FileReader("").read();
@@ -150,7 +159,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
               import java.io.FileReader;
               import java.io.IOException;
               import java.io.FileNotFoundException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -166,16 +175,16 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
               }
               """,
             """
-            import java.io.FileReader;
-            import java.io.IOException;
-            import java.io.FileNotFoundException;
-              
-            class A {
-                void foo() throws IOException {
-                    new FileReader("").read();
-                }
-            }
-            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class A {
+                  void foo() throws IOException {
+                      new FileReader("").read();
+                  }
+              }
+              """
           )
         );
     }
@@ -189,7 +198,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
               import java.io.FileReader;
               import java.io.IOException;
               import java.io.FileNotFoundException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -214,7 +223,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -230,7 +239,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -253,7 +262,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try(FileReader fr = new FileReader("")) {
@@ -267,7 +276,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try(FileReader fr = new FileReader("")) {
@@ -288,7 +297,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() {
                       try {
@@ -311,7 +320,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -320,6 +329,51 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           System.out.println("Oh no an exception");
                           throw e;
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void verifyCsharpImplicitThrow() {
+        rewriteRun(
+          spec -> spec.recipe(toRecipe(() -> new JavaVisitor<>() {
+              @Override
+              public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
+                  // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
+                  Cs.CompilationUnit cscu = JavaToCsharp.compilationUnit(cu);
+                  cscu = (Cs.CompilationUnit) new JavaVisitor<ExecutionContext>() {
+                      @Override
+                      public J visitThrow(J.Throw thrown, ExecutionContext ctx) {
+                          if (thrown.getException() instanceof J.Identifier) {
+                              return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
+                          }
+                          return thrown;
+                      }
+                  }.visit(cscu, new InMemoryExecutionContext());
+                  // Exercise the regular recipe with the now modified CSharp compilation unit
+                  return (J) new CatchClauseOnlyRethrows().getVisitor().visit(cscu, ctx);
+              }
+          })),
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() throws IllegalAccessException {
+                      try {
+                          throw new IllegalAccessException();
+                      } catch (Exception e) {
+                          throw e; // `e` is removed below
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() throws IllegalAccessException {
+                      throw new IllegalAccessException();
                   }
               }
               """
