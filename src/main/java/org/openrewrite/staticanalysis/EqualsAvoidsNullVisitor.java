@@ -80,7 +80,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return true;
         }
         if (firstArgument instanceof J.FieldAccess) {
-            JavaType.Variable fieldType = ((J.FieldAccess) firstArgument).getName().getFieldType();
+            firstArgument = ((J.FieldAccess) firstArgument).getName();
+        }
+        if (firstArgument instanceof J.Identifier) {
+            JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
             return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
         }
         return false;

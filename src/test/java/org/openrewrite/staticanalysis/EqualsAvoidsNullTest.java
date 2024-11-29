@@ -106,7 +106,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 }
               """,
             """
-
               public class A {
                     void foo(String s) {
                         if(s == null) {
@@ -145,7 +144,42 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           return Constants.FOO.contentEquals(foo);
                       }
                   }
-                  """)
+                  """
+              )
+            );
+        }
+
+        @Test
+        void staticImport() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  package c;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  """
+              ),
+              // language=java
+              java(
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return foo.contentEquals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return FOO.contentEquals(foo);
+                      }
+                  }
+                  """
+              )
             );
         }
 
@@ -175,7 +209,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                               || Constants.FOO.compareToIgnoreCase(bar);
                       }
                   }
-                  """)
+                  """
+              )
             );
         }
 
