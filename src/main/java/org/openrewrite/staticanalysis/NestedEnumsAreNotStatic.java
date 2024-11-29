@@ -23,6 +23,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.marker.SearchResult;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -51,16 +52,7 @@ public class NestedEnumsAreNotStatic extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
-                    cd = SearchResult.found(cd);
-                }
-                return cd;
-            }
-        }, new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.and(new HasNestedEnum(), Preconditions.not(new CSharpFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
@@ -79,5 +71,16 @@ public class NestedEnumsAreNotStatic extends Recipe {
                 return cd;
             }
         });
+    }
+
+    private static class HasNestedEnum extends JavaIsoVisitor<ExecutionContext> {
+        @Override
+        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+            J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+            if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
+                cd = SearchResult.found(cd);
+            }
+            return cd;
+        }
     }
 }

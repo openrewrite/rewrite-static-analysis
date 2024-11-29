@@ -26,13 +26,19 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class FixStringFormatExpressions extends Recipe {
+
+    // %[argument_index$][flags][width][.precision][t]conversion
+    private static final Pattern FS_PATTERN = Pattern.compile("%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
+
+    private static final MethodMatcher FORMAT_MATCHER = new MethodMatcher("java.lang.String format(..)");
+    private static final MethodMatcher FORMATTED_MATCHER = new MethodMatcher("java.lang.String formatted(..)");
+
     @Override
     public String getDisplayName() {
         return "Fix `String#format` and `String#formatted` expressions";
@@ -49,89 +55,69 @@ public class FixStringFormatExpressions extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(
-                Preconditions.or(
-                        new UsesMethod<>(new MethodMatcher("java.lang.String format(..)")),
-                        new UsesMethod<>(new MethodMatcher("java.lang.String formatted(..)"))
-                ),
-                new FixPrintfExpressionsVisitor()
-        );
-    }
+        return Preconditions.check(Preconditions.or(new UsesMethod<>(FORMAT_MATCHER), new UsesMethod<>(FORMATTED_MATCHER)),
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                        J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
+                        if (FORMAT_MATCHER.matches(mi) || FORMATTED_MATCHER.matches(mi)) {
+                            boolean isStringFormattedExpression = false;
+                            J.Literal fmtArg = null;
+                            if (FORMAT_MATCHER.matches(mi) && mi.getArguments().get(0) instanceof J.Literal) {
+                                fmtArg = (J.Literal) mi.getArguments().get(0);
+                            } else if (FORMATTED_MATCHER.matches(mi) && mi.getSelect() instanceof J.Literal) {
+                                fmtArg = (J.Literal) mi.getSelect();
+                                isStringFormattedExpression = true;
+                            }
 
-    private static class FixPrintfExpressionsVisitor extends JavaIsoVisitor<ExecutionContext> {
-        // %[argument_index$][flags][width][.precision][t]conversion
-        private final String formatSpecifier = "%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
-        private final Pattern fsPattern = Pattern.compile(formatSpecifier);
+                            if (fmtArg == null || fmtArg.getValue() == null || fmtArg.getValueSource() == null) {
+                                return mi;
+                            }
 
-        MethodMatcher sFormatMatcher = new MethodMatcher("java.lang.String format(..)");
-        MethodMatcher sFormattedMatcher = new MethodMatcher("java.lang.String formatted(..)");
+                            // Replace any new line chars with %n
+                            if (isStringFormattedExpression) {
+                                mi = mi.withSelect(replaceNewLineChars(mi.getSelect()));
+                            } else {
+                                mi = mi.withArguments(ListUtils.mapFirst(mi.getArguments(), this::replaceNewLineChars));
+                            }
 
-        @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-            J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-            if (sFormatMatcher.matches(mi) || sFormattedMatcher.matches(mi)) {
-                boolean isStringFormattedExpression = false;
-                J.Literal fmtArg = null;
-                if (sFormatMatcher.matches(mi) && mi.getArguments().get(0) instanceof J.Literal) {
-                    fmtArg = (J.Literal) mi.getArguments().get(0);
-                } else if (sFormattedMatcher.matches(mi) && mi.getSelect() instanceof J.Literal) {
-                    fmtArg = (J.Literal) mi.getSelect();
-                    isStringFormattedExpression = true;
-                }
-
-                if (fmtArg == null || fmtArg.getValue() == null || fmtArg.getValueSource() == null) {
-                    return mi;
-                }
-
-                // Replace any new line chars with %n
-                if (isStringFormattedExpression) {
-                    mi = mi.withSelect(replaceNewLineChars(mi.getSelect()));
-                } else {
-                    mi = mi.withArguments(ListUtils.mapFirst(mi.getArguments(), FixPrintfExpressionsVisitor::replaceNewLineChars));
-                }
-
-                // Trim any extra args
-                String val = (String) fmtArg.getValue();
-                Matcher m = fsPattern.matcher(val);
-                int argIndex = isStringFormattedExpression ? 0 : 1;
-                while (m.find()) {
-                    if (m.group(1) != null || m.group(2).contains("<")) {
+                            // Trim any extra args
+                            String val = (String) fmtArg.getValue();
+                            Matcher m = FS_PATTERN.matcher(val);
+                            int argIndex = isStringFormattedExpression ? 0 : 1;
+                            while (m.find()) {
+                                if (m.group(1) != null || m.group(2).contains("<")) {
+                                    return mi;
+                                }
+                                argIndex++;
+                            }
+                            int finalArgIndex = argIndex;
+                            mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
+                                if (i == 0 || i < finalArgIndex) {
+                                    return arg;
+                                }
+                                return null;
+                            }));
+                            return mi;
+                        }
                         return mi;
                     }
-                    argIndex++;
-                }
-                int finalArgIndex = argIndex;
-                mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
-                    if (i == 0 || i < finalArgIndex) {
-                        return arg;
+
+                    private Expression replaceNewLineChars(Expression arg0) {
+                        if (arg0 instanceof J.Literal) {
+                            J.Literal fmt = (J.Literal) arg0;
+                            if (fmt.getValue() != null) {
+                                fmt = fmt.withValue(fmt.getValue().toString().replaceAll("(?<!\\\\)\n", "%n"));
+                            }
+                            if (fmt.getValueSource() != null) {
+                                fmt = fmt.withValueSource(fmt.getValueSource().replaceAll("(?<!\\\\)\\\\n", "%n"));
+                            }
+                            return fmt;
+                        }
+                        return arg0;
                     }
-                    return null;
-                }));
-                return mi;
-            }
-            return mi;
-        }
-
-        private static Expression replaceNewLineChars(Expression arg0) {
-            if (arg0 instanceof J.Literal) {
-                J.Literal fmt = (J.Literal) arg0;
-                if (fmt.getValue() != null) {
-                    fmt = fmt.withValue(fmt.getValue().toString().replaceAll("(?<!\\\\)\n", "%n"));
                 }
-                if (fmt.getValueSource() != null) {
-                    fmt = fmt.withValueSource(fmt.getValueSource().replaceAll("(?<!\\\\)\\\\n", "%n"));
-                }
-                return fmt;
-            }
-            return arg0;
-        }
-
+        );
     }
 }

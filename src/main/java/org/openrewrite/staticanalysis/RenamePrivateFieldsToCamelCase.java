@@ -24,6 +24,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -72,7 +73,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new RenameToCamelCase() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new RenameToCamelCase() {
             @Override
             protected boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable, String toName) {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
@@ -158,6 +159,6 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.Block || is instanceof SourceFile);
             }
-        };
+        });
     }
 }
