@@ -21,6 +21,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Tree;
 import org.openrewrite.csharp.tree.Cs;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
@@ -342,17 +343,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
           spec -> spec.recipe(toRecipe(() -> new JavaVisitor<>() {
               @Override
               public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-                  // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
                   Cs.CompilationUnit cscu = JavaToCsharp.compilationUnit(cu);
-                  cscu = (Cs.CompilationUnit) new JavaVisitor<ExecutionContext>() {
-                      @Override
-                      public J visitThrow(J.Throw thrown, ExecutionContext ctx) {
-                          if (thrown.getException() instanceof J.Identifier) {
-                              return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
-                          }
-                          return thrown;
-                      }
-                  }.visit(cscu, new InMemoryExecutionContext());
                   // Exercise the regular recipe with the now modified CSharp compilation unit
                   return (J) new CatchClauseOnlyRethrows().getVisitor().visit(cscu, ctx);
               }
@@ -376,7 +367,18 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                       throw new IllegalAccessException();
                   }
               }
-              """
+              """,
+            // C# can rethrow the caught exception implicitly and so the `e` Identifier is removed by the inline visitor below
+            spec -> spec.mapBeforeRecipe(cu -> new JavaIsoVisitor<ExecutionContext>() {
+                  @Override
+                  public J.Throw visitThrow(J.Throw thrown, ExecutionContext ctx) {
+                      if (thrown.getException() instanceof J.Identifier) {
+                          return thrown.withException(new J.Empty(Tree.randomId(), Space.EMPTY, Markers.EMPTY));
+                      }
+                      return thrown;
+                  }
+              }.visitCompilationUnit(cu, new InMemoryExecutionContext())
+            )
           )
         );
     }
