@@ -178,5 +178,28 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   """)
             );
         }
+
+        @Test
+        void nonStaticNonFinalNoChange() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class Constants {
+                      public final String FOO = "FOO";
+                      public static String BAR = "BAR";
+                  }
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return foo.contentEquals(new Constants().FOO);
+                      }
+                      private boolean isBar(String bar) {
+                          return bar.contentEquals(Constants.BAR);
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import fj.P;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
@@ -79,9 +80,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             return true;
         }
         if (firstArgument instanceof J.FieldAccess) {
-            return ((J.FieldAccess) firstArgument)
-                    .getName().getFieldType()
-                    .hasFlags(Flag.Static, Flag.Final);
+            JavaType.Variable fieldType = ((J.FieldAccess) firstArgument).getName().getFieldType();
+            return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
         }
         return false;
     }
