@@ -16,22 +16,26 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-public class URLEqualsHashCodeTest implements RewriteTest {
+class URLEqualsHashCodeTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new URLEqualsHashCodeRecipes());
     }
 
+    @DocumentExample
     @Test
     void urlHashCode() {
         rewriteRun(
-          java("""
+          java(
+                """
               import java.net.URL;
                               
               class Test {
@@ -59,7 +63,8 @@ public class URLEqualsHashCodeTest implements RewriteTest {
     @Test
     void urlEquals() {
         rewriteRun(
-          java("""
+          java(
+                """
               import java.net.URL;
               
               class Test {
