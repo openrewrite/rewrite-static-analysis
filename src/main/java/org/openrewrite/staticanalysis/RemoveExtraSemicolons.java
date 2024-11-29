@@ -41,7 +41,7 @@ public class RemoveExtraSemicolons extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-1116", "RSPEC-2959"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1116", "RSPEC-S2959"));
     }
 
     @Override

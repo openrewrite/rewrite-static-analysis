@@ -23,6 +23,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.marker.SearchResult;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -41,7 +42,7 @@ public class NestedEnumsAreNotStatic extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2786");
+        return Collections.singleton("RSPEC-S2786");
     }
 
     @Override
@@ -51,22 +52,14 @@ public class NestedEnumsAreNotStatic extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
-                    cd = SearchResult.found(cd);
-                }
-                return cd;
-            }
-        }, new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.and(new HasNestedEnum(), Preconditions.not(new CSharpFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
                     if (J.Modifier.hasModifier(cd.getModifiers(), J.Modifier.Type.Static)) {
                         J.Block enumBody = cd.getBody();
+                        //noinspection DataFlowIssue
                         cd = cd.withBody(null);
                         cd = maybeAutoFormat(cd,
                                 cd.withModifiers(ListUtils.map(cd.getModifiers(), mod ->
@@ -78,5 +71,16 @@ public class NestedEnumsAreNotStatic extends Recipe {
                 return cd;
             }
         });
+    }
+
+    private static class HasNestedEnum extends JavaIsoVisitor<ExecutionContext> {
+        @Override
+        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+            J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+            if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
+                cd = SearchResult.found(cd);
+            }
+            return cd;
+        }
     }
 }

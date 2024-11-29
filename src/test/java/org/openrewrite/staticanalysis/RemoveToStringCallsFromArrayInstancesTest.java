@@ -24,11 +24,10 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ImplicitArrayToString", "UnnecessaryLocalVariable", "RedundantStringFormatCall", "MalformedFormatString", "PrimitiveArrayArgumentToVarargsMethod"})
-public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
+class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec
-          .recipe(new RemoveToStringCallsFromArrayInstances());
+        spec.recipe(new RemoveToStringCallsFromArrayInstances());
     }
 
     @Test
@@ -227,16 +226,6 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                   System.out.println(String.format("s=%s", s));
                 }
               }
-              """,
-            """
-              import java.util.Arrays;
-              
-              class SomeClass {
-                public static void main(String[] args) {
-                  int[] s = new int[]{1, 2, 3};
-                  System.out.println(String.format("s=%s", Arrays.toString(s)));
-                }
-              }
               """
           )
         );
@@ -429,7 +418,7 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    void worksWithPrintStreamFormat() {
+    void doesNotRunOnPrintStreamFormat() {
         //language=java
         rewriteRun(
           java(
@@ -442,20 +431,6 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                   String[] arr = new String[]{"test", "array"};
                   
                   ps.format("formatting array: %s", arr);
-                  ps.flush();
-                }
-              }
-              """,
-            """
-              import java.io.PrintStream;
-              import java.util.Arrays;
-              
-              class SomeClass {
-                public static void main(String[] args) {
-                  PrintStream ps = new PrintStream(System.out);
-                  String[] arr = new String[]{"test", "array"};
-                  
-                  ps.format("formatting array: %s", Arrays.toString(arr));
                   ps.flush();
                 }
               }
@@ -500,4 +475,44 @@ public class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void varargs() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                String foo(Object[] strings) {
+                    return String.format("%s %s", strings);
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void varargsButTwoArrays() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class SomeClass {
+                String foo(Object[] array1, Object[] array2) {
+                    return String.format("%s %s", array1, array2);
+                }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              
+              class SomeClass {
+                String foo(Object[] array1, Object[] array2) {
+                    return String.format("%s %s", Arrays.toString(array1), Arrays.toString(array2));
+                }
+              }
+              """
+          )
+        );
+    }
 }

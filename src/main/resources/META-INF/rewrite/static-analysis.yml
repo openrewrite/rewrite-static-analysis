@@ -50,7 +50,7 @@ recipeList:
       methodPattern: java.lang.Thread run()
       newMethodName: start
 tags:
-  - RSPEC-1217
+  - RSPEC-S1217
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.CommonDeclarationSiteTypeVariances
@@ -79,4 +79,4 @@ recipeList:
       excludeBounds:
         - java.lang.*
 tags:
-  - RSPEC-1217
+  - RSPEC-S1217

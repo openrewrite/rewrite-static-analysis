@@ -17,9 +17,9 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
@@ -30,10 +30,9 @@ import org.openrewrite.java.tree.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
 public class RemoveUnusedLocalVariables extends Recipe {
     @Incubating(since = "7.17.2")
@@ -41,8 +40,13 @@ public class RemoveUnusedLocalVariables extends Recipe {
             description = "An array of variable identifier names for local variables to ignore, even if the local variable is unused.",
             required = false,
             example = "[unused, notUsed, IGNORE_ME]")
+    String @Nullable [] ignoreVariablesNamed;
+
+    @Option(displayName = "Remove unused local variables with side effects in initializer",
+            description = "Whether to remove unused local variables despite side effects in the initializer. Default false.",
+            required = false)
     @Nullable
-    String[] ignoreVariablesNamed;
+    Boolean withSideEffects;
 
     @Override
     public String getDisplayName() {
@@ -56,7 +60,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1481");
+        return Collections.singleton("RSPEC-S1481");
     }
 
     @Override
@@ -98,7 +102,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
-            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+            public  J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 // skip matching ignored variable names right away
                 if (ignoreVariableNames != null && ignoreVariableNames.contains(variable.getSimpleName())) {
                     return variable;
@@ -127,9 +131,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     return variable;
                 }
 
-                List<J> readReferences = References.findRhsReferences(parentScope.getValue(), variable.getName());
+                List<J> readReferences = VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName());
                 if (readReferences.isEmpty()) {
-                    List<Statement> assignmentReferences = References.findLhsReferences(parentScope.getValue(), variable.getName());
+                    List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
                     for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment) {
                             doAfterVisit(new PruneAssignmentExpression((J.Assignment) ref));
@@ -178,7 +182,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        result.set(true);
+                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                            result.set(true);
+                        }
                         return methodInvocation;
                     }
 
@@ -204,7 +210,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
      * and remove the assignment, leaving behind the value being assigned.
      */
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class PruneAssignmentExpression extends JavaIsoVisitor<ExecutionContext> {
         J.Assignment assignment;
 
@@ -225,7 +231,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = true)
+    @EqualsAndHashCode(callSuper = false)
     private static class AssignmentToLiteral extends JavaVisitor<ExecutionContext> {
         J.Assignment assignment;
 
@@ -238,122 +244,4 @@ public class RemoveUnusedLocalVariables extends Recipe {
         }
     }
 
-    private static class References {
-        private static boolean isIncrementKind(Cursor tree) {
-            return tree.getValue() instanceof J.Unary && ((J.Unary) tree.getValue()).getOperator().isModifying();
-        }
-
-        private static @Nullable Cursor dropParentWhile(Predicate<Object> valuePredicate, Cursor cursor) {
-            while (cursor != null && valuePredicate.test(cursor.getValue())) {
-                cursor = cursor.getParent();
-            }
-            return cursor;
-        }
-
-        private static @Nullable Cursor dropParentUntil(Predicate<Object> valuePredicate, Cursor cursor) {
-            while (cursor != null && !valuePredicate.test(cursor.getValue())) {
-                cursor = cursor.getParent();
-            }
-            return cursor;
-        }
-
-        private static boolean isRhsValue(Cursor tree) {
-            if (!(tree.getValue() instanceof J.Identifier)) {
-                return false;
-            }
-
-            Cursor parent = dropParentWhile(J.Parentheses.class::isInstance, tree.getParent());
-            assert parent != null;
-            if (parent.getValue() instanceof J.Assignment) {
-                if (dropParentUntil(J.ControlParentheses.class::isInstance, parent) != null) {
-                    return true;
-                }
-                J.Assignment assignment = parent.getValue();
-                return assignment.getVariable() != tree.getValue();
-            }
-
-            if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable) {
-                J.VariableDeclarations.NamedVariable namedVariable = parent.getValue();
-                return namedVariable.getName() != tree.getValue();
-            }
-
-            if (parent.getValue() instanceof J.AssignmentOperation) {
-                J.AssignmentOperation assignmentOperation = parent.getValue();
-                if (assignmentOperation.getVariable() == tree.getValue()) {
-                    Tree grandParent = parent.getParentTreeCursor().getValue();
-                    return (grandParent instanceof Expression || grandParent instanceof J.Return);
-                }
-            }
-
-            return !(isIncrementKind(parent) && parent.getParentTreeCursor().getValue() instanceof J.Block);
-        }
-
-        /**
-         * An identifier is considered a right-hand side ("rhs") read operation if it is not used as the left operand
-         * of an assignment, nor as the operand of a stand-alone increment.
-         *
-         * @param j      The subtree to search.
-         * @param target A {@link J.Identifier} to check for usages.
-         * @return found {@link J} locations of "right-hand" read calls.
-         */
-        private static List<J> findRhsReferences(J j, J.Identifier target) {
-            final List<J> refs = new ArrayList<>();
-            new JavaIsoVisitor<List<J>>() {
-                @Override
-                public J.Identifier visitIdentifier(J.Identifier identifier, List<J> ctx) {
-                    if (identifier.getSimpleName().equals(target.getSimpleName()) && isRhsValue(getCursor())) {
-                        ctx.add(identifier);
-                    }
-                    return super.visitIdentifier(identifier, ctx);
-                }
-            }.visit(j, refs);
-            return refs;
-        }
-
-        /**
-         * @param j      The subtree to search.
-         * @param target A {@link J.Identifier} to check for usages.
-         * @return found {@link Statement} locations of "left-hand" assignment write calls.
-         */
-        private static List<Statement> findLhsReferences(J j, J.Identifier target) {
-            JavaIsoVisitor<List<Statement>> visitor = new JavaIsoVisitor<List<Statement>>() {
-                @Override
-                public J.Assignment visitAssignment(J.Assignment assignment, List<Statement> ctx) {
-                    if (assignment.getVariable() instanceof J.Identifier) {
-                        J.Identifier i = (J.Identifier) assignment.getVariable();
-                        if (i.getSimpleName().equals(target.getSimpleName())) {
-                            ctx.add(assignment);
-                        }
-                    }
-                    return super.visitAssignment(assignment, ctx);
-                }
-
-                @Override
-                public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, List<Statement> ctx) {
-                    if (assignOp.getVariable() instanceof J.Identifier) {
-                        J.Identifier i = (J.Identifier) assignOp.getVariable();
-                        if (i.getSimpleName().equals(target.getSimpleName())) {
-                            ctx.add(assignOp);
-                        }
-                    }
-                    return super.visitAssignmentOperation(assignOp, ctx);
-                }
-
-                @Override
-                public J.Unary visitUnary(J.Unary unary, List<Statement> ctx) {
-                    if (unary.getExpression() instanceof J.Identifier) {
-                        J.Identifier i = (J.Identifier) unary.getExpression();
-                        if (i.getSimpleName().equals(target.getSimpleName())) {
-                            ctx.add(unary);
-                        }
-                    }
-                    return super.visitUnary(unary, ctx);
-                }
-            };
-
-            List<Statement> refs = new ArrayList<>();
-            visitor.visit(j, refs);
-            return refs;
-        }
-    }
 }

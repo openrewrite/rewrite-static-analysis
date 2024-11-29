@@ -37,7 +37,7 @@ public class NoValueOfOnStringType extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Unnecessary String#valueOf(..)";
+        return "Unnecessary `String#valueOf(..)`";
     }
 
     @Override
@@ -49,7 +49,7 @@ public class NoValueOfOnStringType extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1153");
+        return Collections.singleton("RSPEC-S1153");
     }
 
     @Override
@@ -59,9 +59,7 @@ public class NoValueOfOnStringType extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(new MethodMatcher("java.lang.String valueOf(..)")), new JavaVisitor<ExecutionContext>() {
-            private final JavaTemplate t = JavaTemplate.builder("#{any(java.lang.String)}").build();
-
+        return Preconditions.check(new UsesMethod<>(VALUE_OF), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 if (VALUE_OF.matches(method.getSelect())) {
@@ -71,9 +69,9 @@ public class NoValueOfOnStringType extends Recipe {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
                     Expression argument = mi.getArguments().get(0);
-
                     if (TypeUtils.isString(argument.getType()) || removeValueOfFromBinaryExpression(argument)) {
-                        return t.apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
+                        return JavaTemplate.builder("#{any(java.lang.String)}").build()
+                                .apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
                     }
                 }
                 return mi;
@@ -87,7 +85,6 @@ public class NoValueOfOnStringType extends Recipe {
              * @return True if the method can be removed.
              */
             private boolean removeValueOfFromBinaryExpression(Expression argument) {
-
                 if (TypeUtils.asPrimitive(argument.getType()) != null) {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
                     if (parent instanceof J.Binary) {

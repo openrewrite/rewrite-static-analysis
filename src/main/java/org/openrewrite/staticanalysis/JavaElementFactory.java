@@ -15,7 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -42,7 +42,7 @@ final class JavaElementFactory {
     static J.MemberReference newStaticMethodReference(JavaType.Method method, boolean qualified, @Nullable JavaType type) {
         JavaType.FullyQualified declaringType = method.getDeclaringType();
         Expression containing = className(declaringType, qualified);
-        return newInstanceMethodReference(method, containing, type);
+        return newInstanceMethodReference(containing, method, type);
     }
 
     static Expression className(JavaType type, boolean qualified) {
@@ -102,22 +102,25 @@ final class JavaElementFactory {
         return name;
     }
 
-    static J.MemberReference newInstanceMethodReference(JavaType.Method method, Expression containing, @Nullable JavaType type) {
+    static J.MemberReference newInstanceMethodReference(Expression containing, JavaType.Method method, @Nullable JavaType type) {
+        return newInstanceMethodReference(containing, method.getName(), method, type);
+    }
+
+    static J.MemberReference newInstanceMethodReference(Expression containing, String methodName, JavaType.Method methodType, @Nullable JavaType type) {
         return new J.MemberReference(
                 randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
                 new JRightPadded<>(containing, Space.EMPTY, Markers.EMPTY),
                 null,
-                new JLeftPadded<>(Space.EMPTY, new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), method.getName(), null, null), Markers.EMPTY),
+                new JLeftPadded<>(Space.EMPTY, new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), methodName, null, null), Markers.EMPTY),
                 type,
-                method,
+                methodType,
                 null
         );
     }
 
-    @Nullable
-    static J.FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
+    static J.@Nullable FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
         JavaType.Class classType = getClassType(type);
         if (classType == null) {
             return null;
@@ -138,8 +141,7 @@ final class JavaElementFactory {
         );
     }
 
-    @Nullable
-    private static JavaType.Class getClassType(@Nullable JavaType type) {
+    private static JavaType.@Nullable Class getClassType(@Nullable JavaType type) {
         if (type instanceof JavaType.Class) {
             JavaType.Class classType = (JavaType.Class) type;
             if (classType.getFullyQualifiedName().equals("java.lang.Class")) {

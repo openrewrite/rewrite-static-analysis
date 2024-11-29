@@ -17,10 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.StringUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -33,7 +33,7 @@ import static org.openrewrite.java.tree.J.Wildcard.Bound.Extends;
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Super;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class DeclarationSiteTypeVariance extends Recipe {
 
     @Option(displayName = "Variant types",

@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     DefaultComesLastStyle style;
 
@@ -50,6 +50,11 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
             for (int i = 0; i < cases.size(); i++) {
                 J.Case aCase = cases.get(i);
+
+                // skip cases with bodies for now
+                if (aCase.getBody() != null) {
+                    return s;
+                }
                 if (isDefaultCase(aCase)) {
                     defaultCaseIndex = i;
                     defaultCase = aCase;

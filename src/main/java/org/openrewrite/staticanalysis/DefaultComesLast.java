@@ -15,18 +15,20 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.DefaultComesLastStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class DefaultComesLast extends Recipe {
@@ -43,12 +45,7 @@ public class DefaultComesLast extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-4524");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return singleton("RSPEC-S4524");
     }
 
     @Override
@@ -58,17 +55,16 @@ public class DefaultComesLast extends Recipe {
 
     private static class DefaultComesLastFromCompilationUnitStyle extends JavaIsoVisitor<ExecutionContext> {
         @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                DefaultComesLastStyle style = ((SourceFile) cu).getStyle(DefaultComesLastStyle.class);
+                DefaultComesLastStyle style = cu.getStyle(DefaultComesLastStyle.class);
                 if (style == null) {
                     style = Checkstyle.defaultComesLast();
                 }
-                return new DefaultComesLastVisitor<>(style).visit(cu, ctx);
+                return new DefaultComesLastVisitor<>(style).visitNonNull(cu, ctx);
             }
             return (J) tree;
         }
     }
-
 }

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -44,7 +45,7 @@ public class RemoveCallsToObjectFinalize extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1111");
+        return Collections.singleton("RSPEC-S1111");
     }
 
     @Override
@@ -55,12 +56,13 @@ public class RemoveCallsToObjectFinalize extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(OBJECT_FINALIZE), new JavaIsoVisitor<ExecutionContext>() {
+
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            public  J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
 
-                if (invocation.getMethodType() != null && "finalize".equals(invocation.getMethodType().getName())
-                    && (invocation.getMethodType().getDeclaringType().getSupertype() != null && Object.class.getName().equals(invocation.getMethodType().getDeclaringType().getSupertype().getFullyQualifiedName()))) {
+                if (invocation.getMethodType() != null && "finalize".equals(invocation.getMethodType().getName()) &&
+                    (invocation.getMethodType().getDeclaringType().getSupertype() != null && Object.class.getName().equals(invocation.getMethodType().getDeclaringType().getSupertype().getFullyQualifiedName()))) {
                     //noinspection DataFlowIssue
                     return null;
                 }

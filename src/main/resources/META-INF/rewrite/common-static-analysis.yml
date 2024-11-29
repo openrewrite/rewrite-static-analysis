@@ -17,10 +17,11 @@
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.CommonStaticAnalysis
 displayName: Common static analysis issues
-description: Resolve common static analysis issues discovered through 3rd party tools.
+description: Resolve common static analysis issues (also known as SAST issues).
 recipeList:
 #  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
   - org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
+  - org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
   - org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
   - org.openrewrite.staticanalysis.BooleanChecksNotInverted
   - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
@@ -69,8 +70,9 @@ recipeList:
 #  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
 #  - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
   - org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
-  - org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrTostring
+  - org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
   - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
+  - org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
   - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
   - org.openrewrite.staticanalysis.SimplifyBooleanExpression
@@ -82,6 +84,7 @@ recipeList:
   - org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
+  - org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
 #  - org.openrewrite.staticanalysis.UnnecessaryThrows
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces

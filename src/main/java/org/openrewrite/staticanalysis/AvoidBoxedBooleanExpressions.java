@@ -24,7 +24,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -43,12 +42,12 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-5411");
+        return singleton("RSPEC-S5411");
     }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.of(5, ChronoUnit.MINUTES);
+        return Duration.ofMinutes(5);
     }
 
     @Override

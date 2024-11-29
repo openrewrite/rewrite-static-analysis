@@ -15,12 +15,12 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
@@ -46,7 +46,7 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1994");
+        return Collections.singleton("RSPEC-S1994");
     }
 
     @Override
@@ -89,9 +89,9 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
                                     //noinspection ConstantConditions
                                     f = f.withBody((Statement) new JavaVisitor<ExecutionContext>() {
-                                        @Nullable
+
                                         @Override
-                                        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                                        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                                             return tree == unary ? null : super.visit(tree, ctx);
                                         }
                                     }.visit(f.getBody(), ctx));

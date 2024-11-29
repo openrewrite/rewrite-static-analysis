@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
@@ -45,7 +45,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2147");
+        return Collections.singleton("RSPEC-S2147");
     }
 
     @Override
@@ -149,7 +149,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             @Override
-            public J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
+            public @Nullable J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
                 Cursor parentCursor = getCursor().dropParentUntil(is -> is instanceof J.Try.Catch || is instanceof J.Try);
                 if (removeCatches != null && parentCursor.getValue() instanceof J.Try.Catch) {
                     if (removeCatches.contains((J.Try.Catch) parentCursor.getValue())) {
@@ -160,7 +160,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             @Override
-            public J visitCatch(J.Try.Catch _catch, ExecutionContext ctx) {
+            public @Nullable J visitCatch(J.Try.Catch _catch, ExecutionContext ctx) {
                 if (removeCatches != null) {
                     if (removeCatches.contains(_catch)) {
                         return null;
@@ -299,7 +299,11 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             private boolean doesNotContainSameComments(Space space1, Space space2) {
-                if (space1.getComments().size() != space2.getComments().size()) {
+                if (space1 == null && space2 == null) {
+                    return false;
+                }
+
+                if (space1 == null || space2 == null || space1.getComments().size() != space2.getComments().size()) {
                     return true;
                 }
 

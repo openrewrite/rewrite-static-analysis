@@ -56,9 +56,9 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 }
 
                 List<Expression> arguments = mi.getArguments();
-                String template = arguments.size() == 2
-                        ? "Objects.requireNonNull(#{any()}, #{any(java.lang.String)})"
-                        : String.format("Objects.requireNonNull(#{any()}, () -> String.format(#{any(java.lang.String)}, %s))",
+                String template = arguments.size() == 2 ?
+                        "Objects.requireNonNull(#{any()}, #{any(java.lang.String)})" :
+                        String.format("Objects.requireNonNull(#{any()}, () -> String.format(#{any(java.lang.String)}, %s))",
                         String.join(", ", Collections.nCopies(arguments.size() - 2, "#{any()}")));
 
 

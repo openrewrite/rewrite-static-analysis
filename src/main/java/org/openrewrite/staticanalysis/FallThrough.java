@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.FallThroughStyle;
@@ -42,7 +42,7 @@ public class FallThrough extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-128");
+        return Collections.singleton("RSPEC-S128");
     }
 
     @Override
@@ -60,7 +60,7 @@ public class FallThrough extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                FallThroughStyle style = ((SourceFile) cu).getStyle(FallThroughStyle.class);
+                FallThroughStyle style = cu.getStyle(FallThroughStyle.class);
                 if (style == null) {
                     style = Checkstyle.fallThrough();
                 }

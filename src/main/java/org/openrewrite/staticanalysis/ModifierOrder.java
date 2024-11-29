@@ -45,7 +45,7 @@ public class ModifierOrder extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1124");
+        return Collections.singleton("RSPEC-S1124");
     }
 
     @Override
@@ -92,7 +92,7 @@ public class ModifierOrder extends Recipe {
 
         return ListUtils.map(modifiers, (i, mod) -> mod.getType() == sortedTypes.get(i) ? mod : mod.withType(sortedTypes.get(i)));
     }
-    
+
     private static ToIntFunction<Type> createModifierTypeToPositionFunction() {
         final int DEFAULT_MOD_POSITION = 4;
         return type -> {

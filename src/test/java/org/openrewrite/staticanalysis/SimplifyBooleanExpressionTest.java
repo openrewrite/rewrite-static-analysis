@@ -315,6 +315,14 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
                       boolean i=a!=true;
                   }
               }
+              """,
+            """
+              public class A {
+                  {
+                      boolean a=true;
+                      boolean i=!a;
+                  }
+              }
               """
           )
         );
@@ -343,6 +351,63 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
               }
               """
           )
+        );
+    }
+
+    @Test
+    void ternary() {
+        rewriteRun(
+          java(
+            """
+              public class A {
+                  {
+                      if (!true || !true) {
+                          System.out.println("");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      if (false) {
+                          System.out.println("");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nullCheck() {
+        rewriteRun(
+          spec -> spec
+            .recipes(
+              new SimplifyBooleanReturn(),
+              new SimplifyBooleanExpression()
+            ),
+          //language=java
+          java(
+                """
+              class A {
+                  String name;
+                  boolean notOne(A a) {
+                      if (a != null ? !name.equals(a.name) : a.name != null) return false;
+                      return true;
+                  }
+              }
+              """,
+            """
+              class A {
+                  String name;
+                  boolean notOne(A a) {
+                      return a == null ? a.name != null : !name.equals(a.name);
+                  }
+              }
+              """
+            )
         );
     }
 }

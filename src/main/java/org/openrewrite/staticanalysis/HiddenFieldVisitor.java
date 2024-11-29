@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 @Incubating(since = "7.6.0")
 public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
     private static final Pattern NEXT_NAME_PATTERN = Pattern.compile("(.+)(\\d+)");
@@ -262,4 +262,3 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
     }
 
 }
-

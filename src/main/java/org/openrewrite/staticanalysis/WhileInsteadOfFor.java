@@ -40,7 +40,7 @@ public class WhileInsteadOfFor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1264");
+        return Collections.singleton("RSPEC-S1264");
     }
 
     @Override

@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -49,7 +49,7 @@ public class SimplifyBooleanReturn extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1126");
+        return Collections.singleton("RSPEC-S1126");
     }
 
     @Override
@@ -192,7 +192,7 @@ public class SimplifyBooleanReturn extends Recipe {
                 return Optional.empty();
             }
 
-            private boolean hasElseWithComment(J.If.Else else_) {
+            private boolean hasElseWithComment(J.If.@Nullable Else else_) {
                 if (else_ == null || else_.getBody() == null) {
                     return false;
                 }
@@ -202,13 +202,9 @@ public class SimplifyBooleanReturn extends Recipe {
                 if (!else_.getBody().getComments().isEmpty()) {
                     return true;
                 }
-                if (else_.getBody() instanceof J.Block
-                    && !((J.Block) else_.getBody()).getStatements().get(0).getComments().isEmpty()) {
-                    return true;
-                }
-                return false;
+                return else_.getBody() instanceof J.Block &&
+                       !((J.Block) else_.getBody()).getStatements().get(0).getComments().isEmpty();
             }
         };
     }
 }
-

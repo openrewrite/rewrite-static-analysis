@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.ChangePackage;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
@@ -44,7 +44,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-120");
+        return Collections.singleton("RSPEC-S120");
     }
 
     @Override

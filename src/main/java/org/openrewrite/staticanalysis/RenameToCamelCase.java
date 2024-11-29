@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
 import org.openrewrite.java.tree.J;
@@ -32,6 +32,16 @@ import java.util.Set;
 import static java.util.Collections.emptyMap;
 
 public abstract class RenameToCamelCase extends JavaIsoVisitor<ExecutionContext> {
+
+    @Nullable
+    private Cursor sourceFileCursor;
+
+    private Cursor getSourceFileCursor() {
+        if (sourceFileCursor == null) {
+            sourceFileCursor = getCursor().getPathAsCursors(c -> c.getValue() instanceof JavaSourceFile).next();
+        }
+        return sourceFileCursor;
+    }
 
     @Override
     public @Nullable J postVisit(J tree, ExecutionContext ctx) {
@@ -52,17 +62,17 @@ public abstract class RenameToCamelCase extends JavaIsoVisitor<ExecutionContext>
         return super.postVisit(tree, ctx);
     }
 
-    protected abstract boolean shouldRename(Set<String> hasNameKey, J.VariableDeclarations.NamedVariable variable,
+    protected abstract boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable,
                                             String toName);
 
     protected void renameVariable(J.VariableDeclarations.NamedVariable variable, String toName) {
-        Cursor cu = getCursor().getPathAsCursors(c -> c.getValue() instanceof JavaSourceFile).next();
-        cu.computeMessageIfAbsent("RENAME_VARIABLES_KEY", k -> new LinkedHashMap<>())
+        getSourceFileCursor()
+                .computeMessageIfAbsent("RENAME_VARIABLES_KEY", k -> new LinkedHashMap<>())
                 .put(variable, toName);
     }
 
     protected void hasNameKey(String variableName) {
-        getCursor().getPathAsCursors(c -> c.getValue() instanceof JavaSourceFile).next()
+        getSourceFileCursor()
                 .computeMessageIfAbsent("HAS_NAME_KEY", k -> new HashSet<>())
                 .add(variableName);
     }
@@ -75,8 +85,7 @@ public abstract class RenameToCamelCase extends JavaIsoVisitor<ExecutionContext>
         return identifier;
     }
 
-    @Nullable
-    protected JavaType.Variable getFieldType(J tree) {
+    protected JavaType.@Nullable Variable getFieldType(J tree) {
         if (tree instanceof J.Identifier) {
             return ((J.Identifier) tree).getFieldType();
         }

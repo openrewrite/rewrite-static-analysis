@@ -49,6 +49,26 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/286")
+    void doNotChangeParenthesisOnly() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      boolean b = true;
+                      if (!(b)) {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void simplifyConstantIfTrue() {
@@ -1297,6 +1317,41 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                       // statement comment
                       System.out.println("hello");
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void constantTernarySimplfied() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean trueCondition1 = true ? true : false;
+                  boolean trueCondition2 = false ? false : true;
+                  boolean trueCondition3 = !true ? false : true;
+                  boolean trueCondition4 = !false ? true : false;
+              
+                  boolean falseCondition1 = true ? false : true;
+                  boolean falseCondition2 = false ? true : false;
+                  boolean falseCondition3 = !false ? false : true;
+                  boolean falseCondition4 = !true ? true : false;
+              }
+              """,
+            """
+              class Test {
+                  boolean trueCondition1 = true;
+                  boolean trueCondition2 = true;
+                  boolean trueCondition3 = true;
+                  boolean trueCondition4 = true;
+              
+                  boolean falseCondition1 = false;
+                  boolean falseCondition2 = false;
+                  boolean falseCondition3 = false;
+                  boolean falseCondition4 = false;
               }
               """
           )

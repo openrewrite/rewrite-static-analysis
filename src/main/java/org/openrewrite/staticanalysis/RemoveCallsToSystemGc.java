@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -45,7 +46,7 @@ public class RemoveCallsToSystemGc extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1215");
+        return Collections.singleton("RSPEC-S1215");
     }
 
     @Override
@@ -56,8 +57,9 @@ public class RemoveCallsToSystemGc extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.or(new UsesMethod<>(SYSTEM_GC), new UsesMethod<>(RUNTIME_GC)), new JavaIsoVisitor<ExecutionContext>() {
+
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            public  J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
                 if (SYSTEM_GC.matches(invocation) || RUNTIME_GC.matches(invocation)) {
                     doAfterVisit(new EmptyBlock().getVisitor());

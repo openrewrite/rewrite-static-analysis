@@ -26,12 +26,13 @@ import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
-public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
+public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
     private static final MethodMatcher NO_ARGS = new MethodMatcher("*..* *()", true);
     private static final MethodMatcher OBJECT_ARG = new MethodMatcher("*..* *(java.lang.Object)", true);
 
@@ -48,7 +49,7 @@ public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1221");
+        return Collections.singleton("RSPEC-S1221");
     }
 
     @Override
@@ -58,7 +59,7 @@ public class RenameMethodsNamedHashcodeEqualOrTostring extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.or(new DeclaresMethod<>(NO_ARGS), new DeclaresMethod<>(OBJECT_ARG)), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.and(new JavaFileChecker<>(), Preconditions.or(new DeclaresMethod<>(NO_ARGS), new DeclaresMethod<>(OBJECT_ARG))), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 if (method.getMethodType() != null && method.getReturnTypeExpression() != null) {

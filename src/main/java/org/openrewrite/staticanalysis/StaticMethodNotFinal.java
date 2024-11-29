@@ -29,7 +29,7 @@ import java.util.Set;
 public class StaticMethodNotFinal extends Recipe {
     @Override
     public String getDisplayName() {
-        return "Static methods not final";
+        return "Static methods need not be final";
     }
 
     @Override
@@ -39,7 +39,7 @@ public class StaticMethodNotFinal extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2333");
+        return Collections.singleton("RSPEC-S2333");
     }
 
     @Override

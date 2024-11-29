@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
@@ -101,8 +101,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
              * @return The name of a numeric variable being assigned or null if not a numeric
              * variable assignment.
              */
-            @Nullable
-            private String numericVariableName(Statement s) {
+            private @Nullable String numericVariableName(Statement s) {
                 if (s instanceof J.Assignment) {
                     return singleVariableName(((J.Assignment) s).getVariable());
                 } else if (s instanceof J.VariableDeclarations) {
@@ -114,8 +113,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 return null;
             }
 
-            @Nullable
-            private Expression numericVariableAccumulation(Statement s, String name) {
+            private @Nullable Expression numericVariableAccumulation(Statement s, String name) {
                 if (s instanceof J.Unary) {
                     if (name.equals(singleVariableName(((J.Unary) s).getExpression()))) {
                         return new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, 1, "1", null,
@@ -130,8 +128,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 return null;
             }
 
-            @Nullable
-            private String numericVariableOperator(Statement s, String name) {
+            private @Nullable String numericVariableOperator(Statement s, String name) {
                 if (s instanceof J.Unary) {
                     if (name.equals(singleVariableName(((J.Unary) s).getExpression()))) {
                         switch (((J.Unary) s).getOperator()) {
@@ -175,8 +172,7 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 return null;
             }
 
-            @Nullable
-            private String singleVariableName(Expression e) {
+            private @Nullable String singleVariableName(Expression e) {
                 JavaType.Primitive type = TypeUtils.asPrimitive(e.getType());
                 return type != null && type.isNumeric() && e instanceof J.Identifier ?
                         ((J.Identifier) e).getSimpleName() :

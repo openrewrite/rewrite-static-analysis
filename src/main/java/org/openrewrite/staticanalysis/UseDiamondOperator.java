@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
@@ -35,17 +35,20 @@ public class UseDiamondOperator extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Use diamond operator";
+        return "Use the diamond operator";
     }
 
     @Override
     public String getDescription() {
-        return "The diamond operator (`<>`) should be used. Java 7 introduced the diamond operator (<>) to reduce the verbosity of generics code. For instance, instead of having to declare a List's type in both its declaration and its constructor, you can now simplify the constructor declaration with `<>`, and the compiler will infer the type.";
+        return "The diamond operator (`<>`) should be used. Java 7 introduced the diamond operator (<>) to " +
+               "reduce the verbosity of generics code. For instance, instead of having to declare a `List`'s " +
+               "type in both its declaration and its constructor, you can now simplify the constructor declaration " +
+               "with `<>`, and the compiler will infer the type.";
     }
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2293");
+        return Collections.singleton("RSPEC-S2293");
     }
 
     @Override
@@ -198,8 +201,7 @@ public class UseDiamondOperator extends Recipe {
             return return_;
         }
 
-        @Nullable
-        private List<JavaType> parameterizedTypes(J.ParameterizedType parameterizedType) {
+        private @Nullable List<JavaType> parameterizedTypes(J.ParameterizedType parameterizedType) {
             if (parameterizedType.getTypeParameters() == null) {
                 return null;
             }

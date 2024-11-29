@@ -16,12 +16,13 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -38,17 +39,12 @@ public class WriteOctalValuesAsDecimal extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1314");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return Collections.singleton("RSPEC-S1314");
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 String src = literal.getValueSource();
@@ -67,6 +63,6 @@ public class WriteOctalValuesAsDecimal extends Recipe {
                 }
                 return super.visitLiteral(literal, ctx);
             }
-        };
+        });
     }
 }

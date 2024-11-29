@@ -15,36 +15,23 @@
  */
 package org.openrewrite.staticanalysis;
 
-import static org.openrewrite.Tree.randomId;
-import static org.openrewrite.java.tree.J.Binary.Type.Equal;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JContainer;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 
 
 public class TernaryOperatorsShouldNotBeNested extends Recipe {
@@ -61,7 +48,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     }
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-3358");
+        return Collections.singleton("RSPEC-S3358");
     }
 
     @Override
@@ -233,19 +220,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 J.MethodInvocation inv = ((J.MethodInvocation) ternary.getCondition());
                 if (isObjectsEquals(inv)) {
                     maybeRemoveImport("java.util.Objects");
-                    compare = isVariable(inv.getArguments().get(0))
-                            ? inv.getArguments().get(1)
-                            : inv.getArguments().get(0);
+                    compare = isVariable(inv.getArguments().get(0)) ?
+                            inv.getArguments().get(1) :
+                            inv.getArguments().get(0);
                 } else {
-                    compare = isEqualVariable(switchVar, inv.getSelect())
-                            ? inv.getArguments().get(0)
-                            : inv.getSelect();
+                    compare = isEqualVariable(switchVar, inv.getSelect()) ?
+                            inv.getArguments().get(0) :
+                            inv.getSelect();
                 }
             } else if (isEqualsBinary(ternary.getCondition())) {
                 J.Binary bin = ((J.Binary) ternary.getCondition());
-                compare = isEqualVariable(switchVar, bin.getLeft())
-                        ? bin.getRight()
-                        : bin.getLeft();
+                compare = isEqualVariable(switchVar, bin.getLeft()) ?
+                        bin.getRight() :
+                        bin.getLeft();
             } else {
                 throw new IllegalArgumentException(
                         "Only J.Binary or J.MethodInvocation are expected as ternary conditions when creating a switch case");
@@ -312,8 +299,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         }
 
-        @Nullable
-        private static J.Identifier xorVariable(J first, J second) {
+        private static J.@Nullable Identifier xorVariable(J first, J second) {
             J.Identifier result = null;
             if (isVariable(first) && isVariable(second)) {
                 return null;

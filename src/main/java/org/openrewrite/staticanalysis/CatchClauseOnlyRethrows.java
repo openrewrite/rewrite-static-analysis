@@ -17,12 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.J.Try.Catch;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
@@ -41,12 +42,12 @@ public class CatchClauseOnlyRethrows extends Recipe {
     @Override
     public String getDescription() {
         return "A `catch` clause that only rethrows the caught exception is unnecessary. " +
-                "Letting the exception bubble up as normal achieves the same result with less code.";
+               "Letting the exception bubble up as normal achieves the same result with less code.";
     }
 
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-2737");
+        return singleton("RSPEC-S2737");
     }
 
     @Override
@@ -80,9 +81,11 @@ public class CatchClauseOnlyRethrows extends Recipe {
                         // if a subsequent catch is a wider exception type and doesn't rethrow, we should
                         // keep this one
                         for (int j = i + 1; j < tryable.getCatches().size(); j++) {
-                            Catch next = tryable.getCatches().get(j);
-                            if (!onlyRethrows(next) && TypeUtils.isAssignableTo(next.getParameter().getType(),
-                                    aCatch.getParameter().getType())) {
+                            J.Try.Catch next = tryable.getCatches().get(j);
+                            if (hasWiderExceptionType(aCatch, next)) {
+                                if (onlyRethrows(next)) {
+                                    return null;
+                                }
                                 return aCatch;
                             }
                         }
@@ -92,18 +95,40 @@ public class CatchClauseOnlyRethrows extends Recipe {
                 }));
             }
 
-            private boolean onlyRethrows(Catch aCatch) {
+            private boolean hasWiderExceptionType(J.Try.Catch aCatch, J.Try.Catch next) {
+                if (next.getParameter().getType() instanceof JavaType.MultiCatch) {
+                    JavaType.MultiCatch multiCatch = (JavaType.MultiCatch) next.getParameter().getType();
+                    for (JavaType throwableType : multiCatch.getThrowableTypes()) {
+                        if (TypeUtils.isAssignableTo(throwableType, aCatch.getParameter().getType())) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                return TypeUtils.isAssignableTo(next.getParameter().getType(), aCatch.getParameter().getType());
+            }
+
+            private boolean onlyRethrows(J.Try.Catch aCatch) {
                 if (aCatch.getBody().getStatements().size() != 1 ||
-                        !(aCatch.getBody().getStatements().get(0) instanceof J.Throw)) {
+                    !(aCatch.getBody().getStatements().get(0) instanceof J.Throw)) {
                     return false;
                 }
 
                 Expression exception = ((J.Throw) aCatch.getBody().getStatements().get(0)).getException();
-                JavaType.FullyQualified catchType = TypeUtils.asFullyQualified(aCatch.getParameter().getType());
-                if (catchType == null || !catchType.equals(exception.getType())) {
-                    return false;
+
+                // In C# an implicit rethrow is possible
+                if (getCursor().firstEnclosing(SourceFile.class) instanceof Cs &&
+                    exception instanceof J.Empty) {
+                    return true;
                 }
 
+                JavaType catchParameterType = aCatch.getParameter().getType();
+                if (!(catchParameterType instanceof JavaType.MultiCatch)) {
+                    JavaType.FullyQualified catchType = TypeUtils.asFullyQualified(catchParameterType);
+                    if (catchType == null || !catchType.equals(exception.getType())) {
+                        return false;
+                    }
+                }
                 if (exception instanceof J.Identifier) {
                     return ((J.Identifier) exception).getSimpleName().equals(aCatch.getParameter().getTree().getVariables().get(0).getSimpleName());
                 }

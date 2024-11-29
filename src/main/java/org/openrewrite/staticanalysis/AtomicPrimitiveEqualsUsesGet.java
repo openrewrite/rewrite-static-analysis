@@ -15,11 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -30,16 +30,18 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class AtomicPrimitiveEqualsUsesGet extends Recipe {
 
-    private static final Set<String> ATOMIC_PRIMITIVE_TYPES = new HashSet<>(Arrays.asList(
-            "java.util.concurrent.atomic.AtomicBoolean",
-            "java.util.concurrent.atomic.AtomicInteger",
-            "java.util.concurrent.atomic.AtomicLong"
-    ));
+    public static final String ATOMIC_ATOMIC_BOOLEAN = "java.util.concurrent.atomic.AtomicBoolean";
+    public static final String ATOMIC_ATOMIC_INTEGER = "java.util.concurrent.atomic.AtomicInteger";
+    public static final String ATOMIC_ATOMIC_LONG = "java.util.concurrent.atomic.AtomicLong";
+
+    private static final List<String> ATOMIC_PRIMITIVE_TYPES = Arrays.asList(
+            ATOMIC_ATOMIC_BOOLEAN, ATOMIC_ATOMIC_INTEGER, ATOMIC_ATOMIC_LONG
+    );
 
     @Override
     public String getDisplayName() {
@@ -53,23 +55,23 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2204");
+        return Collections.singleton("RSPEC-S2204");
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.or(
-                new UsesType<>("java.util.concurrent.atomic.AtomicBoolean", false),
-                new UsesType<>("java.util.concurrent.atomic.AtomicInteger", false),
-                new UsesType<>("java.util.concurrent.atomic.AtomicLong", false)
+                new UsesType<>(ATOMIC_ATOMIC_BOOLEAN, false),
+                new UsesType<>(ATOMIC_ATOMIC_INTEGER, false),
+                new UsesType<>(ATOMIC_ATOMIC_LONG, false)
         ), new JavaVisitor<ExecutionContext>() {
             private final MethodMatcher aiMethodMatcher = new MethodMatcher("java.lang.Object equals(java.lang.Object)");
 
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                if (mi.getSelect() != null && isAtomicEqualsType(mi.getSelect().getType()) && aiMethodMatcher.matches(mi)
-                    && TypeUtils.isOfType(mi.getSelect().getType(), mi.getArguments().get(0).getType())) {
+                if (mi.getSelect() != null && isAtomicEqualsType(mi.getSelect().getType()) && aiMethodMatcher.matches(mi) &&
+                    TypeUtils.isOfType(mi.getSelect().getType(), mi.getArguments().get(0).getType())) {
                     JavaType.FullyQualified fqt = TypeUtils.asFullyQualified(mi.getSelect().getType());
                     if (fqt != null) {
                         String templateString = "#{any(" + fqt.getFullyQualifiedName() + ")}.get() == #{any(" + fqt.getFullyQualifiedName() + ")}.get()";

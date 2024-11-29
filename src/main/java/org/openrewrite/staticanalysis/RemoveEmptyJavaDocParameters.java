@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
@@ -74,7 +75,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                 }
 
                 @Override
-                public Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
+                public @Nullable Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
                     List<Javadoc> newBody = new ArrayList<>(javadoc.getBody().size());
                     boolean useNewBody = false;
 
@@ -154,10 +155,46 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     }
 
                     if (useNewBody) {
+                        trim(newBody);
+                        if (newBody.isEmpty()) {
+                            return null;
+                        }
                         javadoc = javadoc.withBody(newBody);
                     }
                     // No need to call super visitor, already covered all cases by adding an empty first element when needed.
                     return javadoc;
+                }
+
+                /**
+                 * Removes all empty lines from body
+                 */
+                private void trim(List<Javadoc> body) {
+                    Javadoc currentDoc;
+                    Javadoc.LineBreak firstLineBreak = null;
+                    while (!body.isEmpty()) {
+                        currentDoc = body.get(body.size() - 1);
+                        boolean isLineBreak = currentDoc instanceof Javadoc.LineBreak;
+                        if (isLineBreak && firstLineBreak == null) {
+                            firstLineBreak = (Javadoc.LineBreak) currentDoc;
+                        }
+                        boolean isEmptyText = false;
+                        if (currentDoc instanceof Javadoc.Text) {
+                            String currentText = ((Javadoc.Text) currentDoc).getText().trim();
+                            isEmptyText = currentText.isEmpty();
+                        }
+                        if (!isLineBreak && !isEmptyText) {
+                            break;
+                        }
+                        body.remove(body.size() - 1);
+                    }
+                    if (!body.isEmpty() && firstLineBreak != null) {
+                        // ensure proper "ending" of JavaDoc including OS-specific newlines
+                        String margin = firstLineBreak.getMargin();
+                        if (margin.endsWith("*")) {
+                            firstLineBreak = firstLineBreak.withMargin(margin.substring(0, margin.length() - 1));
+                        }
+                        body.add(firstLineBreak);
+                    }
                 }
 
                 public boolean isEmptyParameter(Javadoc.Parameter parameter) {

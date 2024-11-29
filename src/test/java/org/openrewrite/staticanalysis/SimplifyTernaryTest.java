@@ -16,11 +16,13 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
 class SimplifyTernaryTest implements RewriteTest {
+    @DocumentExample
     @Test
     void simplified() {
         rewriteRun(

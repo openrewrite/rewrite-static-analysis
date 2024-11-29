@@ -34,6 +34,8 @@ import java.util.Set;
 
 public class ExternalizableHasNoArgsConstructor extends Recipe {
 
+    private static final JavaType EXTERNALIZABLE_TYPE = JavaType.buildType("java.io.Externalizable");
+
     @Override
     public String getDisplayName() {
         return "`Externalizable` classes have no-arguments constructor";
@@ -51,96 +53,92 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-2060");
+        return Collections.singleton("RSPEC-S2060");
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("java.io.Externalizable", false),
-                new ExternalizableHasNoArgsConstructorVisitor());
-    }
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                        J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+                        if (TypeUtils.isAssignableTo(EXTERNALIZABLE_TYPE, cd.getType())) {
+                            boolean hasFinalUninitializedFieldVar = false;
+                            Integer firstMethodDeclarationIndex = null;
+                            List<Statement> statements = cd.getBody().getStatements();
 
-    private static class ExternalizableHasNoArgsConstructorVisitor extends JavaIsoVisitor<ExecutionContext> {
-        private static final JavaType externalizableType = JavaType.buildType("java.io.Externalizable");
-
-        @Override
-        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-            J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-            if (TypeUtils.isAssignableTo(externalizableType, cd.getType())) {
-                boolean hasFinalUninitializedFieldVar = false;
-                Integer firstMethodDeclarationIndex = null;
-                List<Statement> statements = cd.getBody().getStatements();
-
-                for (int i = 0; i < statements.size(); i++) {
-                    Statement statement = statements.get(i);
-                    if (statement instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations varDecls = (J.VariableDeclarations) statement;
-                        if (J.Modifier.hasModifier(varDecls.getModifiers(), J.Modifier.Type.Final)
-                            && varDecls.getVariables().stream().anyMatch(v -> v.getInitializer() == null)) {
-                            hasFinalUninitializedFieldVar = true;
-                            break;
+                            for (int i = 0; i < statements.size(); i++) {
+                                Statement statement = statements.get(i);
+                                if (statement instanceof J.VariableDeclarations) {
+                                    J.VariableDeclarations varDecls = (J.VariableDeclarations) statement;
+                                    if (J.Modifier.hasModifier(varDecls.getModifiers(), J.Modifier.Type.Final) &&
+                                            varDecls.getVariables().stream().anyMatch(v -> v.getInitializer() == null)) {
+                                        hasFinalUninitializedFieldVar = true;
+                                        break;
+                                    }
+                                }
+                                // The new no-args constructor should be the first methodDeclaration
+                                if (statement instanceof J.MethodDeclaration && firstMethodDeclarationIndex == null) {
+                                    firstMethodDeclarationIndex = i;
+                                }
+                            }
+                            if (!hasFinalUninitializedFieldVar && !hasNoArgsConstructor(cd) && parentClassHasNoArgsConstructor(cd)) {
+                                cd = JavaTemplate.builder("public " + cd.getSimpleName() + "() {}")
+                                        .contextSensitive()
+                                        .build()
+                                        .apply(updateCursor(cd), cd.getBody().getCoordinates().lastStatement());
+                                if (firstMethodDeclarationIndex != null) {
+                                    statements.add(firstMethodDeclarationIndex, cd.getBody().getStatements().remove(cd.getBody().getStatements().size() - 1));
+                                    cd = cd.withBody(cd.getBody().withStatements(statements));
+                                }
+                            }
                         }
+                        return cd;
                     }
-                    // The new no-args constructor should be the first methodDeclaration
-                    if (statement instanceof J.MethodDeclaration && firstMethodDeclarationIndex == null) {
-                        firstMethodDeclarationIndex = i;
-                    }
-                }
-                if (!hasFinalUninitializedFieldVar && !hasNoArgsConstructor(cd) && parentClassHasNoArgsConstructor(cd)) {
-                    cd = JavaTemplate.builder("public " + cd.getSimpleName() + "() {}")
-                            .contextSensitive()
-                            .build()
-                            .apply(updateCursor(cd), cd.getBody().getCoordinates().lastStatement());
-                    if (firstMethodDeclarationIndex != null) {
-                        statements.add(firstMethodDeclarationIndex, cd.getBody().getStatements().remove(cd.getBody().getStatements().size() - 1));
-                        cd = cd.withBody(cd.getBody().withStatements(statements));
-                    }
-                }
-            }
-            return cd;
-        }
 
-        private boolean hasNoArgsConstructor(J.ClassDeclaration cd) {
-            boolean hasNoArgsConstructor = false;
-            boolean hasDefaultConstructor = true;
-            for (Statement statement : cd.getBody().getStatements()) {
-                if (statement instanceof J.MethodDeclaration) {
-                    J.MethodDeclaration md = (J.MethodDeclaration) statement;
-                    if (md.isConstructor()) {
-                        if (md.getParameters().isEmpty() || md.getParameters().get(0) instanceof J.Empty) {
-                            hasNoArgsConstructor = true;
-                        } else {
-                            hasDefaultConstructor = false;
+                    private boolean hasNoArgsConstructor(J.ClassDeclaration cd) {
+                        boolean hasNoArgsConstructor = false;
+                        boolean hasDefaultConstructor = true;
+                        for (Statement statement : cd.getBody().getStatements()) {
+                            if (statement instanceof J.MethodDeclaration) {
+                                J.MethodDeclaration md = (J.MethodDeclaration) statement;
+                                if (md.isConstructor()) {
+                                    if (md.getParameters().isEmpty() || md.getParameters().get(0) instanceof J.Empty) {
+                                        hasNoArgsConstructor = true;
+                                    } else {
+                                        hasDefaultConstructor = false;
+                                    }
+                                }
+                            }
                         }
+                        return hasDefaultConstructor || hasNoArgsConstructor;
                     }
-                }
-            }
-            return hasDefaultConstructor || hasNoArgsConstructor;
-        }
 
-        private boolean parentClassHasNoArgsConstructor(J.ClassDeclaration cd) {
-            if (cd.getExtends() == null) {
-                return true;
-            }
+                    private boolean parentClassHasNoArgsConstructor(J.ClassDeclaration cd) {
+                        if (cd.getExtends() == null) {
+                            return true;
+                        }
 
-            JavaType.FullyQualified parentFq = TypeUtils.asFullyQualified(cd.getExtends().getType());
-            if (parentFq == null) {
-                return false;
-            }
+                        JavaType.FullyQualified parentFq = TypeUtils.asFullyQualified(cd.getExtends().getType());
+                        if (parentFq == null) {
+                            return false;
+                        }
 
-            boolean hasNoArgsConstructor = false;
-            boolean hasDefaultConstructor = true;
+                        boolean hasNoArgsConstructor = false;
+                        boolean hasDefaultConstructor = true;
 
-            for (JavaType.Method method : parentFq.getMethods()) {
-                if ("<constructor>".equals(method.getName())) {
-                    if (method.getParameterNames().isEmpty()) {
-                        hasNoArgsConstructor = true;
-                    } else {
-                        hasDefaultConstructor = false;
+                        for (JavaType.Method method : parentFq.getMethods()) {
+                            if ("<constructor>".equals(method.getName())) {
+                                if (method.getParameterNames().isEmpty()) {
+                                    hasNoArgsConstructor = true;
+                                } else {
+                                    hasDefaultConstructor = false;
+                                }
+                            }
+                        }
+                        return hasDefaultConstructor || hasNoArgsConstructor;
                     }
-                }
-            }
-            return hasDefaultConstructor || hasNoArgsConstructor;
-        }
+                });
     }
 }

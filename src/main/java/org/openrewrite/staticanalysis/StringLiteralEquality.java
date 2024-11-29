@@ -20,10 +20,8 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
-import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -33,7 +31,7 @@ import static java.util.Collections.singletonList;
 public class StringLiteralEquality extends Recipe {
     @Override
     public String getDisplayName() {
-        return "Use `String.equals()` on String literals";
+        return "Use `String.equals()` on `String` literals";
     }
 
     @Override
@@ -46,26 +44,30 @@ public class StringLiteralEquality extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-4973");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return Collections.singleton("RSPEC-S4973");
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        // Don't change for Kotlin because In Kotlin, `==` means structural equality, so it's redundant to call equals().
-        // see https://rules.sonarsource.com/kotlin/RSPEC-6519/
-        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(
-                Preconditions.and(
-                        Preconditions.not(new KotlinFileChecker<>()),
-                        Preconditions.not(new GroovyFileChecker<>())),
-                new UsesType<>("java.lang.String", false));
-        return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
-            private final JavaType.FullyQualified TYPE_STRING = TypeUtils.asFullyQualified(JavaType.buildType("java.lang.String"));
-            private final JavaType TYPE_OBJECT = JavaType.buildType("java.lang.Object");
+        // Don't change for other language than Java, because other languages uses different constructs.
+        // For example, in Kotlin `==` means structural equality, so it is redundant to call equals().
+        return Preconditions.check(Preconditions.and(new JavaFileChecker<>(), new UsesType<>("java.lang.String", false)), new JavaVisitor<ExecutionContext>() {
+            @Override
+            public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                if (isStringLiteral(binary.getLeft()) || isStringLiteral(binary.getRight())) {
+                    J after = null;
+                    if (binary.getOperator() == J.Binary.Type.Equal) {
+                        after = asEqualsMethodInvocation(binary).withPrefix(binary.getPrefix());
+                    } else if (binary.getOperator() == J.Binary.Type.NotEqual) {
+                        after = asNegatedUnary(asEqualsMethodInvocation(binary)).withPrefix(binary.getPrefix());
+                    }
+                    if (after != null) {
+                        doAfterVisit(new EqualsAvoidsNull().getVisitor());
+                        return after;
+                    }
+                }
+                return super.visitBinary(binary, ctx);
+            }
 
             private boolean isStringLiteral(Expression expression) {
                 return expression instanceof J.Literal && TypeUtils.isString(((J.Literal) expression).getType());
@@ -88,11 +90,11 @@ public class StringLiteralEquality extends Recipe {
                         new JavaType.Method(
                                 null,
                                 Flag.Public.getBitMask(),
-                                TYPE_STRING,
+                                TypeUtils.asFullyQualified(JavaType.buildType("java.lang.String")),
                                 "equals",
                                 JavaType.Primitive.Boolean,
                                 singletonList("o"),
-                                singletonList(TYPE_OBJECT),
+                                singletonList(JavaType.buildType("java.lang.Object")),
                                 null, null, null
                         )
                 );
@@ -112,23 +114,6 @@ public class StringLiteralEquality extends Recipe {
                         mi,
                         JavaType.Primitive.Boolean
                 );
-            }
-
-            @Override
-            public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-                if (isStringLiteral(binary.getLeft()) || isStringLiteral(binary.getRight())) {
-                    J after = null;
-                    if (binary.getOperator() == J.Binary.Type.Equal) {
-                        after = asEqualsMethodInvocation(binary).withPrefix(binary.getPrefix());
-                    } else if (binary.getOperator() == J.Binary.Type.NotEqual) {
-                        after = asNegatedUnary(asEqualsMethodInvocation(binary)).withPrefix(binary.getPrefix());
-                    }
-                    if (after != null) {
-                        doAfterVisit(new EqualsAvoidsNull().getVisitor());
-                        return after;
-                    }
-                }
-                return super.visitBinary(binary, ctx);
             }
         });
     }

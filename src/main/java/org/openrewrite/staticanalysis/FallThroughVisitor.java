@@ -24,12 +24,14 @@ import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     /**
      * Ignores any fall-through commented with a text matching the regex pattern.
@@ -52,7 +54,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
-                    c = (J.Case) new AddBreak<>(c).visit(c, p, getCursor().getParent());
+                    c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
         }

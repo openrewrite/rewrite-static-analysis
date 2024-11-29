@@ -170,7 +170,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
             """
               package abc;
               import java.util.List;
-
+              
               public class Thing {
                   private final List<String> stuff;
                   public Thing(List<String> stuff) {
@@ -185,7 +185,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
               package abc;
               import java.util.ArrayList;
               import java.util.List;
-
+              
               class A {
                   Thing t = new Thing(new ArrayList<String>(){{add("abc"); add("def");}});
               }
@@ -268,7 +268,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
               import java.util.List;
               import java.util.Map;
               import java.util.Set;
-                            
+              
               class A {
                   private static final Map<String, String> map = new HashMap<>() {{put("a", "a");}};
                   private final List<String> lst = new ArrayList<>() {{add("x");add("y");}};
@@ -282,7 +282,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
               import java.util.List;
               import java.util.Map;
               import java.util.Set;
-                            
+              
               class A {
                   private static final Map<String, String> map;
                   static {
@@ -354,7 +354,7 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
             """
               import java.util.HashMap;
               import java.util.Map;
-
+              
               class A {
                   void example() {
                       Map<String, String> bMap = new HashMap<String, String>() {
@@ -372,6 +372,43 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void implicitReceiver() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+              
+              class A {
+                  void example() {
+                      var m = new HashMap<String, String>() {
+                          {
+                              put("a", "A");
+                              put("b", "B");
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+              
+              class A {
+                  void example() {
+                      var m = new HashMap<String, String>();
+                      m.put("a", "A");
+                      m.put("b", "B");
+                  }
+              }
+              """
+          )
+        );
+    }
+
 
     @Test
     void selectIsThis() {

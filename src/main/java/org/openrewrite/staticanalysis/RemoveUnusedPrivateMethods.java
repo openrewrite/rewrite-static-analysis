@@ -15,17 +15,21 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.NoMissingTypes;
+import org.openrewrite.java.RemoveUnusedImports;
+import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 public class RemoveUnusedPrivateMethods extends Recipe {
@@ -42,7 +46,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1144");
+        return Collections.singleton("RSPEC-S1144");
     }
 
     @Override
@@ -53,8 +57,33 @@ public class RemoveUnusedPrivateMethods extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new NoMissingTypes(), new JavaIsoVisitor<ExecutionContext>() {
+
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDeclaration, ExecutionContext ctx) {
+                if (unusedWarningsSuppressed(classDeclaration)) {
+                    return classDeclaration;
+                }
+                return super.visitClassDeclaration(classDeclaration, ctx);
+            }
+
+            private boolean unusedWarningsSuppressed(J classDeclaration) {
+                for (J.Annotation annotation : FindAnnotations.find(classDeclaration, "java.lang.SuppressWarnings")) {
+                    List<Expression> arguments = annotation.getArguments();
+                    if (arguments != null) {
+                        for (Expression argument : arguments) {
+                            if (J.Literal.isLiteralValue(argument, "all") ||
+                                J.Literal.isLiteralValue(argument, "unused")) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public  J.@Nullable MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method,
+                    ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method methodType = method.getMethodType();
                 if (methodType != null && methodType.hasFlags(Flag.Private) &&
@@ -96,6 +125,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                         }
                     }
 
+                    doAfterVisit(new RemoveUnusedImports().getVisitor());
                     //noinspection ConstantConditions
                     return null;
                 }
@@ -104,4 +134,5 @@ public class RemoveUnusedPrivateMethods extends Recipe {
             }
         });
     }
+
 }

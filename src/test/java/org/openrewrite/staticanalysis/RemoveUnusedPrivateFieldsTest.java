@@ -237,7 +237,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                       private final String vehicleId;
                   }
                             
-                  public doSomethingWithAVehicle() {
+                  public void doSomethingWithAVehicle() {
                       vehicleUsage = new VehicleUsage();
                       vehicleUsage.vehicleId = "vu50";
                   }
@@ -441,4 +441,3 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 }
-

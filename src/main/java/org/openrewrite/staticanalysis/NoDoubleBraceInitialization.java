@@ -46,7 +46,7 @@ public class NoDoubleBraceInitialization extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-1171", "RSPEC-3599"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1171", "RSPEC-S3599"));
     }
 
     @Override
@@ -69,18 +69,18 @@ public class NoDoubleBraceInitialization extends Recipe {
     private static class NoDoubleBraceInitializationVisitor extends JavaIsoVisitor<ExecutionContext> {
 
         private boolean isSupportedDoubleBraceInitialization(J.NewClass nc) {
-            if (getCursor().getParent() == null
-                || getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation
-                || getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
+            if (getCursor().getParent() == null ||
+                getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation ||
+                getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
                 return false;
             }
-            if (nc.getBody() != null && !nc.getBody().getStatements().isEmpty()
-                && nc.getBody().getStatements().size() == 1
-                && nc.getBody().getStatements().get(0) instanceof J.Block
-                && getCursor().getParent(3) != null) {
-                return TypeUtils.isAssignableTo(MAP_TYPE, nc.getType())
-                       || TypeUtils.isAssignableTo(LIST_TYPE, nc.getType())
-                       || TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
+            if (nc.getBody() != null && !nc.getBody().getStatements().isEmpty() &&
+                nc.getBody().getStatements().size() == 1 &&
+                nc.getBody().getStatements().get(0) instanceof J.Block &&
+                getCursor().getParent(3) != null) {
+                return TypeUtils.isAssignableTo(MAP_TYPE, nc.getType()) ||
+                       TypeUtils.isAssignableTo(LIST_TYPE, nc.getType()) ||
+                       TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
             }
             return false;
         }
@@ -96,8 +96,8 @@ public class NoDoubleBraceInitialization extends Recipe {
                 J.Block secondBlock = (J.Block) nc.getBody().getStatements().get(0);
                 List<Statement> initStatements = secondBlock.getStatements();
 
-                boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty()
-                                                             && initStatements.stream().allMatch(J.NewClass.class::isInstance);
+                boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty() &&
+                                                             initStatements.stream().allMatch(J.NewClass.class::isInstance);
 
                 if (maybeMistakenlyMissedAddingElement) {
                     JavaType newClassType = nc.getType();
@@ -124,7 +124,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                             JavaTemplate template = JavaTemplate.builder(newInitializer).imports(fq.getFullyQualifiedName()).build();
                             nc = template.apply(getCursor(), nc.getCoordinates().replace());
                             initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
-                            initStatements.add(0, new J.Assignment(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, var.getName().withId(UUID.randomUUID()), JLeftPadded.build(nc), fq));
+                            initStatements.add(0, new J.Assignment(Tree.randomId(), Space.EMPTY, Markers.EMPTY, var.getName().withId(UUID.randomUUID()), JLeftPadded.build(nc), fq));
                             parentBlockCursor.computeMessageIfAbsent("INIT_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
                         }
                     } else if (parentBlockCursor.getParent().getValue() instanceof J.MethodDeclaration) {
@@ -141,11 +141,7 @@ public class NoDoubleBraceInitialization extends Recipe {
 
         private List<Statement> addSelectToInitStatements(List<Statement> statements, J.Identifier identifier, ExecutionContext ctx) {
             AddSelectVisitor selectVisitor = new AddSelectVisitor(identifier);
-            List<Statement> statementList = new ArrayList<>();
-            for (Statement statement : statements) {
-                statementList.add((Statement) selectVisitor.visit(statement, ctx));
-            }
-            return statementList;
+            return ListUtils.map(statements, statement -> (Statement) selectVisitor.visitNonNull(statement, ctx));
         }
 
         private static class AddSelectVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -158,22 +154,8 @@ public class NoDoubleBraceInitialization extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-                if (mi.getMethodType() != null && identifier.getFieldType() != null && mi.getSelect() == null
-                    || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
-                    if (identifier.getFieldType() == null) {
-                        return mi;
-                    }
-                    JavaType rawFieldType = identifier.getFieldType().getType();
-                    rawFieldType = rawFieldType instanceof JavaType.Parameterized ? ((JavaType.Parameterized) rawFieldType).getType() : rawFieldType;
-                    if (mi.getMethodType() == null) {
-                        return mi;
-                    }
-                    JavaType rawMethodDeclaringType = mi.getMethodType().getDeclaringType();
-                    rawMethodDeclaringType = rawMethodDeclaringType instanceof JavaType.Parameterized ? ((JavaType.Parameterized) rawMethodDeclaringType).getType() : rawMethodDeclaringType;
-
-                    if (TypeUtils.isAssignableTo(rawFieldType, rawMethodDeclaringType)) {
-                        return mi.withSelect(identifier);
-                    }
+                if (mi.getSelect() == null || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
+                    return mi.withSelect(identifier);
                 }
                 return mi;
             }
@@ -247,7 +229,7 @@ public class NoDoubleBraceInitialization extends Recipe {
 
     private static class FindMethodInvocationInDoubleBrace extends JavaIsoVisitor<AtomicBoolean> {
         /**
-         * Find whether any collection content initialization method(e.g add() or put()) is invoked in the double brace.
+         * Find whether any collection content initialization method(e.g. add() or put()) is invoked in the double brace.
          *
          * @param j The subtree to search, supposed to be the 2nd brace (J.Block)
          * @return true if any method invocation found in the double brace, otherwise false.

@@ -17,11 +17,11 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Value
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = false)
 public class RemoveUnusedPrivateFields extends Recipe {
     private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
@@ -53,7 +53,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1068");
+        return Collections.singleton("RSPEC-S1068");
     }
 
     @Override
@@ -67,6 +67,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
             @Value
             class CheckField {
                 J.VariableDeclarations declarations;
+
                 @Nullable Statement nextStatement;
             }
 
@@ -90,7 +91,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                     Statement statement = statements.get(i);
                     if (statement instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) statement;
-                        // RSPEC-1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
+                        // RSPEC-S1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
                             vd.getLeadingAnnotations().isEmpty() &&
                             vd.hasModifier(J.Modifier.Type.Private)) {
@@ -98,7 +99,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             checkFields.add(new CheckField(vd, nextStatement));
                         }
                     } else if (statement instanceof J.MethodDeclaration) {
-                        // RSPEC-1068 does not apply fields from classes with native methods.
+                        // RSPEC-S1068 does not apply fields from classes with native methods.
                         J.MethodDeclaration md = (J.MethodDeclaration) statement;
                         if (md.hasModifier(J.Modifier.Type.Native)) {
                             return cd;
@@ -199,7 +200,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
+        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
             if (multiVariable.getVariables().size() == 1 && multiVariable.getVariables().contains(namedVariable)) {
                 declarationDeleted.set(true);
                 //noinspection ConstantConditions
@@ -209,7 +210,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
+        public @Nullable J visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
             if (variable == namedVariable) {
                 //noinspection ConstantConditions
                 return null;
@@ -221,6 +222,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
     private static class MaybeRemoveComment extends JavaVisitor<ExecutionContext> {
         @Nullable
         private final Statement statement;
+
         private final J.ClassDeclaration classDeclaration;
 
         public MaybeRemoveComment(@Nullable Statement statement, J.ClassDeclaration classDeclaration) {

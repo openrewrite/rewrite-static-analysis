@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis.kotlin;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.staticanalysis.SimplifyBooleanExpression;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -29,6 +30,7 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanExpression());
     }
 
+    @DocumentExample
     @Test
     void regular() {
         rewriteRun(

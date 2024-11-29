@@ -15,8 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.lang.Nullable;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.EmptyBlockStyle;
@@ -43,7 +43,7 @@ public class EmptyBlock extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-108");
+        return Collections.singleton("RSPEC-S108");
     }
 
     @Override
@@ -61,7 +61,7 @@ public class EmptyBlock extends Recipe {
         public J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                EmptyBlockStyle style = ((SourceFile) cu).getStyle(EmptyBlockStyle.class);
+                EmptyBlockStyle style = cu.getStyle(EmptyBlockStyle.class);
                 if (style == null) {
                     style = Checkstyle.emptyBlock();
                 }

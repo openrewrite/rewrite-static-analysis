@@ -17,11 +17,14 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.AnnotationMatcher;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -40,6 +43,7 @@ import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
  * - The recipe will not rename fields if the result already exists in a class or the result will be a java reserved keyword.
  */
 public class RenamePrivateFieldsToCamelCase extends Recipe {
+    private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
     @Override
     public String getDisplayName() {
@@ -59,7 +63,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-116", "RSPEC-3008"));
+        return new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
     }
 
     @Override
@@ -69,18 +73,27 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new RenameToCamelCase() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new RenameToCamelCase() {
             @Override
-            protected boolean shouldRename(Set<String> hasNameKey, J.VariableDeclarations.NamedVariable variable, String toName) {
+            protected boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable, String toName) {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
                     return false;
                 }
-                return hasNameKey.stream().noneMatch(key ->
+                return hasNameSet.stream().noneMatch(key ->
                         key.equals(toName) ||
                         key.equals(variable.getSimpleName()) ||
                         key.endsWith(" " + toName) ||
                         key.endsWith(" " + variable.getSimpleName())
                 );
+            }
+
+            @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                // Skip classes annotated with Lombok annotations, as their fields might be set or exposed by Lombok.
+                if (service(AnnotationService.class).matches(getCursor(), LOMBOK_ANNOTATION)) {
+                    return classDecl;
+                }
+                return super.visitClassDeclaration(classDecl, ctx);
             }
 
             @SuppressWarnings("all")
@@ -123,6 +136,10 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                if (service(AnnotationService.class).matches(getCursor(), LOMBOK_ANNOTATION)) {
+                    return multiVariable;
+                }
+
                 J.VariableDeclarations vds = super.visitVariableDeclarations(multiVariable, ctx);
                 if (getCursor().getMessage("ADD_STATIC", false)) {
                     return vds.withModifiers(ListUtils.insert(vds.getModifiers(),
@@ -142,6 +159,6 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.Block || is instanceof SourceFile);
             }
-        };
+        });
     }
 }
