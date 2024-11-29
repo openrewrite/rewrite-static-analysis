@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import fj.P;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
