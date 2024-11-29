@@ -57,11 +57,8 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-        if (m.getSelect() != null &&
-            !(m.getSelect() instanceof J.Literal) &&
-            !m.getArguments().isEmpty() &&
-            (m.getArguments().get(0) instanceof J.Literal || m.getArguments().get(0) instanceof J.FieldAccess) &&
-            isStringComparisonMethod(m)) {
+        if (m.getSelect() != null && !(m.getSelect() instanceof J.Literal) &&
+            isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
 
             maybeHandleParentBinary(m);
 
@@ -71,6 +68,22 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                     literalsFirstInComparisons(m, firstArgument);
         }
         return m;
+    }
+
+    private boolean hasCompatibleArgument(J.MethodInvocation m) {
+        if (m.getArguments().isEmpty()) {
+            return false;
+        }
+        Expression firstArgument = m.getArguments().get(0);
+        if (firstArgument instanceof J.Literal) {
+            return true;
+        }
+        if (firstArgument instanceof J.FieldAccess) {
+            return ((J.FieldAccess) firstArgument)
+                    .getName().getFieldType()
+                    .hasFlags(Flag.Static, Flag.Final);
+        }
+        return false;
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
