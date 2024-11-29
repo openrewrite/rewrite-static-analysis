@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.J;
@@ -53,7 +54,7 @@ public class EqualsAvoidsNull extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        JavaIsoVisitor<ExecutionContext> replacementVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
@@ -68,5 +69,12 @@ public class EqualsAvoidsNull extends Recipe {
                 return (J) tree;
             }
         };
+        return Preconditions.check(
+                Preconditions.or(
+                        new UsesMethod<>("java.lang.String equals*(..)"),
+                        new UsesMethod<>("java.lang.String co*(..)")
+                ),
+                replacementVisitor
+        );
     }
 }

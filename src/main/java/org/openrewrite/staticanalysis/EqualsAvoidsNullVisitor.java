@@ -57,14 +57,35 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     @Override
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-        if (m.getSelect() != null &&
-            !(m.getSelect() instanceof J.Literal) &&
-            !m.getArguments().isEmpty() &&
-            m.getArguments().get(0) instanceof J.Literal &&
-            isStringComparisonMethod(m)) {
-            return literalsFirstInComparisonsBinaryCheck(m, getCursor().getParentTreeCursor().getValue());
+        if (m.getSelect() != null && !(m.getSelect() instanceof J.Literal) &&
+            isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
+
+            maybeHandleParentBinary(m);
+
+            Expression firstArgument = m.getArguments().get(0);
+            return firstArgument.getType() == JavaType.Primitive.Null ?
+                    literalsFirstInComparisonsNull(m, firstArgument) :
+                    literalsFirstInComparisons(m, firstArgument);
         }
         return m;
+    }
+
+    private boolean hasCompatibleArgument(J.MethodInvocation m) {
+        if (m.getArguments().isEmpty()) {
+            return false;
+        }
+        Expression firstArgument = m.getArguments().get(0);
+        if (firstArgument instanceof J.Literal) {
+            return true;
+        }
+        if (firstArgument instanceof J.FieldAccess) {
+            firstArgument = ((J.FieldAccess) firstArgument).getName();
+        }
+        if (firstArgument instanceof J.Identifier) {
+            JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
+            return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
+        }
+        return false;
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
@@ -76,17 +97,26 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                CONTENT_EQUALS.matches(methodInvocation);
     }
 
-    private Expression literalsFirstInComparisonsBinaryCheck(J.MethodInvocation m, P parent) {
+    private void maybeHandleParentBinary(J.MethodInvocation m) {
+        P parent = getCursor().getParentTreeCursor().getValue();
         if (parent instanceof J.Binary) {
-            handleBinaryExpression(m, (J.Binary) parent);
+            if (((J.Binary) parent).getOperator() == J.Binary.Type.And && ((J.Binary) parent).getLeft() instanceof J.Binary) {
+                J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
+                if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
+                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                    doAfterVisit(new RemoveUnnecessaryNullCheck<>((J.Binary) parent));
+                }
+            }
         }
-        return getExpression(m, m.getArguments().get(0));
     }
 
-    private static Expression getExpression(J.MethodInvocation m, Expression firstArgument) {
-        return firstArgument.getType() == JavaType.Primitive.Null ?
-                literalsFirstInComparisonsNull(m, firstArgument) :
-                literalsFirstInComparisons(m, firstArgument);
+    private boolean isNullLiteral(Expression expression) {
+        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
+    }
+
+    private boolean matchesSelect(Expression expression, Expression select) {
+        return expression.printTrimmed(getCursor()).replaceAll("\\s", "")
+                .equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
     }
 
     private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {
@@ -102,25 +132,6 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
         return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
-    }
-
-    private void handleBinaryExpression(J.MethodInvocation m, J.Binary binary) {
-        if (binary.getOperator() == J.Binary.Type.And && binary.getLeft() instanceof J.Binary) {
-            J.Binary potentialNullCheck = (J.Binary) binary.getLeft();
-            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
-                doAfterVisit(new RemoveUnnecessaryNullCheck<>(binary));
-            }
-        }
-    }
-
-    private boolean isNullLiteral(Expression expression) {
-        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
-    }
-
-    private boolean matchesSelect(Expression expression, Expression select) {
-        return expression.printTrimmed(getCursor()).replaceAll("\\s", "")
-                .equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
     }
 
     private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {

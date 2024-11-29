@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -94,8 +96,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void nullLiteral() {
         rewriteRun(
-            //language=java
-            java("""
+          //language=java
+          java("""
               public class A {
                     void foo(String s) {
                         if(s.equals(null)) {
@@ -103,8 +105,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                     }
                 }
               """,
-              """
-
+            """
               public class A {
                     void foo(String s) {
                         if(s == null) {
@@ -113,5 +114,127 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 }
               """)
         );
+    }
+
+    @Nested
+    class ReplaceConstantMethodArg {
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/398")
+        @Test
+        void one() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return foo.contentEquals(Constants.FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return Constants.FOO.contentEquals(foo);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void staticImport() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  package c;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  """
+              ),
+              // language=java
+              java(
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return foo.contentEquals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return FOO.contentEquals(foo);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void multiple() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo, String bar) {
+                          return foo.contentEquals(Constants.FOO)
+                              || bar.compareToIgnoreCase(Constants.FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private boolean isFoo(String foo, String bar) {
+                          return Constants.FOO.contentEquals(foo)
+                              || Constants.FOO.compareToIgnoreCase(bar);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void nonStaticNonFinalNoChange() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class Constants {
+                      public final String FOO = "FOO";
+                      public static String BAR = "BAR";
+                  }
+                  class A {
+                      private boolean isFoo(String foo) {
+                          return foo.contentEquals(new Constants().FOO);
+                      }
+                      private boolean isBar(String bar) {
+                          return bar.contentEquals(Constants.BAR);
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
