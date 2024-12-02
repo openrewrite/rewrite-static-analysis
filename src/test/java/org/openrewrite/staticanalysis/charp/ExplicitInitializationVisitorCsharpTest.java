@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis.charp;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.staticanalysis.ExplicitInitialization;
 import org.openrewrite.test.RecipeSpec;
@@ -46,6 +47,7 @@ class ExplicitInitializationVisitorCsharpTest implements RewriteTest {
           );
     }
 
+    @DocumentExample
     @Test
     void removeExplicitInitialization() {
         rewriteRun(
