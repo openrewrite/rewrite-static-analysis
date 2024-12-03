@@ -20,9 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Tree;
-import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
@@ -30,7 +28,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.test.RewriteTest.toRecipe;
+import static org.openrewrite.staticanalysis.charp.JavaToCsharp.toCsRecipe;
 
 @SuppressWarnings("ALL")
 class CatchClauseOnlyRethrowsTest implements RewriteTest {
@@ -340,14 +338,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     @Test
     void verifyCsharpImplicitThrow() {
         rewriteRun(
-          spec -> spec.recipe(toRecipe(() -> new JavaVisitor<>() {
-              @Override
-              public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-                  Cs.CompilationUnit cscu = JavaToCsharp.compilationUnit(cu);
-                  // Exercise the regular recipe with the now modified CSharp compilation unit
-                  return (J) new CatchClauseOnlyRethrows().getVisitor().visit(cscu, ctx);
-              }
-          })),
+          spec -> spec.recipe(toCsRecipe(new CatchClauseOnlyRethrows())),
           //language=java
           java(
             """

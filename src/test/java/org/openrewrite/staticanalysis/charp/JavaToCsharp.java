@@ -13,18 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.staticanalysis;
+package org.openrewrite.staticanalysis.charp;
 
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Recipe;
 import org.openrewrite.csharp.tree.Cs;
+import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.test.AdHocRecipe;
 
 import java.util.List;
 
+import static org.openrewrite.test.RewriteTest.toRecipe;
+
 public class JavaToCsharp {
 
-    public static Cs.CompilationUnit compilationUnit(J.CompilationUnit cu) {
+    public static AdHocRecipe toCsRecipe(Recipe recipe) {
+        return toRecipe(() -> new JavaVisitor<>() {
+            @Override
+            public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
+                Cs.CompilationUnit cscu = compilationUnit(cu);
+                // Exercise the regular recipe with the now modified CSharp compilation unit
+                return (J) recipe.getVisitor().visit(cscu, ctx);
+            }
+        });
+    }
+
+    private static Cs.CompilationUnit compilationUnit(J.CompilationUnit cu) {
         return new Cs.CompilationUnit(
           cu.getId(),
           cu.getPrefix(),
