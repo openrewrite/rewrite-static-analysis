@@ -81,16 +81,29 @@ class ExplicitInitializationTest implements RewriteTest {
     }
 
     @Test
+    void ignoreVariablesInMethods() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private void test() {
+                      int i = 0;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void ignoreInterfaces() {
         rewriteRun(
           //language=java
           java(
             """
               interface Test {
-                  private int a = 0;
-                  void s() {
-                      int i = 0;
-                  }
+                  int a = 0;
               }
               """
           )

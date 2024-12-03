@@ -11,7 +11,7 @@
 
 This project implements a [Rewrite module](https://github.com/openrewrite/rewrite) that fixes SAST like issues automatically. Say goodbye to annoying reports from SonarQube, and hello to a world where they are fixed for you.
 
-Browse [a selection of recipes available through this module in the recipe catalog](https://docs.openrewrite.org/recipes/staticanalysis-1).
+Browse [a selection of recipes available through this module in the recipe catalog](https://docs.openrewrite.org/recipes/staticanalysis).
 
 ## Contributing
 
