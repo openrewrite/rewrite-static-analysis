@@ -104,7 +104,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                     NamingService service = service(NamingService.class);
                     String toName = service.standardizeMethodName(normalized);
                     if (!StringUtils.isBlank(toName) &&
-                        toName.equals(simpleName) &&
+                        !toName.equals(simpleName) &&
                         !StringUtils.isNumeric(toName) &&
                         !methodExists(method.getMethodType(), toName)) {
                         changes.add(new MethodNameChange(
