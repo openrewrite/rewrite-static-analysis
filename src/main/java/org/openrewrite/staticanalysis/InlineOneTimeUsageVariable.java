@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static java.time.Duration.ofMinutes;
 import static java.util.Objects.requireNonNull;
 
 public class InlineOneTimeUsageVariable extends Recipe {
@@ -53,7 +52,7 @@ public class InlineOneTimeUsageVariable extends Recipe {
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return ofMinutes(2);
+        return Duration.ofMinutes(2);
     }
 
     @Override
@@ -67,8 +66,7 @@ public class InlineOneTimeUsageVariable extends Recipe {
                     String identReturned = identReturned(statements);
                     if (identReturned != null) {
                         if (statements.get(statements.size() - 2) instanceof J.VariableDeclarations) {
-                            J.VariableDeclarations varDec =
-                                    (J.VariableDeclarations) statements.get(statements.size() - 2);
+                            J.VariableDeclarations varDec = (J.VariableDeclarations) statements.get(statements.size() - 2);
                             J.VariableDeclarations.NamedVariable identDefinition = varDec.getVariables().get(0);
                             if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
                                 bl = bl.withStatements(ListUtils.map(statements, (i, statement) -> {
@@ -102,7 +100,7 @@ public class InlineOneTimeUsageVariable extends Recipe {
                     J.Return return_ = (J.Return) lastStatement;
                     Expression expression = return_.getExpression();
                     if (expression instanceof J.Identifier &&
-                            !(expression.getType() instanceof JavaType.Array)) {
+                        !(expression.getType() instanceof JavaType.Array)) {
                         return ((J.Identifier) expression).getSimpleName();
                     }
                 } else if (lastStatement instanceof J.Throw) {
