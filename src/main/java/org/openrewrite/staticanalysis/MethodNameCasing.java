@@ -25,6 +25,7 @@ import org.openrewrite.java.ChangeMethodName;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.VariableNameUtils;
+import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
@@ -85,6 +86,13 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
             public J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     scope = tree.getId();
+                    JavaSourceFile cu = (JavaSourceFile) tree;
+                    Optional<JavaSourceSet> sourceSet = cu.getMarkers().findFirst(JavaSourceSet.class);
+                    if (!sourceSet.isPresent()) {
+                        stopAfterPreVisit();
+                    } else if (!Boolean.TRUE.equals(includeTestSources) && !"main".equals(sourceSet.get().getName())) {
+                        stopAfterPreVisit();
+                    }
                 }
                 return super.preVisit(tree, ctx);
             }
