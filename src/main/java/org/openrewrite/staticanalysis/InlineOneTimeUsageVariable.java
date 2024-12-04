@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -37,18 +38,17 @@ public class InlineOneTimeUsageVariable extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Inline variable";
+        return "Inline local variables used only once";
     }
 
     @Override
     public String getDescription() {
-        return "Inline ALL variables when they used only once for documentation purposes applying imperative style " +
-                "and to blow up the code like crazy.";
+        return "Inline local variables that are only used once, to reduce the code or clean up after other recipes.";
     }
 
     @Override
     public Set<String> getTags() {
-        return Set.of("RSPEC-S1488");
+        return Collections.singleton("RSPEC-S1488");
     }
 
     @Override
