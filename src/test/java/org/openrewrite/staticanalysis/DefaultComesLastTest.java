@@ -23,6 +23,7 @@ import org.openrewrite.java.style.DefaultComesLastStyle;
 import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
@@ -258,6 +259,36 @@ class DefaultComesLastTest implements RewriteTest {
                           default:
                               return true;
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defensivelySkipSwitchExpressionsForNow() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              enum Product {
+                  A, B, C
+              }
+              """,
+            SourceSpec::skip
+          ),
+          java(
+            """
+              class Foo {
+                  int bar(Product product) {
+                      int var = 0;
+                      switch (product) {
+                          default -> var = 1;
+                          case B -> { var = 2; }
+                          case C -> { var = 3; }
+                      }
+                      return var;
                   }
               }
               """

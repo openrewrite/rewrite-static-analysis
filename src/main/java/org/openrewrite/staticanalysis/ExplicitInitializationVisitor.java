@@ -67,12 +67,9 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
         if (service(AnnotationService.class).matches(variableDeclsCursor, LOMBOK_BUILDER_DEFAULT)) {
             return v;
         }
-        J.Literal literalInit = variable.getInitializer() instanceof J.Literal ?
-                (J.Literal) variable.getInitializer() :
-                null;
-        if (literalInit != null && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
-            if (TypeUtils.asFullyQualified(variable.getType()) != null &&
-                JavaType.Primitive.Null.equals(literalInit.getType())) {
+        if (variable.getInitializer() instanceof J.Literal && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
+            J.Literal literalInit = (J.Literal) variable.getInitializer();
+            if (TypeUtils.asFullyQualified(variable.getType()) != null && JavaType.Primitive.Null.equals(literalInit.getType())) {
                 v = v.withInitializer(null);
             } else if (primitive != null && !Boolean.TRUE.equals(style.getOnlyObjectReferences())) {
                 switch (primitive) {

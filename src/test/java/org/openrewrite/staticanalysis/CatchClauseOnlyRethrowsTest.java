@@ -38,7 +38,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -63,7 +63,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -90,7 +90,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -116,7 +116,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -130,7 +130,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       new FileReader("").read();
@@ -150,7 +150,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
               import java.io.FileReader;
               import java.io.IOException;
               import java.io.FileNotFoundException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -166,16 +166,16 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
               }
               """,
             """
-            import java.io.FileReader;
-            import java.io.IOException;
-            import java.io.FileNotFoundException;
-              
-            class A {
-                void foo() throws IOException {
-                    new FileReader("").read();
-                }
-            }
-            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class A {
+                  void foo() throws IOException {
+                      new FileReader("").read();
+                  }
+              }
+              """
           )
         );
     }
@@ -189,7 +189,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
               import java.io.FileReader;
               import java.io.IOException;
               import java.io.FileNotFoundException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -214,7 +214,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -230,7 +230,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -253,7 +253,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try(FileReader fr = new FileReader("")) {
@@ -267,7 +267,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try(FileReader fr = new FileReader("")) {
@@ -288,7 +288,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() {
                       try {
@@ -311,7 +311,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {

@@ -32,6 +32,7 @@ import java.util.function.BiPredicate;
  * Only removes {@link MethodCall} where the call's return value is unused.
  */
 @AllArgsConstructor
+// TODO Consider moving this to `org.openrewrite.java.RemoveMethodInvocationsVisitor` in rewrite-java
 public class RemoveMethodCallVisitor<P> extends JavaIsoVisitor<P> {
     /**
      * The {@link MethodCall} to match to be removed.
