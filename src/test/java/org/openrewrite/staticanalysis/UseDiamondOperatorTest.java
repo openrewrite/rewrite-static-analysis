@@ -115,14 +115,14 @@ class UseDiamondOperatorTest implements RewriteTest {
               import java.util.function.Predicate;
               import java.util.List;
               import java.util.Map;
-              
+
               class Foo<T> {
                   Map<String, Integer> map;
                   Map unknownMap;
                   public Foo(Predicate<T> p) {}
                   public void something(Foo<List<String>> foos){}
                   public void somethingEasy(List<List<String>> l){}
-              
+
                   Foo getFoo() {
                       // variable type initializer
                       Foo<List<String>> f = new Foo<List<String>>(it -> it.stream().anyMatch(baz -> true));
@@ -137,7 +137,7 @@ class UseDiamondOperatorTest implements RewriteTest {
                       // return type unknown
                       return new Foo<List<String>>(it -> it.stream().anyMatch(baz -> true));
                   }
-              
+
                   Foo<List<String>> getFoo2() {
                       // return type expression
                       return new Foo<List<String>>(it -> it.stream().anyMatch(baz -> true));
@@ -150,14 +150,14 @@ class UseDiamondOperatorTest implements RewriteTest {
               import java.util.function.Predicate;
               import java.util.List;
               import java.util.Map;
-              
+
               class Foo<T> {
                   Map<String, Integer> map;
                   Map unknownMap;
                   public Foo(Predicate<T> p) {}
                   public void something(Foo<List<String>> foos){}
                   public void somethingEasy(List<List<String>> l){}
-              
+
                   Foo getFoo() {
                       // variable type initializer
                       Foo<List<String>> f = new Foo<>(it -> it.stream().anyMatch(baz -> true));
@@ -172,7 +172,7 @@ class UseDiamondOperatorTest implements RewriteTest {
                       // return type unknown
                       return new Foo<List<String>>(it -> it.stream().anyMatch(baz -> true));
                   }
-              
+
                   Foo<List<String>> getFoo2() {
                       // return type expression
                       return new Foo<>(it -> it.stream().anyMatch(baz -> true));
@@ -193,13 +193,13 @@ class UseDiamondOperatorTest implements RewriteTest {
             """
               import java.util.List;
               import java.util.function.Predicate;
-              
+
               class Test {
                   interface MyInterface<T> { }
                   class MyClass<S, T> implements MyInterface<T>{
                       public MyClass(Predicate<S> p, T check) {}
                   }
-              
+
                   public MyInterface<Integer> a() {
                       return new MyClass<List<String>, Integer>(l -> l.stream().anyMatch(String::isEmpty), 0);
                   }
@@ -211,13 +211,13 @@ class UseDiamondOperatorTest implements RewriteTest {
             """
               import java.util.List;
               import java.util.function.Predicate;
-              
+
               class Test {
                   interface MyInterface<T> { }
                   class MyClass<S, T> implements MyInterface<T>{
                       public MyClass(Predicate<S> p, T check) {}
                   }
-              
+
                   public MyInterface<Integer> a() {
                       return new MyClass<List<String>, Integer>(l -> l.stream().anyMatch(String::isEmpty), 0);
                   }
@@ -242,7 +242,19 @@ class UseDiamondOperatorTest implements RewriteTest {
 
               class Test<X, Y> {
                   void test() {
-                      var ls = new ArrayList<String>();
+                      var ls1 = new ArrayList<String>();
+                      List<String> ls2 = new ArrayList<String>();
+                  }
+              }
+              """,
+            """
+              import lombok.val;
+              import java.util.ArrayList;
+
+              class Test<X, Y> {
+                  void test() {
+                      var ls1 = new ArrayList<String>();
+                      List<String> ls2 = new ArrayList<>();
                   }
               }
               """
@@ -386,6 +398,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     void anonymousNewClassJava9Plus() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(11))),
+          //language=java
           java(
             """
               import java.util.*;
@@ -409,6 +422,7 @@ class UseDiamondOperatorTest implements RewriteTest {
     void anonymousNewClassInferTypesJava9Plus() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(11))),
+          //language=java
           java(
             """
               interface Serializer<T> {
@@ -421,6 +435,7 @@ class UseDiamondOperatorTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               class Test {
@@ -473,6 +488,7 @@ class UseDiamondOperatorTest implements RewriteTest {
         @Test
         void doNotChange() {
             rewriteRun(
+              //language=kotlin
               kotlin(
                 """
                   class test {
@@ -532,7 +548,7 @@ class UseDiamondOperatorTest implements RewriteTest {
             import org.jetbrains.annotations.Nullable;
             import java.util.ArrayList;
             import java.util.List;
-            
+
             class Test {
                 private void test(Object t) {
                     List<List<String>> l = new ArrayList<List<@Nullable String>>();
