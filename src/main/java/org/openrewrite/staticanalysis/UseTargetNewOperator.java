@@ -78,9 +78,6 @@ public class UseTargetNewOperator extends Recipe {
                 if (newClass.getBody() == null && newClass.getClazz() instanceof J.ParameterizedType) {
                     J.ParameterizedType newClassType = (J.ParameterizedType) newClass.getClazz();
                     if (newClassType.getTypeParameters() != null) {
-                        newClassType.getTypeParameters().stream()
-                                .map(e -> TypeUtils.asFullyQualified(e.getType()))
-                                .forEach(this::maybeRemoveImport);
                         newClass = newClass.withClazz(new J.Empty(randomId(), Space.EMPTY, Markers.EMPTY));
                     }
                 }
