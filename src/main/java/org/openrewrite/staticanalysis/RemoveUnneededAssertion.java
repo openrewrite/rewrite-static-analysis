@@ -22,32 +22,30 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.internal.TypesInUse;
+import org.openrewrite.java.RemoveMethodInvocationsVisitor;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.marker.SearchResult;
 
-import java.util.function.BiPredicate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.function.Predicate;
 
 public class RemoveUnneededAssertion extends Recipe {
-    private static final MethodMatcher JUNIT_JUPITER_ASSERT_TRUE_MATCHER =
-            new MethodMatcher("org.junit.jupiter.api.Assertions assertTrue(..)");
-    private static final MethodMatcher JUNIT_JUPITER_ASSERT_FALSE_MATCHER =
-            new MethodMatcher("org.junit.jupiter.api.Assertions assertFalse(..)");
-    private static final MethodMatcher JUNIT_ASSERT_TRUE_MATCHER =
-            new MethodMatcher("org.junit.Assert assertTrue(boolean)");
-    private static final MethodMatcher JUNIT_ASSERT_FALSE_MATCHER =
-            new MethodMatcher("org.junit.Assert assertFalse(boolean)");
+    // Junit Jupiter
+    private static final MethodMatcher JUNIT_JUPITER_ASSERT_TRUE_MATCHER = new MethodMatcher("org.junit.jupiter.api.Assertions assertTrue(..)");
+    private static final MethodMatcher JUNIT_JUPITER_ASSERT_FALSE_MATCHER = new MethodMatcher("org.junit.jupiter.api.Assertions assertFalse(..)");
 
-    private static final MethodMatcher JUNIT_ASSERT_MESSAGE_TRUE_MATCHER =
-            new MethodMatcher("org.junit.Assert assertTrue(String, boolean)");
-    private static final MethodMatcher JUNIT_ASSERT_MESSAGE_FALSE_MATCHER =
-            new MethodMatcher("org.junit.Assert assertFalse(String, boolean)");
+    // Junit 4
+    private static final MethodMatcher JUNIT_ASSERT_TRUE_MATCHER = new MethodMatcher("org.junit.Assert assertTrue(boolean)");
+    private static final MethodMatcher JUNIT_ASSERT_FALSE_MATCHER = new MethodMatcher("org.junit.Assert assertFalse(boolean)");
+    private static final MethodMatcher JUNIT_ASSERT_MESSAGE_TRUE_MATCHER = new MethodMatcher("org.junit.Assert assertTrue(String, boolean)");
+    private static final MethodMatcher JUNIT_ASSERT_MESSAGE_FALSE_MATCHER = new MethodMatcher("org.junit.Assert assertFalse(String, boolean)");
 
     @Override
     public String getDisplayName() {
-        return "Remove Unneeded Assertions";
+        return "Remove unneeded assertions";
     }
 
     @Override
@@ -57,95 +55,59 @@ public class RemoveUnneededAssertion extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(
-                Preconditions.or(
-                        new UsesMethod<>(JUNIT_JUPITER_ASSERT_TRUE_MATCHER),
-                        new UsesMethod<>(JUNIT_JUPITER_ASSERT_FALSE_MATCHER),
-                        new UsesMethod<>(JUNIT_ASSERT_TRUE_MATCHER),
-                        new UsesMethod<>(JUNIT_ASSERT_FALSE_MATCHER),
-                        new UsesMethod<>(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER),
-                        new UsesMethod<>(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER),
-                        new JavaIsoVisitor<ExecutionContext>() {
-                            @Override
-                            public J.Assert visitAssert(J.Assert _assert, ExecutionContext ctx) {
-                                if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
-                                    return SearchResult.found(_assert);
-                                }
-                                return _assert;
-                            }
+        TreeVisitor<?, ExecutionContext> constraints = Preconditions.or(
+                new UsesMethod<>(JUNIT_JUPITER_ASSERT_TRUE_MATCHER),
+                new UsesMethod<>(JUNIT_JUPITER_ASSERT_FALSE_MATCHER),
+                new UsesMethod<>(JUNIT_ASSERT_TRUE_MATCHER),
+                new UsesMethod<>(JUNIT_ASSERT_FALSE_MATCHER),
+                new UsesMethod<>(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER),
+                new UsesMethod<>(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER),
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.Assert visitAssert(J.Assert _assert, ExecutionContext ctx) {
+                        if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
+                            return SearchResult.found(_assert);
                         }
-                ), new RemoveUnneededAssertionVisitor());
-    }
-
-    private static class RemoveUnneededAssertionVisitor extends JavaIsoVisitor<ExecutionContext> {
-        @FunctionalInterface
-        private interface InvokeRemoveMethodCallVisitor {
-            J.CompilationUnit invoke(
-                    J.CompilationUnit cu,
-                    MethodMatcher methodMatcher,
-                    BiPredicate<Integer, Expression> argumentPredicate
-            );
-        }
-
-        @Override
-        public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-            J.CompilationUnit compilationUnit = super.visitCompilationUnit(cu, ctx);
-            // We can compute the types in use once, because this logic only removes method calls, never adds them.
-            TypesInUse typesInUse = compilationUnit.getTypesInUse();
-            InvokeRemoveMethodCallVisitor invokeRemoveMethodCallVisitor = (inputCu, methodMatcher, argumentPredicate) -> {
-                if (typesInUse.getUsedMethods().stream().anyMatch(methodMatcher::matches)) {
-                    // Only visit the subtree when we know the method is present.
-                    return (J.CompilationUnit) new RemoveMethodCallVisitor<>(methodMatcher, argumentPredicate)
-                            .visitNonNull(cu, ctx, getCursor().getParentOrThrow());
+                        return _assert;
+                    }
                 }
-                return inputCu;
-            };
+        );
+        return Preconditions.check(constraints, new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.CompilationUnit visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
+                J.CompilationUnit cu = super.visitCompilationUnit(compilationUnit, ctx);
 
-            // Junit Jupiter
-            compilationUnit = invokeRemoveMethodCallVisitor.invoke(
-                    compilationUnit,
-                    JUNIT_JUPITER_ASSERT_TRUE_MATCHER,
-                    (arg, expr) -> !arg.equals(0) || J.Literal.isLiteralValue(expr, true)
-            );
-            compilationUnit = invokeRemoveMethodCallVisitor.invoke(
-                    compilationUnit,
-                    JUNIT_JUPITER_ASSERT_FALSE_MATCHER,
-                    (arg, expr) -> !arg.equals(0) || J.Literal.isLiteralValue(expr, false)
-            );
+                cu = maybeRemoveAssert(JUNIT_JUPITER_ASSERT_TRUE_MATCHER, args -> !args.isEmpty() && J.Literal.isLiteralValue(args.get(0), true), cu, ctx);
+                cu = maybeRemoveAssert(JUNIT_JUPITER_ASSERT_FALSE_MATCHER, args -> !args.isEmpty() && J.Literal.isLiteralValue(args.get(0), false), cu, ctx);
 
-            // Junit 4
-            compilationUnit = invokeRemoveMethodCallVisitor.invoke(
-                    compilationUnit,
-                    JUNIT_ASSERT_TRUE_MATCHER,
-                    (arg, expr) -> arg.equals(0) && J.Literal.isLiteralValue(expr, true)
-            );
-            compilationUnit = invokeRemoveMethodCallVisitor.invoke(
-                    compilationUnit,
-                    JUNIT_ASSERT_FALSE_MATCHER,
-                    (arg, expr) -> arg.equals(0) && J.Literal.isLiteralValue(expr, false)
-            );
-            compilationUnit = invokeRemoveMethodCallVisitor.invoke(
-                    compilationUnit,
-                    JUNIT_ASSERT_MESSAGE_TRUE_MATCHER,
-                    (arg, expr) -> !arg.equals(1) || J.Literal.isLiteralValue(expr, true)
-            );
-            compilationUnit = invokeRemoveMethodCallVisitor.invoke(
-                    compilationUnit,
-                    JUNIT_ASSERT_MESSAGE_FALSE_MATCHER,
-                    (arg, expr) -> !arg.equals(1) || J.Literal.isLiteralValue(expr, false)
-            );
-            return compilationUnit;
-        }
+                cu = maybeRemoveAssert(JUNIT_ASSERT_TRUE_MATCHER, args -> J.Literal.isLiteralValue(args.get(0), true), cu, ctx);
+                cu = maybeRemoveAssert(JUNIT_ASSERT_FALSE_MATCHER, args -> J.Literal.isLiteralValue(args.get(0), false), cu, ctx);
+                cu = maybeRemoveAssert(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), true), cu, ctx);
+                cu = maybeRemoveAssert(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), false), cu, ctx);
 
-        @Override
-        public  J.@Nullable Assert visitAssert(J.Assert anAssert, ExecutionContext ctx) {
-            if (anAssert.getCondition() instanceof J.Literal) {
-                if (J.Literal.isLiteralValue(anAssert.getCondition(), true)) {
-                    //noinspection ConstantConditions
-                    return null;
-                }
+                return cu;
             }
-            return super.visitAssert(anAssert, ctx);
-        }
+
+            @Override
+            @SuppressWarnings("NullableProblems")
+            public J.@Nullable Assert visitAssert(J.Assert anAssert, ExecutionContext ctx) {
+                if (anAssert.getCondition() instanceof J.Literal) {
+                    if (J.Literal.isLiteralValue(anAssert.getCondition(), true)) {
+                        return null;
+                    }
+                }
+                return super.visitAssert(anAssert, ctx);
+            }
+
+            private J.CompilationUnit maybeRemoveAssert(MethodMatcher methodMatcher, Predicate<List<Expression>> predicate, J.CompilationUnit cu, ExecutionContext ctx) {
+                if (cu.getTypesInUse().getUsedMethods().stream().anyMatch(methodMatcher::matches)) {
+                    // Only visit the subtree when we know the method is present.
+                    return (J.CompilationUnit) new RemoveMethodInvocationsVisitor(new HashMap<MethodMatcher, Predicate<List<Expression>>>() {{
+                        put(methodMatcher, predicate);
+                    }}).visitNonNull(cu, ctx, getCursor().getParentOrThrow());
+                }
+                return cu;
+            }
+        });
     }
 }
