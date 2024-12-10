@@ -100,13 +100,9 @@ public class RemoveUnneededAssertion extends Recipe {
             }
 
             private J.CompilationUnit maybeRemoveAssert(MethodMatcher methodMatcher, Predicate<List<Expression>> predicate, J.CompilationUnit cu, ExecutionContext ctx) {
-                if (cu.getTypesInUse().getUsedMethods().stream().anyMatch(methodMatcher::matches)) {
-                    // Only visit the subtree when we know the method is present.
-                    return (J.CompilationUnit) new RemoveMethodInvocationsVisitor(new HashMap<MethodMatcher, Predicate<List<Expression>>>() {{
-                        put(methodMatcher, predicate);
-                    }}).visitNonNull(cu, ctx, getCursor().getParentOrThrow());
-                }
-                return cu;
+                return (J.CompilationUnit) new RemoveMethodInvocationsVisitor(new HashMap<MethodMatcher, Predicate<List<Expression>>>() {{
+                    put(methodMatcher, predicate);
+                }}).visitNonNull(cu, ctx, getCursor().getParentOrThrow());
             }
         });
     }
