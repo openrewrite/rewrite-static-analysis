@@ -90,13 +90,11 @@ public class RemoveUnneededAssertion extends Recipe {
 
             @Override
             @SuppressWarnings("NullableProblems")
-            public J.@Nullable Assert visitAssert(J.Assert anAssert, ExecutionContext ctx) {
-                if (anAssert.getCondition() instanceof J.Literal) {
-                    if (J.Literal.isLiteralValue(anAssert.getCondition(), true)) {
-                        return null;
-                    }
+            public J.@Nullable Assert visitAssert(J.Assert _assert, ExecutionContext ctx) {
+                if (J.Literal.isLiteralValue(_assert.getCondition(), true)) {
+                    return null;
                 }
-                return super.visitAssert(anAssert, ctx);
+                return super.visitAssert(_assert, ctx);
             }
 
             private J.CompilationUnit maybeRemoveAssert(MethodMatcher methodMatcher, Predicate<List<Expression>> predicate, J.CompilationUnit cu, ExecutionContext ctx) {
