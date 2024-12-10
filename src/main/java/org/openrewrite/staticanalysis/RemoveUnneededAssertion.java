@@ -30,6 +30,7 @@ import org.openrewrite.marker.SearchResult;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 public class RemoveUnneededAssertion extends Recipe {
@@ -72,20 +73,24 @@ public class RemoveUnneededAssertion extends Recipe {
                     }
                 }
         );
+
+        Predicate<List<Expression>> isTrue = args -> J.Literal.isLiteralValue(args.get(0), true);
+        Predicate<List<Expression>> isFalse = args -> J.Literal.isLiteralValue(args.get(0), false);
+
+        Map<MethodMatcher, Predicate<List<Expression>>> matchers = new HashMap<>();
+        matchers.put(JUNIT_JUPITER_ASSERT_TRUE_MATCHER, isTrue);
+        matchers.put(JUNIT_JUPITER_ASSERT_FALSE_MATCHER, isFalse);
+        matchers.put(JUNIT_ASSERT_TRUE_MATCHER, isTrue);
+        matchers.put(JUNIT_ASSERT_FALSE_MATCHER, isFalse);
+        matchers.put(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), true));
+        matchers.put(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), false));
+
         return Preconditions.check(constraints, new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.CompilationUnit visitCompilationUnit(J.CompilationUnit compilationUnit, ExecutionContext ctx) {
                 J.CompilationUnit cu = super.visitCompilationUnit(compilationUnit, ctx);
-
-                cu = maybeRemoveAssert(JUNIT_JUPITER_ASSERT_TRUE_MATCHER, args -> !args.isEmpty() && J.Literal.isLiteralValue(args.get(0), true), cu, ctx);
-                cu = maybeRemoveAssert(JUNIT_JUPITER_ASSERT_FALSE_MATCHER, args -> !args.isEmpty() && J.Literal.isLiteralValue(args.get(0), false), cu, ctx);
-
-                cu = maybeRemoveAssert(JUNIT_ASSERT_TRUE_MATCHER, args -> J.Literal.isLiteralValue(args.get(0), true), cu, ctx);
-                cu = maybeRemoveAssert(JUNIT_ASSERT_FALSE_MATCHER, args -> J.Literal.isLiteralValue(args.get(0), false), cu, ctx);
-                cu = maybeRemoveAssert(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), true), cu, ctx);
-                cu = maybeRemoveAssert(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), false), cu, ctx);
-
-                return cu;
+                return (J.CompilationUnit) new RemoveMethodInvocationsVisitor(matchers)
+                        .visitNonNull(cu, ctx, getCursor().getParentOrThrow());
             }
 
             @Override
@@ -95,12 +100,6 @@ public class RemoveUnneededAssertion extends Recipe {
                     return null;
                 }
                 return super.visitAssert(_assert, ctx);
-            }
-
-            private J.CompilationUnit maybeRemoveAssert(MethodMatcher methodMatcher, Predicate<List<Expression>> predicate, J.CompilationUnit cu, ExecutionContext ctx) {
-                return (J.CompilationUnit) new RemoveMethodInvocationsVisitor(new HashMap<MethodMatcher, Predicate<List<Expression>>>() {{
-                    put(methodMatcher, predicate);
-                }}).visitNonNull(cu, ctx, getCursor().getParentOrThrow());
             }
         });
     }
