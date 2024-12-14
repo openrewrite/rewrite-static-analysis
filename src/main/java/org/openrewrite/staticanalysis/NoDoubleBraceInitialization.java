@@ -70,17 +70,21 @@ public class NoDoubleBraceInitialization extends Recipe {
 
         private boolean isSupportedDoubleBraceInitialization(J.NewClass nc) {
             if (getCursor().getParent() == null ||
-                getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation ||
-                getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
+                    getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation ||
+                    getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
+                return false;
+            }
+            J.ClassDeclaration cd = getCursor().firstEnclosing(J.ClassDeclaration.class);
+            if (cd != null && cd.getKind() == J.ClassDeclaration.Kind.Type.Interface) {
                 return false;
             }
             if (nc.getBody() != null && !nc.getBody().getStatements().isEmpty() &&
-                nc.getBody().getStatements().size() == 1 &&
-                nc.getBody().getStatements().get(0) instanceof J.Block &&
-                getCursor().getParent(3) != null) {
+                    nc.getBody().getStatements().size() == 1 &&
+                    nc.getBody().getStatements().get(0) instanceof J.Block &&
+                    getCursor().getParent(3) != null) {
                 return TypeUtils.isAssignableTo(MAP_TYPE, nc.getType()) ||
-                       TypeUtils.isAssignableTo(LIST_TYPE, nc.getType()) ||
-                       TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
+                        TypeUtils.isAssignableTo(LIST_TYPE, nc.getType()) ||
+                        TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
             }
             return false;
         }
@@ -97,7 +101,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                 List<Statement> initStatements = secondBlock.getStatements();
 
                 boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty() &&
-                                                             initStatements.stream().allMatch(J.NewClass.class::isInstance);
+                        initStatements.stream().allMatch(J.NewClass.class::isInstance);
 
                 if (maybeMistakenlyMissedAddingElement) {
                     JavaType newClassType = nc.getType();
