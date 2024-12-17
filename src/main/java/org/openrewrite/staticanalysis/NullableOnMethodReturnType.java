@@ -22,6 +22,8 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.NameTree;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
@@ -54,6 +56,14 @@ public class NullableOnMethodReturnType extends Recipe {
                         .map(nullable -> {
                             if (nullable.getCursor().getParentTreeCursor().getValue() != m) {
                                 return m;
+                            }
+                            if (!m.getLeadingAnnotations().isEmpty()) {
+                                for (J.Annotation a : m.getLeadingAnnotations()) {
+                                    JavaType annotationType = a.getAnnotationType().getType();
+                                    if (annotationType instanceof JavaType.FullyQualified && ((JavaType.FullyQualified) annotationType).getFullyQualifiedName().equals("org.jspecify.annotations.Nullable")) {
+                                        return m;
+                                    }
+                                }
                             }
                             J.MethodDeclaration m2 = m;
                             m2 = m2.withLeadingAnnotations(ListUtils.map(m2.getLeadingAnnotations(),
