@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,17 +70,21 @@ public class NoDoubleBraceInitialization extends Recipe {
 
         private boolean isSupportedDoubleBraceInitialization(J.NewClass nc) {
             if (getCursor().getParent() == null ||
-                getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation ||
-                getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
+                    getCursor().getParent().firstEnclosing(J.class) instanceof J.MethodInvocation ||
+                    getCursor().getParent().firstEnclosing(J.class) instanceof J.NewClass) {
+                return false;
+            }
+            J.ClassDeclaration cd = getCursor().firstEnclosing(J.ClassDeclaration.class);
+            if (cd != null && cd.getKind() == J.ClassDeclaration.Kind.Type.Interface) {
                 return false;
             }
             if (nc.getBody() != null && !nc.getBody().getStatements().isEmpty() &&
-                nc.getBody().getStatements().size() == 1 &&
-                nc.getBody().getStatements().get(0) instanceof J.Block &&
-                getCursor().getParent(3) != null) {
+                    nc.getBody().getStatements().size() == 1 &&
+                    nc.getBody().getStatements().get(0) instanceof J.Block &&
+                    getCursor().getParent(3) != null) {
                 return TypeUtils.isAssignableTo(MAP_TYPE, nc.getType()) ||
-                       TypeUtils.isAssignableTo(LIST_TYPE, nc.getType()) ||
-                       TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
+                        TypeUtils.isAssignableTo(LIST_TYPE, nc.getType()) ||
+                        TypeUtils.isAssignableTo(SET_TYPE, nc.getType());
             }
             return false;
         }
@@ -97,7 +101,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                 List<Statement> initStatements = secondBlock.getStatements();
 
                 boolean maybeMistakenlyMissedAddingElement = !initStatements.isEmpty() &&
-                                                             initStatements.stream().allMatch(J.NewClass.class::isInstance);
+                        initStatements.stream().allMatch(J.NewClass.class::isInstance);
 
                 if (maybeMistakenlyMissedAddingElement) {
                     JavaType newClassType = nc.getType();

@@ -22,32 +22,36 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-class NullableOnMethodReturnTypeTest implements RewriteTest {
+class URLEqualsHashCodeTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new NullableOnMethodReturnType());
+        spec.recipe(new URLEqualsHashCodeRecipes());
     }
 
     @DocumentExample
     @Test
-    void nullableOnMethodReturnType() {
+    void urlHashCode() {
         rewriteRun(
-          //language=java
           java(
-            """
-              import org.openrewrite.internal.lang.Nullable;
+                """
+              import java.net.URL;
+                              
               class Test {
-                  @Nullable
-                  public String test() {
+                  public void test() {
+                      URL url = new URL("https://example.com");
+                      int hash = url.hashCode();
                   }
               }
               """,
             """
-              import org.openrewrite.internal.lang.Nullable;
+              import java.net.URI;
+              import java.net.URL;
+                              
               class Test {
-
-                  public @Nullable String test() {
+                  public void test() {
+                      URL url = new URL("https://example.com");
+                      int hash = URI.create(url.toString()).hashCode();
                   }
               }
               """
@@ -56,33 +60,29 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
     }
 
     @Test
-    void dontTouchArguments() {
+    void urlEquals() {
         rewriteRun(
           java(
-            //language=java
-            """
-              import org.openrewrite.internal.lang.Nullable;
+                """
+              import java.net.URL;
+              
               class Test {
-                  void test(@Nullable String s) {
+                  public void test() {
+                      URL url1 = new URL("https://example.com");
+                      URL url2 = new URL("https://example.com");
+                      boolean equals = url1.equals(url2);
                   }
               }
-              """
-          )
-        );
-    }
-
-    @Test
-    void changesNothingWhenAlreadyAnnotated() {
-        rewriteRun(
-          //language=java
-          java(
+              """,
             """
-              import org.jspecify.annotations.Nullable;
-
+              import java.net.URI;
+              import java.net.URL;
+              
               class Test {
-                  @Nullable
-                  String test() {
-                      return null;
+                  public void test() {
+                      URL url1 = new URL("https://example.com");
+                      URL url2 = new URL("https://example.com");
+                      boolean equals = URI.create(url1.toString()).equals(URI.create(url2.toString()));
                   }
               }
               """
