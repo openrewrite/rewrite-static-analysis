@@ -70,4 +70,23 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void noChangeForPackagePrivate() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+
+              class Test {
+                  @Nullable
+                  String test() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
