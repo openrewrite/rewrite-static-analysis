@@ -72,7 +72,7 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
     }
 
     @Test
-    void changesNothingWhenAlreadyAnnotated() {
+    void noChangeForPackagePrivate() {
         rewriteRun(
           //language=java
           java(
