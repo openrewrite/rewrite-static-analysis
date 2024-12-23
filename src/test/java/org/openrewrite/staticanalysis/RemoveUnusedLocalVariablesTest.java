@@ -979,7 +979,9 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void recordCompactConstructor() {
         rewriteRun(
-          version(java(
+          version(
+            //language=java
+            java(
             """
               public record MyRecord(
                  boolean bar,
@@ -999,6 +1001,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeKotlinUnusedLocalVariable() {
         rewriteRun(
+          //language=kotlin
           kotlin(
             """
               class A (val b: String) {
@@ -1101,12 +1104,13 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         @Test
         void retainUnusedLocalVariableWithNewClass() {
             rewriteRun(
+              //language=kotlin
               kotlin(
                 """
                   class A {}
                   class B {
                     fun foo() {
-                      val a = A();
+                      val a = A()
                     }
                   }
                   """

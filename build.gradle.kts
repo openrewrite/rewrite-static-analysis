@@ -14,14 +14,13 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
-    compileOnly("org.openrewrite:rewrite-groovy")
-    testImplementation("org.openrewrite:rewrite-groovy")
-    compileOnly("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
-    testImplementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
-    compileOnly("org.openrewrite:rewrite-csharp:${rewriteVersion}")
-    testImplementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
     implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
+
+    // Limit transitive dependencies for downstream projects like rewrite-spring
+    compileOnly("org.openrewrite:rewrite-groovy")
+    compileOnly("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    compileOnly("org.openrewrite:rewrite-csharp:${rewriteVersion}")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
@@ -29,9 +28,11 @@ dependencies {
         exclude("com.google.auto.service", "auto-service-annotations")
     }
 
-    testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.openrewrite:rewrite-groovy")
+    testImplementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    testImplementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
     testImplementation("org.openrewrite:rewrite-test")
+    testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("junit:junit:4.13.2")
 
