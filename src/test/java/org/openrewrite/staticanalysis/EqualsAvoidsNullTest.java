@@ -151,7 +151,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
-        void nested() {
+        void chainedMethodCalls() {
             // language=java
             rewriteRun(
               java(
