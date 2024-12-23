@@ -26,7 +26,7 @@ import org.openrewrite.staticanalysis.internal.ClassPathUtils;
  * Add a search marker if vising a CSharp file
  */
 public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
-    private static final boolean IS_CSHARP_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.csharp.tree.Cs$CompilationUnit");
+    private static final boolean IS_CSHARP_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.csharp.tree.Cs");
 
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {

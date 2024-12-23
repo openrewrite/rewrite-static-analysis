@@ -26,7 +26,7 @@ import org.openrewrite.staticanalysis.internal.ClassPathUtils;
  * Add a search marker if vising a Groovy file
  */
 public class GroovyFileChecker<P> extends TreeVisitor<Tree, P> {
-    private static final boolean IS_GROOVY_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.groovy.tree.G$CompilationUnit");
+    private static final boolean IS_GROOVY_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.groovy.tree.G");
 
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {

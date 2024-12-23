@@ -26,7 +26,7 @@ import org.openrewrite.staticanalysis.internal.ClassPathUtils;
  * Add a search marker if vising a Kotlin file
  */
 public class KotlinFileChecker<P> extends TreeVisitor<Tree, P> {
-    private static final boolean IS_KOTLIN_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.kotlin.tree.K$CompilationUnit");
+    private static final boolean IS_KOTLIN_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.kotlin.tree.K");
 
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
