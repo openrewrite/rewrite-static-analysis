@@ -21,6 +21,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -151,29 +152,48 @@ class EqualsAvoidsNullTest implements RewriteTest {
 
         @Test
         void nested() {
+            // language=java
             rewriteRun(
-              // language=java
               java(
                 """
+                  package c;
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
+                  """,
+                SourceSpec::skip
+              ),
+              java(
+                """
+                  class Foo {
+                      String getFooType() {
+                          return "FOO";
+                      }
+                      Foo getFOO() {
+                          return this;
+                      }
+                  }
+                  """,
+                SourceSpec::skip
+              ),
+              java(
+                """
+                  import static c.Constants.FOO;
                   class A {
-                      protected boolean filterFoo(final Foo foo) {
+                      boolean filterFoo(final Foo foo) {
                           return foo.getFOO().getFooType().contentEquals(FOO);
                       }
                   }
                   """,
                 """
-                  public class Constants {
-                      public static final String FOO = "FOO";
-                  }
+                  import static c.Constants.FOO;
                   class A {
-                      protected boolean filterFoo(final Foo foo) {
+                      boolean filterFoo(final Foo foo) {
                           return FOO.contentEquals(foo.getFOO().getFooType());
                       }
                   }
-                  """)
+                  """
+              )
             );
         }
 
