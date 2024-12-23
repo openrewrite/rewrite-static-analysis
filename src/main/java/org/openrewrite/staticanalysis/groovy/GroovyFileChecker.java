@@ -20,14 +20,17 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.groovy.tree.G;
 import org.openrewrite.marker.SearchResult;
+import org.openrewrite.staticanalysis.internal.ClassPathUtils;
 
 /**
  * Add a search marker if vising a Groovy file
  */
 public class GroovyFileChecker<P> extends TreeVisitor<Tree, P> {
+    private static final boolean IS_GROOVY_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.groovy.tree.G$CompilationUnit");
+
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (tree instanceof G.CompilationUnit) {
+        if (IS_GROOVY_AVAILABLE && tree instanceof G.CompilationUnit) {
             return SearchResult.found(tree);
         }
         return tree;

@@ -20,14 +20,17 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.marker.SearchResult;
+import org.openrewrite.staticanalysis.internal.ClassPathUtils;
 
 /**
  * Add a search marker if vising a CSharp file
  */
 public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
+    private static final boolean IS_CSHARP_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.csharp.tree.Cs$CompilationUnit");
+
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (tree instanceof Cs.CompilationUnit) {
+        if (IS_CSHARP_AVAILABLE && tree instanceof Cs.CompilationUnit) {
             return SearchResult.found(tree);
         }
         return tree;

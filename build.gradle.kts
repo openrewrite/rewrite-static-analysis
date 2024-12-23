@@ -14,9 +14,12 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
-    implementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
-    implementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
-    implementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
+    compileOnly("org.openrewrite:rewrite-groovy:${rewriteVersion}")
+    testImplementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
+    compileOnly("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    testImplementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    compileOnly("org.openrewrite:rewrite-csharp:${rewriteVersion}")
+    testImplementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
     implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
     implementation("org.apache.commons:commons-text:latest.release")
 
