@@ -14,8 +14,8 @@ dependencies {
 
     implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     implementation("org.openrewrite:rewrite-java")
-    compileOnly("org.openrewrite:rewrite-groovy:${rewriteVersion}")
-    testImplementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
+    compileOnly("org.openrewrite:rewrite-groovy")
+    testImplementation("org.openrewrite:rewrite-groovy")
     compileOnly("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     testImplementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     compileOnly("org.openrewrite:rewrite-csharp:${rewriteVersion}")
