@@ -150,6 +150,34 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
+        void nested() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      protected boolean filterFoo(final Foo foo) {
+                          return foo.getFOO().getFooType().contentEquals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      protected boolean filterFoo(final Foo foo) {
+                          return FOO.contentEquals(foo.getFOO().getFooType());
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
         void staticImport() {
             rewriteRun(
               // language=java
