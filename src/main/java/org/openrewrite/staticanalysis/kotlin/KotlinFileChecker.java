@@ -18,15 +18,15 @@ package org.openrewrite.staticanalysis.kotlin;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.SearchResult;
-import org.openrewrite.staticanalysis.internal.ClassPathUtils;
 
 /**
  * Add a search marker if vising a Kotlin file
  */
 public class KotlinFileChecker<P> extends TreeVisitor<Tree, P> {
-    private static final boolean IS_KOTLIN_AVAILABLE = ClassPathUtils.isAvailable("org.openrewrite.kotlin.tree.K");
+    private static final boolean IS_KOTLIN_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.kotlin.tree.K");
 
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
