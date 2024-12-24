@@ -19,15 +19,18 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.csharp.tree.Cs;
+import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.marker.SearchResult;
 
 /**
  * Add a search marker if vising a CSharp file
  */
 public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
+    private static final boolean IS_CSHARP_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.csharp.tree.Cs");
+
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (tree instanceof Cs.CompilationUnit) {
+        if (IS_CSHARP_AVAILABLE && tree instanceof Cs.CompilationUnit) {
             return SearchResult.found(tree);
         }
         return tree;
