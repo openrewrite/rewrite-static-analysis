@@ -69,7 +69,7 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
         }
         if (variable.getInitializer() instanceof J.Literal && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
             J.Literal literalInit = (J.Literal) variable.getInitializer();
-            if (TypeUtils.asFullyQualified(variable.getType()) != null && JavaType.Primitive.Null.equals(literalInit.getType())) {
+            if (TypeUtils.asFullyQualified(variable.getType()) != null && JavaType.Primitive.Null == literalInit.getType()) {
                 v = v.withInitializer(null);
             } else if (primitive != null && !Boolean.TRUE.equals(style.getOnlyObjectReferences())) {
                 switch (primitive) {
@@ -91,7 +91,7 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
                         }
                         break;
                 }
-            } else if (array != null && JavaType.Primitive.Null.equals(literalInit.getType())) {
+            } else if (array != null && JavaType.Primitive.Null == literalInit.getType()) {
                 v = v.withInitializer(null)
                         .withDimensionsAfterName(ListUtils.map(v.getDimensionsAfterName(), (i, dim) ->
                                 i == 0 ? dim.withBefore(Space.EMPTY) : dim));

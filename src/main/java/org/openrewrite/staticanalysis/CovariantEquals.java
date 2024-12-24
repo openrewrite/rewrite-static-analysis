@@ -77,7 +77,7 @@ public class CovariantEquals extends Recipe {
 
                 String ecfqn = type.getFullyQualifiedName();
                 if (m.hasModifier(J.Modifier.Type.Public) && m.getReturnTypeExpression() != null &&
-                        JavaType.Primitive.Boolean.equals(m.getReturnTypeExpression().getType()) &&
+                        JavaType.Primitive.Boolean == m.getReturnTypeExpression().getType() &&
                         new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass)) {
 
                     if (!service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION)) {

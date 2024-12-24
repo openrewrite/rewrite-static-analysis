@@ -93,7 +93,7 @@ public class OperatorWrap extends Recipe {
                     (Boolean.TRUE.equals(operatorWrapStyle.getBor()) && op == J.Binary.Type.BitOr) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getLand()) && op == J.Binary.Type.And) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getLor()) && op == J.Binary.Type.Or)) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (b.getRight().getPrefix().getWhitespace().contains("\n")) {
                             b = b.getPadding().withOperator(
                                     b.getPadding().getOperator().withBefore(
@@ -131,7 +131,7 @@ public class OperatorWrap extends Recipe {
                             tp.getPadding().getBounds().getPadding().withElements(
                                     ListUtils.map(tp.getPadding().getBounds().getPadding().getElements(),
                                             (index, elemContainer) -> {
-                                                if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                                                if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                                                     if (index != typeBoundsSize - 1 && typeParam.getPadding().getBounds() != null) {
                                                         JRightPadded<TypeTree> next = typeParam.getPadding().getBounds().getPadding().getElements().get(index + 1);
                                                         if (next.getElement().getPrefix().getWhitespace().contains("\n")) {
@@ -179,7 +179,7 @@ public class OperatorWrap extends Recipe {
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 J.InstanceOf i = super.visitInstanceOf(instanceOf, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof())) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (i.getClazz().getPrefix().getWhitespace().contains("\n")) {
                             i = i.getPadding().withExpr(
                                     i.getPadding().getExpression().withAfter(
@@ -212,7 +212,7 @@ public class OperatorWrap extends Recipe {
             public J.Ternary visitTernary(J.Ternary ternary, ExecutionContext ctx) {
                 J.Ternary t = super.visitTernary(ternary, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getQuestion())) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (t.getTruePart().getPrefix().getWhitespace().contains("\n")) {
                             t = t.getPadding().withTruePart(
                                     t.getPadding().getTruePart().withBefore(
@@ -243,7 +243,7 @@ public class OperatorWrap extends Recipe {
                     }
                 }
                 if (Boolean.TRUE.equals(operatorWrapStyle.getColon())) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (t.getPadding().getFalsePart().getElement().getPrefix().getWhitespace().contains("\n")) {
                             t = t.getPadding().withFalsePart(
                                     t.getPadding().getFalsePart().withBefore(
@@ -280,7 +280,7 @@ public class OperatorWrap extends Recipe {
             public J.MemberReference visitMemberReference(J.MemberReference memberRef, ExecutionContext ctx) {
                 J.MemberReference m = super.visitMemberReference(memberRef, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getMethodRef())) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (m.getPadding().getReference().getBefore().getWhitespace().contains("\n")) {
                             m = m.getPadding().withContaining(
                                     m.getPadding().getContaining().withAfter(
@@ -313,7 +313,7 @@ public class OperatorWrap extends Recipe {
             public J.Assignment visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
                 J.Assignment a = super.visitAssignment(assignment, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getAssign())) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (a.getPadding().getAssignment().getElement().getPrefix().getWhitespace().contains("\n")) {
                             a = a.getPadding().withAssignment(
                                     a.getPadding().getAssignment().withBefore(
@@ -361,7 +361,7 @@ public class OperatorWrap extends Recipe {
                     (Boolean.TRUE.equals(operatorWrapStyle.getBandAssign()) && op == J.AssignmentOperation.Type.BitAnd) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getBxorAssign()) && op == J.AssignmentOperation.Type.BitXor) ||
                     (Boolean.TRUE.equals(operatorWrapStyle.getBorAssign()) && op == J.AssignmentOperation.Type.BitOr)) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (a.getAssignment().getPrefix().getWhitespace().contains("\n")) {
                             a = a.getPadding().withOperator(
                                     a.getPadding().getOperator().withBefore(
@@ -394,7 +394,7 @@ public class OperatorWrap extends Recipe {
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, ctx);
                 if (Boolean.TRUE.equals(operatorWrapStyle.getAssign()) && v.getPadding().getInitializer() != null) {
-                    if (OperatorWrapStyle.WrapOption.NL.equals(operatorWrapStyle.getWrapOption())) {
+                    if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (v.getPadding().getInitializer().getElement().getPrefix().getWhitespace().contains("\n")) {
                             v = v.getPadding().withInitializer(
                                     v.getPadding().getInitializer().withBefore(
