@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis.internal;
 
 import lombok.experimental.UtilityClass;
 
+// TODO: Remove this class, use `ReflectionUtils.isClassAvailable`.
 @UtilityClass
 public class ClassPathUtils {
     public static boolean isAvailable(String className) {
