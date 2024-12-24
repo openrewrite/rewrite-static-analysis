@@ -833,7 +833,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
-    void dontUseLambdaWhenEnumAccessesNonStaticFieldFromConstructor() {
+    void doUseLambdaWhenEnumAccessesNonStaticFieldFromConstructor() {
         rewriteRun(
           //language=java
           java(
