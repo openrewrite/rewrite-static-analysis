@@ -246,7 +246,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
                 @Override
                 public J.Literal visitLiteral(J.Literal literal, Integer integer) {
-                    if (JavaType.Primitive.String.equals(literal.getType()) &&
+                    if (JavaType.Primitive.String == literal.getType() &&
                         literal.getValue() instanceof String &&
                         ((String) literal.getValue()).length() >= 5) {
 
