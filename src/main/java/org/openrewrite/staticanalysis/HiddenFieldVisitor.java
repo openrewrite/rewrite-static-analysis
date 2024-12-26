@@ -196,7 +196,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
         @Override
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, Set<J.VariableDeclarations.NamedVariable> ctx) {
             // do not go into static inner classes, interfaces, or enums which have a different name scope
-            if (!(classDecl.getKind().equals(J.ClassDeclaration.Kind.Type.Class)) || classDecl.hasModifier(J.Modifier.Type.Static)) {
+            if (classDecl.getKind() != J.ClassDeclaration.Kind.Type.Class || classDecl.hasModifier(J.Modifier.Type.Static)) {
                 return classDecl;
             }
             return super.visitClassDeclaration(classDecl, ctx);
@@ -241,7 +241,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
                     J.MethodDeclaration md = (J.MethodDeclaration) maybeMethodDecl;
 
                     boolean doesSetterReturnItsClass = md.getReturnTypeExpression() != null && TypeUtils.isOfType(targetVariableEnclosingClass.getType(), md.getReturnTypeExpression().getType());
-                    boolean isSetterVoid = md.getReturnTypeExpression() != null && JavaType.Primitive.Void.equals(md.getReturnTypeExpression().getType());
+                    boolean isSetterVoid = md.getReturnTypeExpression() != null && JavaType.Primitive.Void == md.getReturnTypeExpression().getType();
                     boolean doesMethodNameCorrespondToVariable = md.getSimpleName().startsWith("set") && md.getSimpleName().toLowerCase().endsWith(variable.getSimpleName().toLowerCase());
                     isIgnorableSetter = doesMethodNameCorrespondToVariable &&
                             (hiddenFieldStyle.getSetterCanReturnItsClass() ? (doesSetterReturnItsClass || isSetterVoid) : isSetterVoid);
