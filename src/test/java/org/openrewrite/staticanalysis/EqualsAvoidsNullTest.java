@@ -225,7 +225,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   import java.util.List;
                   class A {
                       private boolean isFoo(List<?> c) {
-                          c.stream().filter(c -> c.getKey().contentEquals("FOO")).collect(Collectors.toList());
+                          c.stream().filter(c -> c.toString().contentEquals("FOO")).collect(Collectors.toList());
                       }
                   }
                   """,
@@ -233,7 +233,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   import java.util.List;
                   class A {
                       private boolean isFoo(List<?> c) {
-                          c.stream().filter(c -> "FOO".contentEquals(c.getKey())).collect(Collectors.toList());
+                          c.stream().filter(c -> "FOO".contentEquals(c.toString())).collect(Collectors.toList());
                       }
                   }
                   """)
