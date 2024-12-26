@@ -215,6 +215,30 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
+        void lambda() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  class A {
+                      private boolean isFoo(List<?> c) {
+                          c.stream().filter(c -> c.getKey().contentEquals("FOO")).collect(Collectors.toList());
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  class A {
+                      private boolean isFoo(List<?> c) {
+                          c.stream().filter(c -> "FOO".contentEquals(c.getKey())).collect(Collectors.toList());
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
         void nonStaticNonFinalNoChange() {
             rewriteRun(
               // language=java
