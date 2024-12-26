@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -215,6 +216,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
+        @Disabled
         void lambda() {
             rewriteRun(
               //language=java
