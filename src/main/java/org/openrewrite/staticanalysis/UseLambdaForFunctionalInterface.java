@@ -62,6 +62,15 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Repeat.repeatUntilStable(new JavaVisitor<ExecutionContext>() {
             @Override
+            public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                // Don't convert anonymous classes to lambdas when located in an enum class, to avoid `Accessing static field from enum constructor is not allowed` errors.
+                if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Enum) {
+                    return classDecl;
+                }
+                return super.visitClassDeclaration(classDecl, ctx);
+            }
+
+            @Override
             public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = (J.NewClass) super.visitNewClass(newClass, ctx);
                 updateCursor(n);
@@ -95,10 +104,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
                         StringBuilder templateBuilder = new StringBuilder();
                         J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
-
-                        if (isLambdaInEnumConstructorWithStaticField(getCursor(), methodDeclaration)) {
-                            return n;
-                        }
 
                         // If the functional interface method has type parameters, we can't replace it with a lambda.
                         if (methodDeclaration.getTypeParameters() != null && !methodDeclaration.getTypeParameters().isEmpty()) {
@@ -139,37 +144,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     }
                 }
                 return n;
-            }
-
-            private boolean isLambdaInEnumConstructorWithStaticField(Cursor cursor, J.MethodDeclaration md) {
-                if (md.getBody() == null) {
-                    return false;
-                }
-
-                for (Statement s : md.getBody().getStatements()) {
-                    J.MethodInvocation e = null;
-                    if (s instanceof J.VariableDeclarations && ((J.VariableDeclarations) s).getVariables().size() == 1 && ((J.VariableDeclarations) s).getVariables().get(0).getInitializer() instanceof J.MethodInvocation) {
-                        e = (J.MethodInvocation) ((J.VariableDeclarations) s).getVariables().get(0).getInitializer();
-                    } else if (s instanceof J.MethodInvocation) {
-                        e = (J.MethodInvocation) s;
-                    }
-
-                    if (e != null && e.getSelect() instanceof J.Identifier) {
-                        JavaType.Variable v = ((J.Identifier) e.getSelect()).getFieldType();
-                        if (v != null && v.hasFlags(Flag.Static)) {
-                            JavaType owner = v.getOwner();
-                            if (owner instanceof JavaType.Class && ((JavaType.Class) owner).getKind() == JavaType.Class.Kind.Enum) {
-                                J.MethodDeclaration parentMethodDeclaration = cursor.dropParentUntil(p -> p instanceof J.MethodDeclaration).getValue();
-                                J.ClassDeclaration parentClass = cursor.dropParentUntil(p -> p instanceof J.ClassDeclaration).getValue();
-                                if (parentMethodDeclaration.isConstructor() && owner.equals(parentClass.getType())) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return false;
             }
 
             private J maybeAddCast(J.Lambda lambda, J.NewClass original) {
