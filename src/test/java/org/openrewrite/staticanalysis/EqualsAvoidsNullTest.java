@@ -270,6 +270,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               java(
                 """
                   import java.util.List;
+                  import java.util.stream.Collectors;
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
@@ -281,6 +282,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   """,
                 """
                   import java.util.List;
+                  import java.util.stream.Collectors;
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
