@@ -212,9 +212,9 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     private boolean isEmptyBlock(Statement blockNode) {
         if (blockNode instanceof J.Block) {
             J.Block block = (J.Block) blockNode;
-            if (EmptyBlockStyle.BlockPolicy.STATEMENT.equals(emptyBlockStyle.getBlockPolicy())) {
+            if (EmptyBlockStyle.BlockPolicy.STATEMENT == emptyBlockStyle.getBlockPolicy()) {
                 return block.getStatements().isEmpty();
-            } else if (EmptyBlockStyle.BlockPolicy.TEXT.equals(emptyBlockStyle.getBlockPolicy())) {
+            } else if (EmptyBlockStyle.BlockPolicy.TEXT == emptyBlockStyle.getBlockPolicy()) {
                 return block.getStatements().isEmpty() && block.getEnd().getComments().isEmpty();
             }
         }

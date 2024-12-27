@@ -13,21 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.staticanalysis;/*
- * Copyright 2021 the original author or authors.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -88,7 +74,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
               class Test {
                   private void test() throws UncheckedIOException {
                   }
-                            
+
                   void test() throws IOException, UncheckedIOException {
                       new FileInputStream("test");
                   }
@@ -109,7 +95,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
               import java.io.IOException;
               import java.net.URL;
               import java.net.URLClassLoader;
-                            
+
               class Test {
                   public void closeable() throws IOException {
                       // URLClassLoader implements Closeable and throws IOException from its close() method
@@ -129,9 +115,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
           java(
             """
               import java.io.IOException;
-                            
+
               class Test {
-                  
+
                   void test() throws IOException {
                       throw new IOException();
                   }
@@ -149,7 +135,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
           java(
             """
               import java.io.IOException;
-                            
+
               interface Test {
                   void test() throws IOException;
               }
@@ -166,7 +152,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
           java(
             """
               import java.io.IOException;
-                            
+
               abstract class Test {
                   abstract void test() throws IOException;
               }
@@ -183,7 +169,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
           java(
             """
               import javax.xml.datatype.DatatypeFactory;
-                            
+
               class Test {
                   void test() throws Exception {
                       DatatypeFactory.newInstance();
@@ -257,7 +243,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
                   public void bar() throws Exception { // this throws should not be removed
                   }
               }
-                            
+
               class Foo extends ParentFoo {
                   @Override
                   public void bar() throws Exception {
@@ -277,9 +263,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
           java(
             """
               package com.yourorg;
-                            
+
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws Exception {
                       throw new IOException("");
@@ -299,9 +285,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
           java(
             """
               package com.yourorg;
-                            
+
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws ExceptionWithUnknownType {
                       someUnknownMethodInvocation();
