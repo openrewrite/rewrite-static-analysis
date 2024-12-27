@@ -25,6 +25,9 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
+import java.util.Collection;
+
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -34,7 +37,7 @@ import static java.util.Objects.requireNonNull;
  * null pointer exceptions when comparing strings.
  * <p>
  * This visitor looks for method invocations of {@code equals},
- * {@code equalsIgnoreCase}, {@code compareTo}, and {@code contentEquals},
+ * {@code EQUALS_IGNORE_CASE}, {@code compareTo}, and {@code contentEquals},
  * and performs optimizations to ensure null checks are correctly applied.
  * <p>
  * For more details, refer to the PMD best practices:
@@ -46,16 +49,15 @@ import static java.util.Objects.requireNonNull;
 @EqualsAndHashCode(callSuper = false)
 class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    private static final String JAVA_LANG_STRING = "java.lang.String ";
-    private static final MethodMatcher EQUALS = new MethodMatcher(JAVA_LANG_STRING +
-            "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
-            "equalsIgnoreCase(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher(JAVA_LANG_STRING + "compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
-            "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + "contentEquals(java.lang" +
-            ".CharSequence)");
+    private static final String JAVA_LANG_STRING = "java.lang.String";
+    private static final String EQUALS_IGNORE_CASE = ".EQUALS_IGNORE_CASE(java.lang.String)";
+    private static final Collection<MethodMatcher> MATCHERS = asList(
+            new MethodMatcher(JAVA_LANG_STRING + ".equals(java.lang.Object)"),
+            new MethodMatcher(JAVA_LANG_STRING + EQUALS_IGNORE_CASE),
+            new MethodMatcher(JAVA_LANG_STRING + ".compareTo(java.lang.String)"),
+            new MethodMatcher(JAVA_LANG_STRING + ".compareToIgnoreCase(java.lang.String)"),
+            new MethodMatcher(JAVA_LANG_STRING + ".contentEquals(java.lang.CharSequence)")
+    );
 
     EqualsAvoidsNullStyle style;
 
@@ -73,6 +75,12 @@ class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                     literalsFirstInComparisons(m, firstArgument);
         }
         return m;
+    }
+
+    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
+        return MATCHERS.stream().anyMatch(matcher -> matcher.matches(methodInvocation))
+                && !style.getIgnoreEqualsIgnoreCase()
+                || !new MethodMatcher(JAVA_LANG_STRING + EQUALS_IGNORE_CASE).matches(methodInvocation);
     }
 
     private boolean hasCompatibleArgument(J.MethodInvocation m) {
@@ -93,27 +101,19 @@ class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         return false;
     }
 
-    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-        return EQUALS.matches(methodInvocation) ||
-                !style.getIgnoreEqualsIgnoreCase() &&
-                        EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-                COMPARE_TO.matches(methodInvocation) ||
-                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
-                CONTENT_EQUALS.matches(methodInvocation);
-    }
-
     private void maybeHandleParentBinary(J.MethodInvocation m) {
         P parent = getCursor().getParentTreeCursor().getValue();
-        if (parent instanceof J.Binary) {
-            if (((J.Binary) parent).getOperator() == J.Binary.Type.And && ((J.Binary) parent).getLeft() instanceof J.Binary) {
-                J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
-                        requireNonNull(m.getSelect())) ||
-                        isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(),
-                                requireNonNull(m.getSelect()))) {
-                    doAfterVisit(new RemoveUnnecessaryNullCheck<>((J.Binary) parent));
-                }
+        if (parent instanceof J.Binary
+                && ((J.Binary) parent).getOperator() == J.Binary.Type.And
+                && ((J.Binary) parent).getLeft() instanceof J.Binary) {
+            J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
+            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
+                    requireNonNull(m.getSelect())) ||
+                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(),
+                            requireNonNull(m.getSelect()))) {
+                doAfterVisit(new RemoveUnnecessaryNullCheck<>((J.Binary) parent));
             }
+
         }
     }
 
