@@ -25,6 +25,9 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -47,16 +50,14 @@ import static java.util.Objects.requireNonNull;
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private static final String JAVA_LANG_STRING = "java.lang.String ";
-    private static final MethodMatcher EQUALS = new MethodMatcher(JAVA_LANG_STRING +
-            "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
-            "equalsIgnoreCase(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher(JAVA_LANG_STRING +
-            "compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
-            "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING +
-            "contentEquals(java.lang.CharSequence)");
+
+    private static final List<MethodMatcher> METHOD_MATCHERS = Arrays.asList(
+            new MethodMatcher(JAVA_LANG_STRING + "equals(java.lang.Object)"),
+            new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase(java.lang.String)"),
+            new MethodMatcher(JAVA_LANG_STRING + "compareTo(java.lang.String)"),
+            new MethodMatcher(JAVA_LANG_STRING + "compareToIgnoreCase(java.lang.String)"),
+            new MethodMatcher(JAVA_LANG_STRING + "contentEquals(java.lang.CharSequence)")
+    );
 
     EqualsAvoidsNullStyle style;
 
@@ -95,12 +96,9 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-        return EQUALS.matches(methodInvocation) ||
-                !style.getIgnoreEqualsIgnoreCase() &&
-                        EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-                COMPARE_TO.matches(methodInvocation) ||
-                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
-                CONTENT_EQUALS.matches(methodInvocation);
+        return METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(methodInvocation)) &&
+                !(style.getIgnoreEqualsIgnoreCase() && new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase(java" +
+                        ".lang.String)").matches(methodInvocation));
     }
 
     private void maybeHandleParentBinary(J.MethodInvocation m) {
