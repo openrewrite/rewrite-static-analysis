@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package org.openrewrite.staticanalysis;
+
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
@@ -23,8 +24,10 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+
 /**
  * A visitor that identifies and addresses potential issues related to
  * the use of {@code equals} methods in Java, particularly to avoid
@@ -44,11 +47,16 @@ import static java.util.Objects.requireNonNull;
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private static final String JAVA_LANG_STRING = "java.lang.String ";
-    private static final MethodMatcher EQUALS = new MethodMatcher(JAVA_LANG_STRING + "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher(JAVA_LANG_STRING + "compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + "contentEquals(java.lang.CharSequence)");
+    private static final MethodMatcher EQUALS = new MethodMatcher(JAVA_LANG_STRING +
+            "equals(java.lang.Object)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
+            "equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher(JAVA_LANG_STRING +
+            "compareTo(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
+            "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING +
+            "contentEquals(java.lang.CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
@@ -56,27 +64,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
         if (m.getSelect() != null && !(m.getSelect() instanceof J.Literal) &&
-            isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
+                isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
 
             maybeHandleParentBinary(m);
 
-
-    
-          
-            
-    
-
-          
-          Expand Down
-          
-            
-    
-
-          
-          Expand Up
-    
-    @@ -91,20 +96,22 @@ private boolean hasCompatibleArgument(J.MethodInvocation m) {
-  
             Expression firstArgument = m.getArguments().get(0);
             return firstArgument.getType() == JavaType.Primitive.Null ?
                     literalsFirstInComparisonsNull(m, firstArgument) :
@@ -84,6 +75,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         }
         return m;
     }
+
     private boolean hasCompatibleArgument(J.MethodInvocation m) {
         if (m.getArguments().isEmpty()) {
             return false;
@@ -104,11 +96,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return EQUALS.matches(methodInvocation) ||
-               !style.getIgnoreEqualsIgnoreCase() &&
-               EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-               COMPARE_TO.matches(methodInvocation) ||
-               COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
-               CONTENT_EQUALS.matches(methodInvocation);
+                !style.getIgnoreEqualsIgnoreCase() &&
+                        EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                COMPARE_TO.matches(methodInvocation) ||
+                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
+                CONTENT_EQUALS.matches(methodInvocation);
     }
 
     private void maybeHandleParentBinary(J.MethodInvocation m) {
@@ -116,31 +108,25 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         if (parent instanceof J.Binary) {
             if (((J.Binary) parent).getOperator() == J.Binary.Type.And && ((J.Binary) parent).getLeft() instanceof J.Binary) {
                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
+                        requireNonNull(m.getSelect())) ||
+                        isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(),
+                                requireNonNull(m.getSelect()))) {
                     doAfterVisit(new RemoveUnnecessaryNullCheck<>((J.Binary) parent));
                 }
             }
-
-    
-          
-            
-    
-
-          
-          Expand Down
-    
-    
-  
         }
     }
+
     private boolean isNullLiteral(Expression expression) {
         return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
     }
+
     private boolean matchesSelect(Expression expression, Expression select) {
         return expression.printTrimmed(getCursor()).replaceAll("\\s", "")
                 .equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
     }
+
     private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {
         return new J.Binary(Tree.randomId(),
                 m.getPrefix(),
@@ -150,16 +136,22 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
                 firstArgument.withPrefix(Space.SINGLE_SPACE),
                 JavaType.Primitive.Boolean);
     }
+
     private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
         return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
     }
+
     private static class RemoveUnnecessaryNullCheck<P> extends JavaVisitor<P> {
+
         private final J.Binary scope;
+
         boolean done;
+
         public RemoveUnnecessaryNullCheck(J.Binary scope) {
             this.scope = scope;
         }
+
         @Override
         public @Nullable J visit(@Nullable Tree tree, P p) {
             if (done) {
@@ -167,6 +159,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             }
             return super.visit(tree, p);
         }
+
         @Override
         public J visitBinary(J.Binary binary, P p) {
             if (scope.isScope(binary)) {
