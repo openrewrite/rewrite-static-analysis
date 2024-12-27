@@ -354,7 +354,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         }
 
         private static boolean isEqualsBinary(J maybeEqualsBinary) {
-            return maybeEqualsBinary instanceof J.Binary && ((J.Binary) maybeEqualsBinary).getOperator().equals(Equal);
+            return maybeEqualsBinary instanceof J.Binary && ((J.Binary) maybeEqualsBinary).getOperator() == Equal;
         }
     }
 

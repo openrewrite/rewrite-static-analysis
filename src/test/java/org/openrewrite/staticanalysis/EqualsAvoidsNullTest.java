@@ -22,6 +22,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -143,6 +144,53 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   class A {
                       private boolean isFoo(String foo) {
                           return Constants.FOO.contentEquals(foo);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void chainedMethodCalls() {
+            // language=java
+            rewriteRun(
+              java(
+                """
+                  package c;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  """,
+                SourceSpec::skip
+              ),
+              java(
+                """
+                  class Foo {
+                      String getFooType() {
+                          return "FOO";
+                      }
+                      Foo getFOO() {
+                          return this;
+                      }
+                  }
+                  """,
+                SourceSpec::skip
+              ),
+              java(
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      boolean filterFoo(final Foo foo) {
+                          return foo.getFOO().getFooType().contentEquals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      boolean filterFoo(final Foo foo) {
+                          return FOO.contentEquals(foo.getFOO().getFooType());
                       }
                   }
                   """

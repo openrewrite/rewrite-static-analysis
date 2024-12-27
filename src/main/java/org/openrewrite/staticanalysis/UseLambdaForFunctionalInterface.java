@@ -70,7 +70,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     n.getBody().getStatements().get(0) instanceof J.MethodDeclaration &&
                     n.getClazz() != null) {
                     JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
-                    if (type != null && type.getKind().equals(JavaType.Class.Kind.Interface)) {
+                    if (type != null && type.getKind() == JavaType.Class.Kind.Interface) {
                         JavaType.Method sam = getSamCompatible(type);
                         if (sam == null) {
                             return n;
@@ -110,7 +110,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         }
 
                         JavaType returnType = sam.getReturnType();
-                        if (!JavaType.Primitive.Void.equals(returnType)) {
+                        if (JavaType.Primitive.Void != returnType) {
                             templateBuilder.append("return ").append(valueOfType(returnType)).append(';');
                         }
                         templateBuilder.append('}');
