@@ -274,8 +274,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class A {
-                      private <T> void r(T entity) {
-                          entity.toString().equals(Constants.FOO);
+                      private <T> void r(T e) {
+                          e.toString().equals(Constants.FOO);
                       }
                   }
                   """,
@@ -285,8 +285,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class A {
-                      private <T> void r(T entity) {
-                          Constants.FOO.equals(entity.toString());
+                      private <T> void r(T e) {
+                          Constants.FOO.equals(e.toString());
                       }
                   }
                   """
@@ -350,10 +350,10 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       }
                   }
                   class A {
-                      private <T extends C> void rr(List<String> f, T entity) {
+                      private <T extends C> void rr(List<String> f, T e) {
                           f.stream()
-                              .filter(fn -> entity.c(fn))
-                              .forEach(fn -> entity.get(fn).equals(Constants.FOO));
+                              .filter(fn -> e.c(fn))
+                              .forEach(fn -> e.get(fn).equals(Constants.FOO));
                       }
                   }
                   """,
@@ -375,10 +375,10 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       }
                   }
                   class A {
-                      private <T extends C> void rr(List<String> f, T entity) {
+                      private <T extends C> void rr(List<String> f, T e) {
                           f.stream()
-                              .filter(fn -> entity.c(fn))
-                              .forEach(fn -> Constants.FOO.equals(entity.get(fn)));
+                              .filter(fn -> e.c(fn))
+                              .forEach(fn -> Constants.FOO.equals(e.get(fn)));
                       }
                   }
                   """)
