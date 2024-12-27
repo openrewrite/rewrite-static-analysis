@@ -270,25 +270,23 @@ class EqualsAvoidsNullTest implements RewriteTest {
               java(
                 """
                   import java.util.List;
-                  import java.util.stream.Collectors;
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
                   class A {
-                      private boolean isFoo(List<?> list) {
-                          return list.stream().filter(c -> c.toString().contentEquals(Constants.FOO)).collect(Collectors.toList());
+                      private void isFoo(List<Object> list) {
+                          list.stream().filter(c -> c.toString().contentEquals(Constants.FOO));
                       }
                   }
                   """,
                 """
                   import java.util.List;
-                  import java.util.stream.Collectors;
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
                   class A {
-                      private boolean isFoo(List<?> list) {
-                          return list.stream().filter(c -> Constants.FOO.contentEquals(c.toString())).collect(Collectors.toList());
+                      private void isFoo(List<Object> list) {
+                          list.stream().filter(c -> Constants.FOO.contentEquals(c.toString()));
                       }
                   }
                   """
