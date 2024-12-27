@@ -97,8 +97,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(methodInvocation))
-                && !(style.getIgnoreEqualsIgnoreCase()
-                && new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase(java.lang.String)").matches(methodInvocation));
+                && !style.getIgnoreEqualsIgnoreCase();
     }
 
     private void maybeHandleParentBinary(J.MethodInvocation m) {
