@@ -59,7 +59,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
         if (m.getSelect() != null && !(m.getSelect() instanceof J.Literal) &&
-            isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
+                isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
 
             maybeHandleParentBinary(m);
 
@@ -91,11 +91,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return EQUALS.matches(methodInvocation) ||
-               !style.getIgnoreEqualsIgnoreCase() &&
-               EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-               COMPARE_TO.matches(methodInvocation) ||
-               COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
-               CONTENT_EQUALS.matches(methodInvocation);
+                !style.getIgnoreEqualsIgnoreCase() &&
+                        EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                COMPARE_TO.matches(methodInvocation) ||
+                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
+                CONTENT_EQUALS.matches(methodInvocation);
     }
 
     private void maybeHandleParentBinary(J.MethodInvocation m) {
@@ -104,7 +104,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
             if (((J.Binary) parent).getOperator() == J.Binary.Type.And && ((J.Binary) parent).getLeft() instanceof J.Binary) {
                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
                 if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                        isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
                     doAfterVisit(new RemoveUnnecessaryNullCheck<>((J.Binary) parent));
                 }
             }
