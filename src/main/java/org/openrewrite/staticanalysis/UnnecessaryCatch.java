@@ -76,7 +76,7 @@ public class UnnecessaryCatch extends Recipe {
             public J.Try visitTry(J.Try tryable, ExecutionContext ctx) {
                 J.Try t = super.visitTry(tryable, ctx);
 
-                List<JavaType.FullyQualified> thrownExceptions = new ArrayList<>();
+                List<JavaType> thrownExceptions = new ArrayList<>();
                 AtomicBoolean missingTypeInformation = new AtomicBoolean(false);
                 //Collect any checked exceptions thrown from the try block.
                 new JavaIsoVisitor<Integer>() {
@@ -108,7 +108,7 @@ public class UnnecessaryCatch extends Recipe {
                     if (!includeJavaLangException && TypeUtils.isOfClassType(parameterType, "java.lang.Exception")) {
                         return aCatch;
                     }
-                    for (JavaType.FullyQualified e : thrownExceptions) {
+                    for (JavaType e : thrownExceptions) {
                         if (TypeUtils.isAssignableTo(e, parameterType)) {
                             return aCatch;
                         }

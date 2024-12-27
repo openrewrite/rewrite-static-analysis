@@ -774,4 +774,60 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
+    void dontUseLambdaWhenEnumAccessesStaticFieldFromConstructor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.time.LocalDate;
+              import java.time.format.DateTimeFormatter;
+              enum Test {
+                  A, B;
+
+                  private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                  Test() {
+                      Runnable r = new Runnable() {
+                          @Override
+                          public void run() {
+                              DATE_FORMAT.format(LocalDate.now());
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
+    void dontUseLambdaWhenEnumAccessesStaticFieldFromFromMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.time.LocalDate;
+              import java.time.format.DateTimeFormatter;
+              enum Test {
+                  A, B;
+
+                  private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+                  void test() {
+                      Runnable r = new Runnable() {
+                          @Override
+                          public void run() {
+                              DATE_FORMAT.format(LocalDate.now());
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
 }
