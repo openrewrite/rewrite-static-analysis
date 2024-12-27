@@ -25,9 +25,9 @@ import org.openrewrite.java.style.EqualsAvoidsNullStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.Arrays;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -51,7 +51,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private static final String JAVA_LANG_STRING = "java.lang.String ";
 
-    private static final List<MethodMatcher> METHOD_MATCHERS = Arrays.asList(
+    private static final List<MethodMatcher> METHOD_MATCHERS = asList(
             new MethodMatcher(JAVA_LANG_STRING + "equals(java.lang.Object)"),
             new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase(java.lang.String)"),
             new MethodMatcher(JAVA_LANG_STRING + "compareTo(java.lang.String)"),
@@ -96,9 +96,9 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     }
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-        return METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(methodInvocation)) &&
-                !(style.getIgnoreEqualsIgnoreCase() && new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase(java" +
-                        ".lang.String)").matches(methodInvocation));
+        return METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(methodInvocation))
+                && !(style.getIgnoreEqualsIgnoreCase()
+                && new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase(java.lang.String)").matches(methodInvocation));
     }
 
     private void maybeHandleParentBinary(J.MethodInvocation m) {
