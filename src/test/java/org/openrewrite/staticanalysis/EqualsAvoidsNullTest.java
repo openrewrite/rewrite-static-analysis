@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -264,27 +263,34 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
-        @Disabled
+//        @Disabled
         void lambda() {
             rewriteRun(
               //language=java
               java(
                 """
                   import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
                   class A {
-                      private boolean isFoo(List<?> c) {
-                          c.stream().filter(c -> c.toString().contentEquals("FOO")).collect(Collectors.toList());
+                      private boolean isFoo(List<?> list) {
+                          return list.stream().filter(c -> c.toString().contentEquals(Constants.FOO)).collect(Collectors.toList());
                       }
                   }
                   """,
                 """
                   import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
                   class A {
-                      private boolean isFoo(List<?> c) {
-                          c.stream().filter(c -> "FOO".contentEquals(c.toString())).collect(Collectors.toList());
+                      private boolean isFoo(List<?> list) {
+                          return list.stream().filter(c -> Constants.FOO.contentEquals(c.toString())).collect(Collectors.toList());
                       }
                   }
-                  """)
+                  """
+              )
             );
         }
 
