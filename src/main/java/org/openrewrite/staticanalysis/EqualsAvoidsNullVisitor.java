@@ -46,11 +46,16 @@ import static java.util.Objects.requireNonNull;
 @EqualsAndHashCode(callSuper = false)
 public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
-    private static final MethodMatcher EQUALS = new MethodMatcher("java.lang.String " + "equals(java.lang.Object)");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " + "equalsIgnoreCase(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher("java.lang.String " + "compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher("java.lang.String " + "compareToIgnoreCase(java.lang.String)");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " + "contentEquals(java.lang.CharSequence)");
+    private static final String JAVA_LANG_STRING = "java.lang.String ";
+    private static final MethodMatcher EQUALS = new MethodMatcher(JAVA_LANG_STRING +
+            "equals(java.lang.Object)");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
+            "equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO = new MethodMatcher(JAVA_LANG_STRING + "compareTo(java.lang.String)");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
+            "compareToIgnoreCase(java.lang.String)");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + "contentEquals(java.lang" +
+            ".CharSequence)");
 
     EqualsAvoidsNullStyle style;
 
@@ -58,7 +63,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     public J visitMethodInvocation(J.MethodInvocation method, P p) {
         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
         if (m.getSelect() != null && !(m.getSelect() instanceof J.Literal) &&
-            isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
+                isStringComparisonMethod(m) && hasCompatibleArgument(m)) {
 
             maybeHandleParentBinary(m);
 
@@ -90,11 +95,11 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
 
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return EQUALS.matches(methodInvocation) ||
-               !style.getIgnoreEqualsIgnoreCase() &&
-               EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-               COMPARE_TO.matches(methodInvocation) ||
-               COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
-               CONTENT_EQUALS.matches(methodInvocation);
+                !style.getIgnoreEqualsIgnoreCase() &&
+                        EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                COMPARE_TO.matches(methodInvocation) ||
+                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
+                CONTENT_EQUALS.matches(methodInvocation);
     }
 
     private void maybeHandleParentBinary(J.MethodInvocation m) {
@@ -102,8 +107,10 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         if (parent instanceof J.Binary) {
             if (((J.Binary) parent).getOperator() == J.Binary.Type.And && ((J.Binary) parent).getLeft() instanceof J.Binary) {
                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
+                        requireNonNull(m.getSelect())) ||
+                        isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(),
+                                requireNonNull(m.getSelect()))) {
                     doAfterVisit(new RemoveUnnecessaryNullCheck<>((J.Binary) parent));
                 }
             }
