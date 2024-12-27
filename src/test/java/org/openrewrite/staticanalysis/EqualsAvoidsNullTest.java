@@ -335,20 +335,20 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class C {
-                      boolean c(String key) {
+                      boolean c(String k) {
                           return true;
                       }
 
-                      Object get(String key) {
+                      Object get(String k) {
                           return null;
                       }
 
-                      void r(String key, String value) {
+                      void r(String k, String v) {
                       }
                   }
                   class A {
-                      private <T extends C> void rr(List<String> fieldNames, T entity) {
-                          fieldNames.stream()
+                      private <T extends C> void rr(List<String> f, T entity) {
+                          f.stream()
                               .filter(fn -> entity.c(fn))
                               .forEach(fn -> entity.get(fn).equals(Constants.FOO));
                       }
@@ -360,20 +360,20 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class C {
-                      boolean c(String key) {
+                      boolean c(String k) {
                           return true;
                       }
 
-                      Object get(String key) {
+                      Object get(String k) {
                           return null;
                       }
 
-                      void r(String key, String value) {
+                      void r(String k, String v) {
                       }
                   }
                   class A {
-                      private <T extends C> void rr(List<String> fieldNames, T entity) {
-                          fieldNames.stream()
+                      private <T extends C> void rr(List<String> f, T entity) {
+                          f.stream()
                               .filter(fn -> entity.c(fn))
                               .forEach(fn -> Constants.FOO.equals(entity.get(fn)));
                       }
