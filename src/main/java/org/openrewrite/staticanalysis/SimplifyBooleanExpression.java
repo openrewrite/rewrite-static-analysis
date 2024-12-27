@@ -64,8 +64,8 @@ public class SimplifyBooleanExpression extends Recipe {
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                return !(j instanceof J.MethodInvocation)
-                        || !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                return !(j instanceof J.MethodInvocation) ||
+                        !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
             }
         };
     }
