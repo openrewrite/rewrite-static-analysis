@@ -324,6 +324,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
+
         @Test
         void lambdaGenerics() {
             rewriteRun(
@@ -335,7 +336,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class A {
-                      private void isFoo(List<Object> list) {
+                      private <T> void isFoo(List<T> list) {
                           list.stream().filter(c -> c.toString().contentEquals(Constants.FOO));
                       }
                   }
@@ -346,7 +347,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class A {
-                      private void isFoo(List<Object> list) {
+                      private <T> void isFoo(List<T> list) {
                           list.stream().filter(c -> Constants.FOO.contentEquals(c.toString()));
                       }
                   }
