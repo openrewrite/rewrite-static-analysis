@@ -38,7 +38,7 @@ class UnnecessaryCatchTest implements RewriteTest {
           java(
             """
               import java.io.IOException;
-                            
+
               public class AnExample {
                   public void method() {
                       try {
@@ -67,7 +67,7 @@ class UnnecessaryCatchTest implements RewriteTest {
           java(
             """
               import java.io.IOException;
-              
+
               public class AnExample {
                   public void method() {
                       try {
@@ -100,7 +100,7 @@ class UnnecessaryCatchTest implements RewriteTest {
         rewriteRun(
           //language=java
           java(
-            """ 
+            """
               public class AnExample {
                   public void method() {
                       try {
@@ -122,7 +122,7 @@ class UnnecessaryCatchTest implements RewriteTest {
           java(
             """
               import java.io.IOException;
-              
+
               public class AnExample {
                   public void method() {
                       try {
@@ -131,7 +131,7 @@ class UnnecessaryCatchTest implements RewriteTest {
                           System.out.println("an exception!");
                       }
                   }
-                  
+
                   public void fred() throws IOException {
                   }
               }
