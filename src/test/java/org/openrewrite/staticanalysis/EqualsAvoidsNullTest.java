@@ -263,7 +263,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
-//        @Disabled
         void lambda() {
             rewriteRun(
               //language=java
