@@ -335,7 +335,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class C {
-                      boolean containsKey(String key) {
+                      boolean c(String key) {
                           return true;
                       }
 
@@ -343,13 +343,13 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           return null;
                       }
 
-                      void replace(String key, String value) {
+                      void r(String key, String value) {
                       }
                   }
                   class A {
-                      private <T extends C> void replaceIdWithName(List<String> fieldNames, T entity) {
+                      private <T extends C> void rr(List<String> fieldNames, T entity) {
                           fieldNames.stream()
-                              .filter(fn -> entity.containsKey(fn))
+                              .filter(fn -> entity.c(fn))
                               .forEach(fn -> entity.get(fn).equals(Constants.FOO));
                       }
                   }
@@ -360,7 +360,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public static final String FOO = "FOO";
                   }
                   class C {
-                      boolean containsKey(String key) {
+                      boolean c(String key) {
                           return true;
                       }
 
@@ -368,13 +368,13 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           return null;
                       }
 
-                      void replace(String key, String value) {
+                      void r(String key, String value) {
                       }
                   }
                   class A {
-                      private <T extends C> void replaceIdWithName(List<String> fieldNames, T entity) {
+                      private <T extends C> void rr(List<String> fieldNames, T entity) {
                           fieldNames.stream()
-                              .filter(fn -> entity.containsKey(fn))
+                              .filter(fn -> entity.c(fn))
                               .forEach(fn -> Constants.FOO.equals(entity.get(fn)));
                       }
                   }
