@@ -263,7 +263,69 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
+        void generics() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private <T> void r(T entity) {
+                          entity.toString().equals(Constants.FOO);
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private <T> void r(T entity) {
+                          Constants.FOO.equals(entity.toString());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void lambda() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private void isFoo(List<Object> list) {
+                          list.stream().filter(c -> c.toString().contentEquals(Constants.FOO));
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private void isFoo(List<Object> list) {
+                          list.stream().filter(c -> Constants.FOO.contentEquals(c.toString()));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void lambdaGenerics() {
             rewriteRun(
               //language=java
               java(
