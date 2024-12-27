@@ -326,8 +326,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
-        @Disabled
-            // fixme
+        @Disabled("Not yet supported")
         void lambdaGenerics() {
             rewriteRun(
               //language=java
@@ -381,7 +380,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                               .forEach(fn -> Constants.FOO.equals(e.get(fn)));
                       }
                   }
-                  """)
+                  """
+              )
             );
         }
 
