@@ -324,7 +324,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-
         @Test
         void lambdaGenerics() {
             rewriteRun(
@@ -335,9 +334,23 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
+                  class C {
+                      boolean containsKey(String key) {
+                          return true;
+                      }
+
+                      Object get(String key) {
+                          return null;
+                      }
+
+                      void replace(String key, String value) {
+                      }
+                  }
                   class A {
-                      private <T> void isFoo(List<T> list) {
-                          list.stream().filter(c -> c.toString().contentEquals(Constants.FOO));
+                      private <T extends C> void replaceIdWithName(List<String> fieldNames, T entity) {
+                          fieldNames.stream()
+                              .filter(fn -> entity.containsKey(fn))
+                              .forEach(fn -> entity.get(fn).equals(Constants.FOO));
                       }
                   }
                   """,
@@ -346,13 +359,26 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
-                  class A {
-                      private <T> void isFoo(List<T> list) {
-                          list.stream().filter(c -> Constants.FOO.contentEquals(c.toString()));
+                  class C {
+                      boolean containsKey(String key) {
+                          return true;
+                      }
+
+                      Object get(String key) {
+                          return null;
+                      }
+
+                      void replace(String key, String value) {
                       }
                   }
-                  """
-              )
+                  class A {
+                      private <T extends C> void replaceIdWithName(List<String> fieldNames, T entity) {
+                          fieldNames.stream()
+                              .filter(fn -> entity.containsKey(fn))
+                              .forEach(fn -> Constants.FOO.equals(entity.get(fn)));
+                      }
+                  }
+                  """)
             );
         }
 
