@@ -1,7 +1,7 @@
 plugins {
     id("org.openrewrite.build.recipe-library") version "latest.release"
     id("org.openrewrite.build.moderne-source-available-license") version "latest.release"
-    pmd
+    id("org.openrewrite.rewrite") version("6.29.0")
 }
 
 group = "org.openrewrite.recipe"
@@ -37,11 +37,10 @@ dependencies {
 
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
+    rewrite("org.openrewrite.recipe:rewrite-static-analysis:1.22.0")
 }
-pmd {
-    isConsoleOutput = true
-    ruleSetFiles = files("${projectDir}/src/test/resources/pmd/pmd-rules.xml")
-//    rulesMinimumPriority = 5
-//    rulesMinimumPriority = 1
-//    ruleSets = listOf("category/java/errorprone.xml", "category/java/bestpractices.xml")
+
+rewrite {
+    activeRecipe("org.openrewrite.staticanalysis.CommonStaticAnalysis")
+    setExportDatatables(true)
 }
