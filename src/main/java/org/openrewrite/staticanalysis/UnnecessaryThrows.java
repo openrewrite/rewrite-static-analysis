@@ -115,7 +115,7 @@ public class UnnecessaryThrows extends Recipe {
 
                         private void removeThrownTypes(JavaType.@Nullable Method type) {
                             if (type != null) {
-                                for (JavaType.FullyQualified thrownException : type.getThrownExceptions()) {
+                                for (JavaType thrownException : type.getThrownExceptions()) {
                                     unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, thrownException));
                                 }
                             }
@@ -178,7 +178,7 @@ public class UnnecessaryThrows extends Recipe {
         if (superMethod.isPresent()) {
             JavaType.Method baseMethod = superMethod.get();
             baseMethod.getThrownExceptions();
-            for (JavaType.FullyQualified baseException : baseMethod.getThrownExceptions()) {
+            for (JavaType baseException : baseMethod.getThrownExceptions()) {
                 candidates.remove(baseException);
             }
         }
