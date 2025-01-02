@@ -70,7 +70,7 @@ public class AddSerialAnnotationToSerialVersionUID extends Recipe {
                         J.VariableDeclarations vd = super.visitVariableDeclarations(multiVariable, ctx);
                         if (isPrivateStaticFinalLongSerialVersionUID(vd) &&
                             FindAnnotations.find(vd, "@java.io.Serial").isEmpty()) {
-                            maybeAddImport("java.io.Serial");
+                            maybeAddImport("java.io.Serial", false); // GH#373
                             return JavaTemplate.builder("@Serial")
                                     .imports("java.io.Serial")
                                     .build()

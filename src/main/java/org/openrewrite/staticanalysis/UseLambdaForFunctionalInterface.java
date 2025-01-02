@@ -62,6 +62,15 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Repeat.repeatUntilStable(new JavaVisitor<ExecutionContext>() {
             @Override
+            public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                // Don't convert anonymous classes to lambdas when located in an enum class, to avoid `Accessing static field from enum constructor is not allowed` errors.
+                if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Enum) {
+                    return classDecl;
+                }
+                return super.visitClassDeclaration(classDecl, ctx);
+            }
+
+            @Override
             public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = (J.NewClass) super.visitNewClass(newClass, ctx);
                 updateCursor(n);
@@ -70,7 +79,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     n.getBody().getStatements().get(0) instanceof J.MethodDeclaration &&
                     n.getClazz() != null) {
                     JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
-                    if (type != null && type.getKind().equals(JavaType.Class.Kind.Interface)) {
+                    if (type != null && type.getKind() == JavaType.Class.Kind.Interface) {
                         JavaType.Method sam = getSamCompatible(type);
                         if (sam == null) {
                             return n;
@@ -110,7 +119,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         }
 
                         JavaType returnType = sam.getReturnType();
-                        if (!JavaType.Primitive.Void.equals(returnType)) {
+                        if (JavaType.Primitive.Void != returnType) {
                             templateBuilder.append("return ").append(valueOfType(returnType)).append(';');
                         }
                         templateBuilder.append('}');

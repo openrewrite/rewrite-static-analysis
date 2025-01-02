@@ -15,12 +15,14 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -150,6 +152,53 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
+        void chainedMethodCalls() {
+            // language=java
+            rewriteRun(
+              java(
+                """
+                  package c;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  """,
+                SourceSpec::skip
+              ),
+              java(
+                """
+                  class Foo {
+                      String getFooType() {
+                          return "FOO";
+                      }
+                      Foo getFOO() {
+                          return this;
+                      }
+                  }
+                  """,
+                SourceSpec::skip
+              ),
+              java(
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      boolean filterFoo(final Foo foo) {
+                          return foo.getFOO().getFooType().contentEquals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  import static c.Constants.FOO;
+                  class A {
+                      boolean filterFoo(final Foo foo) {
+                          return FOO.contentEquals(foo.getFOO().getFooType());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void staticImport() {
             rewriteRun(
               // language=java
@@ -207,6 +256,128 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       private boolean isFoo(String foo, String bar) {
                           return Constants.FOO.contentEquals(foo)
                               || Constants.FOO.compareToIgnoreCase(bar);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void generics() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private <T> void r(T e) {
+                          e.toString().equals(Constants.FOO);
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private <T> void r(T e) {
+                          Constants.FOO.equals(e.toString());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void lambda() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private void isFoo(List<Object> list) {
+                          list.stream().filter(c -> c.toString().contentEquals(Constants.FOO));
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class A {
+                      private void isFoo(List<Object> list) {
+                          list.stream().filter(c -> Constants.FOO.contentEquals(c.toString()));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @Disabled("Not yet supported")
+        void lambdaGenerics() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class C {
+                      boolean c(String k) {
+                          return true;
+                      }
+
+                      Object get(String k) {
+                          return null;
+                      }
+
+                      void r(String k, String v) {
+                      }
+                  }
+                  class A {
+                      private <T extends C> void rr(List<String> f, T e) {
+                          f.stream()
+                              .filter(fn -> e.c(fn))
+                              .forEach(fn -> e.get(fn).equals(Constants.FOO));
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class Constants {
+                      public static final String FOO = "FOO";
+                  }
+                  class C {
+                      boolean c(String k) {
+                          return true;
+                      }
+
+                      Object get(String k) {
+                          return null;
+                      }
+
+                      void r(String k, String v) {
+                      }
+                  }
+                  class A {
+                      private <T extends C> void rr(List<String> f, T e) {
+                          f.stream()
+                              .filter(fn -> e.c(fn))
+                              .forEach(fn -> Constants.FOO.equals(e.get(fn)));
                       }
                   }
                   """
