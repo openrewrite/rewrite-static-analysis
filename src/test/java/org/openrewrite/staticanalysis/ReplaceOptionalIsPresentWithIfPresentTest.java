@@ -37,6 +37,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfIsPresentNotFound() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -56,6 +57,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfPresentPartOfElseIf() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -81,6 +83,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfElsePartPresent() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -105,6 +108,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfContainsReturn() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -125,6 +129,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void ignoreReturnInsideLambda() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -163,6 +168,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void allowFieldAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -195,6 +201,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void ignoreReturnInsideAnonymousSubclass() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -239,6 +246,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfContainsThrow() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -258,6 +266,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfLocalVariableAssignedInsideIfBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -282,6 +291,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfNonEffectivelyFinalVariableAccessed() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -301,6 +311,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -327,6 +338,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void nestedOptionalsUnlessHandledCorrectly() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -365,6 +377,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replace() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -402,6 +415,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replace2() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -448,6 +462,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceIfStaticVariableAccessedORAssigned() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -484,6 +499,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -524,6 +540,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceIfInstanceVariableAssignedORAccessed() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -560,6 +577,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -600,6 +618,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceNestedIf() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -642,6 +661,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceAndHandleDifferentOptionalsPresent() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -672,6 +692,30 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
                           list.add(obj);
                           list.add(o2.get());
                       });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNothingIfIsPresentOnMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+
+              public class Foo {
+                  public static void main(String[] args) {
+                      if (next().isPresent()) {
+                          System.out.println("Message: " + next().get());
+                      }
+                  }
+                  private static Optional<String> next() {
+                      // not guaranteed to return the same value every time, so best not to change above code
+                      return Optional.of("foo");
                   }
               }
               """

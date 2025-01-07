@@ -20,6 +20,7 @@ import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
@@ -86,13 +87,13 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            J.Identifier optionalVariable =
-                    (J.Identifier) ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
-            if (optionalVariable == null || !isStatementLambdaConvertible(_if.getThenPart())) {
+            Expression select = ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
+            if (!(select instanceof J.Identifier) || !isStatementLambdaConvertible(_if.getThenPart())) {
                 return _if;
             }
 
             /* replace if block with Optional#ifPresent and lambda expression */
+            J.Identifier optionalVariable = (J.Identifier) select;
             String methodSelector = optionalVariable.getSimpleName();
 
             Cursor nameScope = getCursor();
