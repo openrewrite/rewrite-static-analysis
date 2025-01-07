@@ -52,7 +52,6 @@ public class WhileInsteadOfFor extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             final JavaTemplate whileLoop = JavaTemplate.builder("while(#{any(boolean)}) {}")
-                    .contextSensitive()
                     .build();
 
             @Override

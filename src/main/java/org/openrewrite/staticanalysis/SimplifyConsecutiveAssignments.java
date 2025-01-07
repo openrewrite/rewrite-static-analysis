@@ -49,8 +49,6 @@ public class SimplifyConsecutiveAssignments extends Recipe {
             // TODO if we had a `replace()` coordinate on every `Expression`, we wouldn't need the left side of this
             final JavaTemplate combinedAssignment = JavaTemplate
                     .builder("o = (#{any()} #{} #{any()});")
-                    .contextSensitive()
-                    // ok to ignore invalid type info on left-hand side of assignment.
                     .build();
 
             @Override
