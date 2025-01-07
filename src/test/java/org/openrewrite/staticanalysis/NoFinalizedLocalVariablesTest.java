@@ -69,4 +69,25 @@ class NoFinalizedLocalVariablesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void retainPrefix() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  public void test(@SuppressWarnings final String s) {
+                  }
+              }
+              """,
+            """
+              class T {
+                  public void test(@SuppressWarnings String s) {
+                  }
+              }
+              """
+          )
+        );
+    }
 }

@@ -78,7 +78,7 @@ public class NoFinalizedLocalVariables extends Recipe {
                         m -> m.getType() == J.Modifier.Type.Final ? null : m));
                 if (v.getModifiers().isEmpty() && v.getTypeExpression() != null) {
                     v = v.withTypeExpression(v.getTypeExpression().withPrefix(v.getTypeExpression().getPrefix()
-                            .withWhitespace("")));
+                            .withWhitespace(v.getLeadingAnnotations().isEmpty() ? "" : " ")));
                 }
                 return v;
             }
