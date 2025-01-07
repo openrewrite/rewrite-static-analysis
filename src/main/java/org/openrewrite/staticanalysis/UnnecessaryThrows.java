@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import jdk.vm.ci.meta.JavaType;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -25,7 +24,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
-import sun.reflect.generics.tree.TypeTree;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.*;
