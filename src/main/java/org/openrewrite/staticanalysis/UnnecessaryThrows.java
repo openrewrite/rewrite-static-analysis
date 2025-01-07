@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import jdk.vm.ci.meta.JavaType;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -24,7 +25,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
-import org.openrewrite.java.tree.*;
+import sun.reflect.generics.tree.TypeTree;
 
 import java.time.Duration;
 import java.util.*;
@@ -179,7 +180,9 @@ public class UnnecessaryThrows extends Recipe {
             JavaType.Method baseMethod = superMethod.get();
             baseMethod.getThrownExceptions();
             for (JavaType baseException : baseMethod.getThrownExceptions()) {
-                candidates.remove(baseException);
+                if (baseException instanceof JavaType.FullyQualified) {
+                    candidates.remove(baseException);
+                }
             }
         }
         if (!candidates.isEmpty()) {

@@ -297,4 +297,44 @@ class UnnecessaryThrowsTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/429")
+    @Test
+    void interfaceWithGenericTypeThrown() {
+        rewriteRun(
+
+          //language=java
+          java(
+            """
+              public interface FooVisitor<T, E extends Exception> {
+                  T visit(Foo.Event event) throws E;
+              }
+              """),
+          //language=java
+          java(
+            """
+              public class Foo implements FooVisitor<Void, Foo.MyException> {
+                  @Override
+                  public Void visit(Event event) throws MyException {
+                      return null;
+                  }
+
+                  public record Event() { }
+                  public static class MyException extends Exception { }
+              }
+              """,
+            """
+              public class Foo implements FooVisitor<Void, Foo.MyException> {
+                  @Override
+                  public Void visit(Event event) {
+                      return null;
+                  }
+
+                  public record Event() { }
+                  public static class MyException extends Exception { }
+              }
+              """
+          )
+        );
+    }
 }
