@@ -7,23 +7,23 @@ plugins {
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
-val rewriteVersion = rewriteRecipe.rewriteVersion.get()
+val rewriteVersion = "latest.release"
 dependencies {
     compileOnly("org.projectlombok:lombok:latest.release")
     annotationProcessor("org.projectlombok:lombok:latest.release")
     testImplementation("org.projectlombok:lombok:latest.release")
 
-    implementation(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
+    implementation(platform("org.openrewrite:rewrite-bom:8.41.1"))
     implementation("org.openrewrite:rewrite-java")
-    implementation("org.openrewrite:rewrite-groovy:${rewriteVersion}")
-    implementation("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
-    implementation("org.openrewrite:rewrite-csharp:${rewriteVersion}")
-    implementation("org.openrewrite.meta:rewrite-analysis:${rewriteVersion}")
+    implementation("org.openrewrite:rewrite-groovy")
+    implementation("org.openrewrite:rewrite-kotlin:1.23.1")
+    implementation("org.openrewrite:rewrite-csharp:0.16.1")
+    implementation("org.openrewrite.meta:rewrite-analysis:2.13.1")
     implementation("org.apache.commons:commons-text:latest.release")
 
-    annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
-    implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
-    compileOnly("com.google.errorprone:error_prone_core:2.+:with-dependencies") {
+    annotationProcessor("org.openrewrite:rewrite-templating:1.19.1")
+    implementation("org.openrewrite:rewrite-templating:1.19.1")
+    compileOnly("com.google.errorprone:error_prone_core:2.+") {
         exclude("com.google.auto.service", "auto-service-annotations")
     }
 
