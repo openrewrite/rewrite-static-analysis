@@ -157,7 +157,7 @@ public class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
         public J visitBinary(J.Binary binary, P p) {
             if (scope.isScope(binary)) {
                 done = true;
-                return binary.getRight().withPrefix(Space.EMPTY);
+                return binary.getRight();
             }
             return super.visitBinary(binary, p);
         }
