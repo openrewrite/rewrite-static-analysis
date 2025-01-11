@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.NameCaseConvention;
+import org.openrewrite.internal.NamingService;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.ChangeMethodName;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -33,14 +33,10 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.regex.Pattern;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.MethodNameChange>> {
-
-    private static final Pattern STANDARD_METHOD_NAME = Pattern.compile("^[a-z][a-zA-Z0-9]*$");
-    private static final Pattern SNAKE_CASE = Pattern.compile("^[a-zA-Z0-9]+_\\w+$");
 
     @Option(displayName = "Apply recipe to test source set",
             description = "Changes only apply to main by default. `includeTestSources` will apply the recipe to `test` source files.",
@@ -62,8 +58,8 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     @Override
     public String getDescription() {
         return "Fixes method names that do not follow standard naming conventions. " +
-                "For example, `String getFoo_bar()` would be adjusted to `String getFooBar()` " +
-                "and `int DoSomething()` would be adjusted to `int doSomething()`.";
+               "For example, `String getFoo_bar()` would be adjusted to `String getFooBar()` " +
+               "and `int DoSomething()` would be adjusted to `int doSomething()`.";
     }
 
     @Override
@@ -85,6 +81,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     public TreeVisitor<?, ExecutionContext> getScanner(List<MethodNameChange> changes) {
         return new JavaIsoVisitor<ExecutionContext>() {
             UUID scope;
+
             @Override
             public J preVisit(J tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
@@ -110,41 +107,13 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                 if (containsValidModifiers(method) &&
                     method.getMethodType() != null &&
                     enclosingClass.getType() != null &&
-                    !method.isConstructor() &&
-                    !simpleName.startsWith("_") &&
-                    !STANDARD_METHOD_NAME.matcher(simpleName).matches()) {
-                    StringBuilder standardized = new StringBuilder();
+                    !method.isConstructor()) {
                     String normalized = VariableNameUtils.normalizeName(simpleName);
-
-                    if (SNAKE_CASE.matcher(normalized).matches()) {
-                        standardized.append(NameCaseConvention.format(NameCaseConvention.LOWER_CAMEL, normalized));
-                    } else {
-                        int nameLength = normalized.length();
-                        for (int i = 0; i < nameLength; i++) {
-                            char c = normalized.charAt(i);
-
-                            if (i == 0) {
-                                // the java specification requires identifiers to start with [a-zA-Z$_]
-                                if (c != '$' && c != '_') {
-                                    standardized.append(Character.toLowerCase(c));
-                                }
-                            } else {
-                                if (!Character.isLetterOrDigit(c)) {
-                                    while (i < nameLength && (!Character.isLetterOrDigit(c) || c > 'z')) {
-                                        c = normalized.charAt(i++);
-                                    }
-                                    if (i < nameLength) {
-                                        standardized.append(Character.toUpperCase(c));
-                                    }
-                                } else {
-                                    standardized.append(c);
-                                }
-                            }
-                        }
-                    }
-
-                    String toName = standardized.toString();
-                    if (!StringUtils.isBlank(toName) && !StringUtils.isNumeric(toName) &&
+                    NamingService service = service(NamingService.class);
+                    String toName = service.standardizeMethodName(normalized);
+                    if (!StringUtils.isBlank(toName) &&
+                        !toName.equals(simpleName) &&
+                        !StringUtils.isNumeric(toName) &&
                         !methodExists(method.getMethodType(), toName)) {
                         changes.add(new MethodNameChange(
                                 scope,

@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -29,6 +30,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class CatchClauseOnlyRethrows extends Recipe {
 
@@ -113,6 +115,13 @@ public class CatchClauseOnlyRethrows extends Recipe {
                 }
 
                 Expression exception = ((J.Throw) aCatch.getBody().getStatements().get(0)).getException();
+
+                // In C# an implicit rethrow is possible
+                if (isInstanceOfCs(getCursor().firstEnclosing(SourceFile.class)) &&
+                    exception instanceof J.Empty) {
+                    return true;
+                }
+
                 JavaType catchParameterType = aCatch.getParameter().getType();
                 if (!(catchParameterType instanceof JavaType.MultiCatch)) {
                     JavaType.FullyQualified catchType = TypeUtils.asFullyQualified(catchParameterType);

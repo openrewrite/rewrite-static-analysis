@@ -1,11 +1,11 @@
 /*
  * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -83,12 +83,15 @@ public class AnnotateNullableMethods extends Recipe {
     private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
 
         private static final List<MethodMatcher> KNOWN_NULLABLE_METHODS = Arrays.asList(
-                new MethodMatcher("java.util.Map computeIfAbsent(..)"),
-                new MethodMatcher("java.util.Map computeIfPresent(..)"),
+                // These mostly return a nullable current or  previous value, which is more often null
                 new MethodMatcher("java.util.Map get(..)"),
                 new MethodMatcher("java.util.Map merge(..)"),
                 new MethodMatcher("java.util.Map put(..)"),
                 new MethodMatcher("java.util.Map putIfAbsent(..)"),
+
+                // These two return the current or computed value, which is less likely to be null in common usage
+                //new MethodMatcher("java.util.Map computeIfAbsent(..)"),
+                //new MethodMatcher("java.util.Map computeIfPresent(..)"),
 
                 new MethodMatcher("java.util.Queue poll(..)"),
                 new MethodMatcher("java.util.Queue peek(..)"),
@@ -128,6 +131,12 @@ public class AnnotateNullableMethods extends Recipe {
         public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean atomicBoolean) {
             // Do not evaluate return statements in lambdas
             return lambda;
+        }
+
+        @Override
+        public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean atomicBoolean) {
+            // Do not evaluate return statements in new class expressions
+            return newClass;
         }
 
         @Override

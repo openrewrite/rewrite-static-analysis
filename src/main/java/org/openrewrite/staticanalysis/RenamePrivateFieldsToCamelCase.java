@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -72,7 +73,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new RenameToCamelCase() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new RenameToCamelCase() {
             @Override
             protected boolean shouldRename(Set<String> hasNameSet, J.VariableDeclarations.NamedVariable variable, String toName) {
                 if (toName.isEmpty() || !Character.isAlphabetic(toName.charAt(0))) {
@@ -158,6 +159,6 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.Block || is instanceof SourceFile);
             }
-        };
+        });
     }
 }

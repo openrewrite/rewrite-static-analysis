@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -66,9 +66,9 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
                     String sn = method.getSimpleName();
                     JavaType rte = method.getReturnTypeExpression().getType();
                     JavaType.Method t = method.getMethodType();
-                    if (equalsIgnoreCaseExclusive(sn, "hashCode") && JavaType.Primitive.Int.equals(rte) && NO_ARGS.matches(t)) {
+                    if (equalsIgnoreCaseExclusive(sn, "hashCode") && JavaType.Primitive.Int == rte && NO_ARGS.matches(t)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "hashCode", true, false).getVisitor());
-                    } else if ("equal".equalsIgnoreCase(sn) && JavaType.Primitive.Boolean.equals(rte) && OBJECT_ARG.matches(t)) {
+                    } else if ("equal".equalsIgnoreCase(sn) && JavaType.Primitive.Boolean == rte && OBJECT_ARG.matches(t)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "equals", true, false).getVisitor());
                     } else if (equalsIgnoreCaseExclusive(sn, "toString") && TypeUtils.isString(rte) && NO_ARGS.matches(t)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "toString", true, false).getVisitor());

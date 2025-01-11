@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,13 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
@@ -28,6 +30,9 @@ import java.util.Collections;
 import java.util.Set;
 
 public class NoFinalizer extends Recipe {
+
+    private static final MethodMatcher FINALIZER = new MethodMatcher("java.lang.Object finalize()", true);
+
     @Override
     public String getDisplayName() {
         return "Remove `finalize()` method";
@@ -50,27 +55,21 @@ public class NoFinalizer extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new NoFinalizerVisitor();
-    }
-
-    private static class NoFinalizerVisitor extends JavaIsoVisitor<ExecutionContext> {
-        private static final MethodMatcher FINALIZER = new MethodMatcher("java.lang.Object finalize()", true);
-
-        @Override
-        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-            J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-            cd = cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), stmt -> {
-                if (stmt instanceof J.MethodDeclaration) {
-                    if (FINALIZER.matches((J.MethodDeclaration) stmt, classDecl)) {
-                        return null;
+        return Preconditions.check(new DeclaresMethod<>(FINALIZER), new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+                cd = cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), stmt -> {
+                    if (stmt instanceof J.MethodDeclaration) {
+                        if (FINALIZER.matches((J.MethodDeclaration) stmt, classDecl)) {
+                            return null;
+                        }
                     }
-                }
-                return stmt;
-            })));
+                    return stmt;
+                })));
 
-            return cd;
-        }
-
+                return cd;
+            }
+        });
     }
-
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -56,31 +56,23 @@ public class IndexOfShouldNotCompareGreaterThanZero extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(
-                Preconditions.or(
-                        new UsesMethod<>(STRING_INDEX_MATCHER),
-                        new UsesMethod<>(LIST_INDEX_MATCHER)
-                ),
-                new IndexOfShouldNotCompareGreaterThanZeroVisitor()
-        );
-    }
-
-    private static class IndexOfShouldNotCompareGreaterThanZeroVisitor extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
-            J.Binary b = super.visitBinary(binary, ctx);
-            if (b.getOperator() == J.Binary.Type.GreaterThan) {
-                if (b.getLeft() instanceof J.MethodInvocation) {
-                    J.MethodInvocation mi = (J.MethodInvocation) b.getLeft();
-                    if (STRING_INDEX_MATCHER.matches(mi) || LIST_INDEX_MATCHER.matches(mi)) {
-                        if (b.getRight() instanceof J.Literal && "0".equals(((J.Literal) b.getRight()).getValueSource())) {
-                            b = b.withRight(((J.Literal) b.getRight()).withValueSource("1")).withOperator(J.Binary.Type.GreaterThanOrEqual);
+        return Preconditions.check(Preconditions.or(new UsesMethod<>(STRING_INDEX_MATCHER), new UsesMethod<>(LIST_INDEX_MATCHER)),
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
+                        J.Binary b = super.visitBinary(binary, ctx);
+                        if (b.getOperator() == J.Binary.Type.GreaterThan) {
+                            if (b.getLeft() instanceof J.MethodInvocation) {
+                                J.MethodInvocation mi = (J.MethodInvocation) b.getLeft();
+                                if (STRING_INDEX_MATCHER.matches(mi) || LIST_INDEX_MATCHER.matches(mi)) {
+                                    if (b.getRight() instanceof J.Literal && "0".equals(((J.Literal) b.getRight()).getValueSource())) {
+                                        b = b.withRight(((J.Literal) b.getRight()).withValueSource("1")).withOperator(J.Binary.Type.GreaterThanOrEqual);
+                                    }
+                                }
+                            }
                         }
+                        return b;
                     }
-                }
-            }
-            return b;
-        }
+                });
     }
-
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -37,6 +38,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfIsPresentNotFound() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -56,6 +58,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfPresentPartOfElseIf() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -81,6 +84,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfElsePartPresent() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -105,6 +109,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfContainsReturn() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -125,6 +130,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void ignoreReturnInsideLambda() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -163,6 +169,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void allowFieldAccess() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -195,6 +202,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void ignoreReturnInsideAnonymousSubclass() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -239,6 +247,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfContainsThrow() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -258,6 +267,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfLocalVariableAssignedInsideIfBlock() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -282,6 +292,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void doNothingIfNonEffectivelyFinalVariableAccessed() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -301,6 +312,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -327,6 +339,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void nestedOptionalsUnlessHandledCorrectly() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -365,6 +378,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replace() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -402,6 +416,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replace2() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -448,6 +463,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceIfStaticVariableAccessedORAssigned() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -484,6 +500,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -524,6 +541,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceIfInstanceVariableAssignedORAccessed() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -560,6 +578,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
               }
               """
           ),
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -600,6 +619,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceNestedIf() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -642,6 +662,7 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
     @Test
     void replaceAndHandleDifferentOptionalsPresent() {
         rewriteRun(
+          //language=java
           java(
             """
               import java.util.Optional;
@@ -672,6 +693,55 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
                           list.add(obj);
                           list.add(o2.get());
                       });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNothingIfIsPresentOnMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+
+              public class Foo {
+                  public static void main(String[] args) {
+                      if (next().isPresent()) {
+                          System.out.println("Message: " + next().get());
+                      }
+                  }
+                  private static Optional<String> next() {
+                      // not guaranteed to return the same value every time, so best not to change above code
+                      return Optional.of("foo");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/435")
+    @Test
+    void doNothingIfMethodThrowsException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              public class Foo {
+                  public void foo() throws Exception {
+                      Optional<String> optional = Optional.empty();
+                      if (optional.isPresent()) {
+                          bar(optional.get());
+                      }
+                  }
+
+                  private void bar(String s) throws Exception {
+                      throw new Exception("bar");
                   }
               }
               """
