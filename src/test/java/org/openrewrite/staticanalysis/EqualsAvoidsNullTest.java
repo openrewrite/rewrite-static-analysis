@@ -422,7 +422,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           return foo != null && foo.equals(FOO);
                       }
                   }
-                  """,              
+                  """,
                 """
                   class A {
                       private static final String FOO = "FOO";
