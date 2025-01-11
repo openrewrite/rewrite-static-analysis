@@ -156,6 +156,15 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 }
 
                 @Override
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean convertible) {
+                    if (method.getMethodType() != null && !method.getMethodType().getThrownExceptions().isEmpty()) {
+                        convertible.set(false);
+                        return method;
+                    }
+                    return super.visitMethodInvocation(method, convertible);
+                }
+
+                @Override
                 public J.Throw visitThrow(J.Throw thrown, AtomicBoolean convertible) {
                     convertible.set(false);
                     return thrown;
@@ -169,7 +178,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
                 @Override
                 public J.Break visitBreak(J.Break breakStatement, AtomicBoolean convertible) {
-                    convertible.set(false);
                     convertible.set(false);
                     return breakStatement;
                 }

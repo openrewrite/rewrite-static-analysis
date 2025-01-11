@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -716,6 +717,31 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
                   private static Optional<String> next() {
                       // not guaranteed to return the same value every time, so best not to change above code
                       return Optional.of("foo");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/435")
+    @Test
+    void doNothingIfMethodThrowsException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              public class Foo {
+                  public void foo() throws Exception {
+                      Optional<String> optional = Optional.empty();
+                      if (optional.isPresent()) {
+                          bar(optional.get());
+                      }
+                  }
+
+                  private void bar(String s) throws Exception {
+                      throw new Exception("bar");
                   }
               }
               """
