@@ -728,31 +728,23 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         );
     }
 
-	@Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/384")
-	@Test
-	void staticWithObjectArray() {
-		rewriteRun(
-		  //language=java
-		  java(
-			"""
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/384")
+    @Test
+    void staticWithObjectArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
            class A {
                public void method() {
                    Object[] args = null;
                    args = new Object[] {"value"};
                }
            }
-           class A {
-               public void method() {
-                   Object[] args = null;
-                   args = new Object[] {"value"};
-               }
-           }
-                  }
-              }
            """
-		  )
-		);
-	}
+          )
+        );
+    }
 
 
 }
