@@ -210,7 +210,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
 
             private boolean areMethodsAmbiguous(JavaType.@Nullable Method m1, JavaType.@Nullable Method m2) {
-                if (m1 == null || m2 == null) {
+                if (m1 == null || m2 == null || m1.getParameterTypes().size() != m2.getParameterTypes().size()) {
                     return false;
                 }
                 if (m1 == m2) {
