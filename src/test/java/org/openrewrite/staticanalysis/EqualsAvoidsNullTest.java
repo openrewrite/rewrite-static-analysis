@@ -407,5 +407,33 @@ class EqualsAvoidsNullTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/434")
+        void missingWhitespace() {
+            rewriteRun(
+              // language=java
+              java(
+                """
+                  class A {
+                      private static final String FOO = "FOO";
+
+                      boolean withParentExpression(String foo) {
+                          return foo != null && foo.equals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      private static final String FOO = "FOO";
+
+                      boolean withParentExpression(String foo) {
+                          return FOO.equals(foo);
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
