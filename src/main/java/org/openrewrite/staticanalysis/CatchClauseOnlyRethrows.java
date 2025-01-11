@@ -19,7 +19,6 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
@@ -31,6 +30,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class CatchClauseOnlyRethrows extends Recipe {
 
@@ -117,7 +117,7 @@ public class CatchClauseOnlyRethrows extends Recipe {
                 Expression exception = ((J.Throw) aCatch.getBody().getStatements().get(0)).getException();
 
                 // In C# an implicit rethrow is possible
-                if (getCursor().firstEnclosing(SourceFile.class) instanceof Cs &&
+                if (isInstanceOfCs(getCursor().firstEnclosing(SourceFile.class)) &&
                     exception instanceof J.Empty) {
                     return true;
                 }

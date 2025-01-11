@@ -28,9 +28,13 @@ import org.openrewrite.marker.SearchResult;
 public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_CSHARP_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.csharp.tree.Cs");
 
+    public static boolean isInstanceOfCs(@Nullable Tree tree) {
+        return IS_CSHARP_AVAILABLE && tree instanceof Cs;
+    }
+
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (IS_CSHARP_AVAILABLE && tree instanceof Cs.CompilationUnit) {
+        if (isInstanceOfCs(tree)) {
             return SearchResult.found(tree);
         }
         return tree;
