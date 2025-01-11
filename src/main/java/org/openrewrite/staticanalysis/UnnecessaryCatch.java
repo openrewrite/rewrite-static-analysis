@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -76,7 +76,7 @@ public class UnnecessaryCatch extends Recipe {
             public J.Try visitTry(J.Try tryable, ExecutionContext ctx) {
                 J.Try t = super.visitTry(tryable, ctx);
 
-                List<JavaType.FullyQualified> thrownExceptions = new ArrayList<>();
+                List<JavaType> thrownExceptions = new ArrayList<>();
                 AtomicBoolean missingTypeInformation = new AtomicBoolean(false);
                 //Collect any checked exceptions thrown from the try block.
                 new JavaIsoVisitor<Integer>() {
@@ -108,7 +108,7 @@ public class UnnecessaryCatch extends Recipe {
                     if (!includeJavaLangException && TypeUtils.isOfClassType(parameterType, "java.lang.Exception")) {
                         return aCatch;
                     }
-                    for (JavaType.FullyQualified e : thrownExceptions) {
+                    for (JavaType e : thrownExceptions) {
                         if (TypeUtils.isAssignableTo(e, parameterType)) {
                             return aCatch;
                         }

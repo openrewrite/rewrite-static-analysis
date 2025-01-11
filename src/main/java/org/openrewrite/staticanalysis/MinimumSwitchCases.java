@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
@@ -29,6 +30,7 @@ import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +60,7 @@ public class MinimumSwitchCases extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
                                                                         "if(#{any()} == #{any()}) {\n" +
                                                                         "} else if(#{any()} == #{any()}) {\n" +
@@ -222,7 +224,7 @@ public class MinimumSwitchCases extends Recipe {
                     return false;
                 }
                 return switch_.getCases().getStatements().stream()
-                        .reduce(0, (a, b) -> a + ((J.Case) b).getExpressions().size(), Integer::sum) < 3;
+                               .reduce(0, (a, b) -> a + ((J.Case) b).getExpressions().size(), Integer::sum) < 3;
             }
 
             private List<Statement> getStatements(J.Case aCase) {
@@ -247,7 +249,7 @@ public class MinimumSwitchCases extends Recipe {
                        ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
             }
 
-        };
+        });
     }
 
     private static J.If createIfForEnum(Expression expression, Expression enumTree) {

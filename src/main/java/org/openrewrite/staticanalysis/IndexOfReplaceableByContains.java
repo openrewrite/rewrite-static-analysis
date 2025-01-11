@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -47,47 +46,32 @@ public class IndexOfReplaceableByContains extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(
-                Preconditions.or(
-                        new UsesMethod<>(STRING_INDEX_MATCHER),
-                        new UsesMethod<>(LIST_INDEX_MATCHER)
-                ),
-                new IndexOfReplaceableByContainsVisitor()
-        );
-    }
-
-    private static class IndexOfReplaceableByContainsVisitor extends JavaVisitor<ExecutionContext> {
-        private final JavaTemplate stringContains = JavaTemplate.builder("#{any(java.lang.String)}.contains(#{any(java.lang.String)})").build();
-        private final JavaTemplate listContains = JavaTemplate.builder("#{any(java.util.List)}.contains(#{any(java.lang.Object)})").build();
-
-        @Override
-        public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-            J j = super.visitBinary(binary, ctx);
-            J.Binary asBinary = (J.Binary) j;
-            if (asBinary.getLeft() instanceof J.MethodInvocation) {
-                J.MethodInvocation mi = (J.MethodInvocation) asBinary.getLeft();
-                if (STRING_INDEX_MATCHER.matches(mi) || mi.getSelect() != null && LIST_INDEX_MATCHER.matches(mi)) {
-                    if (asBinary.getRight() instanceof J.Literal) {
-                        String valueSource = ((J.Literal) asBinary.getRight()).getValueSource();
-                        boolean isGreaterThanNegativeOne = asBinary.getOperator() == J.Binary.Type.GreaterThan && "-1".equals(valueSource);
-                        boolean isGreaterThanOrEqualToZero = asBinary.getOperator() == J.Binary.Type.GreaterThanOrEqual && "0".equals(valueSource);
-                        if (isGreaterThanNegativeOne || isGreaterThanOrEqualToZero) {
-                            Cursor cursor = new Cursor(updateCursor(asBinary), asBinary.getLeft());
-                            j = (STRING_INDEX_MATCHER.matches(mi) ? stringContains : listContains)
-                                    .apply(cursor, mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0))
-                                    .withPrefix(asBinary.getPrefix());
+        return Preconditions.check(Preconditions.or(new UsesMethod<>(STRING_INDEX_MATCHER), new UsesMethod<>(LIST_INDEX_MATCHER)),
+                new JavaVisitor<ExecutionContext>() {
+                    @Override
+                    public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                        J j = super.visitBinary(binary, ctx);
+                        J.Binary asBinary = (J.Binary) j;
+                        if (asBinary.getLeft() instanceof J.MethodInvocation) {
+                            J.MethodInvocation mi = (J.MethodInvocation) asBinary.getLeft();
+                            if (STRING_INDEX_MATCHER.matches(mi) || mi.getSelect() != null && LIST_INDEX_MATCHER.matches(mi)) {
+                                if (asBinary.getRight() instanceof J.Literal) {
+                                    String valueSource = ((J.Literal) asBinary.getRight()).getValueSource();
+                                    boolean isGreaterThanNegativeOne = asBinary.getOperator() == J.Binary.Type.GreaterThan && "-1".equals(valueSource);
+                                    boolean isGreaterThanOrEqualToZero = asBinary.getOperator() == J.Binary.Type.GreaterThanOrEqual && "0".equals(valueSource);
+                                    if (isGreaterThanNegativeOne || isGreaterThanOrEqualToZero) {
+                                        Cursor cursor = new Cursor(updateCursor(asBinary), asBinary.getLeft());
+                                        j = JavaTemplate.builder("#{any()}.contains(#{any()})").build()
+                                                .apply(cursor, mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0))
+                                                .withPrefix(asBinary.getPrefix());
+                                    }
+                                }
+                            }
                         }
+                        return j;
                     }
                 }
-            }
-            return j;
-        }
+        );
     }
-
 }

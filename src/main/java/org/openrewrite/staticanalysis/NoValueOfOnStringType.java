@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,9 +59,7 @@ public class NoValueOfOnStringType extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(new MethodMatcher("java.lang.String valueOf(..)")), new JavaVisitor<ExecutionContext>() {
-            private final JavaTemplate t = JavaTemplate.builder("#{any(java.lang.String)}").build();
-
+        return Preconditions.check(new UsesMethod<>(VALUE_OF), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 if (VALUE_OF.matches(method.getSelect())) {
@@ -71,9 +69,9 @@ public class NoValueOfOnStringType extends Recipe {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
                     Expression argument = mi.getArguments().get(0);
-
                     if (TypeUtils.isString(argument.getType()) || removeValueOfFromBinaryExpression(argument)) {
-                        return t.apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
+                        return JavaTemplate.builder("#{any(java.lang.String)}").build()
+                                .apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
                     }
                 }
                 return mi;
@@ -87,7 +85,6 @@ public class NoValueOfOnStringType extends Recipe {
              * @return True if the method can be removed.
              */
             private boolean removeValueOfFromBinaryExpression(Expression argument) {
-
                 if (TypeUtils.asPrimitive(argument.getType()) != null) {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
                     if (parent instanceof J.Binary) {

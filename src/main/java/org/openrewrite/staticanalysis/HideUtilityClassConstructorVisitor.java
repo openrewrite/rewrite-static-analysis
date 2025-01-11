@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -95,7 +95,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         @Override
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
             if (utilityClassMatcher.hasImplicitDefaultConstructor(classDecl) &&
-                    !J.ClassDeclaration.Kind.Type.Enum.equals(classDecl.getKind())) {
+                    J.ClassDeclaration.Kind.Type.Enum != classDecl.getKind()) {
                 classDecl = JavaTemplate.builder("private #{}() {}")
                         .contextSensitive()
                         .build()
@@ -125,7 +125,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, P p) {
             J.MethodDeclaration md = super.visitMethodDeclaration(method, p);
             if (md.getMethodType() == null || !md.isConstructor() ||
-                    (md.hasModifier(J.Modifier.Type.Private) || md.hasModifier(J.Modifier.Type.Protected) || md.getMethodType().getDeclaringType().getKind().equals(JavaType.Class.Kind.Enum))) {
+                    (md.hasModifier(J.Modifier.Type.Private) || md.hasModifier(J.Modifier.Type.Protected) || md.getMethodType().getDeclaringType().getKind() == JavaType.Class.Kind.Enum)) {
                 return md;
             }
 
@@ -188,7 +188,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
                             md.hasModifier(J.Modifier.Type.Public) &&
                             md.hasModifier(J.Modifier.Type.Static) &&
                             md.getReturnTypeExpression() != null &&
-                            JavaType.Primitive.Void.equals(md.getReturnTypeExpression().getType()) &&
+                            JavaType.Primitive.Void == md.getReturnTypeExpression().getType() &&
 
                             // note that the matcher for "main(String)" will match on "main(String[]) as expected.
                             new MethodMatcher(c.getType().getFullyQualifiedName() + " main(String[])")

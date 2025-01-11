@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.AnnotationService;
@@ -32,6 +31,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
+import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class FinalizePrivateFields extends Recipe {
     @Override
@@ -111,8 +111,8 @@ public class FinalizePrivateFields extends Recipe {
                         return type != null ? v.withVariableType(type.withFlags(
                                 Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
                     })).withModifiers(ListUtils.concat(mv.getModifiers(),
-                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, topLevel instanceof Cs ? "readonly" : "final",
-                                    topLevel instanceof Cs ? J.Modifier.Type.LanguageExtension : J.Modifier.Type.Final, emptyList()))), ctx);
+                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, isInstanceOfCs(topLevel) ? "readonly" : "final",
+                                    isInstanceOfCs(topLevel) ? J.Modifier.Type.LanguageExtension : J.Modifier.Type.Final, emptyList()))), ctx);
                 }
 
                 return mv;
@@ -120,7 +120,7 @@ public class FinalizePrivateFields extends Recipe {
 
             private boolean anyAnnotationApplied(Cursor variableCursor) {
                 return !service(AnnotationService.class).getAllAnnotations(variableCursor).isEmpty() ||
-                       variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
+                        variableCursor.<J.VariableDeclarations>getValue().getTypeExpression() instanceof J.AnnotatedType;
             }
 
             /**
@@ -135,9 +135,9 @@ public class FinalizePrivateFields extends Recipe {
                         .filter(J.VariableDeclarations.class::isInstance)
                         .map(J.VariableDeclarations.class::cast)
                         .filter(mv -> mv.hasModifier(J.Modifier.Type.Private) &&
-                                      !mv.hasModifier(J.Modifier.Type.Final) &&
-                                      (!(topLevel instanceof Cs) || mv.getModifiers().stream().noneMatch(m -> "readonly".equals(m.getKeyword()) || "const".equals(m.getKeyword()))) &&
-                                      !mv.hasModifier(J.Modifier.Type.Volatile))
+                                !mv.hasModifier(J.Modifier.Type.Final) &&
+                                (!isInstanceOfCs(topLevel) || mv.getModifiers().stream().noneMatch(m -> "readonly".equals(m.getKeyword()) || "const".equals(m.getKeyword()))) &&
+                                !mv.hasModifier(J.Modifier.Type.Volatile))
                         .filter(mv -> !anyAnnotationApplied(new Cursor(bodyCursor, mv)))
                         .map(J.VariableDeclarations::getVariables)
                         .flatMap(Collection::stream)
@@ -250,8 +250,8 @@ public class FinalizePrivateFields extends Recipe {
          */
         private static boolean isInitializedByClass(Cursor cursor, boolean privateFieldIsStatic) {
             Object parent = cursor.dropParentWhile(p -> (p instanceof J.Block && !((J.Block) p).isStatic()) ||
-                                                        p instanceof JRightPadded ||
-                                                        p instanceof JLeftPadded)
+                            p instanceof JRightPadded ||
+                            p instanceof JLeftPadded)
                     .getValue();
             if (parent instanceof J.Block) {
                 return privateFieldIsStatic;

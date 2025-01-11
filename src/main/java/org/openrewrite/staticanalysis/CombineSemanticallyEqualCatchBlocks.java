@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -149,7 +149,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             @Override
-            public J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
+            public @Nullable J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
                 Cursor parentCursor = getCursor().dropParentUntil(is -> is instanceof J.Try.Catch || is instanceof J.Try);
                 if (removeCatches != null && parentCursor.getValue() instanceof J.Try.Catch) {
                     if (removeCatches.contains((J.Try.Catch) parentCursor.getValue())) {
@@ -160,7 +160,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
 
             @Override
-            public J visitCatch(J.Try.Catch _catch, ExecutionContext ctx) {
+            public @Nullable J visitCatch(J.Try.Catch _catch, ExecutionContext ctx) {
                 if (removeCatches != null) {
                     if (removeCatches.contains(_catch)) {
                         return null;

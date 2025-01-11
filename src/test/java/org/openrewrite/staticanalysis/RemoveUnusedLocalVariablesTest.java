@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,7 +46,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new RemoveUnusedLocalVariables(new String[0]));
+        spec.recipe(new RemoveUnusedLocalVariables(new String[0], null));
     }
 
     @Test
@@ -73,18 +73,21 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @SuppressWarnings("MethodMayBeStatic")
     void ignoreVariablesNamed() {
         rewriteRun(
-          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused", "ignoreMe"})),
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused"}, null)),
           //language=java
           java(
             """
               class Test {
                   void method(Object someData) {
-                      int unused = writeDataToTheDB(someData);
-                      int ignoreMe = writeDataToTheDB(someData);
+                      int unused = 123;
+                      int removed = 123;
                   }
-
-                  int writeDataToTheDB(Object save) {
-                      return 1;
+              }
+              """,
+            """
+              class Test {
+                  void method(Object someData) {
+                      int unused = 123;
                   }
               }
               """
@@ -976,7 +979,9 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void recordCompactConstructor() {
         rewriteRun(
-          version(java(
+          version(
+            //language=java
+            java(
             """
               public record MyRecord(
                  boolean bar,
@@ -996,6 +1001,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Test
     void removeKotlinUnusedLocalVariable() {
         rewriteRun(
+          //language=kotlin
           kotlin(
             """
               class A (val b: String) {
@@ -1066,18 +1072,45 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-feature-flags/pull/35")
+    void removeDespiteSideEffects() {
+        rewriteRun(
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(null, true)),
+          //language=java
+          java(
+            """
+              class Test {
+                  int sideEffect() { return 123; }
+                  void method(Object someData) {
+                      int unused = sideEffect();
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int sideEffect() { return 123; }
+                  void method(Object someData) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class Kotlin {
 
         @Test
         void retainUnusedLocalVariableWithNewClass() {
             rewriteRun(
+              //language=kotlin
               kotlin(
                 """
                   class A {}
                   class B {
                     fun foo() {
-                      val a = A();
+                      val a = A()
                     }
                   }
                   """

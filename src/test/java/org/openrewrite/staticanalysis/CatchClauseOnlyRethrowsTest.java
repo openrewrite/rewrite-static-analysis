@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -38,7 +38,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -63,7 +63,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -90,7 +90,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -116,7 +116,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -130,10 +130,75 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-                            
+
               class A {
                   void foo() throws IOException {
                       new FileReader("").read();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void tryCanBeRemovedWithMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (FileNotFoundException e) {
+                          throw e;
+                      } catch(IOException | ArrayIndexOutOfBoundsException e) {
+                          throw e;
+                      } catch(Exception e) {
+                          throw e;
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class A {
+                  void foo() throws IOException {
+                      new FileReader("").read();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void multiCatchPreservedOnDifferentThrow() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (FileNotFoundException e) {
+                          throw e;
+                      } catch(IOException | ArrayIndexOutOfBoundsException e) {
+                          throw new IOException("another message", e);
+                      }
                   }
               }
               """
@@ -149,7 +214,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -165,7 +230,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {
@@ -188,7 +253,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try(FileReader fr = new FileReader("")) {
@@ -202,7 +267,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try(FileReader fr = new FileReader("")) {
@@ -223,7 +288,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() {
                       try {
@@ -246,7 +311,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              
+
               class A {
                   void foo() throws IOException {
                       try {

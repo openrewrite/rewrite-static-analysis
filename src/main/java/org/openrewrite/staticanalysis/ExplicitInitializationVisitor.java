@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -67,12 +67,9 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
         if (service(AnnotationService.class).matches(variableDeclsCursor, LOMBOK_BUILDER_DEFAULT)) {
             return v;
         }
-        J.Literal literalInit = variable.getInitializer() instanceof J.Literal ?
-                (J.Literal) variable.getInitializer() :
-                null;
-        if (literalInit != null && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
-            if (TypeUtils.asFullyQualified(variable.getType()) != null &&
-                JavaType.Primitive.Null.equals(literalInit.getType())) {
+        if (variable.getInitializer() instanceof J.Literal && !variableDecls.hasModifier(J.Modifier.Type.Final)) {
+            J.Literal literalInit = (J.Literal) variable.getInitializer();
+            if (TypeUtils.asFullyQualified(variable.getType()) != null && JavaType.Primitive.Null == literalInit.getType()) {
                 v = v.withInitializer(null);
             } else if (primitive != null && !Boolean.TRUE.equals(style.getOnlyObjectReferences())) {
                 switch (primitive) {
@@ -94,7 +91,7 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
                         }
                         break;
                 }
-            } else if (array != null && JavaType.Primitive.Null.equals(literalInit.getType())) {
+            } else if (array != null && JavaType.Primitive.Null == literalInit.getType()) {
                 v = v.withInitializer(null)
                         .withDimensionsAfterName(ListUtils.map(v.getDimensionsAfterName(), (i, dim) ->
                                 i == 0 ? dim.withBefore(Space.EMPTY) : dim));

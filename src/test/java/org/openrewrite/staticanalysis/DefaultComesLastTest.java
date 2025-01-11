@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import org.openrewrite.java.style.DefaultComesLastStyle;
 import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
@@ -258,6 +259,36 @@ class DefaultComesLastTest implements RewriteTest {
                           default:
                               return true;
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defensivelySkipSwitchExpressionsForNow() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              enum Product {
+                  A, B, C
+              }
+              """,
+            SourceSpec::skip
+          ),
+          java(
+            """
+              class Foo {
+                  int bar(Product product) {
+                      int var = 0;
+                      switch (product) {
+                          default -> var = 1;
+                          case B -> { var = 2; }
+                          case C -> { var = 3; }
+                      }
+                      return var;
                   }
               }
               """

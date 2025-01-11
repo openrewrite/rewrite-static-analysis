@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,11 +24,13 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
 public class NewStringBuilderBufferWithCharArgument extends Recipe {
+
+    public static final String STRING_BUILDER = "java.lang.StringBuilder";
+    public static final String STRING_BUFFER = "java.lang.StringBuffer";
 
     @Override
     public String getDisplayName() {
@@ -41,26 +43,19 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S1317");
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        TreeVisitor<?, ExecutionContext> condition = Preconditions.or(new UsesType<>("java.lang.StringBuilder", true), new UsesType<>("java.lang.StringBuffer", true));
+        TreeVisitor<?, ExecutionContext> condition = Preconditions.or(new UsesType<>(STRING_BUILDER, true), new UsesType<>(STRING_BUFFER, true));
         return Preconditions.check(condition, new JavaIsoVisitor<ExecutionContext>() {
-            private final JavaTemplate toString = JavaTemplate.builder("String.valueOf(#{any()})").build();
 
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass nc = super.visitNewClass(newClass, ctx);
-                if ((TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuilder") ||
-                     TypeUtils.isOfClassType(nc.getType(), "java.lang.StringBuffer"))) {
+                if ((TypeUtils.isOfClassType(nc.getType(), STRING_BUILDER) || TypeUtils.isOfClassType(nc.getType(), STRING_BUFFER))) {
                     nc.getArguments();
                     if (nc.getArguments().get(0).getType() == JavaType.Primitive.Char) {
                         nc = nc.withArguments(ListUtils.mapFirst(nc.getArguments(), arg -> {
@@ -72,8 +67,8 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                                 }
                                 return l;
                             } else {
-                                Cursor argCursor = new Cursor(getCursor(), arg);
-                                return toString.apply(argCursor, arg.getCoordinates().replace(), arg);
+                                return JavaTemplate.builder("String.valueOf(#{any()})").build()
+                                        .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace(), arg);
                             }
                         }));
                     }

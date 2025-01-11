@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
@@ -86,13 +87,13 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 return _if;
             }
 
-            J.Identifier optionalVariable =
-                    (J.Identifier) ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
-            if (optionalVariable == null || !isStatementLambdaConvertible(_if.getThenPart())) {
+            Expression select = ((J.MethodInvocation) _if.getIfCondition().getTree()).getSelect();
+            if (!(select instanceof J.Identifier) || !isStatementLambdaConvertible(_if.getThenPart())) {
                 return _if;
             }
 
             /* replace if block with Optional#ifPresent and lambda expression */
+            J.Identifier optionalVariable = (J.Identifier) select;
             String methodSelector = optionalVariable.getSimpleName();
 
             Cursor nameScope = getCursor();
@@ -155,6 +156,15 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                 }
 
                 @Override
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean convertible) {
+                    if (method.getMethodType() != null && !method.getMethodType().getThrownExceptions().isEmpty()) {
+                        convertible.set(false);
+                        return method;
+                    }
+                    return super.visitMethodInvocation(method, convertible);
+                }
+
+                @Override
                 public J.Throw visitThrow(J.Throw thrown, AtomicBoolean convertible) {
                     convertible.set(false);
                     return thrown;
@@ -168,7 +178,6 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
                 @Override
                 public J.Break visitBreak(J.Break breakStatement, AtomicBoolean convertible) {
-                    convertible.set(false);
                     convertible.set(false);
                     return breakStatement;
                 }

@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -43,12 +44,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
             required = false)
     @Nullable
     Boolean includeTestSources;
-
-    @Option(displayName = "Maximum length of the generate variable names",
-            description = "By default this is set to 100 characters",
-            required = false)
-    @Nullable
-    Integer maxVariableLength = 100;
 
     @Override
     public String getDisplayName() {
@@ -73,6 +68,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     public Duration getEstimatedEffortPerOccurrence() {
         return Duration.ofMinutes(2);
     }
+
+    int maxVariableLength = 40;
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -101,8 +98,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 if (duplicateLiteralsMap.isEmpty()) {
                     return classDecl;
                 }
-                Set<String> variableNames = duplicateLiteralInfo.getVariableNames();
                 Map<String, String> fieldValueToFieldName = duplicateLiteralInfo.getFieldValueToFieldName();
+                Set<String> variableNames = VariableNameUtils.findNamesInScope(getCursor()).stream()
+                        .filter(i -> !fieldValueToFieldName.containsValue(i)).collect(Collectors.toSet());
                 String classFqn = classDecl.getType().getFullyQualifiedName();
                 Map<J.Literal, String> replacements = new HashMap<>();
                 for (Map.Entry<String, List<J.Literal>> entry : duplicateLiteralsMap.entrySet()) {
@@ -111,7 +109,13 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     String classFieldName = fieldValueToFieldName.get(valueOfLiteral);
                     String variableName;
                     if (classFieldName != null) {
-                        variableName = getNameWithoutShadow(classFieldName, variableNames);
+                        String maybeVariableName = getNameWithoutShadow(classFieldName, variableNames);
+                        if (duplicateLiteralInfo.existingFieldValueToFieldName.get(maybeVariableName) != null) {
+                            variableNames.add(maybeVariableName);
+                            maybeVariableName = getNameWithoutShadow(classFieldName, variableNames);
+                        }
+
+                        variableName = maybeVariableName;
                         if (StringUtils.isBlank(variableName)) {
                             continue;
                         }
@@ -203,14 +207,14 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Value
     private static class DuplicateLiteralInfo {
-        Set<String> variableNames;
         Map<String, String> fieldValueToFieldName;
+        Map<String, String> existingFieldValueToFieldName;
 
         @NonFinal
         Map<String, List<J.Literal>> duplicateLiterals;
 
         public static DuplicateLiteralInfo find(J.ClassDeclaration inClass) {
-            DuplicateLiteralInfo result = new DuplicateLiteralInfo(new LinkedHashSet<>(), new LinkedHashMap<>(), new HashMap<>());
+            DuplicateLiteralInfo result = new DuplicateLiteralInfo(new LinkedHashMap<>(), new LinkedHashMap<>(), new HashMap<>());
             new JavaIsoVisitor<Integer>() {
 
                 @Override
@@ -225,11 +229,12 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     Cursor parentScope = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration || is instanceof J.MethodDeclaration);
                     boolean privateStaticFinalVariable = isPrivateStaticFinalVariable(variable);
                     // `private static final String`(s) are handled separately by `FindExistingPrivateStaticFinalFields`.
-                    if (parentScope.getValue() instanceof J.MethodDeclaration ||
-                        parentScope.getValue() instanceof J.ClassDeclaration &&
-                        !(privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&
-                          ((J.Literal) v.getInitializer()).getValue() instanceof String)) {
-                        result.variableNames.add(v.getSimpleName());
+                    if (v.getInitializer() instanceof J.Literal &&
+                            (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
+                            ((J.Literal) v.getInitializer()).getValue() instanceof String &&
+                            !privateStaticFinalVariable) {
+                        String value = (((J.Literal) v.getInitializer()).getValue()).toString();
+                        result.existingFieldValueToFieldName.put(v.getSimpleName(), value);
                     }
                     if (parentScope.getValue() instanceof J.ClassDeclaration &&
                         privateStaticFinalVariable && v.getInitializer() instanceof J.Literal &&
@@ -242,7 +247,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
                 @Override
                 public J.Literal visitLiteral(J.Literal literal, Integer integer) {
-                    if (JavaType.Primitive.String.equals(literal.getType()) &&
+                    if (JavaType.Primitive.String == literal.getType() &&
                         literal.getValue() instanceof String &&
                         ((String) literal.getValue()).length() >= 5) {
 

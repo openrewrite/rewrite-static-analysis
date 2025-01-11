@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,16 +30,18 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class AtomicPrimitiveEqualsUsesGet extends Recipe {
 
-    private static final Set<String> ATOMIC_PRIMITIVE_TYPES = new HashSet<>(Arrays.asList(
-            "java.util.concurrent.atomic.AtomicBoolean",
-            "java.util.concurrent.atomic.AtomicInteger",
-            "java.util.concurrent.atomic.AtomicLong"
-    ));
+    public static final String ATOMIC_ATOMIC_BOOLEAN = "java.util.concurrent.atomic.AtomicBoolean";
+    public static final String ATOMIC_ATOMIC_INTEGER = "java.util.concurrent.atomic.AtomicInteger";
+    public static final String ATOMIC_ATOMIC_LONG = "java.util.concurrent.atomic.AtomicLong";
+
+    private static final List<String> ATOMIC_PRIMITIVE_TYPES = Arrays.asList(
+            ATOMIC_ATOMIC_BOOLEAN, ATOMIC_ATOMIC_INTEGER, ATOMIC_ATOMIC_LONG
+    );
 
     @Override
     public String getDisplayName() {
@@ -59,9 +61,9 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.or(
-                new UsesType<>("java.util.concurrent.atomic.AtomicBoolean", false),
-                new UsesType<>("java.util.concurrent.atomic.AtomicInteger", false),
-                new UsesType<>("java.util.concurrent.atomic.AtomicLong", false)
+                new UsesType<>(ATOMIC_ATOMIC_BOOLEAN, false),
+                new UsesType<>(ATOMIC_ATOMIC_INTEGER, false),
+                new UsesType<>(ATOMIC_ATOMIC_LONG, false)
         ), new JavaVisitor<ExecutionContext>() {
             private final MethodMatcher aiMethodMatcher = new MethodMatcher("java.lang.Object equals(java.lang.Object)");
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -149,6 +149,106 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
     }
 
     @Test
+    void enumCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              enum TYPES {
+                  VALUE, NUMBER, TEXT
+              }
+
+              class A {
+                  final String val1 = "types";
+                  final String val2 = "types";
+                  final String val3 = "types";
+                  TYPES type = TYPES.VALUE;
+              }
+
+              """,
+            """
+              package org.foo;
+              enum TYPES {
+                  VALUE, NUMBER, TEXT
+              }
+
+              class A {
+                  private static final String TYPES_1 = "types";
+                  final String val1 = TYPES_1;
+                  final String val2 = TYPES_1;
+                  final String val3 = TYPES_1;
+                  TYPES type = TYPES.VALUE;
+              }
+
+              """
+          )
+        );
+    }
+
+    @Test
+    void fieldNameCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              class A {
+                  final String val1 = "value";
+                  final String val2 = "value";
+                  final String val3 = "value";
+                  final int VALUE = 1;
+              }
+              """,
+            """
+              package org.foo;
+              class A {
+                  private static final String VALUE_1 = "value";
+                  final String val1 = VALUE_1;
+                  final String val2 = VALUE_1;
+                  final String val3 = VALUE_1;
+                  final int VALUE = 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticImportCollidesWithNewStringLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              
+              import static java.lang.Long.MAX_VALUE;
+              
+              class A {
+                  final String val1 = "max_value";
+                  final String val2 = "max_value";
+                  final String val3 = "max_value";
+                  final long value = MAX_VALUE;
+              }
+              """,
+            """
+              package org.foo;
+              
+              import static java.lang.Long.MAX_VALUE;
+              
+              class A {
+                  private static final String MAX_VALUE_1 = "max_value";
+                  final String val1 = MAX_VALUE_1;
+                  final String val2 = MAX_VALUE_1;
+                  final String val3 = MAX_VALUE_1;
+                  final long value = MAX_VALUE;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void generatedNameIsVeryLong() {
         rewriteRun(
           //language=java
@@ -164,10 +264,10 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
             """
               package org.foo;
               class A {
-                  private static final String THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
-                  final String val1 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END;
-                  final String val2 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END;
-                  final String val3 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE_NAME_IT_GOES_ON_AND_ON_FOR_AVERY_LONG_TIME_IT_MIGHT_NEVER_END;
+                  private static final String THIS_IS_AN_UNREASONABLY_LONG_VARIABLE = "ThisIsAnUnreasonablyLongVariableNameItGoesOnAndOnForAVeryLongTimeItMightNeverEndWhoIsToKnowHowLongItWillKeepGoingAndGoing";
+                  final String val1 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+                  final String val2 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
+                  final String val3 = THIS_IS_AN_UNREASONABLY_LONG_VARIABLE;
               }
               """
           )
@@ -278,17 +378,17 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
           java(
             """
               class A {
-                  final String val1 = "An example,, of a :: String with `` special __ characters.";
-                  final String val2 = "An example,, of a :: String with `` special __ characters.";
-                  final String val3 = "An example,, of a :: String with `` special __ characters.";
+                  final String val1 = "Example,, :: String with `` special __ characters.";
+                  final String val2 = "Example,, :: String with `` special __ characters.";
+                  final String val3 = "Example,, :: String with `` special __ characters.";
               }
               """,
             """
               class A {
-                  private static final String AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS = "An example,, of a :: String with `` special __ characters.";
-                  final String val1 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
-                  final String val2 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
-                  final String val3 = AN_EXAMPLE_OF_A_STRING_WITH_SPECIAL_CHARACTERS;
+                  private static final String EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS = "Example,, :: String with `` special __ characters.";
+                  final String val1 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS;
+                  final String val2 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS; 
+                  final String val3 = EXAMPLE_STRING_WITH_SPECIAL_CHARACTERS;
               }
               """
           )
@@ -627,4 +727,24 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/384")
+    @Test
+    void staticWithObjectArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+           class A {
+               public void method() {
+                   Object[] args = null;
+                   args = new Object[] {"value"};
+               }
+           }
+           """
+          )
+        );
+    }
+
+
 }

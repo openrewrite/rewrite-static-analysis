@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -1317,6 +1317,41 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                       // statement comment
                       System.out.println("hello");
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void constantTernarySimplfied() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean trueCondition1 = true ? true : false;
+                  boolean trueCondition2 = false ? false : true;
+                  boolean trueCondition3 = !true ? false : true;
+                  boolean trueCondition4 = !false ? true : false;
+              
+                  boolean falseCondition1 = true ? false : true;
+                  boolean falseCondition2 = false ? true : false;
+                  boolean falseCondition3 = !false ? false : true;
+                  boolean falseCondition4 = !true ? true : false;
+              }
+              """,
+            """
+              class Test {
+                  boolean trueCondition1 = true;
+                  boolean trueCondition2 = true;
+                  boolean trueCondition3 = true;
+                  boolean trueCondition4 = true;
+              
+                  boolean falseCondition1 = false;
+                  boolean falseCondition2 = false;
+                  boolean falseCondition3 = false;
+                  boolean falseCondition4 = false;
               }
               """
           )

@@ -1,11 +1,11 @@
 /*
- * Copyright 2021 the original author or authors.
+ * Copyright 2024 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,6 +31,11 @@ import java.util.Collections;
 import java.util.Set;
 
 public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
+
+    private static final MethodMatcher COMPARE_IGNORE_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String equalsIgnoreCase(java.lang.String)");
+    private static final MethodMatcher TO_LOWER_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String toLowerCase()");
+    private static final MethodMatcher TO_UPPER_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String toUpperCase()");
+
     @Override
     public String getDisplayName() {
         return "CaseInsensitive comparisons do not alter case";
@@ -53,38 +58,32 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>("java.lang.String equalsIgnoreCase(java.lang.String)"), new CaseInsensitiveComparisonVisitor<>());
-    }
-
-    private static class CaseInsensitiveComparisonVisitor<ExecutionContext> extends JavaIsoVisitor<ExecutionContext> {
-        private static final MethodMatcher COMPARE_IGNORE_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String equalsIgnoreCase(java.lang.String)");
-        private static final MethodMatcher TO_LOWER_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String toLowerCase()");
-        private static final MethodMatcher TO_UPPER_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String toUpperCase()");
-
-        @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
-            J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
-            if (COMPARE_IGNORE_CASE_METHOD_MATCHER.matches(mi)) {
-                mi = mi.withArguments(ListUtils.map(mi.getArguments(), arg -> {
-                    if (arg instanceof J.MethodInvocation && isChangeCaseMethod(arg)) {
-                        return ((J.MethodInvocation) arg).getSelect();
+        return Preconditions.check(new UsesMethod<>(COMPARE_IGNORE_CASE_METHOD_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
+                if (COMPARE_IGNORE_CASE_METHOD_MATCHER.matches(mi)) {
+                    mi = mi.withArguments(ListUtils.map(mi.getArguments(), arg -> {
+                        if (arg instanceof J.MethodInvocation && isChangeCaseMethod(arg)) {
+                            return ((J.MethodInvocation) arg).getSelect();
+                        }
+                        return arg;
+                    }));
+                    if (isChangeCaseMethod(mi.getSelect())) {
+                        J.MethodInvocation mChangeCase = (J.MethodInvocation) mi.getSelect();
+                        mi = mi.withSelect(mChangeCase.getSelect());
                     }
-                    return arg;
-                }));
-                if (isChangeCaseMethod(mi.getSelect())) {
-                    J.MethodInvocation mChangeCase = (J.MethodInvocation) mi.getSelect();
-                    mi = mi.withSelect(mChangeCase.getSelect());
                 }
+                return mi;
             }
-            return mi;
-        }
 
-        private boolean isChangeCaseMethod(@Nullable J j) {
-            if (j instanceof J.MethodInvocation) {
-                J.MethodInvocation mi = (J.MethodInvocation) j;
-                return TO_LOWER_CASE_METHOD_MATCHER.matches(mi) || TO_UPPER_CASE_METHOD_MATCHER.matches(mi);
+            private boolean isChangeCaseMethod(@Nullable J j) {
+                if (j instanceof J.MethodInvocation) {
+                    J.MethodInvocation mi = (J.MethodInvocation) j;
+                    return TO_LOWER_CASE_METHOD_MATCHER.matches(mi) || TO_UPPER_CASE_METHOD_MATCHER.matches(mi);
+                }
+                return false;
             }
-            return false;
-        }
+        });
     }
 }
