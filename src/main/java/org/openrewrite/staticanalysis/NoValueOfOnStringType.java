@@ -69,7 +69,10 @@ public class NoValueOfOnStringType extends Recipe {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
                     Expression argument = mi.getArguments().get(0);
-                    if (TypeUtils.isString(argument.getType()) || removeValueOfFromBinaryExpression(argument)) {
+                    if (argument instanceof J.Binary) {
+                        return JavaTemplate.builder("(#{any(java.lang.String)})").build()
+                                .apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
+                    } else if (TypeUtils.isString(argument.getType()) || removeValueOfForStringConcatenation(argument)) {
                         return JavaTemplate.builder("#{any(java.lang.String)}").build()
                                 .apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
                     }
@@ -84,7 +87,7 @@ public class NoValueOfOnStringType extends Recipe {
              * @param argument The argument of the valueOf method.
              * @return True if the method can be removed.
              */
-            private boolean removeValueOfFromBinaryExpression(Expression argument) {
+            private boolean removeValueOfForStringConcatenation(Expression argument) {
                 if (TypeUtils.asPrimitive(argument.getType()) != null) {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
                     if (parent instanceof J.Binary) {

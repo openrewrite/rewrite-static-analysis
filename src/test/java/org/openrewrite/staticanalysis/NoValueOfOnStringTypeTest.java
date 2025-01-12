@@ -255,4 +255,28 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/441")
+    void concatenationExpressionNeedsParentheses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method(int i) {
+                      String parens = "prefix" + String.valueOf(i - 1);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method(int i) {
+                      String parens = "prefix" + (i - 1);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
