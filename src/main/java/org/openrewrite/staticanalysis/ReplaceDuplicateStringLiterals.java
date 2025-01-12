@@ -231,8 +231,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     // `private static final String`(s) are handled separately by `FindExistingPrivateStaticFinalFields`.
                     if (v.getInitializer() instanceof J.Literal &&
                             (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
-                            ((J.Literal) v.getInitializer()).getValue() instanceof String &&
-                            !privateStaticFinalVariable) {
+                            !(privateStaticFinalVariable && ((J.Literal) v.getInitializer()).getValue() instanceof String) &&
+                            !(((J.Literal) v.getInitializer()).getValue() == null)) {
                         String value = (((J.Literal) v.getInitializer()).getValue()).toString();
                         result.existingFieldValueToFieldName.put(v.getSimpleName(), value);
                     }
