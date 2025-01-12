@@ -271,6 +271,13 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
             """
               public class A {
                   public void doubleNegation(boolean g) {
+                      boolean h = !!g;
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void doubleNegation(boolean g) {
                       boolean h = g;
                   }
               }
