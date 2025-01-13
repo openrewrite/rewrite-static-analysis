@@ -70,10 +70,7 @@ public class EqualsAvoidsNull extends Recipe {
             }
         };
         return Preconditions.check(
-                Preconditions.or(
-                        new UsesMethod<>("java.lang.String equals*(..)"),
-                        new UsesMethod<>("java.lang.String co*(..)")
-                ),
+                new UsesMethod<>("java.lang.String *quals*(..)"),
                 replacementVisitor
         );
     }
