@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -173,6 +174,61 @@ class UnnecessaryThrowsTest implements RewriteTest {
               class Test {
                   void test() throws Exception {
                       DatatypeFactory.newInstance();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
+    @Test
+    void necessaryThrowsFromConstructor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Test {
+                  String str = test();
+                  Test() throws IOException {}
+                  String test() throws IOException {
+                      throw new IOException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Not yet implemented")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
+    @Test
+    void necessaryThrowsFromConstructorWithUnused() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.util.concurrent.ExecutionException;
+
+              class Test {
+                  String str = test();
+                  Test() throws IOException, ExecutionException {}
+                  String test() throws IOException {
+                      throw new IOException();
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Test {
+                  String str = test();
+                  Test() throws IOException {}
+                  String test() throws IOException {
+                      throw new IOException();
                   }
               }
               """
