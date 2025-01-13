@@ -180,6 +180,39 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
+    @Test
+    void necessaryThrowsFromConstructor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.util.concurrent.ExecutionException;
+
+              class Test {
+                  String str = test();
+                  Test() throws IOException, ExecutionException {}
+                  String test() throws IOException {
+                      throw new IOException();
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Test {
+                  String str = test();
+                  Test() throws IOException {}
+                  String test() throws IOException {
+                      throw new IOException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/897")
     @Test
     void necessaryThrowsOnInterfaceWithExplicitOverride() {
