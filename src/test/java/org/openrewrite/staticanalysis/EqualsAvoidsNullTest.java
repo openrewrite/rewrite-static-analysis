@@ -46,8 +46,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       String s = null;
                       if(s.equals("test")) {}
                       if(s.equalsIgnoreCase("test")) {}
-                      System.out.println(s.compareTo("test"));
-                      System.out.println(s.compareToIgnoreCase("test"));
                       System.out.println(s.contentEquals("test"));
                   }
               }
@@ -58,8 +56,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       String s = null;
                       if("test".equals(s)) {}
                       if("test".equalsIgnoreCase(s)) {}
-                      System.out.println("test".compareTo(s));
-                      System.out.println("test".compareToIgnoreCase(s));
                       System.out.println("test".contentEquals(s));
                   }
               }
@@ -243,8 +239,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   class A {
                       private boolean isFoo(String foo, String bar) {
-                          return foo.contentEquals(Constants.FOO)
-                              || bar.compareToIgnoreCase(Constants.FOO);
+                          return foo.equals(Constants.FOO)
+                              || bar.contentEquals(Constants.FOO);
                       }
                   }
                   """,
@@ -254,8 +250,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   class A {
                       private boolean isFoo(String foo, String bar) {
-                          return Constants.FOO.contentEquals(foo)
-                              || Constants.FOO.compareToIgnoreCase(bar);
+                          return Constants.FOO.equals(foo)
+                              || Constants.FOO.contentEquals(bar);
                       }
                   }
                   """
@@ -435,5 +431,24 @@ class EqualsAvoidsNullTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/442")
+    @Test
+    void retainCompareToAsToNotChangeOrder() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      String s = null;
+                      System.out.println(s.compareTo("test"));
+                      System.out.println(s.compareToIgnoreCase("test"));
+                  }
+              }
+              """
+          )
+        );
     }
 }
