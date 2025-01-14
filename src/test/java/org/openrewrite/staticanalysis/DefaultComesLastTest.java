@@ -51,7 +51,7 @@ class DefaultComesLastTest implements RewriteTest {
                           case 1:
                               break;
                           case 2:
-                              break;
+                              break; 
                           default:
                               System.out.println("default");
                               break;
@@ -289,6 +289,41 @@ class DefaultComesLastTest implements RewriteTest {
                           case C -> { var = 3; }
                       }
                       return var;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defaultComesLastCreateDuplicate() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  boolean foo() {
+                      switch (n) {
+                          default:
+                          case DERIVATION_MODE:
+                            System.out.println("default");
+                            break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  boolean foo() {
+                      switch (n) {
+                          case DERIVATION_MODE:
+                          default:
+                            System.out.println("default");
+                            break;
+                      }
                   }
               }
               """
