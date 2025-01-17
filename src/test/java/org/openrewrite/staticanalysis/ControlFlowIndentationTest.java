@@ -46,7 +46,7 @@ class ControlFlowIndentationTest implements RewriteTest {
                       foo();
                           foo();
                   }
-                  
+
                   static void foo() {
                   // There's no control flow in this method body, so its indentation should remain untouched
                               int a = 0;
@@ -61,7 +61,7 @@ class ControlFlowIndentationTest implements RewriteTest {
                           foo();
                       foo();
                   }
-                  
+
                   static void foo() {
                   // There's no control flow in this method body, so its indentation should remain untouched
                               int a = 0;
@@ -90,7 +90,7 @@ class ControlFlowIndentationTest implements RewriteTest {
                       }
                               foo();
                   }
-                  
+
                   static void foo(){}
               }
               """
@@ -114,7 +114,7 @@ class ControlFlowIndentationTest implements RewriteTest {
                           foo();
                           foo();
                   }
-                  
+
                   static void foo(){}
               }
               """,
@@ -127,7 +127,7 @@ class ControlFlowIndentationTest implements RewriteTest {
                           foo();
                       foo();
                   }
-                  
+
                   static void foo(){}
               }
               """
@@ -185,7 +185,7 @@ class ControlFlowIndentationTest implements RewriteTest {
                           foo();
                           foo();
                   }
-                  
+
                   static void foo(){}
               }
               """,
@@ -196,7 +196,7 @@ class ControlFlowIndentationTest implements RewriteTest {
                           foo();
                       foo();
                   }
-                  
+
                   static void foo(){}
               }
               """

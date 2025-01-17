@@ -261,6 +261,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             randomId(),
                             Space.EMPTY,
                             Markers.EMPTY,
+                            Collections.emptyList(),
                             "default",
                             null,
                             null

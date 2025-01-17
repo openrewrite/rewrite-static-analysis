@@ -48,7 +48,7 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COLLECTORS_TO_SET_METHOD_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
-            private JavaTemplate template = JavaTemplate.builder("Collectors.toCollection(LinkedHashSet::new)")
+            private final JavaTemplate template = JavaTemplate.builder("Collectors.toCollection(LinkedHashSet::new)")
                     .imports("java.util.stream.Collectors", "java.util.LinkedHashSet")
                     .build();
 

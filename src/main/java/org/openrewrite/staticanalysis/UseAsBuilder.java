@@ -66,7 +66,7 @@ public class UseAsBuilder extends Recipe {
     }
 
     @Override
-    public Validated validate() {
+    public Validated<Object> validate() {
         return super.validate().and(notBlank("builderType", builderType));
     }
 

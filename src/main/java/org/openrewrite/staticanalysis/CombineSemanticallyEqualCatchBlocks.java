@@ -603,7 +603,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                         return _case;
                     }
 
-                    this.visit(_case.getPattern(), compareTo.getPattern());
+                    this.visit(_case.getExpressions().get(0), compareTo.getExpressions().get(0));
                     for (int i = 0; i < _case.getStatements().size(); i++) {
                         this.visit(_case.getStatements().get(i), compareTo.getStatements().get(i));
                     }

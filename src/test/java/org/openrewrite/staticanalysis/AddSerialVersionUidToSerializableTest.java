@@ -53,7 +53,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private String fred;
                   private int numberOfFreds;
@@ -61,7 +61,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
               """,
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private static final long serialVersionUID = 1;
                   private String fred;
@@ -79,7 +79,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private final long serialVersionUID = 1;
                   private String fred;
@@ -88,7 +88,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
               """,
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private static final long serialVersionUID = 1;
                   private String fred;
@@ -106,7 +106,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   long serialVersionUID = 1;
                   private String fred;
@@ -115,7 +115,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
               """,
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private static final long serialVersionUID = 1;
                   private String fred;
@@ -160,7 +160,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private static final long serialVersionUID = 1;
                   private String fred;
@@ -178,7 +178,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private String fred;
                   private int numberOfFreds;
@@ -189,7 +189,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
               """,
             """
               import java.io.Serializable;
-                          
+
               public class Example implements Serializable {
                   private static final long serialVersionUID = 1;
                   private String fred;
@@ -210,7 +210,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public interface Example extends Serializable {
               }
               """
@@ -225,7 +225,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public class MyException extends Exception implements Serializable {
               }
               """
@@ -240,7 +240,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-                          
+
               public class MyException extends RuntimeException implements Serializable {
               }
               """

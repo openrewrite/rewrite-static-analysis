@@ -181,7 +181,7 @@ public class OperatorWrap extends Recipe {
                 if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof())) {
                     if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (i.getClazz().getPrefix().getWhitespace().contains("\n")) {
-                            i = i.getPadding().withExpr(
+                            i = i.getPadding().withExpression(
                                     i.getPadding().getExpression().withAfter(
                                             i.getClazz().getPrefix()
                                     )
@@ -198,7 +198,7 @@ public class OperatorWrap extends Recipe {
                                         i.getPadding().getExpression().getAfter()
                                 )
                         );
-                        i = i.getPadding().withExpr(
+                        i = i.getPadding().withExpression(
                                 i.getPadding().getExpression().withAfter(
                                         i.getPadding().getExpression().getAfter().withWhitespace(" ")
                                 )

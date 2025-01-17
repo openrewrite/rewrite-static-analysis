@@ -67,8 +67,8 @@ public class DeclarationSiteTypeVariance extends Recipe {
     }
 
     @Override
-    public Validated validate() {
-        Validated v = super.validate();
+    public Validated<Object> validate() {
+        Validated<Object> v = super.validate();
         v = v.and(Validated.required("variantTypes", variantTypes));
         if (v.isValid()) {
             for (String variantType : variantTypes) {
