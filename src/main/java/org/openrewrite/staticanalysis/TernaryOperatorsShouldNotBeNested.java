@@ -159,7 +159,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                         if (nestList.size() < 2) {
                             return null;
                         }
-                        return autoFormat(toSwitch(switchVar, nestList), ctx);
+                        return autoFormat(toSwitch(switchVar, nestList, ternary.getType()), ctx);
                     }).map(J.class::cast)
                     .orElseGet(() -> super.visitTernary(ternary, ctx));
         }
@@ -194,7 +194,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             return Objects.equals(foundVar.getFieldType(), switchVar.getFieldType());
         }
 
-        private J.SwitchExpression toSwitch(final J.Identifier switchVar, final List<J.Ternary> nestList) {
+        private J.SwitchExpression toSwitch(final J.Identifier switchVar, final List<J.Ternary> nestList, @Nullable JavaType type) {
             J.Ternary last = nestList.get(nestList.size() - 1);
             return new J.SwitchExpression(
                     Tree.randomId(),
@@ -210,7 +210,8 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             nestList.stream().map(ternary -> toCase(switchVar, ternary)),
                             Stream.of(toDefault(last))
                     ).collect(Collectors.toList()))
-                            .withPrefix(Space.SINGLE_SPACE)
+                            .withPrefix(Space.SINGLE_SPACE),
+                    type
             );
         }
 
