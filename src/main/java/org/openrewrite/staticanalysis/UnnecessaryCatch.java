@@ -43,6 +43,14 @@ public class UnnecessaryCatch extends Recipe {
             required = false)
     boolean includeJavaLangException;
 
+    @Option(displayName = "Include `java.lang.Throwable`",
+        description = "Whether to include java.lang.Throwable in the list of checked exceptions to remove. " +
+            "Unlike other checked exceptions, `java.lang.Throwable` is also the superclass of unchecked exceptions. " +
+            "So removing `catch(Throwable e)` may result in changed runtime behavior in the presence of unchecked exceptions. " +
+            "Default `false`",
+        required = false)
+    boolean includeJavaLangThrowable;
+
     @Override
     public String getDisplayName() {
         return "Remove catch for a checked exception if the try block does not throw that exception";
@@ -106,6 +114,9 @@ public class UnnecessaryCatch extends Recipe {
                         return aCatch;
                     }
                     if (!includeJavaLangException && TypeUtils.isOfClassType(parameterType, "java.lang.Exception")) {
+                        return aCatch;
+                    }
+                    if (!includeJavaLangThrowable && TypeUtils.isOfClassType(parameterType, "java.lang.Throwable")) {
                         return aCatch;
                     }
                     for (JavaType e : thrownExceptions) {
