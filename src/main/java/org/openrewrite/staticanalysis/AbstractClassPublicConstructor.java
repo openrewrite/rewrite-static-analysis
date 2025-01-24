@@ -30,13 +30,13 @@ import static org.openrewrite.java.tree.J.Modifier.Type.*;
 public class AbstractClassPublicConstructor extends Recipe {
     @Override
     public String getDisplayName() {
-        return "Make constructors of abstract classes protected";
+        return "Constructors of an `abstract` class should not be declared `public`";
     }
 
     @Override
     public String getDescription() {
-        return "Constructors of abstract classes can only be called in constructors of their subclasses. "
-                + "Therefore the visibility of public constructors are reduced to protected.";
+        return "Constructors of `abstract` classes can only be called in constructors of their subclasses. " +
+                "Therefore the visibility of `public` constructors are reduced to `protected`.";
     }
 
     @Override
@@ -51,22 +51,16 @@ public class AbstractClassPublicConstructor extends Recipe {
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 if (cd.hasModifier(Abstract)) {
-                    doAfterVisit(CHANGE_CONSTRUCTOR_ACCESS_LEVEL_VISITOR);
+                    return cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), st -> {
+                        if (st instanceof J.MethodDeclaration && ((J.MethodDeclaration) st).isConstructor()) {
+                            return ((J.MethodDeclaration) st).withModifiers(ListUtils.map(((J.MethodDeclaration) st).getModifiers(),
+                                    mod -> mod.getType() == Public ? mod.withType(Protected) : mod));
+                        }
+                        return st;
+                    })));
                 }
                 return cd;
             }
         };
     }
-
-    static final TreeVisitor<?, ExecutionContext> CHANGE_CONSTRUCTOR_ACCESS_LEVEL_VISITOR = new JavaIsoVisitor<ExecutionContext>() {
-        @Override
-        public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-            J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-            if (md.isConstructor() && md.hasModifier(Public)) {
-                md = md.withModifiers(ListUtils.map(md.getModifiers(),
-                        mod -> mod.getType() == Public ? mod.withType(Protected) : mod));
-            }
-            return md;
-        }
-    };
 }
