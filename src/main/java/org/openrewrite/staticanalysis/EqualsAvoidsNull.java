@@ -56,7 +56,8 @@ public class EqualsAvoidsNull extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                new UsesMethod<>("java.lang.String *compareTo*(..)"),
+//                new UsesMethod<>("java.lang.String *quals*(..)"),
+                new UsesMethod<>("java.lang.String *(..)"),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J visit(@Nullable Tree tree, ExecutionContext ctx) {

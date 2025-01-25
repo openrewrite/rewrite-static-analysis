@@ -499,6 +499,15 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       System.out.println(s.compareToIgnoreCase("test"));
                   }
               }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      System.out.println("test".compareTo(s));
+                      System.out.println("test".compareToIgnoreCase(s));
+                  }
+              }
               """
           )
         );
