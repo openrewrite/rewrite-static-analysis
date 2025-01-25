@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -29,7 +30,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
 public class EqualsAvoidsNull extends Recipe {
 
@@ -62,7 +62,10 @@ public class EqualsAvoidsNull extends Recipe {
                     public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                         if (tree instanceof JavaSourceFile) {
                             JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                            return new EqualsAvoidsNullVisitor<>(defaultIfNull(cu.getStyle(EqualsAvoidsNullStyle.class),Checkstyle.equalsAvoidsNull())).visitNonNull(cu, ctx);
+                            return new EqualsAvoidsNullVisitor<>(
+                                    ObjectUtils.defaultIfNull(cu.getStyle(EqualsAvoidsNullStyle.class),
+                                            Checkstyle.equalsAvoidsNull()))
+                                    .visitNonNull(cu, ctx);
                         }
                         //noinspection DataFlowIssue
                         return (J) tree;
