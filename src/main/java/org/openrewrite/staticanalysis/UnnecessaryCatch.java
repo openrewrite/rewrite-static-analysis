@@ -24,6 +24,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.J.NewClass;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
@@ -88,6 +89,18 @@ public class UnnecessaryCatch extends Recipe {
                 AtomicBoolean missingTypeInformation = new AtomicBoolean(false);
                 //Collect any checked exceptions thrown from the try block.
                 new JavaIsoVisitor<Integer>() {
+                    @Override
+                    public NewClass visitNewClass(NewClass newClass, Integer integer) {
+                        JavaType.Method methodType = newClass.getMethodType();
+                        if (methodType == null) {
+                            //Do not make any changes if there is missing type information.
+                            missingTypeInformation.set(true);
+                        } else {
+                            thrownExceptions.addAll(methodType.getThrownExceptions());
+                        }
+                        return super.visitNewClass(newClass, integer);
+                    }
+
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer integer) {
                         JavaType.Method methodType = method.getMethodType();

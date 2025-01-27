@@ -141,6 +141,33 @@ class UnnecessaryCatchTest implements RewriteTest {
     }
 
     @Test
+    void doNotRemoveThrownExceptionFromConstructor() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                  import java.io.IOException;
+
+                  public class AnExample {
+                      public void method() {
+                          try {
+                              new Fred();
+                          } catch (IOException e) {
+                              System.out.println("an exception!");
+                          }
+                      }
+
+                      public static class Fred {
+                          public Fred() throws IOException {}
+                      }
+
+                  }
+                  """
+            )
+        );
+    }
+
+    @Test
     void doNotRemoveJavaLangException() {
         rewriteRun(
           //language=java
