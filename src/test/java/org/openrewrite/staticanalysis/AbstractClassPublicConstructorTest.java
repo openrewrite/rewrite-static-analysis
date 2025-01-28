@@ -72,7 +72,8 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
     void noReplaceOnPackageProtectedConstructor() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
             abstract class Test {
                 Test() {
                 }
