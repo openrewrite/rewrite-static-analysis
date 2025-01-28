@@ -68,7 +68,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
               public enum FRUITS {
                   BANANA,
                   APPLE;
-                  
+
                   void hiFruit() {}
               }
               """
@@ -215,6 +215,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
     }
 
     @Test
+    @DocumentExample
     void repeatedSemicolon() {
         rewriteRun(
           //language=java
