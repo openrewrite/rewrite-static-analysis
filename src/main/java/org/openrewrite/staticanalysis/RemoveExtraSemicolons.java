@@ -38,8 +38,8 @@ public class RemoveExtraSemicolons extends Recipe {
     public String getDescription() {
         //language=markdown
         return "Removes not needed semicolons. Semicolons are considered not needed:\n" +
-                "* Optional semicolons at the end of try-with-resources,\n" +
-                "* after the last enum value if no field or method is defined,\n" +
+                "* Optional semicolons at the end of try-with-resources\n" +
+                "* after the last enum value if no field or method is defined\n" +
                 "* no statement between two semicolon.";
     }
 
