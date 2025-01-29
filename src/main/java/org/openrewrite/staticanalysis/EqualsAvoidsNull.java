@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -54,24 +55,23 @@ public class EqualsAvoidsNull extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        JavaIsoVisitor<ExecutionContext> replacementVisitor = new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                    EqualsAvoidsNullStyle style = cu.getStyle(EqualsAvoidsNullStyle.class);
-                    if (style == null) {
-                        style = Checkstyle.equalsAvoidsNull();
-                    }
-                    return new EqualsAvoidsNullVisitor<>(style).visitNonNull(cu, ctx);
-                }
-                //noinspection DataFlowIssue
-                return (J) tree;
-            }
-        };
         return Preconditions.check(
-                new UsesMethod<>("java.lang.String *quals*(..)"),
-                replacementVisitor
+//                new UsesMethod<>("java.lang.String *quals*(..)"),
+                new UsesMethod<>("java.lang.String *(..)"),
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                        if (tree instanceof JavaSourceFile) {
+                            JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+                            return new EqualsAvoidsNullVisitor<>(
+                                    ObjectUtils.defaultIfNull(cu.getStyle(EqualsAvoidsNullStyle.class),
+                                            Checkstyle.equalsAvoidsNull()))
+                                    .visitNonNull(cu, ctx);
+                        }
+                        //noinspection DataFlowIssue
+                        return (J) tree;
+                    }
+                }
         );
     }
 }
