@@ -83,6 +83,31 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
+    void multiCastCatchShouldBePreservedFoBecauseLessSpecificCatchFollows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (IOException | RuntimeException e) {
+                          throw e;
+                      } catch(Exception e) {
+                          System.out.println(e.getMessage());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void catchShouldBePreservedBecauseLessSpecificCatchFollowsWithMultiCast() {
         rewriteRun(
           //language=java
@@ -96,6 +121,31 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                       try {
                           new FileReader("").read();
                       } catch (IOException e) {
+                          throw e;
+                      } catch(Exception | Throwable t) {
+                          t.printStackTrace();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void multiCastCatchShouldBePreservedFoBecauseLessSpecificCatchFollowsWithMultiCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (IOException | RuntimeException e) {
                           throw e;
                       } catch(Exception | Throwable t) {
                           t.printStackTrace();
