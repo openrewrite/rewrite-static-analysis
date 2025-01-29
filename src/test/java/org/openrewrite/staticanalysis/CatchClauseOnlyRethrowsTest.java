@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("ALL")
@@ -45,7 +46,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           new FileReader("").read();
                       } catch (IOException e) {
                           throw new IOException("another message", e);
-                      } catch(Exception e) {
+                      } catch (Exception e) {
                           throw new Exception("another message");
                       }
                   }
@@ -70,9 +71,9 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           new FileReader("").read();
                       } catch (IOException e) {
                           throw e;
-                      } catch(Exception e) {
+                      } catch (Exception e) {
                           System.out.println(e.getMessage());
-                      } catch(Throwable t) {
+                      } catch (Throwable t) {
                           t.printStackTrace();
                       }
                   }
@@ -83,7 +84,35 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void multiCastCatchShouldBePreservedFoBecauseLessSpecificCatchFollows() {
+    void catchShouldBePreservedBecauseLessSpecificCatchFollowsLater() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (FileNotFoundException e) {
+                          throw e;
+                      } catch (IOException e) {
+                          throw e;
+                      } catch (Exception e) {
+                          System.out.println(e.getMessage());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void multiCatchShouldBePreservedFoBecauseLessSpecificCatchFollows() {
         rewriteRun(
           //language=java
           java(
@@ -97,7 +126,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           new FileReader("").read();
                       } catch (IOException | RuntimeException e) {
                           throw e;
-                      } catch(Exception e) {
+                      } catch (Exception e) {
                           System.out.println(e.getMessage());
                       }
                   }
@@ -108,7 +137,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void catchShouldBePreservedBecauseLessSpecificCatchFollowsWithMultiCast() {
+    void catchShouldBePreservedBecauseLessSpecificCatchFollowsWithMulticatch () {
         rewriteRun(
           //language=java
           java(
@@ -122,7 +151,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           new FileReader("").read();
                       } catch (IOException e) {
                           throw e;
-                      } catch(Exception | Throwable t) {
+                      } catch (Exception | Throwable t) {
                           t.printStackTrace();
                       }
                   }
@@ -133,7 +162,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void multiCastCatchShouldBePreservedFoBecauseLessSpecificCatchFollowsWithMultiCast() {
+    void mltiCatchShouldBePreservedFoBecauseLessSpecificCatchFollowsWithMulticatch () {
         rewriteRun(
           //language=java
           java(
@@ -147,7 +176,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           new FileReader("").read();
                       } catch (IOException | RuntimeException e) {
                           throw e;
-                      } catch(Exception | Throwable t) {
+                      } catch (Exception | Throwable t) {
                           t.printStackTrace();
                       }
                   }
@@ -192,7 +221,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void tryCanBeRemovedWithMultiCatch() {
+    void tryCanBeRemovedWithMulticatch () {
         rewriteRun(
           //language=java
           java(
@@ -207,9 +236,9 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           new FileReader("").read();
                       } catch (FileNotFoundException e) {
                           throw e;
-                      } catch(IOException | ArrayIndexOutOfBoundsException e) {
+                      } catch (IOException | ArrayIndexOutOfBoundsException e) {
                           throw e;
-                      } catch(Exception e) {
+                      } catch (Exception e) {
                           throw e;
                       }
                   }
@@ -246,7 +275,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                           new FileReader("").read();
                       } catch (FileNotFoundException e) {
                           throw e;
-                      } catch(IOException | ArrayIndexOutOfBoundsException e) {
+                      } catch (IOException | ArrayIndexOutOfBoundsException e) {
                           throw new IOException("another message", e);
                       }
                   }
