@@ -80,7 +80,7 @@ public class CatchClauseOnlyRethrows extends Recipe {
                 J.Try t = super.visitTry(tryable, ctx);
                 return t.withCatches(ListUtils.map(t.getCatches(), (i, aCatch) -> {
                     if (onlyRethrows(aCatch)) {
-                        // if a subsequent catch is a wider exception type and doesn't rethrow, we should  keep this one
+                        // if a subsequent catch is a wider exception type and doesn't rethrow, we should keep this one
                         for (int j = i + 1; j < tryable.getCatches().size(); j++) {
                             J.Try.Catch next = tryable.getCatches().get(j);
                             if (isAnyAssignableTo(getJavaTypes(next), getJavaTypes(aCatch)) && !onlyRethrows(next)) {

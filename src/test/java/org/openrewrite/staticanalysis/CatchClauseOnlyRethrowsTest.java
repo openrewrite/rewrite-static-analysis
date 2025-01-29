@@ -137,7 +137,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void catchShouldBePreservedBecauseLessSpecificCatchFollowsWithMulticatch () {
+    void catchShouldBePreservedBecauseLessSpecificCatchFollowsWithMulticatch() {
         rewriteRun(
           //language=java
           java(
@@ -162,7 +162,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void mltiCatchShouldBePreservedFoBecauseLessSpecificCatchFollowsWithMulticatch () {
+    void mltiCatchShouldBePreservedFoBecauseLessSpecificCatchFollowsWithMulticatch() {
         rewriteRun(
           //language=java
           java(
@@ -221,7 +221,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void tryCanBeRemovedWithMulticatch () {
+    void tryCanBeRemovedWithMultiCatch() {
         rewriteRun(
           //language=java
           java(
