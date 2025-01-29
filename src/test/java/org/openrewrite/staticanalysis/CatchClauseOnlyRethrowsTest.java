@@ -162,7 +162,7 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
     }
 
     @Test
-    void mltiCatchShouldBePreservedFoBecauseLessSpecificCatchFollowsWithMultiCatch() {
+    void mltiCatchShouldBePreservedBecauseLessSpecificCatchFollowsWithMultiCatch() {
         rewriteRun(
           //language=java
           java(
