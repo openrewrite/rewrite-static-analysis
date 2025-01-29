@@ -30,8 +30,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class CatchClauseOnlyRethrows extends Recipe {
@@ -98,10 +97,13 @@ public class CatchClauseOnlyRethrows extends Recipe {
                     JavaType.MultiCatch multiCatch = (JavaType.MultiCatch) next.getParameter().getType();
                     return multiCatch.getThrowableTypes();
                 }
-                return singletonList(next.getParameter().getType());
+                return next.getParameter().getType() != null ? singletonList(next.getParameter().getType()) : emptyList();
             }
 
             private boolean isAnyAssignableTo(List<JavaType> nextTypes, List<JavaType> aCatchTypes) {
+                if (nextTypes.isEmpty()) {
+                    return false;
+                }
                 for (JavaType aCatchType : aCatchTypes) {
                     for (JavaType nextType : nextTypes) {
                         if (TypeUtils.isAssignableTo(nextType, aCatchType)) {

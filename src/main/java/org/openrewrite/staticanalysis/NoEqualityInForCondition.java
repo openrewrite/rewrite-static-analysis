@@ -50,6 +50,7 @@ public class NoEqualityInForCondition extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+
         return new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForControl(J.ForLoop.Control control, ExecutionContext ctx) {
@@ -57,8 +58,8 @@ public class NoEqualityInForCondition extends Recipe {
                     J.Binary condition = (J.Binary) control.getCondition();
 
                     if (isNumericalType(condition) &&
-                        control.getUpdate().size() == 1 &&
-                        control.getUpdate().get(0) instanceof J.Unary) {
+                            control.getUpdate().size() == 1 &&
+                            control.getUpdate().get(0) instanceof J.Unary) {
                         J.Unary update = (J.Unary) control.getUpdate().get(0);
                         if (updatedExpressionInConditional(update.getExpression(), condition)) {
                             if (condition.getOperator() == J.Binary.Type.NotEqual) {
@@ -104,9 +105,9 @@ public class NoEqualityInForCondition extends Recipe {
             private boolean isNumericalType(J.Binary condition) {
                 JavaType type = condition.getRight().getType();
                 return type == JavaType.Primitive.Short ||
-                       type == JavaType.Primitive.Byte ||
-                       type == JavaType.Primitive.Int ||
-                       type == JavaType.Primitive.Long;
+                        type == JavaType.Primitive.Byte ||
+                        type == JavaType.Primitive.Int ||
+                        type == JavaType.Primitive.Long;
             }
         };
     }

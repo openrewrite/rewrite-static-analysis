@@ -20,7 +20,6 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("ALL")
