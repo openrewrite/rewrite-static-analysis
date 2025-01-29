@@ -97,13 +97,10 @@ public class CatchClauseOnlyRethrows extends Recipe {
                     JavaType.MultiCatch multiCatch = (JavaType.MultiCatch) next.getParameter().getType();
                     return multiCatch.getThrowableTypes();
                 }
-                return next.getParameter().getType() != null ? singletonList(next.getParameter().getType()) : emptyList();
+                return next.getParameter().getType() == null ? emptyList() : singletonList(next.getParameter().getType());
             }
 
             private boolean isAnyAssignableTo(List<JavaType> nextTypes, List<JavaType> aCatchTypes) {
-                if (nextTypes.isEmpty()) {
-                    return false;
-                }
                 for (JavaType aCatchType : aCatchTypes) {
                     for (JavaType nextType : nextTypes) {
                         if (TypeUtils.isAssignableTo(nextType, aCatchType)) {
