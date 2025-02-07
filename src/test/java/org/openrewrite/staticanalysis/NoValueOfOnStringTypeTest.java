@@ -144,6 +144,23 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/456")
+    void valueOfOnNonStringPrimitiveWithBinaryArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method(int i) {
+                      String s = String.valueOf(41 + 1);
+                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/1200")
     void valueOfIsMethodInvocationPartOfBinary() {
         rewriteRun(

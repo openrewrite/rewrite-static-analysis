@@ -27,7 +27,7 @@ class UnnecessaryCatchTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new UnnecessaryCatch(false));
+        spec.recipe(new UnnecessaryCatch(false, false));
     }
 
     @DocumentExample
@@ -141,6 +141,33 @@ class UnnecessaryCatchTest implements RewriteTest {
     }
 
     @Test
+    void doNotRemoveThrownExceptionFromConstructor() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                  import java.io.IOException;
+
+                  public class AnExample {
+                      public void method() {
+                          try {
+                              new Fred();
+                          } catch (IOException e) {
+                              System.out.println("an exception!");
+                          }
+                      }
+
+                      public static class Fred {
+                          public Fred() throws IOException {}
+                      }
+
+                  }
+                  """
+            )
+        );
+    }
+
+    @Test
     void doNotRemoveJavaLangException() {
         rewriteRun(
           //language=java
@@ -157,6 +184,26 @@ class UnnecessaryCatchTest implements RewriteTest {
               }
               """
           )
+        );
+    }
+
+    @Test
+    void doNotRemoveJavaLangThrowable() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                  class Scratch {
+                      void method() {
+                          try {
+                              throw new RuntimeException();
+                          } catch (Throwable e) {
+                              System.out.println("an exception!");
+                          }
+                      }
+                  }
+                  """
+            )
         );
     }
 }

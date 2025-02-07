@@ -69,7 +69,7 @@ public class NoValueOfOnStringType extends Recipe {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
                     Expression argument = mi.getArguments().get(0);
-                    if (argument instanceof J.Binary) {
+                    if (argument instanceof J.Binary && removeValueOfForStringConcatenation(argument)) {
                         return JavaTemplate.builder("(#{any(java.lang.String)})").build()
                                 .apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
                     } else if (TypeUtils.isString(argument.getType()) || removeValueOfForStringConcatenation(argument)) {

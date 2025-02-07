@@ -27,9 +27,10 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class CatchClauseOnlyRethrows extends Recipe {
@@ -78,14 +79,10 @@ public class CatchClauseOnlyRethrows extends Recipe {
                 J.Try t = super.visitTry(tryable, ctx);
                 return t.withCatches(ListUtils.map(t.getCatches(), (i, aCatch) -> {
                     if (onlyRethrows(aCatch)) {
-                        // if a subsequent catch is a wider exception type and doesn't rethrow, we should
-                        // keep this one
+                        // if a subsequent catch is a wider exception type and doesn't rethrow, we should keep this one
                         for (int j = i + 1; j < tryable.getCatches().size(); j++) {
                             J.Try.Catch next = tryable.getCatches().get(j);
-                            if (hasWiderExceptionType(aCatch, next)) {
-                                if (onlyRethrows(next)) {
-                                    return null;
-                                }
+                            if (isAnyAssignableTo(getJavaTypes(next), getJavaTypes(aCatch)) && !onlyRethrows(next)) {
                                 return aCatch;
                             }
                         }
@@ -95,17 +92,23 @@ public class CatchClauseOnlyRethrows extends Recipe {
                 }));
             }
 
-            private boolean hasWiderExceptionType(J.Try.Catch aCatch, J.Try.Catch next) {
+            private List<JavaType> getJavaTypes(J.Try.Catch next) {
                 if (next.getParameter().getType() instanceof JavaType.MultiCatch) {
                     JavaType.MultiCatch multiCatch = (JavaType.MultiCatch) next.getParameter().getType();
-                    for (JavaType throwableType : multiCatch.getThrowableTypes()) {
-                        if (TypeUtils.isAssignableTo(throwableType, aCatch.getParameter().getType())) {
+                    return multiCatch.getThrowableTypes();
+                }
+                return next.getParameter().getType() == null ? emptyList() : singletonList(next.getParameter().getType());
+            }
+
+            private boolean isAnyAssignableTo(List<JavaType> nextTypes, List<JavaType> aCatchTypes) {
+                for (JavaType aCatchType : aCatchTypes) {
+                    for (JavaType nextType : nextTypes) {
+                        if (TypeUtils.isAssignableTo(nextType, aCatchType)) {
                             return true;
                         }
                     }
-                    return false;
                 }
-                return TypeUtils.isAssignableTo(next.getParameter().getType(), aCatch.getParameter().getType());
+                return false;
             }
 
             private boolean onlyRethrows(J.Try.Catch aCatch) {
@@ -116,9 +119,8 @@ public class CatchClauseOnlyRethrows extends Recipe {
 
                 Expression exception = ((J.Throw) aCatch.getBody().getStatements().get(0)).getException();
 
-                // In C# an implicit rethrow is possible
-                if (isInstanceOfCs(getCursor().firstEnclosing(SourceFile.class)) &&
-                    exception instanceof J.Empty) {
+                // In C# an implicit rethrow is possible, which means a `throw` statement without a variable
+                if (isInstanceOfCs(getCursor().firstEnclosing(SourceFile.class)) && exception instanceof J.Empty) {
                     return true;
                 }
 
