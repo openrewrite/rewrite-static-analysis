@@ -40,9 +40,10 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 
+import static java.time.Duration.ofMinutes;
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
@@ -60,12 +61,12 @@ public class EqualsAvoidsNull extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1132");
+        return singleton("RSPEC-S1132");
     }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
+        return ofMinutes(10);
     }
 
     @Override
