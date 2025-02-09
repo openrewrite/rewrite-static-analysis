@@ -73,8 +73,6 @@ public class EqualsAvoidsNull extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.or(
-                        new UsesMethod<>("java.lang.String compareTo(..)"),
-                        new UsesMethod<>("java.lang.String compareToIgnoreCase(..)"),
                         new UsesMethod<>("java.lang.String contentEquals(..)"),
                         new UsesMethod<>("java.lang.String equals(..)"),
                         new UsesMethod<>("java.lang.String equalsIgnoreCase(..)")),
@@ -118,9 +116,6 @@ class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private static final MethodMatcher EQUALS = new MethodMatcher(JAVA_LANG_STRING + "equals(java.lang.Object)");
     private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + "equalsIgnoreCase" +
             "(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO = new MethodMatcher(JAVA_LANG_STRING + "compareTo(java.lang.String)");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
-            "compareToIgnoreCase(java.lang.String)");
     private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + "contentEquals(java.lang" +
             ".CharSequence)");
 
@@ -164,9 +159,7 @@ class EqualsAvoidsNullVisitor<P> extends JavaVisitor<P> {
     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
         return EQUALS.matches(methodInvocation) ||
                 (!style.getIgnoreEqualsIgnoreCase() && EQUALS_IGNORE_CASE.matches(methodInvocation)) ||
-                CONTENT_EQUALS.matches(methodInvocation) ||
-                COMPARE_TO.matches(methodInvocation) ||
-                COMPARE_TO_IGNORE_CASE.matches(methodInvocation);
+                CONTENT_EQUALS.matches(methodInvocation);
     }
 
     private void maybeHandleParentBinary(J.MethodInvocation m) {
