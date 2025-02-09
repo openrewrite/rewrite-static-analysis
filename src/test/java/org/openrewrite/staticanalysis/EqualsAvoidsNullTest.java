@@ -67,6 +67,42 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
+    @DocumentExample
+    @Test
+    void invertConditionalKeepOrderOnObjectForCompare() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      Object s1 = null;
+                      Object s2 = null;
+                      if(s1.equals(s2)) {}
+                      if(s1.equalsIgnoreCase(s2)) {}
+                      System.out.println(s1.compareTo(s2));
+                      System.out.println(s1.compareToIgnoreCase(s2));
+                      System.out.println(s1.contentEquals(s2));
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      Object s1 = null;
+                      Object s2 = null;
+                      if(s1.equals(s2)) {}
+                      if(s1.equalsIgnoreCase(s2)) {}
+                      System.out.println(s1.compareTo(s2));
+                      System.out.println(s1.compareToIgnoreCase(s2));
+                      System.out.println(s1.contentEquals(s2));
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void removeUnnecessaryNullCheck() {
         rewriteRun(
