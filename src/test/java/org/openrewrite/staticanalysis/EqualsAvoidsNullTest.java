@@ -64,6 +64,35 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
+    @DocumentExample
+    @Test
+    void invertConditionalButKeepComparisonOrder() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  boolean bar(String x) {
+                      x.equals("2"); // should be "2".equals(x)
+                      x.compareTo("2"); // should be x.compareTo("2")
+                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2")
+                      return x.contentEquals("2"); // should be "2".contentEquals(x)
+                  }
+              }
+              """,
+            """
+              class A {
+                  boolean bar(String x) {
+                      "2".equals(x); // should be "2".equals(x)
+                      x.compareTo("2"); // should be x.compareTo("2")
+                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2")
+                      return "2".contentEquals(x); // should be "2".contentEquals(x)
+                  }
+              }
+              """)
+        );
+    }
+
     @Test
     void removeUnnecessaryNullCheck() {
         rewriteRun(
