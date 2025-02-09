@@ -75,9 +75,11 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
               class A {
                   boolean bar(String x) {
+                      x.compareTo("2"); // should be x.compareTo("2") for stable compare logic
+                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2") for stable compare logic
+                      x.contentEquals("2"); // should be "2".contentEquals(x)
                       x.equals("2"); // should be "2".equals(x)
-                      x.compareTo("2"); // should be x.compareTo("2")
-                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2")
+                      x.equalsIgnoreCase("2"); // should be "2".equalsIgnoreCase(x)
                       return x.contentEquals("2"); // should be "2".contentEquals(x)
                   }
               }
@@ -85,9 +87,11 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
               class A {
                   boolean bar(String x) {
+                      x.compareTo("2"); // should be x.compareTo("2") for stable compare logic
+                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2") for stable compare logic
+                      "2".contentEquals(x); // should be "2".contentEquals(x)
                       "2".equals(x); // should be "2".equals(x)
-                      x.compareTo("2"); // should be x.compareTo("2")
-                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2")
+                      "2".equalsIgnoreCase(x); // should be "2".equalsIgnoreCase(x)
                       return "2".contentEquals(x); // should be "2".contentEquals(x)
                   }
               }
