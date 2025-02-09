@@ -99,6 +99,41 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/362")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/442")
+    @DocumentExample
+    @Test
+    void keepOrderForSameType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void bar(String x) {
+                      String o = null;
+                      o.equals(x);
+                      o.equalsIgnoreCase(x);
+                      o.contentEquals(x);
+                      o.compareTo(x);
+                      o.compareToIgnoreCase(x);
+                  }
+              }
+              """,
+            """
+              class A {
+                  void bar(String x) {
+                      String o = null;
+                      o.equals(x);
+                      o.equalsIgnoreCase(x);
+                      o.contentEquals(x);
+                      o.compareTo(x);
+                      o.compareToIgnoreCase(x);
+                  }
+              }
+              """)
+        );
+    }
+
     @Test
     void removeUnnecessaryNullCheck() {
         rewriteRun(
