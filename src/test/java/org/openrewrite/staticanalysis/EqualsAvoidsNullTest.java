@@ -64,6 +64,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/362")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/442")
     @DocumentExample
     @Test
