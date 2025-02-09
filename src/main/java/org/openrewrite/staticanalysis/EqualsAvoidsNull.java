@@ -153,10 +153,9 @@ public class EqualsAvoidsNull extends Recipe {
 
                                                     @Override
                                                     public @Nullable J visit(@Nullable Tree tree, ExecutionContext p) {
-                                                        if (done) {
-                                                            return (J) tree;
-                                                        }
-                                                        return super.visit(tree, p);
+                                                        return done
+                                                                ? (J) tree
+                                                                : super.visit(tree, p);
                                                     }
 
                                                     @Override
