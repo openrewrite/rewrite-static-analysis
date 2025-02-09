@@ -118,18 +118,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       o.compareToIgnoreCase(x);
                   }
               }
-              """,
-            """
-              class A {
-                  void bar(String x) {
-                      String o = null;
-                      o.equals(x);
-                      o.equalsIgnoreCase(x);
-                      o.contentEquals(x);
-                      o.compareTo(x);
-                      o.compareToIgnoreCase(x);
-                  }
-              }
               """)
         );
     }
