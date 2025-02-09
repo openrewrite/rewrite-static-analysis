@@ -67,32 +67,42 @@ public class EqualsAvoidsNull extends Recipe {
         return ofMinutes(10);
     }
 
+    private static final String JAVA_LANG_STRING = "java.lang.String";
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.or(
-                        new UsesMethod<>("java.lang.String contentEquals(..)"),
-                        new UsesMethod<>("java.lang.String equals(..)"),
-                        new UsesMethod<>("java.lang.String equalsIgnoreCase(..)")),
+                        new UsesMethod<>(JAVA_LANG_STRING + " contentEquals(..)"),
+                        new UsesMethod<>(JAVA_LANG_STRING + " equals(..)"),
+                        new UsesMethod<>(JAVA_LANG_STRING + " equalsIgnoreCase(..)")),
                 new JavaIsoVisitor<ExecutionContext>() {
+
                     @Override
                     public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                         if (tree instanceof JavaSourceFile) {
                             JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                             return new JavaVisitor<ExecutionContext>() {
+
+                                private final MethodMatcher EQUALS =
+                                        new MethodMatcher(JAVA_LANG_STRING + " equals(java.lang.Object)");
+                                private final MethodMatcher EQUALS_IGNORE_CASE =
+                                        new MethodMatcher(JAVA_LANG_STRING + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
+                                private final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING
+                                        + " contentEquals(java.lang.CharSequence)");
+
                                 @Override
                                 public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext p) {
                                     J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, p);
-                                    boolean stringComparisonMethod = isStringComparisonMethod(m);
-                                    if (m.getSelect() != null && !(m.getSelect() instanceof J.Literal) &&
-                                            stringComparisonMethod && hasCompatibleArgument(m)) {
-
-                                        maybeHandleParentBinary(m);
-
+                                    if (m.getSelect() != null
+                                            && !(m.getSelect() instanceof J.Literal)
+                                            && isStringComparisonMethod(m)
+                                            && hasCompatibleArgument(m)) {
+                                        maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
                                         Expression firstArgument = m.getArguments().get(0);
-                                        return firstArgument.getType() == JavaType.Primitive.Null ?
-                                                literalsFirstInComparisonsNull(m, firstArgument) :
-                                                literalsFirstInComparisons(m, firstArgument);
+                                        return firstArgument.getType() == JavaType.Primitive.Null
+                                                ? literalsFirstInComparisonsNull(m, firstArgument)
+                                                : literalsFirstInComparisons(m, firstArgument);
                                     }
                                     return m;
                                 }
@@ -122,14 +132,15 @@ public class EqualsAvoidsNull extends Recipe {
                                             CONTENT_EQUALS.matches(methodInvocation);
                                 }
 
-                                private void maybeHandleParentBinary(J.MethodInvocation m) {
-                                    Tree parent = getCursor().getParentTreeCursor().getValue();
+                                private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
                                     if (parent instanceof J.Binary) {
                                         if (((J.Binary) parent).getOperator() == J.Binary.Type.And && ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                             J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                            if (isNullLiteral(potentialNullCheck.getLeft()) && matchesSelect(potentialNullCheck.getRight(),
-                                                    requireNonNull(m.getSelect())) ||
-                                                    isNullLiteral(potentialNullCheck.getRight()) && matchesSelect(potentialNullCheck.getLeft(),
+                                            if (isNullLiteral(potentialNullCheck.getLeft())
+                                                    && matchesSelect(potentialNullCheck.getRight(),
+                                                    requireNonNull(m.getSelect()))
+                                                    || isNullLiteral(potentialNullCheck.getRight())
+                                                    && matchesSelect(potentialNullCheck.getLeft(),
                                                             requireNonNull(m.getSelect()))) {
                                                 doAfterVisit(new JavaVisitor<ExecutionContext>() {
                                                     private final J.Binary scope = (J.Binary) parent;
@@ -165,13 +176,6 @@ public class EqualsAvoidsNull extends Recipe {
                                     return expression.printTrimmed(getCursor()).replaceAll("\\s", "")
                                             .equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
                                 }
-
-                                private final MethodMatcher EQUALS = new MethodMatcher("java.lang.String equals(java" +
-                                        ".lang.Object)");
-                                private final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher("java.lang.String " +
-                                        "equalsIgnoreCase(java.lang.String)");
-                                private final MethodMatcher CONTENT_EQUALS = new MethodMatcher("java.lang.String " +
-                                        "contentEquals(java.lang.CharSequence)");
 
                                 private J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m,
                                                                                 Expression firstArgument) {
