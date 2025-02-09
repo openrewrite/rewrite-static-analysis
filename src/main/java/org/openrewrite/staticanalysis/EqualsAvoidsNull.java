@@ -126,15 +126,19 @@ public class EqualsAvoidsNull extends Recipe {
                                 }
 
                                 private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-                                    return EQUALS.matches(methodInvocation) ||
-                                            (!ObjectUtils.defaultIfNull(cu.getStyle(EqualsAvoidsNullStyle.class),
-                                                    Checkstyle.equalsAvoidsNull()).getIgnoreEqualsIgnoreCase() && EQUALS_IGNORE_CASE.matches(methodInvocation)) ||
-                                            CONTENT_EQUALS.matches(methodInvocation);
+                                    return EQUALS.matches(methodInvocation)
+                                            || !ObjectUtils
+                                            .defaultIfNull(cu.getStyle(EqualsAvoidsNullStyle.class),
+                                                    Checkstyle.equalsAvoidsNull())
+                                            .getIgnoreEqualsIgnoreCase()
+                                            && EQUALS_IGNORE_CASE.matches(methodInvocation)
+                                            || CONTENT_EQUALS.matches(methodInvocation);
                                 }
 
                                 private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
                                     if (parent instanceof J.Binary) {
-                                        if (((J.Binary) parent).getOperator() == J.Binary.Type.And && ((J.Binary) parent).getLeft() instanceof J.Binary) {
+                                        if (((J.Binary) parent).getOperator() == J.Binary.Type.And
+                                                && ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                             J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
                                             if (isNullLiteral(potentialNullCheck.getLeft())
                                                     && matchesSelect(potentialNullCheck.getRight(),
@@ -143,6 +147,7 @@ public class EqualsAvoidsNull extends Recipe {
                                                     && matchesSelect(potentialNullCheck.getLeft(),
                                                             requireNonNull(m.getSelect()))) {
                                                 doAfterVisit(new JavaVisitor<ExecutionContext>() {
+
                                                     private final J.Binary scope = (J.Binary) parent;
                                                     private boolean done;
 
