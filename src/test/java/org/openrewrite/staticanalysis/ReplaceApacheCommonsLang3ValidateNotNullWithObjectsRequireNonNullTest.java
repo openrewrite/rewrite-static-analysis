@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.config.Environment;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
@@ -74,6 +75,34 @@ class ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest impl
 
               class Test {
                   void test(Object obj) {
+                      Objects.requireNonNull(obj);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/457")
+    @Test
+    void replaceWithOneArgumentAsString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.apache.commons.lang3.Validate;
+
+              class Test {
+                  void test(String obj) {
+                      Validate.notNull(obj);
+                  }
+              }
+              """,
+            """
+              import java.util.Objects;
+
+              class Test {
+                  void test(String obj) {
                       Objects.requireNonNull(obj);
                   }
               }
