@@ -113,13 +113,11 @@ public class EqualsAvoidsNull extends Recipe {
                         if (parent instanceof J.Binary) {
                             if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
+                                J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
                                 if (isNullLiteral(potentialNullCheck.getLeft()) &&
-                                        matchesSelect(potentialNullCheck.getRight(),
-                                        requireNonNull(m.getSelect())) ||
+                                        matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
                                         isNullLiteral(potentialNullCheck.getRight()) &&
-                                        matchesSelect(potentialNullCheck.getLeft(),
-                                        && matchesSelect(potentialNullCheck.getLeft(),
-                                        requireNonNull(m.getSelect()))) {
+                                        matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
                                         private final J.Binary scope = (J.Binary) parent;
