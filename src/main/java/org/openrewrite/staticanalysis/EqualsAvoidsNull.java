@@ -17,26 +17,12 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.apache.commons.lang3.ObjectUtils;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.style.Checkstyle;
-import org.openrewrite.java.style.EqualsAvoidsNullStyle;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JavaSourceFile;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -93,9 +79,9 @@ public class EqualsAvoidsNull extends Recipe {
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
                         Expression firstArgument = m.getArguments().get(0);
 
-                        return firstArgument.getType() == JavaType.Primitive.Null
-                                ? literalsFirstInComparisonsNull(m, firstArgument)
-                                : literalsFirstInComparisons(m, firstArgument);
+                        return firstArgument.getType() == JavaType.Primitive.Null ?
+                                literalsFirstInComparisonsNull(m, firstArgument) :
+                                literalsFirstInComparisons(m, firstArgument);
 
                     }
 
@@ -118,9 +104,9 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-                        return EQUALS.matches(methodInvocation)
-                                || EQUALS_IGNORE_CASE.matches(methodInvocation)
-                                || CONTENT_EQUALS.matches(methodInvocation);
+                        return EQUALS.matches(methodInvocation) ||
+                                EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                                CONTENT_EQUALS.matches(methodInvocation);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
@@ -141,9 +127,7 @@ public class EqualsAvoidsNull extends Recipe {
 
                                         @Override
                                         public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                                            return done
-                                                    ? (J) tree
-                                                    : super.visit(tree, ctx);
+                                            return done ? (J) tree : super.visit(tree, ctx);
                                         }
 
                                         @Override
