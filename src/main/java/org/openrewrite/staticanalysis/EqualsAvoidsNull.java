@@ -111,13 +111,13 @@ public class EqualsAvoidsNull extends Recipe {
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
                         if (parent instanceof J.Binary) {
-                            if (((J.Binary) parent).getOperator() == J.Binary.Type.And
-                                    && ((J.Binary) parent).getLeft() instanceof J.Binary) {
-                                J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                if (isNullLiteral(potentialNullCheck.getLeft())
-                                        && matchesSelect(potentialNullCheck.getRight(),
-                                        requireNonNull(m.getSelect()))
-                                        || isNullLiteral(potentialNullCheck.getRight())
+                            if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
+                                    ((J.Binary) parent).getLeft() instanceof J.Binary) {
+                                if (isNullLiteral(potentialNullCheck.getLeft()) &&
+                                        matchesSelect(potentialNullCheck.getRight(),
+                                        requireNonNull(m.getSelect())) ||
+                                        isNullLiteral(potentialNullCheck.getRight()) &&
+                                        matchesSelect(potentialNullCheck.getLeft(),
                                         && matchesSelect(potentialNullCheck.getLeft(),
                                         requireNonNull(m.getSelect()))) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
