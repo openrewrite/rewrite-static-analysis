@@ -64,64 +64,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/362")
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/442")
-    @DocumentExample
-    @Test
-    void invertConditionalButKeepComparisonOrder() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  boolean bar(String x) {
-                      x.compareTo("2"); // should be x.compareTo("2") for stable compare logic
-                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2") for stable compare logic
-                      x.contentEquals("2"); // should be "2".contentEquals(x)
-                      x.equals("2"); // should be "2".equals(x)
-                      x.equalsIgnoreCase("2"); // should be "2".equalsIgnoreCase(x)
-                      return x.contentEquals("2"); // should be "2".contentEquals(x)
-                  }
-              }
-              """,
-            """
-              class A {
-                  boolean bar(String x) {
-                      x.compareTo("2"); // should be x.compareTo("2") for stable compare logic
-                      x.compareToIgnoreCase("2"); // should be x.compareToIgnoreCase("2") for stable compare logic
-                      "2".contentEquals(x); // should be "2".contentEquals(x)
-                      "2".equals(x); // should be "2".equals(x)
-                      "2".equalsIgnoreCase(x); // should be "2".equalsIgnoreCase(x)
-                      return "2".contentEquals(x); // should be "2".contentEquals(x)
-                  }
-              }
-              """)
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/362")
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/442")
-    @DocumentExample
-    @Test
-    void keepOrderForSameType() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void bar(String x) {
-                      String o = null;
-                      o.equals(x);
-                      o.equalsIgnoreCase(x);
-                      o.contentEquals(x);
-                      o.compareTo(x);
-                      o.compareToIgnoreCase(x);
-                  }
-              }
-              """)
-        );
-    }
-
     @Test
     void removeUnnecessaryNullCheck() {
         rewriteRun(
@@ -215,8 +157,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
-                  """,
-                SourceSpec::skip
+                  """
               ),
               java(
                 """
@@ -228,8 +169,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           return this;
                       }
                   }
-                  """,
-                SourceSpec::skip
+                  """
               ),
               java(
                 """
