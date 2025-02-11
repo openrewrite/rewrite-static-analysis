@@ -157,8 +157,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class Constants {
                       public static final String FOO = "FOO";
                   }
-                  """,
-                SourceSpec::skip
+                  """
               ),
               java(
                 """
@@ -170,8 +169,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           return this;
                       }
                   }
-                  """,
-                SourceSpec::skip
+                  """
               ),
               java(
                 """
