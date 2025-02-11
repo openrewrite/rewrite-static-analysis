@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import jdk.vm.ci.meta.JavaType;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
@@ -28,6 +27,7 @@ import org.openrewrite.internal.RecipeRunException;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.service.ImportService;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
