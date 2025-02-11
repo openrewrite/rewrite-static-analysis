@@ -22,7 +22,6 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
-import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.java;
 

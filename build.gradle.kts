@@ -38,5 +38,12 @@ dependencies {
     testImplementation("com.google.code.gson:gson:latest.release")
 
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
+    testRuntimeOnly("org.openrewrite:rewrite-java-21")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
 }
