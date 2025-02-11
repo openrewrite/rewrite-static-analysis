@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import jdk.vm.ci.meta.JavaType;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
@@ -27,7 +28,6 @@ import org.openrewrite.internal.RecipeRunException;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.service.ImportService;
-import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
@@ -123,7 +123,7 @@ public class MinimumSwitchCases extends Recipe {
                         if (statement instanceof J.Case) {
                             J.Case aCase = (J.Case) statement;
                             if (aCase.getType() == J.Case.Type.Rule) {
-                                if (aCase.getExpressions().size() > 1 || !(aCase.getBody() instanceof Statement)) {
+                                if (aCase.getCaseLabels().size() > 1 || !(aCase.getBody() instanceof Statement)) {
                                     return super.visitSwitch(switch_, ctx);
                                 }
                             } else {
@@ -224,7 +224,7 @@ public class MinimumSwitchCases extends Recipe {
                     return false;
                 }
                 return switch_.getCases().getStatements().stream()
-                               .reduce(0, (a, b) -> a + ((J.Case) b).getExpressions().size(), Integer::sum) < 3;
+                               .reduce(0, (a, b) -> a + ((J.Case) b).getCaseLabels().size(), Integer::sum) < 3;
             }
 
             private List<Statement> getStatements(J.Case aCase) {

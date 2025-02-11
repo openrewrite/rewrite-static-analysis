@@ -15,13 +15,15 @@
  */
 package org.openrewrite.staticanalysis;
 
+import com.sun.source.tree.TreeVisitor;
+import jdk.vm.ci.meta.JavaType;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.J;
 import org.openrewrite.marker.Markers;
+import sun.jvm.hotspot.gc.shared.Space;
 
 import java.time.Duration;
 import java.util.*;
@@ -603,7 +605,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                         return _case;
                     }
 
-                    this.visit(_case.getExpressions().get(0), compareTo.getExpressions().get(0));
+                    this.visit(_case.getCaseLabels().get(0), compareTo.getCaseLabels().get(0));
                     for (int i = 0; i < _case.getStatements().size(); i++) {
                         this.visit(_case.getStatements().get(i), compareTo.getStatements().get(i));
                     }
