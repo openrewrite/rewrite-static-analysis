@@ -15,15 +15,13 @@
  */
 package org.openrewrite.staticanalysis;
 
-import com.sun.source.tree.TreeVisitor;
-import jdk.vm.ci.meta.JavaType;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
-import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
-import sun.jvm.hotspot.gc.shared.Space;
 
 import java.time.Duration;
 import java.util.*;
