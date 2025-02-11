@@ -16,7 +16,10 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.DefaultComesLastStyle;
@@ -289,6 +292,28 @@ class DefaultComesLastTest implements RewriteTest {
                           case C -> { var = 3; }
                       }
                       return var;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @EnabledForJreRange(min = JRE.JAVA_21)
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/461")
+    @Test
+    void exhaustiveSwitch(){
+        //language=java
+        rewriteRun(
+          java(
+            """
+              public class ExhaustiveSwitch {
+                  static int coverage(Object obj) {
+                      return switch (obj) {
+                          case String s -> s.length();
+                          case Integer i -> i;
+                          default -> 0;
+                      };
                   }
               }
               """

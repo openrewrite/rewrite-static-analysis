@@ -21,7 +21,6 @@ import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.DefaultComesLastStyle;
-import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
@@ -186,7 +185,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private boolean isDefaultCase(J.Case case_) {
-        Expression elem = case_.getExpressions().get(0);
+        J elem = case_.getCaseLabels().get(0);
         return elem instanceof J.Identifier && ((J.Identifier) elem).getSimpleName().equals("default");
     }
 
