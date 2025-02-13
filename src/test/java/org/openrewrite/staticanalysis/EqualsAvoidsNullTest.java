@@ -64,6 +64,58 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
+    @DocumentExample
+    @Test
+    void invertConditional_compareTo() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if(s.compareTo("test")) {}
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if("test".compareTo(s)) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @DocumentExample
+    @Test
+    void invertConditional_compareToIgnoreCase() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if(s.compareToIgnoreCase("test")) {}
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      if("test".compareToIgnoreCase(s)) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void removeUnnecessaryNullCheck() {
         rewriteRun(
@@ -107,6 +159,29 @@ class EqualsAvoidsNullTest implements RewriteTest {
               public class A {
                     void foo(String s) {
                         if(s == null) {
+                        }
+                    }
+                }
+              """)
+        );
+    }
+
+    @Test
+    void ObjectEquals() {
+        rewriteRun(
+          //language=java
+          java("""
+              public class A {
+                    void foo(Object s) {
+                        if(s.equals("null")) {
+                        }
+                    }
+                }
+              """,
+            """
+              public class A {
+                    void foo(Object s) {
+                        if("null".equals(s)) {
                         }
                     }
                 }
@@ -445,6 +520,15 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       String s = null;
                       System.out.println(s.compareTo("test"));
                       System.out.println(s.compareToIgnoreCase("test"));
+                  }
+              }
+              """,
+            """
+              public class A {
+                  {
+                      String s = null;
+                      System.out.println("test".compareTo(s));
+                      System.out.println("test".compareToIgnoreCase(s));
                   }
               }
               """
