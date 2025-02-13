@@ -117,22 +117,24 @@ class EqualsAvoidsNullTest implements RewriteTest {
     void ObjectEquals() {
         rewriteRun(
           //language=java
-          java("""
-              public class A {
-                    void foo(Object s) {
-                        if(s.equals("null")) {
-                        }
-                    }
-                }
+          java(
+            """
+              class A {
+                  void foo(Object s) {
+                      if (s.equals("null")) {
+                      }
+                  }
+              }
               """,
             """
-              public class A {
-                    void foo(Object s) {
-                        if("null".equals(s)) {
-                        }
-                    }
-                }
-              """)
+              class A {
+                  void foo(Object s) {
+                      if ("null".equals(s)) {
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 

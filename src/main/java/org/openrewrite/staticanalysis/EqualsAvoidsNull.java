@@ -18,20 +18,11 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -49,10 +40,8 @@ public class EqualsAvoidsNull extends Recipe {
     private static final String JAVA_LANG_STRING = "java.lang.String";
     private static final String JAVA_LANG_OBJECT = "java.lang.Object";
 
-    private static final MethodMatcher EQUALS_STRING =
-            new MethodMatcher(JAVA_LANG_STRING + " equals(" + JAVA_LANG_OBJECT + ")");
-    private static final MethodMatcher EQUALS_OBJECT =
-            new MethodMatcher(JAVA_LANG_OBJECT + " equals(" + JAVA_LANG_OBJECT + ")");
+    private static final MethodMatcher EQUALS_STRING = new MethodMatcher(JAVA_LANG_STRING + " equals(" + JAVA_LANG_OBJECT + ")");
+    private static final MethodMatcher EQUALS_OBJECT = new MethodMatcher(JAVA_LANG_OBJECT + " equals(" + JAVA_LANG_OBJECT + ")");
     private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
     private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + " contentEquals(java.lang.CharSequence)");
 
@@ -134,9 +123,8 @@ public class EqualsAvoidsNull extends Recipe {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
                                 if (isNullLiteral(potentialNullCheck.getLeft()) &&
                                         matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                                        isNullLiteral(potentialNullCheck.getRight()) &&
-                                                matchesSelect(potentialNullCheck.getLeft(),
-                                                        requireNonNull(m.getSelect()))) {
+                                    isNullLiteral(potentialNullCheck.getRight()) &&
+                                            matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
                                         private final J.Binary scope = (J.Binary) parent;
