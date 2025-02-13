@@ -113,6 +113,29 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
+    @Test
+    void ObjectEquals() {
+        rewriteRun(
+          //language=java
+          java("""
+              public class A {
+                    void foo(Object s) {
+                        if(s.equals("null")) {
+                        }
+                    }
+                }
+              """,
+            """
+              public class A {
+                    void foo(Object s) {
+                        if("null".equals(s)) {
+                        }
+                    }
+                }
+              """)
+        );
+    }
+
     @Nested
     class ReplaceConstantMethodArg {
 
