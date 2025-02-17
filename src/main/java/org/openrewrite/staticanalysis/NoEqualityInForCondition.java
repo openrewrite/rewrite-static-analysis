@@ -16,12 +16,16 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -50,15 +54,15 @@ public class NoEqualityInForCondition extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForControl(J.ForLoop.Control control, ExecutionContext ctx) {
                 if (control.getCondition() instanceof J.Binary) {
                     J.Binary condition = (J.Binary) control.getCondition();
 
                     if (isNumericalType(condition) &&
-                        control.getUpdate().size() == 1 &&
-                        control.getUpdate().get(0) instanceof J.Unary) {
+                            control.getUpdate().size() == 1 &&
+                            control.getUpdate().get(0) instanceof J.Unary) {
                         J.Unary update = (J.Unary) control.getUpdate().get(0);
                         if (updatedExpressionInConditional(update.getExpression(), condition)) {
                             if (condition.getOperator() == J.Binary.Type.NotEqual) {
@@ -109,5 +113,12 @@ public class NoEqualityInForCondition extends Recipe {
                        type == JavaType.Primitive.Long;
             }
         };
+        return Preconditions.check(
+                Preconditions.or(
+                        // Avoid running on JS/TS, Python, Kotlin for now
+                        new JavaFileChecker<>(),
+                        new GroovyFileChecker<>(),
+                        new CSharpFileChecker<>()),
+                javaVisitor);
     }
 }
