@@ -42,27 +42,64 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
               class Test {
                   private void unused() {
                   }
-              
+
                   public void dontRemove() {
                       dontRemove2();
                   }
-              
+
                   private void dontRemove2() {
                   }
               }
               """,
             """
               class Test {
-              
+
                   public void dontRemove() {
                       dontRemove2();
                   }
-              
+
                   private void dontRemove2() {
                   }
               }
               """
           )
+        );
+    }
+
+    @DocumentExample
+    @Test
+    void removeUnusedPrivateMethods2() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private void unused() {
+                      unused2();
+                  }
+
+                  private void unused2() {
+                  }
+
+                  public void dontRemove() {
+                      dontRemove2();
+                  }
+
+                  private void dontRemove2() {
+                  }
+              }
+              """,
+            """
+              class Test {
+
+                  public void dontRemove() {
+                      dontRemove2();
+                  }
+
+                  private void dontRemove2() {
+                  }
+              }
+              """)
         );
     }
 
@@ -135,14 +172,14 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           java(
             """
               import java.util.stream.Stream;
-              
+
               class Test {
                   void test(String input) {
                   }
                   private Stream<Object> unused() {
                       return null;
                   }
-              
+
                   class InnerTest {
                       void test(String input) {
                       }
@@ -156,7 +193,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
               class Test {
                   void test(String input) {
                   }
-              
+
                   class InnerTest {
                       void test(String input) {
                       }
@@ -175,7 +212,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           java(
             """
               import java.util.stream.Stream;
-              
+
               @SuppressWarnings("unused")
               class Test {
                   void test(String input) {
@@ -200,7 +237,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           java(
             """
               import java.util.stream.Stream;
-              
+
               @SuppressWarnings("unused")
               class Test {
                   void test(String input) {
@@ -208,7 +245,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                   private Stream<Object> unused() {
                       return null;
                   }
-              
+
                   class InnerTest {
                       void test(String input) {
                       }
