@@ -68,7 +68,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void removeUnusedPrivateMethods2() {
+    void removeUnusedPrivateMethodsChainedUsage() {
         rewriteRun(
           //language=java
           java(
