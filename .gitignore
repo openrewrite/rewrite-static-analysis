@@ -1,7 +1,6 @@
 build/
 .gradle/
-.idea/*
-!.idea/icon.png
+.idea/
 .boot-releases
 out/
 .classpath
