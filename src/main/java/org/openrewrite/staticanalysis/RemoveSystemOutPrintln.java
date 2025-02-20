@@ -16,14 +16,18 @@
 package org.openrewrite.staticanalysis;
 
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.marker.Markers;
+
+import java.util.Collections;
+
+import static org.openrewrite.Tree.randomId;
 
 public class RemoveSystemOutPrintln extends Recipe {
     private static final MethodMatcher SYSTEM_OUT_PRINTLN = new MethodMatcher("java.io.PrintStream println(..)");
@@ -43,9 +47,19 @@ public class RemoveSystemOutPrintln extends Recipe {
         return Preconditions.check(new UsesMethod<>(SYSTEM_OUT_PRINTLN), new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
+            public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
+                J.Lambda l = super.visitLambda(lambda, ctx);
+                //noinspection ConstantValue
+                if (l.getBody() == null) {
+                    l = l.withBody(new J.Block(randomId(), lambda.getPrefix(), Markers.EMPTY, JRightPadded.build(false), Collections.emptyList(), Space.EMPTY));
+                }
+                return l;
+            }
+
+            @Override
+            @SuppressWarnings("NullableProblems")
             public  J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 if (SYSTEM_OUT_PRINTLN.matches(method)) {
-                    //noinspection DataFlowIssue
                     return null;
                 }
                 return super.visitMethodInvocation(method, ctx);
