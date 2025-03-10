@@ -479,14 +479,18 @@ class EqualsAvoidsNullTest implements RewriteTest {
     class equalsAvoidsNullNonIdempotent {
 
         @Test
-        void simple() {
+        void raw() {
             rewriteRun(
               //language=java
               java(
                 """
                   public class Foo {
                       public void bar() {
+                          null.equals(null);
                           "FOO".equals("BAR");
+                          "FOO".equalsIgnoreCase("BAR");
+                          "FOO".compareTo("BAR");
+                          "FOO".compareToIgnoreCase("BAR");
                       }
                   }
                   """
@@ -495,53 +499,50 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
-        @Disabled
-        void advanced() {
+        void constant() {
             rewriteRun(
               //language=java
               java(
                 """
                   public class Foo {
-                      private static final String FOO = "F";
-                      private static final String BAR = "B";
-
+                      private static final String FOO = "FOO";
                       public void bar() {
-                          "BAR".equals("FOO");
-                          "FOO".equals("BAR");
                           FOO.equals(FOO);
-                          BAR.equals(BAR);
-                          FOO.equals(BAR);
-                          BAR.equals(FOO);
-                          FOO.equals("BAR");
-                          BAR.equals("FOO");
+                          FOO.equalsIgnoreCase(FOO);
+                          FOO.compareTo(FOO);
+                          FOO.compareToIgnoreCase(FOO);
                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        /**
+         * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg}
+         */
+        @Test
+        @Disabled
+        void preferRawOverConstant() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "FOO";
 
                       public void foo() {
-                          FOO.equals("");
-                          "".equals(FOO);
+                          FOO.equals("RAW");
                       }
                   }
                   """
                 ,
                 """
                   public class Foo {
-                      private static final String FOO = "F";
-                      private static final String BAR = "B";
-
-                      public void bar() {
-                          "BAR".equals("FOO");
-                          "FOO".equals("BAR");
-                          FOO.equals(FOO);
-                          BAR.equals(BAR);
-                          FOO.equals(BAR);
-                          BAR.equals(FOO);
-                          "BAR".equals(FOO);
-                          "FOO".equals(BAR);
-                      }
+                      private static final String FOO = "FOO";
 
                       public void foo() {
-                          "".equals(FOO);
-                          "".equals(FOO);
+                          "RAW".equals(FOO);
                       }
                   }
                   """
