@@ -23,6 +23,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.JavaType.Primitive;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -32,6 +33,7 @@ import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.openrewrite.java.tree.JavaType.Primitive.Null;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -78,14 +80,14 @@ public class EqualsAvoidsNull extends Recipe {
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m)) {
+                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || isIdempotent(m)) {
                             return m;
                         }
 
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
                         Expression firstArgument = m.getArguments().get(0);
 
-                        return firstArgument.getType() == JavaType.Primitive.Null ?
+                        return firstArgument.getType() == Null ?
                                 literalsFirstInComparisonsNull(m, firstArgument) :
                                 literalsFirstInComparisons(m, firstArgument);
 
@@ -114,6 +116,42 @@ public class EqualsAvoidsNull extends Recipe {
                                 EQUALS_OBJECT.matches(methodInvocation) ||
                                 EQUALS_IGNORE_CASE.matches(methodInvocation) ||
                                 CONTENT_EQUALS.matches(methodInvocation);
+                    }
+
+                    /**
+                     * Checks whether the given method invocation is idempotent.
+                     *
+                     * <p>Idempotent cases include:</p>
+                     * <ul>
+                     *   <li>{@code "FOO".equals("FOO");}</li>
+                     *   <li>{@code "".equals("");}</li>
+                     *   <li>{@code FOO.equals(FOO);}</li>
+                     * </ul>
+                     *
+                     * @param methodInvocation the method invocation to check
+                     * @return {@code true} if the invocation is idempotent, otherwise {@code false}
+                     */
+                    private boolean isIdempotent(J.MethodInvocation methodInvocation) {
+                        final JavaType argType = methodInvocation.getArguments().get(0).getType();
+                        final JavaType selectType = requireNonNull(methodInvocation.getSelect()).getType();
+                        if (JAVA_LANG_STRING.equals(requireNonNull(selectType).toString())
+                                && !JAVA_LANG_STRING.equals(requireNonNull(argType).toString())
+                                && !Null.equals(argType)
+                                && !Primitive.String.equals(argType)) {
+                            return true;
+                        }
+                        if (Primitive.String.equals(argType)
+                                && !Primitive.String.equals(selectType)
+                                && !JAVA_LANG_STRING.equals(selectType.toString())) {
+                            return false;
+                        }
+                        // for test# constantOnRaw
+//                        if (Primitive.String.equals(argType)
+//                                && JAVA_LANG_STRING.equals(selectType.toString())) {
+//                            return false;
+//                        }
+                        return Primitive.String.equals(argType)
+                                && Primitive.String.equals(selectType);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
@@ -150,7 +188,7 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private boolean isNullLiteral(Expression expression) {
-                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
+                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == Null;
                     }
 
                     private boolean matchesSelect(Expression expression, Expression select) {
@@ -166,7 +204,7 @@ public class EqualsAvoidsNull extends Recipe {
                                 requireNonNull(m.getSelect()),
                                 JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
                                 firstArgument.withPrefix(Space.SINGLE_SPACE),
-                                JavaType.Primitive.Boolean);
+                                Primitive.Boolean);
                     }
 
                     private J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m,

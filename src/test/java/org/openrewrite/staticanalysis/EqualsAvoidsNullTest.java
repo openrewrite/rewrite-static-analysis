@@ -473,4 +473,104 @@ class EqualsAvoidsNullTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/472")
+    @Nested
+    class equalsAvoidsNullNonIdempotent {
+
+        @Test
+        void raw() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void bar() {
+                          "FOO".equals("BAR");
+                          "FOO".equalsIgnoreCase("BAR");
+                          "FOO".compareTo("BAR");
+                          "FOO".compareToIgnoreCase("BAR");
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        /**
+         * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg#one}
+         */
+        @Test
+        @Disabled
+        void constantOnConstant() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "FOO";
+                      public void bar() {
+                          FOO.equals(FOO);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        /**
+         * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg#one}
+         */
+        @Test
+        @Disabled
+        void constantOnRaw() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "FOO";
+                      public void bar() {
+                          FOO.equals("RAW");
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        /**
+         * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg}
+         */
+        @Test
+        @Disabled
+        void preferRawOverConstant() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "FOO";
+
+                      public void foo() {
+                          FOO.equals("RAW");
+                      }
+                  }
+                  """
+                ,
+                """
+                  public class Foo {
+                      private static final String FOO = "FOO";
+
+                      public void foo() {
+                          "RAW".equals(FOO);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+    }
+
 }
