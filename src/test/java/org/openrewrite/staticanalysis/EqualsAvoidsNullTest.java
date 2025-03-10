@@ -449,75 +449,81 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
-    @Test
-    void equalsAvoidsNullNonIdempotentSimple() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class Foo {
-                  public void bar() {
-                      "FOO".equals("BAR");
-                  }
-              }
-              """
-          )
-        );
-    }
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/472")
+    @Nested
+    class equalsAvoidsNullNonIdempotent {
 
-    @Test
-    @Disabled
-    void equalsAvoidsNullNonIdempotentAdvanced() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class Foo {
-                  private static final String FOO = "F";
-                  private static final String BAR = "B";
-
-                  public void bar() {
-                      "BAR".equals("FOO");
-                      "FOO".equals("BAR");
-                      FOO.equals(FOO);
-                      BAR.equals(BAR);
-                      FOO.equals(BAR);
-                      BAR.equals(FOO);
-                      FOO.equals("BAR");
-                      BAR.equals("FOO");
+        @Test
+        void simple() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void bar() {
+                          "FOO".equals("BAR");
+                      }
                   }
+                  """
+              )
+            );
+        }
 
-                  public void foo() {
-                      FOO.equals("");
-                      "".equals(FOO);
-                  }
-              }
-              """
-            ,
-            """
-              public class Foo {
-                  private static final String FOO = "F";
-                  private static final String BAR = "B";
+        @Test
+        @Disabled
+        void advanced() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "F";
+                      private static final String BAR = "B";
 
-                  public void bar() {
-                      "BAR".equals("FOO");
-                      "FOO".equals("BAR");
-                      FOO.equals(FOO);
-                      BAR.equals(BAR);
-                      FOO.equals(BAR);
-                      BAR.equals(FOO);
-                      "BAR".equals(FOO);
-                      "FOO".equals(BAR);
-                  }
+                      public void bar() {
+                          "BAR".equals("FOO");
+                          "FOO".equals("BAR");
+                          FOO.equals(FOO);
+                          BAR.equals(BAR);
+                          FOO.equals(BAR);
+                          BAR.equals(FOO);
+                          FOO.equals("BAR");
+                          BAR.equals("FOO");
+                      }
 
-                  public void foo() {
-                      "".equals(FOO);
-                      "".equals(FOO);
+                      public void foo() {
+                          FOO.equals("");
+                          "".equals(FOO);
+                      }
                   }
-              }
-              """
-          )
-        );
+                  """
+                ,
+                """
+                  public class Foo {
+                      private static final String FOO = "F";
+                      private static final String BAR = "B";
+
+                      public void bar() {
+                          "BAR".equals("FOO");
+                          "FOO".equals("BAR");
+                          FOO.equals(FOO);
+                          BAR.equals(BAR);
+                          FOO.equals(BAR);
+                          BAR.equals(FOO);
+                          "BAR".equals(FOO);
+                          "FOO".equals(BAR);
+                      }
+
+                      public void foo() {
+                          "".equals(FOO);
+                          "".equals(FOO);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
     }
 
 }
