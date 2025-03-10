@@ -18,21 +18,12 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.JavaType.Primitive;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -140,10 +131,14 @@ public class EqualsAvoidsNull extends Recipe {
                      * @return {@code true} if the invocation is idempotent, otherwise {@code false}
                      */
                     private boolean isIdempotent(J.MethodInvocation methodInvocation) {
-                        final JavaType type = methodInvocation.getArguments().get(0).getType();
-                        final JavaType type1 = requireNonNull(methodInvocation.getSelect()).getType();
-                        return Primitive.String.equals(type)
-                                && Primitive.String.equals(type1);
+                        final JavaType argType = methodInvocation.getArguments().get(0).getType();
+                        final JavaType selectType = requireNonNull(methodInvocation.getSelect()).getType();
+                        if (JAVA_LANG_STRING.equals(requireNonNull(selectType).toString())
+                                && !JAVA_LANG_STRING.equals(requireNonNull(argType).toString())) {
+                            return true;
+                        }
+                        return Primitive.String.equals(argType)
+                                && Primitive.String.equals(selectType);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
