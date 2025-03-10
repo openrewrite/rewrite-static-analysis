@@ -33,6 +33,7 @@ import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.openrewrite.java.tree.JavaType.Primitive.Null;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -86,7 +87,7 @@ public class EqualsAvoidsNull extends Recipe {
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
                         Expression firstArgument = m.getArguments().get(0);
 
-                        return firstArgument.getType() == Primitive.Null ?
+                        return firstArgument.getType() == Null ?
                                 literalsFirstInComparisonsNull(m, firstArgument) :
                                 literalsFirstInComparisons(m, firstArgument);
 
@@ -134,7 +135,8 @@ public class EqualsAvoidsNull extends Recipe {
                         final JavaType argType = methodInvocation.getArguments().get(0).getType();
                         final JavaType selectType = requireNonNull(methodInvocation.getSelect()).getType();
                         if (JAVA_LANG_STRING.equals(requireNonNull(selectType).toString())
-                                && !JAVA_LANG_STRING.equals(requireNonNull(argType).toString())) {
+                                && !JAVA_LANG_STRING.equals(requireNonNull(argType).toString())
+                                && !Null.equals(argType)) {
                             return true;
                         }
                         return Primitive.String.equals(argType)
@@ -175,7 +177,7 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private boolean isNullLiteral(Expression expression) {
-                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == Primitive.Null;
+                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == Null;
                     }
 
                     private boolean matchesSelect(Expression expression, Expression select) {
