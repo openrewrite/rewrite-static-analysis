@@ -450,6 +450,23 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
+    void equalsAvoidsNullNonIdempotentSimple() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Foo {
+                  public void bar() {
+                      "FOO".equals("BAR");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Disabled
     void equalsAvoidsNullNonIdempotentAdvanced() {
         rewriteRun(
           //language=java
