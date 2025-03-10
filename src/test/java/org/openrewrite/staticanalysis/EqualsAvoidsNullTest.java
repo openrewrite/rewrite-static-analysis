@@ -448,4 +448,24 @@ class EqualsAvoidsNullTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void equalsAvoidsNullNonIdempotent() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Foo {
+                  private static final String FOO = "";
+
+                  public void foo() {
+                      FOO.equals("");
+                      "".equals(FOO);
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
