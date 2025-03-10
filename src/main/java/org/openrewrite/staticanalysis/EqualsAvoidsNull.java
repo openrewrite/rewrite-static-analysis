@@ -136,9 +136,20 @@ public class EqualsAvoidsNull extends Recipe {
                         final JavaType selectType = requireNonNull(methodInvocation.getSelect()).getType();
                         if (JAVA_LANG_STRING.equals(requireNonNull(selectType).toString())
                                 && !JAVA_LANG_STRING.equals(requireNonNull(argType).toString())
-                                && !Null.equals(argType)) {
+                                && !Null.equals(argType)
+                                && !Primitive.String.equals(argType)) {
                             return true;
                         }
+                        if (Primitive.String.equals(argType)
+                                && !Primitive.String.equals(selectType)
+                                && !JAVA_LANG_STRING.equals(selectType.toString())) {
+                            return false;
+                        }
+                        // for test# constantOnRaw
+//                        if (Primitive.String.equals(argType)
+//                                && JAVA_LANG_STRING.equals(selectType.toString())) {
+//                            return false;
+//                        }
                         return Primitive.String.equals(argType)
                                 && Primitive.String.equals(selectType);
                     }
