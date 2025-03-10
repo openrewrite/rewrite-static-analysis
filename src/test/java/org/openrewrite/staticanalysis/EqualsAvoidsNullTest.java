@@ -450,16 +450,51 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
-    void equalsAvoidsNullNonIdempotent() {
+    void equalsAvoidsNullNonIdempotentAdvanced() {
         rewriteRun(
           //language=java
           java(
             """
               public class Foo {
-                  private static final String FOO = "";
+                  private static final String FOO = "F";
+                  private static final String BAR = "B";
+
+                  public void bar() {
+                      "BAR".equals("FOO");
+                      "FOO".equals("BAR");
+                      FOO.equals(FOO);
+                      BAR.equals(BAR);
+                      FOO.equals(BAR);
+                      BAR.equals(FOO);
+                      FOO.equals("BAR");
+                      BAR.equals("FOO");
+                  }
 
                   public void foo() {
                       FOO.equals("");
+                      "".equals(FOO);
+                  }
+              }
+              """
+            ,
+            """
+              public class Foo {
+                  private static final String FOO = "F";
+                  private static final String BAR = "B";
+
+                  public void bar() {
+                      "BAR".equals("FOO");
+                      "FOO".equals("BAR");
+                      FOO.equals(FOO);
+                      BAR.equals(BAR);
+                      FOO.equals(BAR);
+                      BAR.equals(FOO);
+                      "BAR".equals(FOO);
+                      "FOO".equals(BAR);
+                  }
+
+                  public void foo() {
+                      "".equals(FOO);
                       "".equals(FOO);
                   }
               }
