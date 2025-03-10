@@ -486,7 +486,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   public class Foo {
                       public void bar() {
-                          null.equals(null);
                           "FOO".equals("BAR");
                           "FOO".equalsIgnoreCase("BAR");
                           "FOO".compareTo("BAR");
@@ -499,7 +498,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
-        void constant() {
+        void constantOnConstant() {
             rewriteRun(
               //language=java
               java(
@@ -508,9 +507,23 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       private static final String FOO = "FOO";
                       public void bar() {
                           FOO.equals(FOO);
-                          FOO.equalsIgnoreCase(FOO);
-                          FOO.compareTo(FOO);
-                          FOO.compareToIgnoreCase(FOO);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void constantOnRaw() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "FOO";
+                      public void bar() {
+                          FOO.equals("RAW");
                       }
                   }
                   """

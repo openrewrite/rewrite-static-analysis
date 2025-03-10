@@ -140,8 +140,10 @@ public class EqualsAvoidsNull extends Recipe {
                      * @return {@code true} if the invocation is idempotent, otherwise {@code false}
                      */
                     private boolean isIdempotent(J.MethodInvocation methodInvocation) {
-                        return Primitive.String.equals(methodInvocation.getArguments().get(0).getType())
-                                && Primitive.String.equals(requireNonNull(methodInvocation.getSelect()).getType());
+                        final JavaType type = methodInvocation.getArguments().get(0).getType();
+                        final JavaType type1 = requireNonNull(methodInvocation.getSelect()).getType();
+                        return Primitive.String.equals(type)
+                                && Primitive.String.equals(type1);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
