@@ -247,4 +247,19 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/5146")
+    void noValuesJustSemicolon() {
+        rewriteRun(
+          java(
+            """
+             public enum A {
+                 ;
+                 public static final String X = "receipt-id";
+             }
+             """
+          )
+        );
+    }
 }
