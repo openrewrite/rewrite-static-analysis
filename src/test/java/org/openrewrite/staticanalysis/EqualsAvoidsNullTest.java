@@ -153,6 +153,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   class A {
                       private boolean isFoo(String foo) {
+                          foo = null;
                           return foo.contentEquals(Constants.FOO);
                       }
                   }
@@ -163,6 +164,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   class A {
                       private boolean isFoo(String foo) {
+                          foo = null;
                           return Constants.FOO.contentEquals(foo);
                       }
                   }
@@ -511,8 +513,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       static final String FOO = "FOO";
                       static final String BAR = "BAR";
                       void bar(String foo) {
+                          foo = null;
+                          foo.contentEquals("FOO");
                           foo.contentEquals(FOO);
-                          foo.contentEquals(BAR);
                           FOO.equals(BAR);
                       }
                   }
@@ -522,10 +525,11 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       static final String FOO = "FOO";
                       static final String BAR = "BAR";
                       void bar(String foo) {
-                          FOO.contentEquals(foo);
-                          BAR.contentEquals(foo);
-                          FOO.equals(BAR);
-                      }
+                      foo = null;
+                      "FOO".contentEquals(foo);
+                      FOO.contentEquals(foo);
+                      FOO.equals(BAR);
+                  }
                   }
                   """
               )
