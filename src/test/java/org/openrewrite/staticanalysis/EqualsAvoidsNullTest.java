@@ -501,16 +501,30 @@ class EqualsAvoidsNullTest implements RewriteTest {
          * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg#one}
          */
         @Test
-        @Disabled
+//        @Disabled
         void constantOnConstant() {
             rewriteRun(
               //language=java
               java(
                 """
                   public class Foo {
-                      private static final String FOO = "FOO";
-                      public void bar() {
-                          FOO.equals(FOO);
+                      static final String FOO = "FOO";
+                      static final String BAR = "BAR";
+                      void bar(String foo) {
+                          foo.contentEquals(FOO);
+                          foo.contentEquals(BAR);
+                          FOO.equals(BAR);
+                      }
+                  }
+                  """,
+                """
+                  public class Foo {
+                      static final String FOO = "FOO";
+                      static final String BAR = "BAR";
+                      void bar(String foo) {
+                          FOO.contentEquals(foo);
+                          BAR.contentEquals(foo);
+                          FOO.equals(BAR);
                       }
                   }
                   """
