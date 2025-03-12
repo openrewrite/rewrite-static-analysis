@@ -149,7 +149,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               java(
                 """
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private boolean isFoo(String foo) {
@@ -160,7 +160,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   """,
                 """
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private boolean isFoo(String foo) {
@@ -181,7 +181,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   package c;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   """
               ),
@@ -226,7 +226,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   package c;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   """
               ),
@@ -259,7 +259,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               java(
                 """
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private boolean isFoo(String foo, String bar) {
@@ -270,7 +270,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   """,
                 """
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private boolean isFoo(String foo, String bar) {
@@ -291,7 +291,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   import java.util.List;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private <T> void r(T e) {
@@ -302,7 +302,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   import java.util.List;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private <T> void r(T e) {
@@ -322,7 +322,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   import java.util.List;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private void isFoo(List<Object> list) {
@@ -333,7 +333,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   import java.util.List;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class A {
                       private void isFoo(List<Object> list) {
@@ -354,7 +354,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   import java.util.List;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class C {
                       boolean c(String k) {
@@ -379,7 +379,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                 """
                   import java.util.List;
                   public class Constants {
-                      public static final String FOO = "FOO";
+                      public static final String FOO = null;
                   }
                   class C {
                       boolean c(String k) {
@@ -412,8 +412,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
               java(
                 """
                   public class Constants {
-                      public final String FOO = "FOO";
-                      public static String BAR = "BAR";
+                      public final String FOO = null;
+                      public static String BAR = null;
                   }
                   class A {
                       private boolean isFoo(String foo) {
@@ -436,7 +436,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               java(
                 """
                   class A {
-                      private static final String FOO = "FOO";
+                      private static final String FOO = null;
 
                       boolean withParentExpression(String foo) {
                           return foo != null && foo.equals(FOO);
@@ -445,7 +445,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   """,
                 """
                   class A {
-                      private static final String FOO = "FOO";
+                      private static final String FOO = null;
 
                       boolean withParentExpression(String foo) {
                           return FOO.equals(foo);
@@ -510,78 +510,57 @@ class EqualsAvoidsNullTest implements RewriteTest {
               java(
                 """
                   public class Foo {
-                      static final String FOO = "FOO";
-                      static final String BAR = "BAR";
+                      static final String FOO = null;
+                      static final String BAR = null;
                       void bar(String foo) {
                           foo = null;
                           foo.contentEquals("FOO");
                           foo.contentEquals(FOO);
                           FOO.equals(BAR);
+                          BAR.equals(FOO);
                       }
                   }
                   """,
                 """
                   public class Foo {
-                      static final String FOO = "FOO";
-                      static final String BAR = "BAR";
+                      static final String FOO = null;
+                      static final String BAR = null;
                       void bar(String foo) {
-                      foo = null;
-                      "FOO".contentEquals(foo);
-                      FOO.contentEquals(foo);
-                      FOO.equals(BAR);
+                          foo = null;
+                          "FOO".contentEquals(foo);
+                          foo.contentEquals(FOO);
+                          FOO.equals(BAR);
+                          BAR.equals(FOO);
+                      }
                   }
-                  }
-                  """
-              )
+                  """)
             );
         }
 
-        /**
-         * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg#one}
-         */
         @Test
-        @Disabled
-        void constantOnRaw() {
+        void rawOverReference() {
             rewriteRun(
               //language=java
               java(
                 """
                   public class Foo {
-                      private static final String FOO = "FOO";
-                      public void bar() {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
                           FOO.equals("RAW");
+                          _null.equals("RAW");
+                          _null2.equals("RAW");
                       }
                   }
                   """
-              )
-            );
-        }
-
-        /**
-         * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg}
-         */
-        @Test
-        @Disabled
-        void preferRawOverConstant() {
-            rewriteRun(
-              //language=java
-              java(
-                """
+                , """
                   public class Foo {
-                      private static final String FOO = "FOO";
-
-                      public void foo() {
-                          FOO.equals("RAW");
-                      }
-                  }
-                  """
-                ,
-                """
-                  public class Foo {
-                      private static final String FOO = "FOO";
-
-                      public void foo() {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
                           "RAW".equals(FOO);
+                          "RAW".equals(_null);
+                          "RAW".equals(_null2);
                       }
                   }
                   """

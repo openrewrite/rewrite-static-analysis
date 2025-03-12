@@ -80,7 +80,7 @@ public class EqualsAvoidsNull extends Recipe {
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || isIdempotent(m)) {
+                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || isReferenceOnReference(m)) {
                             return m;
                         }
 
@@ -119,52 +119,11 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     /**
-                     * Checks whether the given method invocation is idempotent.
-                     *
-                     * <p>Idempotent cases include:</p>
-                     * <ul>
-                     *   <li>{@code "FOO".equals("FOO");}</li>
-                     *   <li>{@code "".equals("");}</li>
-                     *   <li>{@code FOO.equals(FOO);}</li>
-                     * </ul>
-                     *
-                     * @param methodInvocation the method invocation to check
-                     * @return {@code true} if the invocation is idempotent, otherwise {@code false}
+                     * Checks whether the given method invocation contains a raw string.
                      */
-                    private boolean isIdempotent(J.MethodInvocation methodInvocation) {
-                        final JavaType argType = methodInvocation.getArguments().get(0).getType();
-                        final JavaType selectType = requireNonNull(methodInvocation.getSelect()).getType();
-                        if (JAVA_LANG_STRING.equals(requireNonNull(selectType).toString())
-                                && !JAVA_LANG_STRING.equals(requireNonNull(argType).toString())
-                                && !Null.equals(argType)
-                                && !Primitive.String.equals(argType)) {
-                            return true;
-                        }
-                        String string = methodInvocation.toString();
-                        boolean ofType = TypeUtils.isOfType(selectType, selectType);
-                        boolean ofType2 = TypeUtils.isOfType(selectType, Primitive.String);
-                        boolean ofType23 = TypeUtils.isOfClassType(selectType, JAVA_LANG_STRING);
-                        boolean of2Type23 = TypeUtils.isOfClassType(selectType, Primitive.String.getClassName());
-                        boolean argTypeofType = TypeUtils.isOfType(argType, selectType);
-                        boolean argTypeofType2 = TypeUtils.isOfType(argType, Primitive.String);
-                        boolean argTypeofType23 = TypeUtils.isOfClassType(argType, JAVA_LANG_STRING);
-                        boolean argTypeof2Type23 = TypeUtils.isOfClassType(argType, Primitive.String.getClassName());
-                        if (JAVA_LANG_STRING.equals(requireNonNull(selectType).toString())
-                                && JAVA_LANG_STRING.equals(requireNonNull(argType).toString())) {
-                            return true;
-                        }
-                        if (Primitive.String.equals(argType)
-                                && !Primitive.String.equals(selectType)
-                                && !JAVA_LANG_STRING.equals(selectType.toString())) {
-                            return false;
-                        }
-                        // for test# constantOnRaw
-//                        if (Primitive.String.equals(argType)
-//                                && JAVA_LANG_STRING.equals(selectType.toString())) {
-//                            return false;
-//                        }
-                        return Primitive.String.equals(argType)
-                                && Primitive.String.equals(selectType);
+                    private boolean isReferenceOnReference(J.MethodInvocation methodInvocation) {
+                        return Primitive.String.equals(methodInvocation.getArguments().get(0).getType())
+                                || Primitive.String.equals(requireNonNull(methodInvocation.getSelect()).getType());
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
