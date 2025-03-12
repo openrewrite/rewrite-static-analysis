@@ -448,7 +448,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       private static final String FOO = null;
 
                       boolean withParentExpression(String foo) {
-                          return FOO.equals(foo);
+                          return foo.equals(FOO);
                       }
                   }
                   """
@@ -496,44 +496,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   }
                   """
               )
-            );
-        }
-
-        /**
-         * ATM we cannot determine this case without breaking {@link ReplaceConstantMethodArg#one}
-         */
-        @Test
-//        @Disabled
-        void constantOnConstant() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  public class Foo {
-                      static final String FOO = null;
-                      static final String BAR = null;
-                      void bar(String foo) {
-                          foo = null;
-                          foo.contentEquals("FOO");
-                          foo.contentEquals(FOO);
-                          FOO.equals(BAR);
-                          BAR.equals(FOO);
-                      }
-                  }
-                  """,
-                """
-                  public class Foo {
-                      static final String FOO = null;
-                      static final String BAR = null;
-                      void bar(String foo) {
-                          foo = null;
-                          "FOO".contentEquals(foo);
-                          foo.contentEquals(FOO);
-                          FOO.equals(BAR);
-                          BAR.equals(FOO);
-                      }
-                  }
-                  """)
             );
         }
 
