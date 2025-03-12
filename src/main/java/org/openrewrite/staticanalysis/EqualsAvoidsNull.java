@@ -47,8 +47,8 @@ public class EqualsAvoidsNull extends Recipe {
     private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
     private static final MethodMatcher COMPARE_TO_CASE =
             new MethodMatcher(JAVA_LANG_STRING + " compareTo(" + JAVA_LANG_STRING + ")");
-    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + " " +
-            "compareToIgnoreCase(" + JAVA_LANG_STRING + ")");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
+            " compareToIgnoreCase(" + JAVA_LANG_STRING + ")");
     private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + " contentEquals(java.lang.CharSequence)");
 
     @Override
@@ -75,10 +75,12 @@ public class EqualsAvoidsNull extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.or(
-                        new UsesMethod<>(EQUALS_STRING),
-                        new UsesMethod<>(EQUALS_OBJECT),
+                        new UsesMethod<>(COMPARE_TO_CASE),
+                        new UsesMethod<>(COMPARE_TO_IGNORE_CASE),
+                        new UsesMethod<>(CONTENT_EQUALS),
                         new UsesMethod<>(EQUALS_IGNORE_CASE),
-                        new UsesMethod<>(CONTENT_EQUALS)),
+                        new UsesMethod<>(EQUALS_OBJECT),
+                        new UsesMethod<>(EQUALS_STRING)),
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
@@ -139,8 +141,9 @@ public class EqualsAvoidsNull extends Recipe {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
                                 if (isNullLiteral(potentialNullCheck.getLeft()) &&
                                         matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                                    isNullLiteral(potentialNullCheck.getRight()) &&
-                                            matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                                        isNullLiteral(potentialNullCheck.getRight()) &&
+                                                matchesSelect(potentialNullCheck.getLeft(),
+                                                        requireNonNull(m.getSelect()))) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
                                         private final J.Binary scope = (J.Binary) parent;
@@ -189,7 +192,7 @@ public class EqualsAvoidsNull extends Recipe {
                                                                           Expression firstArgument) {
                         return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
-                    }
-                });
+            }
+        });
     }
 }
