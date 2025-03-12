@@ -510,6 +510,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public void bar(String _null) {
                           String _null2 = null;
                           FOO.equals("RAW");
+                          FOO.compareTo("RAW");
+                          FOO.compareToIgnoreCase("RAW");
                           _null.equals("RAW");
                           _null2.equals("RAW");
                       }
@@ -521,6 +523,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public void bar(String _null) {
                           String _null2 = null;
                           "RAW".equals(FOO);
+                          "RAW".compareTo(FOO);
+                          "RAW".compareToIgnoreCase(FOO);
                           "RAW".equals(_null);
                           "RAW".equals(_null2);
                       }
