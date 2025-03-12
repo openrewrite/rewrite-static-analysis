@@ -86,7 +86,7 @@ public class EqualsAvoidsNull extends Recipe {
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || isReferenceOnReference(m)) {
+                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || !isStringLiteral(m)) {
                             return m;
                         }
 
@@ -129,7 +129,7 @@ public class EqualsAvoidsNull extends Recipe {
                     /**
                      * Checks whether the given method invocation contains a raw string.
                      */
-                    private boolean isReferenceOnReference(J.MethodInvocation methodInvocation) {
+                    private boolean isStringLiteral(J.MethodInvocation methodInvocation) {
                         return Primitive.String.equals(methodInvocation.getArguments().get(0).getType())
                                 || Primitive.String.equals(requireNonNull(methodInvocation.getSelect()).getType());
                     }
