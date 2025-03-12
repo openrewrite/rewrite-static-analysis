@@ -98,6 +98,8 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
                             JavaType argType = arg.getType();
                             if (TypeUtils.isOfClassType(argType, "java.lang.Double")) {
                                 valueOf = JavaTemplate.builder("Float.valueOf(#{any(java.lang.Double)}.floatValue())");
+                            } else if (JavaType.Primitive.Double == arg.getType()) {
+                                valueOf = JavaTemplate.builder("Float.valueOf((float) #{any(double)})");
                             } else {
                                 valueOf = JavaTemplate.builder("Float.valueOf(#{any(float)})");
                             }
