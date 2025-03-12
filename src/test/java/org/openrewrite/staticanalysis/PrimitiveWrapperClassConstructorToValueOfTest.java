@@ -186,10 +186,12 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
             """
               class T {
                   Double d1 = Double.valueOf(1.0);
+                  double d2 = 2.0d;
                   void makeFloats() {
                       Float f = new Float(2.0d);
                       Float f2 = new Float(getD());
                       Float f3 = new Float(d1);
+                      Float f4 = new Float(d2);
                   }
                   Double getD() {
                       return Double.valueOf(2.0d);
@@ -199,10 +201,12 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
             """
               class T {
                   Double d1 = Double.valueOf(1.0);
+                  double d2 = 2.0d;
                   void makeFloats() {
                       Float f = Float.valueOf("2.0");
                       Float f2 = Float.valueOf(getD().floatValue());
                       Float f3 = Float.valueOf(d1.floatValue());
+                      Float f4 = Float.valueOf((float) d2);
                   }
                   Double getD() {
                       return Double.valueOf(2.0d);
@@ -220,64 +224,64 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
           java(
             """
               public enum Options {
-              
+
                   JAR("instance.jar.file"),
                   JVM_ARGUMENTS("instance.vm.args"),
                   QUICKSTART_OPTIONS("instance.options"),
                   INSTALLATIONS("instance.installations"),
                   START_TIMEOUT("instance.timeout");
-              
+
                   private String name;
-              
+
                   Options(String name) {
                       this.name = name;
                   }
-              
+
                   public String asString() {
                       return System.getProperty(name);
                   }
-                  
+
                   public Integer asInteger(int defaultValue) {
                       String string  = asString();
-              
+
                       if (string == null) {
                           return defaultValue;
                       }
-              
+
                       return new Integer(asString());
                   }
-              
+
               }
               """,
             """
               public enum Options {
-              
+
                   JAR("instance.jar.file"),
                   JVM_ARGUMENTS("instance.vm.args"),
                   QUICKSTART_OPTIONS("instance.options"),
                   INSTALLATIONS("instance.installations"),
                   START_TIMEOUT("instance.timeout");
-              
+
                   private String name;
-              
+
                   Options(String name) {
                       this.name = name;
                   }
-              
+
                   public String asString() {
                       return System.getProperty(name);
                   }
-                  
+
                   public Integer asInteger(int defaultValue) {
                       String string  = asString();
-              
+
                       if (string == null) {
                           return defaultValue;
                       }
-              
+
                       return Integer.valueOf(asString());
                   }
-              
+
               }
               """
           )
