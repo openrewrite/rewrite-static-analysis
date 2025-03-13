@@ -435,4 +435,22 @@ class EmptyBlockTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void empty2() {
+        rewriteRun(
+          java(
+            """
+            public class WithEmptyBlock {
+              public void shouldNotFlipCondition() {
+                  if (1 > 0 || 0 > 1) {
+                  } else {
+                    System.out.println("wrong");
+                  }
+              }
+            }
+            """
+          )
+        );
+    }
 }
