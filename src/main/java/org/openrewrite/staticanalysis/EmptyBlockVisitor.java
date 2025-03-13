@@ -139,7 +139,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
         }
         J.Binary binary = (J.Binary) cond.getTree();
 
-        // only boolean operators are valid for if conditions
+        // only some operators are supported
         switch (binary.getOperator()) {
             case Equal:
                 cond = cond.withTree(binary.withOperator(J.Binary.Type.NotEqual));
@@ -160,7 +160,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
                 cond = cond.withTree(binary.withOperator(J.Binary.Type.LessThan));
                 break;
             default:
-                break;
+                return i;
         }
         i = i.withIfCondition(cond);
 
