@@ -25,7 +25,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions"})
+@SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SequencedCollectionMethodCanBeUsed"})
 class EqualsAvoidsNullTest implements RewriteTest {
 
     @Override
@@ -60,6 +60,22 @@ class EqualsAvoidsNullTest implements RewriteTest {
               }
               """
           )
+        );
+    }
+
+    @Test
+    void leaveCharAlone() {
+        rewriteRun(
+            //language=java
+            java("""
+              import java.util.List;
+
+              class A {
+                  boolean compareToPrimitiveTypes(List<Object> objects) {
+                      return objects.get(0).equals(1) || objects.get(0).equals('a');
+                  }
+              }
+              """)
         );
     }
 
@@ -138,6 +154,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Nested
     class ReplaceConstantMethodArg {
 

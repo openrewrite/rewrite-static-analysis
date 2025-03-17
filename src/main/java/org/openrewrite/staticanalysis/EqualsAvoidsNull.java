@@ -111,7 +111,7 @@ public class EqualsAvoidsNull extends Recipe {
 
                     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
                         return EQUALS_STRING.matches(methodInvocation) ||
-                                EQUALS_OBJECT.matches(methodInvocation) ||
+                                (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType()))||
                                 EQUALS_IGNORE_CASE.matches(methodInvocation) ||
                                 CONTENT_EQUALS.matches(methodInvocation);
                     }
