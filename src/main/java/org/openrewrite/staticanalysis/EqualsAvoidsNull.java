@@ -23,6 +23,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.JavaType.Primitive;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -32,6 +33,7 @@ import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.openrewrite.java.tree.JavaType.Primitive.Null;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -43,6 +45,10 @@ public class EqualsAvoidsNull extends Recipe {
     private static final MethodMatcher EQUALS_STRING = new MethodMatcher(JAVA_LANG_STRING + " equals(" + JAVA_LANG_OBJECT + ")");
     private static final MethodMatcher EQUALS_OBJECT = new MethodMatcher(JAVA_LANG_OBJECT + " equals(" + JAVA_LANG_OBJECT + ")");
     private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
+    private static final MethodMatcher COMPARE_TO_CASE =
+            new MethodMatcher(JAVA_LANG_STRING + " compareTo(" + JAVA_LANG_STRING + ")");
+    private static final MethodMatcher COMPARE_TO_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING +
+            " compareToIgnoreCase(" + JAVA_LANG_STRING + ")");
     private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + " contentEquals(java.lang.CharSequence)");
 
     @Override
@@ -69,23 +75,25 @@ public class EqualsAvoidsNull extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.or(
-                        new UsesMethod<>(EQUALS_STRING),
-                        new UsesMethod<>(EQUALS_OBJECT),
+                        new UsesMethod<>(COMPARE_TO_CASE),
+                        new UsesMethod<>(COMPARE_TO_IGNORE_CASE),
+                        new UsesMethod<>(CONTENT_EQUALS),
                         new UsesMethod<>(EQUALS_IGNORE_CASE),
-                        new UsesMethod<>(CONTENT_EQUALS)),
+                        new UsesMethod<>(EQUALS_OBJECT),
+                        new UsesMethod<>(EQUALS_STRING)),
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m)) {
+                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || !isStringLiteral(m)) {
                             return m;
                         }
 
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
                         Expression firstArgument = m.getArguments().get(0);
 
-                        return firstArgument.getType() == JavaType.Primitive.Null ?
+                        return firstArgument.getType() == Null ?
                                 literalsFirstInComparisonsNull(m, firstArgument) :
                                 literalsFirstInComparisons(m, firstArgument);
 
@@ -113,7 +121,17 @@ public class EqualsAvoidsNull extends Recipe {
                         return EQUALS_STRING.matches(methodInvocation) ||
                                 (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType()))||
                                 EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                                COMPARE_TO_CASE.matches(methodInvocation) ||
+                                COMPARE_TO_IGNORE_CASE.matches(methodInvocation) ||
                                 CONTENT_EQUALS.matches(methodInvocation);
+                    }
+
+                    /**
+                     * Checks whether the given method invocation contains a raw string.
+                     */
+                    private boolean isStringLiteral(J.MethodInvocation methodInvocation) {
+                        return Primitive.String.equals(methodInvocation.getArguments().get(0).getType())
+                                || Primitive.String.equals(requireNonNull(methodInvocation.getSelect()).getType());
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
@@ -123,8 +141,9 @@ public class EqualsAvoidsNull extends Recipe {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
                                 if (isNullLiteral(potentialNullCheck.getLeft()) &&
                                         matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                                    isNullLiteral(potentialNullCheck.getRight()) &&
-                                            matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                                        isNullLiteral(potentialNullCheck.getRight()) &&
+                                                matchesSelect(potentialNullCheck.getLeft(),
+                                                        requireNonNull(m.getSelect()))) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
                                         private final J.Binary scope = (J.Binary) parent;
@@ -150,7 +169,7 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private boolean isNullLiteral(Expression expression) {
-                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
+                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == Null;
                     }
 
                     private boolean matchesSelect(Expression expression, Expression select) {
@@ -166,14 +185,14 @@ public class EqualsAvoidsNull extends Recipe {
                                 requireNonNull(m.getSelect()),
                                 JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
                                 firstArgument.withPrefix(Space.SINGLE_SPACE),
-                                JavaType.Primitive.Boolean);
+                                Primitive.Boolean);
                     }
 
                     private J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m,
                                                                           Expression firstArgument) {
                         return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
-                    }
-                });
+            }
+        });
     }
 }
