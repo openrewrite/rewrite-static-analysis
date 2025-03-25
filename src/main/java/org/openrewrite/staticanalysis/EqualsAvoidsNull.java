@@ -80,19 +80,19 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private J visitMethodInvocation(J.MethodInvocation m) {
-                        if (EqualsAvoidsNull.isStringComparisonMethod(m) &&
-                                EqualsAvoidsNull.hasCompatibleArgument(m) &&
+                        if (isStringComparisonMethod(m) &&
+                                hasCompatibleArgument(m) &&
                                 !(m.getSelect() instanceof J.Literal)) {
-                            return visitMethodInvocation(m, m.getArguments().get(0));
+                            return applyLiteralsFirstInComparisons(m, m.getArguments().get(0));
                         }
                         return m;
                     }
 
-                    private J visitMethodInvocation(J.MethodInvocation m, Expression firstArgument) {
+                    private J applyLiteralsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
                         return firstArgument.getType() == JavaType.Primitive.Null ?
-                                EqualsAvoidsNull.literalsFirstInComparisonsNull(m, firstArgument) :
-                                EqualsAvoidsNull.literalsFirstInComparisons(m, firstArgument);
+                                literalsFirstInComparisonsNull(m, firstArgument) :
+                                literalsFirstInComparisons(m, firstArgument);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
@@ -100,11 +100,11 @@ public class EqualsAvoidsNull extends Recipe {
                             if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                if (EqualsAvoidsNull.isNullLiteral(potentialNullCheck.getLeft()) &&
-                                        EqualsAvoidsNull.matchesSelect(getCursor(), potentialNullCheck.getRight(),
+                                if (isNullLiteral(potentialNullCheck.getLeft()) &&
+                                        matchesSelect(getCursor(), potentialNullCheck.getRight(),
                                                 requireNonNull(m.getSelect())) ||
-                                        EqualsAvoidsNull.isNullLiteral(potentialNullCheck.getRight()) &&
-                                                EqualsAvoidsNull.matchesSelect(getCursor(),
+                                        isNullLiteral(potentialNullCheck.getRight()) &&
+                                                matchesSelect(getCursor(),
                                                         potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
                                         private final J.Binary scope = (J.Binary) parent;
@@ -164,19 +164,18 @@ public class EqualsAvoidsNull extends Recipe {
     }
 
     private static boolean hasCompatibleArgument(J.MethodInvocation m) {
-        if (m.getArguments().isEmpty()) {
-            return false;
-        }
-        Expression firstArgument = m.getArguments().get(0);
-        if (firstArgument instanceof J.Literal) {
-            return true;
-        }
-        if (firstArgument instanceof J.FieldAccess) {
-            firstArgument = ((J.FieldAccess) firstArgument).getName();
-        }
-        if (firstArgument instanceof J.Identifier) {
-            JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
-            return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
+        if (!m.getArguments().isEmpty()) {
+            Expression firstArgument = m.getArguments().get(0);
+            if (firstArgument instanceof J.Literal) {
+                return true;
+            }
+            if (firstArgument instanceof J.FieldAccess) {
+                firstArgument = ((J.FieldAccess) firstArgument).getName();
+            }
+            if (firstArgument instanceof J.Identifier) {
+                JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
+                return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
+            }
         }
         return false;
     }
