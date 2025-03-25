@@ -1130,6 +1130,42 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/482")
+        void castTooSpecific() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                         class B<T> {}
+                         void method() {
+                             Object o = new Object();
+                             if (o instanceof B) {
+                                 @SuppressWarnings("unsafe")
+                                 B<String> bString = (B) o;
+                                 System.out.println(bString);
+                             }
+                         }
+                    }
+                    """,
+                  """
+                    class A {
+                         class B<T> {}
+                         void method() {
+                             Object o = new Object();
+                             if (o instanceof B bString) {
+                                 System.out.println(bString);
+                             }
+                         }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
