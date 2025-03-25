@@ -549,6 +549,25 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
+        void referenceOnReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      private static final String BAR = null;
+                      public void bar() {
+                          FOO.equals(FOO);
+                          FOO.equals(BAR);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void rawOverReference() {
             rewriteRun(
               //language=java
@@ -584,7 +603,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
 
         @Test
-        void flipLocalReference() {
+        void rawOverLocalReference() {
             rewriteRun(
               //language=java
               java(
