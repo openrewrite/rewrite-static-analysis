@@ -1267,6 +1267,43 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/483")
+        void classVariableShadowing() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        class B {}
+                        Object b;
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B) {
+                                B b = (B) o;
+                                System.out.println(b);
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        class B {}
+                        Object b;
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B b) {
+                                System.out.println(b);
+                            }
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
     }
 
     @Nested
