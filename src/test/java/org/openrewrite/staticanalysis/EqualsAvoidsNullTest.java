@@ -524,4 +524,98 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
             ));
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/472")
+    @Nested
+    class equalsAvoidsNullNonIdempotent {
+
+        @Test
+        void raw() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void bar() {
+                          "FOO".equals("BAR");
+                          "FOO".equalsIgnoreCase("BAR");
+                          "FOO".compareTo("BAR");
+                          "FOO".compareToIgnoreCase("BAR");
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void rawOverReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          FOO.equals("RAW");
+                          FOO.compareTo("RAW");
+                          FOO.compareToIgnoreCase("RAW");
+                          _null.equals("RAW");
+                          _null2.equals("RAW");
+                      }
+                  }
+                  """
+                , """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          "RAW".equals(FOO);
+                          "RAW".compareTo(FOO);
+                          "RAW".compareToIgnoreCase(FOO);
+                          "RAW".equals(_null);
+                          "RAW".equals(_null2);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void flipLocalReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          _null.equals(FOO);
+                          _null2.equals(FOO);
+                          _null.equals(_null);
+                          _null2.equals(_null2);
+                          "_null".equals("_null2");
+                      }
+                  }
+                  """
+                , """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          FOO.equals(_null);
+                          FOO.equals(_null2);
+                          _null.equals(_null);
+                          _null2.equals(_null2);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+    }
 }
