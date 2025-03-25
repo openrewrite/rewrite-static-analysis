@@ -89,22 +89,22 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private J applyLiteralsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
-                        maybePotentialNullCheck(m, getCursor().getParentTreeCursor().getValue());
+                        checkPotentialNullCheck(m, getCursor().getParentTreeCursor().getValue());
                         return firstArgument.getType() == JavaType.Primitive.Null ?
                                 literalsFirstInComparisonsNull(m, firstArgument) :
                                 literalsFirstInComparisons(m, firstArgument);
                     }
 
-                    private void maybePotentialNullCheck(J.MethodInvocation m, final Tree parent) {
+                    private void checkPotentialNullCheck(J.MethodInvocation m, final Tree parent) {
                         if (parent instanceof J.Binary &&
                                 ((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                 ((J.Binary) parent).getLeft() instanceof J.Binary) {
-                            potentialNullCheck(m, (J.Binary) parent, (J.Binary) ((J.Binary) parent).getLeft());
+                            avoidPotentialNullCheck(m, (J.Binary) parent, (J.Binary) ((J.Binary) parent).getLeft());
                         }
                     }
 
-                    private void potentialNullCheck(J.MethodInvocation m, J.Binary parent,
-                                                    J.Binary potentialNullCheck) {
+                    private void avoidPotentialNullCheck(J.MethodInvocation m, J.Binary parent,
+                                                         J.Binary potentialNullCheck) {
                         if (isNullLiteral(potentialNullCheck.getLeft()) &&
                                 matchesSelect(getCursor(), potentialNullCheck.getRight(),
                                         requireNonNull(m.getSelect())) ||
