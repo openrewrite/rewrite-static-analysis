@@ -1304,6 +1304,41 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/484")
+        void enumPatternMatch() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        enum B {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B) {
+                                B e = (B) o;
+                                System.out.println(e);
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        enum B {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B e) {
+                                System.out.println(e);
+                            }
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
     }
 
     @Nested
