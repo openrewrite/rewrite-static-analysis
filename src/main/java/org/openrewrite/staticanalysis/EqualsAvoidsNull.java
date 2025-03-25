@@ -99,33 +99,37 @@ public class EqualsAvoidsNull extends Recipe {
                         if (parent instanceof J.Binary) {
                             if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
-                                J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                if (isNullLiteral(potentialNullCheck.getLeft()) &&
-                                        matchesSelect(getCursor(), potentialNullCheck.getRight(),
-                                                requireNonNull(m.getSelect())) ||
-                                        isNullLiteral(potentialNullCheck.getRight()) &&
-                                                matchesSelect(getCursor(),
-                                                        potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
-                                    doAfterVisit(new JavaVisitor<ExecutionContext>() {
-                                        private final J.Binary scope = (J.Binary) parent;
-                                        private boolean done;
-
-                                        @Override
-                                        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                                            return done ? (J) tree : super.visit(tree, ctx);
-                                        }
-
-                                        @Override
-                                        public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-                                            if (scope.isScope(binary)) {
-                                                done = true;
-                                                return binary.getRight().withPrefix(binary.getPrefix());
-                                            }
-                                            return super.visitBinary(binary, ctx);
-                                        }
-                                    });
-                                }
+                                potentialNullCheck(m, (J.Binary) parent, (J.Binary) ((J.Binary) parent).getLeft());
                             }
+                        }
+                    }
+
+                    private void potentialNullCheck(J.MethodInvocation m, J.Binary parent,
+                                                    J.Binary potentialNullCheck) {
+                        if (isNullLiteral(potentialNullCheck.getLeft()) &&
+                                matchesSelect(getCursor(), potentialNullCheck.getRight(),
+                                        requireNonNull(m.getSelect())) ||
+                                isNullLiteral(potentialNullCheck.getRight()) &&
+                                        matchesSelect(getCursor(),
+                                                potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                            doAfterVisit(new JavaVisitor<ExecutionContext>() {
+                                private final J.Binary scope = parent;
+                                private boolean done;
+
+                                @Override
+                                public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                                    return done ? (J) tree : super.visit(tree, ctx);
+                                }
+
+                                @Override
+                                public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                                    if (scope.isScope(binary)) {
+                                        done = true;
+                                        return binary.getRight().withPrefix(binary.getPrefix());
+                                    }
+                                    return super.visitBinary(binary, ctx);
+                                }
+                            });
                         }
                     }
                 });
