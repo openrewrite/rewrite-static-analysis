@@ -492,42 +492,38 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
-    @Test
-    void literalAndConstant() {
-        rewriteRun(
-          spec -> spec.recipe(new EqualsAvoidsNull()),
-          // language=java
-          java(
-            """
-            package com.helloworld;
-
-            public class Foo {
-                private static final String FOO = "";
-
-                public void foo() {
-                    FOO.equals("");
-                    "".equals(FOO);
-                }
-            }
-            """,
-            """
-            package com.helloworld;
-
-            public class Foo {
-                private static final String FOO = "";
-
-                public void foo() {
-                    "".equals(FOO);
-                    "".equals(FOO);
-                }
-            }
-            """
-            ));
-    }
-
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/472")
     @Nested
     class equalsAvoidsNullNonIdempotent {
+
+        @Test
+        void literalAndConstant() {
+            rewriteRun(
+              spec -> spec.recipe(new EqualsAvoidsNull()),
+              // language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "";
+
+                      public void foo() {
+                          FOO.equals("");
+                          "".equals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Foo {
+                      private static final String FOO = "";
+
+                      public void foo() {
+                          "".equals(FOO);
+                          "".equals(FOO);
+                      }
+                  }
+                  """
+              ));
+        }
 
         @Test
         void rawOnRaw() {
