@@ -76,45 +76,23 @@ public class EqualsAvoidsNull extends Recipe {
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        final J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-                        if (isStringComparisonMethod(m) &&
-                                hasCompatibleArgument(m) &&
+                        return visitMethodInvocation((J.MethodInvocation) super.visitMethodInvocation(method, ctx));
+                    }
+
+                    private J visitMethodInvocation(J.MethodInvocation m) {
+                        if (EqualsAvoidsNull.isStringComparisonMethod(m) &&
+                                EqualsAvoidsNull.hasCompatibleArgument(m) &&
                                 !(m.getSelect() instanceof J.Literal)) {
                             return visitMethodInvocation(m, m.getArguments().get(0));
                         }
                         return m;
                     }
 
-                    private boolean hasCompatibleArgument(J.MethodInvocation m) {
-                        if (m.getArguments().isEmpty()) {
-                            return false;
-                        }
-                        Expression firstArgument = m.getArguments().get(0);
-                        if (firstArgument instanceof J.Literal) {
-                            return true;
-                        }
-                        if (firstArgument instanceof J.FieldAccess) {
-                            firstArgument = ((J.FieldAccess) firstArgument).getName();
-                        }
-                        if (firstArgument instanceof J.Identifier) {
-                            JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
-                            return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
-                        }
-                        return false;
-                    }
-
-                    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-                        return EQUALS_STRING.matches(methodInvocation) ||
-                                (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType()))||
-                                EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-                                CONTENT_EQUALS.matches(methodInvocation);
-                    }
-
                     private J visitMethodInvocation(J.MethodInvocation m, Expression firstArgument) {
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
                         return firstArgument.getType() == JavaType.Primitive.Null ?
-                                literalsFirstInComparisonsNull(m, firstArgument) :
-                                literalsFirstInComparisons(m, firstArgument);
+                                EqualsAvoidsNull.literalsFirstInComparisonsNull(m, firstArgument) :
+                                EqualsAvoidsNull.literalsFirstInComparisons(m, firstArgument);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
@@ -122,12 +100,13 @@ public class EqualsAvoidsNull extends Recipe {
                             if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                if (isNullLiteral(potentialNullCheck.getLeft()) &&
-                                        matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                                    isNullLiteral(potentialNullCheck.getRight()) &&
-                                            matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                                if (EqualsAvoidsNull.isNullLiteral(potentialNullCheck.getLeft()) &&
+                                        EqualsAvoidsNull.matchesSelect(getCursor(), potentialNullCheck.getRight(),
+                                                requireNonNull(m.getSelect())) ||
+                                        EqualsAvoidsNull.isNullLiteral(potentialNullCheck.getRight()) &&
+                                                EqualsAvoidsNull.matchesSelect(getCursor(),
+                                                        potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
-
                                         private final J.Binary scope = (J.Binary) parent;
                                         private boolean done;
 
@@ -149,32 +128,56 @@ public class EqualsAvoidsNull extends Recipe {
                             }
                         }
                     }
-
-                    private boolean isNullLiteral(Expression expression) {
-                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
-                    }
-
-                    private boolean matchesSelect(Expression expression, Expression select) {
-                        return expression.printTrimmed(getCursor()).replaceAll("\\s", "")
-                                .equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
-                    }
-
-                    private J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m,
-                                                                    Expression firstArgument) {
-                        return new J.Binary(Tree.randomId(),
-                                m.getPrefix(),
-                                Markers.EMPTY,
-                                requireNonNull(m.getSelect()),
-                                JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
-                                firstArgument.withPrefix(Space.SINGLE_SPACE),
-                                JavaType.Primitive.Boolean);
-                    }
-
-                    private J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m,
-                                                                          Expression firstArgument) {
-                        return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
-                                .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
-                    }
                 });
+    }
+
+    private static boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
+        return EQUALS_STRING.matches(methodInvocation) ||
+                EQUALS_OBJECT.matches(methodInvocation) &&
+                        TypeUtils.isString(methodInvocation.getArguments().get(0).getType()) ||
+                EQUALS_IGNORE_CASE.matches(methodInvocation) ||
+                CONTENT_EQUALS.matches(methodInvocation);
+    }
+
+    private static boolean isNullLiteral(Expression expression) {
+        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
+    }
+
+    private static boolean matchesSelect(Cursor cursor, Expression expression, Expression select) {
+        return expression.printTrimmed(cursor).replaceAll("\\s", "")
+                .equals(select.printTrimmed(cursor).replaceAll("\\s", ""));
+    }
+
+    private static J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {
+        return new J.Binary(Tree.randomId(),
+                m.getPrefix(),
+                Markers.EMPTY,
+                requireNonNull(m.getSelect()),
+                JLeftPadded.build(J.Binary.Type.Equal).withBefore(Space.SINGLE_SPACE),
+                firstArgument.withPrefix(Space.SINGLE_SPACE),
+                JavaType.Primitive.Boolean);
+    }
+
+    private static J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m, Expression firstArgument) {
+        return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
+                .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
+    }
+
+    private static boolean hasCompatibleArgument(J.MethodInvocation m) {
+        if (m.getArguments().isEmpty()) {
+            return false;
+        }
+        Expression firstArgument = m.getArguments().get(0);
+        if (firstArgument instanceof J.Literal) {
+            return true;
+        }
+        if (firstArgument instanceof J.FieldAccess) {
+            firstArgument = ((J.FieldAccess) firstArgument).getName();
+        }
+        if (firstArgument instanceof J.Identifier) {
+            JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
+            return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
+        }
+        return false;
     }
 }
