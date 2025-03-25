@@ -76,10 +76,10 @@ public class EqualsAvoidsNull extends Recipe {
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        return visitMethodInvocation((J.MethodInvocation) super.visitMethodInvocation(method, ctx));
+                        return checkLiteralsFirstInComparisons((J.MethodInvocation) super.visitMethodInvocation(method, ctx));
                     }
 
-                    private J visitMethodInvocation(J.MethodInvocation m) {
+                    private J checkLiteralsFirstInComparisons(J.MethodInvocation m) {
                         if (isStringComparisonMethod(m) &&
                                 hasCompatibleArgument(m) &&
                                 !(m.getSelect() instanceof J.Literal)) {
