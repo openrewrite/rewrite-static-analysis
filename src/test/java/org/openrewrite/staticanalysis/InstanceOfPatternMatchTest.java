@@ -932,7 +932,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                 """
                   public class A {
                       boolean test(Object o) {
-                          return o instanceof String[] && ((java.lang.String[]) o).length > 1 || ((String[]) o).length > 2;
+                          return o instanceof String[] && ((String[]) o).length > 1 || ((String[]) o).length > 2;
                       }
                   }
                   """,
@@ -1143,23 +1143,43 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                          class B<T> {}
                          void method() {
                              Object o = new Object();
-                             if (o instanceof B) {
-                                 @SuppressWarnings("unsafe")
-                                 B<String> bString = (B) o;
+                             if (o instanceof B<?>) {
+                                 B<String> bString = (B<String>) o;
                                  System.out.println(bString);
                              }
                          }
                     }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Test
+        void bareAssignmentButParameterizedCheck() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        class B<T> {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B<?>) {
+                                B b = (B)o;
+                            }
+                        }
+                    }
                     """,
                   """
                     class A {
-                         class B<T> {}
-                         void method() {
-                             Object o = new Object();
-                             if (o instanceof B bString) {
-                                 System.out.println(bString);
-                             }
-                         }
+                        class B<T> {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B b) {
+                            }
+                        }
                     }
                     """
                 ), 17

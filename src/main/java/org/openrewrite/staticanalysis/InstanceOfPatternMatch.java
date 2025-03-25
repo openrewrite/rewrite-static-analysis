@@ -251,23 +251,22 @@ public class InstanceOfPatternMatch extends Recipe {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
             }
-            JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             String name = patternVariableName(instanceOf, cursor);
+            TypeTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
+            J currentTypeTree = instanceOf.getClazz();
             J.InstanceOf result = instanceOf.withPattern(new J.Identifier(
                     randomId(),
                     Space.build(" ", emptyList()),
                     Markers.EMPTY,
                     emptyList(),
                     name,
-                    type,
-                    null));
+                    typeCastTypeTree.getType(),
+                    null))
+                    .withClazz(typeCastTypeTree.withPrefix(currentTypeTree.getPrefix()).withId(Tree.randomId()));
 
-            J currentTypeTree = instanceOf.getClazz();
-            TypeTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
-            // If type tree from type cast is not parameterized then NVM. Instance of should already have proper type
-            if (typeCastTypeTree instanceof J.ParameterizedType) {
-                J.ParameterizedType parameterizedType = (J.ParameterizedType) typeCastTypeTree;
-                result = result.withClazz(parameterizedType.withId(Tree.randomId()).withPrefix(currentTypeTree.getPrefix()));
+            if (typeCastTypeTree instanceof J.ParameterizedType && ((J.ParameterizedType) typeCastTypeTree).getTypeParameters().stream().anyMatch(e -> !(e instanceof J.Wildcard))) {
+                // only pattern match against types with wildcard parameters, since others cannot be checked due to type erasure
+                return instanceOf;
             }
 
             // update entry in replacements to share the pattern variable name
