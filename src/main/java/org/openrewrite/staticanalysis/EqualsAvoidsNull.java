@@ -76,19 +76,13 @@ public class EqualsAvoidsNull extends Recipe {
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
-                            return m;
+                        final J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+                        if (isStringComparisonMethod(m) &&
+                                hasCompatibleArgument(m) &&
+                                !(m.getSelect() instanceof J.Literal)) {
+                            return visitMethodInvocation(m, m.getArguments().get(0));
                         }
-
-                        maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
-                        Expression firstArgument = m.getArguments().get(0);
-
-                        return firstArgument.getType() == JavaType.Primitive.Null ?
-                                literalsFirstInComparisonsNull(m, firstArgument) :
-                                literalsFirstInComparisons(m, firstArgument);
-
+                        return m;
                     }
 
                     private boolean hasCompatibleArgument(J.MethodInvocation m) {
@@ -114,6 +108,13 @@ public class EqualsAvoidsNull extends Recipe {
                                 (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType()))||
                                 EQUALS_IGNORE_CASE.matches(methodInvocation) ||
                                 CONTENT_EQUALS.matches(methodInvocation);
+                    }
+
+                    private J visitMethodInvocation(J.MethodInvocation m, Expression firstArgument) {
+                        maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
+                        return firstArgument.getType() == JavaType.Primitive.Null ?
+                                literalsFirstInComparisonsNull(m, firstArgument) :
+                                literalsFirstInComparisons(m, firstArgument);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
