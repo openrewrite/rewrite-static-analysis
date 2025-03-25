@@ -99,12 +99,12 @@ public class EqualsAvoidsNull extends Recipe {
                         if (parent instanceof J.Binary &&
                                 ((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                 ((J.Binary) parent).getLeft() instanceof J.Binary) {
-                            avoidPotentialNullCheck(m, (J.Binary) parent, (J.Binary) ((J.Binary) parent).getLeft());
+                            preparePotentialNullCheck(m, (J.Binary) parent, (J.Binary) ((J.Binary) parent).getLeft());
                         }
                     }
 
-                    private void avoidPotentialNullCheck(J.MethodInvocation m, J.Binary parent,
-                                                         J.Binary potentialNullCheck) {
+                    private void preparePotentialNullCheck(J.MethodInvocation m, J.Binary parent,
+                                                           J.Binary potentialNullCheck) {
                         if (isNullLiteral(potentialNullCheck.getLeft()) &&
                                 matchesSelect(getCursor(), potentialNullCheck.getRight(),
                                         requireNonNull(m.getSelect())) ||
