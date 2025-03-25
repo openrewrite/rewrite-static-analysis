@@ -530,7 +530,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
     class equalsAvoidsNullNonIdempotent {
 
         @Test
-        void raw() {
+        void rawOnRaw() {
             rewriteRun(
               //language=java
               java(
