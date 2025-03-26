@@ -297,15 +297,18 @@ public class InstanceOfPatternMatch extends Recipe {
 
         private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor) {
             VariableNameStrategy strategy;
+            JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
             if (root instanceof J.If) {
                 VariableAndTypeTree variableData = variablesToDelete.get(instanceOf);
-                strategy = variableData != null ?
-                        VariableNameStrategy.exact(variableData.getVariable().getSimpleName()) :
-                        VariableNameStrategy.normal(contextScopes.get(instanceOf));
+                if (variableData != null) {
+                    // under the assumption that the code compiled previously we don't need to check for duplicates
+                    return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
+                }
+                strategy = VariableNameStrategy.normal(contextScopes.get(instanceOf));
             } else {
                 strategy = VariableNameStrategy.short_();
             }
-            String baseName = strategy.variableName(((TypeTree) instanceOf.getClazz()).getType());
+            String baseName = strategy.variableName(type);
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
