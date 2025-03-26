@@ -67,7 +67,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
     void leaveCharAlone() {
         rewriteRun(
             //language=java
-            java("""
+            java(
+              """
               import java.util.List;
 
               class A {
@@ -489,5 +490,38 @@ class EqualsAvoidsNullTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void literalAndConstant() {
+        rewriteRun(
+          spec -> spec.recipe(new EqualsAvoidsNull()),
+          // language=java
+          java(
+            """
+            package com.helloworld;
+
+            public class Foo {
+                private static final String FOO = "";
+
+                public void foo() {
+                    FOO.equals("");
+                    "".equals(FOO);
+                }
+            }
+            """,
+            """
+            package com.helloworld;
+
+            public class Foo {
+                private static final String FOO = "";
+
+                public void foo() {
+                    "".equals(FOO);
+                    "".equals(FOO);
+                }
+            }
+            """
+            ));
     }
 }
