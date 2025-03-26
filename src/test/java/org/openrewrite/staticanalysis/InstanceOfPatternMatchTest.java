@@ -1143,8 +1143,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                          class B<T> {}
                          void method() {
                              Object o = new Object();
-                             if (o instanceof B<?>) {
-                                 B<String> bString = (B<String>) o;
+                             if (o instanceof B) {
+                                 B<String> bString = (B) o;
                                  System.out.println(bString);
                              }
                          }

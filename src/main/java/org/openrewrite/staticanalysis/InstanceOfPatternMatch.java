@@ -201,11 +201,13 @@ public class InstanceOfPatternMatch extends Recipe {
                 for (Iterator<?> it = cursor.getPath(); it.hasNext(); ) {
                     Object next = it.next();
                     if (validContexts.contains(next)) {
-                        if (isAcceptableTypeCast(typeCast) && isTheSameAsOtherTypeCasts(typeCast, instanceOf)) {
+                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf)) {
                             if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
-                                !variablesToDelete.containsKey(instanceOf)) {
-                                variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
-                                        requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class).getTypeExpression())));
+                                    !variablesToDelete.containsKey(instanceOf)) {
+                                if (isAcceptableTypeCast(((J.VariableDeclarations.NamedVariable) parent.getValue()).getType())) {
+                                    variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
+                                            requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class).getTypeExpression())));
+                                }
                             } else {
                                 replacements.put(typeCast, instanceOf);
                             }
@@ -225,10 +227,9 @@ public class InstanceOfPatternMatch extends Recipe {
             }
         }
 
-        private boolean isAcceptableTypeCast(J.TypeCast typeCast) {
-            TypeTree typeTree = typeCast.getClazz().getTree();
-            if (typeTree instanceof J.ParameterizedType) {
-                return requireNonNull(((J.ParameterizedType) typeTree).getTypeParameters()).stream().allMatch(J.Wildcard.class::isInstance);
+        private boolean isAcceptableTypeCast(JavaType type) {
+            if (type instanceof JavaType.Parameterized) {
+                return requireNonNull(((JavaType.Parameterized) type).getTypeParameters()).stream().allMatch(JavaType.GenericTypeVariable.class::isInstance);
             }
             return true;
         }
@@ -263,11 +264,6 @@ public class InstanceOfPatternMatch extends Recipe {
                     typeCastTypeTree.getType(),
                     null))
                     .withClazz(typeCastTypeTree.withPrefix(currentTypeTree.getPrefix()).withId(Tree.randomId()));
-
-            if (typeCastTypeTree instanceof J.ParameterizedType && ((J.ParameterizedType) typeCastTypeTree).getTypeParameters().stream().anyMatch(e -> !(e instanceof J.Wildcard))) {
-                // only pattern match against types with wildcard parameters, since others cannot be checked due to type erasure
-                return instanceOf;
-            }
 
             // update entry in replacements to share the pattern variable name
             for (Map.Entry<J.TypeCast, J.InstanceOf> entry : replacements.entrySet()) {
