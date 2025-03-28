@@ -84,17 +84,25 @@ public class EqualsAvoidsNull extends Recipe {
                         return visitBlock((J.Block) super.visitBlock(block, ctx));
                     }
 
+                    /**
+                     * @implNote {@link MultipleVariableDeclarationsVisitor#visitBlock(J.Block, ExecutionContext)}
+                     */
                     private J.@NotNull Block visitBlock(J.Block b) {
                         return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                             if ((statement instanceof J.VariableDeclarations)) {
-                                J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) statement;
-                                JavaType type = variableDeclarations.getType();
-                                if (type.toString().equals(JAVA_LANG_STRING)) {
-                                    VARIABLE_DECLARATIONS.put(variableDeclarations.getTypeAsFullyQualified().getClassName(), variableDeclarations);
-                                }
+                                addVariableDeclarationIfString((J.VariableDeclarations) statement);
                             }
+                            VARIABLE_DECLARATIONS.toString();
                             return statement;
                         }));
+                    }
+
+                    private void addVariableDeclarationIfString(J.VariableDeclarations variableDeclarations) {
+                        if (variableDeclarations.getType().toString().equals(JAVA_LANG_STRING)) {
+                            VARIABLE_DECLARATIONS.put(
+                                    variableDeclarations.getVariables().getFirst().getName().getSimpleName(),
+                                    variableDeclarations);
+                        }
                     }
 
                     @Override

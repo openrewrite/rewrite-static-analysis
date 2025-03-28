@@ -607,12 +607,17 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class Foo {
                       private static final String FOO = null;
                       public void bar(String _null) {
+                          String _null1 = null;
                           String _null2 = null;
                           _null.equals(FOO);
                           _null2.equals(FOO);
                           _null.equals(_null);
                           _null2.equals(_null2);
+                          _null1.equals(_null2);
+                          _null1.equals("_null2");
                           "_null".equals("_null2");
+                          "_null1".equals("_null2");
+                          "_null2".equals("_null2");
                       }
                   }
                   """
@@ -620,11 +625,14 @@ class EqualsAvoidsNullTest implements RewriteTest {
                   public class Foo {
                       private static final String FOO = null;
                       public void bar(String _null) {
+                          String _null1 = null;
                           String _null2 = null;
                           FOO.equals(_null);
                           FOO.equals(_null2);
                           _null.equals(_null);
                           _null2.equals(_null2);
+                          _null1.equals(_null2);
+                          "_null2".equals(_null1);
                       }
                   }
                   """
