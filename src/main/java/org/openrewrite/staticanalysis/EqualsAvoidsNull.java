@@ -100,7 +100,7 @@ public class EqualsAvoidsNull extends Recipe {
                     private void addVariableDeclarationIfString(J.VariableDeclarations variableDeclarations) {
                         if (variableDeclarations.getType().toString().equals(JAVA_LANG_STRING)) {
                             VARIABLE_DECLARATIONS.put(
-                                    variableDeclarations.getVariables().getFirst().getName().getSimpleName(),
+                                    variableDeclarations.getVariables().get(0).getName().getSimpleName(),
                                     variableDeclarations);
                         }
                     }
