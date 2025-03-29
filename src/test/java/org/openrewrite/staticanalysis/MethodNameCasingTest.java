@@ -505,6 +505,29 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/426") // Links to the issue being tested
+    @Test
+    void keywordUsage() {
+        rewriteRun(
+          srcMainJava(
+            // Language hint for syntax highlighting
+            //language=java
+            java(
+              """
+                class Test {
+                    // Method name 'this' is a reserved keyword, so we use 'this_()' instead.
+                    // This test ensures that the renaming logic does not incorrectly modify such method names.
+                    private String this_() {
+                        return "foobar"; // Return a sample string
+                    }
+                }
+                """
+            )
+          )
+        );
+    }
+
+
     @Test
     void keepCamelCase2() {
         rewriteRun(
