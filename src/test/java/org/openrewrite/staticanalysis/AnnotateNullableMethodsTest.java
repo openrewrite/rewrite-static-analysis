@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -29,7 +28,6 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     public void defaults(RecipeSpec spec) {
         spec
           .recipe(new AnnotateNullableMethods(null));
-          //.parser(JavaParser.fromJavaVersion().classpath("jspecify"));
     }
 
     @DocumentExample
