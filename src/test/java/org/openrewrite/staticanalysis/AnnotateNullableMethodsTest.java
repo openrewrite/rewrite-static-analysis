@@ -28,8 +28,8 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec
-          .recipe(new AnnotateNullableMethods())
-          .parser(JavaParser.fromJavaVersion().classpath("jspecify"));
+          .recipe(new AnnotateNullableMethods(null));
+          //.parser(JavaParser.fromJavaVersion().classpath("jspecify"));
     }
 
     @DocumentExample
@@ -229,6 +229,34 @@ class AnnotateNullableMethodsTest implements RewriteTest {
                       return callable;
                   }
 
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void provideCustomNullableAnnotationOption() {
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableMethods("my.custom.Nullable")),
+          //language=java
+          java(
+            """
+              public class Test {
+
+                  public String getString() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import my.custom.Nullable;
+
+              public class Test {
+
+                  public @Nullable String getString() {
+                      return null;
+                  }
               }
               """
           )
