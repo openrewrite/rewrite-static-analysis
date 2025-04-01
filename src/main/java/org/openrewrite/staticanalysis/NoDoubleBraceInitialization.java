@@ -123,10 +123,7 @@ public class NoDoubleBraceInitialization extends Recipe {
                             Cursor namedVarCursor = getCursor().dropParentUntil(J.VariableDeclarations.NamedVariable.class::isInstance);
                             namedVarCursor.putMessage("DROP_INITIALIZER", Boolean.TRUE);
 
-                            fq = fq.getSupertype();
-                            String newInitializer = " new " + fq.getClassName() + "<>();";
-                            JavaTemplate template = JavaTemplate.builder(newInitializer).imports(fq.getFullyQualifiedName()).build();
-                            nc = template.apply(getCursor(), nc.getCoordinates().replace());
+                            nc = nc.withBody(null);
                             initStatements = addSelectToInitStatements(initStatements, var.getName(), ctx);
                             initStatements.add(0, new J.Assignment(Tree.randomId(), Space.EMPTY, Markers.EMPTY, var.getName().withId(UUID.randomUUID()), JLeftPadded.build(nc), fq));
                             parentBlockCursor.computeMessageIfAbsent("INIT_STATEMENTS", v -> new HashMap<Statement, List<Statement>>()).put(varDeclsCursor.getValue(), initStatements);
