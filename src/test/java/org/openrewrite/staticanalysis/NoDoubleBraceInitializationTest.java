@@ -30,6 +30,70 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         spec.recipe(new NoDoubleBraceInitialization());
     }
 
+    @Test
+    void dropsConstructorCollectionParameterInMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              class A {
+                  void foo() {
+                      Map<String, String> a = Map.of("foo", "bar");
+                      Map<String, String> b = new HashMap<>(a) {{
+                          put("irrelevantKey", "irrelevantValue");
+                      }};
+                  }
+              }
+              """,
+            """
+              import java.util.*;
+
+              class A {
+                  void foo() {
+                      Map<String, String> a = Map.of("foo", "bar");
+                      Map<String, String> b = new HashMap<>(a);
+                      b.put("irrelevantKey", "irrelevantValue");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/356")
+    @Test
+    void dropsConstructorCollectionParameterInClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              class A {
+                  Map<String, String> a = Map.of("foo", "bar");
+                  Map<String, String> b = new HashMap<>(a) {{
+                      put("irrelevantKey", "irrelevantValue");
+                  }};
+              }
+              """,
+            """
+              import java.util.*;
+
+              class A {
+                  Map<String, String> a = Map.of("foo", "bar");
+                  Map<String, String> b;
+                  {
+                      b = new HashMap<>(a);
+                      b.put("irrelevantKey", "irrelevantValue");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2674")
     @Test
     void possibleMistakenlyMissedAddingToCollection() {
