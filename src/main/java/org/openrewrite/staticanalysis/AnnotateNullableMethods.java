@@ -62,7 +62,7 @@ public class AnnotateNullableMethods extends Recipe {
     @Override
     public Validated<Object> validate() {
         return super.validate()
-                .and(Validated.test("nullableAnnotationClass", "<message>", nullableAnnotationClass,
+                .and(Validated.test("nullableAnnotationClass", "Property `nullableAnnotationClass` must be a fully qualified classname.", nullableAnnotationClass,
                         it -> it == null || it.contains(".")));
     }
 
