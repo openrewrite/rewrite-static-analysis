@@ -60,20 +60,26 @@ public class AnnotateNullableMethods extends Recipe {
     }
 
     @Override
+    public Validated<Object> validate() {
+        return super.validate()
+                .and(Validated.test("nullableAnnotationClass", "<message>", nullableAnnotationClass,
+                        it -> it == null || it.contains(".")));
+    }
+
+    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         String fullyQualifiedName = nullableAnnotationClass != null ? nullableAnnotationClass : DEFAULT_NULLABLE_ANN_CLASS;
         String fullyQualifiedPackage = fullyQualifiedName.substring(0, fullyQualifiedName.lastIndexOf('.'));
         String simpleName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.') + 1);
-        AnnotationMatcher nullableAnnotationMatcher = new AnnotationMatcher("@" + fullyQualifiedName);
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
                 if (!methodDeclaration.hasModifier(J.Modifier.Type.Public) ||
                         methodDeclaration.getMethodType() == null ||
                         methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
-                        service(AnnotationService.class).matches(getCursor(), nullableAnnotationMatcher) ||
+                        service(AnnotationService.class).matches(getCursor(), new AnnotationMatcher("@" + fullyQualifiedName)) ||
                         (methodDeclaration.getReturnTypeExpression() != null &&
-                                service(AnnotationService.class).matches(new Cursor(null, methodDeclaration.getReturnTypeExpression()), nullableAnnotationMatcher))) {
+                                service(AnnotationService.class).matches(new Cursor(null, methodDeclaration.getReturnTypeExpression()), new AnnotationMatcher("@" + fullyQualifiedName)))) {
                     return methodDeclaration;
                 }
 
