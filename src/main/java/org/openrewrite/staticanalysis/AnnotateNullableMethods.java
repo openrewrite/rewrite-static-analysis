@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AnnotateNullableMethods extends Recipe {
 
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation. The annotation should have `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.Nullable`",
+            description = "The fully qualified name of the @Nullable annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.Nullable`",
             example = "org.jspecify.annotations.Nullable",
             required = false)
     @Nullable
@@ -52,7 +52,7 @@ public class AnnotateNullableMethods extends Recipe {
     public String getDescription() {
         return "Add `@Nullable` to non-private methods that may return `null`. " +
                 "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided." +
-                "When providing a custom `nullableAnnotationClass` that annotation should have `@Target(TYPE_USE)`." +
+                "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`." +
                 "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
                 "statements for potential null values. It also identifies known methods from standard libraries that may " +
                 "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
