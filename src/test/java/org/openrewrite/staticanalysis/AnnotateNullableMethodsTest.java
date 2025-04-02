@@ -17,10 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 class AnnotateNullableMethodsTest implements RewriteTest {
@@ -28,8 +28,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec
-          .recipe(new AnnotateNullableMethods())
-          .parser(JavaParser.fromJavaVersion().classpath("jspecify"));
+          .recipe(new AnnotateNullableMethods(null));
     }
 
     @DocumentExample
@@ -233,6 +232,39 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void provideCustomNullableAnnotationOption() {
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableMethods("my.custom.Nullable")),
+          //language=java
+          java(
+            """
+              public class Test {
+
+                  public String getString() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import my.custom.Nullable;
+
+              public class Test {
+
+                  public @Nullable String getString() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void validate() {
+        assertThat(new AnnotateNullableMethods("Nullable").validate().isInvalid()).isTrue();
     }
 
     @Test
