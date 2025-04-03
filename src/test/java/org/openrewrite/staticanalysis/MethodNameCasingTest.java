@@ -505,12 +505,11 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/426") // Links to the issue being tested
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/426")
     @Test
     void keywordUsage() {
         rewriteRun(
           srcMainJava(
-            // Language hint for syntax highlighting
             //language=java
             java(
               """
