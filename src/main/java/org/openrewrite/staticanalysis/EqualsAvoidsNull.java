@@ -17,8 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
@@ -26,6 +28,8 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static java.time.Duration.ofMinutes;
@@ -44,6 +48,7 @@ public class EqualsAvoidsNull extends Recipe {
     private static final MethodMatcher EQUALS_OBJECT = new MethodMatcher(JAVA_LANG_OBJECT + " equals(" + JAVA_LANG_OBJECT + ")");
     private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
     private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + " contentEquals(java.lang.CharSequence)");
+    private static final Map<String, J.VariableDeclarations> VARIABLE_DECLARATIONS = new HashMap<>();
 
     @Override
     public String getDisplayName() {
@@ -75,20 +80,40 @@ public class EqualsAvoidsNull extends Recipe {
                         new UsesMethod<>(CONTENT_EQUALS)),
                 new JavaVisitor<ExecutionContext>() {
                     @Override
-                    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+                    public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+                        return visitBlock((J.Block) super.visitBlock(block, ctx));
+                    }
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
-                            return m;
+                    /**
+                     * @implNote {@link MultipleVariableDeclarationsVisitor#visitBlock(J.Block, ExecutionContext)}
+                     */
+                    private J.@NotNull Block visitBlock(J.Block b) {
+                        return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
+                            if ((statement instanceof J.VariableDeclarations)) {
+                                addVariableDeclarationIfString((J.VariableDeclarations) statement);
+                            }
+                            VARIABLE_DECLARATIONS.toString();
+                            return statement;
+                        }));
+                    }
+
+                    private void addVariableDeclarationIfString(J.VariableDeclarations variableDeclarations) {
+                        if (variableDeclarations.getType().toString().equals(JAVA_LANG_STRING)) {
+                            VARIABLE_DECLARATIONS.put(
+                                    variableDeclarations.getVariables().get(0).getName().getSimpleName(),
+                                    variableDeclarations);
                         }
+                    }
 
-                        maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
-                        Expression firstArgument = m.getArguments().get(0);
-
-                        return firstArgument.getType() == JavaType.Primitive.Null ?
-                                literalsFirstInComparisonsNull(m, firstArgument) :
-                                literalsFirstInComparisons(m, firstArgument);
-
+                    @Override
+                    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                        final J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+                        if (isStringComparisonMethod(m) &&
+                                hasCompatibleArgument(m) &&
+                                !(m.getSelect() instanceof J.Literal)) {
+                            return visitMethodInvocation(m, m.getArguments().get(0));
+                        }
+                        return m;
                     }
 
                     private boolean hasCompatibleArgument(J.MethodInvocation m) {
@@ -114,6 +139,13 @@ public class EqualsAvoidsNull extends Recipe {
                                 (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType()))||
                                 EQUALS_IGNORE_CASE.matches(methodInvocation) ||
                                 CONTENT_EQUALS.matches(methodInvocation);
+                    }
+
+                    private J visitMethodInvocation(J.MethodInvocation m, Expression firstArgument) {
+                        maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
+                        return firstArgument.getType() == JavaType.Primitive.Null ?
+                                literalsFirstInComparisonsNull(m, firstArgument) :
+                                literalsFirstInComparisons(m, firstArgument);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
@@ -171,6 +203,10 @@ public class EqualsAvoidsNull extends Recipe {
 
                     private J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m,
                                                                           Expression firstArgument) {
+                        if (VARIABLE_DECLARATIONS.containsKey(m.getSimpleName())) {
+                            // check ref
+                            return null;
+                        }
                         return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
                     }
