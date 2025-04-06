@@ -56,10 +56,10 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           java(
             """
               import java.util.Collection;
-                            
+
               class Test {
                   Class<? extends Collection<String>> test = (Class<? extends Collection<String>>) get();
-              
+
                   Class<?> get() {
                       return null;
                   }
@@ -76,7 +76,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           java(
             """
               import java.io.DataOutputStream;
-                            
+
               class Test {
                   void m(DataOutputStream out) {
                       out.writeByte((byte) 0xff);
@@ -96,31 +96,31 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           java(
             """
               import java.util.Iterator;
-              
+
               class GenericNumberIterable<T extends Number> implements Iterable<T> {
-              
+
                   private final Iterable<Number> wrappedIterable;
-              
+
                   GenericNumberIterable(Iterable<Number> wrap) {
                       this.wrappedIterable = wrap;
                   }
-              
+
                   @Override
                   public Iterator<T> iterator() {
                       final Iterator<Number> iter = wrappedIterable.iterator();
-              
+
                       return new Iterator<T>() {
                           @Override
                           public boolean hasNext() {
                               return iter.hasNext();
                           }
-              
+
                           @Override
                           @SuppressWarnings("unchecked")
                           public T next() {
                               return (T) iter.next();
                           }
-              
+
                           @Override
                           public void remove() {
                               throw new UnsupportedOperationException();
@@ -141,7 +141,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           java(
             """
               import java.util.*;
-              
+
               class Test {
                   public <T extends Collection<String>> T test() {
                       return (T) get();
@@ -162,7 +162,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           java(
             """
               import java.util.*;
-              
+
               class Test {
                   public boolean foo() {
                       return Objects.equals("x", (Comparable<String>) (s) -> 1);
@@ -210,7 +210,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           java(
             """
               import java.util.List;
-              
+
               class Test {
                   Object o = null;
                   List<?> l = (List<?>) o;
@@ -309,7 +309,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           java(
             """
               import java.util.List;
-                            
+
               class Test {
                   Object o = (List<String>) method();
                   Object o2 = (List<? extends String>) method();
@@ -322,7 +322,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               """,
             """
               import java.util.List;
-                            
+
               class Test {
                   Object o = method();
                   Object o2 = method();
@@ -402,7 +402,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               import java.util.Map;
               import java.util.function.Supplier;
               import java.util.stream.Collectors;
-              
+
               class Test {
                   void method() {
                       Object o2 = new MapDropdownChoice<String, Integer>(
@@ -414,7 +414,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                               });
                   }
               }
-              
+
               class MapDropdownChoice<K, V> {
                   public MapDropdownChoice(Supplier<? extends Map<K, ? extends V>> choiceMap) {
                   }
@@ -448,7 +448,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.List;
-              
+
               class Test {
                   void method() {
                       List<? extends Number> list = new ArrayList<>();
@@ -468,7 +468,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import java.util.List;
-              
+
               class Test {
                   List method(List list) {
                       return (ArrayList) list;
@@ -477,7 +477,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               """,
             """
               import java.util.List;
-              
+
               class Test {
                   List method(List list) {
                       return list;
@@ -498,7 +498,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                 package org.glassfish.jaxb.core.marshaller;
                 import java.io.IOException;
                 import java.io.Writer;
-                              
+
                 public interface CharacterEscapeHandler {
                     void escape( char[] ch, int start, int length, boolean isAttVal, Writer out ) throws IOException;\s
                 }
@@ -517,7 +517,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
             """
               import javax.xml.bind.Marshaller;
               import org.glassfish.jaxb.core.marshaller.CharacterEscapeHandler;
-                
+
               class Foo {
                 void bar(Marshaller marshaller) {
                   marshaller.setProperty("org.glassfish.jaxb.characterEscapeHandler", (CharacterEscapeHandler) (ch, start, length, isAttVal, out) -> {
@@ -528,4 +528,36 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void dontRemoveNecessaryDowncast() {
+        rewriteRun(
+          spec -> spec.recipe(new RemoveRedundantTypeCast()),
+          // language=java
+          java(
+            """
+            package com.helloworld;
+
+            import java.util.Optional;
+
+            public class Foo {
+                public interface Bar {}
+
+                public static class BarImpl implements Bar {}
+
+                private Bar getBar() {
+                    return new BarImpl();
+                }
+
+                private BarImpl getBarImpl() {
+                    return new BarImpl();
+                }
+
+                public Bar baz() {
+                 return Optional.of((Bar) getBarImpl()).orElse(getBar());
+               }
+            }
+            """));
+    }
 }
+
