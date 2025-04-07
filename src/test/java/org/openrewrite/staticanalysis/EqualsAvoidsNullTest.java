@@ -532,8 +532,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       public void bar() {
                           "FOO".equals("BAR");
                           "FOO".equalsIgnoreCase("BAR");
-                          "FOO".compareTo("BAR");
-                          "FOO".compareToIgnoreCase("BAR");
                       }
                   }
                   """
@@ -551,7 +549,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       private static final String FOO = null;
                       private static final String BAR = null;
                       public void bar() {
-                          // FOO.equals(FOO);
                           BAR.equals(FOO);
                       }
                   }
