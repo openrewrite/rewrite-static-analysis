@@ -1222,6 +1222,38 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void multipleVariablesOneNotAcceptableToCast() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  public class A {
+                      void test(Object o1, Object o2) {
+                          if (o1 instanceof String && o2 instanceof List<?>) {
+                              String s = (String) o1;
+                              List<String> l = (List) o2;
+                              l.add(s);
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class A {
+                      void test(Object o1, Object o2) {
+                          if (o1 instanceof String s && o2 instanceof List<?>) {
+                              List<String> l = (List) o2;
+                              l.add(s);
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

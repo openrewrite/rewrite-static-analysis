@@ -201,13 +201,11 @@ public class InstanceOfPatternMatch extends Recipe {
                 for (Iterator<?> it = cursor.getPath(); it.hasNext(); ) {
                     Object next = it.next();
                     if (validContexts.contains(next)) {
-                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf)) {
+                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent)) {
                             if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
                                     !variablesToDelete.containsKey(instanceOf)) {
-                                if (isAcceptableTypeCast(((J.VariableDeclarations.NamedVariable) parent.getValue()).getType())) {
-                                    variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
-                                            requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class).getTypeExpression())));
-                                }
+                                variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
+                                        requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
                             } else {
                                 replacements.put(typeCast, instanceOf);
                             }
@@ -230,6 +228,14 @@ public class InstanceOfPatternMatch extends Recipe {
         private boolean isAcceptableTypeCast(JavaType type) {
             if (type instanceof JavaType.Parameterized) {
                 return requireNonNull(((JavaType.Parameterized) type).getTypeParameters()).stream().allMatch(JavaType.GenericTypeVariable.class::isInstance);
+            }
+            return true;
+        }
+
+        private boolean isAcceptableParentTypeCast(Cursor parent) {
+            // if the parent is a variable declaration, that declaration must also have an acceptable generic type
+            if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable) {
+                return isAcceptableTypeCast(requireNonNull(((J.VariableDeclarations.NamedVariable) parent.getValue()).getType()));
             }
             return true;
         }
