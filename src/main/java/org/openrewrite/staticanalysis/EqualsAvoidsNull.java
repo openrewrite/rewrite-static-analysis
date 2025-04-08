@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -50,10 +51,14 @@ public class EqualsAvoidsNull extends Recipe {
     private static final String JAVA_LANG_STRING = "java.lang.String";
     private static final String JAVA_LANG_OBJECT = "java.lang.Object";
 
-    private static final MethodMatcher EQUALS_STRING = new MethodMatcher(JAVA_LANG_STRING + " equals(" + JAVA_LANG_OBJECT + ")");
-    private static final MethodMatcher EQUALS_OBJECT = new MethodMatcher(JAVA_LANG_OBJECT + " equals(" + JAVA_LANG_OBJECT + ")");
-    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
-    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + " contentEquals(java.lang.CharSequence)");
+    private static final MethodMatcher EQUALS_STRING = new MethodMatcher(JAVA_LANG_STRING
+            + " equals(" + JAVA_LANG_OBJECT + ")");
+    private static final MethodMatcher EQUALS_OBJECT = new MethodMatcher(JAVA_LANG_OBJECT
+            + " equals(" + JAVA_LANG_OBJECT + ")");
+    private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING
+            + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
+    private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING
+            + " contentEquals(java.lang.CharSequence)");
 
     @Override
     public String getDisplayName() {
@@ -86,21 +91,27 @@ public class EqualsAvoidsNull extends Recipe {
                         new UsesMethod<>(EQUALS_IGNORE_CASE),
                         new UsesMethod<>(CONTENT_EQUALS)),
                 new JavaVisitor<ExecutionContext>() {
+
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+                        return visitMethodInvocation((J.MethodInvocation) super.visitMethodInvocation(method, ctx));
+                    }
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
+                    private @NotNull J visitMethodInvocation(J.MethodInvocation m) {
+                        if (!isStringComparisonMethod(m) ||
+                                !hasCompatibleArgument(m) ||
+                                m.getSelect() instanceof J.Literal) {
                             return m;
                         }
-
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
-                        Expression firstArgument = m.getArguments().get(0);
+                        return literalsFirstInComparisonsNullCheck(m, m.getArguments().get(0));
+                    }
 
+                    private @NotNull J literalsFirstInComparisonsNullCheck(J.MethodInvocation m,
+                                                                           Expression firstArgument) {
                         return firstArgument.getType() == JavaType.Primitive.Null ?
                                 literalsFirstInComparisonsNull(m, firstArgument) :
                                 literalsFirstInComparisons(m, firstArgument);
-
                     }
 
                     private boolean hasCompatibleArgument(J.MethodInvocation m) {
@@ -187,14 +198,13 @@ public class EqualsAvoidsNull extends Recipe {
 
                     private J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m,
                                                                           Expression firstArgument) {
-                        if (!(firstArgument instanceof J.Literal) && !(m.getSelect() instanceof J.Literal)) {
-                            if (firstArgument.toString().compareTo(m.getSelect().toString()) > 0) {
-                                // Don't swap the order to avoid thrashing.
-                                // toString() is a somewhat arbitrary criterion, but at least it's deterministic.
-                                return m;
-                            }
+                        if (!(firstArgument instanceof J.Literal) &&
+                                !(m.getSelect() instanceof J.Literal) &&
+                                firstArgument.toString().compareTo(m.getSelect().toString()) > 0) {
+                            // Don't swap the order to avoid thrashing.
+                            // toString() is a somewhat arbitrary criterion, but at least it's deterministic.
+                            return m;
                         }
-
                         return m.withSelect(firstArgument.withPrefix(requireNonNull(m.getSelect()).getPrefix()))
                                 .withArguments(singletonList(m.getSelect().withPrefix(Space.EMPTY)));
                     }
