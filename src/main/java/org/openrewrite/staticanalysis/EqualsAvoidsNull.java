@@ -99,7 +99,7 @@ public class EqualsAvoidsNull extends Recipe {
 
                     private @NotNull J visitMethodInvocation(J.MethodInvocation m) {
                         if (!isStringComparisonMethod(m) ||
-                                !hasCompatibleArgument(m) ||
+                                !isCompatibleArgument(m) ||
                                 m.getSelect() instanceof J.Literal) {
                             return m;
                         }
@@ -114,7 +114,7 @@ public class EqualsAvoidsNull extends Recipe {
                                 literalsFirstInComparisons(m, firstArgument);
                     }
 
-                    private boolean hasCompatibleArgument(J.MethodInvocation m) {
+                    private boolean isCompatibleArgument(J.MethodInvocation m) {
                         if (!m.getArguments().isEmpty()) {
                             Expression firstArgument = m.getArguments().get(0);
                             if (firstArgument instanceof J.Literal) {
