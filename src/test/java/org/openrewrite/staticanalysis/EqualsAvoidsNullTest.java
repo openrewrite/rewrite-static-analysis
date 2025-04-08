@@ -25,7 +25,12 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SequencedCollectionMethodCanBeUsed"})
+@SuppressWarnings({
+  "ClassInitializerMayBeStatic",
+  "StatementWithEmptyBody",
+  "ConstantConditions",
+  "SequencedCollectionMethodCanBeUsed"
+})
 class EqualsAvoidsNullTest implements RewriteTest {
 
     @Override
@@ -66,9 +71,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void leaveCharAlone() {
         rewriteRun(
-            //language=java
-            java(
-              """
+          //language=java
+          java(
+            """
               import java.util.List;
 
               class A {
@@ -76,7 +81,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       return objects.get(0).equals(1) || objects.get(0).equals('a');
                   }
               }
-              """)
+              """
+          )
         );
     }
 
@@ -111,22 +117,24 @@ class EqualsAvoidsNullTest implements RewriteTest {
     void nullLiteral() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+            """
               public class A {
-                    void foo(String s) {
-                        if(s.equals(null)) {
-                        }
-                    }
-                }
+                  void foo(String s) {
+                      if(s.equals(null)) {
+                      }
+                  }
+              }
               """,
             """
               public class A {
-                    void foo(String s) {
-                        if(s == null) {
-                        }
-                    }
-                }
-              """)
+                  void foo(String s) {
+                      if(s == null) {
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 
@@ -519,7 +527,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       }
                   }
                   """
-              ));
+              )
+            );
         }
 
         @Test
@@ -572,8 +581,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           _null2.equals("RAW");
                       }
                   }
-                  """
-                , """
+                  """,
+                """
                   public class Foo {
                       private static final String FOO = null;
                       public void bar(String _null) {
@@ -606,8 +615,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                           _null1.equals(_null2);
                       }
                   }
-                  """
-                , """
+                  """,
+                """
                   public class Foo {
                       private static final String FOO = null;
                       public void bar(String _null) {

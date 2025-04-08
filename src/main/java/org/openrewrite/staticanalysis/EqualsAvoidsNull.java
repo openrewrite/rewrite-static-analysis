@@ -18,11 +18,21 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JLeftPadded;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -52,7 +62,9 @@ public class EqualsAvoidsNull extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Checks that any combination of String literals is on the left side of an `equals()` comparison. Also checks for String literals assigned to some field (such as `someString.equals(anotherString = \"text\"))`.";
+        return "Checks that any combination of String literals is on the left side of an `equals()` comparison. " +
+                "Also checks for String literals assigned to some field " +
+                "(such as `someString.equals(anotherString = \"text\"))`.";
     }
 
     @Override
@@ -92,60 +104,64 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private boolean hasCompatibleArgument(J.MethodInvocation m) {
-                        if (m.getArguments().isEmpty()) {
-                            return false;
-                        }
-                        Expression firstArgument = m.getArguments().get(0);
-                        if (firstArgument instanceof J.Literal) {
-                            return true;
-                        }
-                        if (firstArgument instanceof J.FieldAccess) {
-                            firstArgument = ((J.FieldAccess) firstArgument).getName();
-                        }
-                        if (firstArgument instanceof J.Identifier) {
-                            JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
-                            return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
+                        if (!m.getArguments().isEmpty()) {
+                            Expression firstArgument = m.getArguments().get(0);
+                            if (firstArgument instanceof J.Literal) {
+                                return true;
+                            }
+                            if (firstArgument instanceof J.FieldAccess) {
+                                firstArgument = ((J.FieldAccess) firstArgument).getName();
+                            }
+                            if (firstArgument instanceof J.Identifier) {
+                                JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
+                                return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
+                            }
                         }
                         return false;
                     }
 
                     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
                         return EQUALS_STRING.matches(methodInvocation) ||
-                                (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType()))||
+                                (EQUALS_OBJECT.matches(methodInvocation) &&
+                                        TypeUtils.isString(methodInvocation.getArguments().get(0).getType())) ||
                                 EQUALS_IGNORE_CASE.matches(methodInvocation) ||
                                 CONTENT_EQUALS.matches(methodInvocation);
                     }
 
                     private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
-                        if (parent instanceof J.Binary) {
-                            if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
-                                    ((J.Binary) parent).getLeft() instanceof J.Binary) {
-                                J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                if (isNullLiteral(potentialNullCheck.getLeft()) &&
-                                        matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                                    isNullLiteral(potentialNullCheck.getRight()) &&
-                                            matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
-                                    doAfterVisit(new JavaVisitor<ExecutionContext>() {
+                        if (parent instanceof J.Binary &&
+                                ((J.Binary) parent).getOperator() == J.Binary.Type.And &&
+                                ((J.Binary) parent).getLeft() instanceof J.Binary) {
+                            potentialNullCheck(m, (J.Binary) parent, (J.Binary) ((J.Binary) parent).getLeft());
+                        }
+                    }
 
-                                        private final J.Binary scope = (J.Binary) parent;
-                                        private boolean done;
+                    private void potentialNullCheck(J.MethodInvocation m, J.Binary parent,
+                                                    J.Binary potentialNullCheck) {
+                        if (isNullLiteral(potentialNullCheck.getLeft()) &&
+                                matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
+                                isNullLiteral(potentialNullCheck.getRight()) &&
+                                        matchesSelect(potentialNullCheck.getLeft(),
+                                                requireNonNull(m.getSelect()))) {
+                            doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
-                                        @Override
-                                        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                                            return done ? (J) tree : super.visit(tree, ctx);
-                                        }
+                                private final J.Binary scope = parent;
+                                private boolean done;
 
-                                        @Override
-                                        public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-                                            if (scope.isScope(binary)) {
-                                                done = true;
-                                                return binary.getRight().withPrefix(binary.getPrefix());
-                                            }
-                                            return super.visitBinary(binary, ctx);
-                                        }
-                                    });
+                                @Override
+                                public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                                    return done ? (J) tree : super.visit(tree, ctx);
                                 }
-                            }
+
+                                @Override
+                                public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                                    if (scope.isScope(binary)) {
+                                        done = true;
+                                        return binary.getRight().withPrefix(binary.getPrefix());
+                                    }
+                                    return super.visitBinary(binary, ctx);
+                                }
+                            });
                         }
                     }
 
