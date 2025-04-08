@@ -119,16 +119,17 @@ public class EqualsAvoidsNull extends Recipe {
                             Expression firstArgument = m.getArguments().get(0);
                             if (firstArgument instanceof J.Literal) {
                                 return true;
-                            }
-                            if (firstArgument instanceof J.FieldAccess) {
-                                firstArgument = ((J.FieldAccess) firstArgument).getName();
-                            }
-                            if (firstArgument instanceof J.Identifier) {
-                                JavaType.Variable fieldType = ((J.Identifier) firstArgument).getFieldType();
-                                return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
+                            } else if (firstArgument instanceof J.FieldAccess) {
+                                return extracted(((J.FieldAccess) firstArgument).getName().getFieldType());
+                            } else if (firstArgument instanceof J.Identifier) {
+                                return extracted(((J.Identifier) firstArgument).getFieldType());
                             }
                         }
                         return false;
+                    }
+
+                    private boolean extracted(JavaType.Variable fieldType) {
+                        return fieldType.hasFlags(Flag.Static, Flag.Final);
                     }
 
                     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
