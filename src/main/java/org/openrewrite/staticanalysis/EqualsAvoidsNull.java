@@ -178,7 +178,8 @@ public class EqualsAvoidsNull extends Recipe {
                     }
 
                     private boolean isNullLiteral(Expression expression) {
-                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
+                        return expression instanceof J.Literal &&
+                                ((J.Literal) expression).getType() == JavaType.Primitive.Null;
                     }
 
                     private boolean matchesSelect(Expression expression, Expression select) {
@@ -201,7 +202,7 @@ public class EqualsAvoidsNull extends Recipe {
                                                                           Expression firstArgument) {
                         if (!(firstArgument instanceof J.Literal) &&
                                 !(m.getSelect() instanceof J.Literal) &&
-                                firstArgument.toString().compareTo(m.getSelect().toString()) > 0) {
+                                0 < firstArgument.toString().compareTo(m.getSelect().toString())) {
                             // Don't swap the order to avoid thrashing.
                             // toString() is a somewhat arbitrary criterion, but at least it's deterministic.
                             return m;
