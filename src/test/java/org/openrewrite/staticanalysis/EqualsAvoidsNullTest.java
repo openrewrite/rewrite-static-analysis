@@ -492,4 +492,138 @@ class EqualsAvoidsNullTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/472")
+    @Nested
+    class EqualsAvoidsNullNonIdempotent {
+        @Test
+        void literalAndConstant() {
+            rewriteRun(
+              spec -> spec.recipe(new EqualsAvoidsNull()),
+              // language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "";
+                      public void foo() {
+                          FOO.equals("");
+                          "".equals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Foo {
+                      private static final String FOO = "";
+                      public void foo() {
+                          "".equals(FOO);
+                          "".equals(FOO);
+                      }
+                  }
+                  """
+              ));
+        }
+
+        @Test
+        void rawOnRaw() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void bar() {
+                          "FOO".equals("BAR");
+                          "FOO".equalsIgnoreCase("BAR");
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void referenceOnReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      private static final String BAR = null;
+                      public void bar() {
+                          BAR.equals(FOO);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void rawOverReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          FOO.equals("RAW");
+                          _null.equals("RAW");
+                          _null2.equals("RAW");
+                      }
+                  }
+                  """
+                , """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          "RAW".equals(FOO);
+                          "RAW".equals(_null);
+                          "RAW".equals(_null2);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void rawOverLocalReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null1 = null;
+                          String _null2 = null;
+                          _null.equals(FOO);
+                          _null2.equals(FOO);
+                          _null.equals(_null);
+                          _null2.equals(_null2);
+                          _null1.equals(_null2);
+                      }
+                  }
+                  """
+                , """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null1 = null;
+                          String _null2 = null;
+                          FOO.equals(_null);
+                          FOO.equals(_null2);
+                          _null.equals(_null);
+                          _null2.equals(_null2);
+                          _null1.equals(_null2);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
 }

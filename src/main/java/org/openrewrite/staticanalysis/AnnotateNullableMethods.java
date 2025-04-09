@@ -15,11 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.*;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
@@ -31,10 +30,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Value
+@EqualsAndHashCode(callSuper = false)
 public class AnnotateNullableMethods extends Recipe {
 
-    private static final String NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
-    private static final AnnotationMatcher NULLABLE_ANNOTATION_MATCHER = new AnnotationMatcher("@" + NULLABLE_ANN_CLASS);
+    @Option(displayName = "`@Nullable` annotation class",
+            description = "The fully qualified name of the @Nullable annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.Nullable`",
+            example = "org.jspecify.annotations.Nullable",
+            required = false)
+    @Nullable
+    String nullableAnnotationClass;
+
+    private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
 
     @Override
     public String getDisplayName() {
@@ -43,33 +50,45 @@ public class AnnotateNullableMethods extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Add the `@org.jspecify.annotation.Nullable` to non-private methods that may return `null`. " +
-               "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
-               "statements for potential null values. It also identifies known methods from standard libraries that may " +
-               "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
-               "The return of streams, or lambdas are not taken into account.";
+        return "Add `@Nullable` to non-private methods that may return `null`. " +
+                "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
+                "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
+                "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
+                "statements for potential null values. It also identifies known methods from standard libraries that may " +
+                "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
+                "The return of streams, or lambdas are not taken into account.";
+    }
+
+    @Override
+    public Validated<Object> validate() {
+        return super.validate()
+                .and(Validated.test("nullableAnnotationClass", "Property `nullableAnnotationClass` must be a fully qualified classname.", nullableAnnotationClass,
+                        it -> it == null || it.contains(".")));
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+        String fullyQualifiedName = nullableAnnotationClass != null ? nullableAnnotationClass : DEFAULT_NULLABLE_ANN_CLASS;
+        String fullyQualifiedPackage = fullyQualifiedName.substring(0, fullyQualifiedName.lastIndexOf('.'));
+        String simpleName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.') + 1);
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
                 if (!methodDeclaration.hasModifier(J.Modifier.Type.Public) ||
-                    methodDeclaration.getMethodType() == null ||
-                    methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
-                    service(AnnotationService.class).matches(getCursor(), NULLABLE_ANNOTATION_MATCHER) ||
-                    (methodDeclaration.getReturnTypeExpression() != null &&
-                    service(AnnotationService.class).matches(new Cursor(null, methodDeclaration.getReturnTypeExpression()), NULLABLE_ANNOTATION_MATCHER))) {
+                        methodDeclaration.getMethodType() == null ||
+                        methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
+                        service(AnnotationService.class).matches(getCursor(), new AnnotationMatcher("@" + fullyQualifiedName)) ||
+                        (methodDeclaration.getReturnTypeExpression() != null &&
+                                service(AnnotationService.class).matches(new Cursor(null, methodDeclaration.getReturnTypeExpression()), new AnnotationMatcher("@" + fullyQualifiedName)))) {
                     return methodDeclaration;
                 }
 
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
                 updateCursor(md);
                 if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor())) {
-                    J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@" + NULLABLE_ANN_CLASS)
+                    J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@" + fullyQualifiedName)
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(
-                                    "package org.jspecify.annotations;public @interface Nullable {}"))
+                                    String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
                             .build()
                             .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                     doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotatedMethod));
