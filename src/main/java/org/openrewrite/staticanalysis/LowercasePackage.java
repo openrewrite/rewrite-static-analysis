@@ -85,7 +85,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
                     if (pkg != null) {
                         String packageText = getPackageText(getCursor(), pkg);
                         if (acc.containsKey(packageText)) {
-                            return (JavaSourceFile) new ChangePackage(packageText, acc.get(packageText), true)
+                            return (JavaSourceFile) new ChangePackage(packageText, acc.get(packageText), true, false)
                                     .getVisitor().visitNonNull(cu, ctx);
                         }
                     }

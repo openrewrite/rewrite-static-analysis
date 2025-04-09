@@ -66,9 +66,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void leaveCharAlone() {
         rewriteRun(
-            //language=java
-            java(
-              """
+          //language=java
+          java(
+            """
               import java.util.List;
 
               class A {
@@ -76,7 +76,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       return objects.get(0).equals(1) || objects.get(0).equals('a');
                   }
               }
-              """)
+              """
+          )
         );
     }
 

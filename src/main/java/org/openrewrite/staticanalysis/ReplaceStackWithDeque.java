@@ -59,7 +59,7 @@ public class ReplaceStackWithDeque extends Recipe {
                 };
 
                 if (v.getInitializer() != null && FindLocalFlowPaths.noneMatch(getCursor(), returned)) {
-                    v = (J.VariableDeclarations.NamedVariable) new ChangeType("java.util.Stack", "java.util.ArrayDeque", false)
+                    v = (J.VariableDeclarations.NamedVariable) new ChangeType("java.util.Stack", "java.util.ArrayDeque", false, false)
                             .getVisitor().visitNonNull(v, ctx, getCursor().getParentOrThrow());
                     getCursor().putMessageOnFirstEnclosing(J.VariableDeclarations.class, "replace", true);
                 }
@@ -71,7 +71,7 @@ public class ReplaceStackWithDeque extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, ctx);
                 if (getCursor().getMessage("replace", false)) {
-                    v = (J.VariableDeclarations) new ChangeType("java.util.Stack", "java.util.Deque", false)
+                    v = (J.VariableDeclarations) new ChangeType("java.util.Stack", "java.util.Deque", false, false)
                             .getVisitor().visitNonNull(v, ctx, getCursor().getParentOrThrow());
                     maybeAddImport("java.util.ArrayDeque");
                     maybeAddImport("java.util.Deque");
