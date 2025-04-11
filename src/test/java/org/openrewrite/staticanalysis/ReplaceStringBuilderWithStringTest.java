@@ -55,6 +55,60 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     }
 
     @Test
+    void replaceWhileMaintainingSpaces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      String scenarioOne = new StringBuilder()
+                          .append("A")
+                          .append("B")
+                          .append("C")
+                          .toString();
+                      String scenarioTwo = new StringBuilder("A")
+                          .append("B")
+                          .append("C")
+                          .toString();
+                      String scenarioThree = new StringBuilder()
+                          .append("A")
+                          .append("B")
+                          .append("C")
+                          .append(testString())
+                          .toString();
+                  }
+
+                  String testString() {
+                      return "testString";
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      String scenarioOne = "A" +
+                          "B" +
+                          "C";
+                      String scenarioTwo = "A" +
+                          "B" +
+                          "C";
+                      String scenarioThree = "A" +
+                          "B" +
+                          "C" +
+                          testString();
+                  }
+
+                  String testString() {
+                      return "testString";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void replaceLiteralConcatenationWithReturn() {
         rewriteRun(
           //language=java
