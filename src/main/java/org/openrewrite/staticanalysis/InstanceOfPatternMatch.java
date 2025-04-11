@@ -52,8 +52,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`." +
-               " Currently, this recipe supports `if` statements and ternary operator expressions.";
+        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`. " +
+               "Currently, this recipe supports `if` statements and ternary operator expressions.";
     }
 
     @Override

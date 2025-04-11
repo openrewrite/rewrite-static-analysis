@@ -58,8 +58,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
 
     @Override
     public String getDescription() {
-        return "The result from `toString()` calls on arrays is largely useless. The output does not actually reflect" +
-               " the contents of the array. `Arrays.toString(array)` should be used instead as it gives the contents of the array.";
+        return "The result from `toString()` calls on arrays is largely useless. The output does not actually reflect " +
+               "the contents of the array. `Arrays.toString(array)` should be used instead as it gives the contents of the array.";
     }
 
     @Override
