@@ -20,6 +20,7 @@ dependencies {
     implementation("org.apache.commons:commons-text:latest.release")
 
     // Limit transitive dependencies for downstream projects like rewrite-spring
+    provided(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     provided("org.openrewrite:rewrite-groovy:${rewriteVersion}")
     provided("org.openrewrite:rewrite-kotlin")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
