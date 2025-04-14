@@ -142,8 +142,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     if (args.size() != 1) {
                         return false;
                     } else {
-                        String selectMethodWhiteSpace = selectMethod.getPadding().getSelect().getAfter().getWhitespace();
-                        arguments.add(args.get(0).withPrefix(Space.build(selectMethodWhiteSpace, emptyList())));
+                        Space selectMethodWhiteSpace = selectMethod.getPadding().getSelect().getAfter();
+                        arguments.add(args.get(0).withPrefix(selectMethodWhiteSpace));
                     }
                 }
 
