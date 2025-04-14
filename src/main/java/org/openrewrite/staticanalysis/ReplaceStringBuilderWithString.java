@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static java.util.Collections.emptyList;
 import static org.openrewrite.Tree.randomId;
 
 public class ReplaceStringBuilderWithString extends Recipe {
