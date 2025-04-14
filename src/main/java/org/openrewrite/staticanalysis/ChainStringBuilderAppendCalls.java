@@ -126,9 +126,11 @@ public class ChainStringBuilderAppendCalls extends Recipe {
      */
     public static J.Binary concatAdditionBinary(Expression left, Expression right) {
         J.Binary b = getAdditiveBinaryTemplate();
+        String rightWhiteSpace = right.getPrefix().getWhitespace();
+        Space rightPrefix = rightWhiteSpace.isEmpty() ? Space.SINGLE_SPACE : Space.build(rightWhiteSpace, emptyList());
         return b.withPrefix(b.getLeft().getPrefix())
                 .withLeft(left)
-                .withRight(right.withPrefix(Space.build(" " + right.getPrefix().getWhitespace(), emptyList())));
+                .withRight(right.withPrefix(rightPrefix));
     }
 
     /**

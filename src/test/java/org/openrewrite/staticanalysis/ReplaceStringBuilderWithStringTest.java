@@ -55,6 +55,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
     void replaceWhileMaintainingSpaces() {
         rewriteRun(
           //language=java

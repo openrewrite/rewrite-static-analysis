@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
 import static org.openrewrite.Tree.randomId;
 
 public class ReplaceStringBuilderWithString extends Recipe {
@@ -60,9 +61,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
                 if (STRING_BUILDER_TO_STRING.matches(method)) {
-                    List<Expression> methodCallsChain = new ArrayList<>();
                     List<Expression> arguments = new ArrayList<>();
-                    boolean isFlattenable = flatMethodInvocationChain(method, methodCallsChain, arguments);
+                    boolean isFlattenable = flatMethodInvocationChain(method, arguments);
                     if (!isFlattenable || arguments.isEmpty()) {
                         return m;
                     }
@@ -121,14 +121,12 @@ public class ReplaceStringBuilderWithString extends Recipe {
             /**
              * Return true if the method calls chain is like "new StringBuilder().append("A")....append("B");"
              *
-             * @param method      a StringBuilder.toString() method call
-             * @param methodChain output methods chain
-             * @param arguments   output expression list to be chained by '+'.
+             * @param method    a StringBuilder.toString() method call
+             * @param arguments output expression list to be chained by '+'.
              */
-            private boolean flatMethodInvocationChain(J.MethodInvocation method, List<Expression> methodChain, List<Expression> arguments) {
+            private boolean flatMethodInvocationChain(J.MethodInvocation method, List<Expression> arguments) {
                 Expression select = method.getSelect();
                 while (select != null) {
-                    methodChain.add(select);
                     if (!(select instanceof J.MethodInvocation)) {
                         break;
                     }
@@ -144,7 +142,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     if (args.size() != 1) {
                         return false;
                     } else {
-                        arguments.add(args.get(0));
+                        String selectMethodWhiteSpace = selectMethod.getPadding().getSelect().getAfter().getWhitespace();
+                        arguments.add(args.get(0).withPrefix(Space.build(selectMethodWhiteSpace, emptyList())));
                     }
                 }
 
@@ -154,6 +153,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     J.NewClass nc = (J.NewClass) select;
                     if (nc.getArguments().size() == 1 && TypeUtils.isString(nc.getArguments().get(0).getType())) {
                         arguments.add(nc.getArguments().get(0));
+                    } else if (!arguments.isEmpty()) {
+                        arguments.set(arguments.size() - 1, arguments.get(arguments.size() - 1).withPrefix(Space.EMPTY));
                     }
                     return true;
                 }
