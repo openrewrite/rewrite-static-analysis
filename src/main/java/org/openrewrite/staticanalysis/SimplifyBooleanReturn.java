@@ -62,6 +62,8 @@ public class SimplifyBooleanReturn extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
             private final JavaTemplate notIfConditionReturn = JavaTemplate.builder("return !(#{any(boolean)});")
                     .build();
+            private final JavaTemplate plainReturn = JavaTemplate.builder("return #{any(boolean)};")
+                  .build();
 
             @Override
             public J visitIf(J.If iff, ExecutionContext ctx) {
@@ -116,7 +118,15 @@ public class SimplifyBooleanReturn extends Recipe {
                             }
 
                             if (returnThenPart) {
-                                // we need to NOT the expression inside the if condition
+                                // we need to either
+                                //  - NOT the expression inside the if condition
+                                //  - unNOT the if condition
+                                if (ifCondition instanceof J.Unary) {
+                                    J.Unary u = (J.Unary) ifCondition;
+                                    if (u.getOperator() == J.Unary.Type.Not) {
+                                        return plainReturn.apply(updateCursor(i), i.getCoordinates().replace(), ((J.Unary) ifCondition).getExpression());
+                                    }
+                                }
                                 return notIfConditionReturn.apply(updateCursor(i), i.getCoordinates().replace(), ifCondition);
                             }
                         }
