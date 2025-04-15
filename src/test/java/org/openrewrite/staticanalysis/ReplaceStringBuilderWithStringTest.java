@@ -231,6 +231,44 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
+    void retainComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      String scenarioFour = new StringBuilder()
+                          // A
+                          .append("A")
+                          // B
+                          .append("B")
+                          // C
+                          .append("C")
+                          .toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      String scenarioFour =
+                          // A
+                          "A" +
+                          // B
+                          "B" +
+                          // C
+                          "C" +
+                          testString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void objectsGrouping() {
         rewriteRun(
           //language=java
