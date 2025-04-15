@@ -70,7 +70,6 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     arguments = adjustExpressions(method, arguments);
 
                     Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments);
-
                     if (additive == null) {
                         return m;
                     }
@@ -151,11 +150,10 @@ public class ReplaceStringBuilderWithString extends Recipe {
                         return false;
                     } else {
                         JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
-                        if( jrp == null ) {
+                        if (jrp == null) {
                             arguments.add(args.get(0));
                         } else {
-                            Space argumentPrefix = jrp.getAfter();
-                            arguments.add(args.get(0).withPrefix(argumentPrefix));
+                            arguments.add(args.get(0).withPrefix(jrp.getAfter()));
                         }
                     }
                 }
@@ -169,7 +167,6 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     } else if (!arguments.isEmpty()) {
                         Expression lastArgument = arguments.get(arguments.size() - 1);
                         Space formattedPrefix = lastArgument.getComments().isEmpty() ? Space.EMPTY : lastArgument.getPrefix();
-
                         arguments.set(arguments.size() - 1, lastArgument.withPrefix(formattedPrefix));
                     }
                     return true;
