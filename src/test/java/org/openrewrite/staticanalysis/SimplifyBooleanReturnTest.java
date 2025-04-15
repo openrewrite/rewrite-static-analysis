@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -213,6 +214,34 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                   Object failure;
                   public boolean equals(Object o) {
                       return !(failure != null ? !failure.equals(this.failure) : this.failure != null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/pull/671#discussion_r1947004208")
+    @Test
+    void avoidDoubleNegation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  boolean foo(boolean bar) {
+                      if (!bar) {
+                          return false;
+                      }
+                      return true;
+                  }
+              }
+              """,
+            """
+              public class A {
+                  boolean foo(boolean bar) {
+                      return bar;
                   }
               }
               """
