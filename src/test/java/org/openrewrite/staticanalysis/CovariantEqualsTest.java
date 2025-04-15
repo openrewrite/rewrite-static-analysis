@@ -270,7 +270,7 @@ class CovariantEqualsTest implements RewriteTest {
                   public boolean equals(Object i) {
                       return false;
                   }
-                  
+
                   public boolean equals(Object i, Test t) {
                       return false;
                   }
@@ -287,7 +287,7 @@ class CovariantEqualsTest implements RewriteTest {
           java(
             """
               class A {}
-                            
+
               class B {
                   B() {}
                   public void placeholder(B t) {}

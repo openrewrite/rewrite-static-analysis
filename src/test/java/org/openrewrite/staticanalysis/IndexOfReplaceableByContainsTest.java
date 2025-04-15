@@ -94,7 +94,7 @@ class IndexOfReplaceableByContainsTest implements RewriteTest {
           java(
             """
               import java.util.List;
-              
+
               abstract class Test implements List<String> {
                   boolean m(Object o) {
                       return indexOf(o) >= 0;

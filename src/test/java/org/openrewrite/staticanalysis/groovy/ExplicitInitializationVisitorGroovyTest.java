@@ -60,7 +60,7 @@ class ExplicitInitializationVisitorGroovyTest implements RewriteTest {
                   private Object k = null
 
                   int[] l = null
-                  
+
                   private final Long n = null
               }
               """,
@@ -72,15 +72,15 @@ class ExplicitInitializationVisitorGroovyTest implements RewriteTest {
                   private int d = 1
                   private long e = 2L
                   private int f
-              
+
                   private boolean h
                   private boolean i = true
-              
+
                   private Object j = new Object()
                   private Object k
-              
+
                   int[] l
-                  
+
                   private final Long n = null
               }
               """

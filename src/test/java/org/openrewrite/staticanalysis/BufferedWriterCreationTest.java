@@ -41,11 +41,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.FileWriter;
               import java.io.File;
               import java.io.IOException;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(File f) throws IOException {
                       try (BufferedWriter writer = new BufferedWriter(new FileWriter(f))) {
-              
+
                       }
                   }
               }
@@ -55,11 +55,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.File;
               import java.io.IOException;
               import java.nio.file.Files;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(File f) throws IOException {
                       try (BufferedWriter writer = Files.newBufferedWriter(f.toPath())) {
-              
+
                       }
                   }
               }
@@ -78,11 +78,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.FileWriter;
               import java.io.File;
               import java.io.IOException;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(File f) throws IOException {
                       try (BufferedWriter writer = new BufferedWriter(new FileWriter(f, true))) {
-              
+
                       }
                   }
               }
@@ -93,11 +93,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.IOException;
               import java.nio.file.Files;
               import java.nio.file.StandardOpenOption;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(File f) throws IOException {
                       try (BufferedWriter writer = Files.newBufferedWriter(f.toPath(), StandardOpenOption.APPEND)) {
-              
+
                       }
                   }
               }
@@ -116,11 +116,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.FileWriter;
               import java.io.File;
               import java.io.IOException;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(String f) throws IOException {
                       try (BufferedWriter writer = new BufferedWriter(new FileWriter(f))) {
-              
+
                       }
                   }
               }
@@ -130,11 +130,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.File;
               import java.io.IOException;
               import java.nio.file.Files;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(String f) throws IOException {
                       try (BufferedWriter writer = Files.newBufferedWriter(new File(f).toPath())) {
-              
+
                       }
                   }
               }
@@ -153,11 +153,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.FileWriter;
               import java.io.File;
               import java.io.IOException;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(String f) throws IOException {
                       try (BufferedWriter writer = new BufferedWriter(new FileWriter(f, false))) {
-              
+
                       }
                   }
               }
@@ -168,11 +168,11 @@ class BufferedWriterCreationTest implements RewriteTest {
               import java.io.IOException;
               import java.nio.file.Files;
               import java.nio.file.StandardOpenOption;
-              
+
               public class BufferedWriterCreationTest {
                   public void createBufferedWriter(String f) throws IOException {
                       try (BufferedWriter writer = Files.newBufferedWriter(new File(f).toPath(), StandardOpenOption.CREATE)) {
-              
+
                       }
                   }
               }

@@ -122,13 +122,13 @@ class OperatorWrapTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-              
+
               class Test {
                   static <T extends Serializable &
                           Comparable<T>> T method0() {
                       return null;
                   }
-              
+
                   static <T extends Serializable> T method1() {
                       return null;
                   }
@@ -136,13 +136,13 @@ class OperatorWrapTest implements RewriteTest {
               """,
             """
               import java.io.Serializable;
-              
+
               class Test {
                   static <T extends Serializable
                           & Comparable<T>> T method0() {
                       return null;
                   }
-              
+
                   static <T extends Serializable> T method1() {
                       return null;
                   }
@@ -162,13 +162,13 @@ class OperatorWrapTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-              
+
               class Test {
                   static <T extends Serializable
                           & Comparable<T>> T method0() {
                       return null;
                   }
-              
+
                   static <T extends Serializable> T method1() {
                       return null;
                   }
@@ -176,13 +176,13 @@ class OperatorWrapTest implements RewriteTest {
               """,
             """
               import java.io.Serializable;
-              
+
               class Test {
                   static <T extends Serializable &
                           Comparable<T>> T method0() {
                       return null;
                   }
-              
+
                   static <T extends Serializable> T method1() {
                       return null;
                   }
@@ -455,7 +455,7 @@ class OperatorWrapTest implements RewriteTest {
           java(
             """
               import java.util.stream.Stream;
-              
+
               class Test {
                   static void methodStream(Stream<Object> stream) {
                       stream.forEach(System.out::
@@ -465,7 +465,7 @@ class OperatorWrapTest implements RewriteTest {
               """,
             """
               import java.util.stream.Stream;
-              
+
               class Test {
                   static void methodStream(Stream<Object> stream) {
                       stream.forEach(System.out
@@ -487,7 +487,7 @@ class OperatorWrapTest implements RewriteTest {
           java(
             """
               import java.util.stream.Stream;
-              
+
               class Test {
                   static void methodStream(Stream<Object> stream) {
                       stream.forEach(System.out
@@ -497,7 +497,7 @@ class OperatorWrapTest implements RewriteTest {
               """,
             """
               import java.util.stream.Stream;
-              
+
               class Test {
                   static void methodStream(Stream<Object> stream) {
                       stream.forEach(System.out::

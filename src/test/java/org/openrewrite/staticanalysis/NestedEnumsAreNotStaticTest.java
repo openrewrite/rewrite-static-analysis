@@ -68,11 +68,11 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
           java(
             """
               class A {
-              
+
                   static enum ABC {
                       A, B, C
                   }
-              
+
                   private static enum DEF {
                       D, E, F
                   }
@@ -80,11 +80,11 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
               """,
             """
               class A {
-              
+
                   enum ABC {
                       A, B, C
                   }
-              
+
                   private enum DEF {
                       D, E, F
                   }
@@ -104,9 +104,9 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
               public class Test {
                   public static enum testEnum {
                       Account;
-              
+
                       public final String field;
-              
+
                       private testEnum() {this.field = this.name();}
                   }
               }
@@ -115,9 +115,9 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
               public class Test {
                   public enum testEnum {
                       Account;
-              
+
                       public final String field;
-              
+
                       private testEnum() {this.field = this.name();}
                   }
               }

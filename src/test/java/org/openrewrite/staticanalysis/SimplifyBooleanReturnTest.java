@@ -45,7 +45,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                       }
                       return false;
                   }
-                  
+
                   static boolean isOddMillis() {
                       boolean even = System.currentTimeMillis() % 2 == 0;
                       if (even == true) {
@@ -62,7 +62,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                   boolean ifNoElse() {
                       return isOddMillis();
                   }
-                  
+
                   static boolean isOddMillis() {
                       boolean even = System.currentTimeMillis() % 2 == 0;
                       return !(even == true);
@@ -114,7 +114,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
               public class A {
                   public boolean absurdEquals(Object o) {
                       if(this == o)
-                          if(this == null) 
+                          if(this == null)
                               return true;
                       return false;
                   }
@@ -134,10 +134,10 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                   public boolean foo(int n) {
                       if (n == 1) {
                           return false;
-                      } 
+                      }
                       else if (n == 2) {
                           return true;
-                      } 
+                      }
                       else {
                           return false;
                       }
@@ -158,11 +158,11 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                   public boolean foo(int n) {
                       if (n == 1) {
                           return true;
-                      } 
+                      }
                       else {
                           System.out.println("side effect");
                           return false;
-                      } 
+                      }
                   }
               }
               """
@@ -233,10 +233,10 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                           if (n == 1) {
                               // A comment that provides important context
                               return true;
-                          } 
+                          }
                           else {
                               return false;
-                          } 
+                          }
                       }
                   }
                   """
@@ -254,11 +254,11 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                       boolean foo(int n) {
                           if (n == 1) {
                               return true;
-                          } 
+                          }
                           else {
                               // A comment that provides important context
                               return false;
-                          } 
+                          }
                       }
                   }
                   """
@@ -276,7 +276,7 @@ class SimplifyBooleanReturnTest implements RewriteTest {
                       boolean foo(int n) {
                           if (n == 1) {
                               return true;
-                          } 
+                          }
                           else
                               // A comment that provides important context
                               return false;

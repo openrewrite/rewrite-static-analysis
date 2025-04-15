@@ -42,14 +42,14 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
               import java.util.HashSet;
               import java.util.List;
               import java.util.Set;
-                          
+
               class T {
                   static {
                       Set<String> s = new HashSet<>();
                       List<String> l = Collections.singletonList("a");
                       s.removeAll(l);
                   }
-                  
+
                   Set<String> removeFromSet(Set<String> s, Collection<String> c) {
                       s.removeAll(c);
                       return s;
@@ -62,14 +62,14 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
               import java.util.HashSet;
               import java.util.List;
               import java.util.Set;
-                          
+
               class T {
                   static {
                       Set<String> s = new HashSet<>();
                       List<String> l = Collections.singletonList("a");
                       l.forEach(s::remove);
                   }
-                  
+
                   Set<String> removeFromSet(Set<String> s, Collection<String> c) {
                       c.forEach(s::remove);
                       return s;
@@ -88,7 +88,7 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
             """
               import java.util.Collection;
               import java.util.Set;
-                          
+
               class T {
                   MyThings howAboutAnonymousInitializer(Set<String> s, Collection<String> c) {
                       return new MyThings() {
@@ -98,11 +98,11 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
                           }
                       };
                   }
-                  
+
                   MyThings howLambda(Set<String> s, Collection<String> c) {
                       return (s1, c1) -> s1.removeAll(c1);
                   }
-                      
+
                   @FunctionalInterface
                   interface MyThings {
                       void removeOtherThings(Set<String> s, Collection<String> c);
@@ -112,7 +112,7 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
             """
               import java.util.Collection;
               import java.util.Set;
-                          
+
               class T {
                   MyThings howAboutAnonymousInitializer(Set<String> s, Collection<String> c) {
                       return new MyThings() {
@@ -122,11 +122,11 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
                           }
                       };
                   }
-                  
+
                   MyThings howLambda(Set<String> s, Collection<String> c) {
                       return (s1, c1) -> c1.forEach(s1::remove);
                   }
-                      
+
                   @FunctionalInterface
                   interface MyThings {
                       void removeOtherThings(Set<String> s, Collection<String> c);
@@ -146,16 +146,16 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
               import java.util.Collection;
               import java.util.HashSet;
               import java.util.Set;
-                          
+
               class T {
-                          
+
                   Set<String> removeFromSet(Set<String> s, Collection<String> c) {
                       if (s.removeAll(c)) {
                           return s;
                       }
                       return new HashSet<>(c);
                   }
-                  
+
                   Set<String> doSomething(Set<String> s, Collection<String> c) {
                       if (!c.isEmpty() && s.removeAll(c)) {
                           return s;
@@ -164,16 +164,16 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
                       }
                       return new HashSet<>();
                   }
-                  
+
                   void workWithSet(Set<String> s, Collection<String> c) {
                       boolean removedALl = s.removeAll(c);
                   }
-                  
+
                   String didItRemoveAnything(Set<String> s, Collection<String> c) {
                       String success = s.removeAll(c) ? "YES" : "NO";
                       return success;
                   }
-                  
+
                   boolean returnsResult(Set<String> s, Collection<String> c) {
                       return s.removeAll(c);
                   }

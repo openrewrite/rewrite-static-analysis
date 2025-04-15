@@ -37,14 +37,14 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
           java(
             """
               public class A {
-              
+
                       @Override
                       protected void finalize() {
                           super.finalize();
                       }
-                      
+
                       public static void main(String[] args) throws Throwable {
-              
+
                           A a = new A();
                           System.out.println("Clean object");
                           a.finalize();
@@ -53,14 +53,14 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
               """,
             """
                 public class A {
-                
+
                         @Override
                         protected void finalize() {
                             super.finalize();
                         }
-                
+
                         public static void main(String[] args) throws Throwable {
-                
+
                             A a = new A();
                             System.out.println("Clean object");
                         }
@@ -78,13 +78,13 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
           java(
             """
               public class A {
-              
+
                       private void finalize() {
                          System.out.println("I am just a friendly finalizer");
                       }
-                      
+
                       public static void main(String[] args) throws Throwable {
-              
+
                           A a = new A();
                           System.out.println("Clean object");
                           a.finalize();
@@ -103,13 +103,13 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
           java(
             """
               public class A {
-              
+
                       public void finalize() {
                          System.out.println("I am just a friendly finalizer");
                       }
-                      
+
                       public static void main(String[] args) throws Throwable {
-              
+
                           A a = new A();
                           System.out.println("Clean object");
                           a.finalize();
@@ -128,13 +128,13 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
           java(
             """
               public class A {
-              
+
                       protected void finalize() {
                          System.out.println("I am just a friendly finalizer");
                       }
-                      
+
                       public static void main(String[] args) throws Throwable {
-              
+
                           A a = new A();
                           System.out.println("Clean object");
                           a.finalize();
@@ -151,13 +151,13 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
               java(
                 """
                   public class A {
-                  
+
                           static void finalize() {
                              System.out.println("I am just a friendly finalizer");
                           }
-                          
+
                           public static void main(String[] args) throws Throwable {
-                  
+
                               A.finalize();
                           }
                       }

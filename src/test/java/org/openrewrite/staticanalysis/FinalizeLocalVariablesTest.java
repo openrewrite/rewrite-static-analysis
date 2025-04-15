@@ -52,7 +52,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
                       }
                   }
                   private static void error(String s, Exception e) {
-                  
+
                   }
               }
               """
@@ -164,7 +164,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           java(
             """
               import java.io.IOException;
-              
+
               class Test {
                   static {
                       try {
@@ -282,7 +282,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.FutureTask;
-                            
+
               class A {
                   void f() {
                       for(FutureTask<?> future; (future = new FutureTask<>(() -> "hello world")) != null;) { }
@@ -299,7 +299,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           //language=java
           java(
             """
-              class A {             
+              class A {
                   static {
                       for (int i = 0; i < 10; i++) {
                           // no-op
@@ -317,7 +317,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           //language=java
           java(
             """
-              class A {             
+              class A {
                   static {
                       for (int i = 0; i < 10;) {
                           i = 11;

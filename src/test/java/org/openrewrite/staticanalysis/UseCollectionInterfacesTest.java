@@ -45,7 +45,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.Set;
-              
+
               class Test {
                   Set<Integer> method() {
                       return Collections.emptySet();
@@ -156,7 +156,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.Set;
 
               import org.jetbrains.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable Set<@Nullable Integer> method() {
                       return new HashSet<>();
@@ -282,7 +282,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.Set;
 
               import org.jetbrains.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable Set<@Nullable Integer> values = new HashSet<>();
               }
@@ -741,7 +741,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.EnumSet;
-              
+
               class Test {
                   public EnumSet values = EnumSet.allOf(A.class);
                   void iterate() {

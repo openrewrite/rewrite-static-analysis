@@ -41,7 +41,7 @@ class ExplicitCharsetOnStringGetBytesTest implements RewriteTest {
               """,
             """
               import java.nio.charset.StandardCharsets;
-              
+
               public class Test {
                   void test() {
                       String s = "hi";
