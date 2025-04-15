@@ -239,7 +239,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
             """
               class A {
                   void foo() {
-                      String scenarioFour = new StringBuilder()
+                      String scenarioOne = new StringBuilder()
                           // A
                           .append("A")
                           // B
@@ -247,20 +247,83 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
                           // C
                           .append("C")
                           .toString();
+                      String scenarioTwo = new StringBuilder("A")
+                          // B
+                          .append("B")
+                          // C
+                          .append("C")
+                          .toString();
+                      String scenarioThree = new StringBuilder()
+                          // A
+                          .append("A")
+                          // B
+                          .append("B")
+                          // C
+                          .append("C")
+                          // test method
+                          .append(testString())
+                          .toString();
+                      String scenarioFour = new StringBuilder()
+                          // 1 + 1
+                          .append(1 + 1)
+                          // 1
+                          .append(1)
+                          .toString();
+                      String scenarioFive = new StringBuilder()
+                          // A
+                          .append("A")
+                          // 1 + 1
+                          .append(1 + 1)
+                          // 1
+                          .append(1)
+                          .toString();
+                  }
+
+                  String testString() {
+                      return "testString";
                   }
               }
               """,
             """
               class A {
                   void foo() {
-                      String scenarioFour =
+                      String scenarioOne =
+                          // A
+                          "A" +
+                          // B
+                          "B" +
+                          // C
+                          "C";
+                      String scenarioTwo = "A" +
+                          // B
+                          "B" +
+                          // C
+                          "C";
+                      String scenarioThree =
                           // A
                           "A" +
                           // B
                           "B" +
                           // C
                           "C" +
+                          // test method
                           testString();
+                      String scenarioFour =
+                          // 1 + 1
+                          String.valueOf(1 + 1) +
+                          // 1
+                          1;
+                      String scenarioFive =
+                          // A
+                          "A" +
+                          // 1 + 1
+                          (1 + 1) +
+                          // 1
+                          1;
+                  }
+
+                  String testString() {
+                      return "testString";
                   }
               }
               """
