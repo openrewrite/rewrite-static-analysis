@@ -124,7 +124,7 @@ public class SimplifyBooleanReturn extends Recipe {
                                 if (ifCondition instanceof J.Unary) {
                                     J.Unary u = (J.Unary) ifCondition;
                                     if (u.getOperator() == J.Unary.Type.Not) {
-                                        return plainReturn.apply(updateCursor(i), i.getCoordinates().replace(), ((J.Unary) ifCondition).getExpression());
+                                        return plainReturn.apply(updateCursor(i), i.getCoordinates().replace(), u.getExpression());
                                     }
                                 }
                                 return notIfConditionReturn.apply(updateCursor(i), i.getCoordinates().replace(), ifCondition);
