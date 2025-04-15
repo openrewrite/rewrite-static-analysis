@@ -69,7 +69,15 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     Collections.reverse(arguments);
                     arguments = adjustExpressions(method, arguments);
 
-                    Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments).withPrefix(method.getPrefix());
+                    Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments);
+                    if (additive == null) {
+                        return m;
+                    }
+
+                    if (arguments.get(0).getComments().isEmpty() || !arguments.get(0).getPrefix().getWhitespace().startsWith("\n")) {
+                        additive = additive.withPrefix(method.getPrefix());
+                    }
+
                     if (isAMethodSelect(method)) {
                         additive = new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(additive));
                     }
@@ -111,7 +119,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                             }
                         }
                     } else if (!(arg instanceof J.Identifier || arg instanceof J.Literal || arg instanceof J.MethodInvocation)) {
-                        return new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(arg));
+                        return new J.Parentheses<>(randomId(), arg.getPrefix(), Markers.EMPTY, JRightPadded.build(arg.withPrefix(Space.EMPTY)));
                     }
                     return arg;
                 });
@@ -141,8 +149,12 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     if (args.size() != 1) {
                         return false;
                     } else {
-                        Space selectMethodWhiteSpace = selectMethod.getPadding().getSelect().getAfter();
-                        arguments.add(args.get(0).withPrefix(selectMethodWhiteSpace));
+                        JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
+                        if (jrp == null) {
+                            arguments.add(args.get(0));
+                        } else {
+                            arguments.add(args.get(0).withPrefix(jrp.getAfter()));
+                        }
                     }
                 }
 
@@ -153,7 +165,9 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     if (nc.getArguments().size() == 1 && TypeUtils.isString(nc.getArguments().get(0).getType())) {
                         arguments.add(nc.getArguments().get(0));
                     } else if (!arguments.isEmpty()) {
-                        arguments.set(arguments.size() - 1, arguments.get(arguments.size() - 1).withPrefix(Space.EMPTY));
+                        Expression lastArgument = arguments.get(arguments.size() - 1);
+                        Space formattedPrefix = lastArgument.getComments().isEmpty() ? Space.EMPTY : lastArgument.getPrefix();
+                        arguments.set(arguments.size() - 1, lastArgument.withPrefix(formattedPrefix));
                     }
                     return true;
                 }
