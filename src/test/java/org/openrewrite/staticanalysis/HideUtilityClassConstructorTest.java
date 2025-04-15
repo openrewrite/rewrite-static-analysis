@@ -354,7 +354,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               public class A extends B {
                   public A() {
                   }
-              
+
                   public static void doSomething() {
                   }
               }
@@ -569,13 +569,13 @@ class HideUtilityClassConstructorTest implements RewriteTest {
           java(
             """
               import lombok.experimental.UtilityClass;
-              
+
               @UtilityClass
               public class DoNotChangeMeA {
                   public static void utility() {
                   }
               }
-              
+
               @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
               class DoNotChangeMeB {
                   public static void utility() {

@@ -67,7 +67,7 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                // ignores anonymous class fields, contributed code for issue #181    
+                // ignores anonymous class fields, contributed code for issue #181
                 if (this.getCursorToParentScope(this.getCursor()).getValue() instanceof J.NewClass) {
                     return mv;
                 }

@@ -45,7 +45,7 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
             }
             """, """
             import java.util.Arrays;
-            
+
             class SomeClass {
               public static void main(String[] args) {
                 int argHash = Arrays.hashCode(args);
@@ -65,19 +65,19 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
               void foo() {
                 int hashCode = getArr().hashCode();
               }
-              
+
               public int[] getArr() {
                 return new int[]{1, 2, 3};
               }
             }
             """, """
             import java.util.Arrays;
-            
+
             class SomeClass {
               void foo() {
                 int hashCode = Arrays.hashCode(getArr());
               }
-              
+
               public int[] getArr() {
                 return new int[]{1, 2, 3};
               }

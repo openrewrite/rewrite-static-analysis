@@ -499,7 +499,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                   class Test {
                     public String determineSomething(String a, String b) {
                       //this should be before the if and followed by a new line
-                     
+
                       return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope"; //this should be behind the ternary
                     }
                   }
@@ -508,7 +508,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                   class Test {
                     public String determineSomething(String a, String b) {
                         //this should be before the if and followed by a new line
-                        
+
                         if ("a".equals(a)) {
                             return "a";
                         }
@@ -1065,7 +1065,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       class Test {
                         public String determineSomething(String a, String b) {
                             //this should be before the if and followed by a new line
-                        
+
                             return "a".equals(a) ? "a" : "b".equals(a) ? "b" : "nope"; //this should be behind the ternary
                         }
                       }
@@ -1074,7 +1074,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       class Test {
                         public String determineSomething(String a, String b) {
                             //this should be before the if and followed by a new line
-                            
+
                             return switch (a) {
                                 case "a" -> "a";
                                 case "b" -> "b";

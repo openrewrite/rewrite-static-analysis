@@ -116,19 +116,19 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
               import java.util.Collection;
 
               public class Test {
-              
+
                   <G> G foo() {
                       return null;
                   }
-              
+
                   <E> E fetch(E entity) {
                       return null;
                   }
-              
+
                   <E> Collection<E> fetch(Collection<E> entity) {
                       return null;
                   }
-              
+
                   void test() {
                       Integer bar = fetch(this.<Integer>foo());
                   }
@@ -178,7 +178,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
               import java.util.List;
 
               public class Test {
-              
+
                   List<String> test() {
                       var l = List.<String> of("x");
                       return l;

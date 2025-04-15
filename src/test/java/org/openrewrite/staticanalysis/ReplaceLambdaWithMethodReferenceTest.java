@@ -64,7 +64,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.nio.file.Paths;
               import java.util.List;
               import java.util.stream.Collectors;
-                            
+
               class Test {
                   Path path = Paths.get("");
                   List<String> method(List<String> l) {
@@ -86,7 +86,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.stream.Stream;
-                            
+
               class Test {
                   Stream<String> method() {
                       return Stream.of(1, 32, 12, 15, 23).map(x -> Integer.toString(x));
@@ -241,7 +241,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             //language=java
             """
               import org.test.CheckType;
-                            
+
               import java.util.List;
               import java.util.stream.Collectors;
 
@@ -354,11 +354,11 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             """
               import java.util.function.Function;
               class Test {
-                            
+
                   ChangeListener listener = (o, oldVal, newVal) -> {
                       onChange(o, oldVal, newVal);
                   };
-                  
+
                   protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
                       String strVal = newVal.toString();
                       System.out.println(strVal);
@@ -376,9 +376,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             """
               import java.util.function.Function;
               class Test {
-                            
+
                   ChangeListener listener = this::onChange;
-                  
+
                   protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
                       String strVal = newVal.toString();
                       System.out.println(strVal);
@@ -404,7 +404,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.Collections;
-                            
+
               class Test2 {
                   class Test {
                       Runnable r = () -> run();
@@ -420,7 +420,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               """,
             """
               import java.util.Collections;
-                            
+
               class Test2 {
                   class Test {
                       Runnable r = this::run;
@@ -606,7 +606,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             //language=java
             """
               import org.test.CheckType;
-                            
+
               import java.util.List;
               import java.util.stream.Collectors;
 
@@ -680,7 +680,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               """,
             """
               import java.util.function.BiFunction;
-               
+
               class Test {
                   void foo() {
                       BiFunction<Integer, Integer, Integer> f = Integer::compareTo;
@@ -860,7 +860,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   Function<Integer, String> f = (i) -> {
                       return this.execute(i);
                   };
-                  
+
                   String execute(Integer i) {
                       return i.toString();
                   }
@@ -871,7 +871,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
               class Test {
                   Function<Integer, String> f = this::execute;
-                  
+
                   String execute(Integer i) {
                       return i.toString();
                   }
@@ -919,7 +919,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               package abc;
-                            
+
               class M {
                   MyFunction getFunction(String fcn) {
                       return () -> fcn;
@@ -959,7 +959,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-                            
+
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -979,7 +979,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-                            
+
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -1008,7 +1008,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-                            
+
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -1337,7 +1337,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             """
               import java.util.*;
               import java.util.stream.*;
-                          
+
               class Animal {}
               class Cat extends Animal {}
               class Dog extends Animal {}

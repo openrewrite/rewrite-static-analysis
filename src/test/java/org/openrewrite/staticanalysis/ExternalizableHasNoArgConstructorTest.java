@@ -40,21 +40,21 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               import java.io.IOException;
               import java.io.ObjectInput;
               import java.io.ObjectOutput;
-                            
+
               public class MyThing implements Externalizable {
                   private String a;
                   private String b;
-                  
+
                   public void setA(String a) {
                       this.a = a;
                   }
                   public void setB(String b) {
                       this.b = b;
                   }
-                  
-                  @Override 
+
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -73,21 +73,21 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               import java.io.IOException;
               import java.io.ObjectInput;
               import java.io.ObjectOutput;
-                            
+
               public class MyThing implements Externalizable {
                   private String a;
                   private String b;
-                  
+
                   public MyThing(String a, String b) {
                       this.a = a;
                       this.b = b;
                   }
-                  
+
                   public MyThing() {}
-                  
-                  @Override 
+
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -112,15 +112,15 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               public class MyThing implements Externalizable {
                   private String a;
                   private String b;
-                  
+
                   public MyThing(String a, String b) {
                       this.a = a;
                       this.b = b;
                   }
 
-                  @Override 
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -134,18 +134,18 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               public class MyThing implements Externalizable {
                   private String a;
                   private String b;
-                            
+
                   public MyThing() {
                   }
-                  
+
                   public MyThing(String a, String b) {
                       this.a = a;
                       this.b = b;
                   }
 
-                  @Override 
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -162,7 +162,7 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
             """
               package abc;
               import java.io.Externalizable;
-                            
+
               interface Abc extends Externalizable {
                   String getLetter();
               }
@@ -175,24 +175,24 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               import java.io.IOException;
               import java.io.ObjectInput;
               import java.io.ObjectOutput;
-                            
+
               public class MyThing implements Abc {
                   private String a;
                   private String b;
-                  
+
                   public MyThing(String a, String b) {
                       this.a = a;
                       this.b = b;
                   }
-                  
+
                   @Override
                   public String getLetter() {
                       return a;
                   }
-                  
-                  @Override 
+
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -202,27 +202,27 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               import java.io.IOException;
               import java.io.ObjectInput;
               import java.io.ObjectOutput;
-                            
+
               public class MyThing implements Abc {
                   private String a;
                   private String b;
-                            
+
                   public MyThing() {
                   }
-                  
+
                   public MyThing(String a, String b) {
                       this.a = a;
                       this.b = b;
                   }
-                  
+
                   @Override
                   public String getLetter() {
                       return a;
                   }
-                  
-                  @Override 
+
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -245,15 +245,15 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               public class MyThing implements Externalizable {
                   private final String a;
                   private final String b;
-                  
+
                   public MyThing(String a, String b) {
                       this.a = a;
                       this.b = b;
                   }
 
-                  @Override 
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -276,14 +276,14 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               public class MyThing implements Externalizable {
                   private final Integer limit = 10;
                   private String a;
-                  
+
                   public MyThing(String a) {
                       this.a = a;
                   }
 
-                  @Override 
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -297,17 +297,17 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               public class MyThing implements Externalizable {
                   private final Integer limit = 10;
                   private String a;
-                            
+
                   public MyThing() {
                   }
-                  
+
                   public MyThing(String a) {
                       this.a = a;
                   }
 
-                  @Override 
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }
@@ -342,14 +342,14 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
               import java.io.ObjectOutput;
 
               public class MyThing extends SuperThing implements Externalizable {
-                  
+
                   public MyThing(Long l) {
                       super(l);
                   }
 
-                  @Override 
+                  @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}
-                  
+
                   @Override
                   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
               }

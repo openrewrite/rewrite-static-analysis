@@ -41,7 +41,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
@@ -52,7 +52,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
@@ -73,7 +73,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
               import java.text.SimpleDateFormat;
               import java.time.format.DateTimeFormatter;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
@@ -85,7 +85,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
               import java.text.SimpleDateFormat;
               import java.time.format.DateTimeFormatter;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
@@ -106,7 +106,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
               import java.text.SimpleDateFormat;
               import java.time.format.DateTimeFormatter;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yy/MM/dd").parse("2015/12/31");
@@ -118,7 +118,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
               import java.text.SimpleDateFormat;
               import java.time.format.DateTimeFormatter;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   Date date = new SimpleDateFormat("yy/MM/dd").parse("2015/12/31");
@@ -155,7 +155,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("YYYY-MM-dd");
@@ -166,7 +166,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
@@ -185,7 +185,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("'Your date is:' YYYY-MM-dd");
@@ -196,7 +196,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("'Your date is:' yyyy-MM-dd");
@@ -216,7 +216,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("'Your date is:' YYYY-MM-dd, 'yy'");
@@ -227,7 +227,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("'Your date is:' yyyy-MM-dd, 'yy'");
@@ -247,7 +247,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
             """
               import java.text.SimpleDateFormat;
               import java.util.Date;
-              
+
               class Test {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("'Y' dd-MM");

@@ -38,14 +38,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMillis(5000);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofSeconds(5);
               }
@@ -61,14 +61,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMillis(300000);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMinutes(5);
               }
@@ -84,14 +84,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMillis(18000000);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofHours(5);
               }
@@ -107,14 +107,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMillis(432000000);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofDays(5);
               }
@@ -130,14 +130,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMillis(5 * 1000);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofSeconds(5);
               }
@@ -153,14 +153,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMillis(5 * 5000);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofSeconds(25);
               }
@@ -176,14 +176,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofSeconds(300);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMinutes(5);
               }
@@ -199,14 +199,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMinutes(120);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofHours(2);
               }
@@ -222,14 +222,14 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofHours(48);
               }
               """,
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofDays(2);
               }
@@ -245,7 +245,7 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofDays(14);
               }
@@ -261,7 +261,7 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration = Duration.ofMillis(5500);
               }
@@ -296,7 +296,7 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
             """
             import java.time.Duration;
-                          
+
             public class Test {
                 static Duration durationPlus = Duration.ofMillis(1000 + 1000);
                 static Duration durationMinus = Duration.ofMillis(2000 - 1000);
@@ -321,7 +321,7 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   int seconds = 30;
                   static Duration duration = Duration.ofMillis(1000 * seconds);
@@ -339,7 +339,7 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
           java(
               """
               import java.time.Duration;
-                            
+
               public class Test {
                   static Duration duration1 = Duration.ofMillis(0);
                   static Duration duration2 = Duration.ofSeconds(0);

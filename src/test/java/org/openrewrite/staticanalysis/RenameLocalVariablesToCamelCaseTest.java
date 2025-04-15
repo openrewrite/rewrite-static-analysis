@@ -47,7 +47,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
                   void m()  {
                       final int _secure = 0;
                       boolean secure = _secure > 0;
-                      
+
                       int _notSecure = 0;
                       boolean notSecure = _notSecure < 1;
                   }
@@ -273,9 +273,9 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
                       public List<String> testFoo() {
                           return new ArrayList<>() {
                               private final int DO_NOT_CHANGE = 1;
-                         
+
                           };
-                          
+
                       }
                   }
 

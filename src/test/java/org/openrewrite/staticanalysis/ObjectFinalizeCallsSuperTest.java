@@ -37,7 +37,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
             """
               class F {
                   Object o = new Object();
-                  
+
                   @Override
                   protected void finalize() throws Throwable {
                       o = null;
@@ -58,7 +58,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
             """
               class F {
                   Object o = new Object();
-                  
+
                   @Override
                   protected void finalize() throws Throwable {
                       o = null;
@@ -68,7 +68,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
             """
               class F {
                   Object o = new Object();
-                  
+
                   @Override
                   protected void finalize() throws Throwable {
                       o = null;
