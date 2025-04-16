@@ -66,6 +66,42 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void removeUnusedPrivateMethodsChainedUsage() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private void unused() {
+                      unused2();
+                  }
+
+                  private void unused2() {
+                  }
+
+                  public void dontRemove() {
+                      dontRemove2();
+                  }
+
+                  private void dontRemove2() {
+                  }
+              }
+              """,
+            """
+              class Test {
+
+                  public void dontRemove() {
+                      dontRemove2();
+                  }
+
+                  private void dontRemove2() {
+                  }
+              }
+              """)
+        );
+    }
+
     @SuppressWarnings("MissingSerialAnnotation")
     @Test
     void doNotRemoveCustomizedSerialization() {
