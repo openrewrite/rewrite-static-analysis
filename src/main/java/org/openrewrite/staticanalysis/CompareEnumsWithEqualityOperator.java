@@ -56,7 +56,7 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (enumEquals.matches(m) && m.getSelect() != null) {
-                    Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.Unary || is instanceof J.Block || is instanceof J.Binary);
+                    Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.Unary || is instanceof J.Block || is instanceof J.Binary || is instanceof J.Ternary || is instanceof J.Lambda);
                     boolean isNot = parent.getValue() instanceof J.Unary && ((J.Unary) parent.getValue()).getOperator() == J.Unary.Type.Not;
                     if (isNot) {
                         parent.putMessage("REMOVE_UNARY_NOT", parent.getValue());
