@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.groovy.tree.G;
@@ -164,18 +165,22 @@ public class UseCollectionInterfaces extends Recipe {
                                 if(originalType instanceof JavaType.Parameterized) {
                                     JavaType.Parameterized originalParameterizedType = (JavaType.Parameterized) originalType;
                                     JavaType.Parameterized newParameterizedType = new JavaType.Parameterized(null, newType, originalParameterizedType.getTypeParameters());
-                                    if(mi.getMethodType() != null) {
-                                        return mi
-                                              .withSelect(mi.getSelect().withType(newParameterizedType))
-                                              .withMethodType(mi.getMethodType().withDeclaringType(newParameterizedType));
-                                    }
-                                    return mi
-                                          .withSelect(mi.getSelect().withType(newParameterizedType));
+                                    return updateMethodInvocation(mi, newParameterizedType);
                                 }
-                                return mi.withSelect(mi.getSelect().withType(newType));
+                                return updateMethodInvocation(mi, newType);
                             }
                         }
                     }
+                }
+                return mi;
+            }
+
+            private J.MethodInvocation updateMethodInvocation(J.MethodInvocation mi, JavaType.FullyQualified newType) {
+                if (mi.getSelect() != null) {
+                    mi = mi.withSelect(mi.getSelect().withType(newType));
+                }
+                if(mi.getMethodType() != null) {
+                    mi = mi.withMethodType(mi.getMethodType().withDeclaringType(newType));
                 }
                 return mi;
             }
