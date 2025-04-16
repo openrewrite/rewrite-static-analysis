@@ -43,7 +43,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
                       String s2 = "hello world\\n%s".formatted("again");
                   }
               }
-              """, """
+              """,
+                """
               class T {
                   static {
                       String s = String.format("hello world%n%s", "again");

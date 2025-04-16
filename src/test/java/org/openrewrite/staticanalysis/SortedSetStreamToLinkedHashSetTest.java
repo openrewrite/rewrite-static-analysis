@@ -45,7 +45,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
                   Set<Integer> sorted = set.stream().sorted().collect(Collectors.toSet());
               }
             }
-            """, """
+            """,
+                """
             import java.util.LinkedHashSet;
             import java.util.Set;
             import java.util.stream.Collectors;
@@ -55,7 +56,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
                   Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
               }
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -72,7 +74,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
                   Set<Integer> sorted = set.stream().sorted().collect(toSet());
               }
             }
-            """, """
+            """,
+                """
             import java.util.LinkedHashSet;
             import java.util.Set;
             import java.util.stream.Collectors;
@@ -82,7 +85,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
                   Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
               }
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -100,7 +104,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
                   Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
               }
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -118,6 +123,7 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
                   List<Integer> sorted = set.stream().sorted().collect(Collectors.toList());
               }
             }
-            """));
+            """
+          ));
     }
 }

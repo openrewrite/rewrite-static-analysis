@@ -214,7 +214,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
                     return equals(FOO);
                 }
             }
-            """)
+            """
+          )
         );
     }
 

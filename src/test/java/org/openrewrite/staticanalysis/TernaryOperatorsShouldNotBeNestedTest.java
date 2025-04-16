@@ -532,7 +532,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
                   static String c(){return "c";}
                   static String nope(){return "nope";}
                 }
-                """),
+                """
+              ),
               java(
                 """
                   class Test {
@@ -1099,7 +1100,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       static String c(){return "c";}
                       static String nope(){return "nope";}
                     }
-                    """),
+                    """
+                  ),
                   java(
                     """
                       class Test {

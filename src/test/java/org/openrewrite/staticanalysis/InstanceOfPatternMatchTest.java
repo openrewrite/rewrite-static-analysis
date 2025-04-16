@@ -259,7 +259,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                  """, """
+                  """,
+                    """
                   import java.util.Collections;
                   import java.util.List;
                   public class A {
@@ -353,7 +354,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                         return Collections.emptyList();
                       }
                   }
-                  """, """
+                  """,
+                    """
                   import java.util.Collections;
                   import java.util.List;
                   import java.util.Map;
@@ -1081,15 +1083,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           return o instanceof List ? ((List<Object>) o).get(0) : o.toString();
                       }
                   }
-                  """/*,
-                """
-                  import java.util.List;
-                  public class A {
-                      Object test(Object o) {
-                          return o instanceof List<?> l ? l.get(0) : o.toString();
-                      }
-                  }
-                  """*/
+                  """
               )
             );
         }
