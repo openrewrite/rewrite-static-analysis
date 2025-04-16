@@ -151,6 +151,18 @@ public class UseCollectionInterfaces extends Recipe {
             }
 
             @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext executionContext) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, executionContext);
+                JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mi.getSelect().getType());
+                if (originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
+                    JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
+                          JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
+                    return mi.withSelect(mi.getSelect().withType(newType));
+                }
+                return mi;
+            }
+
+            @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());

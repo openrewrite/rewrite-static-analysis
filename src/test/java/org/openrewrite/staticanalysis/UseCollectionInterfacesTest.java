@@ -1001,4 +1001,34 @@ class UseCollectionInterfacesTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
+    @Test
+    void danglingReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            import java.util.concurrent.ConcurrentLinkedQueue;
+
+            class B {
+                private final ConcurrentLinkedQueue<String> widgetDataList;
+                public void foo() {
+                  widgetDataList.add("TEST");
+                }
+            }
+            """,
+            """
+            import java.util.Queue;
+
+            class B {
+                private final Queue<String> widgetDataList;
+                public void foo() {
+                  widgetDataList.add("TEST");
+                }
+            }
+            """
+          )
+        );
+    }
 }
