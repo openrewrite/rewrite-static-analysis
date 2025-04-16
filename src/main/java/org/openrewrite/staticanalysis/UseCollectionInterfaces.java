@@ -174,16 +174,6 @@ public class UseCollectionInterfaces extends Recipe {
                 return mi;
             }
 
-            private J.MethodInvocation updateMethodInvocation(J.MethodInvocation mi, JavaType.FullyQualified newType) {
-                if (mi.getSelect() != null) {
-                    mi = mi.withSelect(mi.getSelect().withType(newType));
-                }
-                if(mi.getMethodType() != null) {
-                    mi = mi.withMethodType(mi.getMethodType().withDeclaringType(newType));
-                }
-                return mi;
-            }
-
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
@@ -233,6 +223,16 @@ public class UseCollectionInterfaces extends Recipe {
                     }
                 }
                 return mv;
+            }
+
+            private J.MethodInvocation updateMethodInvocation(J.MethodInvocation mi, JavaType.FullyQualified newType) {
+                if (mi.getSelect() != null) {
+                    mi = mi.withSelect(mi.getSelect().withType(newType));
+                }
+                if(mi.getMethodType() != null) {
+                    mi = mi.withMethodType(mi.getMethodType().withDeclaringType(newType));
+                }
+                return mi;
             }
 
             private TypeTree removeFromParameterizedType(JavaType.FullyQualified newType,
