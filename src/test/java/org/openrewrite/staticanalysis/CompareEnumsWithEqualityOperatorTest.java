@@ -272,7 +272,51 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
               import java.util.List;
               class Test {
                   void method(List<ObjectA> list) {
+                      if (list.stream().filter(e -> e.getEnumA().equals(A.FOO)).toList().isEmpty()) {}
+                      if (list.stream().filter(e -> !(e.getEnumA().equals(A.FOO))).toList().isEmpty()) {}
+                  }
+              }
+              """,
+            """
+              import a.A;
+              import java.util.List;
+              class Test {
+                  void method(List<ObjectA> list) {
+                      if (list.stream().filter(e -> e.getEnumA() == A.FOO).toList().isEmpty()) {}
+                      if (list.stream().filter(e -> e.getEnumA() != A.FOO).toList().isEmpty()) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
+    @Test
+    void notLambda() {
+        rewriteRun(
+          enumA,
+          //language=java
+          java(
+            """
+              import a.A;
+              class ObjectA {
+                  private A enumA;
+                  public A getEnumA() {
+                      return enumA;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import a.A;
+              import java.util.List;
+              class Test {
+                  void method(List<ObjectA> list) {
                       if (!list.stream().filter(e -> e.getEnumA().equals(A.FOO)).toList().isEmpty()) {}
+                      if (!list.stream().filter(e -> !(e.getEnumA().equals(A.FOO))).toList().isEmpty()) {}
                   }
               }
               """,
@@ -282,6 +326,7 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
               class Test {
                   void method(List<ObjectA> list) {
                       if (!list.stream().filter(e -> e.getEnumA() == A.FOO).toList().isEmpty()) {}
+                      if (!list.stream().filter(e -> e.getEnumA() != A.FOO).toList().isEmpty()) {}
                   }
               }
               """
@@ -300,8 +345,43 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
               import a.A;
               class Test {
                   void method(A value1, A value2, A value3, A value4) {
+                      boolean hasMultipleValues = value1 != null ? value1.equals(value2) : value2 == null ||
+                                                  value3 != null ? value3.equals(value4) : value4 == null;
+                      boolean hasMultipleValues2 = value1 != null ? !value1.equals(value2) : value2 == null ||
+                                                   value3 != null ? !value3.equals(value4) : value4 == null;
+                  }
+              }
+              """,
+            """
+              import a.A;
+              class Test {
+                  void method(A value1, A value2, A value3, A value4) {
+                      boolean hasMultipleValues = value1 != null ? value1 == value2 : value2 == null ||
+                                                  value3 != null ? value3 == value4 : value4 == null;
+                      boolean hasMultipleValues2 = value1 != null ? value1 != value2 : value2 == null ||
+                                                   value3 != null ? value3 != value4 : value4 == null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
+    @Test
+    void notTernaryExpression() {
+        rewriteRun(
+          enumA,
+          //language=java
+          java(
+            """
+              import a.A;
+              class Test {
+                  void method(A value1, A value2, A value3, A value4) {
                       boolean hasMultipleValues = !(value1 != null ? value1.equals(value2) : value2 == null) ||
                                                   !(value3 != null ? value3.equals(value4) : value4 == null);
+                      boolean hasMultipleValues2 = !(value1 != null ? !value1.equals(value2) : value2 == null) ||
+                                                   !(value3 != null ? !value3.equals(value4) : value4 == null);
                   }
               }
               """,
@@ -311,6 +391,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
                   void method(A value1, A value2, A value3, A value4) {
                       boolean hasMultipleValues = !(value1 != null ? value1 == value2 : value2 == null) ||
                                                   !(value3 != null ? value3 == value4 : value4 == null);
+                      boolean hasMultipleValues2 = !(value1 != null ? value1 != value2 : value2 == null) ||
+                                                   !(value3 != null ? value3 != value4 : value4 == null);
                   }
               }
               """
