@@ -20,14 +20,16 @@ dependencies {
     implementation("org.apache.commons:commons-text:latest.release")
 
     // Limit transitive dependencies for downstream projects like rewrite-spring
+    provided(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     provided("org.openrewrite:rewrite-groovy:${rewriteVersion}")
-    provided("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
+    provided("org.openrewrite:rewrite-kotlin")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
-    compileOnly("com.google.errorprone:error_prone_core:2.+:with-dependencies") {
+    compileOnly("com.google.errorprone:error_prone_core:2.+") {
         exclude("com.google.auto.service", "auto-service-annotations")
+        exclude("io.github.eisop","dataflow-errorprone")
     }
 
     testImplementation("org.openrewrite:rewrite-test")

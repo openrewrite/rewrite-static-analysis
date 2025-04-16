@@ -63,7 +63,7 @@ class UseSystemLineSeparatorTest implements RewriteTest {
           java(
             """
               import static java.lang.System.getProperty;
-              
+
               class A {
                   String s = getProperty("line.separator");
                   void method1() {
@@ -73,7 +73,7 @@ class UseSystemLineSeparatorTest implements RewriteTest {
               """,
             """
               import static java.lang.System.lineSeparator;
-              
+
               class A {
                   String s = lineSeparator();
                   void method1() {

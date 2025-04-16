@@ -36,7 +36,7 @@ class URLEqualsHashCodeTest implements RewriteTest {
           java(
                 """
               import java.net.URL;
-                              
+
               class Test {
                   public void test() {
                       URL url = new URL("https://example.com");
@@ -47,7 +47,7 @@ class URLEqualsHashCodeTest implements RewriteTest {
             """
               import java.net.URI;
               import java.net.URL;
-                              
+
               class Test {
                   public void test() {
                       URL url = new URL("https://example.com");
@@ -65,7 +65,7 @@ class URLEqualsHashCodeTest implements RewriteTest {
           java(
                 """
               import java.net.URL;
-              
+
               class Test {
                   public void test() {
                       URL url1 = new URL("https://example.com");
@@ -77,7 +77,7 @@ class URLEqualsHashCodeTest implements RewriteTest {
             """
               import java.net.URI;
               import java.net.URL;
-              
+
               class Test {
                   public void test() {
                       URL url1 = new URL("https://example.com");

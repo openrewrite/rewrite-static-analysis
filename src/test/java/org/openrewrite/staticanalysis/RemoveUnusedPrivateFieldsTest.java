@@ -232,11 +232,11 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               public class Vehicle {
                   private VehicleUsage vehicleUsage;
-                            
+
                   public class VehicleUsage {
                       private final String vehicleId;
                   }
-                            
+
                   public void doSomethingWithAVehicle() {
                       vehicleUsage = new VehicleUsage();
                       vehicleUsage.vehicleId = "vu50";
@@ -291,7 +291,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               public class Test {
                   private int a;
                   private int b; // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -299,7 +299,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               """, """
               public class Test {
                   private int a;
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -322,7 +322,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                     multiline
                     comment
                   */
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -330,7 +330,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               """, """
               public class Test {
                   private int a;
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -351,7 +351,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                   private int a;
                   private int b;
                   // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -360,7 +360,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               public class Test {
                   private int a;
                   // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -378,7 +378,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               public class Test {
                   private int a, b; // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -386,7 +386,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               """, """
               public class Test {
                   private int a; // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }

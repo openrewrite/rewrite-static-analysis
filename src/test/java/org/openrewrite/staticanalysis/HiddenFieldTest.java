@@ -57,10 +57,10 @@ class HiddenFieldTest implements RewriteTest {
             """
               class Test {
                   private String field;
-                          
+
                   public Test(String someField) {
                   }
-                          
+
                   static void method(String someField) {
                       String localVariable = someField;
                   }
@@ -89,13 +89,13 @@ class HiddenFieldTest implements RewriteTest {
               public class A extends B {
                   int n;
                   int n1;
-                          
+
                   class C {
                       public void method(int n) {
                           int n1 = n;
                       }
                   }
-                          
+
                   static class D {
                       public void method(int n) {
                       }
@@ -106,13 +106,13 @@ class HiddenFieldTest implements RewriteTest {
               public class A extends B {
                   int n;
                   int n1;
-                          
+
                   class C {
                       public void method(int n2) {
                           int n3 = n2;
                       }
                   }
-                          
+
                   static class D {
                       public void method(int n) {
                       }
@@ -133,7 +133,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   private String field;
-                          
+
                   public A(String field) {
                   }
               }
@@ -141,7 +141,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   private String field;
-                          
+
                   public A(String field1) {
                   }
               }
@@ -159,7 +159,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   private String field;
-                      
+
                   public A(String field) {
                   }
               }
@@ -176,7 +176,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   private String field;
-                          
+
                   public void method(String field) {
                   }
               }
@@ -184,7 +184,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   private String field;
-                          
+
                   public void method(String field1) {
                   }
               }
@@ -201,7 +201,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   private String field;
-                          
+
                   public void method(String param) {
                       String field = param;
                   }
@@ -210,7 +210,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   private String field;
-                          
+
                   public void method(String param) {
                       String field1 = param;
                   }
@@ -228,13 +228,13 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   int n;
-                          
+
                   public void standardForLoop() {
                       for (int n = 0; n < 1; n++) {
                           int x = n;
                       }
                   }
-                          
+
                   public void enhancedForLoop(int[] arr) {
                       for (int n : arr) {
                           int x = n;
@@ -245,13 +245,13 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   int n;
-                          
+
                   public void standardForLoop() {
                       for (int n1 = 0; n1 < 1; n1++) {
                           int x = n1;
                       }
                   }
-                          
+
                   public void enhancedForLoop(int[] arr) {
                       for (int n1 : arr) {
                           int x = n1;
@@ -385,7 +385,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               import java.util.List;
               import java.util.Arrays;
-                          
+
               public class A {
                   List<Integer> numbers = Arrays.asList(1, 2, 3);
                   Integer value = 0;
@@ -397,7 +397,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               import java.util.List;
               import java.util.Arrays;
-                          
+
               public class A {
                   List<Integer> numbers = Arrays.asList(1, 2, 3);
                   Integer value = 0;
@@ -418,17 +418,17 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class Outer {
                   int outer;
-                            
+
                   public class Inner {
                       int inner;
-                          
+
                       public Inner() {
                           int inner = 0;
                       }
-                            
+
                       public Inner(int inner) {
                       }
-                            
+
                       public void method() {
                           int outer = 0;
                       }
@@ -438,17 +438,17 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class Outer {
                   int outer;
-                            
+
                   public class Inner {
                       int inner;
-                            
+
                       public Inner() {
                           int inner1 = 0;
                       }
-                            
+
                       public Inner(int inner) {
                       }
-                            
+
                       public void method() {
                           int outer1 = 0;
                       }
@@ -467,7 +467,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   int n, n1;
-                          
+
                   public void method(int n) {
                       int n1 = 0;
                   }
@@ -476,7 +476,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   int n, n1;
-                          
+
                   public void method(int n2) {
                       int n3 = 0;
                   }
@@ -494,7 +494,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   int n, n1;
-                          
+
                   public void method(int n) {
                       int n2 = 0;
                   }
@@ -503,7 +503,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class A {
                   int n, n1;
-                          
+
                   public void method(int n3) {
                       int n2 = 0;
                   }
@@ -524,22 +524,22 @@ class HiddenFieldTest implements RewriteTest {
                   B(1),
                   C(2) {
                       int hidden;
-                          
+
                       public void method() {
                           int hidden = 0;
                       }
                   };
-                          
+
                   int hidden;
                   static int hiddenStatic;
-                          
+
                   ExampleEnum(int hidden) {
                   }
-                          
+
                   public void method() {
                       int hidden = 0;
                   }
-                          
+
                   public static void methodStatic() {
                       int hiddenStatic = 0;
                   }
@@ -558,25 +558,25 @@ class HiddenFieldTest implements RewriteTest {
             """
               public class StaticMethods {
                   private int notHidden;
-                          
+
                   public static void method() {
                       // local variables of static methods don't hide instance fields.
                       int notHidden;
                   }
-                          
+
                   static {
                       // local variables of static initializers don't hide instance fields.
                       int notHidden;
                   }
-                          
+
                   private int x;
                   private static int y;
-                          
+
                   static class Inner {
                       void useX(int x) {
                           x++;
                       }
-                          
+
                       void useY(int y) {
                           y++;
                       }
@@ -595,7 +595,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               interface A {
                   int n = 0;
-                          
+
                   void method(int n);
               }
               """
@@ -612,15 +612,15 @@ class HiddenFieldTest implements RewriteTest {
             """
               class A {
                   int n;
-                          
+
                   public void setN(int n) {
                       this.n = n;
                   }
               }
-                          
+
               class B {
                   int n;
-                          
+
                   public B setN(int n) {
                       this.n = n;
                       return this;
@@ -630,15 +630,15 @@ class HiddenFieldTest implements RewriteTest {
             """
               class A {
                   int n;
-                          
+
                   public void setN(int n1) {
                       this.n = n1;
                   }
               }
-                          
+
               class B {
                   int n;
-                          
+
                   public B setN(int n1) {
                       this.n = n1;
                       return this;
@@ -658,15 +658,15 @@ class HiddenFieldTest implements RewriteTest {
             """
               class A {
                   int n;
-                          
+
                   public void setN(int n) {
                       this.n = n;
                   }
               }
-                          
+
               class B {
                   int n;
-                          
+
                   public B setN(int n) {
                       this.n = n;
                       return this;
@@ -676,15 +676,15 @@ class HiddenFieldTest implements RewriteTest {
             """
               class A {
                   int n;
-                          
+
                   public void setN(int n) {
                       this.n = n;
                   }
               }
-                          
+
               class B {
                   int n;
-                          
+
                   public B setN(int n1) {
                       this.n = n1;
                       return this;
@@ -705,15 +705,15 @@ class HiddenFieldTest implements RewriteTest {
             """
               class A {
                   int n;
-                          
+
                   public void setN(int n) {
                       this.n = n;
                   }
               }
-                          
+
               class B {
                   int n;
-                          
+
                   public B setN(int n) {
                       this.n = n;
                       return this;
@@ -732,14 +732,14 @@ class HiddenFieldTest implements RewriteTest {
             """
               public abstract class A {
                   int n;
-                          
+
                   public abstract void method(int n);
               }
               """,
             """
               public abstract class A {
                   int n;
-                          
+
                   public abstract void method(int n1);
               }
               """
@@ -756,7 +756,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public abstract class A {
                   int n;
-                          
+
                   public abstract void method(int n);
               }
                 """
@@ -772,7 +772,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public abstract class A {
                   int n;
-                          
+
                   /**
                    * @param n rename param
                    */
@@ -782,7 +782,7 @@ class HiddenFieldTest implements RewriteTest {
             """
               public abstract class A {
                   int n;
-                          
+
                   /**
                    * @param n1 rename param
                    */
@@ -812,7 +812,7 @@ class HiddenFieldTest implements RewriteTest {
               public class A extends B {
                   Integer n;
                   Integer n1;
-                          
+
                   class C {
                       public void method(Integer n) {
                           Integer n1 = n;
@@ -824,7 +824,7 @@ class HiddenFieldTest implements RewriteTest {
               public class A extends B {
                   Integer n;
                   Integer n1;
-                          
+
                   class C {
                       public void method(Integer n2) {
                           Integer n3 = n2;

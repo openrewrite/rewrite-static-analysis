@@ -39,28 +39,28 @@ class InlineVariableTest implements RewriteTest {
             """
               import java.util.List;
               import java.util.stream.Collectors;
-                            
+
               class Test {
                   int test() {
                       int n = 0;
                       return n;
                   }
-                  
+
                   int test2() {
                       int n = 0;
                       System.out.println(n);
                       return n;
                   }
-                  
+
                   void test3() {}
-                  
+
                   void test4(String arg) throws IllegalArgumentException {
                       if (arg == null || arg.isEmpty()) {
                           IllegalArgumentException e = new IllegalArgumentException("arg should not be empty or null");
                           throw e;
                       }
                   }
-                  
+
                   List<String> testLambda(List<String> names) {
                       return names.stream().map(n -> {
                           String un = n.toLowerCase();
@@ -72,26 +72,26 @@ class InlineVariableTest implements RewriteTest {
             """
               import java.util.List;
               import java.util.stream.Collectors;
-                            
+
               class Test {
                   int test() {
                       return 0;
                   }
-                  
+
                   int test2() {
                       int n = 0;
                       System.out.println(n);
                       return n;
                   }
-                  
+
                   void test3() {}
-                  
+
                   void test4(String arg) throws IllegalArgumentException {
                       if (arg == null || arg.isEmpty()) {
                           throw new IllegalArgumentException("arg should not be empty or null");
                       }
                   }
-                  
+
                   List<String> testLambda(List<String> names) {
                       return names.stream().map(n -> {
                           return n.toLowerCase();
@@ -117,7 +117,7 @@ class InlineVariableTest implements RewriteTest {
                       String s = "hello";
                       return s;
                   }
-                  
+
                   void test4(String arg) throws IllegalArgumentException {
                       if (arg == null || arg.isEmpty()) {
                           // some comment for the illegal argument
@@ -134,7 +134,7 @@ class InlineVariableTest implements RewriteTest {
                       // keep them
                       return "hello";
                   }
-                  
+
                   void test4(String arg) throws IllegalArgumentException {
                       if (arg == null || arg.isEmpty()) {
                           // some comment for the illegal argument
@@ -159,7 +159,7 @@ class InlineVariableTest implements RewriteTest {
                       String someString = (String) getSomething();
                       return someString;
                   }
-                  
+
                   Object getSomething() {return null;}
               }
               """

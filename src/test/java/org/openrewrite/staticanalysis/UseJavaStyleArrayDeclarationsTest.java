@@ -57,7 +57,7 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
                   int i[];
                   int j[][];
                   int c[], d[];
-                  
+
                   void someMethod(int i[]) {
                   }
               }
@@ -67,7 +67,7 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
                   int[] i;
                   int[][] j;
                   int[] c, d;
-                  
+
                   void someMethod(int[] i) {
                   }
               }

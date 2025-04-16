@@ -41,17 +41,17 @@ class UnnecessaryPrimitiveAnnotationsTest implements RewriteTest {
               class A {
                   @Nullable
                   private long[] partitionLengths;
-                  
+
                   @CheckForNull
                   public Object getCount(@Nullable Object val) {
                       return val;
                   }
-                  
+
                   @Nullable
                   public byte[] getBytes() {
                       return null;
                   }
-                  
+
                   public void doSomething(long requestId, long stageId, String component, String host,
                                             String type, boolean skipFailure) {
                   }
@@ -79,7 +79,7 @@ class UnnecessaryPrimitiveAnnotationsTest implements RewriteTest {
               """,
             """
               class A {
-              
+
                   public int getCount(int val) {
                       return val;
                   }

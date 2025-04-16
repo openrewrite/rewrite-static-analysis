@@ -803,11 +803,11 @@ class FinalizePrivateFieldsTest implements RewriteTest {
           java(
             """
               import lombok.Data;
-                          
+
               @Data
               public class B {
                   private int num = 0;
-                          
+
                   void func() {
                       B b = new B();
                       // b.setNum(1);
@@ -848,12 +848,12 @@ class FinalizePrivateFieldsTest implements RewriteTest {
           java(
             """
               public final class Reproducer {
-              
+
                   private Reproducer() {
                   }
-              
+
                   private static volatile String foo = "this becomes final volatile, which is invalid";
-              
+
               }
               """
           )

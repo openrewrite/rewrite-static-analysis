@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis.csharp;
 
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.csharp.tree.Cs;
@@ -27,6 +28,10 @@ import org.openrewrite.marker.SearchResult;
  */
 public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_CSHARP_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.csharp.tree.Cs");
+
+    public static boolean isCSharpTree(Cursor cursor) {
+        return IS_CSHARP_AVAILABLE && cursor.getPath(is -> is instanceof Cs).hasNext();
+    }
 
     public static boolean isInstanceOfCs(@Nullable Tree tree) {
         return IS_CSHARP_AVAILABLE && tree instanceof Cs;

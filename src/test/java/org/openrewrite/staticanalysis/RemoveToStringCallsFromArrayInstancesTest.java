@@ -46,7 +46,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   String argStr = Arrays.toString(args);
@@ -84,7 +84,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                 public static void main(String[] args) {
                   String arrStr = getNumArr().toString();
                 }
-                
+
                 public int[] getNumArr() {
                   return new int[]{1, 2, 3, 4};
                 }
@@ -92,12 +92,12 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   String arrStr = Arrays.toString(getNumArr());
                 }
-                
+
                 public int[] getNumArr() {
                   return new int[]{1, 2, 3, 4};
                 }
@@ -117,7 +117,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                 public static void main(String[] args) {
                   String arrStr = getArr().toString();
                 }
-                
+
                 public String[] getArr() {
                   String[] arr = {"test", "array"};
                   return arr;
@@ -126,12 +126,12 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   String arrStr = Arrays.toString(getArr());
                 }
-                
+
                 public String[] getArr() {
                   String[] arr = {"test", "array"};
                   return arr;
@@ -157,7 +157,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                   public static void main(String[] args) {
                       int[] s = new int[]{1,2,3};
@@ -184,7 +184,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   String[] arr = new String[]{"string ", "array"};
@@ -241,19 +241,19 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                 public static void main(String[] args) {
                   int[] s1 = new int[]{1, 2, 3};
                   int[] s2 = new int[]{4, 5, 6};
-                  
+
                   System.out.println(String.format("s1=%s, s2=%s", s1, s2));
                 }
               }
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   int[] s1 = new int[]{1, 2, 3};
                   int[] s2 = new int[]{4, 5, 6};
-                  
+
                   System.out.println(String.format("s1=%s, s2=%s", Arrays.toString(s1), Arrays.toString(s2)));
                 }
               }
@@ -274,21 +274,21 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                   int[] s2 = new int[]{4, 5, 6};
                   String name = "First array:";
                   String secondName = "Second array:";
-                  
+
                   System.out.println(String.format("%s %s, %s %s", name, s1, secondName, s2));
                 }
               }
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   int[] s1 = new int[]{1, 2, 3};
                   int[] s2 = new int[]{4, 5, 6};
                   String name = "First array:";
                   String secondName = "Second array:";
-                  
+
                   System.out.println(String.format("%s %s, %s %s", name, Arrays.toString(s1), secondName, Arrays.toString(s2)));
                 }
               }
@@ -304,7 +304,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
           java(
             """
               import java.util.Objects;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   int[] arr = new int[]{1, 2, 3};
@@ -314,7 +314,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   int[] arr = new int[]{1, 2, 3};
@@ -335,18 +335,18 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               class SomeClass {
                 public static void main(String[] args) {
                   String[] strings = new String[]{"bar"};
-                  
+
                   String str_rep = String.valueOf(strings);
                 }
               }
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   String[] strings = new String[]{"bar"};
-                  
+
                   String str_rep = Arrays.toString(strings);
                 }
               }
@@ -365,19 +365,19 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                 public static void main(String[] args) {
                   StringBuilder builder = new StringBuilder("builder");
                   String[] strings = new String[]{"string", "array"};
-                  
+
                   builder.insert(0, strings);
                 }
               }
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   StringBuilder builder = new StringBuilder("builder");
                   String[] strings = new String[]{"string", "array"};
-                  
+
                   builder.insert(0, Arrays.toString(strings));
                 }
               }
@@ -396,19 +396,19 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
                 public static void main(String[] args) {
                   StringBuilder builder = new StringBuilder("builder");
                   String[] strings = new String[]{"array"};
-                  
+
                   builder.append(strings);
                 }
               }
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   StringBuilder builder = new StringBuilder("builder");
                   String[] strings = new String[]{"array"};
-                  
+
                   builder.append(Arrays.toString(strings));
                 }
               }
@@ -424,12 +424,12 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
           java(
             """
               import java.io.PrintStream;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   PrintStream ps = new PrintStream(System.out);
                   String[] arr = new String[]{"test", "array"};
-                  
+
                   ps.format("formatting array: %s", arr);
                   ps.flush();
                 }
@@ -446,12 +446,12 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
           java(
             """
               import java.io.PrintStream;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   PrintStream ps = new PrintStream(System.out);
                   String[] arr = new String[]{"test", "array"};
-                  
+
                   ps.print(arr);
                   ps.flush();
                 }
@@ -460,12 +460,12 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
             """
               import java.io.PrintStream;
               import java.util.Arrays;
-              
+
               class SomeClass {
                 public static void main(String[] args) {
                   PrintStream ps = new PrintStream(System.out);
                   String[] arr = new String[]{"test", "array"};
-                  
+
                   ps.print(Arrays.toString(arr));
                   ps.flush();
                 }
@@ -505,7 +505,7 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
               """,
             """
               import java.util.Arrays;
-              
+
               class SomeClass {
                 String foo(Object[] array1, Object[] array2) {
                     return String.format("%s %s", Arrays.toString(array1), Arrays.toString(array2));

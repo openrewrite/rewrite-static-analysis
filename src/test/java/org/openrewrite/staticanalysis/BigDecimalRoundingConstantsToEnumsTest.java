@@ -58,7 +58,7 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
           java(
             """
               import java.math.BigDecimal;
-                            
+
               class A {
                   void divide() {
                       BigDecimal bd = BigDecimal.valueOf(10);
@@ -74,7 +74,7 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
             """
               import java.math.BigDecimal;
               import java.math.RoundingMode;
-                            
+
               class A {
                   void divide() {
                       BigDecimal bd = BigDecimal.valueOf(10);

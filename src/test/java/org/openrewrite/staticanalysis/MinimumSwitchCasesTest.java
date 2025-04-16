@@ -494,7 +494,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
           java(
             """
               import java.time.LocalDate;
-                            
+
               class Test {
                   void test(LocalDate date) {
                       switch(date.getDayOfWeek()) {
@@ -578,7 +578,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
             """
               enum Test {
                   A, B, C;
-                  
+
                   @Override
                   public String toString() {
                       String s;
@@ -597,7 +597,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
             """
               enum Test {
                   A, B, C;
-                  
+
                   @Override
                   public String toString() {
                       String s;
@@ -686,7 +686,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
               """,
             """
               import java.io.ObjectInputFilter;
-              
+
               class Test {
                   int test(java.io.ObjectInputFilter filter) {
                       if (filter.checkInput(null) == ObjectInputFilter.Status.ALLOWED) {

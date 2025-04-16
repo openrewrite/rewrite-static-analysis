@@ -166,7 +166,7 @@ class ExplicitInitializationTest implements RewriteTest {
 
                   int[] l = null;
                   int[] m = new int[0];
-                  
+
                   private final Long n = null;
               }
               """,
@@ -179,16 +179,16 @@ class ExplicitInitializationTest implements RewriteTest {
                   private long e = 2L;
                   private int f;
                   private char g;
-                            
+
                   private boolean h;
                   private boolean i = true;
-                            
+
                   private Object j = new Object();
                   private Object k;
-                            
+
                   int[] l;
                   int[] m = new int[0];
-                  
+
                   private final Long n = null;
               }
               """

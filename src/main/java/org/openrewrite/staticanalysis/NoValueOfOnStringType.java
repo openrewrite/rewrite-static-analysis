@@ -19,7 +19,6 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
@@ -31,6 +30,8 @@ import org.openrewrite.java.tree.TypeUtils;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
+
+import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 
 public class NoValueOfOnStringType extends Recipe {
     private static final MethodMatcher VALUE_OF = new MethodMatcher("java.lang.String valueOf(..)");
@@ -69,12 +70,8 @@ public class NoValueOfOnStringType extends Recipe {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
                     Expression argument = mi.getArguments().get(0);
-                    if (argument instanceof J.Binary && removeValueOfForStringConcatenation(argument)) {
-                        return JavaTemplate.builder("(#{any(java.lang.String)})").build()
-                                .apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
-                    } else if (TypeUtils.isString(argument.getType()) || removeValueOfForStringConcatenation(argument)) {
-                        return JavaTemplate.builder("#{any(java.lang.String)}").build()
-                                .apply(updateCursor(mi), mi.getCoordinates().replace(), argument);
+                    if (TypeUtils.isString(argument.getType()) || removeValueOfForStringConcatenation(argument)) {
+                        return maybeParenthesize(argument.withPrefix(mi.getPrefix()), updateCursor(mi));
                     }
                 }
                 return mi;

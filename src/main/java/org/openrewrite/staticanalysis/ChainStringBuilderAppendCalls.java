@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 public class ChainStringBuilderAppendCalls extends Recipe {
@@ -126,9 +125,10 @@ public class ChainStringBuilderAppendCalls extends Recipe {
      */
     public static J.Binary concatAdditionBinary(Expression left, Expression right) {
         J.Binary b = getAdditiveBinaryTemplate();
+        Space rightPrefix = right.getPrefix().isEmpty() ? Space.SINGLE_SPACE : right.getPrefix();
         return b.withPrefix(b.getLeft().getPrefix())
                 .withLeft(left)
-                .withRight(right.withPrefix(Space.build(" " + right.getPrefix().getWhitespace(), emptyList())));
+                .withRight(right.withPrefix(rightPrefix));
     }
 
     /**

@@ -38,13 +38,40 @@ class RemoveSystemOutPrintlnTest implements RewriteTest {
             """
               class Test {
                   void test() {
-                        System.out.println("Hello, world!");
+                      System.out.println("Hello, world!");
                   }
               }
               """,
             """
               class Test {
                   void test() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void lambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Consumer;
+
+              class Test {
+                  void test() {
+                      Consumer<String> c = s -> System.out.println(s);
+                  }
+              }
+              """,
+            """
+              import java.util.function.Consumer;
+
+              class Test {
+                  void test() {
+                      Consumer<String> c = s -> {};
                   }
               }
               """

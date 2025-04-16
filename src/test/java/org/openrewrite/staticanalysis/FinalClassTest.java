@@ -40,7 +40,7 @@ class FinalClassTest implements RewriteTest {
               public class A {
                   private A(String s) {
                   }
-                            
+
                   private A() {
                   }
               }
@@ -49,7 +49,7 @@ class FinalClassTest implements RewriteTest {
               public final class A {
                   private A(String s) {
                   }
-                            
+
                   private A() {
                   }
               }
@@ -96,7 +96,7 @@ class FinalClassTest implements RewriteTest {
               public class A {
                   private A(String s) {
                   }
-                  
+
                   public A() {
                   }
               }
@@ -125,7 +125,7 @@ class FinalClassTest implements RewriteTest {
           java(
             """
               class A {
-                            
+
                   class B {
                       private B() {}
                   }
@@ -133,7 +133,7 @@ class FinalClassTest implements RewriteTest {
               """,
             """
               class A {
-                            
+
                   final class B {
                       private B() {}
                   }
@@ -153,7 +153,7 @@ class FinalClassTest implements RewriteTest {
               public abstract class A {
                   public static void foo() {
                   }
-                  
+
                   private A() {
                   }
               }
@@ -170,7 +170,7 @@ class FinalClassTest implements RewriteTest {
           java(
             """
               class A {
-              
+
                   @Deprecated
                   class B {
                       private B() {}
@@ -179,7 +179,7 @@ class FinalClassTest implements RewriteTest {
               """,
             """
               class A {
-              
+
                   @Deprecated
                   final class B {
                       private B() {}

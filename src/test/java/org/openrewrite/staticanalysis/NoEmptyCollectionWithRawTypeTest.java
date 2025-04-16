@@ -37,14 +37,14 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
           java(
             """
               import java.util.List;
-              
+
               class Test {
                   List<Integer> l = java.util.Collections.EMPTY_LIST;
               }
               """,
             """
               import java.util.List;
-              
+
               class Test {
                   List<Integer> l = java.util.Collections.emptyList();
               }
@@ -60,18 +60,18 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
           java(
             """
               import java.util.List;
-              
+
               import static java.util.Collections.EMPTY_LIST;
-              
+
               class Test {
                   List<Integer> l = EMPTY_LIST;
               }
               """,
             """
               import java.util.List;
-              
+
               import static java.util.Collections.emptyList;
-              
+
               class Test {
                   List<Integer> l = emptyList();
               }
@@ -88,7 +88,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.List;
-              
+
               class Test {
                   List<Integer> l = Collections.EMPTY_LIST;
               }
@@ -96,7 +96,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.List;
-              
+
               class Test {
                   List<Integer> l = Collections.emptyList();
               }
@@ -112,14 +112,14 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
           java(
             """
               import java.util.Map;
-              
+
               class Test {
                   Map<Integer, Integer> m = java.util.Collections.EMPTY_MAP;
               }
               """,
             """
               import java.util.Map;
-              
+
               class Test {
                   Map<Integer, Integer> m = java.util.Collections.emptyMap();
               }
@@ -135,18 +135,18 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
           java(
             """
               import java.util.Map;
-              
+
               import static java.util.Collections.EMPTY_MAP;
-              
+
               class Test {
                   Map<Integer, Integer> l = EMPTY_MAP;
               }
               """,
             """
               import java.util.Map;
-              
+
               import static java.util.Collections.emptyMap;
-              
+
               class Test {
                   Map<Integer, Integer> l = emptyMap();
               }
@@ -163,7 +163,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.Map;
-              
+
               class Test {
                   Map<Integer, Integer> m = Collections.EMPTY_MAP;
               }
@@ -171,7 +171,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.Map;
-              
+
               class Test {
                   Map<Integer, Integer> m = Collections.emptyMap();
               }
@@ -187,14 +187,14 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
           java(
             """
               import java.util.Set;
-              
+
               class Test {
                   Set<Integer> m = java.util.Collections.EMPTY_SET;
               }
               """,
             """
               import java.util.Set;
-              
+
               class Test {
                   Set<Integer> m = java.util.Collections.emptySet();
               }
@@ -210,18 +210,18 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
           java(
             """
               import java.util.Set;
-              
+
               import static java.util.Collections.EMPTY_SET;
-              
+
               class Test {
                   Set<Integer> l = EMPTY_SET;
               }
               """,
             """
               import java.util.Set;
-              
+
               import static java.util.Collections.emptySet;
-              
+
               class Test {
                   Set<Integer> l = emptySet();
               }
@@ -238,7 +238,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.Set;
-              
+
               class Test {
                   Set<Integer> s = Collections.EMPTY_SET;
               }
@@ -246,7 +246,7 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
             """
               import java.util.Collections;
               import java.util.Set;
-              
+
               class Test {
                   Set<Integer> s = Collections.emptySet();
               }
