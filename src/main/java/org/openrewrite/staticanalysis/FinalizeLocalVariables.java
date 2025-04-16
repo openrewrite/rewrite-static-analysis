@@ -58,11 +58,10 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
-                if (isDeclaredInForLoopControl(getCursor())) {
-                    return mv;
-                }
-
-                if (isDeclaredInTryWithResources(getCursor())) {
+                // Skip known cases where a `final` modifier looks out of place
+                J parentTreeCursor = getCursor().getParentTreeCursor().getValue();
+                if (parentTreeCursor instanceof J.ForLoop.Control ||
+                        parentTreeCursor instanceof J.Try.Resource) {
                     return mv;
                 }
 
@@ -94,16 +93,6 @@ public class FinalizeLocalVariables extends Recipe {
                 return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration);
             }
         };
-    }
-
-    private boolean isDeclaredInForLoopControl(Cursor cursor) {
-        return cursor.getParentTreeCursor()
-                .getValue() instanceof J.ForLoop.Control;
-    }
-
-    private boolean isDeclaredInTryWithResources(Cursor cursor) {
-        return cursor.getParentTreeCursor()
-              .getValue() instanceof J.Try.Resource;
     }
 
     @Value
