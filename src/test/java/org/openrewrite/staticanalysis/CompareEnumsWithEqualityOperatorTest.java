@@ -250,7 +250,7 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     @Test
-    void conditionalIsNotInvertedInLambda() {
+    void lambda() {
         rewriteRun(
           enumA,
           //language=java
@@ -291,7 +291,7 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     @Test
-    void conditionalIsNotInvertedInMutlipleChecks() {
+    void ternaryExpression() {
         rewriteRun(
           enumA,
           //language=java
