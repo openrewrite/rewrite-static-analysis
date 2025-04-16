@@ -463,4 +463,61 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/359")
+    @Test
+    void initializedInTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileOutputStream;
+              class T {
+                  public void doSomething() {
+                      try (FileOutputStream out = new FileOutputStream("......")) {
+                          //...
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void initializedInTryCatchFinally() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileOutputStream;
+              class T {
+                  public void doSomething() {
+                      try {
+                          String someValue = "some value";
+                      } catch (Exception e) {
+                          String someExceptionValue = "some exception value";
+                      } finally {
+                          String someFinallyValue = "some finally value";
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.FileOutputStream;
+              class T {
+                  public void doSomething() {
+                      try {
+                          final String someValue = "some value";
+                      } catch (Exception e) {
+                          final String someExceptionValue = "some exception value";
+                      } finally {
+                          final String someFinallyValue = "some finally value";
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

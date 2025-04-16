@@ -62,6 +62,10 @@ public class FinalizeLocalVariables extends Recipe {
                     return mv;
                 }
 
+                if (isDeclaredInTryWithResources(getCursor())) {
+                    return mv;
+                }
+
                 // ignore fields (aka "instance variable" or "class variable")
                 if (mv.getVariables().stream().anyMatch(v -> v.isField(getCursor()))) {
                     return mv;
@@ -95,6 +99,11 @@ public class FinalizeLocalVariables extends Recipe {
     private boolean isDeclaredInForLoopControl(Cursor cursor) {
         return cursor.getParentTreeCursor()
                 .getValue() instanceof J.ForLoop.Control;
+    }
+
+    private boolean isDeclaredInTryWithResources(Cursor cursor) {
+        return cursor.getParentTreeCursor()
+              .getValue() instanceof J.Try.Resource;
     }
 
     @Value
