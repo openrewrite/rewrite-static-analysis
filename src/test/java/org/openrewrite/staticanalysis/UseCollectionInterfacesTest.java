@@ -1004,7 +1004,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
     @Test
-    void danglingReference() {
+    void danglingGenericReference() {
         rewriteRun(
           //language=java
           java(
@@ -1023,6 +1023,36 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
             class B {
                 private final Queue<String> widgetDataList;
+                public void foo() {
+                  widgetDataList.add("TEST");
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
+    @Test
+    void danglingReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            import java.util.concurrent.ConcurrentLinkedQueue;
+
+            class B {
+                private final ConcurrentLinkedQueue widgetDataList;
+                public void foo() {
+                  widgetDataList.add("TEST");
+                }
+            }
+            """,
+            """
+            import java.util.Queue;
+
+            class B {
+                private final Queue widgetDataList;
                 public void foo() {
                   widgetDataList.add("TEST");
                 }

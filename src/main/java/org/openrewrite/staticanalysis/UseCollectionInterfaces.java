@@ -153,11 +153,29 @@ public class UseCollectionInterfaces extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-                JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mi.getSelect().getType());
-                if (originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
-                    JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
-                          JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
-                    return mi.withSelect(mi.getSelect().withType(newType));
+                if (mi.getSelect() != null && mi.getSelect().getType() != null) {
+                    JavaType originalType = mi.getSelect().getType();
+                    JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(originalType);
+                    if (fullyQualified != null) {
+                        String fullyQualifiedName = fullyQualified.getFullyQualifiedName();
+                        if (rspecRulesReplaceTypeMap.containsKey(fullyQualifiedName)) {
+                            JavaType.FullyQualified newType = TypeUtils.asFullyQualified(JavaType.buildType(rspecRulesReplaceTypeMap.get(fullyQualifiedName)));
+                            if (newType != null) {
+                                if(originalType instanceof JavaType.Parameterized) {
+                                    JavaType.Parameterized originalParameterizedType = (JavaType.Parameterized) originalType;
+                                    JavaType.Parameterized newParameterizedType = new JavaType.Parameterized(null, newType, originalParameterizedType.getTypeParameters());
+                                    if(mi.getMethodType() != null) {
+                                        return mi
+                                              .withSelect(mi.getSelect().withType(newParameterizedType))
+                                              .withMethodType(mi.getMethodType().withDeclaringType(newParameterizedType));
+                                    }
+                                    return mi
+                                          .withSelect(mi.getSelect().withType(newParameterizedType));
+                                }
+                                return mi.withSelect(mi.getSelect().withType(newType));
+                            }
+                        }
+                    }
                 }
                 return mi;
             }
