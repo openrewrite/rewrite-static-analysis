@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    uses: openrewrite/gh-automation/.github/workflows/ci-gradle.yml@greg-avoid-global-secret
+    uses: openrewrite/gh-automation/.github/workflows/ci-gradle.yml@greg-avoid-global-secrets
     secrets:
       gradle_enterprise_access_key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
       ossrh_username: ${{ secrets.OSSRH_USERNAME }}
