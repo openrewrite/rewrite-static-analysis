@@ -95,7 +95,8 @@ class ModifierOrderTest implements RewriteTest {
                   }
               }
               """
-          , """
+          ,
+                """
               interface Foo {
                   public default static void bar() {
                       int i = 5;
@@ -109,7 +110,8 @@ class ModifierOrderTest implements RewriteTest {
                       int i = 5;
                   }
               }
-              """)
+              """
+          )
         );
     }
 

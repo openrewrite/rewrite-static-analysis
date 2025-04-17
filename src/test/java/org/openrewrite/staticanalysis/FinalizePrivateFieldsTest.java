@@ -48,13 +48,14 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               class A {
                   private static final String TEST_STRING = "ABC";
               }
-              """, spec -> spec.afterRecipe(cu -> {
-                J.VariableDeclarations declarations = (J.VariableDeclarations) cu.getClasses().get(
-                  0).getBody().getStatements().get(0);
-                assertThat(declarations.getModifiers()).anySatisfy(
-                  m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
-                assertThat(declarations.getVariables().get(0).getVariableType().getFlags()).contains(Flag.Final);
-            })));
+              """,
+                spec -> spec.afterRecipe(cu -> {
+                    J.VariableDeclarations declarations = (J.VariableDeclarations) cu.getClasses().get(
+                            0).getBody().getStatements().get(0);
+                    assertThat(declarations.getModifiers()).anySatisfy(
+                            m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
+                    assertThat(declarations.getVariables().get(0).getVariableType().getFlags()).contains(Flag.Final);
+                })));
     }
 
     @DocumentExample("Finalize private field.")
@@ -80,7 +81,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                       return name;
                   }
               }
-              """));
+              """
+          ));
     }
 
     @Test

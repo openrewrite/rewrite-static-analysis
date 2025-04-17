@@ -112,7 +112,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
     void nullLiteral() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
               public class A {
                     void foo(String s) {
                         if(s.equals(null)) {
@@ -127,7 +128,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                         }
                     }
                 }
-              """)
+              """
+          )
         );
     }
 
@@ -574,7 +576,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       }
                   }
                   """
-                , """
+                ,
+                    """
                   public class Foo {
                       private static final String FOO = null;
                       public void bar(String _null) {
@@ -608,7 +611,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       }
                   }
                   """
-                , """
+                ,
+                    """
                   public class Foo {
                       private static final String FOO = null;
                       public void bar(String _null) {

@@ -43,7 +43,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
                 int argHash = args.hashCode();
               }
             }
-            """, """
+            """,
+                """
             import java.util.Arrays;
 
             class SomeClass {
@@ -51,7 +52,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
                 int argHash = Arrays.hashCode(args);
               }
             }
-            """)
+            """
+          )
         );
     }
 
@@ -70,7 +72,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
                 return new int[]{1, 2, 3};
               }
             }
-            """, """
+            """,
+                """
             import java.util.Arrays;
 
             class SomeClass {
@@ -82,7 +85,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
                 return new int[]{1, 2, 3};
               }
             }
-            """)
+            """
+          )
         );
     }
 
@@ -98,7 +102,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
                 int hashCode = name.hashCode();
               }
             }
-            """)
+            """
+          )
         );
     }
 }

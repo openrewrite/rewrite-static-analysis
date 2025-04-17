@@ -268,7 +268,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
                       String t = ("literallyString" + "stringLiteral");
                       if (s == null) {
                           s = null;
-                      } else if (("someLiteral".toLowerCase()).equals(s)) {
+                      } else if ("someLiteral".toLowerCase().equals(s)) {
                           s = null;
                       }
                   }

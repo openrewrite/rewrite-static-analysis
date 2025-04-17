@@ -257,7 +257,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                  // Some comment
                  private int a;
               }
-              """, """
+              """,
+                """
               public class Test {
               }
               """
@@ -274,7 +275,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               public class Test {
                   private int a; // Some comment
               }
-              """, """
+              """,
+                """
               public class Test {
               }
               """
@@ -296,7 +298,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a;
 
@@ -327,7 +330,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a;
 
@@ -356,7 +360,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a;
                   // Some comment
@@ -383,7 +388,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a; // Some comment
 

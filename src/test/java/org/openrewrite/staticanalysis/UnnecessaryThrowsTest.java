@@ -365,7 +365,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
               public interface FooVisitor<T, E extends Exception> {
                   T visit(Foo.Event event) throws E;
               }
-              """),
+              """
+
+          ),
           //language=java
           java(
             """
