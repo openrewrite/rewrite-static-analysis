@@ -320,4 +320,47 @@ class DefaultComesLastTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveDefaultToLastWithFallThrough() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          default:
+                          case 3:
+                              System.out.println("case3");
+                              break;
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                          default:
+                              System.out.println("case3");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
