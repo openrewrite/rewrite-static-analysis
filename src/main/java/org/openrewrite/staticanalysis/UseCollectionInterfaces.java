@@ -151,6 +151,28 @@ public class UseCollectionInterfaces extends Recipe {
             }
 
             @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
+                if (mi.getSelect() != null && mi.getSelect().getType() != null) {
+                    JavaType originalType = mi.getSelect().getType();
+                    JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(originalType);
+                    if (fullyQualified != null) {
+                        String fullyQualifiedName = fullyQualified.getFullyQualifiedName();
+                        if (rspecRulesReplaceTypeMap.containsKey(fullyQualifiedName)) {
+                            JavaType.FullyQualified newType = TypeUtils.asFullyQualified(JavaType.buildType(rspecRulesReplaceTypeMap.get(fullyQualifiedName)));
+                            if (newType != null) {
+                                if (originalType instanceof JavaType.Parameterized) {
+                                    newType = new JavaType.Parameterized(null, newType, ((JavaType.Parameterized) originalType).getTypeParameters());
+                                }
+                                return updateMethodInvocation(mi, newType);
+                            }
+                        }
+                    }
+                }
+                return mi;
+            }
+
+            @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());
@@ -199,6 +221,16 @@ public class UseCollectionInterfaces extends Recipe {
                     }
                 }
                 return mv;
+            }
+
+            private J.MethodInvocation updateMethodInvocation(J.MethodInvocation mi, JavaType.FullyQualified newType) {
+                if (mi.getSelect() != null) {
+                    mi = mi.withSelect(mi.getSelect().withType(newType));
+                }
+                if (mi.getMethodType() != null) {
+                    mi = mi.withMethodType(mi.getMethodType().withDeclaringType(newType));
+                }
+                return mi;
             }
 
             private TypeTree removeFromParameterizedType(JavaType.FullyQualified newType,
