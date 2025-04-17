@@ -45,16 +45,28 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
         if (!isDefaultCaseLastOrNotPresent(switch_)) {
             List<J.Case> cases = s.getCases().getStatements().stream().map(J.Case.class::cast).collect(Collectors.toList());
-            List<J.Case> casesWithDefaultLast = maybeReorderCases(p, cases);
+            List<J.Case> casesWithDefaultLast = maybeReorderCases(cases, p);
             if (casesWithDefaultLast != null) {
-                s = maybeUpdateSwitch(cases, casesWithDefaultLast, s);
+                boolean changed = true;
+                if (cases.size() == casesWithDefaultLast.size()) {
+                    changed = false;
+                    for (int i = 0; i < cases.size(); i++) {
+                        if (cases.get(i) != casesWithDefaultLast.get(i)) {
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (changed) {
+                    s = s.withCases(s.getCases().withStatements(casesWithDefaultLast.stream().map(Statement.class::cast).collect(Collectors.toList())));
+                }
             }
         }
-
         return s;
     }
 
-    private @Nullable List<J.Case> maybeReorderCases(P p, List<J.Case> cases) {
+    private @Nullable List<J.Case> maybeReorderCases(List<J.Case> cases, P p) {
         List<J.Case> fallThroughCases = new ArrayList<>(cases.size());
         List<J.Case> defaultCases = new ArrayList<>(cases.size());
         List<J.Case> casesWithDefaultLast = new ArrayList<>(cases.size());
@@ -81,13 +93,13 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
 
-        casesWithDefaultLast = addBreakToLastCase(p, casesWithDefaultLast);
-        casesWithDefaultLast.addAll(maybeReorderFallthroughCases(p, defaultCases));
-        casesWithDefaultLast = removeBreakFromLastCase(casesWithDefaultLast);
+        casesWithDefaultLast = addBreakToLastCase(casesWithDefaultLast, p);
+        casesWithDefaultLast.addAll(maybeReorderFallthroughCases(defaultCases, p));
+        casesWithDefaultLast = ListUtils.mapLast(casesWithDefaultLast, this::removeBreak);
         return casesWithDefaultLast;
     }
 
-    private @NonNull List<J.Case> maybeReorderFallthroughCases(P p, List<J.Case> cases) {
+    private @NonNull List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, P p) {
         J.Case defaultCase = null;
         List<J.Case> preDefault = new ArrayList<>();
         List<J.Case> postDefault = new ArrayList<>();
@@ -111,7 +123,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             List<Statement> lastStatements = fixedCases.get(fixedCases.size() - 1).getStatements();
             if (!lastStatements.isEmpty()) {
                 if (!new HashSet<>(lastStatements).containsAll(defaultStatements)) {
-                    fixedCases = addBreakToLastCase(p, fixedCases);
+                    fixedCases = addBreakToLastCase(fixedCases, p);
                 } else {
                     J.Case last = fixedCases.remove(fixedCases.size() - 1);
                     fixedCases.add(last.withStatements(Collections.emptyList()));
@@ -120,24 +132,6 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         }
         fixedCases.add(defaultCase.withStatements(ListUtils.map(defaultStatements, stmt -> autoFormat(stmt, p, getCursor()))));
         return fixedCases;
-    }
-
-    private J.Switch maybeUpdateSwitch(List<J.Case> cases, List<J.Case> casesWithDefaultLast, J.Switch s) {
-        boolean changed = true;
-        if (cases.size() == casesWithDefaultLast.size()) {
-            changed = false;
-            for (int i = 0; i < cases.size(); i++) {
-                if (cases.get(i) != casesWithDefaultLast.get(i)) {
-                    changed = true;
-                    break;
-                }
-            }
-        }
-
-        if (changed) {
-            s = s.withCases(s.getCases().withStatements(casesWithDefaultLast.stream().map(Statement.class::cast).collect(Collectors.toList())));
-        }
-        return s;
     }
 
     private List<J.Case> maybeUpdatePreDefaultCases(List<J.Case> preDefault, List<Statement> defaultCaseStatements) {
@@ -152,35 +146,19 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         return result;
     }
 
-    private List<J.Case> addBreakToLastCase(P p, List<J.Case> cases) {
-        if(cases.isEmpty()) {
-            return cases;
-        }
-        List<J.Case> result = new ArrayList<>(cases.size());
-        result.addAll(cases.subList(0, cases.size() - 1));
-        J.Case aCase = cases.get(cases.size() - 1);
-        if (isFallthroughCase(aCase)) {
-            J.Break breakStatement = autoFormat(
-                  new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
-                  p
-            );
-            List<Statement> statements = aCase.getStatements();
-            statements.add(breakStatement);
-            aCase = aCase.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
-        }
-        result.add(aCase);
-        return result;
-    }
-
-    private List<J.Case> removeBreakFromLastCase(List<J.Case> cases) {
-        if (cases.isEmpty()) {
-            return cases;
-        }
-        List<J.Case> result = new ArrayList<>(cases.size());
-        result.addAll(cases.subList(0, cases.size() - 1));
-        J.Case aCase = cases.get(cases.size() - 1);
-        result.add(removeCaseEnd(aCase));
-        return result;
+    private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
+        return ListUtils.mapLast(cases, e -> {
+            if (isFallthroughCase(e)) {
+                J.Break breakStatement = autoFormat(
+                      new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
+                      p
+                );
+                List<Statement> statements = e.getStatements();
+                statements.add(breakStatement);
+                return e.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+            }
+            return e;
+        });
     }
 
     private boolean isFallthroughCase(J.Case aCase) {
@@ -191,7 +169,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
                     aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Throw);
     }
 
-    private J.Case removeCaseEnd(J.Case aCase) {
+    private J.Case removeBreak(J.Case aCase) {
         if (!aCase.getStatements().isEmpty() && aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break) {
             aCase = aCase.withStatements(aCase.getStatements().subList(0, aCase.getStatements().size() - 1));
         }
