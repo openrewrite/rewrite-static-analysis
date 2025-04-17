@@ -43,7 +43,7 @@ public class UseCollectionInterfaces extends Recipe {
     @Override
     public String getDescription() {
         return "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
-               "Replaces the return type of public method declarations and the variable type public variable declarations.";
+              "Replaces the return type of public method declarations and the variable type public variable declarations.";
     }
 
     @Override
@@ -114,12 +114,12 @@ public class UseCollectionInterfaces extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if ((m.hasModifier(J.Modifier.Type.Public) || m.hasModifier(J.Modifier.Type.Private) || m.getModifiers().isEmpty()) &&
-                    m.getReturnTypeExpression() != null) {
+                      m.getReturnTypeExpression() != null) {
                     JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(m.getReturnTypeExpression().getType());
                     if (originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
 
                         JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
-                                JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
+                              JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
                         if (newType != null) {
                             maybeRemoveImport(originalType);
                             maybeAddImport(newType);
@@ -127,13 +127,13 @@ public class UseCollectionInterfaces extends Recipe {
                             TypeTree typeExpression;
                             if (m.getReturnTypeExpression() instanceof J.Identifier) {
                                 typeExpression = new J.Identifier(
-                                        randomId(),
-                                        m.getReturnTypeExpression().getPrefix(),
-                                        Markers.EMPTY,
-                                        emptyList(),
-                                        newType.getClassName(),
-                                        newType,
-                                        null
+                                      randomId(),
+                                      m.getReturnTypeExpression().getPrefix(),
+                                      Markers.EMPTY,
+                                      emptyList(),
+                                      newType.getClassName(),
+                                      newType,
+                                      null
                                 );
                             } else if (m.getReturnTypeExpression() instanceof J.AnnotatedType) {
                                 J.AnnotatedType annotatedType = (J.AnnotatedType) m.getReturnTypeExpression();
@@ -161,10 +161,8 @@ public class UseCollectionInterfaces extends Recipe {
                         if (rspecRulesReplaceTypeMap.containsKey(fullyQualifiedName)) {
                             JavaType.FullyQualified newType = TypeUtils.asFullyQualified(JavaType.buildType(rspecRulesReplaceTypeMap.get(fullyQualifiedName)));
                             if (newType != null) {
-                                if(originalType instanceof JavaType.Parameterized) {
-                                    JavaType.Parameterized originalParameterizedType = (JavaType.Parameterized) originalType;
-                                    JavaType.Parameterized newParameterizedType = new JavaType.Parameterized(null, newType, originalParameterizedType.getTypeParameters());
-                                    return updateMethodInvocation(mi, newParameterizedType);
+                                if (originalType instanceof JavaType.Parameterized) {
+                                    newType = new JavaType.Parameterized(null, newType, ((JavaType.Parameterized) originalType).getTypeParameters());
                                 }
                                 return updateMethodInvocation(mi, newType);
                             }
@@ -179,13 +177,13 @@ public class UseCollectionInterfaces extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());
                 if ((mv.hasModifier(J.Modifier.Type.Public) || mv.hasModifier(J.Modifier.Type.Private) || mv.getModifiers().isEmpty()) &&
-                    originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
+                      originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
                     if (mv.getTypeExpression() instanceof J.Identifier && "var".equals(((J.Identifier) mv.getTypeExpression()).getSimpleName())) {
                         return mv;
                     }
 
                     JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
-                            JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
+                          JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
                     if (newType != null) {
                         maybeRemoveImport(originalType);
                         maybeAddImport(newType);
@@ -195,13 +193,13 @@ public class UseCollectionInterfaces extends Recipe {
                             typeExpression = null;
                         } else if (mv.getTypeExpression() instanceof J.Identifier) {
                             typeExpression = new J.Identifier(
-                                    randomId(),
-                                    mv.getTypeExpression().getPrefix(),
-                                    Markers.EMPTY,
-                                    emptyList(),
-                                    newType.getClassName(),
-                                    newType,
-                                    null
+                                  randomId(),
+                                  mv.getTypeExpression().getPrefix(),
+                                  Markers.EMPTY,
+                                  emptyList(),
+                                  newType.getClassName(),
+                                  newType,
+                                  null
                             );
                         } else if (mv.getTypeExpression() instanceof J.AnnotatedType) {
                             J.AnnotatedType annotatedType = (J.AnnotatedType) mv.getTypeExpression();
@@ -229,7 +227,7 @@ public class UseCollectionInterfaces extends Recipe {
                 if (mi.getSelect() != null) {
                     mi = mi.withSelect(mi.getSelect().withType(newType));
                 }
-                if(mi.getMethodType() != null) {
+                if (mi.getMethodType() != null) {
                     mi = mi.withMethodType(mi.getMethodType().withDeclaringType(newType));
                 }
                 return mi;
@@ -238,18 +236,18 @@ public class UseCollectionInterfaces extends Recipe {
             private TypeTree removeFromParameterizedType(JavaType.FullyQualified newType,
                                                          J.ParameterizedType parameterizedType) {
                 J.Identifier returnType = new J.Identifier(
-                        randomId(),
-                        Space.EMPTY,
-                        Markers.EMPTY,
-                        emptyList(),
-                        newType.getClassName(),
-                        newType,
-                        null
+                      randomId(),
+                      Space.EMPTY,
+                      Markers.EMPTY,
+                      emptyList(),
+                      newType.getClassName(),
+                      newType,
+                      null
                 );
                 JavaType.Parameterized javaType = (JavaType.Parameterized) parameterizedType.getType();
                 return parameterizedType.withClazz(returnType)
-                        .withType(javaType != null ? javaType.withType(newType) :
-                                new JavaType.Parameterized(null, newType, null));
+                      .withType(javaType != null ? javaType.withType(newType) :
+                            new JavaType.Parameterized(null, newType, null));
             }
         };
     }
