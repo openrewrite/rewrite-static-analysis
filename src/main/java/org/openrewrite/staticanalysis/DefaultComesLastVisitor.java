@@ -119,17 +119,17 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         List<J.Case> fixedCases = new ArrayList<>(preDefault.size() + postDefault.size() + 1);
         fixedCases.addAll(maybeUpdatePreDefaultCases(preDefault, defaultCaseStatements));
         fixedCases.addAll(postDefault);
-        if (!fixedCases.isEmpty()) {
-            List<Statement> lastStatements = fixedCases.get(fixedCases.size() - 1).getStatements();
+        fixedCases = ListUtils.mapLast(fixedCases, e -> {
+            List<Statement> lastStatements = e.getStatements();
             if (!lastStatements.isEmpty()) {
                 if (!new HashSet<>(lastStatements).containsAll(defaultStatements)) {
-                    fixedCases = addBreakToLastCase(fixedCases, p);
+                    return addBreak(e, p);
                 } else {
-                    J.Case last = fixedCases.remove(fixedCases.size() - 1);
-                    fixedCases.add(last.withStatements(Collections.emptyList()));
+                    return e.withStatements(Collections.emptyList());
                 }
             }
-        }
+            return e;
+        });
         fixedCases.add(defaultCase.withStatements(ListUtils.map(defaultStatements, stmt -> autoFormat(stmt, p, getCursor()))));
         return fixedCases;
     }
@@ -149,13 +149,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
         return ListUtils.mapLast(cases, e -> {
             if (isFallthroughCase(e)) {
-                J.Break breakStatement = autoFormat(
-                      new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
-                      p
-                );
-                List<Statement> statements = e.getStatements();
-                statements.add(breakStatement);
-                return e.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                return addBreak(e, p);
             }
             return e;
         });
@@ -167,6 +161,16 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
                     aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Continue ||
                     aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Return ||
                     aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Throw);
+    }
+
+    private J.Case addBreak(J.Case e, P p) {
+        J.Break breakStatement = autoFormat(
+              new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
+              p
+        );
+        List<Statement> statements = e.getStatements();
+        statements.add(breakStatement);
+        return e.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
     }
 
     private J.Case removeBreak(J.Case aCase) {
