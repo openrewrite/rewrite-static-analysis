@@ -29,7 +29,6 @@ import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -100,37 +99,35 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, P p) {
+        List<J.Case> preDefaultCases = new ArrayList<>();
+        List<J.Case> postDefaultCases = new ArrayList<>();
         J.Case defaultCase = null;
-        List<J.Case> preDefault = new ArrayList<>();
-        List<J.Case> postDefault = new ArrayList<>();
-        List<Statement> defaultStatements = new ArrayList<>();
-        for (J.Case aCase : cases) {
+        for (int i = 0; i < cases.size(); i++) {
+            J.Case aCase = cases.get(i);
             if (isDefaultCase(aCase)) {
+                if (!aCase.getStatements().isEmpty()) {
+                    return cases;
+                }
                 defaultCase = aCase;
-            } else if (defaultCase == null) {
-                preDefault.add(aCase);
+            } else if (defaultCase != null) {
+                if (!aCase.getStatements().isEmpty() && i != cases.size() - 1) {
+                    return cases;
+                } else {
+                    postDefaultCases.add(aCase);
+                }
             } else {
-                postDefault.add(aCase);
-                defaultStatements.addAll(aCase.getStatements());
+                preDefaultCases.add(aCase);
             }
         }
-        List<Statement> defaultCaseStatements = defaultCase != null ? defaultCase.getStatements() : Collections.emptyList();
-        defaultStatements.addAll(0, defaultCaseStatements);
-        List<J.Case> fixedCases = new ArrayList<>(preDefault.size() + postDefault.size() + 1);
-        fixedCases.addAll(maybeUpdatePreDefaultCases(preDefault, defaultCaseStatements));
-        fixedCases.addAll(postDefault);
-        fixedCases = ListUtils.mapLast(fixedCases, e -> {
-            List<Statement> lastStatements = e.getStatements();
-            if (!lastStatements.isEmpty()) {
-                if (!new HashSet<>(lastStatements).containsAll(defaultStatements)) {
-                    return addBreak(e, p);
-                } else {
-                    return e.withStatements(Collections.emptyList());
-                }
-            }
-            return e;
-        });
-        fixedCases.add(defaultCase.withStatements(ListUtils.map(defaultStatements, stmt -> autoFormat(stmt, p, getCursor()))));
+
+        List<J.Case> fixedCases = new ArrayList<>();
+        fixedCases.addAll(preDefaultCases);
+        if (!postDefaultCases.isEmpty()) {
+            List<Statement> statements = postDefaultCases.get(postDefaultCases.size() - 1).getStatements();
+            defaultCase = defaultCase.withStatements(statements);
+            fixedCases.addAll(ListUtils.mapLast(postDefaultCases, e -> e.withStatements(Collections.emptyList())));
+        }
+        fixedCases.add(defaultCase);
         return fixedCases;
     }
 

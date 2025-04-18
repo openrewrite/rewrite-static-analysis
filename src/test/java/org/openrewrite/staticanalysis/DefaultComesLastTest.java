@@ -335,7 +335,7 @@ class DefaultComesLastTest implements RewriteTest {
     @EnabledForJreRange(min = JRE.JAVA_21)
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/461")
     @Test
-    void exhaustiveSwitch(){
+    void exhaustiveSwitch() {
         //language=java
         rewriteRun(
           java(
@@ -398,7 +398,7 @@ class DefaultComesLastTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     @Test
-    void moveDefaultToLastWithFallThroughAndStatements() {
+    void dontMoveDefaultToLastWithFallThroughAndStatements() {
         rewriteRun(
           //language=java
           java(
@@ -416,28 +416,6 @@ class DefaultComesLastTest implements RewriteTest {
                           case 3:
                               System.out.println("case3");
                           case 4:
-                              System.out.println("case4");
-                      }
-                  }
-              }
-              """,
-            """
-              class Test {
-                  int n;
-                  {
-                      switch (n) {
-                          case 1:
-                              break;
-                          case 2:
-                              break;
-                          case 3:
-                              System.out.println("case3");
-                          case 4:
-                              System.out.println("case4");
-                              break;
-                          default:
-                              System.out.println("default");
-                              System.out.println("case3");
                               System.out.println("case4");
                       }
                   }
@@ -449,7 +427,7 @@ class DefaultComesLastTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     @Test
-    void moveDefaultToLastFromMiddleWithFallThroughAndStatements() {
+    void dontMoveDefaultToLastFromMiddleWithFallThroughAndStatements() {
         rewriteRun(
           //language=java
           java(
@@ -471,6 +449,36 @@ class DefaultComesLastTest implements RewriteTest {
                       }
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveFallThroughBlockWithDefaultWithStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                              break;
+                          case 2:
+                              break;
+                      }
+                  }
+              }
               """,
             """
               class Test {
@@ -483,12 +491,56 @@ class DefaultComesLastTest implements RewriteTest {
                               break;
                           case 3:
                               System.out.println("case3");
+                          default:
                               System.out.println("default");
                           case 4:
                               System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveFallThroughBlockWithDefaultWithoutStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
                               break;
+                          case 3:
+                              System.out.println("case3");
                           default:
-                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                              break;
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          case 4:
+                          default:
                               System.out.println("case4");
                       }
                   }
