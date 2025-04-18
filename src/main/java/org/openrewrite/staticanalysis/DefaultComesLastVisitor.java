@@ -114,7 +114,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
                 defaultStatements.addAll(aCase.getStatements());
             }
         }
-        List<Statement> defaultCaseStatements = defaultCase.getStatements();
+        List<Statement> defaultCaseStatements = defaultCase != null ? defaultCase.getStatements() : Collections.emptyList();
         defaultStatements.addAll(0, defaultCaseStatements);
         List<J.Case> fixedCases = new ArrayList<>(preDefault.size() + postDefault.size() + 1);
         fixedCases.addAll(maybeUpdatePreDefaultCases(preDefault, defaultCaseStatements));
