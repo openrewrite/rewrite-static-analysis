@@ -66,9 +66,9 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private @Nullable List<J.Case> maybeReorderCases(List<J.Case> cases, P p) {
-        List<J.Case> fallThroughCases = new ArrayList<>(cases.size());
-        List<J.Case> defaultCases = new ArrayList<>(cases.size());
-        List<J.Case> casesWithDefaultLast = new ArrayList<>(cases.size());
+        List<J.Case> fallThroughCases = new ArrayList<>();
+        List<J.Case> defaultCases = new ArrayList<>();
+        List<J.Case> casesWithDefaultLast = new ArrayList<>();
 
         boolean defaultCaseFound = false;
         for (int i = 0; i < cases.size(); i++) {
@@ -129,18 +129,6 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         }
         fixedCases.add(defaultCase);
         return fixedCases;
-    }
-
-    private List<J.Case> maybeUpdatePreDefaultCases(List<J.Case> preDefault, List<Statement> defaultCaseStatements) {
-        List<J.Case> result = new ArrayList<>();
-        if (!preDefault.isEmpty()) {
-            result.addAll(preDefault.subList(0, preDefault.size() - 1));
-            J.Case last = preDefault.get(preDefault.size() - 1);
-            List<Statement> statements = last.getStatements();
-            statements.addAll(defaultCaseStatements);
-            result.add(last.withStatements(statements));
-        }
-        return result;
     }
 
     private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
