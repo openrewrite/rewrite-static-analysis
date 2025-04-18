@@ -59,7 +59,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
                 }
 
                 if (changed) {
-                    s = s.withCases(s.getCases().withStatements(casesWithDefaultLast.stream().map(Statement.class::cast).collect(Collectors.toList())));
+                    s = s.withCases(s.getCases().withStatements(casesWithDefaultLast.stream().map(Statement.class::cast).collect(toList())));
                 }
             }
         }
