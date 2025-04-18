@@ -32,7 +32,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -44,7 +45,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         J.Switch s = visitAndCast(switch_, p, super::visitSwitch);
 
         if (!isDefaultCaseLastOrNotPresent(switch_)) {
-            List<J.Case> cases = s.getCases().getStatements().stream().map(J.Case.class::cast).collect(Collectors.toList());
+            List<J.Case> cases = s.getCases().getStatements().stream().map(J.Case.class::cast).collect(toList());
             List<J.Case> casesWithDefaultLast = maybeReorderCases(cases, p);
             if (casesWithDefaultLast != null) {
                 boolean changed = true;
