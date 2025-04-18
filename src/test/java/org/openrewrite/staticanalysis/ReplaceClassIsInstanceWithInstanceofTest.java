@@ -282,4 +282,32 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
         );
     }
 
+    @Test
+    void parensAroundInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class A {
+                boolean foo(Object one, Object two) {
+                    if (one == null || !String.class.isInstance(two)) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+            """,
+            """
+            class A {
+                boolean foo(Object one, Object two) {
+                    if (one == null || !(two instanceof String)) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+            """
+          )
+        );
+    }
 }
