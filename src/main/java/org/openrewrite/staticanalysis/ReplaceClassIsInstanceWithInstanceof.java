@@ -33,6 +33,7 @@ import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 
 import java.util.Collections;
+import java.util.function.Function;
 import java.util.Set;
 
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
@@ -68,13 +69,27 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
                     // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
                     JavaCoordinates coordinates = method.getCoordinates().replace();
-                    J.InstanceOf instanceOf = JavaTemplate.builder("#{any()} instanceof Object")
+                    J updated = JavaTemplate.builder("#{any()} instanceof Object")
                             .build()
                             .apply(getCursor(), coordinates, objectExpression);
-                    instanceOf = instanceOf.withClazz(fieldAccessPart.getTarget().withPrefix(instanceOf.getClazz().getPrefix()));
-                    return maybeAutoFormat(method, instanceOf, ctx);
+                    updated = mapInstanceOf(updated,
+                            instanceOf -> instanceOf.withClazz(fieldAccessPart.getTarget().withPrefix(instanceOf.getClazz().getPrefix())));
+                    return maybeAutoFormat(method, updated, ctx);
                 }
                 return super.visitMethodInvocation(method, ctx);
+            }
+
+            private J mapInstanceOf(J tree, Function<J.InstanceOf, J.InstanceOf> fun) {
+                if (tree instanceof J.InstanceOf) {
+                    return fun.apply((J.InstanceOf) tree);
+                }
+                if (tree instanceof J.Parentheses) {
+                    J.Parentheses<J> par = (J.Parentheses<J>) tree;
+                    J inner = mapInstanceOf(par.getTree(), fun);
+                    return par.withTree(inner);
+                } else {
+                    throw new IllegalArgumentException("Expected J.InstanceOf or J.Parentheses, but got: " + tree.getClass());
+                }
             }
 
             private boolean isObjectClass(@Nullable Expression expression) {
