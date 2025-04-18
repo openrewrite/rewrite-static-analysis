@@ -100,7 +100,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         return casesWithDefaultLast;
     }
 
-    private @NonNull List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, P p) {
+    private List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, P p) {
         J.Case defaultCase = null;
         List<J.Case> preDefault = new ArrayList<>();
         List<J.Case> postDefault = new ArrayList<>();
