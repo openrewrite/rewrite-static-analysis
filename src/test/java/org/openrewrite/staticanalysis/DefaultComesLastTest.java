@@ -205,6 +205,39 @@ class DefaultComesLastTest implements RewriteTest {
     }
 
     @Test
+    void defaultIsNotLastAndReturnsNonVoid() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public int foo(int n) {
+                      switch (n) {
+                          default:
+                              return 2;
+                          case 1:
+                              return 1;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  public int foo(int n) {
+                      switch (n) {
+                          case 1:
+                              return 1;
+                          default:
+                              return 2;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void dontAddBreaksIfCasesArentMoving() {
         rewriteRun(
           //language=java
@@ -302,7 +335,7 @@ class DefaultComesLastTest implements RewriteTest {
     @EnabledForJreRange(min = JRE.JAVA_21)
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/461")
     @Test
-    void exhaustiveSwitch(){
+    void exhaustiveSwitch() {
         //language=java
         rewriteRun(
           java(
@@ -314,6 +347,202 @@ class DefaultComesLastTest implements RewriteTest {
                           case Integer i -> i;
                           default -> 0;
                       };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveDefaultToLastWithFallThrough() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          default:
+                          case 3:
+                              System.out.println("case3");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                          default:
+                              System.out.println("case3");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void dontMoveDefaultToLastWithFallThroughAndStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          default:
+                              System.out.println("default");
+                          case 3:
+                              System.out.println("case3");
+                          case 4:
+                              System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void dontMoveDefaultToLastFromMiddleWithFallThroughAndStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveFallThroughBlockWithDefaultWithStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                              break;
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveFallThroughBlockWithDefaultWithoutStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                          case 4:
+                              System.out.println("case4");
+                              break;
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          case 4:
+                          default:
+                              System.out.println("case4");
+                      }
                   }
               }
               """
