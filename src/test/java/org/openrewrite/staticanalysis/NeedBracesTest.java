@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.Checkstyle;
@@ -310,6 +311,15 @@ class NeedBracesTest implements RewriteTest {
                       if (true) return; // comment 2
                       return;
                   }
+                  static void commentWhile(Object obj) {
+                      while (true); // while comment
+                      while (true) return; // while comment with body
+                      do obj.notify(); while (true); // do while comment
+                  }
+                  static void commentIterative(Object obj) {
+                      for (int i = 0; ; ); // iterative comment
+                      for (int i = 0; ; ) obj.notify(); // iterative with body comment
+                  }
               }
               """,
             """
@@ -322,6 +332,177 @@ class NeedBracesTest implements RewriteTest {
                           return; // comment 2
                       }
                       return;
+                  }
+                  static void commentWhile(Object obj) {
+                      while (true) { // while comment
+                      }
+                      while (true) {
+                          return; // while comment with body
+                      }
+                      do {
+                          obj.notify(); // do while comment
+                      } while (true);
+                  }
+                  static void commentIterative(Object obj) {
+                      for (int i = 0; ; ) { // iterative comment
+                      }
+                      for (int i = 0; ; ) {
+                          obj.notify(); // iterative with body comment
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
+    @Test
+    void commentsBeforeElseBlockWithNoBraces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method() {
+                      if (true) {
+                          return;
+                      }
+                      /*
+                       * comment should be in else block
+                       */
+                      else return;
+                      if(true) {
+                          return;
+                      } // comment on if
+                      else return;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method() {
+                      if (true) {
+                          return;
+                      } else {
+                          /*
+                           * comment should be in else block
+                           */
+                          return;
+                      }
+                      if(true) {
+                          return;
+                      } // comment on if
+                      else {
+                          return;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
+    @Test
+    void commentsBeforeElseBlockWithBraces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method() {
+                      if (true)
+                          return;
+                      // if comment
+                      else{
+                          return;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method() {
+                      if (true) {
+                          return;
+                          // if comment
+                      } else {
+                          return;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
+    @Test
+    void trailingCommentsElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static void method() {
+                      if (true) return; // if comment
+                      else return; // else comment
+                      if (true) return; // if comment 2
+                      else if (true) return; // else if comment 2
+                      else if (true) return; // second else if comment 2
+                      else return; // else comment 2
+                  }
+                  static void methodTwo(){
+                      if (true) return; // if comment
+                      else return; // else comment
+                      return; // return comment
+                  }
+                  static void methodThreeNested(){
+                      if (true){
+                          if (true) return; // nested if comment
+                          else return; // nested else comment
+                      }
+                      else return; // else comment
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static void method() {
+                      if (true) {
+                          return; // if comment
+                      } else {
+                          return; // else comment
+                      }
+                      if (true) {
+                          return; // if comment 2
+                      } else if (true) {
+                          return; // else if comment 2
+                      } else if (true) {
+                          return; // second else if comment 2
+                      } else {
+                          return; // else comment 2
+                      }
+                  }
+                  static void methodTwo(){
+                      if (true) {
+                          return; // if comment
+                      } else {
+                          return; // else comment
+                      }
+                      return; // return comment
+                  }
+                  static void methodThreeNested(){
+                      if (true) {
+                          if (true) {
+                              return; // nested if comment
+                          } else {
+                              return; // nested else comment
+                          }
+                      } else {
+                          return; // else comment
+                      }
                   }
               }
               """
