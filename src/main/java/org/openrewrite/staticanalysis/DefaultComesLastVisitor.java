@@ -159,7 +159,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private J.Case removeBreak(J.Case aCase) {
-        if (!aCase.getStatements().isEmpty() && aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break) {
+        if (!aCase.getStatements().isEmpty() && aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break && ((J.Break) aCase.getStatements().get(aCase.getStatements().size() - 1)).getLabel() == null) {
             aCase = aCase.withStatements(aCase.getStatements().subList(0, aCase.getStatements().size() - 1));
         }
         return aCase;

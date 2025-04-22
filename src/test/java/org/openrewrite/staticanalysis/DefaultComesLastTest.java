@@ -549,4 +549,50 @@ class DefaultComesLastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void breakOuterLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                    loop: for (;;) {
+                      switch (n) {
+                          default:
+                              break loop;
+                          case 1:
+                          case 2:
+                              break;
+                          case 3:
+                          case 4:
+                      }
+                    }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                    loop: for (;;) {
+                      switch (n) {
+                          case 1:
+                          case 2:
+                              break;
+                          case 3:
+                          case 4:
+                              break;
+                          default:
+                              break loop;
+                      }
+                    }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
