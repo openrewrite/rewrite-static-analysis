@@ -253,4 +253,25 @@ class ExplicitInitializationTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/109")
+    @Test
+    void ignoreInAnonymousSubClasses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object o = new Object() {
+                      private final boolean b = false;
+
+                      private void method() {
+                          int i = 0;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
 }
