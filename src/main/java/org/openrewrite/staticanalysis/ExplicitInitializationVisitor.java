@@ -48,11 +48,18 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
             return v;
         } else {
             J maybeClassDecl = maybeBlockOrGType
-                    .getParentTreeCursor() // maybe J.ClassDecl
+                    .getParentTreeCursor() // maybe J.ClassDecl or J.NewClass
                     .getValue();
-            if (!(maybeClassDecl instanceof J.ClassDeclaration) ||
-                J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration) maybeClassDecl).getKind() ||
-                !(variableDeclsCursor.getValue() instanceof J.VariableDeclarations)) {
+            if (!(maybeClassDecl instanceof J.ClassDeclaration || maybeClassDecl instanceof J.NewClass)) {
+                return v;
+            }
+
+            if (!(maybeClassDecl instanceof J.NewClass) &&
+                    J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration) maybeClassDecl).getKind()) {
+                return v;
+            }
+
+            if (!(variableDeclsCursor.getValue() instanceof J.VariableDeclarations)) {
                 return v;
             }
         }

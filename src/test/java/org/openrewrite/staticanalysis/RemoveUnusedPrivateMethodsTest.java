@@ -98,7 +98,8 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                   private void dontRemove2() {
                   }
               }
-              """)
+              """
+          )
         );
     }
 
