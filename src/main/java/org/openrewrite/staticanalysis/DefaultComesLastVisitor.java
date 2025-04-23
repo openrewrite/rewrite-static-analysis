@@ -133,7 +133,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
         return ListUtils.mapLast(cases, e -> {
-            if (e != null && isFallthroughCase(e.getStatements())) {
+            if (isFallthroughCase(e.getStatements())) {
                 return addBreak(e, p);
             }
             return e;
@@ -144,13 +144,14 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         if (statements.isEmpty()) {
             return true;
         }
-        if(statements.get(statements.size() - 1) instanceof J.Block) {
-            return isFallthroughCase(((J.Block) statements.get(statements.size() - 1)).getStatements());
+        Statement lastStatment = statements.get(statements.size() - 1);
+        if (lastStatment instanceof J.Block) {
+            return isFallthroughCase(((J.Block) lastStatment).getStatements());
         }
-        return !(statements.get(statements.size() - 1) instanceof J.Break ||
-              statements.get(statements.size() - 1) instanceof J.Continue ||
-              statements.get(statements.size() - 1) instanceof J.Return ||
-              statements.get(statements.size() - 1) instanceof J.Throw);
+        return !(lastStatment instanceof J.Break ||
+              lastStatment instanceof J.Continue ||
+              lastStatment instanceof J.Return ||
+              lastStatment instanceof J.Throw);
     }
 
     private J.Case addBreak(J.Case e, P p) {
