@@ -595,4 +595,41 @@ class DefaultComesLastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void casesContainBlocks() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                        default:
+                        case 1: {
+                            break;
+                        }
+                        case 2:
+                            break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                        case 2:
+                            break;
+                        case 1:
+                        default: {
+                            break;
+                        }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

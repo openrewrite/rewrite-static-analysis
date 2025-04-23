@@ -80,7 +80,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             if (isDefaultCase(aCase)) {
                 defaultCaseFound = true;
             }
-            if (i == cases.size() - 1 || !isFallthroughCase(aCase)) {
+            if (i == cases.size() - 1 || !isFallthroughCase(aCase.getStatements())) {
                 if (defaultCaseFound) {
                     defaultCases.addAll(fallThroughCases);
                     fallThroughCases.clear();
@@ -133,26 +133,28 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
         return ListUtils.mapLast(cases, e -> {
-            if (isFallthroughCase(e)) {
+            if (e != null && isFallthroughCase(e.getStatements())) {
                 return addBreak(e, p);
             }
             return e;
         });
     }
 
-    private boolean isFallthroughCase(J.Case aCase) {
-        return aCase.getStatements().isEmpty() ||
-              !(aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break ||
-                    aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Continue ||
-                    aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Return ||
-                    aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Throw);
+    private boolean isFallthroughCase(List<Statement> statements) {
+        if(statements.isEmpty()) {
+            return true;
+        }
+        if(statements.get(statements.size() - 1) instanceof J.Block) {
+            return isFallthroughCase(((J.Block) statements.get(statements.size() - 1)).getStatements());
+        }
+        return !(statements.get(statements.size() - 1) instanceof J.Break ||
+              statements.get(statements.size() - 1) instanceof J.Continue ||
+              statements.get(statements.size() - 1) instanceof J.Return ||
+              statements.get(statements.size() - 1) instanceof J.Throw);
     }
 
     private J.Case addBreak(J.Case e, P p) {
-        J.Break breakStatement = autoFormat(
-              new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
-              p
-        );
+        J.Break breakStatement = autoFormat(new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null), p);
         List<Statement> statements = e.getStatements();
         statements.add(breakStatement);
         return e.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
