@@ -141,7 +141,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private boolean isFallthroughCase(List<Statement> statements) {
-        if(statements.isEmpty()) {
+        if (statements.isEmpty()) {
             return true;
         }
         if(statements.get(statements.size() - 1) instanceof J.Block) {
