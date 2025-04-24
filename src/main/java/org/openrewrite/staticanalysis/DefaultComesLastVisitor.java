@@ -28,9 +28,9 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 @Value
@@ -120,13 +120,13 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
 
-        List<J.Case> fixedCases = new ArrayList<>();
-        fixedCases.addAll(preDefaultCases);
+        List<J.Case> fixedCases = new ArrayList<>(preDefaultCases);
         if (!postDefaultCases.isEmpty()) {
             List<Statement> statements = postDefaultCases.get(postDefaultCases.size() - 1).getStatements();
             defaultCase = defaultCase.withStatements(statements);
-            fixedCases.addAll(ListUtils.mapLast(postDefaultCases, e -> e.withStatements(Collections.emptyList())));
+            fixedCases.addAll(ListUtils.mapLast(postDefaultCases, e -> e.withStatements(emptyList())));
         }
+        assert defaultCase != null;
         fixedCases.add(defaultCase);
         return fixedCases;
     }
@@ -161,7 +161,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         int switchIndent = switchStatement.getPrefix().getIndent().length();
         int caseIndent = switchStatement.getCases().getStatements().get(0).getPrefix().getIndent().length();
         int breakIndent = caseIndent + (caseIndent - switchIndent);
-        Space prefix = breakIndent > 0 ? Space.build(String.format("\n%" + breakIndent + "s", ""), Collections.emptyList()) : Space.EMPTY;
+        Space prefix = breakIndent > 0 ? Space.build(String.format("\n%" + breakIndent + "s", ""), emptyList()) : Space.EMPTY;
         J.Break breakStatement = new J.Break(Tree.randomId(), prefix, Markers.EMPTY, null);
         if (!statements.isEmpty() && statements.get(statements.size() - 1) instanceof J.Block) {
             statements = ListUtils.mapLast(statements, s -> {
@@ -177,7 +177,8 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private J.Case removeBreak(J.Case aCase) {
-        if (!aCase.getStatements().isEmpty() && aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break && ((J.Break) aCase.getStatements().get(aCase.getStatements().size() - 1)).getLabel() == null) {
+        if (!aCase.getStatements().isEmpty() && aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break &&
+                ((J.Break) aCase.getStatements().get(aCase.getStatements().size() - 1)).getLabel() == null) {
             aCase = aCase.withStatements(aCase.getStatements().subList(0, aCase.getStatements().size() - 1));
         }
         return aCase;
