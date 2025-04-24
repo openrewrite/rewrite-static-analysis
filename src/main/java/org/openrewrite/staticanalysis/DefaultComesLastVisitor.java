@@ -149,9 +149,10 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             return isFallthroughCase(((J.Block) lastStatement).getStatements());
         }
         return !(lastStatement instanceof J.Break ||
-              lastStatement instanceof J.Continue ||
-              lastStatement instanceof J.Return ||
-              lastStatement instanceof J.Throw);
+                lastStatement instanceof J.Continue ||
+                lastStatement instanceof J.Return ||
+                lastStatement instanceof J.Throw ||
+                lastStatement instanceof J.Yield);
     }
 
     private J.Case addBreak(J.Case e, P p) {

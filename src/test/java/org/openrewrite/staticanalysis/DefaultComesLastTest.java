@@ -32,7 +32,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches"})
+@SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches", "DefaultNotLastCaseInSwitch"})
 class DefaultComesLastTest implements RewriteTest {
 
     @Override
