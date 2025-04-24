@@ -155,10 +155,24 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private J.Case addBreak(J.Case e, P p) {
-        J.Break breakStatement = autoFormat(new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null), p);
         List<Statement> statements = e.getStatements();
-        statements.add(breakStatement);
-        return e.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+        J.Switch switchStatement = getCursor().getValue();
+        int switchIndent = switchStatement.getPrefix().getIndent().length();
+        int caseIndent = switchStatement.getCases().getStatements().get(0).getPrefix().getIndent().length();
+        int breakIndent = caseIndent + (caseIndent - switchIndent);
+        Space prefix = breakIndent > 0 ? Space.build(String.format("\n%" + breakIndent + "s", ""), Collections.emptyList()) : Space.EMPTY;
+        J.Break breakStatement = new J.Break(Tree.randomId(), prefix, Markers.EMPTY, null);
+        if (!statements.isEmpty() && statements.get(statements.size() - 1) instanceof J.Block) {
+            statements = ListUtils.mapLast(statements, s -> {
+                J.Block block = (J.Block) s;
+                List<Statement> blockStatements = block.getStatements();
+                blockStatements.add(breakStatement);
+                return block.withStatements(blockStatements);
+            });
+        } else {
+            statements.add(breakStatement);
+        }
+        return e.withStatements(statements);
     }
 
     private J.Case removeBreak(J.Case aCase) {

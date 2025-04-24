@@ -559,17 +559,17 @@ class DefaultComesLastTest implements RewriteTest {
               class Test {
                   int n;
                   {
-                    loop: for (;;) {
-                      switch (n) {
-                          default:
-                              break loop;
-                          case 1:
-                          case 2:
-                              break;
-                          case 3:
-                          case 4:
+                      loop: for (;;) {
+                          switch (n) {
+                              default:
+                                  break loop;
+                              case 1:
+                              case 2:
+                                  break;
+                              case 3:
+                              case 4:
+                          }
                       }
-                    }
                   }
               }
               """,
@@ -577,18 +577,18 @@ class DefaultComesLastTest implements RewriteTest {
               class Test {
                   int n;
                   {
-                    loop: for (;;) {
-                      switch (n) {
-                          case 1:
-                          case 2:
-                              break;
-                          case 3:
-                          case 4:
-                              break;
-                          default:
-                              break loop;
+                      loop: for (;;) {
+                          switch (n) {
+                              case 1:
+                              case 2:
+                                  break;
+                              case 3:
+                              case 4:
+                                  break;
+                              default:
+                                  break loop;
+                          }
                       }
-                    }
                   }
               }
               """
@@ -605,12 +605,12 @@ class DefaultComesLastTest implements RewriteTest {
               class Test {
                   void test (int state) {
                       switch (state) {
-                        default:
-                        case 1: {
-                            break;
-                        }
-                        case 2:
-                            break;
+                          default:
+                          case 1: {
+                              break;
+                          }
+                          case 2:
+                              break;
                       }
                   }
               }
@@ -619,14 +619,158 @@ class DefaultComesLastTest implements RewriteTest {
               class Test {
                   void test (int state) {
                       switch (state) {
-                        case 2:
-                            break;
-                        case 1:
-                        default: {
-                            break;
-                        }
+                          case 2:
+                              break;
+                          case 1:
+                          default: {
+                              break;
+                          }
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addBreakToBlockCase() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          default:
+                              System.out.println();
+                              break;
+                          case 1: {
+                              System.out.println();
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          case 1: {
+                              System.out.println();
+                              break;
+                          }
+                          default:
+                              System.out.println();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void differentIndentation() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    default:
+                      System.out.println();
+                      break;
+                    case 1: {
+                      System.out.println();
+                    }
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 1: {
+                      System.out.println();
+                      break;
+                    }
+                    default:
+                      System.out.println();
+                  }
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groupedCases() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    default:
+                      System.out.println();
+                      break;
+                    case 0: case 1: case 2:
+                      System.out.println();
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 0: case 1: case 2:
+                      System.out.println();
+                      break;
+                    default:
+                      System.out.println();
+                  }
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defaultPartOfGroupedCases() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 0: case 1: case 2: default: case 3:
+                      System.out.println();
+                      break;
+                    case 4: case 5: case 6:
+                      System.out.println();
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 4: case 5: case 6:
+                      System.out.println();
+                      break;
+                    case 0: case 1: case 2: case 3: default:
+                      System.out.println();
+                  }
+                }
               }
               """
           )
