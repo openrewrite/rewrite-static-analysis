@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -134,8 +136,15 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
         );
     }
 
-    @Test
-    void shouldNotAnnotateOtherFields() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+      "static final long",
+      "static final long" ,
+        "private final long" ,
+        "private static long" ,
+        "private static final int"
+    })
+    void shouldNotAnnotateOtherFields(String modifiers) {
         rewriteRun(
           //language=java
           java(
@@ -143,17 +152,14 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
               import java.io.Serializable;
 
               class Example implements Serializable {
-                  static final long serialVersionUID = 1L;
-                  private final long serialVersionUID = 1L;
-                  private static long serialVersionUID = 1L;
-                  private static final int serialVersionUID = 1L;
+                  %s serialVersionUID = 1L;
                   private static final long foo = 1L;
 
                   void doSomething() {
                       long serialVersionUID = 1L;
                   }
               }
-              """
+              """.formatted(modifiers)
           )
         );
     }
