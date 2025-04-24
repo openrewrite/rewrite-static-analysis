@@ -144,14 +144,14 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         if (statements.isEmpty()) {
             return true;
         }
-        Statement lastStatment = statements.get(statements.size() - 1);
-        if (lastStatment instanceof J.Block) {
-            return isFallthroughCase(((J.Block) lastStatment).getStatements());
+        Statement lastStatement = statements.get(statements.size() - 1);
+        if (lastStatement instanceof J.Block) {
+            return isFallthroughCase(((J.Block) lastStatement).getStatements());
         }
-        return !(lastStatment instanceof J.Break ||
-              lastStatment instanceof J.Continue ||
-              lastStatment instanceof J.Return ||
-              lastStatment instanceof J.Throw);
+        return !(lastStatement instanceof J.Break ||
+              lastStatement instanceof J.Continue ||
+              lastStatement instanceof J.Return ||
+              lastStatement instanceof J.Throw);
     }
 
     private J.Case addBreak(J.Case e, P p) {
