@@ -1491,14 +1491,14 @@ examples:
           StringBuffer buffer = new StringBuffer('a');
           StringBuilder builder = new StringBuilder('a');
           char notALiteral = 'c';
-          StringBuffer buffer = new StringBuffer(notALiteral);
+          StringBuffer buffer2 = new StringBuffer(notALiteral);
       }
     after: |
       class A {
           StringBuffer buffer = new StringBuffer("a");
           StringBuilder builder = new StringBuilder("a");
           char notALiteral = 'c';
-          StringBuffer buffer = new StringBuffer(String.valueOf(notALiteral));
+          StringBuffer buffer2 = new StringBuffer(String.valueOf(notALiteral));
       }
     language: java
 ---
@@ -2195,33 +2195,6 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
-recipeName: org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
-examples:
-- description: ''
-  parameters:
-  - J.NewArray(padding=org.openrewrite.java.tree.J$NewArray$Padding@95a9adc, id=80000000-0001-f27e-0000-000000000000,
-    prefix=Space(comments=<0 comments>, whitespace=<empty>), markers=Markers(id=d6d19d8b-56e2-4e17-84a2-26fb15cfc365,
-    markers=[]), typeExpression=String, dimensions=[[0]], initializer=null, type=java.lang.String[])
-  - 'null'
-  sources:
-  - before: |
-      class Test {
-          static int method(int x) {
-              int a = 0;
-              int b = 0;
-              return a;
-          }
-      }
-    after: |
-      class Test {
-          static int method(int x) {
-              int a = 0;
-              return a;
-          }
-      }
-    language: java
----
-type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnusedPrivateFields
 examples:
 - description: ''
@@ -2775,18 +2748,6 @@ examples:
 - description: ''
   sources:
   - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
-- description: ''
-  sources:
-  - before: |
       public class A {
           boolean a;
           {
@@ -2803,6 +2764,18 @@ examples:
           }
       }
     language: java
+- description: ''
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanReturn
@@ -3342,10 +3315,10 @@ examples:
       import java.io.IOException;
       import java.io.UncheckedIOException;
       class Test {
-          private void test() throws FileNotFoundException, UncheckedIOException {
+          private void changed() throws FileNotFoundException, UncheckedIOException {
           }
 
-          void test() throws IOException, UncheckedIOException {
+          void unchanged() throws IOException, UncheckedIOException {
               new FileInputStream("test");
           }
       }
@@ -3354,10 +3327,10 @@ examples:
       import java.io.IOException;
       import java.io.UncheckedIOException;
       class Test {
-          private void test() throws UncheckedIOException {
+          private void changed() throws UncheckedIOException {
           }
 
-          void test() throws IOException, UncheckedIOException {
+          void unchanged() throws IOException, UncheckedIOException {
               new FileInputStream("test");
           }
       }
@@ -3441,6 +3414,25 @@ examples:
   sources:
   - before: |
       import java.util.*;
+      class Test {
+          void test() {
+              var ls1 = new ArrayList<String>();
+              List<String> ls2 = new ArrayList<String>();
+          }
+      }
+    after: |
+      import java.util.*;
+      class Test {
+          void test() {
+              var ls1 = new ArrayList<String>();
+              List<String> ls2 = new ArrayList<>();
+          }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
+      import java.util.*;
 
       class Test<X, Y> {
           void test() {
@@ -3459,25 +3451,6 @@ examples:
               Map<X,Y> map = new HashMap<>();
               List<String> ls2 = new ArrayList<String>() {
               };
-          }
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<String>();
-          }
-      }
-    after: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<>();
           }
       }
     language: java
