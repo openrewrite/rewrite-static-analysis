@@ -2199,8 +2199,8 @@ recipeName: org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
 examples:
 - description: ''
   parameters:
-  - J.NewArray(padding=org.openrewrite.java.tree.J$NewArray$Padding@67a695e, id=80000000-0001-e160-0000-000000000000,
-    prefix=Space(comments=<0 comments>, whitespace=<empty>), markers=Markers(id=82a4a787-dc66-4b09-88a9-5321e92ebf2a,
+  - J.NewArray(padding=org.openrewrite.java.tree.J$NewArray$Padding@95a9adc, id=80000000-0001-f27e-0000-000000000000,
+    prefix=Space(comments=<0 comments>, whitespace=<empty>), markers=Markers(id=d6d19d8b-56e2-4e17-84a2-26fb15cfc365,
     markers=[]), typeExpression=String, dimensions=[[0]], initializer=null, type=java.lang.String[])
   - 'null'
   sources:

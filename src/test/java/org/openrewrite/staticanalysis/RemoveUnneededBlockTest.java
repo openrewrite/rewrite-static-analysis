@@ -30,6 +30,32 @@ class RemoveUnneededBlockTest implements RewriteTest {
         spec.recipe(new RemoveUnneededBlock());
     }
 
+    @DocumentExample
+    @Test
+    void simplifyNestedBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  void test() {
+                      {
+                          System.out.println("hello!");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  void test() {
+                      System.out.println("hello!");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotChangeMethod() {
         rewriteRun(
@@ -151,32 +177,6 @@ class RemoveUnneededBlockTest implements RewriteTest {
                       { "a", "b" },
                       { "c", "d" }
                   };
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void simplifyNestedBlock() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  void test() {
-                      {
-                          System.out.println("hello!");
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  void test() {
-                      System.out.println("hello!");
-                  }
               }
               """
           )

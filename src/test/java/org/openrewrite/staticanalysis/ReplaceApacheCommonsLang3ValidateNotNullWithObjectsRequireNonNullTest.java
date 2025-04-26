@@ -38,23 +38,6 @@ class ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest impl
             .activateRecipes("org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull"));
     }
 
-    @Test
-    void doNothingIfMethodNotFound() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import org.apache.commons.lang3.Validate;
-              class Test {
-                  void test(Object obj) {
-
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void replaceWithOneArgument() {
@@ -76,6 +59,23 @@ class ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest impl
               class Test {
                   void test(Object obj) {
                       Objects.requireNonNull(obj);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNothingIfMethodNotFound() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.apache.commons.lang3.Validate;
+              class Test {
+                  void test(Object obj) {
+
                   }
               }
               """

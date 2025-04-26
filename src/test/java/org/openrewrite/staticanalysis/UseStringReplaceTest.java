@@ -31,6 +31,33 @@ class UseStringReplaceTest implements RewriteTest {
         spec.recipe(new UseStringReplace());
     }
 
+    @Test
+    @DisplayName("String#replaceAll replaced by String#replace, because first argument is not a regular expression")
+    @DocumentExample
+    void replaceAllReplacedByReplace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public void method() {
+                      String someText = "Bob is a Bird... Bob is a Plane... Bob is Superman!";
+                      String newText = someText.replaceAll("Bob is", "It's");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  public void method() {
+                      String someText = "Bob is a Bird... Bob is a Plane... Bob is Superman!";
+                      String newText = someText.replace("Bob is", "It's");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("ReplaceOnLiteralHasNoEffect")
     @Issue("https://github.com/openrewrite/rewrite/issues/2222")
     @Test
@@ -69,33 +96,6 @@ class UseStringReplaceTest implements RewriteTest {
               class Test {
                   public String method(String input) {
                       return input.replace("\\"test\\"\\"", "");
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    @DisplayName("String#replaceAll replaced by String#replace, because first argument is not a regular expression")
-    @DocumentExample
-    void replaceAllReplacedByReplace() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public void method() {
-                      String someText = "Bob is a Bird... Bob is a Plane... Bob is Superman!";
-                      String newText = someText.replaceAll("Bob is", "It's");
-                  }
-              }
-              """,
-            """
-              class Test {
-                  public void method() {
-                      String someText = "Bob is a Bird... Bob is a Plane... Bob is Superman!";
-                      String newText = someText.replace("Bob is", "It's");
                   }
               }
               """

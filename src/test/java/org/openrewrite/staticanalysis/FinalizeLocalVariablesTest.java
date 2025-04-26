@@ -32,34 +32,6 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         spec.recipe(new FinalizeLocalVariables());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1478")
-    @Test
-    void initializedInWhileLoop() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.BufferedReader;
-              class T {
-                  public void doSomething(StringBuilder sb, BufferedReader br) {
-                      String line;
-                      try {
-                          while ((line = br.readLine()) != null) {
-                              sb.append(line);
-                          }
-                      } catch (Exception e) {
-                          error("Exception", e);
-                      }
-                  }
-                  private static void error(String s, Exception e) {
-
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void localVariablesAreMadeFinal() {
@@ -81,6 +53,34 @@ class FinalizeLocalVariablesTest implements RewriteTest {
                       final int n = 1;
                       for(int i = 0; i < n; i++) {
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/1478")
+    @Test
+    void initializedInWhileLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.BufferedReader;
+              class T {
+                  public void doSomething(StringBuilder sb, BufferedReader br) {
+                      String line;
+                      try {
+                          while ((line = br.readLine()) != null) {
+                              sb.append(line);
+                          }
+                      } catch (Exception e) {
+                          error("Exception", e);
+                      }
+                  }
+                  private static void error(String s, Exception e) {
+
                   }
               }
               """

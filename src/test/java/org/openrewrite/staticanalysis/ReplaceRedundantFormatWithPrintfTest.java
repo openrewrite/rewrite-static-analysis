@@ -29,23 +29,6 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
         spec.recipe(new ReplaceRedundantFormatWithPrintf());
     }
 
-    @Test
-    void doesNotModifyNonLiteralFormatStringForPrintln() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void test(String arg) {
-                      String formatString = "hello %s%n";
-                      System.out.println(String.format(formatString, arg));
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void transformsNonLiteralFormatStringForPrint() {
@@ -65,6 +48,23 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
                   void test(String arg) {
                       String formatString = "hello %s%n";
                       System.out.printf(formatString, arg);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotModifyNonLiteralFormatStringForPrintln() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(String arg) {
+                      String formatString = "hello %s%n";
+                      System.out.println(String.format(formatString, arg));
                   }
               }
               """

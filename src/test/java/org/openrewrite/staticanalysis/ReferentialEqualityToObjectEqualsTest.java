@@ -33,6 +33,42 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
         spec.recipe(new ReferentialEqualityToObjectEquals());
     }
 
+    @DocumentExample
+    @Test
+    void bothSidesOverrideEquals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  void doSomething() {
+                      A a1 = new A();
+                      A a2 = new A();
+                      if (a1 == a2) {}
+                  }
+                  class A {
+                      @Override
+                      public boolean equals(Object anObject) {return true;}
+                  }
+              }
+              """,
+            """
+              class T {
+                  void doSomething() {
+                      A a1 = new A();
+                      A a2 = new A();
+                      if (a1.equals(a2)) {}
+                  }
+                  class A {
+                      @Override
+                      public boolean equals(Object anObject) {return true;}
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doesNotModifyBoxedTypes() {
         rewriteRun(
@@ -146,42 +182,6 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
                       if (s1 != s2) {}
                       if (s1 == s2) {}
                       return super.equals(obj);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void bothSidesOverrideEquals() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class T {
-                  void doSomething() {
-                      A a1 = new A();
-                      A a2 = new A();
-                      if (a1 == a2) {}
-                  }
-                  class A {
-                      @Override
-                      public boolean equals(Object anObject) {return true;}
-                  }
-              }
-              """,
-            """
-              class T {
-                  void doSomething() {
-                      A a1 = new A();
-                      A a2 = new A();
-                      if (a1.equals(a2)) {}
-                  }
-                  class A {
-                      @Override
-                      public boolean equals(Object anObject) {return true;}
                   }
               }
               """

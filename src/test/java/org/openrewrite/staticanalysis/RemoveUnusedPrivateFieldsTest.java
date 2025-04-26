@@ -32,6 +32,25 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         spec.recipe(new RemoveUnusedPrivateFields());
     }
 
+    @DocumentExample
+    @Test
+    void removeUnusedPrivateField() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Test {
+                  private String notUsed;
+              }
+              """,
+            """
+              public class Test {
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotRemoveSerialVersionUid() {
         rewriteRun(
@@ -119,25 +138,6 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                   String method(String arg0) {
                       return arg0 + useValue;
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void removeUnusedPrivateField() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class Test {
-                  private String notUsed;
-              }
-              """,
-            """
-              public class Test {
               }
               """
           )

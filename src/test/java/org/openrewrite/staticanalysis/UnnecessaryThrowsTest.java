@@ -32,22 +32,6 @@ class UnnecessaryThrowsTest implements RewriteTest {
         spec.recipe(new UnnecessaryThrows());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2144")
-    @Test
-    void genericException() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public <E extends Exception> void accept(Class<E> e) throws E {
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void unnecessaryThrows() {
@@ -78,6 +62,22 @@ class UnnecessaryThrowsTest implements RewriteTest {
 
                   void test() throws IOException, UncheckedIOException {
                       new FileInputStream("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/2144")
+    @Test
+    void genericException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public <E extends Exception> void accept(Class<E> e) throws E {
                   }
               }
               """

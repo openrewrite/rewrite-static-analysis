@@ -91,6 +91,44 @@ class MissingOverrideAnnotationTest implements RewriteTest {
       }
       """;
 
+    @DocumentExample
+    @Test
+    void whenIgnoreAnonymousClassMethodsIsFalseAndAMethodOverridesWithinAnAnonymousClass() {
+        rewriteRun(
+          spec -> spec.recipe(new MissingOverrideAnnotation(false)),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              class Test {
+                  public void method() {
+                      //noinspection all
+                      Runnable t = new Runnable() {
+                          public void run() {
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              package com.example;
+
+              class Test {
+                  public void method() {
+                      //noinspection all
+                      Runnable t = new Runnable() {
+                          @Override
+                          public void run() {
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void whenAMethodOverridesFromAParent() {
         rewriteRun(
@@ -436,44 +474,6 @@ class MissingOverrideAnnotationTest implements RewriteTest {
                   public void method() {
                       //noinspection all
                       Runnable t = new Runnable() {
-                          public void run() {
-                          }
-                      };
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void whenIgnoreAnonymousClassMethodsIsFalseAndAMethodOverridesWithinAnAnonymousClass() {
-        rewriteRun(
-          spec -> spec.recipe(new MissingOverrideAnnotation(false)),
-          //language=java
-          java(
-            """
-              package com.example;
-
-              class Test {
-                  public void method() {
-                      //noinspection all
-                      Runnable t = new Runnable() {
-                          public void run() {
-                          }
-                      };
-                  }
-              }
-              """,
-            """
-              package com.example;
-
-              class Test {
-                  public void method() {
-                      //noinspection all
-                      Runnable t = new Runnable() {
-                          @Override
                           public void run() {
                           }
                       };

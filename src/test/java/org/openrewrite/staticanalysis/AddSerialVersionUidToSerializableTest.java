@@ -30,21 +30,6 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
         spec.recipe(new AddSerialVersionUidToSerializable());
     }
 
-    @Test
-    void doNothingNotSerializable() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class Example {
-                  private String fred;
-                  private int numberOfFreds;
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void addSerialVersionUID() {
@@ -64,6 +49,21 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
 
               public class Example implements Serializable {
                   private static final long serialVersionUID = 1;
+                  private String fred;
+                  private int numberOfFreds;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNothingNotSerializable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Example {
                   private String fred;
                   private int numberOfFreds;
               }

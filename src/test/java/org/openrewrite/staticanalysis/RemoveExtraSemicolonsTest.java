@@ -36,6 +36,63 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         spec.recipe(new RemoveExtraSemicolons());
     }
 
+    @DocumentExample
+    @Test
+    void emptyBlockStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      ;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @DocumentExample
+    void repeatedSemicolon() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      int a = 1;;
+                      int b = 2;
+                      int c = 3;;;
+                      int d = 4;
+                      int e = 5; ;
+                      int f = 6;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      int a = 1;
+                      int b = 2;
+                      int c = 3;
+                      int d = 4;
+                      int e = 5;
+                      int f = 6;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1587")
     @Test
     void enumSemicolons() {
@@ -70,29 +127,6 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                   APPLE;
 
                   void hiFruit() {}
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void emptyBlockStatements() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void test() {
-                      ;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void test() {
-                  }
               }
               """
           )
@@ -207,40 +241,6 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                       a = 8;
                       return a;
                       //we are done!
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    @DocumentExample
-    void repeatedSemicolon() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void test() {
-                      int a = 1;;
-                      int b = 2;
-                      int c = 3;;;
-                      int d = 4;
-                      int e = 5; ;
-                      int f = 6;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void test() {
-                      int a = 1;
-                      int b = 2;
-                      int c = 3;
-                      int d = 4;
-                      int e = 5;
-                      int f = 6;
                   }
               }
               """

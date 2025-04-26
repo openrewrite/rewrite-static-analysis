@@ -31,6 +31,47 @@ class MinimumSwitchCasesTest implements RewriteTest {
         spec.recipe(new MinimumSwitchCases());
     }
 
+    @DocumentExample
+    @Test
+    void caseWithReturnInsteadOfBreak() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int variable;
+                  int test() {
+                      switch (variable) {
+                        case 0:
+                            return 0;
+                        default:
+                            doSomethingElse();
+                      }
+                      return 1;
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """,
+            """
+              class Test {
+                  int variable;
+                  int test() {
+                      if (variable == 0) {
+                          return 0;
+                      } else {
+                          doSomethingElse();
+                      }
+                      return 1;
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @Test
     void primitiveAndDefault() {
@@ -87,47 +128,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
                         default:
                             doSomethingElse();
                       }
-                  }
-                  void doSomething() {}
-                  void doSomethingElse() {}
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void caseWithReturnInsteadOfBreak() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  int variable;
-                  int test() {
-                      switch (variable) {
-                        case 0:
-                            return 0;
-                        default:
-                            doSomethingElse();
-                      }
-                      return 1;
-                  }
-                  void doSomething() {}
-                  void doSomethingElse() {}
-              }
-              """,
-            """
-              class Test {
-                  int variable;
-                  int test() {
-                      if (variable == 0) {
-                          return 0;
-                      } else {
-                          doSomethingElse();
-                      }
-                      return 1;
                   }
                   void doSomething() {}
                   void doSomethingElse() {}

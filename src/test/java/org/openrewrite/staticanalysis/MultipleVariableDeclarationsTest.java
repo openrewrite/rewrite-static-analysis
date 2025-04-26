@@ -31,6 +31,41 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
         spec.recipe(new MultipleVariableDeclarations());
     }
 
+    @DocumentExample
+    @Test
+    void replaceWithIndividualVariableDeclarations() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n = 0, m = 0;
+                  int o = 0, p;
+                  int s, t = 0;
+
+                  public void method() {
+                      for (int i = 0, j = 0; ; ) ;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n = 0;
+                  int m = 0;
+                  int o = 0;
+                  int p;
+                  int s;
+                  int t = 0;
+
+                  public void method() {
+                      for (int i = 0, j = 0; ; ) ;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/812")
     @Test
     void arrayDimensionsBeforeName() {
@@ -74,41 +109,6 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
                   void test() {
                       int[] m;
                       int[] n;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void replaceWithIndividualVariableDeclarations() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  int n = 0, m = 0;
-                  int o = 0, p;
-                  int s, t = 0;
-
-                  public void method() {
-                      for (int i = 0, j = 0; ; ) ;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  int n = 0;
-                  int m = 0;
-                  int o = 0;
-                  int p;
-                  int s;
-                  int t = 0;
-
-                  public void method() {
-                      for (int i = 0, j = 0; ; ) ;
                   }
               }
               """

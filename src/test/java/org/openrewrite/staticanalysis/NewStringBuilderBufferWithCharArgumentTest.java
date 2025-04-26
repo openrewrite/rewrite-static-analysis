@@ -28,21 +28,6 @@ class NewStringBuilderBufferWithCharArgumentTest implements RewriteTest {
         spec.recipe(new NewStringBuilderBufferWithCharArgument());
     }
 
-    @Test
-    void validStringArg() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  StringBuffer buffer = new StringBuffer("a");
-                  StringBuilder builder = new StringBuilder("a");
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @SuppressWarnings("NewStringBufferWithCharArgument")
     @Test
@@ -64,6 +49,21 @@ class NewStringBuilderBufferWithCharArgumentTest implements RewriteTest {
                   StringBuilder builder = new StringBuilder("a");
                   char notALiteral = 'c';
                   StringBuffer buffer = new StringBuffer(String.valueOf(notALiteral));
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void validStringArg() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  StringBuffer buffer = new StringBuffer("a");
+                  StringBuilder builder = new StringBuilder("a");
               }
               """
           )

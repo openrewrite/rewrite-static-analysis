@@ -33,8 +33,8 @@ import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 
 import java.util.Collections;
-import java.util.function.Function;
 import java.util.Set;
+import java.util.function.Function;
 
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 

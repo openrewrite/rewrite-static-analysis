@@ -35,6 +35,54 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenamePrivateFieldsToCamelCase());
     }
 
+    @DocumentExample
+    @Test
+    void renamePrivateMembers() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private int DoChange = 10;
+                  public int DoNotChangePublicMember;
+                  int DoNotChangeDefaultMember;
+
+                  public int getTen() {
+                      return DoChange;
+                  }
+
+                  public int getTwenty() {
+                      return this.DoChange * 2;
+                  }
+
+                  public int getThirty() {
+                      return DoChange * 3;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  private int doChange = 10;
+                  public int DoNotChangePublicMember;
+                  int DoNotChangeDefaultMember;
+
+                  public int getTen() {
+                      return doChange;
+                  }
+
+                  public int getTwenty() {
+                      return this.doChange * 2;
+                  }
+
+                  public int getThirty() {
+                      return doChange * 3;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2461")
     @Test
     void upperSnakeToLowerCamel() {
@@ -219,54 +267,6 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
                   }
                   public int addTen(String value) {
                       return DoNoTChange + 10;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void renamePrivateMembers() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private int DoChange = 10;
-                  public int DoNotChangePublicMember;
-                  int DoNotChangeDefaultMember;
-
-                  public int getTen() {
-                      return DoChange;
-                  }
-
-                  public int getTwenty() {
-                      return this.DoChange * 2;
-                  }
-
-                  public int getThirty() {
-                      return DoChange * 3;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  private int doChange = 10;
-                  public int DoNotChangePublicMember;
-                  int DoNotChangeDefaultMember;
-
-                  public int getTen() {
-                      return doChange;
-                  }
-
-                  public int getTwenty() {
-                      return this.doChange * 2;
-                  }
-
-                  public int getThirty() {
-                      return doChange * 3;
                   }
               }
               """
