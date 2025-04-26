@@ -30,6 +30,40 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
         spec.recipe(new CatchClauseOnlyRethrows());
     }
 
+    @DocumentExample
+    @Test
+    void tryCanBeRemoved() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+
+              class A {
+                  void foo() throws IOException {
+                      try {
+                          new FileReader("").read();
+                      } catch (IOException e) {
+                          throw e;
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.FileReader;
+              import java.io.IOException;
+
+              class A {
+                  void foo() throws IOException {
+                      new FileReader("").read();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void rethrownButWithDifferentMessage() {
         rewriteRun(
@@ -178,40 +212,6 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
                       } catch (Exception | Throwable t) {
                           t.printStackTrace();
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void tryCanBeRemoved() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.FileReader;
-              import java.io.IOException;
-
-              class A {
-                  void foo() throws IOException {
-                      try {
-                          new FileReader("").read();
-                      } catch (IOException e) {
-                          throw e;
-                      }
-                  }
-              }
-              """,
-            """
-              import java.io.FileReader;
-              import java.io.IOException;
-
-              class A {
-                  void foo() throws IOException {
-                      new FileReader("").read();
                   }
               }
               """

@@ -33,6 +33,33 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
           .recipe(new ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull());
     }
 
+    @DocumentExample
+    @Test
+    void replaceMethodsWithTwoArg() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.apache.commons.lang3.Validate;
+              class Test {
+                  void test(Object obj) {
+                      Validate.notNull(obj, "Object should not be null");
+                  }
+              }
+              """,
+            """
+              import java.util.Objects;
+
+              class Test {
+                  void test(Object obj) {
+                      Objects.requireNonNull(obj, "Object should not be null");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNothingIfMethodNotFound() {
         rewriteRun(
@@ -59,33 +86,6 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
               class Test {
                   void test(Object obj) {
                       Validate.notNull(obj);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void replaceMethodsWithTwoArg() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import org.apache.commons.lang3.Validate;
-              class Test {
-                  void test(Object obj) {
-                      Validate.notNull(obj, "Object should not be null");
-                  }
-              }
-              """,
-            """
-              import java.util.Objects;
-
-              class Test {
-                  void test(Object obj) {
-                      Objects.requireNonNull(obj, "Object should not be null");
                   }
               }
               """

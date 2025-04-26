@@ -36,6 +36,58 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         spec.recipe(new ReplaceLambdaWithMethodReference());
     }
 
+    @DocumentExample
+    @Test
+    void functionMultiParamReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+
+                  ChangeListener listener = (o, oldVal, newVal) -> {
+                      onChange(o, oldVal, newVal);
+                  };
+
+                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+                      String strVal = newVal.toString();
+                      System.out.println(strVal);
+                  }
+
+                  interface ObservableValue<T> {
+                  }
+
+                  @FunctionalInterface
+                  interface ChangeListener<T> {
+                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+
+                  ChangeListener listener = this::onChange;
+
+                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+                      String strVal = newVal.toString();
+                      System.out.println(strVal);
+                  }
+
+                  interface ObservableValue<T> {
+                  }
+
+                  @FunctionalInterface
+                  interface ChangeListener<T> {
+                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void dontSelectCastFromTypeVariable() {
         rewriteRun(
@@ -338,58 +390,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               class Test {
                   List<Optional<Object>> method(List<Optional<Object>> input) {
                       return input.stream().filter(n -> n.get() instanceof CheckType).collect(Collectors.toList());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void functionMultiParamReference() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              class Test {
-
-                  ChangeListener listener = (o, oldVal, newVal) -> {
-                      onChange(o, oldVal, newVal);
-                  };
-
-                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
-                      String strVal = newVal.toString();
-                      System.out.println(strVal);
-                  }
-
-                  interface ObservableValue<T> {
-                  }
-
-                  @FunctionalInterface
-                  interface ChangeListener<T> {
-                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
-                  }
-              }
-              """,
-            """
-              import java.util.function.Function;
-              class Test {
-
-                  ChangeListener listener = this::onChange;
-
-                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
-                      String strVal = newVal.toString();
-                      System.out.println(strVal);
-                  }
-
-                  interface ObservableValue<T> {
-                  }
-
-                  @FunctionalInterface
-                  interface ChangeListener<T> {
-                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
                   }
               }
               """

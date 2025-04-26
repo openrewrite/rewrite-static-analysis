@@ -30,38 +30,6 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         spec.recipe(new NoValueOfOnStringType());
     }
 
-    @Test
-    void doNotChangeOnObject() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  static String method(Object obj) {
-                      return String.valueOf(obj);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void isMethodInvocationSelect() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  String trimPropertyName(String propertyName) {
-                      return String.valueOf(propertyName).trim();
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     @SuppressWarnings({
@@ -96,6 +64,38 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
                       str = "changeMe" + String.valueOf(data);
                       str = String.valueOf(data, 0, 0);
                       str = "doNotChangeMe" + String.valueOf(data, 0, 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeOnObject() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static String method(Object obj) {
+                      return String.valueOf(obj);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void isMethodInvocationSelect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String trimPropertyName(String propertyName) {
+                      return String.valueOf(propertyName).trim();
                   }
               }
               """

@@ -32,6 +32,33 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         spec.recipe(new UseLambdaForFunctionalInterface());
     }
 
+    @DocumentExample
+    @Test
+    void useLambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
+                      @Override
+                      public Integer apply(Integer n) {
+                          return n + 1;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = n -> n + 1;
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("removal")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/10")
     @Test
@@ -172,33 +199,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Runnable r = Test.this::execute;
 
                   void execute() {}
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void useLambda() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
-                      @Override
-                      public Integer apply(Integer n) {
-                          return n + 1;
-                      }
-                  };
-              }
-              """,
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = n -> n + 1;
               }
               """
           )

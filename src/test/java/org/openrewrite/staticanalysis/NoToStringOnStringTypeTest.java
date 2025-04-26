@@ -29,22 +29,6 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         spec.recipe(new NoToStringOnStringType());
     }
 
-    @Test
-    void doNotChangeOnObject() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  static String method(Object obj) {
-                      return obj.toString();
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     @SuppressWarnings("StringOperationCanBeSimplified")
@@ -63,6 +47,22 @@ class NoToStringOnStringTypeTest implements RewriteTest {
               class Test {
                   static String method() {
                       return "hello";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeOnObject() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static String method(Object obj) {
+                      return obj.toString();
                   }
               }
               """

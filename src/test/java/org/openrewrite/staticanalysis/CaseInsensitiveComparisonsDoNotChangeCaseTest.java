@@ -29,22 +29,6 @@ class CaseInsensitiveComparisonsDoNotChangeCaseTest implements RewriteTest {
         spec.recipe(new CaseInsensitiveComparisonsDoNotChangeCase());
     }
 
-    @Test
-    void argIsLiteral() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  boolean isSame(String arg1, String arg2) {
-                      return arg1.equalsIgnoreCase(arg2);
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void argIsToLowerCase() {
@@ -58,6 +42,22 @@ class CaseInsensitiveComparisonsDoNotChangeCaseTest implements RewriteTest {
                   }
               }
               """,
+            """
+              class A {
+                  boolean isSame(String arg1, String arg2) {
+                      return arg1.equalsIgnoreCase(arg2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void argIsLiteral() {
+        rewriteRun(
+          //language=java
+          java(
             """
               class A {
                   boolean isSame(String arg1, String arg2) {

@@ -45,19 +45,6 @@ class OperatorWrapTest implements RewriteTest {
         spec.recipe(new OperatorWrap(null));
     }
 
-    private static List<NamedStyles> operatorWrapStyle() {
-        return operatorWrapStyle(style -> style);
-    }
-
-    private static List<NamedStyles> operatorWrapStyle(UnaryOperator<OperatorWrapStyle> with) {
-        return Collections.singletonList(
-          new NamedStyles(
-            Tree.randomId(), "test", "test", "test", emptySet(),
-            singletonList(with.apply(Checkstyle.operatorWrapStyle()))
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void binaryOnNewline() {
@@ -82,6 +69,19 @@ class OperatorWrapTest implements RewriteTest {
               }
               """,
             autoFormatIsIdempotent()
+          )
+        );
+    }
+
+    private static List<NamedStyles> operatorWrapStyle() {
+        return operatorWrapStyle(style -> style);
+    }
+
+    private static List<NamedStyles> operatorWrapStyle(UnaryOperator<OperatorWrapStyle> with) {
+        return Collections.singletonList(
+          new NamedStyles(
+            Tree.randomId(), "test", "test", "test", emptySet(),
+            singletonList(with.apply(Checkstyle.operatorWrapStyle()))
           )
         );
     }

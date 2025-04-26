@@ -49,6 +49,33 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         spec.recipe(new RemoveUnusedLocalVariables(new String[0], null));
     }
 
+    @DocumentExample
+    @Test
+    void removeUnusedLocalVariables() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static int method(int x) {
+                      int a = 0;
+                      int b = 0;
+                      return a;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static int method(int x) {
+                      int a = 0;
+                      return a;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/841")
     void ignoreSuppressWarnings() {
@@ -147,33 +174,6 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                       while((a = reader.nextLine()) != null) {
                           System.out.println(a);
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void removeUnusedLocalVariables() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  static int method(int x) {
-                      int a = 0;
-                      int b = 0;
-                      return a;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  static int method(int x) {
-                      int a = 0;
-                      return a;
                   }
               }
               """

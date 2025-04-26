@@ -34,30 +34,6 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         spec.recipe(new FinalizePrivateFields());
     }
 
-    @Test
-    void modifierAndVariableTypeFlagSet() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private static String TEST_STRING = "ABC";
-              }
-              """,
-            """
-              class A {
-                  private static final String TEST_STRING = "ABC";
-              }
-              """,
-                spec -> spec.afterRecipe(cu -> {
-                    J.VariableDeclarations declarations = (J.VariableDeclarations) cu.getClasses().get(
-                            0).getBody().getStatements().get(0);
-                    assertThat(declarations.getModifiers()).anySatisfy(
-                            m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
-                    assertThat(declarations.getVariables().get(0).getVariableType().getFlags()).contains(Flag.Final);
-                })));
-    }
-
     @DocumentExample("Finalize private field.")
     @Test
     void fieldWithInitializerMadeFinal() {
@@ -83,6 +59,30 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               }
               """
           ));
+    }
+
+    @Test
+    void modifierAndVariableTypeFlagSet() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private static String TEST_STRING = "ABC";
+              }
+              """,
+            """
+              class A {
+                  private static final String TEST_STRING = "ABC";
+              }
+              """,
+                spec -> spec.afterRecipe(cu -> {
+                    J.VariableDeclarations declarations = (J.VariableDeclarations) cu.getClasses().get(
+                            0).getBody().getStatements().get(0);
+                    assertThat(declarations.getModifiers()).anySatisfy(
+                            m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
+                    assertThat(declarations.getVariables().get(0).getVariableType().getFlags()).contains(Flag.Final);
+                })));
     }
 
     @Test

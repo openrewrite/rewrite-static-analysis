@@ -31,30 +31,6 @@ class UpperCaseLiteralSuffixesTest implements RewriteTest {
         spec.recipe(new UpperCaseLiteralSuffixes());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2429")
-    @Test
-    void usesPrimitive() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  long lp = 1l;
-                  double dp = 1d;
-                  float df = 1f;
-              }
-              """,
-            """
-              class Test {
-                  long lp = 1L;
-                  double dp = 1D;
-                  float df = 1F;
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void useUppercaseLiteralSuffix() {
@@ -81,6 +57,30 @@ class UpperCaseLiteralSuffixesTest implements RewriteTest {
                   Integer i = 0;
                   Long l2 = 0x100000000L;
                   String s = "hello";
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/2429")
+    @Test
+    void usesPrimitive() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  long lp = 1l;
+                  double dp = 1d;
+                  float df = 1f;
+              }
+              """,
+            """
+              class Test {
+                  long lp = 1L;
+                  double dp = 1D;
+                  float df = 1F;
               }
               """
           )

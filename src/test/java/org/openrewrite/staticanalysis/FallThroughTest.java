@@ -37,6 +37,43 @@ class FallThroughTest implements RewriteTest {
         spec.recipe(new FallThrough());
     }
 
+    @DocumentExample
+    @Test
+    void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  int i;
+                  {
+                      switch (i) {
+                      case 0:
+                          i++;
+                      case 99:
+                          i++;
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  int i;
+                  {
+                      switch (i) {
+                      case 0:
+                          i++;
+                          break;
+                      case 99:
+                          i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/173")
     @Test
     void switchInSwitch() {
@@ -78,43 +115,6 @@ class FallThroughTest implements RewriteTest {
                          case 2 -> n+2;
                          default -> n;
                       };
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  int i;
-                  {
-                      switch (i) {
-                      case 0:
-                          i++;
-                      case 99:
-                          i++;
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  int i;
-                  {
-                      switch (i) {
-                      case 0:
-                          i++;
-                          break;
-                      case 99:
-                          i++;
-                      }
                   }
               }
               """

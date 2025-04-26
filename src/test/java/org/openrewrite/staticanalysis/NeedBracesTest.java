@@ -48,15 +48,6 @@ class NeedBracesTest implements RewriteTest {
         spec.recipe(new NeedBraces());
     }
 
-    private static Consumer<RecipeSpec> needsBraces(UnaryOperator<NeedBracesStyle> with) {
-        return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
-          singletonList(
-            new NamedStyles(
-              Tree.randomId(), "test", "test", "test", emptySet(),
-              singletonList(with.apply(Checkstyle.needBracesStyle())))))
-        );
-    }
-
     @DocumentExample
     @Test
     void addBraces() {
@@ -150,6 +141,15 @@ class NeedBracesTest implements RewriteTest {
               }
               """
           )
+        );
+    }
+
+    private static Consumer<RecipeSpec> needsBraces(UnaryOperator<NeedBracesStyle> with) {
+        return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
+          singletonList(
+            new NamedStyles(
+              Tree.randomId(), "test", "test", "test", emptySet(),
+              singletonList(with.apply(Checkstyle.needBracesStyle())))))
         );
     }
 

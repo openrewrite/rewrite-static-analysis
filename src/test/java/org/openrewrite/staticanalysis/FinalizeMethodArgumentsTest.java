@@ -31,6 +31,28 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         spec.recipe(new FinalizeMethodArguments());
     }
 
+    @DocumentExample
+    @Test
+    void replaceWithFinalModifier() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class TestClass {
+                  private void getAccaCouponData(String responsiveRequestConfig, String card) {
+                  }
+              }
+              """,
+            """
+              class TestClass {
+                  private void getAccaCouponData(final String responsiveRequestConfig, final String card) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/3133")
     @Test
     void twoParameters() {
@@ -94,28 +116,6 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
             """
               public interface MarketDeleteService {
                    void deleteMarket(Long marketId, String deletionTimestamp);
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void replaceWithFinalModifier() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class TestClass {
-                  private void getAccaCouponData(String responsiveRequestConfig, String card) {
-                  }
-              }
-              """,
-            """
-              class TestClass {
-                  private void getAccaCouponData(final String responsiveRequestConfig, final String card) {
-                  }
               }
               """
           )

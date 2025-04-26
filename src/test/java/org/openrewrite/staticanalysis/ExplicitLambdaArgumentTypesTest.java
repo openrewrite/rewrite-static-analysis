@@ -36,6 +36,44 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
         spec.recipe(new ExplicitLambdaArgumentTypes());
     }
 
+    @DocumentExample
+    @Test
+    void twoArgumentsWithBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.BiPredicate;
+
+              class Test {
+                  static void run(BiPredicate<String, Object> bc) {
+                  }
+
+                  static void method() {
+                      run((a, b) -> {
+                          return a.isEmpty();
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.function.BiPredicate;
+
+              class Test {
+                  static void run(BiPredicate<String, Object> bc) {
+                  }
+
+                  static void method() {
+                      run((String a, Object b) -> {
+                          return a.isEmpty();
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1459")
     @Test
     void unknownArgumentType() {
@@ -139,44 +177,6 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
 
                   static void method() {
                       run((a, b) -> a.length());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void twoArgumentsWithBlock() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.BiPredicate;
-
-              class Test {
-                  static void run(BiPredicate<String, Object> bc) {
-                  }
-
-                  static void method() {
-                      run((a, b) -> {
-                          return a.isEmpty();
-                      });
-                  }
-              }
-              """,
-            """
-              import java.util.function.BiPredicate;
-
-              class Test {
-                  static void run(BiPredicate<String, Object> bc) {
-                  }
-
-                  static void method() {
-                      run((String a, Object b) -> {
-                          return a.isEmpty();
-                      });
                   }
               }
               """
