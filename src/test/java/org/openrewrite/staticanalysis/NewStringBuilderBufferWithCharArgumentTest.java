@@ -40,7 +40,7 @@ class NewStringBuilderBufferWithCharArgumentTest implements RewriteTest {
                   StringBuffer buffer = new StringBuffer('a');
                   StringBuilder builder = new StringBuilder('a');
                   char notALiteral = 'c';
-                  StringBuffer buffer = new StringBuffer(notALiteral);
+                  StringBuffer buffer2 = new StringBuffer(notALiteral);
               }
               """,
             """
@@ -48,7 +48,7 @@ class NewStringBuilderBufferWithCharArgumentTest implements RewriteTest {
                   StringBuffer buffer = new StringBuffer("a");
                   StringBuilder builder = new StringBuilder("a");
                   char notALiteral = 'c';
-                  StringBuffer buffer = new StringBuffer(String.valueOf(notALiteral));
+                  StringBuffer buffer2 = new StringBuffer(String.valueOf(notALiteral));
               }
               """
           )

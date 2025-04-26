@@ -32,7 +32,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches"})
+@SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches", "DefaultNotLastCaseInSwitch"})
 class DefaultComesLastTest implements RewriteTest {
 
     @Override
@@ -544,6 +544,233 @@ class DefaultComesLastTest implements RewriteTest {
                               System.out.println("case4");
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void breakOuterLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      loop: for (;;) {
+                          switch (n) {
+                              default:
+                                  break loop;
+                              case 1:
+                              case 2:
+                                  break;
+                              case 3:
+                              case 4:
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      loop: for (;;) {
+                          switch (n) {
+                              case 1:
+                              case 2:
+                                  break;
+                              case 3:
+                              case 4:
+                                  break;
+                              default:
+                                  break loop;
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void casesContainBlocks() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          default:
+                          case 1: {
+                              break;
+                          }
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          case 2:
+                              break;
+                          case 1:
+                          default: {
+                              break;
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addBreakToBlockCase() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          default:
+                              System.out.println();
+                              break;
+                          case 1: {
+                              System.out.println();
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          case 1: {
+                              System.out.println();
+                              break;
+                          }
+                          default:
+                              System.out.println();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void differentIndentation() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    default:
+                      System.out.println();
+                      break;
+                    case 1: {
+                      System.out.println();
+                    }
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 1: {
+                      System.out.println();
+                      break;
+                    }
+                    default:
+                      System.out.println();
+                  }
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groupedCases() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    default:
+                      System.out.println();
+                      break;
+                    case 0: case 1: case 2:
+                      System.out.println();
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 0: case 1: case 2:
+                      System.out.println();
+                      break;
+                    default:
+                      System.out.println();
+                  }
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defaultPartOfGroupedCases() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 0: case 1: case 2: default: case 3:
+                      System.out.println();
+                      break;
+                    case 4: case 5: case 6:
+                      System.out.println();
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 4: case 5: case 6:
+                      System.out.println();
+                      break;
+                    case 0: case 1: case 2: case 3: default:
+                      System.out.println();
+                  }
+                }
               }
               """
           )

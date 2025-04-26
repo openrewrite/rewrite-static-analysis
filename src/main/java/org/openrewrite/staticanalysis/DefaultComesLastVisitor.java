@@ -28,9 +28,9 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 @Value
@@ -80,7 +80,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             if (isDefaultCase(aCase)) {
                 defaultCaseFound = true;
             }
-            if (i == cases.size() - 1 || !isFallthroughCase(aCase)) {
+            if (i == cases.size() - 1 || !isFallthroughCase(aCase.getStatements())) {
                 if (defaultCaseFound) {
                     defaultCases.addAll(fallThroughCases);
                     fallThroughCases.clear();
@@ -120,46 +120,65 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             }
         }
 
-        List<J.Case> fixedCases = new ArrayList<>();
-        fixedCases.addAll(preDefaultCases);
+        List<J.Case> fixedCases = new ArrayList<>(preDefaultCases);
         if (!postDefaultCases.isEmpty()) {
             List<Statement> statements = postDefaultCases.get(postDefaultCases.size() - 1).getStatements();
             defaultCase = defaultCase.withStatements(statements);
-            fixedCases.addAll(ListUtils.mapLast(postDefaultCases, e -> e.withStatements(Collections.emptyList())));
+            fixedCases.addAll(ListUtils.mapLast(postDefaultCases, e -> e.withStatements(emptyList())));
         }
+        assert defaultCase != null;
         fixedCases.add(defaultCase);
         return fixedCases;
     }
 
     private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
         return ListUtils.mapLast(cases, e -> {
-            if (isFallthroughCase(e)) {
+            if (isFallthroughCase(e.getStatements())) {
                 return addBreak(e, p);
             }
             return e;
         });
     }
 
-    private boolean isFallthroughCase(J.Case aCase) {
-        return aCase.getStatements().isEmpty() ||
-              !(aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break ||
-                    aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Continue ||
-                    aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Return ||
-                    aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Throw);
+    private boolean isFallthroughCase(List<Statement> statements) {
+        if (statements.isEmpty()) {
+            return true;
+        }
+        Statement lastStatement = statements.get(statements.size() - 1);
+        if (lastStatement instanceof J.Block) {
+            return isFallthroughCase(((J.Block) lastStatement).getStatements());
+        }
+        return !(lastStatement instanceof J.Break ||
+                lastStatement instanceof J.Continue ||
+                lastStatement instanceof J.Return ||
+                lastStatement instanceof J.Throw ||
+                lastStatement instanceof J.Yield);
     }
 
     private J.Case addBreak(J.Case e, P p) {
-        J.Break breakStatement = autoFormat(
-              new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
-              p
-        );
         List<Statement> statements = e.getStatements();
-        statements.add(breakStatement);
-        return e.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+        J.Switch switchStatement = getCursor().getValue();
+        int switchIndent = switchStatement.getPrefix().getIndent().length();
+        int caseIndent = switchStatement.getCases().getStatements().get(0).getPrefix().getIndent().length();
+        int breakIndent = caseIndent + (caseIndent - switchIndent);
+        Space prefix = breakIndent > 0 ? Space.build(String.format("\n%" + breakIndent + "s", ""), emptyList()) : Space.EMPTY;
+        J.Break breakStatement = new J.Break(Tree.randomId(), prefix, Markers.EMPTY, null);
+        if (!statements.isEmpty() && statements.get(statements.size() - 1) instanceof J.Block) {
+            statements = ListUtils.mapLast(statements, s -> {
+                J.Block block = (J.Block) s;
+                List<Statement> blockStatements = block.getStatements();
+                blockStatements.add(breakStatement);
+                return block.withStatements(blockStatements);
+            });
+        } else {
+            statements.add(breakStatement);
+        }
+        return e.withStatements(statements);
     }
 
     private J.Case removeBreak(J.Case aCase) {
-        if (!aCase.getStatements().isEmpty() && aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break) {
+        if (!aCase.getStatements().isEmpty() && aCase.getStatements().get(aCase.getStatements().size() - 1) instanceof J.Break &&
+                ((J.Break) aCase.getStatements().get(aCase.getStatements().size() - 1)).getLabel() == null) {
             aCase = aCase.withStatements(aCase.getStatements().subList(0, aCase.getStatements().size() - 1));
         }
         return aCase;

@@ -1365,8 +1365,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   Object field;
                   void foo() {
                       // Runtime exception when replaced with field::toString
-                      Supplier<String> supplier = () -> field.toString();
-                      Supplier<String> supplier = () -> this.field.toString();
+                      Supplier<String> supplierA = () -> field.toString();
+                      Supplier<String> supplierB = () -> this.field.toString();
                   }
               }
               """

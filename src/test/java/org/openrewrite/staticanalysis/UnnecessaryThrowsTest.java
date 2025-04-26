@@ -44,10 +44,10 @@ class UnnecessaryThrowsTest implements RewriteTest {
               import java.io.IOException;
               import java.io.UncheckedIOException;
               class Test {
-                  private void test() throws FileNotFoundException, UncheckedIOException {
+                  private void changed() throws FileNotFoundException, UncheckedIOException {
                   }
 
-                  void test() throws IOException, UncheckedIOException {
+                  void unchanged() throws IOException, UncheckedIOException {
                       new FileInputStream("test");
                   }
               }
@@ -57,10 +57,10 @@ class UnnecessaryThrowsTest implements RewriteTest {
               import java.io.IOException;
               import java.io.UncheckedIOException;
               class Test {
-                  private void test() throws UncheckedIOException {
+                  private void changed() throws UncheckedIOException {
                   }
 
-                  void test() throws IOException, UncheckedIOException {
+                  void unchanged() throws IOException, UncheckedIOException {
                       new FileInputStream("test");
                   }
               }
