@@ -259,8 +259,16 @@ public class InstanceOfPatternMatch extends Recipe {
                 return instanceOf;
             }
             String name = patternVariableName(instanceOf, cursor);
-            TypeTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
-            J currentTypeTree = instanceOf.getClazz();
+            TypedTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
+            TypedTree currentTypeTree = (TypedTree) instanceOf.getClazz();
+
+            // handle primitives, they must not appear in instanceof's
+            if (typeCastTypeTree.getType() instanceof JavaType.Primitive) {
+                // we have checked for the correct assignability beforehand
+                // so we can just use type from the original instanceof
+                typeCastTypeTree = currentTypeTree;
+            }
+
             J.InstanceOf result = instanceOf.withPattern(new J.Identifier(
                     randomId(),
                     Space.build(" ", emptyList()),
