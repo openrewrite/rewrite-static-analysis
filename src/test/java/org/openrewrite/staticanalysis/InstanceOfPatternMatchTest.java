@@ -1421,7 +1421,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
-        
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/528")
         @Test
         void matchingPrimitiveVariableInBody() {
             rewriteRun(
@@ -1429,7 +1430,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                 //language=java
                 java(
                   """
-                    public class A {
+                    class A {
                         void test(Object o, Integer integer) {
                             if (o instanceof Integer) {
                                 for (int j = 0; j < (int) o; j++) {
@@ -1439,7 +1440,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                     }
                     """,
                   """
-                    public class A {
+                    class A {
                         void test(Object o, Integer integer) {
                             if (o instanceof Integer integer1) {
                                 for (int j = 0; j < integer1; j++) {

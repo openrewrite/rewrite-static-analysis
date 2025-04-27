@@ -264,7 +264,7 @@ public class InstanceOfPatternMatch extends Recipe {
 
             // handle primitives, they must not appear in instanceof's
             if (typeCastTypeTree.getType() instanceof JavaType.Primitive) {
-                // we have cheked for the correct assignability beforehand
+                // we have checked for the correct assignability beforehand
                 // so we can just use type from the original instanceof
                 typeCastTypeTree = currentTypeTree;
             }
