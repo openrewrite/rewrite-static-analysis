@@ -1421,6 +1421,36 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+        
+        @Test
+        void matchingPrimitiveVariableInBody() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    public class A {
+                        void test(Object o, Integer integer) {
+                            if (o instanceof Integer) {
+                                for (int j = 0; j < (int) o; j++) {
+                                }
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    public class A {
+                        void test(Object o, Integer integer) {
+                            if (o instanceof Integer integer1) {
+                                for (int j = 0; j < integer1; j++) {
+                                }
+                            }
+                        }
+                    }
+                    """
+                ), 17)
+            );
+        }
     }
 
     @Nested
