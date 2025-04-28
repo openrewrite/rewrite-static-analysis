@@ -263,7 +263,8 @@ public class InstanceOfPatternMatch extends Recipe {
             TypedTree currentTypeTree = (TypedTree) instanceOf.getClazz();
 
             // handle primitives, they must not appear in instanceof's
-            if (typeCastTypeTree.getType() instanceof JavaType.Primitive) {
+            if (typeCastTypeTree.getType() instanceof JavaType.Primitive ||
+                    typeCastTypeTree.getMarkers().findFirst(JavaVarKeyword.class).isPresent()) {
                 // we have checked for the correct assignability beforehand
                 // so we can just use type from the original instanceof
                 typeCastTypeTree = currentTypeTree;
