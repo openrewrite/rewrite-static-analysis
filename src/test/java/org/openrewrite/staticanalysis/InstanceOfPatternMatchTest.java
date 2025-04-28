@@ -1452,6 +1452,36 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                 ), 17)
             );
         }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/532")
+        @Test
+        void varVariableDeclaration() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    public class A {
+                        void test(Object o) {
+                            if (o instanceof String) {
+                                final var str = (String) o;
+                                System.out.println(str.toUpperCase());
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    public class A {
+                        void test(Object o) {
+                            if (o instanceof String str) {
+                                System.out.println(str.toUpperCase());
+                            }
+                        }
+                    }
+                    """
+                ), 17)
+            );
+        }
     }
 
     @Nested
