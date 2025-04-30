@@ -320,7 +320,14 @@ public class InstanceOfPatternMatch extends Recipe {
                 strategy = VariableNameStrategy.short_();
             }
             String baseName = strategy.variableName(type);
-            return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
+            if (root instanceof J.If) {
+                J.If enclosingIf = cursor.firstEnclosing(J.If.class);
+                String nameInIfScope = VariableNameUtils.generateVariableName(baseName, new Cursor(cursor, enclosingIf), INCREMENT_NUMBER);
+                String nameInCursorScope = VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
+                return nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
+            } else {
+                return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
+            }
         }
 
         public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {

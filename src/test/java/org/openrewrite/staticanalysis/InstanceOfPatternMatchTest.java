@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.Issue;
@@ -528,7 +527,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Issue("https://github.com/openrewrite/rewrite/issues/2787")
-        @Disabled
         @Test
         void nestedPotentiallyConflictingIfs() {
             rewriteRun(
@@ -549,13 +547,98 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                 """
                   public class A {
                       void test(Object o) {
-                          if (o instanceof String string) {
-                              if (o instanceof String string1) {
-                                  System.out.println(string1);
+                          if (o instanceof String string1) {
+                              if (o instanceof String string) {
+                                  System.out.println(string);
                               }
-                              System.out.println(string);
+                              System.out.println(string1);
                           }
                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/334")
+        @Test
+        void clashingWithInstanceOfVariableName() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar) {
+                               System.out.println(((Bar)o));
+                               Bar bar = null;
+                               if (o instanceof FooBar) {
+                                   System.out.println(((FooBar)o));
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
+                  }
+                  """,
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar bar2) {
+                               System.out.println(bar2);
+                               Bar bar = null;
+                               if (o instanceof FooBar fooBar) {
+                                   System.out.println(fooBar);
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void clashingInstanceOfVariableNames() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar) {
+                               System.out.println(((Bar)o));
+                               if (o instanceof FooBar) {
+                                   System.out.println(((FooBar)o));
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
+                  }
+                  """,
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar bar2) {
+                               System.out.println(bar2);
+                               if (o instanceof FooBar bar) {
+                                   System.out.println(bar);
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
                   }
                   """
               )
