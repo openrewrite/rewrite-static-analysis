@@ -2773,18 +2773,6 @@ examples:
 - description: ''
   sources:
   - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
-- description: ''
-  sources:
-  - before: |
       public class A {
           boolean a;
           {
@@ -2801,6 +2789,18 @@ examples:
           }
       }
     language: java
+- description: ''
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanReturn
@@ -3439,6 +3439,25 @@ examples:
   sources:
   - before: |
       import java.util.*;
+      class Test {
+          void test() {
+              var ls1 = new ArrayList<String>();
+              List<String> ls2 = new ArrayList<String>();
+          }
+      }
+    after: |
+      import java.util.*;
+      class Test {
+          void test() {
+              var ls1 = new ArrayList<String>();
+              List<String> ls2 = new ArrayList<>();
+          }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
+      import java.util.*;
 
       class Test<X, Y> {
           void test() {
@@ -3457,25 +3476,6 @@ examples:
               Map<X,Y> map = new HashMap<>();
               List<String> ls2 = new ArrayList<String>() {
               };
-          }
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<String>();
-          }
-      }
-    after: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<>();
           }
       }
     language: java

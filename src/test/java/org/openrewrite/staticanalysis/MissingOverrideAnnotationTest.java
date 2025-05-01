@@ -512,4 +512,16 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void cloneInInterface() {
+        rewriteRun(
+          java(
+            """
+            public interface Reproducer extends Cloneable {
+              Reproducer clone();
+            }
+            """
+          ));
+    }
 }
