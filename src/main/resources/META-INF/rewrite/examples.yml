@@ -478,10 +478,6 @@ examples:
   - 'true'
   sources:
   - before: |
-      interface In {}
-      interface Out {}
-    language: java
-  - before: |
       import java.util.function.Function;
       class Test {
           void test(Function<In, Out> f) {
@@ -493,6 +489,10 @@ examples:
           void test(Function<? super In, ? extends Out> f) {
           }
       }
+    language: java
+  - before: |
+      interface In {}
+      interface Out {}
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
