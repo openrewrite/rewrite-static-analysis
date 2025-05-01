@@ -560,9 +560,9 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/334")
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/481")
         @Test
-        void clashingWithInstanceOfVariableName() {
+        void conflictingWithLocalVariable() {
             rewriteRun(
               //language=java
               java(
@@ -604,8 +604,9 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/334")
         @Test
-        void clashingInstanceOfVariableNames() {
+        void conflictingWithOtherInstanceOf() {
             rewriteRun(
               //language=java
               java(
