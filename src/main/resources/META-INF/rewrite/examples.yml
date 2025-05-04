@@ -54,6 +54,8 @@ type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
 examples:
 - description: ''
+  parameters:
+  - 'null'
   sources:
   - before: |
       import java.io.Serializable;
@@ -634,6 +636,23 @@ examples:
 - description: ''
   sources:
   - before: |
+      class A {
+          // C#: int? a
+          Nullable<Integer> a = null;
+          // C#: int? a = 0
+          Nullable<Integer> a = new Nullable<>(0);
+      }
+    after: |
+      class A {
+          // C#: int? a
+          Nullable<Integer> a;
+          // C#: int? a = 0
+          Nullable<Integer> a = new Nullable<>(0);
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
       class Test {
           private int a = 0;
           private long b = 0L;
@@ -674,23 +693,6 @@ examples:
           int[] m = new int[0];
 
           private final Long n = null;
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      class A {
-          // C#: int? a
-          Nullable<Integer> a = null;
-          // C#: int? a = 0
-          Nullable<Integer> a = new Nullable<>(0);
-      }
-    after: |
-      class A {
-          // C#: int? a
-          Nullable<Integer> a;
-          // C#: int? a = 0
-          Nullable<Integer> a = new Nullable<>(0);
       }
     language: java
 ---
@@ -3457,25 +3459,6 @@ examples:
               Map<X,Y> map = new HashMap<>();
               List<String> ls2 = new ArrayList<String>() {
               };
-          }
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<String>();
-          }
-      }
-    after: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<>();
           }
       }
     language: java

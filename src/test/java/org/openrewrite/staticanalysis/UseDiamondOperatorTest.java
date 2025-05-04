@@ -542,5 +542,4 @@ class UseDiamondOperatorTest implements RewriteTest {
           )
         );
     }
-
 }
