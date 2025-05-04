@@ -57,7 +57,6 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
     void addCustomSerialVersionUID() {
         rewriteRun(
