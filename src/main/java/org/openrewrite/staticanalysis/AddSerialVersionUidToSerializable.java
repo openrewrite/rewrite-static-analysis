@@ -45,8 +45,6 @@ public class AddSerialVersionUidToSerializable extends Recipe {
     @Nullable
     String uid;
 
-    private static final String DEFAULT_NEW_UID = "1";
-
     @Override
     public String getDisplayName() {
         return "Add `serialVersionUID` to a `Serializable` class when missing";
@@ -67,11 +65,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
-            final String newUid = uid != null ? uid : DEFAULT_NEW_UID;
-            final JavaTemplate template = JavaTemplate.builder(
-                            String.format("private static final long serialVersionUID = %s;", newUid)
-                    )
-                    .build();
+            final JavaTemplate template = JavaTemplate.builder(String.format("private static final long serialVersionUID = %s;", uid != null ? uid : "1")).build();
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
