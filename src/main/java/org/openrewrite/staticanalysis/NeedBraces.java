@@ -21,7 +21,10 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 
@@ -87,7 +90,8 @@ public class NeedBraces extends Recipe {
                 rootElement = paddedIf.getElement();
             }
 
-            if (rootElement instanceof Statement) {
+            // Move comments
+            if (rootElement instanceof Statement && !(rootElement instanceof J.DoWhileLoop)) {
                 Cursor blockParentCursor = currentCursor.getParent();
                 J.Block block = blockParentCursor.getValue();
                 List<Statement> statements = block.getStatements();

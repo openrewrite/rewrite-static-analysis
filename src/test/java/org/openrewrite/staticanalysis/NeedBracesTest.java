@@ -60,31 +60,31 @@ class NeedBracesTest implements RewriteTest {
                   static void addToWhile() {
                       while (true) ;
                   }
-              
+
                   static void addToWhileWithBody() {
                       while (true) return;
                   }
-              
+
                   static void addToIf(int n) {
                       if (n == 1) return;
                       // foo
                   }
-              
+
                   static void addToIfElse(int n) {
                       if (n == 1) return;
                       else return;
                   }
-              
+
                   static void addToIfElseIfElse(int n) {
                       if (n == 1) return;
                       else if (n == 2) return;
                       else return;
                   }
-              
+
                   static void addToDoWhile(Object obj) {
                       do obj.notify(); while (true);
                   }
-              
+
                   static void addToIterativeFor(Object obj) {
                       for (int i = 0; ; ) obj.notify();
                   }
@@ -96,20 +96,20 @@ class NeedBracesTest implements RewriteTest {
                       while (true) {
                       }
                   }
-              
+
                   static void addToWhileWithBody() {
                       while (true) {
                           return;
                       }
                   }
-              
+
                   static void addToIf(int n) {
                       if (n == 1) {
                           return;
                       }
                       // foo
                   }
-              
+
                   static void addToIfElse(int n) {
                       if (n == 1) {
                           return;
@@ -117,7 +117,7 @@ class NeedBracesTest implements RewriteTest {
                           return;
                       }
                   }
-              
+
                   static void addToIfElseIfElse(int n) {
                       if (n == 1) {
                           return;
@@ -127,13 +127,13 @@ class NeedBracesTest implements RewriteTest {
                           return;
                       }
                   }
-              
+
                   static void addToDoWhile(Object obj) {
                       do {
                           obj.notify();
                       } while (true);
                   }
-              
+
                   static void addToIterativeFor(Object obj) {
                       for (int i = 0; ; ) {
                           obj.notify();
@@ -165,7 +165,7 @@ class NeedBracesTest implements RewriteTest {
                   static void emptyWhile() {
                       while (true) ;
                   }
-              
+
                   static void emptyForIterative() {
                       for (int i = 0; i < 10; i++) ;
                   }
@@ -186,26 +186,26 @@ class NeedBracesTest implements RewriteTest {
                   static void allowIf(int n) {
                       if (n == 1) return;
                   }
-              
+
                   static void allowIfElse(int n) {
                       if (n == 1) return;
                       else return;
                   }
-              
+
                   static void allowIfElseIfElse(int n) {
                       if (n == 1) return;
                       else if (n == 2) return;
                       else return;
                   }
-              
+
                   static void allowWhileWithBody() {
                       while (true) return;
                   }
-              
+
                   static void allowDoWhileWithBody(Object obj) {
                       do obj.notify(); while (true);
                   }
-              
+
                   static void allowForIterativeWithBody(Object obj) {
                       for (int i = 0; ; ) obj.notify();
                   }
@@ -226,11 +226,11 @@ class NeedBracesTest implements RewriteTest {
                   static void doNotAllowWhileWithEmptyBody() {
                       while (true) ;
                   }
-              
+
                   static void doNotAllowDoWhileWithEmptyBody(Object obj) {
                       do ; while (true);
                   }
-              
+
                   static void doNotAllowForIterativeWithEmptyBody(Object obj) {
                       for (int i = 0; ; ) ;
                   }
@@ -242,12 +242,12 @@ class NeedBracesTest implements RewriteTest {
                       while (true) {
                       }
                   }
-              
+
                   static void doNotAllowDoWhileWithEmptyBody(Object obj) {
                       do {
                       } while (true);
                   }
-              
+
                   static void doNotAllowForIterativeWithEmptyBody(Object obj) {
                       for (int i = 0; ; ) {
                       }
@@ -340,8 +340,8 @@ class NeedBracesTest implements RewriteTest {
                           return; // while comment with body
                       }
                       do {
-                          obj.notify(); // do while comment
-                      } while (true);
+                          obj.notify();
+                      } while (true); // do while comment
                   }
                   static void commentIterative(Object obj) {
                       for (int i = 0; ; ) { // iterative comment
