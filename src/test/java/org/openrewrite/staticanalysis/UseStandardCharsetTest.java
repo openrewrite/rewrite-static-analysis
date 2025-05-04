@@ -30,22 +30,6 @@ class UseStandardCharsetTest implements RewriteTest {
         spec.recipe(new UseStandardCharset());
     }
 
-    @Test
-    void notAStandardCharset() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.nio.charset.Charset;
-
-              class Test {
-                  Charset WINDOWS_1252 = Charset.forName("Windows-1252");
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void changeCharsetForName() {
@@ -75,6 +59,22 @@ class UseStandardCharsetTest implements RewriteTest {
                   Charset UTF_16 = StandardCharsets.UTF_16;
                   Charset UTF_16BE = StandardCharsets.UTF_16BE;
                   Charset UTF_16LE = StandardCharsets.UTF_16LE;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void notAStandardCharset() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.charset.Charset;
+
+              class Test {
+                  Charset WINDOWS_1252 = Charset.forName("Windows-1252");
               }
               """
           )

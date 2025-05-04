@@ -31,22 +31,6 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
     }
 
     @Test
-    void alreadyOnInnerClass() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import org.openrewrite.internal.lang.Nullable;
-              import org.openrewrite.xml.tree.Xml;
-              class Test {
-                  Xml.@Nullable Tag tag;
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     @DocumentExample
     void fieldAnnotation() {
         rewriteRun(
@@ -59,6 +43,22 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
                   @Nullable Xml.Tag tag;
               }
               """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  Xml.@Nullable Tag tag;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void alreadyOnInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
             """
               import org.openrewrite.internal.lang.Nullable;
               import org.openrewrite.xml.tree.Xml;

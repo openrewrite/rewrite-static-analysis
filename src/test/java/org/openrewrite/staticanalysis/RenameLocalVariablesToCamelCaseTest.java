@@ -36,27 +36,6 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenameLocalVariablesToCamelCase());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2227")
-    @Test
-    void lowerCamelVariableHasNonLowerCamelVariableSibling() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void m()  {
-                      final int _secure = 0;
-                      boolean secure = _secure > 0;
-
-                      int _notSecure = 0;
-                      boolean notSecure = _notSecure < 1;
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void renameAllCapsAcronyms() {
@@ -74,6 +53,27 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
               class Test {
                   void test() {
                       String id;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/2227")
+    @Test
+    void lowerCamelVariableHasNonLowerCamelVariableSibling() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void m()  {
+                      final int _secure = 0;
+                      boolean secure = _secure > 0;
+
+                      int _notSecure = 0;
+                      boolean notSecure = _notSecure < 1;
                   }
               }
               """

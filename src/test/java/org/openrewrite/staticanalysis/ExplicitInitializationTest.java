@@ -31,6 +31,60 @@ class ExplicitInitializationTest implements RewriteTest {
         spec.recipe(new ExplicitInitialization());
     }
 
+    @DocumentExample
+    @Test
+    void removeExplicitInitialization() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private int a = 0;
+                  private long b = 0L;
+                  private short c = 0;
+                  private int d = 1;
+                  private long e = 2L;
+                  private int f;
+                  private char g = '\\0';
+
+                  private boolean h = false;
+                  private boolean i = true;
+
+                  private Object j = new Object();
+                  private Object k = null;
+
+                  int[] l = null;
+                  int[] m = new int[0];
+
+                  private final Long n = null;
+              }
+              """,
+            """
+              class Test {
+                  private int a;
+                  private long b;
+                  private short c;
+                  private int d = 1;
+                  private long e = 2L;
+                  private int f;
+                  private char g;
+
+                  private boolean h;
+                  private boolean i = true;
+
+                  private Object j = new Object();
+                  private Object k;
+
+                  int[] l;
+                  int[] m = new int[0];
+
+                  private final Long n = null;
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void ignoreLombokDefaultBuilder() {
         rewriteRun(
@@ -142,54 +196,79 @@ class ExplicitInitializationTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/109")
     @Test
-    void removeExplicitInitialization() {
+    void removeExplicitInitializationInAnonymousSubClasses() {
         rewriteRun(
           //language=java
           java(
             """
               class Test {
-                  private int a = 0;
-                  private long b = 0L;
-                  private short c = 0;
-                  private int d = 1;
-                  private long e = 2L;
-                  private int f;
-                  private char g = '\\0';
+                  Object o = new Object() {
+                      private int a = 0;
+                      private long b = 0L;
+                      private short c = 0;
+                      private int d = 1;
+                      private long e = 2L;
+                      private int f;
+                      private char g = '\\0';
 
-                  private boolean h = false;
-                  private boolean i = true;
+                      private boolean h = false;
+                      private boolean i = true;
 
-                  private Object j = new Object();
-                  private Object k = null;
+                      private Object j = new Object();
+                      private Object k = null;
 
-                  int[] l = null;
-                  int[] m = new int[0];
+                      int[] l = null;
+                      int[] m = new int[0];
 
-                  private final Long n = null;
+                      private final Long n = null;
+                  };
               }
               """,
             """
               class Test {
-                  private int a;
-                  private long b;
-                  private short c;
-                  private int d = 1;
-                  private long e = 2L;
-                  private int f;
-                  private char g;
+                  Object o = new Object() {
+                      private int a;
+                      private long b;
+                      private short c;
+                      private int d = 1;
+                      private long e = 2L;
+                      private int f;
+                      private char g;
 
-                  private boolean h;
-                  private boolean i = true;
+                      private boolean h;
+                      private boolean i = true;
 
-                  private Object j = new Object();
-                  private Object k;
+                      private Object j = new Object();
+                      private Object k;
 
-                  int[] l;
-                  int[] m = new int[0];
+                      int[] l;
+                      int[] m = new int[0];
 
-                  private final Long n = null;
+                      private final Long n = null;
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/109")
+    @Test
+    void ignoreInAnonymousSubClasses() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object o = new Object() {
+                      private final boolean b = false;
+
+                      private void method() {
+                          int i = 0;
+                      }
+                  };
               }
               """
           )

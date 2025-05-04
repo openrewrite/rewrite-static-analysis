@@ -29,26 +29,6 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
         spec.recipe(new UnnecessaryCloseInTryWithResources());
     }
 
-    @Test
-    void noChangeRequired() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.FileWriter;
-              class A {
-                  public void doSomething() {
-                      try (FileWriter fileWriter = new FileWriter("test")){
-                          fileWriter.append('c');
-                          fileWriter.flush();
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void hasUnnecessaryClose() {
@@ -76,6 +56,26 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
                   public void doSomething() {
                       try (FileWriter fileWriter = new FileWriter("test"); Scanner scanner = new Scanner("abc")) {
                           fileWriter.write('c');
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeRequired() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileWriter;
+              class A {
+                  public void doSomething() {
+                      try (FileWriter fileWriter = new FileWriter("test")){
+                          fileWriter.append('c');
+                          fileWriter.flush();
                       }
                   }
               }

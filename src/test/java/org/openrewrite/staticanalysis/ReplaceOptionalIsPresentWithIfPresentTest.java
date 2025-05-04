@@ -35,6 +35,46 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
           .recipe(new ReplaceOptionalIsPresentWithIfPresent());
     }
 
+    @DocumentExample
+    @Test
+    void ignoreReturnInsideLambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  Supplier<Integer> s = () -> { return 1; };
+                  int method(Optional<Integer> o) {
+                      if (o.isPresent()) {
+                          s = () -> {
+                              return 2;
+                          };
+                      }
+                      return s.get();
+                  }
+              }
+              """,
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+              public class A {
+                  Supplier<Integer> s = () -> { return 1; };
+                  int method(Optional<Integer> o) {
+                      o.ifPresent(obj -> {
+                          s = () -> {
+                              return 2;
+                          };
+                      });
+                      return s.get();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNothingIfIsPresentNotFound() {
         rewriteRun(
@@ -119,46 +159,6 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
                           return o.get();
                       }
                       return -1;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void ignoreReturnInsideLambda() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Optional;
-              import java.util.function.Supplier;
-              public class A {
-                  Supplier<Integer> s = () -> { return 1; };
-                  int method(Optional<Integer> o) {
-                      if (o.isPresent()) {
-                          s = () -> {
-                              return 2;
-                          };
-                      }
-                      return s.get();
-                  }
-              }
-              """,
-            """
-              import java.util.Optional;
-              import java.util.function.Supplier;
-              public class A {
-                  Supplier<Integer> s = () -> { return 1; };
-                  int method(Optional<Integer> o) {
-                      o.ifPresent(obj -> {
-                          s = () -> {
-                              return 2;
-                          };
-                      });
-                      return s.get();
                   }
               }
               """

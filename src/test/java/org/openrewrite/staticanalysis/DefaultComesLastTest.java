@@ -32,7 +32,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches"})
+@SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches", "DefaultNotLastCaseInSwitch"})
 class DefaultComesLastTest implements RewriteTest {
 
     @Override
@@ -205,6 +205,39 @@ class DefaultComesLastTest implements RewriteTest {
     }
 
     @Test
+    void defaultIsNotLastAndReturnsNonVoid() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public int foo(int n) {
+                      switch (n) {
+                          default:
+                              return 2;
+                          case 1:
+                              return 1;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  public int foo(int n) {
+                      switch (n) {
+                          case 1:
+                              return 1;
+                          default:
+                              return 2;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void dontAddBreaksIfCasesArentMoving() {
         rewriteRun(
           //language=java
@@ -302,7 +335,7 @@ class DefaultComesLastTest implements RewriteTest {
     @EnabledForJreRange(min = JRE.JAVA_21)
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/461")
     @Test
-    void exhaustiveSwitch(){
+    void exhaustiveSwitch() {
         //language=java
         rewriteRun(
           java(
@@ -315,6 +348,429 @@ class DefaultComesLastTest implements RewriteTest {
                           default -> 0;
                       };
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveDefaultToLastWithFallThrough() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          default:
+                          case 3:
+                              System.out.println("case3");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                          default:
+                              System.out.println("case3");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void dontMoveDefaultToLastWithFallThroughAndStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          default:
+                              System.out.println("default");
+                          case 3:
+                              System.out.println("case3");
+                          case 4:
+                              System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void dontMoveDefaultToLastFromMiddleWithFallThroughAndStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveFallThroughBlockWithDefaultWithStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                              break;
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                              System.out.println("default");
+                          case 4:
+                              System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
+    @Test
+    void moveFallThroughBlockWithDefaultWithoutStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          default:
+                          case 4:
+                              System.out.println("case4");
+                              break;
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      switch (n) {
+                          case 1:
+                              break;
+                          case 2:
+                              break;
+                          case 3:
+                              System.out.println("case3");
+                          case 4:
+                          default:
+                              System.out.println("case4");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void breakOuterLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int n;
+                  {
+                      loop: for (;;) {
+                          switch (n) {
+                              default:
+                                  break loop;
+                              case 1:
+                              case 2:
+                                  break;
+                              case 3:
+                              case 4:
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int n;
+                  {
+                      loop: for (;;) {
+                          switch (n) {
+                              case 1:
+                              case 2:
+                                  break;
+                              case 3:
+                              case 4:
+                                  break;
+                              default:
+                                  break loop;
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void casesContainBlocks() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          default:
+                          case 1: {
+                              break;
+                          }
+                          case 2:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          case 2:
+                              break;
+                          case 1:
+                          default: {
+                              break;
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addBreakToBlockCase() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          default:
+                              System.out.println();
+                              break;
+                          case 1: {
+                              System.out.println();
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test (int state) {
+                      switch (state) {
+                          case 1: {
+                              System.out.println();
+                              break;
+                          }
+                          default:
+                              System.out.println();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void differentIndentation() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    default:
+                      System.out.println();
+                      break;
+                    case 1: {
+                      System.out.println();
+                    }
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 1: {
+                      System.out.println();
+                      break;
+                    }
+                    default:
+                      System.out.println();
+                  }
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groupedCases() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    default:
+                      System.out.println();
+                      break;
+                    case 0: case 1: case 2:
+                      System.out.println();
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 0: case 1: case 2:
+                      System.out.println();
+                      break;
+                    default:
+                      System.out.println();
+                  }
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defaultPartOfGroupedCases() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 0: case 1: case 2: default: case 3:
+                      System.out.println();
+                      break;
+                    case 4: case 5: case 6:
+                      System.out.println();
+                  }
+                }
+              }
+              """,
+            """
+              class Test {
+                void test (int state) {
+                  switch (state) {
+                    case 4: case 5: case 6:
+                      System.out.println();
+                      break;
+                    case 0: case 1: case 2: case 3: default:
+                      System.out.println();
+                  }
+                }
               }
               """
           )

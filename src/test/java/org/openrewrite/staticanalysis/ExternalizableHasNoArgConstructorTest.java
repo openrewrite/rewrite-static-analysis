@@ -30,6 +30,64 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
         spec.recipe(new ExternalizableHasNoArgsConstructor());
     }
 
+    @DocumentExample
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    @Test
+    void needsNoArgsConstructor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Externalizable;
+              import java.io.IOException;
+              import java.io.ObjectInput;
+              import java.io.ObjectOutput;
+
+              public class MyThing implements Externalizable {
+                  private String a;
+                  private String b;
+
+                  public MyThing(String a, String b) {
+                      this.a = a;
+                      this.b = b;
+                  }
+
+                  @Override
+                  public void writeExternal(ObjectOutput out) throws IOException {}
+
+                  @Override
+                  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
+              }
+              """,
+            """
+              import java.io.Externalizable;
+              import java.io.IOException;
+              import java.io.ObjectInput;
+              import java.io.ObjectOutput;
+
+              public class MyThing implements Externalizable {
+                  private String a;
+                  private String b;
+
+                  public MyThing() {
+                  }
+
+                  public MyThing(String a, String b) {
+                      this.a = a;
+                      this.b = b;
+                  }
+
+                  @Override
+                  public void writeExternal(ObjectOutput out) throws IOException {}
+
+                  @Override
+                  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void hasDefaultNoArgsConstructor() {
         rewriteRun(
@@ -84,64 +142,6 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
                   }
 
                   public MyThing() {}
-
-                  @Override
-                  public void writeExternal(ObjectOutput out) throws IOException {}
-
-                  @Override
-                  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Test
-    void needsNoArgsConstructor() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.Externalizable;
-              import java.io.IOException;
-              import java.io.ObjectInput;
-              import java.io.ObjectOutput;
-
-              public class MyThing implements Externalizable {
-                  private String a;
-                  private String b;
-
-                  public MyThing(String a, String b) {
-                      this.a = a;
-                      this.b = b;
-                  }
-
-                  @Override
-                  public void writeExternal(ObjectOutput out) throws IOException {}
-
-                  @Override
-                  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
-              }
-              """,
-            """
-              import java.io.Externalizable;
-              import java.io.IOException;
-              import java.io.ObjectInput;
-              import java.io.ObjectOutput;
-
-              public class MyThing implements Externalizable {
-                  private String a;
-                  private String b;
-
-                  public MyThing() {
-                  }
-
-                  public MyThing(String a, String b) {
-                      this.a = a;
-                      this.b = b;
-                  }
 
                   @Override
                   public void writeExternal(ObjectOutput out) throws IOException {}

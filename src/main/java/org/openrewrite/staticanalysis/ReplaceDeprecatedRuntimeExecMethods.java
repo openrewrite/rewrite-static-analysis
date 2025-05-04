@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Javadoc;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,6 +54,16 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesJavaVersion<>(18), new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            protected JavadocVisitor<ExecutionContext> getJavadocVisitor() {
+                return new JavadocVisitor<ExecutionContext>(this) {
+                    @Override
+                    public Javadoc visitReference(Javadoc.Reference reference, ExecutionContext ctx) {
+                        return reference;
+                    }
+                };
+            }
+
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);

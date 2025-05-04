@@ -30,6 +30,34 @@ class UnnecessaryPrimitiveAnnotationsTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath("jsr305"));
     }
 
+    @DocumentExample
+    @Test
+    void unnecessaryNullable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import javax.annotation.CheckForNull;
+              import javax.annotation.Nullable;
+              class A {
+                  @CheckForNull
+                  public int getCount(@Nullable int val) {
+                      return val;
+                  }
+              }
+              """,
+            """
+              class A {
+
+                  public int getCount(int val) {
+                      return val;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void nullableOnNonPrimitive() {
         rewriteRun(
@@ -54,34 +82,6 @@ class UnnecessaryPrimitiveAnnotationsTest implements RewriteTest {
 
                   public void doSomething(long requestId, long stageId, String component, String host,
                                             String type, boolean skipFailure) {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void unnecessaryNullable() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import javax.annotation.CheckForNull;
-              import javax.annotation.Nullable;
-              class A {
-                  @CheckForNull
-                  public int getCount(@Nullable int val) {
-                      return val;
-                  }
-              }
-              """,
-            """
-              class A {
-
-                  public int getCount(int val) {
-                      return val;
                   }
               }
               """

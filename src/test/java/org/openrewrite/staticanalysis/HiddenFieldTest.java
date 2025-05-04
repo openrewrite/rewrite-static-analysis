@@ -40,6 +40,33 @@ class HiddenFieldTest implements RewriteTest {
         spec.recipe(new HiddenField());
     }
 
+    @DocumentExample
+    @Test
+    void constructorParameter() {
+        rewriteRun(
+          hiddenFieldStyle(style -> style.withIgnoreConstructorParameter(false)),
+          //language=java
+          java(
+            """
+              public class A {
+                  private String field;
+
+                  public A(String field) {
+                  }
+              }
+              """,
+            """
+              public class A {
+                  private String field;
+
+                  public A(String field1) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     private static Consumer<RecipeSpec> hiddenFieldStyle(UnaryOperator<HiddenFieldStyle> with) {
         return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
           singletonList(
@@ -65,7 +92,7 @@ class HiddenFieldTest implements RewriteTest {
                       String localVariable = someField;
                   }
               }
-                """
+              """
           )
         );
     }
@@ -116,33 +143,6 @@ class HiddenFieldTest implements RewriteTest {
                   static class D {
                       public void method(int n) {
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void constructorParameter() {
-        rewriteRun(
-          hiddenFieldStyle(style -> style.withIgnoreConstructorParameter(false)),
-          //language=java
-          java(
-            """
-              public class A {
-                  private String field;
-
-                  public A(String field) {
-                  }
-              }
-              """,
-            """
-              public class A {
-                  private String field;
-
-                  public A(String field1) {
                   }
               }
               """
@@ -759,7 +759,7 @@ class HiddenFieldTest implements RewriteTest {
 
                   public abstract void method(int n);
               }
-                """
+              """
           )
         );
     }

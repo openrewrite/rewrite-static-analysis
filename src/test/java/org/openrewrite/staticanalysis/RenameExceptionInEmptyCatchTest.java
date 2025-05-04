@@ -29,25 +29,6 @@ class RenameExceptionInEmptyCatchTest implements RewriteTest {
         spec.recipe(new RenameExceptionInEmptyCatch());
     }
 
-    @Test
-    void notEmpty() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void method() {
-                      try {
-                      } catch (Exception ex) {
-                          // comment
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void nameScopeTest() {
@@ -86,6 +67,25 @@ class RenameExceptionInEmptyCatchTest implements RewriteTest {
                       try {
                           int ignored6 = 0; // scope does not apply.
                       } catch (Exception ignored3) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void notEmpty() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (Exception ex) {
+                          // comment
                       }
                   }
               }

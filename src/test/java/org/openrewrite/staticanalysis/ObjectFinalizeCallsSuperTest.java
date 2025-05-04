@@ -29,26 +29,6 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
         spec.recipe(new ObjectFinalizeCallsSuper());
     }
 
-    @Test
-    void hasSuperFinalizeInvocation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class F {
-                  Object o = new Object();
-
-                  @Override
-                  protected void finalize() throws Throwable {
-                      o = null;
-                      super.finalize();
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void addsSuperFinalizeInvocation() {
@@ -65,6 +45,26 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
                   }
               }
               """,
+            """
+              class F {
+                  Object o = new Object();
+
+                  @Override
+                  protected void finalize() throws Throwable {
+                      o = null;
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hasSuperFinalizeInvocation() {
+        rewriteRun(
+          //language=java
+          java(
             """
               class F {
                   Object o = new Object();

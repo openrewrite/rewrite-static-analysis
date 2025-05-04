@@ -32,6 +32,36 @@ class MinimumSwitchCasesTest implements RewriteTest {
         spec.recipe(new MinimumSwitchCases());
     }
 
+    @DocumentExample
+    @ExpectedToFail("Temporarily until we have investigated why the behavior has changed here")
+    @Test
+    void twoCases() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              def s = "prod"
+              switch(s) {
+                  case "prod":
+                      println("prod")
+                      break
+                  default:
+                      println("default")
+                      break
+              }
+              """,
+            """
+              def s = "prod"
+              if (s == "prod") {
+                  println("prod")
+              } else {
+                  println("default")
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("GrMethodMayBeStatic")
     @Issue("https://github.com/openrewrite/rewrite/issues/2566")
     @Test
@@ -58,36 +88,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
                           System.out.println("read")
                       }
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @ExpectedToFail("Temporarily until we have investigated why the behavior has changed here")
-    @Test
-    void twoCases() {
-        rewriteRun(
-          //language=groovy
-          groovy(
-            """
-              def s = "prod"
-              switch(s) {
-                  case "prod":
-                      println("prod")
-                      break
-                  default:
-                      println("default")
-                      break
-              }
-              """,
-            """
-              def s = "prod"
-              if (s == "prod") {
-                  println("prod")
-              } else {
-                  println("default")
               }
               """
           )

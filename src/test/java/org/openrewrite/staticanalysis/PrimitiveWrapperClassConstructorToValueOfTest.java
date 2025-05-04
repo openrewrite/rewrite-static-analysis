@@ -33,6 +33,44 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
         spec.recipe(new PrimitiveWrapperClassConstructorToValueOf());
     }
 
+    @DocumentExample
+    @Test
+    void newClassToValueOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Boolean bool = new Boolean(true);
+                  Byte b = new Byte("1");
+                  Character c = new Character('c');
+                  Double d = new Double(1.0);
+                  Float f = new Float(1.1f);
+                  Long l = new Long(1);
+                  Short sh = new Short("12");
+                  short s3 = 3;
+                  Short sh3 = new Short(s3);
+                  Integer i = new Integer(1);
+              }
+              """,
+            """
+              class A {
+                  Boolean bool = Boolean.valueOf(true);
+                  Byte b = Byte.valueOf("1");
+                  Character c = Character.valueOf('c');
+                  Double d = Double.valueOf(1.0);
+                  Float f = Float.valueOf(1.1f);
+                  Long l = Long.valueOf(1);
+                  Short sh = Short.valueOf("12");
+                  short s3 = 3;
+                  Short sh3 = Short.valueOf(s3);
+                  Integer i = Integer.valueOf(1);
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2945")
     @Test
     void ternaryWithBinary() {
@@ -73,44 +111,6 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
                   Integer i = Integer.valueOf(1);
                   String hello = new String("Hello" + " world " + i);
                   Long l = 11L;
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void newClassToValueOf() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  Boolean bool = new Boolean(true);
-                  Byte b = new Byte("1");
-                  Character c = new Character('c');
-                  Double d = new Double(1.0);
-                  Float f = new Float(1.1f);
-                  Long l = new Long(1);
-                  Short sh = new Short("12");
-                  short s3 = 3;
-                  Short sh3 = new Short(s3);
-                  Integer i = new Integer(1);
-              }
-              """,
-            """
-              class A {
-                  Boolean bool = Boolean.valueOf(true);
-                  Byte b = Byte.valueOf("1");
-                  Character c = Character.valueOf('c');
-                  Double d = Double.valueOf(1.0);
-                  Float f = Float.valueOf(1.1f);
-                  Long l = Long.valueOf(1);
-                  Short sh = Short.valueOf("12");
-                  short s3 = 3;
-                  Short sh3 = Short.valueOf(s3);
-                  Integer i = Integer.valueOf(1);
               }
               """
           )

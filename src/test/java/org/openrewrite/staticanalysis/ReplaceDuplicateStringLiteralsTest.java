@@ -31,6 +31,33 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         spec.recipe(new ReplaceDuplicateStringLiterals(true));
     }
 
+    @DocumentExample
+    @Test
+    void replaceRedundantFinalStrings() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.foo;
+              class A {
+                  final String val1 = "value";
+                  final String val2 = "value";
+                  final String val3 = "value";
+              }
+              """,
+            """
+              package org.foo;
+              class A {
+                  private static final String VALUE = "value";
+                  final String val1 = VALUE;
+                  final String val2 = VALUE;
+                  final String val3 = VALUE;
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doesNotMeetCharacterLimit() {
         rewriteRun(
@@ -115,33 +142,6 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
                   void method2() {}
                   @Example(value = "value")
                   void method3() {}
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void replaceRedundantFinalStrings() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              package org.foo;
-              class A {
-                  final String val1 = "value";
-                  final String val2 = "value";
-                  final String val3 = "value";
-              }
-              """,
-            """
-              package org.foo;
-              class A {
-                  private static final String VALUE = "value";
-                  final String val1 = VALUE;
-                  final String val2 = VALUE;
-                  final String val3 = VALUE;
               }
               """
           )

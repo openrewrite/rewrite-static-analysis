@@ -41,22 +41,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         spec.recipe(new HideUtilityClassConstructor());
     }
 
-    @SuppressWarnings("UnnecessaryModifier")
-    @Issue("https://github.com/openrewrite/rewrite/issues/1780")
-    @Test
-    void doNotAddConstructorToInterface() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public interface A {
-                  public static final String utility = "";
-              }
-              """
-          )
-        );
-    }
-
     /**
      * Should be a utility class since all methods are static, but class has public constructor
      */
@@ -82,6 +66,22 @@ class HideUtilityClassConstructorTest implements RewriteTest {
 
                   public static void utility() {
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings("UnnecessaryModifier")
+    @Issue("https://github.com/openrewrite/rewrite/issues/1780")
+    @Test
+    void doNotAddConstructorToInterface() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public interface A {
+                  public static final String utility = "";
               }
               """
           )

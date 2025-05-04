@@ -37,6 +37,35 @@ class UseCollectionInterfacesTest implements RewriteTest {
         spec.recipe(new UseCollectionInterfaces());
     }
 
+    @DocumentExample
+    @Test
+    void rawReturnType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashSet;
+
+              class Test {
+                  public HashSet method() {
+                      return new HashSet<>();
+                  }
+              }
+              """,
+            """
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class Test {
+                  public Set method() {
+                      return new HashSet<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void noTargetInUse() {
         rewriteRun(
@@ -67,35 +96,6 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
               class Test {
                   public Set<Integer> method() {
-                      return new HashSet<>();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void rawReturnType() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.HashSet;
-
-              class Test {
-                  public HashSet method() {
-                      return new HashSet<>();
-                  }
-              }
-              """,
-            """
-              import java.util.HashSet;
-              import java.util.Set;
-
-              class Test {
-                  public Set method() {
                       return new HashSet<>();
                   }
               }

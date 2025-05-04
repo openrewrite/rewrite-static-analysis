@@ -30,36 +30,6 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
         spec.recipe(new NestedEnumsAreNotStatic());
     }
 
-    @Test
-    void enumIsNotNested() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              static enum ABC {
-                  A, B, C
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void nestedEnumIsNotStatic() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  enum ABC {
-                      A, B, C
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void nestedEnumIsStatic() {
@@ -87,6 +57,36 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
 
                   private enum DEF {
                       D, E, F
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void enumIsNotNested() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              static enum ABC {
+                  A, B, C
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedEnumIsNotStatic() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  enum ABC {
+                      A, B, C
                   }
               }
               """

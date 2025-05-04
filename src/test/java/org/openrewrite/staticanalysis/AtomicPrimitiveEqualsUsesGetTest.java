@@ -29,6 +29,50 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
         spec.recipe(new AtomicPrimitiveEqualsUsesGet());
     }
 
+    @DocumentExample
+    @Test
+    void usesEquals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.atomic.AtomicInteger;
+              import java.util.concurrent.atomic.AtomicLong;
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean areEqual(AtomicInteger i1, AtomicInteger i2) {
+                      return i1.equals(i2);
+                  }
+                  boolean areEqual(AtomicLong l1, AtomicLong l2) {
+                      return l1.equals(l2);
+                  }
+                  boolean areEqual(AtomicBoolean b1, AtomicBoolean b2) {
+                      return b1.equals(b2);
+                  }
+              }
+              """,
+            """
+              import java.util.concurrent.atomic.AtomicInteger;
+              import java.util.concurrent.atomic.AtomicLong;
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean areEqual(AtomicInteger i1, AtomicInteger i2) {
+                      return i1.get() == i2.get();
+                  }
+                  boolean areEqual(AtomicLong l1, AtomicLong l2) {
+                      return l1.get() == l2.get();
+                  }
+                  boolean areEqual(AtomicBoolean b1, AtomicBoolean b2) {
+                      return b1.get() == b2.get();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void usesGet() {
         rewriteRun(
@@ -68,50 +112,6 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
               class A {
                   boolean areEqual(Integer a1, Integer a2) {
                       return a1.equals(a2);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void usesEquals() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.concurrent.atomic.AtomicInteger;
-              import java.util.concurrent.atomic.AtomicLong;
-              import java.util.concurrent.atomic.AtomicBoolean;
-
-              class A {
-                  boolean areEqual(AtomicInteger i1, AtomicInteger i2) {
-                      return i1.equals(i2);
-                  }
-                  boolean areEqual(AtomicLong l1, AtomicLong l2) {
-                      return l1.equals(l2);
-                  }
-                  boolean areEqual(AtomicBoolean b1, AtomicBoolean b2) {
-                      return b1.equals(b2);
-                  }
-              }
-              """,
-            """
-              import java.util.concurrent.atomic.AtomicInteger;
-              import java.util.concurrent.atomic.AtomicLong;
-              import java.util.concurrent.atomic.AtomicBoolean;
-
-              class A {
-                  boolean areEqual(AtomicInteger i1, AtomicInteger i2) {
-                      return i1.get() == i2.get();
-                  }
-                  boolean areEqual(AtomicLong l1, AtomicLong l2) {
-                      return l1.get() == l2.get();
-                  }
-                  boolean areEqual(AtomicBoolean b1, AtomicBoolean b2) {
-                      return b1.get() == b2.get();
                   }
               }
               """

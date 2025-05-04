@@ -32,22 +32,6 @@ class UnnecessaryThrowsTest implements RewriteTest {
         spec.recipe(new UnnecessaryThrows());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2144")
-    @Test
-    void genericException() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public <E extends Exception> void accept(Class<E> e) throws E {
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void unnecessaryThrows() {
@@ -60,10 +44,10 @@ class UnnecessaryThrowsTest implements RewriteTest {
               import java.io.IOException;
               import java.io.UncheckedIOException;
               class Test {
-                  private void test() throws FileNotFoundException, UncheckedIOException {
+                  private void changed() throws FileNotFoundException, UncheckedIOException {
                   }
 
-                  void test() throws IOException, UncheckedIOException {
+                  void unchanged() throws IOException, UncheckedIOException {
                       new FileInputStream("test");
                   }
               }
@@ -73,11 +57,27 @@ class UnnecessaryThrowsTest implements RewriteTest {
               import java.io.IOException;
               import java.io.UncheckedIOException;
               class Test {
-                  private void test() throws UncheckedIOException {
+                  private void changed() throws UncheckedIOException {
                   }
 
-                  void test() throws IOException, UncheckedIOException {
+                  void unchanged() throws IOException, UncheckedIOException {
                       new FileInputStream("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/2144")
+    @Test
+    void genericException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public <E extends Exception> void accept(Class<E> e) throws E {
                   }
               }
               """
