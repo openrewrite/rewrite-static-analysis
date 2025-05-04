@@ -133,8 +133,7 @@ public class NeedBraces extends Recipe {
         @Override
         public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
             J.Block bl = super.visitBlock(block, ctx);
-            Boolean removeEndComments = getCursor().pollMessage("removeEndComments");
-            if (removeEndComments != null) {
+            if (Boolean.TRUE.equals(getCursor().pollMessage("removeEndComments"))) {
                 bl = bl.withEnd(bl.getEnd().withComments(Collections.emptyList()));
                 bl = maybeAutoFormat(block, bl, ctx);
             }
