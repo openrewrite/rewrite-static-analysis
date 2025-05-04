@@ -15,6 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -32,7 +34,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Value
+@EqualsAndHashCode(callSuper = false)
 public class AddSerialVersionUidToSerializable extends Recipe {
+
+    @Option(displayName = "New serial version UID",
+            description = "Value of the added serial version UID.",
+            example = "42L",
+            required = false)
+    @Nullable
+    String uid;
 
     @Override
     public String getDisplayName() {
@@ -54,7 +65,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
-            final JavaTemplate template = JavaTemplate.builder("private static final long serialVersionUID = 1;").build();
+            final JavaTemplate template = JavaTemplate.builder(String.format("private static final long serialVersionUID = %s;", uid != null ? uid : "1")).build();
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
@@ -103,7 +114,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                     varDecls = varDecls.withModifiers(Arrays.asList(
                             new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Private, Collections.emptyList()),
                             new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()),
-                            new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Final,   Collections.emptyList())
+                            new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList())
                     ));
                 }
                 if (TypeUtils.asPrimitive(varDecls.getType()) != JavaType.Primitive.Long) {
