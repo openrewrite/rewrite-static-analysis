@@ -62,7 +62,7 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
     void shouldAddToNewFieldWhenChained() {
         rewriteRun(
           spec -> spec.recipes(
-            new AddSerialVersionUidToSerializable(),
+            new AddSerialVersionUidToSerializable(null),
             new AddSerialAnnotationToSerialVersionUID()),
           //language=java
           java(
