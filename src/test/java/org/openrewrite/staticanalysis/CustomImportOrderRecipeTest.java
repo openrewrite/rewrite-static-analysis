@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.CustomImportOrderStyle;
@@ -38,18 +39,7 @@ class CustomImportOrderRecipeTest implements RewriteTest {
         spec.recipe(new CustomImportOrder());
     }
 
-    private static Consumer<RecipeSpec> customImportOrder(UnaryOperator<CustomImportOrderStyle> with) {
-        return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
-          singletonList(
-            new NamedStyles(
-              Tree.randomId(), "test", "test", "test", emptySet(),
-              singletonList(with.apply(new CustomImportOrderStyle(parseImportOrder("STATIC, STANDARD_JAVA_PACKAGE, THIRD_PARTY_PACKAGE"),
-                true,
-                false,
-                "^$", "^(java|javax)\\.", ".*"))))))
-        );
-    }
-
+    @DocumentExample
     @Test
     void ordersStaticThenStandardThenThirdPartyWithNoGroupBlankLine() {
         rewriteRun(
@@ -74,7 +64,20 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import org.apache.commons.lang3.StringUtils;
 
                     class Test {}
-                    """));
+                    """
+          ));
+    }
+
+    private static Consumer<RecipeSpec> customImportOrder(UnaryOperator<CustomImportOrderStyle> with) {
+        return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
+          singletonList(
+            new NamedStyles(
+              Tree.randomId(), "test", "test", "test", emptySet(),
+              singletonList(with.apply(new CustomImportOrderStyle(parseImportOrder("STATIC, STANDARD_JAVA_PACKAGE, THIRD_PARTY_PACKAGE"),
+                true,
+                false,
+                "^$", "^(java|javax)\\.", ".*"))))))
+        );
     }
 
     @Test
@@ -108,7 +111,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import org.apache.commons.io.FileUtils;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -142,7 +146,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import org.apache.commons.io.FileUtils;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -182,7 +187,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import org.apache.commons.io.FileUtils;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -220,7 +226,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import javax.net.*;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -259,7 +266,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -297,7 +305,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -339,7 +348,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -379,7 +389,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -407,7 +418,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import java.awt.color.ColorSpace;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
 
@@ -449,7 +461,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import static java.util.Collections.*;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -540,7 +553,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
                     import java.lang.String;
 
                     class Test {}
-                    """));
+                    """
+          ));
     }
 
     @Test
@@ -631,6 +645,7 @@ class CustomImportOrderRecipeTest implements RewriteTest {
             import org.apache.commons.lang3.StringUtils;
 
             class Test {}
-            """));
+            """
+          ));
     }
 }

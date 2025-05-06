@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.openrewrite.ExecutionContext;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.CustomImportOrderStyle;
 import org.openrewrite.java.style.CustomImportOrderStyle.GroupWithDepth;
@@ -25,12 +24,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.compile;
@@ -42,9 +36,9 @@ public class CustomImportOrderVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, P p) {
-        String pkgName = cu.getPackageDeclaration() != null
-                ? cu.getPackageDeclaration().getExpression().printTrimmed(getCursor())
-                : "";
+        String pkgName = cu.getPackageDeclaration() != null ?
+                cu.getPackageDeclaration().getExpression().printTrimmed(getCursor()) :
+                "";
 
         List<JRightPadded<J.Import>> originalImports = cu.getPadding().getImports();
         if (originalImports.isEmpty() || style.getImportOrder().isEmpty()) {
@@ -156,10 +150,10 @@ public class CustomImportOrderVisitor<P> extends JavaIsoVisitor<P> {
                 return !imp.isStatic() && specialPattern.matcher(importFqcn).find();
             case THIRD_PARTY_PACKAGE:
                 boolean notOther =
-                        !imp.isStatic() && !specialPattern.matcher(importFqcn).find()
-                                && !standardPattern.matcher(importFqcn).find()
-                                && (groupDef.getDepth() == null
-                                || !isSamePackage(importFqcn, pkgName, groupDef.getDepth()));
+                        !imp.isStatic() && !specialPattern.matcher(importFqcn).find() &&
+                                !standardPattern.matcher(importFqcn).find() &&
+                                (groupDef.getDepth() == null ||
+                                !isSamePackage(importFqcn, pkgName, groupDef.getDepth()));
                 boolean matchesThird = thirdPartyPattern.matcher(importFqcn).find();
                 return notOther && matchesThird;
             default:
