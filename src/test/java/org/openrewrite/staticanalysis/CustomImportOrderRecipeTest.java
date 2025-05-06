@@ -616,4 +616,21 @@ class CustomImportOrderRecipeTest implements RewriteTest {
         );
     }
 
+    @Test
+    void doNothingIfAlreadyStandard() {
+        rewriteRun(
+          customImportOrder(style -> style.withSeparateLineBetweenGroups(false)),
+          //language=java
+          java(
+            """
+            package com.example;
+
+            import static java.util.Collections.*;
+
+            import java.util.Collections;
+            import org.apache.commons.lang3.StringUtils;
+
+            class Test {}
+            """));
+    }
 }
