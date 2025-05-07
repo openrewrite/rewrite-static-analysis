@@ -41,6 +41,7 @@ recipeList:
   - org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
   - org.openrewrite.java.ShortenFullyQualifiedTypeReferences
+  - org.openrewrite.staticanalysis.CustomImportOrder
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
