@@ -196,6 +196,34 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
     }
 
     @Test
+    void simplifyConstantIfTrueWithReturnImpliedFalseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public boolean test() {
+                      if (true) {
+                          Object x;
+                          return true;
+                      }
+                      return false;
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public boolean test() {
+                      Object x;
+                      return true;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void simplifyConstantIfTrueElse() {
         rewriteRun(
           //language=java
