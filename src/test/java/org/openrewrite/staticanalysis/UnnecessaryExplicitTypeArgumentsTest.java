@@ -217,6 +217,34 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void typedBuilder() {
+        rewriteRun(
+          java(
+          """
+            package org.openrewrite.test;
+
+            public class GenericClass<T> {
+                public static <T> GenericClass<T> typedBuilder() {
+                    return null;
+                }
+            }
+          """
+          ),
+          java(
+            """
+              package org.openrewrite.test;
+
+              public class Test {
+                  <T> GenericClass<T> test(Class<T> clazz) {
+                      return GenericClass.<T>typedBuilder();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class kotlinTest {
         @Test
