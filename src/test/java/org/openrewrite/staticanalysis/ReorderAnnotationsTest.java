@@ -33,17 +33,16 @@ class ReorderAnnotationsTest implements RewriteTest {
               //language=java
               java(
                 """
-                    import org.junit.jupiter.api.Test;
-                    import org.junitpioneer.jupiter.ExpectedToFail;
-                    import org.junitpioneer.jupiter.Issue;
-
-                    class A {
-                        @ExpectedToFail
-                        @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                        @Test
-                        void explicitImplementationClassInApi() {
-                        }
-                    }
+                  import org.junit.jupiter.api.Test;
+                  import org.junitpioneer.jupiter.ExpectedToFail;
+                  import org.junitpioneer.jupiter.Issue;
+                  class A {
+                      @ExpectedToFail
+                      @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+                      @Test
+                      void explicitImplementationClassInApi() {
+                      }
+                  }
                   """
               )
             );
@@ -57,30 +56,28 @@ class ReorderAnnotationsTest implements RewriteTest {
               //language=java
               java(
                 """
-                    import org.junit.jupiter.api.Test;
-                    import org.junitpioneer.jupiter.ExpectedToFail;
-                    import org.junitpioneer.jupiter.Issue;
-
-                    class A {
-                        @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                        @Test
-                        @ExpectedToFail
-                        void explicitImplementationClassInApi() {
-                        }
-                    }
+                  import org.junit.jupiter.api.Test;
+                  import org.junitpioneer.jupiter.ExpectedToFail;
+                  import org.junitpioneer.jupiter.Issue;
+                  class A {
+                      @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+                      @Test
+                      @ExpectedToFail
+                      void explicitImplementationClassInApi() {
+                      }
+                  }
                   """,
                 """
-                    import org.junit.jupiter.api.Test;
-                    import org.junitpioneer.jupiter.ExpectedToFail;
-                    import org.junitpioneer.jupiter.Issue;
-
-                    class A {
-                        @ExpectedToFail
-                        @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                        @Test
-                        void explicitImplementationClassInApi() {
-                        }
-                    }
+                  import org.junit.jupiter.api.Test;
+                  import org.junitpioneer.jupiter.ExpectedToFail;
+                  import org.junitpioneer.jupiter.Issue;
+                  class A {
+                      @ExpectedToFail
+                      @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+                      @Test
+                      void explicitImplementationClassInApi() {
+                      }
+                  }
                   """
               )
             );
