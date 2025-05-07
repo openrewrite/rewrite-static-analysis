@@ -469,6 +469,37 @@ class RemoveUnneededBlockTest implements RewriteTest {
     }
 
     @Test
+    void inlineNonLastBlockContainingVariableDeclarationsIfAlsoContainsReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void SomeFunction() {
+                      {
+                          int i = 0;
+                          return;
+                      }
+                      {
+                          System.out.println("hello world!");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void SomeFunction() {
+                      int i = 0;
+                      return;
+                      System.out.println("hello world!");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void inlineLastBlockContainingVariableDeclarations() {
         rewriteRun(
           //language=java
