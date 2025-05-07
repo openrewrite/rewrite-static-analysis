@@ -100,3 +100,4 @@ recipeList:
   - org.openrewrite.kotlin.cleanup.EqualsMethodUsage
   - org.openrewrite.kotlin.cleanup.ImplicitParameterInLambda
   - org.openrewrite.kotlin.cleanup.ReplaceCharToIntWithCode
+  - org.openrewrite.staticanalysis.CustomImportOrder
