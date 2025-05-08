@@ -225,8 +225,18 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             package org.openrewrite.test;
 
             public class GenericClass<T> {
-                public static <T> GenericClass<T> typedBuilder() {
-                    return null;
+                public static <T> GenericClassBuilder<T> typedBuilder() {
+                    return new GenericClassBuilder<T>();
+                }
+
+                static class GenericClassBuilder<T> {
+                    GenericClassBuilder<T> type(String type) {
+                        return null;
+                    }
+
+                    GenericClass<T> build() {
+                        return null;
+                    }
                 }
             }
           """
@@ -237,7 +247,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
 
               public class Test {
                   <T> GenericClass<T> test(Class<T> clazz) {
-                      return GenericClass.<T>typedBuilder();
+                      final GenericClass<T> gc = GenericClass.<T>typedBuilder().type("thing").build();
+                      return gc;
                   }
               }
               """
