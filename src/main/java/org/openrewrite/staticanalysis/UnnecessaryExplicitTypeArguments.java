@@ -20,6 +20,10 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
     @Override
@@ -46,8 +50,20 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 if (m.getMethodType() != null) {
                     Object enclosing = getCursor().getParentTreeCursor().getValue();
                     JavaType enclosingType = null;
-
                     if (enclosing instanceof J.MethodInvocation) {
+                        if (m.getMethodType().getFlags().contains(Flag.Static)) {
+                            List<String> collect = m.getMethodType().getParameterTypes().stream().flatMap(p -> {
+                                if (!(p instanceof JavaType.Parameterized)) {
+                                    return Collections.<String>emptyList().stream();
+                                }
+                                return ((JavaType.Parameterized) p).getTypeParameters().stream()
+                                        .filter(t -> t instanceof JavaType.GenericTypeVariable)
+                                        .map(e -> ((JavaType.GenericTypeVariable)e).getName());
+                            }).collect(Collectors.toList());
+                            if(!collect.containsAll(m.getMethodType().getDeclaredFormalTypeNames())) {
+                                return m;
+                            }
+                        }
                         // Cannot remove type parameters if it would introduce ambiguity about which method should be called
                         J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
                         if (enclosingMethod.getMethodType() == null) {
@@ -64,7 +80,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                                 .count() > 1) {
                             return m;
                         }
-                        enclosingType = enclosingMethod.getType();
+                        enclosingType = m.getMethodType().getReturnType();
                     } else if (enclosing instanceof Expression) {
                         enclosingType = ((Expression) enclosing).getType();
                     } else if (enclosing instanceof NameTree) {

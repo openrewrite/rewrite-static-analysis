@@ -180,7 +180,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
               public class Test {
 
                   List<String> test() {
-                      var l = List.<String> of("x");
+                      var l = List.<String>of("x");
                       return l;
                   }
               }
@@ -218,7 +218,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
-    void typedBuilder() {
+    void staticMethodInvocation() {
         rewriteRun(
           java(
           """
@@ -226,6 +226,10 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
 
             public class GenericClass<T> {
                 public static <T> GenericClassBuilder<T> typedBuilder() {
+                    return new GenericClassBuilder<T>();
+                }
+
+                public static <T> GenericClassBuilder<T> typedBuilderWithClass(Class<T> clazz) {
                     return new GenericClassBuilder<T>();
                 }
 
@@ -246,9 +250,25 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
               package org.openrewrite.test;
 
               public class Test {
-                  <T> GenericClass<T> test(Class<T> clazz) {
-                      final GenericClass<T> gc = GenericClass.<T>typedBuilder().type("thing").build();
-                      return gc;
+                  <T> void test(Class<T> clazz) {
+                      final GenericClass<T> gc1 = GenericClass.<T>typedBuilderWithClass(clazz).build();
+                      final GenericClass<T> gc2 = GenericClass.<T>typedBuilder().type("thing").build();
+                      var gc3 = GenericClass.<T>typedBuilder().type("thing").build();
+                      final GenericClass.GenericClassBuilder<T> gcb1 = GenericClass.<T>typedBuilder();
+                      var gcb2 = GenericClass.<T>typedBuilder();
+                  }
+              }
+              """,
+            """
+              package org.openrewrite.test;
+
+              public class Test {
+                  <T> void test(Class<T> clazz) {
+                      final GenericClass<T> gc1 = GenericClass.typedBuilderWithClass(clazz).build();
+                      final GenericClass<T> gc2 = GenericClass.<T>typedBuilder().type("thing").build();
+                      var gc3 = GenericClass.<T>typedBuilder().type("thing").build();
+                      final GenericClass.GenericClassBuilder<T> gcb1 = GenericClass.typedBuilder();
+                      var gcb2 = GenericClass.<T>typedBuilder();
                   }
               }
               """
