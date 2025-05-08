@@ -23,12 +23,41 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpecs;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"RedundantTypeArguments", "InfiniteRecursion", "CodeBlock2Expr"})
 class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
+
+    public static final SourceSpecs GENERIC_CLASS_SOURCE = java(
+      //language=java
+      """
+        package org.openrewrite.test;
+
+        public class GenericClass<T> {
+            public static <T> GenericClassBuilder<T> typedBuilder() {
+                return new GenericClassBuilder<T>();
+            }
+
+            public static <T> GenericClassBuilder<T> typedBuilderWithClass(Class<T> clazz) {
+                return new GenericClassBuilder<T>();
+            }
+
+            static class GenericClassBuilder<T> {
+                GenericClassBuilder<T> type(String type) {
+                    return null;
+                }
+
+                GenericClass<T> build() {
+                    return null;
+                }
+            }
+        }
+        """
+    );
+
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UnnecessaryExplicitTypeArguments());
@@ -218,44 +247,39 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
-    void staticMethodInvocation() {
+    void staticMethodInvocationWithTypeArguments() {
+        //language=java
         rewriteRun(
-          java(
-          """
-            package org.openrewrite.test;
-
-            public class GenericClass<T> {
-                public static <T> GenericClassBuilder<T> typedBuilder() {
-                    return new GenericClassBuilder<T>();
-                }
-
-                public static <T> GenericClassBuilder<T> typedBuilderWithClass(Class<T> clazz) {
-                    return new GenericClassBuilder<T>();
-                }
-
-                static class GenericClassBuilder<T> {
-                    GenericClassBuilder<T> type(String type) {
-                        return null;
-                    }
-
-                    GenericClass<T> build() {
-                        return null;
-                    }
-                }
-            }
-          """
-          ),
+          GENERIC_CLASS_SOURCE,
           java(
             """
               package org.openrewrite.test;
 
               public class Test {
                   <T> void test(Class<T> clazz) {
-                      final GenericClass<T> gc1 = GenericClass.<T>typedBuilderWithClass(clazz).build();
-                      final GenericClass<T> gc2 = GenericClass.<T>typedBuilder().type("thing").build();
-                      var gc3 = GenericClass.<T>typedBuilder().type("thing").build();
-                      final GenericClass.GenericClassBuilder<T> gcb1 = GenericClass.<T>typedBuilder();
-                      var gcb2 = GenericClass.<T>typedBuilder();
+                      final GenericClass<T> gc1 = GenericClass.<T>typedBuilder().type("thing").build();
+                      var gc2 = GenericClass.<T>typedBuilder().type("thing").build();
+                      var gcb1 = GenericClass.<T>typedBuilder();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticMethodInvocationWithoutTypeArguments() {
+        //language=java
+        rewriteRun(
+          GENERIC_CLASS_SOURCE,
+          java(
+            """
+              package org.openrewrite.test;
+
+              public class Test {
+                  <T> void test(Class<T> clazz) {
+                      final GenericClass<T> gc = GenericClass.<T>typedBuilderWithClass(clazz).build();
+                      final GenericClass.GenericClassBuilder<T> gcb = GenericClass.<T>typedBuilder();
                   }
               }
               """,
@@ -264,11 +288,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
 
               public class Test {
                   <T> void test(Class<T> clazz) {
-                      final GenericClass<T> gc1 = GenericClass.typedBuilderWithClass(clazz).build();
-                      final GenericClass<T> gc2 = GenericClass.<T>typedBuilder().type("thing").build();
-                      var gc3 = GenericClass.<T>typedBuilder().type("thing").build();
-                      final GenericClass.GenericClassBuilder<T> gcb1 = GenericClass.typedBuilder();
-                      var gcb2 = GenericClass.<T>typedBuilder();
+                      final GenericClass<T> gc = GenericClass.typedBuilderWithClass(clazz).build();
+                      final GenericClass.GenericClassBuilder<T> gcb = GenericClass.typedBuilder();
                   }
               }
               """
