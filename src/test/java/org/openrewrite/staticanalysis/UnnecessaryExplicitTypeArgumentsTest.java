@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
@@ -23,12 +22,14 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpecs;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"RedundantTypeArguments", "InfiniteRecursion", "CodeBlock2Expr"})
 class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
+
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new UnnecessaryExplicitTypeArguments());
@@ -71,7 +72,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
-    @Disabled
+    @ExpectedToFail("Not implemented yet")
     void withinLambda() {
         rewriteRun(
           //language=java
@@ -166,7 +167,6 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
 
-
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Issue("https://github.com/openrewrite/rewrite/issues/2818")
     @Test
@@ -180,7 +180,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
               public class Test {
 
                   List<String> test() {
-                      var l = List.<String> of("x");
+                      var l = List.<String>of("x");
                       return l;
                   }
               }
@@ -218,6 +218,79 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Nested
+    class StaticMethods {
+        static final SourceSpecs GENERIC_CLASS_SOURCE = java(
+          //language=java
+          """
+            class GenericClass<T> {
+                static <T> GenericClassBuilder<T> typedBuilder() {
+                    return new GenericClassBuilder<T>();
+                }
+
+                static <T> GenericClassBuilder<T> typedBuilderWithClass(Class<T> clazz) {
+                    return new GenericClassBuilder<T>();
+                }
+
+                static class GenericClassBuilder<T> {
+                    GenericClassBuilder<T> type(String type) {
+                        return null;
+                    }
+
+                    GenericClass<T> build() {
+                        return null;
+                    }
+                }
+            }
+            """
+        );
+
+        @Test
+        void staticMethodInvocationWithTypeArguments() {
+            //language=java
+            rewriteRun(
+              GENERIC_CLASS_SOURCE,
+              java(
+                """
+                  class Test {
+                      <T> void test(Class<T> clazz) {
+                          final GenericClass<T> gc1 = GenericClass.<T>typedBuilder().type("thing").build();
+                          var gc2 = GenericClass.<T>typedBuilder().type("thing").build();
+                          var gcb1 = GenericClass.<T>typedBuilder();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void staticMethodInvocationWithoutTypeArguments() {
+            //language=java
+            rewriteRun(
+              GENERIC_CLASS_SOURCE,
+              java(
+                """
+                  class Test {
+                      <T> void test(Class<T> clazz) {
+                          final GenericClass<T> gc = GenericClass.<T>typedBuilderWithClass(clazz).build();
+                          final GenericClass.GenericClassBuilder<T> gcb = GenericClass.<T>typedBuilder();
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      <T> void test(Class<T> clazz) {
+                          final GenericClass<T> gc = GenericClass.typedBuilderWithClass(clazz).build();
+                          final GenericClass.GenericClassBuilder<T> gcb = GenericClass.typedBuilder();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
     class kotlinTest {
         @Test
         void doNotChangeIfHasNotTypeInference() {
@@ -231,7 +304,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @Disabled
+        @ExpectedToFail("Not matching yet")
         @Test
         void changeIfHasTypeInference() {
             rewriteRun(
