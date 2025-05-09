@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -27,7 +28,7 @@ class NoFinalizedLocalVariablesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new NoFinalizedLocalVariables());
+        spec.recipe(new NoFinalizedLocalVariables(null));
     }
 
     @DocumentExample
@@ -71,23 +72,250 @@ class NoFinalizedLocalVariablesTest implements RewriteTest {
     }
 
     @Test
+    void removeFinalFromWithinTryBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  final int field = 0;
+                  public void test(final String s) {
+                      final int n = 0;
+                      try {
+                          final int innerField = 0;
+                      } catch (final RuntimeException e) {
+                          final int inCatchField = 0;
+                      };
+                  }
+              }
+              """,
+            """
+              class T {
+                  final int field = 0;
+                  public void test(String s) {
+                      int n = 0;
+                      try {
+                          int innerField = 0;
+                      } catch (RuntimeException e) {
+                          int inCatchField = 0;
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void retainPrefix() {
         rewriteRun(
           //language=java
           java(
             """
               class T {
-                  public void test(@SuppressWarnings final String s) {
+                  public void test(@SuppressWarnings("ALL") final String s) {
                   }
               }
               """,
             """
               class T {
-                  public void test(@SuppressWarnings String s) {
+                  public void test(@SuppressWarnings("ALL") String s) {
                   }
               }
               """
           )
         );
+    }
+
+    @Nested
+    class WithExcludeMethodParametersTrue {
+        @Test
+        void removesFinalExceptOnMethodParameters() {
+            rewriteRun(
+              spec -> spec.recipe(new NoFinalizedLocalVariables(true)),
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+                  class T {
+                      final int field = 0;
+                      final Function<String, Boolean> lambda = (final String t) -> {
+                          final int j = 1;
+                          return true;
+                      };
+                      public void test(final String s) {
+                          final int n = 0;
+                          new Supplier<>() {
+                              final int innerField = 0;
+                              public String get() {
+                                  return s;
+                              }
+                              private void set(final Boolean u) {
+                                  final Function<String, Boolean> innerLambda = (final String x) -> {
+                                      final int k = 2;
+                                      return u;
+                                  };
+                              }
+                          };
+                      }
+                  }
+                  """,
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+                  class T {
+                      final int field = 0;
+                      final Function<String, Boolean> lambda = (final String t) -> {
+                          int j = 1;
+                          return true;
+                      };
+                      public void test(final String s) {
+                          int n = 0;
+                          new Supplier<>() {
+                              final int innerField = 0;
+                              public String get() {
+                                  return s;
+                              }
+                              private void set(final Boolean u) {
+                                  Function<String, Boolean> innerLambda = (final String x) -> {
+                                      int k = 2;
+                                      return u;
+                                  };
+                              }
+                          };
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class WithExcludeMethodParametersFalseOrNull {
+        @Test
+        void withFalseRemovesFinal() {
+            rewriteRun(
+              spec -> spec.recipe(new NoFinalizedLocalVariables(false)),
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+                  class T {
+                      final int field = 0;
+                      final Function<String, Boolean> lambda = (final String t) -> {
+                          final int j = 1;
+                          return true;
+                      };
+                      public void test(final String s) {
+                          final int n = 0;
+                          new Supplier<>() {
+                              final int innerField = 0;
+                              public String get() {
+                                  return s;
+                              }
+                              private void set(final Boolean u) {
+                                  final Function<String, Boolean> innerLambda = (final String x) -> {
+                                      final int k = 2;
+                                      return u;
+                                  };
+                              }
+                          };
+                      }
+                  }
+                  """,
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+                  class T {
+                      final int field = 0;
+                      final Function<String, Boolean> lambda = (String t) -> {
+                          int j = 1;
+                          return true;
+                      };
+                      public void test(String s) {
+                          int n = 0;
+                          new Supplier<>() {
+                              final int innerField = 0;
+                              public String get() {
+                                  return s;
+                              }
+                              private void set(Boolean u) {
+                                  Function<String, Boolean> innerLambda = (String x) -> {
+                                      int k = 2;
+                                      return u;
+                                  };
+                              }
+                          };
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void withNullRemovesFinal() {
+            rewriteRun(
+              spec -> spec.recipe(new NoFinalizedLocalVariables(null)),
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+                  class T {
+                      final int field = 0;
+                      final Function<String, Boolean> lambda = (final String t) -> {
+                          final int j = 1;
+                          return true;
+                      };
+                      public void test(final String s) {
+                          final int n = 0;
+                          new Supplier<>() {
+                              final int innerField = 0;
+                              public String get() {
+                                  return s;
+                              }
+                              private void set(final Boolean u) {
+                                  final Function<String, Boolean> innerLambda = (final String x) -> {
+                                      final int k = 2;
+                                      return u;
+                                  };
+                              }
+                          };
+                      }
+                  }
+                  """,
+                """
+                  import java.util.function.Function;
+                  import java.util.function.Supplier;
+                  class T {
+                      final int field = 0;
+                      final Function<String, Boolean> lambda = (String t) -> {
+                          int j = 1;
+                          return true;
+                      };
+                      public void test(String s) {
+                          int n = 0;
+                          new Supplier<>() {
+                              final int innerField = 0;
+                              public String get() {
+                                  return s;
+                              }
+                              private void set(Boolean u) {
+                                  Function<String, Boolean> innerLambda = (String x) -> {
+                                      int k = 2;
+                                      return u;
+                                  };
+                              }
+                          };
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
