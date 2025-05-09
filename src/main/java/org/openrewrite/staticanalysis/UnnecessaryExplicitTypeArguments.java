@@ -20,9 +20,8 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -49,18 +48,16 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
 
                 if (m.getMethodType() != null) {
                     Object enclosing = getCursor().getParentTreeCursor().getValue();
-                    JavaType enclosingType = null;
+                    JavaType inferedType = null;
                     if (enclosing instanceof J.MethodInvocation) {
                         if (m.getMethodType().getFlags().contains(Flag.Static)) {
-                            List<String> collect = m.getMethodType().getParameterTypes().stream().flatMap(p -> {
-                                if (!(p instanceof JavaType.Parameterized)) {
-                                    return Collections.<String>emptyList().stream();
-                                }
-                                return ((JavaType.Parameterized) p).getTypeParameters().stream()
-                                        .filter(t -> t instanceof JavaType.GenericTypeVariable)
-                                        .map(e -> ((JavaType.GenericTypeVariable)e).getName());
-                            }).collect(Collectors.toList());
-                            if(!collect.containsAll(m.getMethodType().getDeclaredFormalTypeNames())) {
+                            List<String> formalTypeNames = new ArrayList<>(m.getMethodType().getDeclaredFormalTypeNames());
+                            m.getMethodType().getParameterTypes().stream()
+                                    .filter(p -> p instanceof JavaType.Parameterized)
+                                    .flatMap(p -> ((JavaType.Parameterized) p).getTypeParameters().stream())
+                                    .filter(t -> t instanceof JavaType.GenericTypeVariable)
+                                    .forEach(it -> formalTypeNames.remove(((JavaType.GenericTypeVariable) it).getName()));
+                            if (!formalTypeNames.isEmpty()) {
                                 return m;
                             }
                         }
@@ -80,9 +77,9 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                                 .count() > 1) {
                             return m;
                         }
-                        enclosingType = m.getMethodType().getReturnType();
+                        inferedType = m.getMethodType().getReturnType();
                     } else if (enclosing instanceof Expression) {
-                        enclosingType = ((Expression) enclosing).getType();
+                        inferedType = ((Expression) enclosing).getType();
                     } else if (enclosing instanceof NameTree) {
                         if (enclosing instanceof J.VariableDeclarations.NamedVariable) {
                             J.VariableDeclarations decl = getCursor().getParentTreeCursor().getParentTreeCursor().getValue();
@@ -90,20 +87,20 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                                 return m;
                             }
                         }
-                        enclosingType = ((NameTree) enclosing).getType();
+                        inferedType = ((NameTree) enclosing).getType();
                     } else if (enclosing instanceof J.Return) {
                         Object e = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || p.equals(Cursor.ROOT_VALUE)).getValue();
                         if (e instanceof J.MethodDeclaration) {
                             J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) e;
                             if (methodDeclaration.getReturnTypeExpression() != null) {
-                                enclosingType = methodDeclaration.getReturnTypeExpression().getType();
+                                inferedType = methodDeclaration.getReturnTypeExpression().getType();
                             }
                         } else if (e instanceof J.Lambda) {
-                            enclosingType = ((J.Lambda) e).getType();
+                            inferedType = ((J.Lambda) e).getType();
                         }
                     }
 
-                    if (enclosingType != null && TypeUtils.isOfType(enclosingType, m.getMethodType().getReturnType())) {
+                    if (inferedType != null && TypeUtils.isOfType(inferedType, m.getMethodType().getReturnType())) {
                         m = m.withTypeParameters(null);
                     }
                 }
