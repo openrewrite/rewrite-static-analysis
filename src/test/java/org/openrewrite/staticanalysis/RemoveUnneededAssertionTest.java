@@ -266,4 +266,100 @@ class RemoveUnneededAssertionTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void testNgAssertTrue() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+          //language=java
+          java(
+            """
+              import static org.testng.Assert.assertTrue;
+              public class A {
+                  public void m() {
+                      assertTrue(true);
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void m() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void testNgAssertFalse() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+          //language=java
+          java(
+            """
+              import static org.testng.Assert.assertFalse;
+              public class A {
+                  public void m() {
+                      assertFalse(false);
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void m() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void testNgAssertTrueMessage() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+          //language=java
+          java(
+            """
+              import static org.testng.Assert.assertTrue;
+              public class A {
+                  public void m() {
+                      assertTrue(true, "message");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void m() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void testNgAssertFalseMessage() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+          //language=java
+          java(
+            """
+              import static org.testng.Assert.assertFalse;
+              public class A {
+                  public void m() {
+                      assertFalse(false, "message");
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void m() {
+                  }
+              }
+              """
+          )
+        );
+    }
 }
