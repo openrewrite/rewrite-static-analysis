@@ -395,4 +395,51 @@ class UnnecessaryThrowsTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/apache/maven/pull/2291")
+    @Test
+    void retainProtectedNonOverrides() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+              class A {
+                  // Someone marked this protected, and added exceptions that implementers can optionally use
+                  protected void method() throws FileNotFoundException {
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import java.io.FileNotFoundException;
+              class B extends A {
+                  @Override
+                  protected void method() throws FileNotFoundException {
+                      throw new FileNotFoundException();
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import java.io.FileNotFoundException;
+              class C extends A {
+                  @Override
+                  protected void method() throws FileNotFoundException {
+                  }
+              }
+              """,
+            // Expected to remove here, as we override, but do not use the exceptions
+            """
+              class C extends A {
+                  @Override
+                  protected void method() {
+                  }
+              }
+              """
+          )
+        );
+    }
 }

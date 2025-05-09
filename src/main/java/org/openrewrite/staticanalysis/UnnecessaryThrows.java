@@ -29,6 +29,8 @@ import org.openrewrite.java.tree.*;
 import java.time.Duration;
 import java.util.*;
 
+import static org.openrewrite.java.tree.J.Modifier.Type.*;
+
 public class UnnecessaryThrows extends Recipe {
 
     @Override
@@ -146,6 +148,11 @@ public class UnnecessaryThrows extends Recipe {
             return Collections.emptySet();
         }
 
+        // Do not change the API of methods intended for overriding.
+        if (method.hasModifier(Protected) && !method.getMethodType().isOverride()) {
+            return Collections.emptySet();
+        }
+
         //Collect all checked exceptions.
         Set<JavaType.FullyQualified> candidates = new TreeSet<>(Comparator.comparing(JavaType.FullyQualified::getFullyQualifiedName));
 
@@ -166,9 +173,9 @@ public class UnnecessaryThrows extends Recipe {
 
         //noinspection ConstantConditions
         if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
-                method.isAbstract() || method.hasModifier(J.Modifier.Type.Static) ||
-                method.hasModifier(J.Modifier.Type.Private) ||
-                method.hasModifier(J.Modifier.Type.Final)) {
+                method.isAbstract() || method.hasModifier(Static) ||
+                method.hasModifier(Private) ||
+                method.hasModifier(Final)) {
             //Consider all checked exceptions as candidates if the type/method are final or the method is private or static.
             return candidates;
         }
