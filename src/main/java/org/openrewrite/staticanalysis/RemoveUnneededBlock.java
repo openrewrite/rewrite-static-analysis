@@ -80,8 +80,10 @@ public class RemoveUnneededBlock extends Recipe {
                     return stmt;
                 }
 
-                // blocks are relevant for scoping, so don't flatten them if they contain variable declarations
-                if (i < statements.size() - 1 && nested.getStatements().stream().anyMatch(J.VariableDeclarations.class::isInstance)) {
+                // blocks are relevant for scoping, so don't flatten them if they contain variable declarations unless they also have returns
+                if (i < statements.size() - 1 &&
+                    nested.getStatements().stream().anyMatch(J.VariableDeclarations.class::isInstance) &&
+                    nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
                     return stmt;
                 }
 
