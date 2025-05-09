@@ -305,7 +305,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @Disabled
+        @ExpectedToFail("Not matching yet")
         @Test
         void changeIfHasTypeInference() {
             rewriteRun(
