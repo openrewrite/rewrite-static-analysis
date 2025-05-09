@@ -48,7 +48,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
 
                 if (m.getMethodType() != null) {
                     Object enclosing = getCursor().getParentTreeCursor().getValue();
-                    JavaType inferedType = null;
+                    JavaType inferredType = null;
                     if (enclosing instanceof J.MethodInvocation) {
                         if (m.getMethodType().getFlags().contains(Flag.Static)) {
                             List<String> formalTypeNames = new ArrayList<>(m.getMethodType().getDeclaredFormalTypeNames());
@@ -77,9 +77,9 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                                 .count() > 1) {
                             return m;
                         }
-                        inferedType = m.getMethodType().getReturnType();
+                        inferredType = m.getMethodType().getReturnType();
                     } else if (enclosing instanceof Expression) {
-                        inferedType = ((Expression) enclosing).getType();
+                        inferredType = ((Expression) enclosing).getType();
                     } else if (enclosing instanceof NameTree) {
                         if (enclosing instanceof J.VariableDeclarations.NamedVariable) {
                             J.VariableDeclarations decl = getCursor().getParentTreeCursor().getParentTreeCursor().getValue();
@@ -87,20 +87,20 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                                 return m;
                             }
                         }
-                        inferedType = ((NameTree) enclosing).getType();
+                        inferredType = ((NameTree) enclosing).getType();
                     } else if (enclosing instanceof J.Return) {
                         Object e = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || p.equals(Cursor.ROOT_VALUE)).getValue();
                         if (e instanceof J.MethodDeclaration) {
                             J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) e;
                             if (methodDeclaration.getReturnTypeExpression() != null) {
-                                inferedType = methodDeclaration.getReturnTypeExpression().getType();
+                                inferredType = methodDeclaration.getReturnTypeExpression().getType();
                             }
                         } else if (e instanceof J.Lambda) {
-                            inferedType = ((J.Lambda) e).getType();
+                            inferredType = ((J.Lambda) e).getType();
                         }
                     }
 
-                    if (inferedType != null && TypeUtils.isOfType(inferedType, m.getMethodType().getReturnType())) {
+                    if (inferredType != null && TypeUtils.isOfType(inferredType, m.getMethodType().getReturnType())) {
                         m = m.withTypeParameters(null);
                     }
                 }
