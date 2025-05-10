@@ -398,7 +398,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
 
     @Issue("https://github.com/apache/maven/pull/2291")
     @Test
-    void retainProtectedNonOverrides() {
+    void retainExceptionsForOverrides() {
         rewriteRun(
           //language=java
           java(
@@ -417,7 +417,6 @@ class UnnecessaryThrowsTest implements RewriteTest {
               class B extends A {
                   @Override
                   protected void method() throws FileNotFoundException {
-                      throw new FileNotFoundException();
                   }
               }
               """
@@ -425,15 +424,31 @@ class UnnecessaryThrowsTest implements RewriteTest {
           java(
             """
               import java.io.FileNotFoundException;
-              class C extends A {
+              class C1 extends B {
+                  @Override
+                  protected final void method() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class C1 extends B {
+                  @Override
+                  protected final void method() {
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import java.io.FileNotFoundException;
+              final class C2 extends B {
                   @Override
                   protected void method() throws FileNotFoundException {
                   }
               }
               """,
-            // Expected to remove here, as we override, but do not use the exceptions
             """
-              class C extends A {
+              final class C2 extends B {
                   @Override
                   protected void method() {
                   }
