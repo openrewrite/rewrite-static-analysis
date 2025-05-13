@@ -59,7 +59,7 @@ public class NoFinalizedLocalVariables extends Recipe {
                 }
 
                 Tree parent = getCursor().getParentTreeCursor().getValue();
-                if (parent instanceof J.MethodDeclaration || parent instanceof J.Lambda) {
+                if (parent instanceof J.MethodDeclaration || parent instanceof J.Lambda || parent instanceof J.Lambda.Parameters) {
                     // this variable is a method parameter or lambda parameter
                     if (Boolean.TRUE.equals(excludeMethodParameters)) {
                         return mv;
