@@ -83,34 +83,39 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         return Preconditions.check(new NoMissingTypes(),
                 Repeat.repeatUntilStable(new JavaIsoVisitor<ExecutionContext>() {
 
+                    private boolean skipAnyExplicitOverride(J.MethodDeclaration m) {
+                        return m.getMethodType() != null && m.getMethodType().isOverride();
+                    }
+
+                    private boolean skipIfOverriddenElsewhere(String signature) {
+                        return acc.overrideSignatures.contains(signature);
+                    }
+
                     @Override
                     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                         J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
 
-                        // Skip any explicit @Override
-                        if (m.getMethodType() != null && m.getMethodType().isOverride()) {
+                        if (skipAnyExplicitOverride(m)) {
                             return m;
                         }
-                        // Skip if overridden elsewhere
+
                         String signature = m.getSimpleName() + "#" + m.getParameters().size();
-                        if (acc.overrideSignatures.contains(signature)) {
+                        if (skipIfOverriddenElsewhere(signature)) {
                             return m;
                         }
-                        // Original guards
+
                         if (m.getBody() == null ||
                                 m.hasModifier(J.Modifier.Type.Native) ||
                                 !m.getLeadingAnnotations().isEmpty()) {
                             return m;
                         }
 
-                        // Collect parameter names
                         Set<String> params = m.getParameters().stream()
                                 .filter(p -> p instanceof J.VariableDeclarations)
                                 .flatMap(p -> ((J.VariableDeclarations) p).getVariables().stream())
                                 .map(J.VariableDeclarations.NamedVariable::getSimpleName)
                                 .collect(Collectors.toSet());
 
-                        // Find which are actually used
                         Set<String> used = new HashSet<>();
                         new JavaIsoVisitor<Set<String>>() {
                             Deque<Set<String>> shadowed = new ArrayDeque<>();
@@ -143,7 +148,6 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                             }
                         }.visit(m.getBody(), used);
 
-                        // Rebuild parameter list
                         List<Statement> newParams = new ArrayList<>();
                         for (Statement p : m.getParameters()) {
                             if (!(p instanceof J.VariableDeclarations)) {

@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -29,6 +30,7 @@ class RemoveUnusedParamsTest implements RewriteTest {
         spec.recipe(new RemoveUnusedParams());
     }
 
+    @DocumentExample
     @Test
     void removeUnusedMethodParameter() {
         rewriteRun(
@@ -276,9 +278,6 @@ class RemoveUnusedParamsTest implements RewriteTest {
               """
           )
         );
-
-
-
     }
 
     @Test
