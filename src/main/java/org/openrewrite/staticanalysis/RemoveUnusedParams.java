@@ -16,167 +16,196 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Repeat;
-import org.openrewrite.ScanningRecipe;
-import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Repeat;
+import org.openrewrite.ScanningRecipe;
+import org.openrewrite.TreeVisitor;
 
-import java.time.Duration;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumulator> {
-
     static class Accumulator {
-        final Set<String> OVERRIDE_SIGNATURES = new HashSet<>();
+        /**
+         * Signatures of all methods that override or implement a supertype method.
+         * Each entry is a string of the form
+         * <code>"fully.qualified.ClassName#methodName(paramType1,paramType2,...)"</code>.
+         * Parameters of these methods are considered part of the public API
+         * and will not be removed even if they appear unused.
+         */
+        private final Set<String> overrideSignatures = new HashSet<>();
+
+        void add(final String signature) {
+            overrideSignatures.add(signature);
+        }
+
+        boolean contains(final String signature) {
+            return overrideSignatures.contains(signature);
+        }
     }
+
+    private static final String OVERRIDE_ANNOTATION = "Override";
+    private static final int MAX_ATTEMPTS = 5;
 
     @Override
     public String getDisplayName() {
-        return "Remove unused method parameters";
+        return "Remove obsolete constructor and method parameters";
     }
 
     @Override
     public String getDescription() {
-        return "Removes parameters from methods that are declared but never used in the method body.";
+        return "Removes obsolete method parameters from signature, not used in body.";
     }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return Duration.ofMinutes(MAX_ATTEMPTS);
     }
 
     @Override
-    public Accumulator getInitialValue(ExecutionContext ctx) {
+    public Accumulator getInitialValue(final ExecutionContext ctx) {
         return new Accumulator();
     }
 
-    private String buildSignature(J.MethodDeclaration m){
-        return m.getSimpleName() + "#" +
-                m.getMethodType().getParameterTypes()
-                .stream().map(p->p.toString())
-                .collect(Collectors.joining(","));
-    }
-
     @Override
-    public TreeVisitor<?, ExecutionContext> getScanner(Accumulator acc) {
+    public TreeVisitor<?, ExecutionContext> getScanner(final Accumulator acc) {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+            public J.MethodDeclaration visitMethodDeclaration(final J.MethodDeclaration method, final ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                for (J.Annotation ann : m.getLeadingAnnotations()) {
-                    if ("Override".equals(ann.getSimpleName())) {
-                        acc.OVERRIDE_SIGNATURES.add(buildSignature(m));
-                        break;
-                    }
-                }
+                collectOverrideSignature(m, acc);
                 return m;
             }
         };
     }
 
+    private void collectOverrideSignature(final J.MethodDeclaration m, final Accumulator acc) {
+        m.getLeadingAnnotations().stream()
+                .map(J.Annotation::getSimpleName)
+                .filter(OVERRIDE_ANNOTATION::equals)
+                .findAny()
+                .ifPresent(annotationName -> acc.add(buildSignature(m)));
+    }
+
     @Override
-    public TreeVisitor<?, ExecutionContext> getVisitor(Accumulator acc) {
+    public TreeVisitor<?, ExecutionContext> getVisitor(final Accumulator acc) {
         return Preconditions.check(new NoMissingTypes(),
                 Repeat.repeatUntilStable(new JavaIsoVisitor<ExecutionContext>() {
 
-                    private boolean skipAnyExplicitOverride(J.MethodDeclaration m) {
-                        return m.getMethodType() != null && m.getMethodType().isOverride();
-                    }
-
-                    private boolean skipIfOverriddenElsewhere(String signature) {
-                        return acc.OVERRIDE_SIGNATURES.contains(signature);
-                    }
-
                     @Override
-                    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                    public J.MethodDeclaration visitMethodDeclaration(final J.MethodDeclaration method, final ExecutionContext ctx) {
                         J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-
-                        if (skipAnyExplicitOverride(m)) {
-                            return m;
-                        }
-
-                        if (skipIfOverriddenElsewhere(buildSignature(m))) {
-                            return m;
-                        }
-
-                        if (m.getBody() == null ||
-                                m.hasModifier(J.Modifier.Type.Native) ||
-                                !m.getLeadingAnnotations().isEmpty()) {
-                            return m;
-                        }
-
-                        Set<String> params = m.getParameters().stream()
-                                .filter(p -> p instanceof J.VariableDeclarations)
-                                .flatMap(p -> ((J.VariableDeclarations) p).getVariables().stream())
-                                .map(J.VariableDeclarations.NamedVariable::getSimpleName)
-                                .collect(Collectors.toSet());
-
-                        Set<String> used = new HashSet<>();
-                        new JavaIsoVisitor<Set<String>>() {
-                            Deque<Set<String>> shadowed = new ArrayDeque<>();
-
-                            @Override
-                            public J.Block visitBlock(J.Block block, Set<String> u) {
-                                shadowed.push(new HashSet<>());
-                                J.Block b = super.visitBlock(block, u);
-                                shadowed.pop();
-                                return b;
-                            }
-
-                            @Override
-                            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vars, Set<String> u) {
-                                vars.getVariables().forEach(v -> shadowed.peek().add(v.getSimpleName()));
-                                return super.visitVariableDeclarations(vars, u);
-                            }
-
-                            @Override
-                            public J.Identifier visitIdentifier(J.Identifier ident, Set<String> u) {
-                                for (Set<String> scope : shadowed) {
-                                    if (scope.contains(ident.getSimpleName())) {
-                                        return ident;
-                                    }
-                                }
-                                if (params.contains(ident.getSimpleName())) {
-                                    u.add(ident.getSimpleName());
-                                }
-                                return ident;
-                            }
-                        }.visit(m.getBody(), used);
-
-                        List<Statement> newParams = new ArrayList<>();
-                        for (Statement p : m.getParameters()) {
-                            if (!(p instanceof J.VariableDeclarations)) {
-                                newParams.add(p);
-                                continue;
-                            }
-                            J.VariableDeclarations vd = (J.VariableDeclarations) p;
-                            if (!vd.getLeadingAnnotations().isEmpty()) {
-                                newParams.add(vd);
-                                continue;
-                            }
-                            List<J.VariableDeclarations.NamedVariable> keep = vd.getVariables().stream()
-                                    .filter(v -> used.contains(v.getSimpleName()))
-                                    .collect(Collectors.toList());
-                            if (!keep.isEmpty()) {
-                                newParams.add(vd.withVariables(keep));
+                        if (shouldPruneParameters(m, acc)) {
+                            Set<String> usedParams = collectUsedParameters(m);
+                            List<Statement> prunedParams = filterUnusedParameters(m, usedParams);
+                            if (!prunedParams.equals(m.getParameters())) {
+                                return m.withParameters(prunedParams);
                             }
                         }
-
-                        return newParams.equals(m.getParameters()) ?
-                                m :
-                                m.withParameters(newParams);
+                        return m;
                     }
                 })
         );
     }
+
+    private boolean shouldPruneParameters(final J.MethodDeclaration m, final Accumulator acc) {
+        return m.getBody() != null
+                && !m.hasModifier(J.Modifier.Type.Native)
+                && m.getLeadingAnnotations().isEmpty()
+                && !acc.contains(buildSignature(m));
+    }
+
+    private String buildSignature(final J.MethodDeclaration m) {
+        return m.getSimpleName() + "#"
+                + m.getMethodType().getParameterTypes().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(","));
+    }
+
+    private Set<String> collectUsedParameters(final J.MethodDeclaration m) {
+        Set<String> used = new HashSet<>();
+        Deque<Set<String>> shadowStack = new ArrayDeque<>();
+
+        new JavaIsoVisitor<Set<String>>() {
+            @Override
+            public J.Block visitBlock(final J.Block block, final Set<String> u) {
+                shadowStack.push(new HashSet<>());
+                try {
+                    return super.visitBlock(block, u);
+                } finally {
+                    shadowStack.pop();
+                }
+            }
+
+            @Override
+            public J.VariableDeclarations visitVariableDeclarations(final J.VariableDeclarations decl, final Set<String> u) {
+                decl.getVariables().forEach(v -> shadowStack.peek().add(v.getSimpleName()));
+                return super.visitVariableDeclarations(decl, u);
+            }
+
+            @Override
+            public J.Identifier visitIdentifier(final J.Identifier id, final Set<String> u) {
+                if (isVisibleParameter(id, m, shadowStack)) {
+                    u.add(id.getSimpleName());
+                }
+                return id;
+            }
+        }.visit(m.getBody(), used);
+
+        return used;
+    }
+
+    private boolean isVisibleParameter(final J.Identifier id, final J.MethodDeclaration m, final Deque<Set<String>> shadowStack) {
+        return !isShadowed(id.getSimpleName(), shadowStack)
+                && isDeclaredAsParameter(id.getSimpleName(), m);
+    }
+
+    private boolean isShadowed(final String name, final Deque<Set<String>> shadowStack) {
+        return shadowStack.stream().anyMatch(scope -> scope.contains(name));
+    }
+
+    private boolean isDeclaredAsParameter(final String name, final J.MethodDeclaration m) {
+        return m.getParameters().stream()
+                .filter(p -> p instanceof J.VariableDeclarations)
+                .flatMap(p -> ((J.VariableDeclarations) p).getVariables().stream())
+                .anyMatch(v -> v.getSimpleName().equals(name));
+    }
+
+    private List<Statement> filterUnusedParameters(final J.MethodDeclaration m, final Set<String> usedParams) {
+        return m.getParameters().stream()
+                .flatMap(param -> {
+                    if (param instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations decl = (J.VariableDeclarations) param;
+                        return filterDeclaration(decl, usedParams);
+                    }
+                    return Stream.of(param);
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    private Stream<Statement> filterDeclaration(final J.VariableDeclarations decl, final Set<String> usedParams) {
+        if (!decl.getLeadingAnnotations().isEmpty()) {
+            return Stream.of(decl);
+        }
+        List<J.VariableDeclarations.NamedVariable> kept =
+                decl.getVariables().stream()
+                        .filter(v -> usedParams.contains(v.getSimpleName()))
+                        .collect(Collectors.toList());
+
+        return kept.isEmpty()
+                ? Stream.empty()
+                : Stream.of(decl.withVariables(kept));
+    }
+
 }
