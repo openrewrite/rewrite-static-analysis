@@ -29,6 +29,7 @@ class InvertReplaceCollectToListWithToListTest implements RewriteTest {
         spec.recipe(new ReplaceCollectToListWithToList());
     }
 
+    @DocumentExample
     @Test
     void replacesCollectToList() {
         rewriteRun(
