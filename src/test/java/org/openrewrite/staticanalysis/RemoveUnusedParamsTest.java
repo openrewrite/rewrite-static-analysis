@@ -292,4 +292,37 @@ class RemoveUnusedParamsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void skipWronglyDueToSignatureCollision() {
+        rewriteRun(
+          java(
+            """
+            class Base {
+                void foo(int a, String b) {}
+            }
+            class Derived extends Base {
+                @Override
+                void foo(int a, String b) {}
+                void foo(String a, int b) {
+                    // no use of a or b
+                }
+            }
+            """,
+            """
+            class Base {
+                void foo(int a, String b) {}
+            }
+            class Derived extends Base {
+                @Override
+                void foo(int a, String b) {}
+                void foo() {
+                    // no use of a or b
+                }
+            }
+            """
+          )
+        );
+    }
+
 }

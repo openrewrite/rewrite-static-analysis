@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumulator> {
 
     static class Accumulator {
-        Set<String> overrideSignatures = new HashSet<>();
+        final Set<String> OVERRIDE_SIGNATURES = new HashSet<>();
     }
 
     @Override
@@ -60,6 +60,13 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         return new Accumulator();
     }
 
+    private String buildSignature(J.MethodDeclaration m){
+        return m.getSimpleName() + "#"
+                + m.getMethodType().getParameterTypes()
+                .stream().map(p->p.toString())
+                .collect(Collectors.joining(","));
+    }
+
     @Override
     public TreeVisitor<?, ExecutionContext> getScanner(Accumulator acc) {
         return new JavaIsoVisitor<ExecutionContext>() {
@@ -68,8 +75,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 for (J.Annotation ann : m.getLeadingAnnotations()) {
                     if ("Override".equals(ann.getSimpleName())) {
-                        String key = m.getSimpleName() + "#" + m.getParameters().size();
-                        acc.overrideSignatures.add(key);
+                        acc.OVERRIDE_SIGNATURES.add(buildSignature(m));
                         break;
                     }
                 }
@@ -88,7 +94,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     }
 
                     private boolean skipIfOverriddenElsewhere(String signature) {
-                        return acc.overrideSignatures.contains(signature);
+                        return acc.OVERRIDE_SIGNATURES.contains(signature);
                     }
 
                     @Override
@@ -99,8 +105,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                             return m;
                         }
 
-                        String signature = m.getSimpleName() + "#" + m.getParameters().size();
-                        if (skipIfOverriddenElsewhere(signature)) {
+                        if (skipIfOverriddenElsewhere(buildSignature(m))) {
                             return m;
                         }
 
