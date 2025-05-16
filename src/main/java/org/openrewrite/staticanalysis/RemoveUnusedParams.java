@@ -61,8 +61,8 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private String buildSignature(J.MethodDeclaration m){
-        return m.getSimpleName() + "#"
-                + m.getMethodType().getParameterTypes()
+        return m.getSimpleName() + "#" +
+                m.getMethodType().getParameterTypes()
                 .stream().map(p->p.toString())
                 .collect(Collectors.joining(","));
     }
