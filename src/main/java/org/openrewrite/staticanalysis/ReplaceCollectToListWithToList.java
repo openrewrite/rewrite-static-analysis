@@ -42,12 +42,12 @@ public class ReplaceCollectToListWithToList extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Replace stream.collect(collectors.toList()) with stream.toList()";
+        return "Replace `Stream.collect(collectors.toList())` with `Stream.toList()`";
     }
 
     @Override
     public String getDescription() {
-        return "Replace Java 11 `Stream.collect(Collectors.toList())` with Java 16+ `Stream.toList()` for more concise syntax.";
+        return "Replace Java 11 `Stream.collect(Collectors.toList())` with Java 16+ `Stream.toList()` for more concise syntax and an unmodifiable return value.";
     }
 
     @Override
