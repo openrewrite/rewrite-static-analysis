@@ -44,9 +44,3 @@ dependencies {
     testRuntimeOnly("org.openrewrite:rewrite-java-21")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
 }
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-}
