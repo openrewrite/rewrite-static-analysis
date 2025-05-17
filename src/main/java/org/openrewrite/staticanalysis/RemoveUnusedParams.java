@@ -203,9 +203,9 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                         .filter(v -> usedParams.contains(v.getSimpleName()))
                         .collect(Collectors.toList());
 
-        return kept.isEmpty()
-                ? Stream.empty()
-                : Stream.of(decl.withVariables(kept));
+        return kept.isEmpty() ?
+                Stream.empty() :
+                Stream.of(decl.withVariables(kept));
     }
 
 }
