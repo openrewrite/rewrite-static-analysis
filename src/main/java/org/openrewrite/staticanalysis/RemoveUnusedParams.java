@@ -166,8 +166,8 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private boolean isVisibleParameter(final J.Identifier id, final J.MethodDeclaration m, final Deque<Set<String>> shadowStack) {
-        return !isShadowed(id.getSimpleName(), shadowStack)
-                && isDeclaredAsParameter(id.getSimpleName(), m);
+        return !isShadowed(id.getSimpleName(), shadowStack) &&
+                isDeclaredAsParameter(id.getSimpleName(), m);
     }
 
     private boolean isShadowed(final String name, final Deque<Set<String>> shadowStack) {
