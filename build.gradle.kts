@@ -36,16 +36,11 @@ dependencies {
     testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.testng:testng:7.+")
 
     testImplementation("com.google.code.gson:gson:latest.release")
 
     testRuntimeOnly("org.openrewrite:rewrite-java-17")
     testRuntimeOnly("org.openrewrite:rewrite-java-21")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
 }

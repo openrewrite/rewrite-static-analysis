@@ -92,7 +92,7 @@ class HiddenFieldTest implements RewriteTest {
                       String localVariable = someField;
                   }
               }
-                """
+              """
           )
         );
     }
@@ -759,7 +759,7 @@ class HiddenFieldTest implements RewriteTest {
 
                   public abstract void method(int n);
               }
-                """
+              """
           )
         );
     }

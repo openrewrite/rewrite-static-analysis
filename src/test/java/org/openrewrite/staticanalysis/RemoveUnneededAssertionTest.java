@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
@@ -75,195 +76,300 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         );
     }
 
-    @Test
-    void junitJupiterAssertTrue() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
-          //language=java
-          java(
-            """
-              import static org.junit.jupiter.api.Assertions.assertTrue;
-              public class A {
-                  public void m() {
-                      assertTrue(true);
+    @Nested
+    class UsingJUnitJupiter {
+        @Test
+        void assertTrueWithTrueArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+              //language=java
+              java(
+                """
+                  import static org.junit.jupiter.api.Assertions.assertTrue;
+                  public class A {
+                      public void m() {
+                          assertTrue(true);
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
                   }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
+
+        @Test
+        void assertFalseWithFalseArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+              //language=java
+              java(
+                """
+                  import static org.junit.jupiter.api.Assertions.assertFalse;
+                  public class A {
+                      public void m() {
+                          assertFalse(false);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void assertTrueWithTrueArgumentAndMessage() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+              //language=java
+              java(
+                """
+                  import static org.junit.jupiter.api.Assertions.assertTrue;
+                  public class A {
+                      public void m() {
+                          assertTrue(true, "message");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void assertFalseWithFalseArgumentAndMessage() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
+              //language=java
+              java(
+                """
+                  import static org.junit.jupiter.api.Assertions.assertFalse;
+                  public class A {
+                      public void m() {
+                          assertFalse(false, "message");
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
-    @Test
-    void junitJupiterAssertFalse() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
-          //language=java
-          java(
-            """
-              import static org.junit.jupiter.api.Assertions.assertFalse;
-              public class A {
-                  public void m() {
-                      assertFalse(false);
+    @Nested
+    class UsingJUnit4 {
+        @Test
+        void assertTrueWithTrueArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              //language=java
+              java(
+                """
+                  import static org.junit.Assert.assertTrue;
+                  public class A {
+                      public void m() {
+                          assertTrue(true);
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
                   }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
+
+        @Test
+        void assertFalseWithFalseArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              //language=java
+              java(
+                """
+                  import static org.junit.Assert.assertFalse;
+                  public class A {
+                      public void m() {
+                          assertFalse(false);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void assertTrueWithMessageAndTrueArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              //language=java
+              java(
+                """
+                  import static org.junit.Assert.assertTrue;
+                  public class A {
+                      public void m() {
+                          assertTrue("message", true);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void assertTrueWithMessageAndFalseArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
+              //language=java
+              java(
+                """
+                  import static org.junit.Assert.assertFalse;
+                  public class A {
+                      public void m() {
+                          assertFalse("message", false);
+                      }
+                  }
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
-    @Test
-    void junitJupiterAssertTrueMessage() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
-          //language=java
-          java(
-            """
-              import static org.junit.jupiter.api.Assertions.assertTrue;
-              public class A {
-                  public void m() {
-                      assertTrue(true, "message");
+    @Nested
+    class UsingTestNG {
+        @Test
+        void assertTrueWithTrueArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              //language=java
+              java(
+                """
+                  import static org.testng.Assert.assertTrue;
+                  public class A {
+                      public void m() {
+                          assertTrue(true);
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
                   }
-              }
-              """
-          )
-        );
-    }
+                  """
+              )
+            );
+        }
 
-    @Test
-    void junitJupiterAssertFalseMessage() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-api")),
-          //language=java
-          java(
-            """
-              import static org.junit.jupiter.api.Assertions.assertFalse;
-              public class A {
-                  public void m() {
-                      assertFalse(false, "message");
+        @Test
+        void assertFalseWithFalseArgument() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              //language=java
+              java(
+                """
+                  import static org.testng.Assert.assertFalse;
+                  public class A {
+                      public void m() {
+                          assertFalse(false);
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
                   }
-              }
-              """
-          )
-        );
-    }
+                  """
+              )
+            );
+        }
 
-    @Test
-    void junit4AssertTrueWithTrueArgument() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
-          //language=java
-          java(
-            """
-              import static org.junit.Assert.assertTrue;
-              public class A {
-                  public void m() {
-                      assertTrue(true);
+        @Test
+        void assertTrueWithTrueArgumentAndMessage() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              //language=java
+              java(
+                """
+                  import static org.testng.Assert.assertTrue;
+                  public class A {
+                      public void m() {
+                          assertTrue(true, "message");
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
                   }
-              }
-              """
-          )
-        );
-    }
+                  """
+              )
+            );
+        }
 
-    @Test
-    void junit4AssertFalseWithFalseArgument() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
-          //language=java
-          java(
-            """
-              import static org.junit.Assert.assertFalse;
-              public class A {
-                  public void m() {
-                      assertFalse(false);
+        @Test
+        void assertFalseWithFalseArgumentAndMessage() {
+            rewriteRun(
+              spec -> spec.parser(JavaParser.fromJavaVersion().classpath("testng")),
+              //language=java
+              java(
+                """
+                  import static org.testng.Assert.assertFalse;
+                  public class A {
+                      public void m() {
+                          assertFalse(false, "message");
+                      }
                   }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
+                  """,
+                """
+                  public class A {
+                      public void m() {
+                      }
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void junit4AssertTrueWithMessageAndTrueArgument() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
-          //language=java
-          java(
-            """
-              import static org.junit.Assert.assertTrue;
-              public class A {
-                  public void m() {
-                      assertTrue("message", true);
-                  }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void junit4AssertTrueWithMessageAndFalseArgument() {
-        rewriteRun(
-          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
-          //language=java
-          java(
-            """
-              import static org.junit.Assert.assertFalse;
-              public class A {
-                  public void m() {
-                      assertFalse("message", false);
-                  }
-              }
-              """,
-            """
-              public class A {
-                  public void m() {
-                  }
-              }
-              """
-          )
-        );
+                  """
+              )
+            );
+        }
     }
 }

@@ -54,6 +54,8 @@ type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
 examples:
 - description: ''
+  parameters:
+  - 'null'
   sources:
   - before: |
       import java.io.Serializable;
@@ -466,6 +468,30 @@ examples:
               return n == tee.n;
           }
       }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CustomImportOrder
+examples:
+- description: ''
+  sources:
+  - before: |
+      package com.example;
+
+      import org.apache.commons.lang3.StringUtils;
+      import java.util.Collections;
+      import static java.util.Collections.*;
+
+      class Test {}
+    after: |
+      package com.example;
+
+      import static java.util.Collections.*;
+
+      import java.util.Collections;
+      import org.apache.commons.lang3.StringUtils;
+
+      class Test {}
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
@@ -1582,6 +1608,8 @@ type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoFinalizedLocalVariables
 examples:
 - description: ''
+  parameters:
+  - 'null'
   sources:
   - before: |
       import java.util.function.Supplier;
@@ -3435,25 +3463,6 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseDiamondOperator
 examples:
-- description: ''
-  sources:
-  - before: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<String>();
-          }
-      }
-    after: |
-      import java.util.*;
-      class Test {
-          void test() {
-              var ls1 = new ArrayList<String>();
-              List<String> ls2 = new ArrayList<>();
-          }
-      }
-    language: java
 - description: ''
   sources:
   - before: |

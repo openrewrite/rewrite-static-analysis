@@ -21,7 +21,10 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
 
@@ -69,20 +72,43 @@ public class NeedBraces extends Recipe {
          * We can use that to our advantage by saying if you aren't a block (e.g. a single {@link Statement}, etc.),
          * then we're going to make this into a block. That's how we'll get the code bodies surrounded in braces.
          */
-        private <T extends Statement> J.Block buildBlock(Statement owner, T element) {
-            J j = getCursor().getParentTreeCursor().getValue();
+        private <T extends Statement> J.Block buildBlock(T element) {
+            J rootElement = null;
             Space end = Space.EMPTY;
-            if (j instanceof J.Block) {
-                J.Block block = (J.Block) j;
+
+            Cursor currentCursor = getCursor();
+            while (
+                    currentCursor != null &&
+                            currentCursor.getParent() != null &&
+                            !(currentCursor.getParent().getValue() instanceof J.Block)
+            ) {
+                currentCursor = currentCursor.getParent();
+            }
+
+            if (currentCursor != null && currentCursor.getValue() instanceof JRightPadded) {
+                JRightPadded<J> paddedIf = currentCursor.getValue();
+                rootElement = paddedIf.getElement();
+            }
+
+            // Move comments
+            if (rootElement instanceof Statement && !(rootElement instanceof J.DoWhileLoop)) {
+                Cursor blockParentCursor = currentCursor.getParent();
+                J.Block block = blockParentCursor.getValue();
                 List<Statement> statements = block.getStatements();
-                int i = statements.indexOf(owner);
-                boolean last = i == statements.size() - 1;
-                Space trailingSpace = last ? block.getEnd() : statements.get(i + 1).getPrefix();
-                if (!trailingSpace.getComments().isEmpty() && trailingSpace.getWhitespace().indexOf('\n') == -1) {
-                    end = trailingSpace;
-                    getCursor().getParentTreeCursor().<List<Integer>>computeMessageIfAbsent("replaced", k -> new ArrayList<>()).add(i);
+                int currentIndex = statements.indexOf(rootElement);
+                boolean last = currentIndex == statements.size() - 1;
+                Space trailingComment = last ? block.getEnd() : statements.get(currentIndex + 1).getPrefix();
+
+                if (!trailingComment.isEmpty() && !trailingComment.getWhitespace().contains("\n")) {
+                    end = trailingComment;
+                    if (last) {
+                        blockParentCursor.putMessage("removeEndComments", true);
+                    } else {
+                        blockParentCursor.<List<Integer>>computeMessageIfAbsent("replaced", k -> new ArrayList<>()).add(currentIndex);
+                    }
                 }
             }
+
             return new J.Block(
                     Tree.randomId(),
                     Space.EMPTY,
@@ -111,6 +137,10 @@ public class NeedBraces extends Recipe {
         @Override
         public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
             J.Block bl = super.visitBlock(block, ctx);
+            if (Boolean.TRUE.equals(getCursor().pollMessage("removeEndComments"))) {
+                bl = bl.withEnd(bl.getEnd().withComments(Collections.emptyList()));
+                bl = maybeAutoFormat(block, bl, ctx);
+            }
             List<Integer> indexes = getCursor().pollMessage("replaced");
             if (indexes != null) {
                 for (int index : indexes) {
@@ -140,7 +170,15 @@ public class NeedBraces extends Recipe {
             J.If elem = super.visitIf(iff, ctx);
             boolean hasAllowableBodyType = elem.getThenPart() instanceof J.Block;
             if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem, elem.getThenPart());
+                J.Block b;
+                if (elem.getElsePart() != null && !elem.getElsePart().getPrefix().getComments().isEmpty()) {
+                    Space end = elem.getElsePart().getPrefix();
+                    elem = elem.withElsePart(elem.getElsePart().withPrefix(Space.EMPTY));
+                    b = buildBlock(elem.getThenPart()).withEnd(end);
+                } else {
+                    b = buildBlock(elem.getThenPart());
+                }
+
                 elem = maybeAutoFormat(elem, elem.withThenPart(b), ctx);
             }
             return elem;
@@ -155,7 +193,14 @@ public class NeedBraces extends Recipe {
             J.If.Else elem = super.visitElse(else_, ctx);
             boolean hasAllowableBodyType = elem.getBody() instanceof J.Block || elem.getBody() instanceof J.If;
             if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(getCursor().getParentTreeCursor().getValue(), elem.getBody());
+                Space prefix = elem.getPrefix();
+                Statement body = elem.getBody();
+
+                if (!prefix.getComments().isEmpty() && prefix.getWhitespace().contains("\n")) {
+                    body = body.withPrefix(prefix);
+                }
+
+                J.Block b = buildBlock(body);
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             }
             return elem;
@@ -168,10 +213,10 @@ public class NeedBraces extends Recipe {
                     elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
                     elem.getBody() instanceof J.Block;
             if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
-                J.Block b = buildBlock(elem, elem.getBody());
+                J.Block b = buildBlock(elem.getBody());
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem, elem.getBody());
+                J.Block b = buildBlock(elem.getBody());
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             }
             return elem;
@@ -184,10 +229,10 @@ public class NeedBraces extends Recipe {
                     elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
                     elem.getBody() instanceof J.Block;
             if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
-                J.Block b = buildBlock(elem, elem.getBody());
+                J.Block b = buildBlock(elem.getBody());
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem, elem.getBody());
+                J.Block b = buildBlock(elem.getBody());
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             }
             return elem;
@@ -200,10 +245,10 @@ public class NeedBraces extends Recipe {
                     elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
                     elem.getBody() instanceof J.Block;
             if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
-                J.Block b = buildBlock(elem, elem.getBody());
+                J.Block b = buildBlock(elem.getBody());
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem, elem.getBody());
+                J.Block b = buildBlock(elem.getBody());
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             }
             return elem;

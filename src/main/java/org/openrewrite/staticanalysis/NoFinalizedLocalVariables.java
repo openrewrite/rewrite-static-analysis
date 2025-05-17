@@ -15,6 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -22,8 +25,16 @@ import org.openrewrite.java.tree.J;
 
 import java.util.Iterator;
 
+@Value
+@EqualsAndHashCode(callSuper = false)
 @Incubating(since = "7.0.0")
 public class NoFinalizedLocalVariables extends Recipe {
+
+    @Option(displayName = "Exclude method parameters",
+            description = "If true, do not remove final from method parameters.",
+            required = false)
+    @Nullable
+    Boolean excludeMethodParameters;
 
     @Override
     public String getDisplayName() {
@@ -48,8 +59,11 @@ public class NoFinalizedLocalVariables extends Recipe {
                 }
 
                 Tree parent = getCursor().getParentTreeCursor().getValue();
-                if (parent instanceof J.MethodDeclaration || parent instanceof J.Lambda) {
+                if (parent instanceof J.MethodDeclaration || parent instanceof J.Lambda || parent instanceof J.Lambda.Parameters) {
                     // this variable is a method parameter or lambda parameter
+                    if (Boolean.TRUE.equals(excludeMethodParameters)) {
+                        return mv;
+                    }
                     return removeFinal(mv);
                 }
 
@@ -62,7 +76,7 @@ public class NoFinalizedLocalVariables extends Recipe {
                             if (next instanceof J.ClassDeclaration || next instanceof J.NewClass) {
                                 // this variable is a field
                                 return mv;
-                            } else if (next instanceof J.MethodDeclaration) {
+                            } else if (next instanceof J.MethodDeclaration || next instanceof J.Lambda) {
                                 return removeFinal(mv);
                             }
                         }

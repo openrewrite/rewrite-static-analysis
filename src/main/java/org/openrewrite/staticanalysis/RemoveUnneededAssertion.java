@@ -44,6 +44,10 @@ public class RemoveUnneededAssertion extends Recipe {
     private static final MethodMatcher JUNIT_ASSERT_MESSAGE_TRUE_MATCHER = new MethodMatcher("org.junit.Assert assertTrue(String, boolean)");
     private static final MethodMatcher JUNIT_ASSERT_MESSAGE_FALSE_MATCHER = new MethodMatcher("org.junit.Assert assertFalse(String, boolean)");
 
+    // TestNG
+    private static final MethodMatcher TEST_NG_ASSERT_TRUE_MATCHER = new MethodMatcher("org.testng.Assert assertTrue(..)");
+    private static final MethodMatcher TEST_NG_ASSERT_FALSE_MATCHER = new MethodMatcher("org.testng.Assert assertFalse(..)");
+
     @Override
     public String getDisplayName() {
         return "Remove unneeded assertions";
@@ -63,6 +67,8 @@ public class RemoveUnneededAssertion extends Recipe {
                 new UsesMethod<>(JUNIT_ASSERT_FALSE_MATCHER),
                 new UsesMethod<>(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER),
                 new UsesMethod<>(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER),
+                new UsesMethod<>(TEST_NG_ASSERT_TRUE_MATCHER),
+                new UsesMethod<>(TEST_NG_ASSERT_FALSE_MATCHER),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.Assert visitAssert(J.Assert _assert, ExecutionContext ctx) {
@@ -84,6 +90,8 @@ public class RemoveUnneededAssertion extends Recipe {
         matchers.put(JUNIT_ASSERT_FALSE_MATCHER, isFalse);
         matchers.put(JUNIT_ASSERT_MESSAGE_TRUE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), true));
         matchers.put(JUNIT_ASSERT_MESSAGE_FALSE_MATCHER, args -> J.Literal.isLiteralValue(args.get(1), false));
+        matchers.put(TEST_NG_ASSERT_TRUE_MATCHER, isTrue);
+        matchers.put(TEST_NG_ASSERT_FALSE_MATCHER, isFalse);
 
         return Preconditions.check(constraints, new JavaIsoVisitor<ExecutionContext>() {
             @Override

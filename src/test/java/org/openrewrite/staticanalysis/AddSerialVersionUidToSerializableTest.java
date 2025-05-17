@@ -27,7 +27,7 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new AddSerialVersionUidToSerializable());
+        spec.recipe(new AddSerialVersionUidToSerializable(null));
     }
 
     @DocumentExample
@@ -49,6 +49,33 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
 
               public class Example implements Serializable {
                   private static final long serialVersionUID = 1;
+                  private String fred;
+                  private int numberOfFreds;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addCustomSerialVersionUID() {
+        rewriteRun(
+          spec -> spec.recipe(new AddSerialVersionUidToSerializable("1L")),
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              public class Example implements Serializable {
+                  private String fred;
+                  private int numberOfFreds;
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              public class Example implements Serializable {
+                  private static final long serialVersionUID = 1L;
                   private String fred;
                   private int numberOfFreds;
               }
@@ -156,6 +183,25 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     @Test
     void uidAlreadyPresent() {
         rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              public class Example implements Serializable {
+                  private static final long serialVersionUID = 1;
+                  private String fred;
+                  private int numberOfFreds;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void customUidKeepsUidAlreadyPresent() {
+        rewriteRun(
+          spec -> spec.recipe(new AddSerialVersionUidToSerializable("1L")),
           //language=java
           java(
             """
