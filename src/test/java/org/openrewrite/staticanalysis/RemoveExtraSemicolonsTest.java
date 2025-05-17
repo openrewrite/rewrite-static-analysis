@@ -163,7 +163,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                 public J.Try visitTry(J.Try t, Object o) {
                     List<J.Try.Resource> resources = t.getResources();
                     assertThat(resources).isNotNull();
-                    assertThat(resources.get(0).isTerminatedWithSemicolon()).isTrue();
+                    assertThat(resources.getFirst().isTerminatedWithSemicolon()).isTrue();
                     assertThat(resources.get(1).isTerminatedWithSemicolon()).isFalse();
                     return t;
                 }
