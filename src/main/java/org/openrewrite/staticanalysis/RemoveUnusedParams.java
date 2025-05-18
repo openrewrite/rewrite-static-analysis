@@ -185,21 +185,21 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                 .collect(Collectors.toList());
     }
 
-    private Stream<Statement> filterDeclaration(J.VariableDeclarations decl, Set<String> usedParams) {
+    private Stream<Statement> filterDeclaration(final J.VariableDeclarations decl, final Set<String> usedParams) {
         return Optional.of(decl)
                 .filter(d -> !d.getLeadingAnnotations().isEmpty())
                 .map(d -> Stream.<Statement>of(d))
                 .orElseGet(() -> pruneByUsage(decl, usedParams));
     }
 
-    private Stream<Statement> pruneByUsage(J.VariableDeclarations decl, Set<String> usedParams) {
+    private Stream<Statement> pruneByUsage(final J.VariableDeclarations decl, final Set<String> usedParams) {
         return Optional.of(collectUsedParameters(decl, usedParams))
                 .filter(kept -> !kept.isEmpty())
                 .map(kept -> Stream.<Statement>of(decl.withVariables(kept)))
                 .orElseGet(Stream::empty);
     }
 
-    private List<J.VariableDeclarations.NamedVariable> collectUsedParameters(J.VariableDeclarations decl, Set<String> usedParams) {
+    private List<J.VariableDeclarations.NamedVariable> collectUsedParameters(final J.VariableDeclarations decl, final Set<String> usedParams) {
         return decl.getVariables().stream()
                 .filter(v -> usedParams.contains(v.getSimpleName()))
                 .collect(Collectors.toList());
