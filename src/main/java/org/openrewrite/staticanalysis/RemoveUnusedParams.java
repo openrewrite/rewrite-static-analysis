@@ -30,6 +30,7 @@ import java.util.Deque;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -162,8 +163,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private boolean isVisibleParameter(final J.Identifier id, final J.MethodDeclaration m, final Deque<Set<String>> shadowStack) {
-        return !isShadowed(id.getSimpleName(), shadowStack) &&
-                isDeclaredAsParameter(id.getSimpleName(), m);
+        return !isShadowed(id.getSimpleName(), shadowStack) && isDeclaredAsParameter(id.getSimpleName(), m);
     }
 
     private boolean isShadowed(final String name, final Deque<Set<String>> shadowStack) {
@@ -185,19 +185,23 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                 .collect(Collectors.toList());
     }
 
-
-    private Stream<Statement> filterDeclaration(final J.VariableDeclarations decl, final Set<String> usedParams) {
-        if (!decl.getLeadingAnnotations().isEmpty()) {
-            return Stream.of(decl);
-        }
-        List<J.VariableDeclarations.NamedVariable> kept =
-                decl.getVariables().stream()
-                        .filter(v -> usedParams.contains(v.getSimpleName()))
-                        .collect(Collectors.toList());
-
-        return kept.isEmpty() ?
-                Stream.empty() :
-                Stream.of(decl.withVariables(kept));
+    private Stream<Statement> filterDeclaration(J.VariableDeclarations decl, Set<String> usedParams) {
+        return Optional.of(decl)
+                .filter(d -> !d.getLeadingAnnotations().isEmpty())
+                .map(d -> Stream.<Statement>of(d))
+                .orElseGet(() -> pruneByUsage(decl, usedParams));
     }
 
+    private Stream<Statement> pruneByUsage(J.VariableDeclarations decl, Set<String> usedParams) {
+        return Optional.of(collectUsedParameters(decl, usedParams))
+                .filter(kept -> !kept.isEmpty())
+                .map(kept -> Stream.<Statement>of(decl.withVariables(kept)))
+                .orElseGet(Stream::empty);
+    }
+
+    private List<J.VariableDeclarations.NamedVariable> collectUsedParameters(J.VariableDeclarations decl, Set<String> usedParams) {
+        return decl.getVariables().stream()
+                .filter(v -> usedParams.contains(v.getSimpleName()))
+                .collect(Collectors.toList());
+    }
 }
