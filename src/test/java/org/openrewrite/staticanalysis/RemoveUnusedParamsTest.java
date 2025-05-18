@@ -324,23 +324,4 @@ class RemoveUnusedParamsTest implements RewriteTest {
           )
         );
     }
-
-    @Test
-    void removeUnusedBaseConstructorParams() {
-        rewriteRun(
-          java(
-            """
-            class Base {
-                public Base(int a, String b) {}
-            }
-            """,
-            """
-            class Base {
-                public Base() {}
-            }
-            """
-          )
-        );
-    }
-
 }

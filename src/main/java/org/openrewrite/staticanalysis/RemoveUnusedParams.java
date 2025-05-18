@@ -82,19 +82,18 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(final J.MethodDeclaration method, final ExecutionContext ctx) {
-                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                collectOverrideSignature(m, acc);
-                return m;
+                return collectOverrideSignature(super.visitMethodDeclaration(method, ctx), acc);
             }
         };
     }
 
-    private void collectOverrideSignature(final J.MethodDeclaration m, final Accumulator acc) {
+    private J.MethodDeclaration collectOverrideSignature(final J.MethodDeclaration m, final Accumulator acc) {
         m.getLeadingAnnotations().stream()
                 .map(J.Annotation::getSimpleName)
                 .filter(OVERRIDE_ANNOTATION::equals)
                 .findAny()
                 .ifPresent(annotationName -> acc.add(buildSignature(m)));
+        return m;
     }
 
     @Override
@@ -106,11 +105,8 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     public J.MethodDeclaration visitMethodDeclaration(final J.MethodDeclaration method, final ExecutionContext ctx) {
                         J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                         if (shouldPruneParameters(m, acc)) {
-                            Set<String> usedParams = collectUsedParameters(m);
-                            List<Statement> prunedParams = filterUnusedParameters(m, usedParams);
-                            if (!prunedParams.equals(m.getParameters())) {
-                                return m.withParameters(prunedParams);
-                            }
+                            List<Statement> prunedParams = filterUnusedParameters(m, collectUsedParameters(m));
+                            return prunedParams.equals(m.getParameters()) ? m : m.withParameters(prunedParams);
                         }
                         return m;
                     }
@@ -133,8 +129,8 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private Set<String> collectUsedParameters(final J.MethodDeclaration m) {
-        Set<String> used = new HashSet<>();
-        Deque<Set<String>> shadowStack = new ArrayDeque<>();
+        final Set<String> used = new HashSet<>();
+        final Deque<Set<String>> shadowStack = new ArrayDeque<>();
 
         new JavaIsoVisitor<Set<String>>() {
             @Override
@@ -183,13 +179,9 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
 
     private List<Statement> filterUnusedParameters(final J.MethodDeclaration m, final Set<String> usedParams) {
         return m.getParameters().stream()
-                .flatMap(param -> {
-                    if (param instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations decl = (J.VariableDeclarations) param;
-                        return filterDeclaration(decl, usedParams);
-                    }
-                    return Stream.of(param);
-                })
+                .flatMap(param -> param instanceof J.VariableDeclarations ?
+                        filterDeclaration((J.VariableDeclarations) param, usedParams)
+                        : Stream.of(param))
                 .collect(Collectors.toList());
     }
 
