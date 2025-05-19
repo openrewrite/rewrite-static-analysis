@@ -65,11 +65,6 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public Accumulator getInitialValue(final ExecutionContext ctx) {
         return new Accumulator();
     }
