@@ -46,7 +46,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new RemoveUnusedLocalVariables(new String[0], null));
+        spec.recipe(new RemoveUnusedLocalVariables(new String[0], null, null));
     }
 
     @DocumentExample
@@ -100,7 +100,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @SuppressWarnings("MethodMayBeStatic")
     void ignoreVariablesNamed() {
         rewriteRun(
-          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused"}, null)),
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused"}, null, null)),
           //language=java
           java(
             """
@@ -1076,7 +1076,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite-feature-flags/pull/35")
     void removeDespiteSideEffects() {
         rewriteRun(
-          spec -> spec.recipe(new RemoveUnusedLocalVariables(null, true)),
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(null, null, true)),
           //language=java
           java(
             """
