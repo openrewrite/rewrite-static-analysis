@@ -44,8 +44,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
             example = "[unused, notUsed, IGNORE_ME]")
     String @Nullable [] ignoreVariablesNamed;
 
-    @Option(displayName = "Only remove variables of type",
-            description = "A fully qualified class names. Only unused local variables whose type matches one of these will be removed. " +
+    @Option(displayName = "Only remove variables of a given type",
+            description = "A fully qualified class name. Only unused local variables whose type matches this will be removed. " +
                     "If empty or not set, all unused local variables are considered for removal.",
             required = false,
             example = "java.lang.String")
