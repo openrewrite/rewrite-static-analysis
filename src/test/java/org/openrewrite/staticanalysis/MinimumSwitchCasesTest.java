@@ -688,7 +688,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
               import java.io.ObjectInputFilter;
 
               class Test {
-                  int test(java.io.ObjectInputFilter filter) {
+                  int test(ObjectInputFilter filter) {
                       if (filter.checkInput(null) == ObjectInputFilter.Status.ALLOWED) {
                           return 0;
                       } else {

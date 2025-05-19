@@ -613,7 +613,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               class Test {
                   List<Object> filter(List<Object> l) {
                       return l.stream()
-                          .filter(org.test.CheckType.class::isInstance)
+                          .filter(CheckType.class::isInstance)
                           .map(CheckType.class::cast)
                           .collect(Collectors.toList());
                   }
