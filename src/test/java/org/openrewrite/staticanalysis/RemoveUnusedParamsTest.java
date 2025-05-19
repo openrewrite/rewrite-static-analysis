@@ -73,6 +73,23 @@ class RemoveUnusedParamsTest implements RewriteTest {
         rewriteRun(
           java(
             """
+              class Test {
+                  void method(String param) {}
+              }
+              class Base {
+                  void method(String param) {}
+              }
+              class Derived extends Base {
+                  @Override
+                  void method(String param) {
+                      // not used but required
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {}
+              }
               class Base {
                   void method(String param) {}
               }

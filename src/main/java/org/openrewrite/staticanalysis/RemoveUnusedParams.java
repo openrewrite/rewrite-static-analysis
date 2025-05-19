@@ -21,18 +21,18 @@ import org.openrewrite.Repeat;
 import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
-import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumulator> {
     static class Accumulator {
@@ -81,7 +81,8 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
 
     private J.MethodDeclaration collectOverrideSignature(final J.MethodDeclaration m, final Accumulator acc) {
         if (m.getMethodType() != null && m.getMethodType().isOverride()) {
-            acc.add(buildSignature(m));
+            acc.add(buildSignature(m.getMethodType()));
+            acc.add(buildSignature(m.getMethodType().getOverride()));
         }
         return m;
     }
@@ -109,14 +110,11 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                 && m.getMethodType() != null
                 && !m.hasModifier(J.Modifier.Type.Native)
                 && m.getLeadingAnnotations().isEmpty()
-                && !acc.contains(buildSignature(m));
+                && !acc.contains(buildSignature(m.getMethodType()));
     }
 
-    private String buildSignature(final J.MethodDeclaration m) {
-        return m.getSimpleName() + "#"
-                + m.getMethodType().getParameterTypes().stream()
-                .map(Object::toString)
-                .collect(Collectors.joining(","));
+    private String buildSignature(final JavaType.Method m) {
+        return MethodMatcher.methodPattern(m);
     }
 
     private Set<String> collectUsedParameters(final J.MethodDeclaration m) {
