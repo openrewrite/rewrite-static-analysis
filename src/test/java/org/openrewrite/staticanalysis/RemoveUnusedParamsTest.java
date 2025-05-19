@@ -341,4 +341,37 @@ class RemoveUnusedParamsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void nestedInheritanceOverrideChain() {
+        rewriteRun(
+          java(
+            """
+            class Lone { void solo(String x) {} }
+
+            class Grandparent { void greet(String msg) {} }
+            class Parent extends Grandparent { }
+            class Child extends Parent {
+                @Override
+                void greet(String msg) {
+                    // required override
+                }
+            }
+            """,
+            """
+            class Lone { void solo() {} }
+
+            class Grandparent { void greet(String msg) {} }
+            class Parent extends Grandparent { }
+            class Child extends Parent {
+                @Override
+                void greet(String msg) {
+                    // required override
+                }
+            }
+            """
+          )
+        );
+    }
+
 }

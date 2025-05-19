@@ -80,9 +80,12 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private J.MethodDeclaration collectOverrideSignature(final J.MethodDeclaration m, final Accumulator acc) {
-        if (m.getMethodType() != null && m.getMethodType().isOverride()) {
-            acc.add(buildSignature(m.getMethodType()));
-            acc.add(buildSignature(m.getMethodType().getOverride()));
+        JavaType.Method mt = m.getMethodType();
+        if (mt != null && mt.isOverride()) {
+            while (mt != null) {
+                acc.add(buildSignature(mt));
+                mt = mt.getOverride();
+            }
         }
         return m;
     }
