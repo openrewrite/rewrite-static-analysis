@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
@@ -42,11 +43,37 @@ public class RemoveUnusedLocalVariables extends Recipe {
             example = "[unused, notUsed, IGNORE_ME]")
     String @Nullable [] ignoreVariablesNamed;
 
-    @Option(displayName = "Remove unused local variables with side effects in initializer",
-            description = "Whether to remove unused local variables despite side effects in the initializer. Default false.",
-            required = false)
-    @Nullable
-    Boolean withSideEffects;
+    @Option(displayName = "Only remove variables of type",
+            description = "A fully qualified class names. Only unused local variables whose type matches one of these will be removed. " +
+                          "If empty or not set, all unused local variables are considered for removal.",
+            required = false,
+            example = "java.lang.String")
+    @Nullable String withType;
+
+    @Option(displayName = "Ignore possible side effects",
+            description = "If true, variables with possible side effects in their initializer will be ignored and not removed. " +
+                          "This option was previously named 'withSideEffects'.",
+            required = false,
+            example = "true")
+    @Nullable Boolean withSideEffects;
+
+    @JsonCreator
+    public RemoveUnusedLocalVariables(
+            String @Nullable [] ignoreVariablesNamed,
+            @Nullable String withType,
+            @Nullable Boolean withSideEffects
+    ) {
+        this.ignoreVariablesNamed = ignoreVariablesNamed;
+        this.withType = withType;
+        this.withSideEffects = withSideEffects;
+    }
+
+    public RemoveUnusedLocalVariables(
+            String @Nullable [] ignoreVariablesNamed,
+            @Nullable Boolean withSideEffects
+    ) {
+        this(ignoreVariablesNamed, null, withSideEffects);
+    }
 
     @Override
     public String getDisplayName() {
@@ -105,6 +132,15 @@ public class RemoveUnusedLocalVariables extends Recipe {
             public  J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 // skip matching ignored variable names right away
                 if (ignoreVariableNames != null && ignoreVariableNames.contains(variable.getSimpleName())) {
+                    return variable;
+                }
+
+                // skip matching ignored variable types right away
+                if (
+                    variable.getType() instanceof JavaType.FullyQualified &&
+                    withType != null &&
+                    !withType.equals(((JavaType.FullyQualified) variable.getType()).getFullyQualifiedName())
+                ) {
                     return variable;
                 }
 
