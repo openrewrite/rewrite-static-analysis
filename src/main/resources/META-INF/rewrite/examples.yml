@@ -2229,6 +2229,7 @@ examples:
   parameters:
   - 'null'
   - 'null'
+  - 'null'
   sources:
   - before: |
       class Test {
