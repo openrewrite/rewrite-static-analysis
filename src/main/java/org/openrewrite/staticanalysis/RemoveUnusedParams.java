@@ -109,11 +109,11 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private boolean shouldPruneParameters(final J.MethodDeclaration m, final Accumulator acc) {
-        return m.getBody() != null
-                && m.getMethodType() != null
-                && !m.hasModifier(J.Modifier.Type.Native)
-                && m.getLeadingAnnotations().isEmpty()
-                && !acc.contains(buildSignature(m.getMethodType()));
+        return m.getBody() != null &&
+                m.getMethodType() != null &&
+                !m.hasModifier(J.Modifier.Type.Native) &&
+                m.getLeadingAnnotations().isEmpty() &&
+                !acc.contains(buildSignature(m.getMethodType()));
     }
 
     private String buildSignature(final JavaType.Method m) {
