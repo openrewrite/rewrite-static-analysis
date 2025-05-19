@@ -137,11 +137,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 }
 
                 // skip matching ignored variable types right away
-                if (
-                    variable.getType() instanceof JavaType.FullyQualified &&
-                    withType != null &&
-                    !withType.equals(((JavaType.FullyQualified) variable.getType()).getFullyQualifiedName())
-                ) {
+                if (withType != null && !TypeUtils.isOfClassType(variable.getType(), withType)) {
                     return variable;
                 }
 
