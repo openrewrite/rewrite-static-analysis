@@ -16,24 +16,23 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.NoMissingTypes;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Statement;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Repeat;
 import org.openrewrite.ScanningRecipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.NoMissingTypes;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Statement;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumulator> {
     static class Accumulator {
@@ -55,9 +54,6 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         }
     }
 
-    private static final String OVERRIDE_ANNOTATION = "Override";
-    private static final int MAX_ATTEMPTS = 5;
-
     @Override
     public String getDisplayName() {
         return "Remove obsolete constructor and method parameters";
@@ -70,7 +66,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(MAX_ATTEMPTS);
+        return Duration.ofMinutes(5);
     }
 
     @Override
@@ -89,11 +85,9 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private J.MethodDeclaration collectOverrideSignature(final J.MethodDeclaration m, final Accumulator acc) {
-        m.getLeadingAnnotations().stream()
-                .map(J.Annotation::getSimpleName)
-                .filter(OVERRIDE_ANNOTATION::equals)
-                .findAny()
-                .ifPresent(annotationName -> acc.add(buildSignature(m)));
+        if (m.getMethodType() != null && m.getMethodType().isOverride()) {
+            acc.add(buildSignature(m));
+        }
         return m;
     }
 
@@ -117,6 +111,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
 
     private boolean shouldPruneParameters(final J.MethodDeclaration m, final Accumulator acc) {
         return m.getBody() != null
+                && m.getMethodType() != null
                 && !m.hasModifier(J.Modifier.Type.Native)
                 && m.getLeadingAnnotations().isEmpty()
                 && !acc.contains(buildSignature(m));
@@ -167,41 +162,57 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
     }
 
     private boolean isShadowed(final String name, final Deque<Set<String>> shadowStack) {
-        return shadowStack.stream().anyMatch(scope -> scope.contains(name));
+        for (Set<String> scope : shadowStack) {
+            if (scope.contains(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isDeclaredAsParameter(final String name, final J.MethodDeclaration m) {
-        return m.getParameters().stream()
-                .filter(p -> p instanceof J.VariableDeclarations)
-                .flatMap(p -> ((J.VariableDeclarations) p).getVariables().stream())
-                .anyMatch(v -> v.getSimpleName().equals(name));
+        for (Statement p : m.getParameters()) {
+            if (p instanceof J.VariableDeclarations) {
+                for (J.VariableDeclarations.NamedVariable v : ((J.VariableDeclarations) p).getVariables()) {
+                    if (v.getSimpleName().equals(name)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
-    private List<Statement> filterUnusedParameters(final J.MethodDeclaration m, final Set<String> usedParams) {
-        return m.getParameters().stream()
-                .flatMap(param -> param instanceof J.VariableDeclarations ?
-                        filterDeclaration((J.VariableDeclarations) param, usedParams)
-                        : Stream.of(param))
-                .collect(Collectors.toList());
+    private List<Statement> filterUnusedParameters(final J.MethodDeclaration method, final Set<String> usedParams) {
+        final List<Statement> result = new ArrayList<>(method.getParameters().size());
+        for (Statement param : method.getParameters()) {
+            if (param instanceof J.VariableDeclarations) {
+                processVariableDeclaration((J.VariableDeclarations) param, usedParams, result);
+            } else {
+                result.add(param);
+            }
+        }
+        return result;
     }
 
-    private Stream<Statement> filterDeclaration(final J.VariableDeclarations decl, final Set<String> usedParams) {
-        return Optional.of(decl)
-                .filter(d -> !d.getLeadingAnnotations().isEmpty())
-                .map(d -> Stream.<Statement>of(d))
-                .orElseGet(() -> pruneByUsage(decl, usedParams));
+    private void processVariableDeclaration(final J.VariableDeclarations decl, final Set<String> usedParams, final List<Statement> result) {
+        final List<J.VariableDeclarations.NamedVariable> kept = keepUsedVariables(decl, usedParams);
+
+        if (!kept.isEmpty()) {
+            result.add(decl.withVariables(kept));
+        } else if (!decl.getLeadingAnnotations().isEmpty()) {
+            result.add(decl);
+        }
     }
 
-    private Stream<Statement> pruneByUsage(final J.VariableDeclarations decl, final Set<String> usedParams) {
-        return Optional.of(collectUsedParameters(decl, usedParams))
-                .filter(kept -> !kept.isEmpty())
-                .map(kept -> Stream.<Statement>of(decl.withVariables(kept)))
-                .orElseGet(Stream::empty);
+    private List<J.VariableDeclarations.NamedVariable> keepUsedVariables(final J.VariableDeclarations decl, final Set<String> usedParams) {
+        List<J.VariableDeclarations.NamedVariable> kept = new ArrayList<>(decl.getVariables().size());
+        for (J.VariableDeclarations.NamedVariable v : decl.getVariables()) {
+            if (usedParams.contains(v.getSimpleName())) {
+                kept.add(v);
+            }
+        }
+        return kept;
     }
 
-    private List<J.VariableDeclarations.NamedVariable> collectUsedParameters(final J.VariableDeclarations decl, final Set<String> usedParams) {
-        return decl.getVariables().stream()
-                .filter(v -> usedParams.contains(v.getSimpleName()))
-                .collect(Collectors.toList());
-    }
 }
