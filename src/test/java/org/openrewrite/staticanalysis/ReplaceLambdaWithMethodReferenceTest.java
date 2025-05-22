@@ -1373,4 +1373,30 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void noMethodReferenceForParentheses() {
+        rewriteRun(
+          java(
+            """
+              @FunctionalInterface
+              interface Foo {
+                  void foo();
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.function.Consumer;
+              import java.util.function.Function;
+              class Test {
+                  void onChange(Foo a, Foo b, boolean c) {
+                      Consumer<?> processor = () -> (c ? a : b).foo();
+                  }
+              }
+              """
+          )
+        );
+    }
 }

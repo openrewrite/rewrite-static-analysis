@@ -220,6 +220,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 } else if (select instanceof J.FieldAccess) {
                     JavaType.Variable fieldType = ((J.FieldAccess) select).getName().getFieldType();
                     return fieldType != null && fieldType.getOwner() instanceof JavaType.Class && !fieldType.hasFlags(Flag.Final);
+                } else if (select instanceof J.NewClass || select instanceof J.Parentheses) {
+                    return true;
                 }
             }
             return false;
