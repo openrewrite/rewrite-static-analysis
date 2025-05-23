@@ -531,7 +531,7 @@ class FallThroughTest implements RewriteTest {
           java(
             """
               enum Enum {
-                  A, B, C, D
+                  A, B, C, D, E, F
               }
               public class Test {
                   void foo(Enum a) {
@@ -553,6 +553,20 @@ class FallThroughTest implements RewriteTest {
                               while (b) {
                                   return;
                               }
+                          case E:
+                              for (; ; ) {
+                                  if(false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                          case F:
+                              while (true) {
+                                  if(false) {
+                                      break;
+                                  }
+                                  return;
+                              }
                           default:
                       }
                   }
@@ -560,7 +574,7 @@ class FallThroughTest implements RewriteTest {
               """,
             """
               enum Enum {
-                  A, B, C, D
+                  A, B, C, D, E, F
               }
               public class Test {
                   void foo(Enum a) {
@@ -581,6 +595,22 @@ class FallThroughTest implements RewriteTest {
                               break;
                           case D:
                               while (b) {
+                                  return;
+                              }
+                              break;
+                          case E:
+                              for (; ; ) {
+                                  if(false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          case F:
+                              while (true) {
+                                  if(false) {
+                                      break;
+                                  }
                                   return;
                               }
                               break;

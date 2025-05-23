@@ -149,7 +149,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     return !statements.isEmpty() && breaks(statements.get(statements.size() - 1));
                 } else if (s instanceof J.If) {
                     J.If iff = (J.If) s;
-                    return iff.getElsePart() != null && breaks(iff.getThenPart()) && breaks(iff.getThenPart());
+                    return iff.getElsePart() != null && breaks(iff.getThenPart());
                 } else if (s instanceof J.Label) {
                     return breaks(((J.Label) s).getStatement());
                 } else if (s instanceof J.Try) {
@@ -271,7 +271,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         if (value.getValue() == Boolean.TRUE) {
                             Statement body = whileLoop.getBody();
                             if (body instanceof J.Block) {
-                                return hasGuaranteedReturn(((J.Block) body).getStatements());
+                                return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
                             } else {
                                 return hasGuaranteedReturn(Collections.singletonList(whileLoop.getBody()));
                             }
@@ -279,6 +279,15 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     }
                 }
                 return s instanceof J.Return;
+            }
+
+            private static boolean hasBreak(List<Statement> statements) {
+                for(Statement s : statements) {
+                    if(s instanceof J.Break) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             @Override
