@@ -282,8 +282,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             }
 
             private static boolean hasBreak(List<Statement> statements) {
-                for(Statement s : statements) {
-                    if(s instanceof J.Break) {
+                for (Statement s : statements) {
+                    if (s instanceof J.Break) {
                         return true;
                     } else if (s instanceof J.If) {
                         J.If if_ = (J.If) s;
@@ -294,7 +294,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         } else {
                             hasBreak = hasBreak(Collections.singletonList(body));
                         }
-                        if(!hasBreak && if_.getElsePart() != null) {
+                        if (!hasBreak && if_.getElsePart() != null) {
                             Statement else_ = if_.getElsePart().getBody();
                             if (else_ instanceof J.If) {
                                 hasBreak = hasBreak(Collections.singletonList(else_));
