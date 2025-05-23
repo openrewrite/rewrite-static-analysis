@@ -252,7 +252,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             }
 
             private static boolean returns(Statement s) {
-                boolean guaranteedReturnFound = false;
                 if (s instanceof J.ForLoop) {
                     J.ForLoop forLoop = (J.ForLoop) s;
                     Expression condition = forLoop.getControl().getCondition();
