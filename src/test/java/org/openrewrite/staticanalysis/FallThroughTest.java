@@ -257,7 +257,7 @@ class FallThroughTest implements RewriteTest {
                       switch (i) {
                       }
                   }
-                  
+
                   public void oneCase(int i) {
                       switch (i) {
                           case 0:
@@ -516,6 +516,131 @@ class FallThroughTest implements RewriteTest {
                                   default:
                                       System.out.print("other");
                               }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNestedInAlwaysTrueLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A, B, C, D, E, F, G, H, I
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      final boolean finalB = true;
+                      switch(a) {
+                          case A:
+                              for (; ; ) {
+                                  return;
+                              }
+                          case B:
+                              for (; true; ) {
+                                  return;
+                              }
+                          case C:
+                              while (true) {
+                                  return;
+                              }
+                          case D:
+                              for (; finalB; ) {
+                                  return;
+                              }
+                          case E:
+                              while (finalB) {
+                                  return;
+                              }
+                          case F:
+                              for (int i = 0; i > 0; i++) {
+                                  return;
+                              }
+                          case G:
+                              while (b) {
+                                  return;
+                              }
+                          case H:
+                              for (; ; ) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                          case I:
+                              while (true) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B, C, D, E, F, G, H, I
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      final boolean finalB = true;
+                      switch(a) {
+                          case A:
+                              for (; ; ) {
+                                  return;
+                              }
+                          case B:
+                              for (; true; ) {
+                                  return;
+                              }
+                          case C:
+                              while (true) {
+                                  return;
+                              }
+                          case D:
+                              for (; finalB; ) {
+                                  return;
+                              }
+                          case E:
+                              while (finalB) {
+                                  return;
+                              }
+                          case F:
+                              for (int i = 0; i > 0; i++) {
+                                  return;
+                              }
+                              break;
+                          case G:
+                              while (b) {
+                                  return;
+                              }
+                              break;
+                          case H:
+                              for (; ; ) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          case I:
+                              while (true) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          default:
                       }
                   }
               }

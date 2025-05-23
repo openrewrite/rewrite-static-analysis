@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -24,6 +25,7 @@ import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -53,7 +55,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindGuaranteedReturns.find(getCursor(), switch_, c).isEmpty()) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -148,7 +150,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     return !statements.isEmpty() && breaks(statements.get(statements.size() - 1));
                 } else if (s instanceof J.If) {
                     J.If iff = (J.If) s;
-                    return iff.getElsePart() != null && breaks(iff.getThenPart()) && breaks(iff.getThenPart());
+                    return iff.getElsePart() != null && breaks(iff.getThenPart());
                 } else if (s instanceof J.Label) {
                     return breaks(((J.Label) s).getStatement());
                 } else if (s instanceof J.Try) {
@@ -219,4 +221,152 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     }
 
+    private static class FindGuaranteedReturns {
+        private FindGuaranteedReturns() {
+        }
+
+        /**
+         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
+         * A result is added to the set when a {@link J.Return} statement is found in the {@link J.Case} scope which is guaranteed to execute.
+         *
+         * @param enclosingSwitch The enclosing {@link J.Switch} subtree to search.
+         * @param scope           the {@link J.Case} to use as a target.
+         * @return A set representing whether the case contains any guaranteed {@link J.Return} statements.
+         */
+        private static Set<J> find(Cursor cursor, J.Switch enclosingSwitch, J.Case scope) {
+            Set<J> references = new HashSet<>();
+            new FindGuaranteedReturnsVisitor(cursor, scope).visit(enclosingSwitch, references);
+            return references;
+        }
+
+        private static class FindGuaranteedReturnsVisitor extends JavaIsoVisitor<Set<J>> {
+            private Cursor cursor;
+            private final J.Case scope;
+
+            public FindGuaranteedReturnsVisitor(Cursor cursor, J.Case scope) {
+                this.cursor = cursor;
+                this.scope = scope;
+            }
+
+
+            private boolean hasGuaranteedReturn(List<? extends Statement> trees) {
+                return trees.stream()
+                        .anyMatch(s -> returns(s));
+            }
+
+            private boolean returns(Statement s) {
+                if (s instanceof J.ForLoop) {
+                    J.ForLoop forLoop = (J.ForLoop) s;
+                    Expression condition = forLoop.getControl().getCondition();
+                    if (condition == null || condition instanceof J.Empty || (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE) || isFinalTrue(condition)) {
+                        Statement body = forLoop.getBody();
+                        if (body instanceof J.Block) {
+                            return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
+                        } else {
+                            return hasGuaranteedReturn(Collections.singletonList(forLoop.getBody()));
+                        }
+                    }
+                } else if (s instanceof J.WhileLoop) {
+                    J.WhileLoop whileLoop = (J.WhileLoop) s;
+                    Expression condition = whileLoop.getCondition().getTree();
+                    if (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE || isFinalTrue(condition)) {
+                        Statement body = whileLoop.getBody();
+                        if (body instanceof J.Block) {
+                            return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
+                        } else {
+                            return hasGuaranteedReturn(Collections.singletonList(whileLoop.getBody()));
+                        }
+                    }
+                }
+                return s instanceof J.Return;
+            }
+
+            private boolean isFinalTrue(Expression condition) {
+                if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
+                    J.Identifier id = (J.Identifier) condition;
+                    J.VariableDeclarations.NamedVariable declaration = null;
+                    while (declaration == null) {
+                        J value = cursor.getValue();
+                        if (value instanceof J.Case) {
+                            List<Statement> statements = ((J.Case) value).getStatements();
+                            declaration = finalVariableDeclaration(statements, id);
+                        } else if (value instanceof J.MethodDeclaration) {
+                            J.Block body = ((J.MethodDeclaration) value).getBody();
+                            if(body != null) {
+                                List<Statement> statements = body.getStatements();
+                                declaration = finalVariableDeclaration(statements, id);
+                            }
+                        } else if (value instanceof J.ClassDeclaration) {
+                            List<Statement> statements = ((J.ClassDeclaration) value).getBody().getStatements();
+                            declaration = finalVariableDeclaration(statements, id);
+                            break;
+                        }
+                        cursor = cursor.getParentTreeCursor();
+                        if (cursor.isRoot()) {
+                            break;
+                        }
+                    }
+                    if (declaration != null) {
+                        return declaration.getInitializer() instanceof J.Literal && ((J.Literal) declaration.getInitializer()).getValue() == Boolean.TRUE;
+                    }
+                }
+                return false;
+            }
+
+            private J.VariableDeclarations.NamedVariable finalVariableDeclaration(List<Statement> statements, J.Identifier id) {
+                for (Statement s : statements) {
+                    if (s instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations vd = (J.VariableDeclarations) s;
+                        if (TypeUtils.isAssignableTo("boolean", vd.getType()) && vd.hasModifier(J.Modifier.Type.Final)) {
+                            for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
+                                if (v.getSimpleName().equals(id.getSimpleName())) {
+                                    return v;
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+
+            private static boolean hasBreak(List<Statement> statements) {
+                for (Statement s : statements) {
+                    if (s instanceof J.Break) {
+                        return true;
+                    } else if (s instanceof J.If) {
+                        J.If if_ = (J.If) s;
+                        Statement body = if_.getThenPart();
+                        boolean hasBreak;
+                        if (body instanceof J.Block) {
+                            hasBreak = hasBreak(((J.Block) body).getStatements());
+                        } else {
+                            hasBreak = hasBreak(Collections.singletonList(body));
+                        }
+                        if (!hasBreak && if_.getElsePart() != null) {
+                            Statement else_ = if_.getElsePart().getBody();
+                            if (else_ instanceof J.If) {
+                                hasBreak = hasBreak(Collections.singletonList(else_));
+                            } else if (else_ instanceof J.Block) {
+                                hasBreak = hasBreak(((J.Block) else_).getStatements());
+                            } else {
+                                hasBreak = hasBreak(Collections.singletonList(else_));
+                            }
+                        }
+                        return hasBreak;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public J.Case visitCase(J.Case case_, Set<J> ctx) {
+                if (case_ == scope) {
+                    if (case_.getStatements().isEmpty() || hasGuaranteedReturn(case_.getStatements())) {
+                        ctx.add(case_);
+                    }
+                }
+                return case_;
+            }
+        }
+    }
 }
