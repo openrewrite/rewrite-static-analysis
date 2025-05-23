@@ -296,6 +296,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         } else if (value instanceof J.ClassDeclaration) {
                             List<Statement> statements = ((J.ClassDeclaration) value).getBody().getStatements();
                             declaration = finalVariableDeclaration(statements, id);
+                            break;
                         }
                         cursor = cursor.getParentTreeCursor();
                         if (cursor.isRoot()) {
