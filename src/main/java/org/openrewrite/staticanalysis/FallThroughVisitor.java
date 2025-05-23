@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -54,7 +55,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindGuaranteedReturns.find(switch_, c).isEmpty()) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindGuaranteedReturns.find(getCursor(), switch_, c).isEmpty()) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -232,30 +233,32 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
          * @param scope           the {@link J.Case} to use as a target.
          * @return A set representing whether the case contains any guaranteed {@link J.Return} statements.
          */
-        private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
+        private static Set<J> find(Cursor cursor, J.Switch enclosingSwitch, J.Case scope) {
             Set<J> references = new HashSet<>();
-            new FindGuaranteedReturnsVisitor(scope).visit(enclosingSwitch, references);
+            new FindGuaranteedReturnsVisitor(cursor, scope).visit(enclosingSwitch, references);
             return references;
         }
 
         private static class FindGuaranteedReturnsVisitor extends JavaIsoVisitor<Set<J>> {
+            private Cursor cursor;
             private final J.Case scope;
 
-            public FindGuaranteedReturnsVisitor(J.Case scope) {
+            public FindGuaranteedReturnsVisitor(Cursor cursor, J.Case scope) {
+                this.cursor = cursor;
                 this.scope = scope;
             }
 
 
-            private static boolean hasGuaranteedReturn(List<? extends Statement> trees) {
+            private boolean hasGuaranteedReturn(List<? extends Statement> trees) {
                 return trees.stream()
                         .anyMatch(s -> returns(s));
             }
 
-            private static boolean returns(Statement s) {
+            private boolean returns(Statement s) {
                 if (s instanceof J.ForLoop) {
                     J.ForLoop forLoop = (J.ForLoop) s;
                     Expression condition = forLoop.getControl().getCondition();
-                    if (condition == null || condition instanceof J.Empty || (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE)) {
+                    if (condition == null || condition instanceof J.Empty || (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE) || isFinalTrue(condition)) {
                         Statement body = forLoop.getBody();
                         if (body instanceof J.Block) {
                             return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
@@ -265,20 +268,61 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     }
                 } else if (s instanceof J.WhileLoop) {
                     J.WhileLoop whileLoop = (J.WhileLoop) s;
-                    Expression condition = whileLoop.getCondition();
-                    if (((J.ControlParentheses<?>) condition).getTree() instanceof J.Literal) {
-                        J.Literal value = (J.Literal) ((J.ControlParentheses<?>) condition).getTree();
-                        if (value.getValue() == Boolean.TRUE) {
-                            Statement body = whileLoop.getBody();
-                            if (body instanceof J.Block) {
-                                return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
-                            } else {
-                                return hasGuaranteedReturn(Collections.singletonList(whileLoop.getBody()));
-                            }
+                    Expression condition = whileLoop.getCondition().getTree();
+                    if (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE || isFinalTrue(condition)) {
+                        Statement body = whileLoop.getBody();
+                        if (body instanceof J.Block) {
+                            return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
+                        } else {
+                            return hasGuaranteedReturn(Collections.singletonList(whileLoop.getBody()));
                         }
                     }
                 }
                 return s instanceof J.Return;
+            }
+
+            private boolean isFinalTrue(Expression condition) {
+                if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
+                    J.Identifier id = (J.Identifier) condition;
+                    J.VariableDeclarations.NamedVariable declaration = null;
+                    while (declaration == null) {
+                        J value = cursor.getValue();
+                        if (value instanceof J.Case) {
+                            List<Statement> statements = ((J.Case) value).getStatements();
+                            declaration = finalVariableDeclaration(statements, id);
+                        } else if (value instanceof J.MethodDeclaration) {
+                            List<Statement> statements = ((J.MethodDeclaration) value).getBody().getStatements();
+                            declaration = finalVariableDeclaration(statements, id);
+                        } else if (value instanceof J.ClassDeclaration) {
+                            List<Statement> statements = ((J.ClassDeclaration) value).getBody().getStatements();
+                            declaration = finalVariableDeclaration(statements, id);
+                        }
+                        cursor = cursor.getParentTreeCursor();
+                        if (cursor.isRoot()) {
+                            break;
+                        }
+                    }
+                    if (declaration != null) {
+                        return declaration.getInitializer() instanceof J.Literal && ((J.Literal) declaration.getInitializer()).getValue() == Boolean.TRUE;
+                    }
+                }
+                return false;
+            }
+
+            private J.VariableDeclarations.NamedVariable finalVariableDeclaration(List<Statement> statements, J.Identifier id) {
+                for (Statement s : statements) {
+                    if (s instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations vd = (J.VariableDeclarations) s;
+                        if (TypeUtils.isAssignableTo("boolean", vd.getType()) && vd.hasModifier(J.Modifier.Type.Final)) {
+                            for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
+                                if (v.getSimpleName().equals(id.getSimpleName())) {
+                                    return v;
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
             }
 
             private static boolean hasBreak(List<Statement> statements) {
@@ -288,7 +332,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     } else if (s instanceof J.If) {
                         J.If if_ = (J.If) s;
                         Statement body = if_.getThenPart();
-                        boolean hasBreak = false;
+                        boolean hasBreak;
                         if (body instanceof J.Block) {
                             hasBreak = hasBreak(((J.Block) body).getStatements());
                         } else {

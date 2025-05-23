@@ -531,11 +531,12 @@ class FallThroughTest implements RewriteTest {
           java(
             """
               enum Enum {
-                  A, B, C, D, E, F, G
+                  A, B, C, D, E, F, G, H, I
               }
               public class Test {
                   void foo(Enum a) {
                       boolean b = true;
+                      final boolean finalB = true;
                       switch(a) {
                           case A:
                               for (; ; ) {
@@ -550,21 +551,29 @@ class FallThroughTest implements RewriteTest {
                                   return;
                               }
                           case D:
-                              for (int i = 0; i > 0; i++) {
+                              for (; finalB; ) {
                                   return;
                               }
                           case E:
-                              while (b) {
+                              while (finalB) {
                                   return;
                               }
                           case F:
+                              for (int i = 0; i > 0; i++) {
+                                  return;
+                              }
+                          case G:
+                              while (b) {
+                                  return;
+                              }
+                          case H:
                               for (; ; ) {
                                   if (false) {
                                       break;
                                   }
                                   return;
                               }
-                          case G:
+                          case I:
                               while (true) {
                                   if (false) {
                                       break;
@@ -578,11 +587,12 @@ class FallThroughTest implements RewriteTest {
               """,
             """
               enum Enum {
-                  A, B, C, D, E, F, G
+                  A, B, C, D, E, F, G, H, I
               }
               public class Test {
                   void foo(Enum a) {
                       boolean b = true;
+                      final boolean finalB = true;
                       switch(a) {
                           case A:
                               for (; ; ) {
@@ -597,16 +607,24 @@ class FallThroughTest implements RewriteTest {
                                   return;
                               }
                           case D:
+                              for (; finalB; ) {
+                                  return;
+                              }
+                          case E:
+                              while (finalB) {
+                                  return;
+                              }
+                          case F:
                               for (int i = 0; i > 0; i++) {
                                   return;
                               }
                               break;
-                          case E:
+                          case G:
                               while (b) {
                                   return;
                               }
                               break;
-                          case F:
+                          case H:
                               for (; ; ) {
                                   if (false) {
                                       break;
@@ -614,7 +632,7 @@ class FallThroughTest implements RewriteTest {
                                   return;
                               }
                               break;
-                          case G:
+                          case I:
                               while (true) {
                                   if (false) {
                                       break;
