@@ -255,10 +255,10 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 if (s instanceof J.ForLoop) {
                     J.ForLoop forLoop = (J.ForLoop) s;
                     Expression condition = forLoop.getControl().getCondition();
-                    if (condition == null || condition instanceof J.Empty) {
+                    if (condition == null || condition instanceof J.Empty || (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE)) {
                         Statement body = forLoop.getBody();
                         if (body instanceof J.Block) {
-                            return hasGuaranteedReturn(((J.Block) body).getStatements());
+                            return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
                         } else {
                             return hasGuaranteedReturn(Collections.singletonList(forLoop.getBody()));
                         }
@@ -285,6 +285,26 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 for(Statement s : statements) {
                     if(s instanceof J.Break) {
                         return true;
+                    } else if (s instanceof J.If) {
+                        J.If if_ = (J.If) s;
+                        Statement body = if_.getThenPart();
+                        boolean hasBreak = false;
+                        if (body instanceof J.Block) {
+                            hasBreak = hasBreak(((J.Block) body).getStatements());
+                        } else {
+                            hasBreak = hasBreak(Collections.singletonList(body));
+                        }
+                        if(!hasBreak && if_.getElsePart() != null) {
+                            Statement else_ = if_.getElsePart().getBody();
+                            if (else_ instanceof J.If) {
+                                hasBreak = hasBreak(Collections.singletonList(else_));
+                            } else if (else_ instanceof J.Block) {
+                                hasBreak = hasBreak(((J.Block) else_).getStatements());
+                            } else {
+                                hasBreak = hasBreak(Collections.singletonList(else_));
+                            }
+                        }
+                        return hasBreak;
                     }
                 }
                 return false;
