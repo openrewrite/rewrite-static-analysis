@@ -24,9 +24,7 @@ import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -53,7 +51,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindGuaranteedReturns.find(switch_, c).isEmpty()) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -215,6 +213,81 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 return case_;
             }
 
+        }
+
+    }
+
+    private static class FindGuaranteedReturns {
+        private FindGuaranteedReturns() {
+        }
+
+        /**
+         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
+         * A result is added to the set when a {@link J.Return} statement is found in the {@link J.Case} scope which is guaranteed to execute.
+         *
+         * @param enclosingSwitch The enclosing {@link J.Switch} subtree to search.
+         * @param scope           the {@link J.Case} to use as a target.
+         * @return A set representing guaranteed {@link J.Return} statements.
+         */
+        private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
+            Set<J> references = new HashSet<>();
+            new FindGuaranteedReturnsVisitor(scope).visit(enclosingSwitch, references);
+            return references;
+        }
+
+        private static class FindGuaranteedReturnsVisitor extends JavaIsoVisitor<Set<J>> {
+            private final J.Case scope;
+
+            public FindGuaranteedReturnsVisitor(J.Case scope) {
+                this.scope = scope;
+            }
+
+
+            private static boolean hasGuaranteedReturn(List<? extends Statement> trees) {
+                return trees.stream()
+                        .anyMatch(s -> returns(s));
+            }
+
+            private static boolean returns(Statement s) {
+                boolean guaranteedReturnFound = false;
+                if (s instanceof J.ForLoop) {
+                    J.ForLoop forLoop = (J.ForLoop) s;
+                    Expression condition = forLoop.getControl().getCondition();
+                    if (condition == null || condition instanceof J.Empty) {
+                        Statement body = forLoop.getBody();
+                        if (body instanceof J.Block) {
+                            return hasGuaranteedReturn(((J.Block) body).getStatements());
+                        } else {
+                            return hasGuaranteedReturn(Collections.singletonList(forLoop.getBody()));
+                        }
+                    }
+                } else if (s instanceof J.WhileLoop) {
+                    J.WhileLoop whileLoop = (J.WhileLoop) s;
+                    Expression condition = whileLoop.getCondition();
+                    if (((J.ControlParentheses<?>) condition).getTree() instanceof J.Literal) {
+                        J.Literal value = (J.Literal) ((J.ControlParentheses<?>) condition).getTree();
+                        if (value.getValue() == Boolean.TRUE) {
+                            Statement body = whileLoop.getBody();
+                            if (body instanceof J.Block) {
+                                return hasGuaranteedReturn(((J.Block) body).getStatements());
+                            } else {
+                                return hasGuaranteedReturn(Collections.singletonList(whileLoop.getBody()));
+                            }
+                        }
+                    }
+                }
+                return s instanceof J.Return;
+            }
+
+            @Override
+            public J.Case visitCase(J.Case case_, Set<J> ctx) {
+                if (case_ == scope) {
+                    if (case_.getStatements().isEmpty() || hasGuaranteedReturn(case_.getStatements())) {
+                        ctx.add(case_);
+                    }
+                }
+                return case_;
+            }
         }
 
     }

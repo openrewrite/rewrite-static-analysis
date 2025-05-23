@@ -257,7 +257,7 @@ class FallThroughTest implements RewriteTest {
                       switch (i) {
                       }
                   }
-                  
+
                   public void oneCase(int i) {
                       switch (i) {
                           case 0:
@@ -516,6 +516,75 @@ class FallThroughTest implements RewriteTest {
                                   default:
                                       System.out.print("other");
                               }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNestedInAlwaysTrueLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A, B, C, D
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      switch(a) {
+                          case A:
+                              for (; ; ) {
+                                  return;
+                              }
+                          case B:
+                              while (true) {
+                                  return;
+                              }
+                          case C:
+                              for (int i = 0; i > 0; i++) {
+                                  return;
+                              }
+                          case D:
+                              while (b) {
+                                  return;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B, C, D
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      switch(a) {
+                          case A:
+                              for (; ; ) {
+                                  return;
+                              }
+                          case B:
+                              while (true) {
+                                  return;
+                              }
+                          case C:
+                              for (int i = 0; i > 0; i++) {
+                                  return;
+                              }
+                              break;
+                          case D:
+                              while (b) {
+                                  return;
+                              }
+                              break;
+                          default:
                       }
                   }
               }
