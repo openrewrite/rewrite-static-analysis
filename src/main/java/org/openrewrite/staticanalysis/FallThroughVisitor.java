@@ -291,7 +291,5 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 return case_;
             }
         }
-
     }
-
 }
