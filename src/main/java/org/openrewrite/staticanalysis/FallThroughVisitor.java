@@ -230,7 +230,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
          *
          * @param enclosingSwitch The enclosing {@link J.Switch} subtree to search.
          * @param scope           the {@link J.Case} to use as a target.
-         * @return A set representing guaranteed {@link J.Return} statements.
+         * @return A set representing whether the case contains any guaranteed {@link J.Return} statements.
          */
         private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
             Set<J> references = new HashSet<>();
