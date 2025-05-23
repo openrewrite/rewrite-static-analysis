@@ -291,8 +291,11 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                             List<Statement> statements = ((J.Case) value).getStatements();
                             declaration = finalVariableDeclaration(statements, id);
                         } else if (value instanceof J.MethodDeclaration) {
-                            List<Statement> statements = ((J.MethodDeclaration) value).getBody().getStatements();
-                            declaration = finalVariableDeclaration(statements, id);
+                            J.Block body = ((J.MethodDeclaration) value).getBody();
+                            if(body != null) {
+                                List<Statement> statements = body.getStatements();
+                                declaration = finalVariableDeclaration(statements, id);
+                            }
                         } else if (value instanceof J.ClassDeclaration) {
                             List<Statement> statements = ((J.ClassDeclaration) value).getBody().getStatements();
                             declaration = finalVariableDeclaration(statements, id);
