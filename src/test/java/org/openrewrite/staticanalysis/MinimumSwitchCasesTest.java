@@ -774,4 +774,32 @@ class MinimumSwitchCasesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void mutlipleBreaks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int variable;
+                  void test() {
+                      Object returnValue;
+                       switch (variable) {
+                           case 0:
+                               if(someCondition()) {
+                                   break;
+                               }
+                               returnValue = new Object();
+                               break;
+                           default:
+                               throw new RuntimeException();
+                       }
+                  }
+                  boolean someCondition() { return false; }
+              }
+              """
+          )
+        );
+    }
 }
