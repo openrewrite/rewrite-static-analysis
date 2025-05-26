@@ -774,4 +774,75 @@ class MinimumSwitchCasesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void multipleBreaks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int variable;
+                  void test() {
+                      Object returnValue;
+                      switch (variable) {
+                          case 0:
+                              if(someCondition()) {
+                                  break;
+                              }
+                              returnValue = new Object();
+                              break;
+                          default:
+                              throw new RuntimeException();
+                       }
+                  }
+                  boolean someCondition() { return false; }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedSwitch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int variableA;
+                  int variableB;
+                  void test() {
+                      Object returnValue;
+                      switch(variableA) {
+                          case 0:
+                              switch (variableB) {
+                                  case 0: break;
+                                  default: break;
+                              }
+                              break;
+                          default:
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int variableA;
+                  int variableB;
+                  void test() {
+                      Object returnValue;
+                      if (variableA == 0) {
+                          if (variableB == 0) {
+                          } else {
+                          }
+                      } else {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
