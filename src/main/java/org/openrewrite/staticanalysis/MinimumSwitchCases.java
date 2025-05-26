@@ -31,7 +31,6 @@ import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -130,7 +129,7 @@ public class MinimumSwitchCases extends Recipe {
                                 List<Statement> breaks = new ArrayList<>();
                                 new BreakFinderVisitor().visit(aCase, breaks);
                                 Statement lastStatement = aCase.getStatements().isEmpty() ? null : aCase.getStatements().get(aCase.getStatements().size() - 1);
-                                if(breaks.size() > 1) {
+                                if (breaks.size() > 1) {
                                     return super.visitSwitch(switch_, ctx);
                                 }
                                 if (j != statements.size() - 1 && !(lastStatement instanceof J.Break || lastStatement instanceof J.Return)) {
