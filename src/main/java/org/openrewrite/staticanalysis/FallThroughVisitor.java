@@ -240,14 +240,10 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             return references;
         }
 
+        @RequiredArgsConstructor
         private static class FindGuaranteedReturnsVisitor extends JavaIsoVisitor<Set<J>> {
-            private Cursor cursor;
+            private final Cursor cursor;
             private final J.Case scope;
-
-            public FindGuaranteedReturnsVisitor(Cursor cursor, J.Case scope) {
-                this.cursor = cursor;
-                this.scope = scope;
-            }
 
 
             private boolean hasGuaranteedReturn(List<? extends Statement> trees) {
