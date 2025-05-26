@@ -17,10 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.search.FindFields;
+import org.openrewrite.java.search.FindFieldsOfType;
 import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -29,6 +32,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -261,7 +265,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     if (condition == null || condition instanceof J.Empty || (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE) || isFinalTrue(condition)) {
                         Statement body = forLoop.getBody();
                         if (body instanceof J.Block) {
-                            return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
+                            return !hasBreak(body) && hasGuaranteedReturn(((J.Block) body).getStatements());
                         } else {
                             return hasGuaranteedReturn(Collections.singletonList(forLoop.getBody()));
                         }
@@ -272,7 +276,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     if (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE || isFinalTrue(condition)) {
                         Statement body = whileLoop.getBody();
                         if (body instanceof J.Block) {
-                            return !hasBreak(((J.Block) body).getStatements()) && hasGuaranteedReturn(((J.Block) body).getStatements());
+                            return !hasBreak(body) && hasGuaranteedReturn(((J.Block) body).getStatements());
                         } else {
                             return hasGuaranteedReturn(Collections.singletonList(whileLoop.getBody()));
                         }
@@ -284,78 +288,63 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             private boolean isFinalTrue(Expression condition) {
                 if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
                     J.Identifier id = (J.Identifier) condition;
-                    J.VariableDeclarations.NamedVariable declaration = null;
-                    while (declaration == null) {
-                        J value = cursor.getValue();
-                        if (value instanceof J.Case) {
-                            List<Statement> statements = ((J.Case) value).getStatements();
-                            declaration = finalVariableDeclaration(statements, id);
-                        } else if (value instanceof J.MethodDeclaration) {
-                            J.Block body = ((J.MethodDeclaration) value).getBody();
-                            if(body != null) {
-                                List<Statement> statements = body.getStatements();
-                                declaration = finalVariableDeclaration(statements, id);
-                            }
-                        } else if (value instanceof J.ClassDeclaration) {
-                            List<Statement> statements = ((J.ClassDeclaration) value).getBody().getStatements();
-                            declaration = finalVariableDeclaration(statements, id);
-                            break;
-                        }
-                        cursor = cursor.getParentTreeCursor();
-                        if (cursor.isRoot()) {
-                            break;
-                        }
+                    if (declaresFinalTrue(cursor.getValue(), id)) {
+                        return true;
                     }
-                    if (declaration != null) {
-                        return declaration.getInitializer() instanceof J.Literal && ((J.Literal) declaration.getInitializer()).getValue() == Boolean.TRUE;
+                    try {
+                        J.MethodDeclaration md = cursor.dropParentUntil(e -> e instanceof J.Case).getValue();
+                        if (declaresFinalTrue(md, id)) {
+                            return true;
+                        }
+                    } catch (Exception ignore) {
+                    }
+                    try {
+                        J.ClassDeclaration cd = cursor.dropParentUntil(e -> e instanceof J.ClassDeclaration).getValue();
+                        if (declaresFinalTrue(cd, id)) {
+                            return true;
+                        }
+                    } catch (Exception ignore) {
                     }
                 }
+
                 return false;
             }
 
-            private J.VariableDeclarations.NamedVariable finalVariableDeclaration(List<Statement> statements, J.Identifier id) {
-                for (Statement s : statements) {
-                    if (s instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations vd = (J.VariableDeclarations) s;
-                        if (TypeUtils.isAssignableTo("boolean", vd.getType()) && vd.hasModifier(J.Modifier.Type.Final)) {
+            private boolean declaresFinalTrue(J j, J.Identifier identifier) {
+                AtomicBoolean declaresFinalTrue = new AtomicBoolean(false);
+                new JavaIsoVisitor<AtomicBoolean>() {
+
+                    @Override
+                    public @Nullable J visit(@Nullable Tree tree, AtomicBoolean atomicBoolean) {
+                        if (tree instanceof J.VariableDeclarations) {
+                            J.VariableDeclarations vd = (J.VariableDeclarations) tree;
                             for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
-                                if (v.getSimpleName().equals(id.getSimpleName())) {
-                                    return v;
+                                if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
+                                    declaresFinalTrue.set(true);
+                                    return (J) tree;
                                 }
                             }
                         }
+                        return super.visit(tree, atomicBoolean);
                     }
-                }
-                return null;
+                }.visit(j, declaresFinalTrue);
+                return declaresFinalTrue.get();
             }
 
-            private static boolean hasBreak(List<Statement> statements) {
-                for (Statement s : statements) {
-                    if (s instanceof J.Break) {
-                        return true;
-                    } else if (s instanceof J.If) {
-                        J.If if_ = (J.If) s;
-                        Statement body = if_.getThenPart();
-                        boolean hasBreak;
-                        if (body instanceof J.Block) {
-                            hasBreak = hasBreak(((J.Block) body).getStatements());
-                        } else {
-                            hasBreak = hasBreak(Collections.singletonList(body));
+            private boolean hasBreak(Statement statement) {
+                AtomicBoolean hasBreak = new AtomicBoolean(false);
+                new JavaIsoVisitor<AtomicBoolean>() {
+
+                    @Override
+                    public @Nullable J visit(@Nullable Tree tree, AtomicBoolean hasBreak) {
+                        if (tree instanceof J.Break) {
+                            hasBreak.set(true);
+                            return (J) tree;
                         }
-                        if (!hasBreak && if_.getElsePart() != null) {
-                            Statement else_ = if_.getElsePart().getBody();
-                            if (else_ instanceof J.If) {
-                                hasBreak = hasBreak(Collections.singletonList(else_));
-                            } else if (else_ instanceof J.Block) {
-                                hasBreak = hasBreak(((J.Block) else_).getStatements());
-                            } else {
-                                hasBreak = hasBreak(Collections.singletonList(else_));
-                            }
-                        }
-                        return hasBreak;
+                        return super.visit(tree, hasBreak);
                     }
-                }
-                return false;
+                }.visit(statement, hasBreak);
+                return hasBreak.get();
             }
 
             @Override

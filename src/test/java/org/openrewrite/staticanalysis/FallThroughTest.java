@@ -525,55 +525,33 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
-    void returnNestedInAlwaysTrueLoop() {
+    void returnNestedInLiteralTrue() {
         rewriteRun(
           //language=java
           java(
             """
               enum Enum {
-                  A, B, C, D, E, F, G, H, I
+                  A, B, C, D
               }
               public class Test {
                   void foo(Enum a) {
-                      boolean b = true;
-                      final boolean finalB = true;
                       switch(a) {
                           case A:
-                              for (; ; ) {
-                                  return;
-                              }
-                          case B:
                               for (; true; ) {
                                   return;
                               }
-                          case C:
+                          case B:
                               while (true) {
                                   return;
                               }
-                          case D:
-                              for (; finalB; ) {
-                                  return;
-                              }
-                          case E:
-                              while (finalB) {
-                                  return;
-                              }
-                          case F:
-                              for (int i = 0; i > 0; i++) {
-                                  return;
-                              }
-                          case G:
-                              while (b) {
-                                  return;
-                              }
-                          case H:
-                              for (; ; ) {
+                          case C:
+                              for (; true; ) {
                                   if (false) {
                                       break;
                                   }
                                   return;
                               }
-                          case I:
+                          case D:
                               while (true) {
                                   if (false) {
                                       break;
@@ -587,44 +565,83 @@ class FallThroughTest implements RewriteTest {
               """,
             """
               enum Enum {
-                  A, B, C, D, E, F, G, H, I
+                  A, B, C, D
               }
               public class Test {
                   void foo(Enum a) {
-                      boolean b = true;
-                      final boolean finalB = true;
+                      switch(a) {
+                          case A:
+                              for (; true; ) {
+                                  return;
+                              }
+                          case B:
+                              while (true) {
+                                  return;
+                              }
+                          case C:
+                              for (; true; ) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          case D:
+                              while (true) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+    @Test
+    void returnNestedInInfiniteForLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
                       switch(a) {
                           case A:
                               for (; ; ) {
                                   return;
                               }
                           case B:
-                              for (; true; ) {
+                              for (; ; ) {
+                                  if (false) {
+                                      break;
+                                  }
                                   return;
                               }
-                          case C:
-                              while (true) {
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              for (; ; ) {
                                   return;
                               }
-                          case D:
-                              for (; finalB; ) {
-                                  return;
-                              }
-                          case E:
-                              while (finalB) {
-                                  return;
-                              }
-                          case F:
-                              for (int i = 0; i > 0; i++) {
-                                  return;
-                              }
-                              break;
-                          case G:
-                              while (b) {
-                                  return;
-                              }
-                              break;
-                          case H:
+                          case B:
                               for (; ; ) {
                                   if (false) {
                                       break;
@@ -632,14 +649,88 @@ class FallThroughTest implements RewriteTest {
                                   return;
                               }
                               break;
-                          case I:
-                              while (true) {
-                                  if (false) {
-                                      break;
-                                  }
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNestedInNonFinalBooleanInfiniteLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      switch(a) {
+                          case A:
+                              while (b) {
+                                  return;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      switch(a) {
+                          case A:
+                              while (b) {
                                   return;
                               }
                               break;
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNestedInFinalBooleanInfiniteLoop() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              enum Enum {
+                  A, B, C
+              }
+              public class Test {
+
+                  final boolean classBoolean = true;
+
+                  void foo(Enum a) {
+                      final boolean methodBoolean = true;
+                      switch(a) {
+                          case A:
+                              while (classBoolean) {
+                                  return;
+                              }
+                          case B:
+                              while (methodBoolean) {
+                                  return;
+                              }
+                          case C:
+                              final boolean caseBoolean = true;
+                              while (caseBoolean) {
+                                  return;
+                              }
                           default:
                       }
                   }
