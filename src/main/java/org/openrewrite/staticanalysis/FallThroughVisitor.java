@@ -223,9 +223,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     }
 
+    NoArgsConstructor(access = PRIVATE)
     private static class FindGuaranteedReturns {
-        private FindGuaranteedReturns() {
-        }
 
         /**
          * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
