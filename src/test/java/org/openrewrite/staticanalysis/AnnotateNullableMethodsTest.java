@@ -284,7 +284,6 @@ class AnnotateNullableMethodsTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
     void methodReturnsNullInTernary() {
         rewriteRun(
