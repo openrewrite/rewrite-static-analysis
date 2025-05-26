@@ -175,6 +175,10 @@ public class AnnotateNullableMethods extends Recipe {
             if (returnExpression instanceof J.MethodInvocation) {
                 return isKnowNullableMethod((J.MethodInvocation) returnExpression);
             }
+            if (returnExpression instanceof J.Ternary) {
+                J.Ternary ternary = (J.Ternary) returnExpression;
+                return maybeIsNull(ternary.getTruePart()) || maybeIsNull(ternary.getFalsePart());
+            }
             return false;
         }
 
