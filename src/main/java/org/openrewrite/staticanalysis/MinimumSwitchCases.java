@@ -213,7 +213,7 @@ public class MinimumSwitchCases extends Recipe {
                             }
                         }
 
-                        return autoFormat(generatedIf, ctx);
+                        return autoFormat(super.visit(generatedIf, ctx), ctx);
                     } catch (RecipeRunException e) {
                         // JavaTemplate has problems on some Groovy files, don't currently have a way to adapt it appropriately
                         return switch_;
@@ -295,8 +295,10 @@ public class MinimumSwitchCases extends Recipe {
 
         @Override
         public @Nullable J visit(@Nullable Tree tree, List<Statement> statements) {
-            if(tree instanceof J.Break) {
+            if (tree instanceof J.Break) {
                 statements.add((J.Break) tree);
+            } else if (tree instanceof J.Switch) {
+                return (J) tree;
             }
             return super.visit(tree, statements);
         }
