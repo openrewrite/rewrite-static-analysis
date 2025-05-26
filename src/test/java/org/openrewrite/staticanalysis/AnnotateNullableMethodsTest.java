@@ -283,4 +283,55 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void methodReturnsNullInTernary() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Random;
+
+              public class Test {
+
+                  public String getString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+
+                  public @Nullable String getString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void methodWithTernaryNullButNeverReturnsNull() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Random;
+
+              public class Test {
+
+                  public String getString() {
+                      var value = new Random().nextBoolean() ? "Not null" : null;
+                      return value != null ? value : "Unknown";
+                  }
+              }
+              """
+          )
+        );
+    }
 }
