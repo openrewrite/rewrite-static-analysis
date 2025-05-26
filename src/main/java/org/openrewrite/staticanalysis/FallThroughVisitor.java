@@ -15,8 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.*;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
@@ -223,7 +222,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     }
 
-    NoArgsConstructor(access = PRIVATE)
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     private static class FindGuaranteedReturns {
 
         /**
