@@ -264,9 +264,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         Statement body = forLoop.getBody();
                         if (body instanceof J.Block) {
                             return !hasBreak(body) && hasGuaranteedReturn(((J.Block) body).getStatements());
-                        } else {
-                            return hasGuaranteedReturn(Collections.singletonList(forLoop.getBody()));
                         }
+                        return hasGuaranteedReturn(Collections.singletonList(body));
                     }
                 } else if (s instanceof J.WhileLoop) {
                     J.WhileLoop whileLoop = (J.WhileLoop) s;
