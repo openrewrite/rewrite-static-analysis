@@ -48,9 +48,12 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
         J.WhileLoop w = super.visitWhileLoop(whileLoop, p);
 
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
+        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && w.getBody() instanceof J.Block) {
             J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
+            List<Statement> statements = body.getStatements();
+            if (statements.size() == 1 && statements.get(0) instanceof J.Continue) {
+                w = w.withBody(body.withStatements(new ArrayList<>()));
+            }
         }
 
         return w;
@@ -60,9 +63,12 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, P p) {
         J.DoWhileLoop w = super.visitDoWhileLoop(doWhileLoop, p);
 
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
+        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && w.getBody() instanceof J.Block) {
             J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
+            List<Statement> statements = body.getStatements();
+            if (statements.size() == 1 && statements.get(0) instanceof J.Continue) {
+                w = w.withBody(body.withStatements(new ArrayList<>()));
+            }
         }
 
         return w;

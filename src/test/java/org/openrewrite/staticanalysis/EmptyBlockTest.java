@@ -223,8 +223,10 @@ class EmptyBlockTest implements RewriteTest {
               public class A {
                   public void foo() {
                       while(true) {
+                          continue;
                       }
                       do {
+                          continue;
                       } while(true);
                   }
               }
@@ -233,10 +235,8 @@ class EmptyBlockTest implements RewriteTest {
               public class A {
                   public void foo() {
                       while(true) {
-                          continue;
                       }
                       do {
-                          continue;
                       } while(true);
                   }
               }
