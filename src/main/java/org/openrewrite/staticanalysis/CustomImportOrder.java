@@ -51,8 +51,10 @@ public class CustomImportOrder extends Recipe {
         public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
             if (tree instanceof JavaSourceFile) {
                 JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                CustomImportOrderStyle style = Style.from(CustomImportOrderStyle.class, cu, Checkstyle::customImportOrderStyle);
-                return new CustomImportOrderVisitor<>(style).visitNonNull(cu, ctx);
+                CustomImportOrderStyle style = Style.from(CustomImportOrderStyle.class, cu);
+                if (style != null) {
+                    return new CustomImportOrderVisitor<>(style).visitNonNull(cu, ctx);
+                }
             }
             return (J) tree;
         }
