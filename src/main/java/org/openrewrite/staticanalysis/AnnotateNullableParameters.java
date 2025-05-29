@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -70,14 +71,17 @@ public class AnnotateNullableParameters extends Recipe {
 
     @Override
     public Validated<Object> validate() {
-        return super.validate()
-                .and(Validated.test("nullableAnnotationClass", "Property `nullableAnnotationClass` must be a fully qualified classname.", nullableAnnotationClass,
-                        it -> it == null || it.contains(".")));
+        return super.validate().and(Validated.test(
+                "nullableAnnotationClass",
+                "Property `nullableAnnotationClass` must be a fully qualified classname.",
+                nullableAnnotationClass,
+                it -> it == null || it.contains(".")));
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         String fullyQualifiedName = nullableAnnotationClass != null ? nullableAnnotationClass : DEFAULT_NULLABLE_ANN_CLASS;
+        String fullyQualifiedPackage = fullyQualifiedName.substring(0, fullyQualifiedName.lastIndexOf('.'));
         String simpleName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.') + 1);
         J.Annotation nullableAnnotation = new J.Annotation(
                 Tree.randomId(),
@@ -106,23 +110,18 @@ public class AnnotateNullableParameters extends Recipe {
                 }
 
                 Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md, fullyQualifiedName));
-                Set<J.Identifier> nullCheckedIdentifiers = new HashSet<>();
-                new NullCheckVisitor(candidateIdentifiers.values()).visit(md.getBody(), nullCheckedIdentifiers);
-
-                List<Statement> updatedStatements = new ArrayList<>();
-                for (Statement stm : md.getParameters()) {
-                    J.VariableDeclarations vd = (J.VariableDeclarations) stm;
-                    J.Identifier identifier = candidateIdentifiers.get(vd);
-
-                    if (containsIdentifierByName(nullCheckedIdentifiers, identifier)) {
-                        updatedStatements.add(addNullableAnnotation(vd, nullableAnnotation));
-                    } else {
-                        updatedStatements.add(stm);
-                    }
-                }
+                Set<J.Identifier> nullCheckedIdentifiers = new NullCheckVisitor(candidateIdentifiers.values())
+                        .reduce(md.getBody(), new HashSet<>());
 
                 maybeAddImport(fullyQualifiedName);
-                return md.withParameters(updatedStatements);
+                return md.withParameters(ListUtils.map(md.getParameters(), stm -> {
+                    J.VariableDeclarations vd = (J.VariableDeclarations) stm;
+                    J.Identifier identifier = candidateIdentifiers.get(vd);
+                    if (containsIdentifierByName(nullCheckedIdentifiers, identifier)) {
+                        return(addNullableAnnotation(vd, nullableAnnotation));
+                    }
+                    return stm;
+                }));
             }
         };
     }

@@ -30,8 +30,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec
-          .recipe(new AnnotateNullableParameters(null));
+        spec.recipe(new AnnotateNullableParameters(null));
     }
 
 
@@ -156,6 +155,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
         @ValueSource(strings = {"", "protected", "private"})
         void methodIsNotPublic(String accessModifier) {
             rewriteRun(
+              //language=java
               java(
                 """
                   package org.example;
@@ -232,6 +232,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
         })
         void knownMethodsPositiveInvocation(String pkg, String methodCall) {
             rewriteRun(
+              //language=java
               java(
                 """
                   import %s;
@@ -275,6 +276,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
         })
         void knownMethodsNegatedUnary(String pkg, String methodCall) {
             rewriteRun(
+              //language=java
               java(
                 """
                   import %s;
