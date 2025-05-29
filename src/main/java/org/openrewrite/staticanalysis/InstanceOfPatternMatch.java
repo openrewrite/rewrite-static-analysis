@@ -188,10 +188,11 @@ public class InstanceOfPatternMatch extends Recipe {
         @SuppressWarnings("SuspiciousMethodCalls")
         public void registerTypeCast(J.TypeCast typeCast, Cursor cursor) {
             Expression expression = typeCast.getExpression();
-            JavaType type = typeCast.getClazz().getTree().getType();
+            JavaType castType = typeCast.getClazz().getTree().getType();
 
             Optional<ExpressionAndType> match = instanceOfs.keySet().stream()
-                    .filter(k -> TypeUtils.isAssignableTo(type, k.getType()) &&
+                    .filter(k -> hasSameRawType(castType, k.getType()) &&
+                                 isCheckedCastCompatible(castType) &&
                                  SemanticallyEqual.areEqual(k.getExpression(), expression))
                     .findAny();
             if (match.isPresent()) {
@@ -223,6 +224,38 @@ public class InstanceOfPatternMatch extends Recipe {
                     }
                 }
             }
+        }
+
+        private boolean hasSameRawType(JavaType firstType, JavaType secondType) {
+            JavaType firstRawType = getRawType(firstType);
+            JavaType secondRawType = getRawType(secondType);
+
+            return TypeUtils.isAssignableTo(firstRawType, secondRawType) && TypeUtils.isAssignableTo(secondRawType, firstRawType);
+        }
+
+        private JavaType getRawType(JavaType type) {
+            if(type instanceof JavaType.Parameterized) {
+                return ((JavaType.Parameterized) type).getType();
+            }
+
+            return type;
+        }
+
+        private boolean isCheckedCastCompatible(JavaType castType) {
+            if(!(castType instanceof JavaType.Parameterized)) {
+                return true;
+            }
+
+            JavaType.Parameterized parameterizedCastTargetType = (JavaType.Parameterized) castType;
+            return parameterizedCastTargetType.getTypeParameters().stream()
+                    .allMatch(typeParameter -> {
+                        if (!(typeParameter instanceof JavaType.GenericTypeVariable)) {
+                            return false;
+                        }
+
+                        JavaType.GenericTypeVariable genericTypeVariable = (JavaType.GenericTypeVariable) typeParameter;
+                        return genericTypeVariable.getBounds().isEmpty() && "?".equals(genericTypeVariable.getName());
+                    });
         }
 
         private boolean isAcceptableTypeCast(JavaType type) {
