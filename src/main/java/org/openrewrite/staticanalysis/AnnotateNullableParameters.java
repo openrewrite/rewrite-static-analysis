@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -169,13 +170,10 @@ public class AnnotateNullableParameters extends Recipe {
      *   <li>Negated null-checking method calls (!Objects.isNull, !StringUtils.isBlank, etc.)</li>
      * </ul>
      */
+    @RequiredArgsConstructor
     private static class NullCheckVisitor extends JavaIsoVisitor<Set<J.Identifier>> {
 
         private final Collection<J.Identifier> identifiers;
-
-        public NullCheckVisitor(Collection<J.Identifier> identifiers) {
-            this.identifiers = identifiers;
-        }
 
         @Override
         public J.If visitIf(J.If iff, Set<J.Identifier> nullCheckedParams) {

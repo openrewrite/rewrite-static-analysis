@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -145,8 +146,45 @@ class AnnotateNullableParametersTest implements RewriteTest {
               )
             );
         }
-    }
 
+        @Test
+        void nestedType() {
+            rewriteRun(
+              //language=java
+              java(
+                "package a; public class B { public static class C {} }",
+                SourceSpec::skip
+              ),
+              //language=java
+              java(
+                """
+                  import a.B;
+                  public class PersonBuilder {
+                      public PersonBuilder setName(B.C name) {
+                          if (name == null) {
+                              return this;
+                          }
+                          return this;
+                      }
+                  }
+                  """,
+                """
+                  import a.B;
+                  import org.jspecify.annotations.Nullable;
+
+                  public class PersonBuilder {
+                      public PersonBuilder setName(B.@Nullable C name) {
+                          if (name == null) {
+                              return this;
+                          }
+                          return this;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
 
     @Nested
     class UnchangedCode {
