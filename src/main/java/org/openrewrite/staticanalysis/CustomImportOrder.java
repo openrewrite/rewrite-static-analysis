@@ -21,7 +21,6 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.CustomImportOrderStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
