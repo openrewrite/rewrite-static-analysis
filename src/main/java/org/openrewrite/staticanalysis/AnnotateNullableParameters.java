@@ -117,11 +117,10 @@ public class AnnotateNullableParameters extends Recipe {
         };
     }
 
-    private static boolean containsIdentifierByName(Collection<J.Identifier> identifiers, J.Identifier target) {
+    private static boolean containsIdentifierByName(Collection<J.Identifier> identifiers, J.@Nullable Identifier target) {
         if (target == null) {
             return false;
         }
-
         return identifiers.stream()
                 .anyMatch(identifier -> target.getSimpleName().equals(identifier.getSimpleName()));
     }
@@ -217,15 +216,15 @@ public class AnnotateNullableParameters extends Recipe {
 
         private void handleMethodInvocation(J.MethodInvocation mi, Set<J.Identifier> nullCheckedParams) {
             if (isKnownNullMethodChecker(mi)) {
-                new JavaIsoVisitor<Void>() {
+                new JavaIsoVisitor<Set<J.Identifier>>() {
                     @Override
-                    public J.Identifier visitIdentifier(J.Identifier identifier, Void unused) {
+                    public J.Identifier visitIdentifier(J.Identifier identifier, Set<J.Identifier> set) {
                         if (containsIdentifierByName(identifiers, identifier)) {
-                            nullCheckedParams.add(identifier);
+                            set.add(identifier);
                         }
                         return identifier;
                     }
-                }.visit(mi.getArguments(), null);
+                }.visit(mi.getArguments(), nullCheckedParams);
             }
         }
 
