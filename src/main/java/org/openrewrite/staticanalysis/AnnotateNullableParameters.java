@@ -20,11 +20,10 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.AnnotationMatcher;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.tree.*;
-import org.openrewrite.marker.Markers;
+import org.openrewrite.java.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Statement;
 
 import java.util.*;
 
@@ -83,22 +82,6 @@ public class AnnotateNullableParameters extends Recipe {
         String fullyQualifiedName = nullableAnnotationClass != null ? nullableAnnotationClass : DEFAULT_NULLABLE_ANN_CLASS;
         String fullyQualifiedPackage = fullyQualifiedName.substring(0, fullyQualifiedName.lastIndexOf('.'));
         String simpleName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.') + 1);
-        J.Annotation nullableAnnotation = new J.Annotation(
-                Tree.randomId(),
-                Space.EMPTY,
-                Markers.EMPTY,
-                new J.Identifier(
-                        Tree.randomId(),
-                        Space.EMPTY,
-                        Markers.EMPTY,
-                        Collections.emptyList(),
-                        simpleName,
-                        JavaType.buildType(fullyQualifiedName),
-                        null
-                ),
-                null
-        );
-
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
@@ -118,7 +101,15 @@ public class AnnotateNullableParameters extends Recipe {
                     J.VariableDeclarations vd = (J.VariableDeclarations) stm;
                     J.Identifier identifier = candidateIdentifiers.get(vd);
                     if (containsIdentifierByName(nullCheckedIdentifiers, identifier)) {
-                        return(addNullableAnnotation(vd, nullableAnnotation));
+                        J.VariableDeclarations annotated = JavaTemplate.builder("@" + fullyQualifiedName)
+                                .javaParser(JavaParser.fromJavaVersion().dependsOn(
+                                        String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
+                                .build()
+                                .apply(
+                                        new Cursor(updateCursor(md), vd),
+                                        vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                        doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
+                        return annotated;
                     }
                     return stm;
                 }));
@@ -133,22 +124,6 @@ public class AnnotateNullableParameters extends Recipe {
 
         return identifiers.stream()
                 .anyMatch(identifier -> target.getSimpleName().equals(identifier.getSimpleName()));
-    }
-
-    private J.VariableDeclarations addNullableAnnotation(J.VariableDeclarations vd, J.Annotation annotation) {
-        TypeTree typeExpr = vd.getTypeExpression();
-        if (typeExpr != null) {
-            typeExpr = typeExpr.withPrefix(Space.SINGLE_SPACE); // Ensure proper spacing after annotation
-            vd = vd.withTypeExpression(typeExpr);
-        }
-
-        List<J.Annotation> annotations = new ArrayList<>(vd.getLeadingAnnotations());
-        J.Annotation annotationToAdd = annotations.isEmpty() ?
-                annotation :
-                annotation.withPrefix(Space.SINGLE_SPACE); // Ensure proper spacing after existing annotations
-
-        annotations.add(annotationToAdd);
-        return vd.withLeadingAnnotations(annotations);
     }
 
     /**
