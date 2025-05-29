@@ -61,7 +61,7 @@ public class AnnotateNullableParameters extends Recipe {
     @Override
     public String getDescription() {
 
-        return "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`." +
+        return "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. " +
                 "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
                 "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
                 "This recipe scans for methods that do not already have parameters annotated with `@Nullable` annotation and checks their usages " +
@@ -128,7 +128,9 @@ public class AnnotateNullableParameters extends Recipe {
     }
 
     private static boolean containsIdentifierByName(Collection<J.Identifier> identifiers, J.Identifier target) {
-        if (target == null) return false;
+        if (target == null) {
+            return false;
+        }
 
         return identifiers.stream()
                 .anyMatch(identifier -> target.getSimpleName().equals(identifier.getSimpleName()));
@@ -142,9 +144,9 @@ public class AnnotateNullableParameters extends Recipe {
         }
 
         List<J.Annotation> annotations = new ArrayList<>(vd.getLeadingAnnotations());
-        J.Annotation annotationToAdd = annotations.isEmpty()
-                ? annotation
-                : annotation.withPrefix(Space.SINGLE_SPACE); // Ensure proper spacing after existing annotations
+        J.Annotation annotationToAdd = annotations.isEmpty() ?
+                annotation :
+                annotation.withPrefix(Space.SINGLE_SPACE); // Ensure proper spacing after existing annotations
 
         annotations.add(annotationToAdd);
         return vd.withLeadingAnnotations(annotations);
