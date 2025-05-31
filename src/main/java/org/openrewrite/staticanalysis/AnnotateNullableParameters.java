@@ -112,7 +112,7 @@ public class AnnotateNullableParameters extends Recipe {
                                         new Cursor(updateCursor(md), vd),
                                         vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                         doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
-                        doAfterVisit(new MoveFieldAnnotationToType("org.jspecify.annotations.*").getVisitor());
+                        doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
                         return annotated;
                     }
                     return stm;
