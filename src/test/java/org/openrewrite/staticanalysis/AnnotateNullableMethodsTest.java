@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
@@ -328,6 +329,44 @@ class AnnotateNullableMethodsTest implements RewriteTest {
                   public String getString() {
                       var value = new Random().nextBoolean() ? "Not null" : null;
                       return value != null ? value : "Unknown";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package a;
+              public class B {
+                  public static class C {}
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              import a.B;
+              public class Foo {
+                  public B.C bar() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import a.B;
+              import org.jspecify.annotations.Nullable;
+
+              public class Foo {
+
+                  public  B.@Nullable C bar() {
+                      return null;
                   }
               }
               """
