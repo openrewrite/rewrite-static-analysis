@@ -184,6 +184,31 @@ class AnnotateNullableParametersTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void finalVariableSpacing() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void bar(final String name) {
+                          if (name == null) {}
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class Foo {
+                      public void bar(@Nullable final String name) {
+                          if (name == null) {}
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @Nested

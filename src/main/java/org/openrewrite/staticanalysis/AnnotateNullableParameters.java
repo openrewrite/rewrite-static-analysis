@@ -26,6 +26,7 @@ import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
@@ -104,19 +105,19 @@ public class AnnotateNullableParameters extends Recipe {
 
                 maybeAddImport(fullyQualifiedName);
                 return md.withParameters(ListUtils.map(md.getParameters(), stm -> {
-                    J.VariableDeclarations vd = (J.VariableDeclarations) stm;
-                    J.Identifier identifier = candidateIdentifiers.get(vd);
-                    if (containsIdentifierByName(nullCheckedIdentifiers, identifier)) {
-                        J.VariableDeclarations annotated = JavaTemplate.builder("@" + fullyQualifiedName)
-                                .javaParser(JavaParser.fromJavaVersion().dependsOn(
-                                        String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
-                                .build()
-                                .apply(
-                                        new Cursor(updateCursor(md), vd),
-                                        vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
-                        doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
-                        doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
-                        return annotated;
+                    if (stm instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations vd = (J.VariableDeclarations) stm;
+                        if (containsIdentifierByName(nullCheckedIdentifiers, candidateIdentifiers.get(vd))) {
+                            J.VariableDeclarations annotated = JavaTemplate.builder("@" + fullyQualifiedName)
+                                    .javaParser(JavaParser.fromJavaVersion().dependsOn(
+                                            String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
+                                    .build()
+                                    .apply(new Cursor(getCursor(), vd),
+                                            vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                            doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
+                            doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
+                            return annotated.withModifiers(ListUtils.mapFirst(annotated.getModifiers(), first -> first.withPrefix(Space.SINGLE_SPACE)));
+                        }
                     }
                     return stm;
                 }));
