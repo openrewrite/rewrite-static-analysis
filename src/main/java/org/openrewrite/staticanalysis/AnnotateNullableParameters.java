@@ -91,7 +91,8 @@ public class AnnotateNullableParameters extends Recipe {
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
 
                 // Supporting only public methods atm
-                if (!md.hasModifier(J.Modifier.Type.Public) || md.getBody() == null) {
+                if (!md.hasModifier(J.Modifier.Type.Public) || md.getBody() == null ||
+                        md.getParameters().isEmpty() || md.getParameters().get(0) instanceof J.Empty) {
                     return md;
                 }
 
