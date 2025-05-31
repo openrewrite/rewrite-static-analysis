@@ -95,7 +95,7 @@ public class AnnotateNullableMethods extends Recipe {
                     doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotatedMethod));
                     doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
                     return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor()
-                            .visitNonNull(annotatedMethod, ctx, updateCursor(annotatedMethod).getParentTreeCursor());
+                            .visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
                 }
                 return md;
             }
