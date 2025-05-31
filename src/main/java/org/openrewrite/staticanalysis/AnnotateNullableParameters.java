@@ -22,9 +22,11 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.*;
+import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
 
@@ -110,6 +112,7 @@ public class AnnotateNullableParameters extends Recipe {
                                         new Cursor(updateCursor(md), vd),
                                         vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                         doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
+                        doAfterVisit(new MoveFieldAnnotationToType("org.jspecify.annotations.*").getVisitor());
                         return annotated;
                     }
                     return stm;
@@ -135,18 +138,15 @@ public class AnnotateNullableParameters extends Recipe {
      * @return list of parameter declarations that could receive the annotation
      */
     private List<J.VariableDeclarations> findCandidateParameters(J.MethodDeclaration md, String fqn) {
-        AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + fqn);
         List<J.VariableDeclarations> candidates = new ArrayList<>();
-
         for (Statement parameter : md.getParameters()) {
             if (parameter instanceof J.VariableDeclarations) {
                 J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
-                if (vd.getLeadingAnnotations().stream().noneMatch(annotationMatcher::matches)) {
+                if (FindAnnotations.find(vd, "@" + fqn).isEmpty()) {
                     candidates.add(vd);
                 }
             }
         }
-
         return candidates;
     }
 
