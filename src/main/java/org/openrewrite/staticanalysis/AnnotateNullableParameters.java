@@ -23,6 +23,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.FindAnnotations;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
@@ -92,7 +93,8 @@ public class AnnotateNullableParameters extends Recipe {
 
                 // Supporting only public methods atm
                 if (!md.hasModifier(J.Modifier.Type.Public) || md.getBody() == null ||
-                        md.getParameters().isEmpty() || md.getParameters().get(0) instanceof J.Empty) {
+                        md.getParameters().isEmpty() || md.getParameters().get(0) instanceof J.Empty ||
+                        md.getMethodType() == null || md.getMethodType().isOverride()) {
                     return md;
                 }
 
@@ -126,8 +128,7 @@ public class AnnotateNullableParameters extends Recipe {
         if (target == null) {
             return false;
         }
-        return identifiers.stream()
-                .anyMatch(identifier -> target.getSimpleName().equals(identifier.getSimpleName()));
+        return identifiers.stream().anyMatch(identifier -> SemanticallyEqual.areEqual(identifier, target));
     }
 
     /**

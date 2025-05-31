@@ -256,6 +256,50 @@ class AnnotateNullableParametersTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void noChangeForOverrides() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      @Override
+                      public boolean equals(Object obj) {
+                          if (obj == null) {
+                              return false;
+                          }
+                          return true;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeForDifferentScopeVariableCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void foo(Object obj) {
+                          new Object() {
+                              boolean bar(Object obj) {
+                                  if (obj == null) {
+                                      return false;
+                                  }
+                                 return true;
+                              }
+                          };
+                          return true;
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
 
