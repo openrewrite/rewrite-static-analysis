@@ -1005,6 +1005,48 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/572")
+        void castTypeIsSuperType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                      void test(Object o) {
+                          if (o instanceof Car) {
+                              ((Vehicle) o).start();
+                          }
+                      }
+                      private static abstract class Vehicle { abstract void start(); }
+                      private static class Car extends Vehicle { void start() {} }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/572")
+        void castTypeIsSubType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                      void test(Object o) {
+                          if (o instanceof Car) {
+                              ((Vehicle) o).start();
+                          }
+                      }
+                      private static abstract class Vehicle { abstract void start(); }
+                      private static class Car extends Vehicle { void start() {} }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @Nested

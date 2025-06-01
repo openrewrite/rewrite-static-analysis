@@ -46,7 +46,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new RemoveUnusedLocalVariables(new String[0], null));
+        spec.recipe(new RemoveUnusedLocalVariables(new String[0], null, null));
     }
 
     @DocumentExample
@@ -100,7 +100,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @SuppressWarnings("MethodMayBeStatic")
     void ignoreVariablesNamed() {
         rewriteRun(
-          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused"}, null)),
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(new String[]{"unused"}, null, null)),
           //language=java
           java(
             """
@@ -1076,7 +1076,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     @Issue("https://github.com/openrewrite/rewrite-feature-flags/pull/35")
     void removeDespiteSideEffects() {
         rewriteRun(
-          spec -> spec.recipe(new RemoveUnusedLocalVariables(null, true)),
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(null, null, true)),
           //language=java
           java(
             """
@@ -1091,6 +1091,122 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
               class Test {
                   int sideEffect() { return 123; }
                   void method(Object someData) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOnlyUnusedLocalVariablesOfTypeString() {
+        rewriteRun(
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(
+            null,
+            "java.lang.String",
+            null
+          )),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      String unusedString = "abc";
+                      Integer unusedInteger = 123;
+                      String usedString = "def";
+                      System.out.println(usedString);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      Integer unusedInteger = 123;
+                      String usedString = "def";
+                      System.out.println(usedString);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOnlyUnusedLocalVariablesOfTypeInteger() {
+        rewriteRun(
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(
+            null,
+            "java.lang.Integer",
+            null
+          )),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      String unusedString = "abc";
+                      Integer unusedInteger = 123;
+                      Integer usedInteger = 456;
+                      System.out.println(usedInteger);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      String unusedString = "abc";
+                      Integer usedInteger = 456;
+                      System.out.println(usedInteger);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeAllUnusedLocalVariablesWhenWithTypeNull() {
+        rewriteRun(
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(
+            null,
+            null,
+            null
+          )),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      String unusedString = "abc";
+                      Integer unusedInteger = 123;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveUnusedLocalVariablesWhenWithTypeDoesNotMatch() {
+        rewriteRun(
+          spec -> spec.recipe(new RemoveUnusedLocalVariables(
+            null,
+            "java.lang.BigInteger",
+            null
+          )),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      String unusedString = "abc";
+                      Integer unusedInteger = 123;
                   }
               }
               """

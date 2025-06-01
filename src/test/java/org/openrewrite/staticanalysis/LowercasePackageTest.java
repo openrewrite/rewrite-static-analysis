@@ -21,7 +21,7 @@ import org.openrewrite.PathUtils;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
@@ -48,7 +48,7 @@ class LowercasePackageTest implements RewriteTest {
               class A {}
               """,
             spec -> spec.afterRecipe(cu ->
-              assertThat(PathUtils.equalIgnoringSeparators(cu.getSourcePath(), Paths.get("com/uppercase/camelcase/A.java"))).isTrue())
+              assertThat(PathUtils.equalIgnoringSeparators(cu.getSourcePath(), Path.of("com/uppercase/camelcase/A.java"))).isTrue())
           )
         );
     }
@@ -63,7 +63,7 @@ class LowercasePackageTest implements RewriteTest {
               class A {}
               """,
             spec -> spec.afterRecipe(cu ->
-              assertThat(PathUtils.equalIgnoringSeparators(cu.getSourcePath(), Paths.get("com/lowercase/A.java"))).isTrue())
+              assertThat(PathUtils.equalIgnoringSeparators(cu.getSourcePath(), Path.of("com/lowercase/A.java"))).isTrue())
           )
         );
     }

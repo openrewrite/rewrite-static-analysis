@@ -15,8 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.*;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -24,9 +25,11 @@ import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -53,7 +56,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindGuaranteedReturns.find(getCursor(), switch_, c).isEmpty()) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -148,7 +151,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     return !statements.isEmpty() && breaks(statements.get(statements.size() - 1));
                 } else if (s instanceof J.If) {
                     J.If iff = (J.If) s;
-                    return iff.getElsePart() != null && breaks(iff.getThenPart()) && breaks(iff.getThenPart());
+                    return iff.getElsePart() != null && breaks(iff.getThenPart());
                 } else if (s instanceof J.Label) {
                     return breaks(((J.Label) s).getStatement());
                 } else if (s instanceof J.Try) {
@@ -219,4 +222,130 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     }
 
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    private static class FindGuaranteedReturns {
+
+        /**
+         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
+         * A result is added to the set when a {@link J.Return} statement is found in the {@link J.Case} scope which is guaranteed to execute.
+         *
+         * @param enclosingSwitch The enclosing {@link J.Switch} subtree to search.
+         * @param scope           the {@link J.Case} to use as a target.
+         * @return A set representing whether the case contains any guaranteed {@link J.Return} statements.
+         */
+        private static Set<J> find(Cursor cursor, J.Switch enclosingSwitch, J.Case scope) {
+            Set<J> references = new HashSet<>();
+            new FindGuaranteedReturnsVisitor(cursor, scope).visit(enclosingSwitch, references);
+            return references;
+        }
+
+        @RequiredArgsConstructor
+        private static class FindGuaranteedReturnsVisitor extends JavaIsoVisitor<Set<J>> {
+            private final Cursor cursor;
+            private final J.Case scope;
+
+
+            private boolean hasGuaranteedReturn(List<? extends Statement> trees) {
+                return trees.stream()
+                        .anyMatch(s -> returns(s));
+            }
+
+            private boolean returns(Statement s) {
+                if (s instanceof J.ForLoop) {
+                    J.ForLoop forLoop = (J.ForLoop) s;
+                    Expression condition = forLoop.getControl().getCondition();
+                    if (condition == null || condition instanceof J.Empty || (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE) || isFinalTrue(condition)) {
+                        Statement body = forLoop.getBody();
+                        if (body instanceof J.Block) {
+                            return !hasBreak(body) && hasGuaranteedReturn(((J.Block) body).getStatements());
+                        }
+                        return hasGuaranteedReturn(Collections.singletonList(body));
+                    }
+                } else if (s instanceof J.WhileLoop) {
+                    J.WhileLoop whileLoop = (J.WhileLoop) s;
+                    Expression condition = whileLoop.getCondition().getTree();
+                    if (condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE || isFinalTrue(condition)) {
+                        Statement body = whileLoop.getBody();
+                        if (body instanceof J.Block) {
+                            return !hasBreak(body) && hasGuaranteedReturn(((J.Block) body).getStatements());
+                        }
+                        return hasGuaranteedReturn(Collections.singletonList(body));
+                    }
+                }
+                return s instanceof J.Return;
+            }
+
+            private boolean isFinalTrue(Expression condition) {
+                if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
+                    J.Identifier id = (J.Identifier) condition;
+                    if (declaresFinalTrue(cursor.getValue(), id)) {
+                        return true;
+                    }
+                    try {
+                        J.MethodDeclaration md = cursor.dropParentUntil(e -> e instanceof J.Case).getValue();
+                        if (declaresFinalTrue(md, id)) {
+                            return true;
+                        }
+                    } catch (Exception ignore) {
+                    }
+                    try {
+                        J.ClassDeclaration cd = cursor.dropParentUntil(e -> e instanceof J.ClassDeclaration).getValue();
+                        if (declaresFinalTrue(cd, id)) {
+                            return true;
+                        }
+                    } catch (Exception ignore) {
+                    }
+                }
+
+                return false;
+            }
+
+            private boolean declaresFinalTrue(J j, J.Identifier identifier) {
+                AtomicBoolean declaresFinalTrue = new AtomicBoolean(false);
+                new JavaIsoVisitor<AtomicBoolean>() {
+
+                    @Override
+                    public @Nullable J visit(@Nullable Tree tree, AtomicBoolean atomicBoolean) {
+                        if (tree instanceof J.VariableDeclarations) {
+                            J.VariableDeclarations vd = (J.VariableDeclarations) tree;
+                            for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
+                                if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
+                                    declaresFinalTrue.set(true);
+                                    return (J) tree;
+                                }
+                            }
+                        }
+                        return super.visit(tree, atomicBoolean);
+                    }
+                }.visit(j, declaresFinalTrue);
+                return declaresFinalTrue.get();
+            }
+
+            private boolean hasBreak(Statement statement) {
+                AtomicBoolean hasBreak = new AtomicBoolean(false);
+                new JavaIsoVisitor<AtomicBoolean>() {
+
+                    @Override
+                    public @Nullable J visit(@Nullable Tree tree, AtomicBoolean hasBreak) {
+                        if (tree instanceof J.Break) {
+                            hasBreak.set(true);
+                            return (J) tree;
+                        }
+                        return super.visit(tree, hasBreak);
+                    }
+                }.visit(statement, hasBreak);
+                return hasBreak.get();
+            }
+
+            @Override
+            public J.Case visitCase(J.Case case_, Set<J> ctx) {
+                if (case_ == scope) {
+                    if (case_.getStatements().isEmpty() || hasGuaranteedReturn(case_.getStatements())) {
+                        ctx.add(case_);
+                    }
+                }
+                return case_;
+            }
+        }
+    }
 }

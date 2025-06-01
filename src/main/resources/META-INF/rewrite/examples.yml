@@ -2229,6 +2229,7 @@ examples:
   parameters:
   - 'null'
   - 'null'
+  - 'null'
   sources:
   - before: |
       class Test {
@@ -2801,6 +2802,18 @@ examples:
 - description: ''
   sources:
   - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
+- description: ''
+  sources:
+  - before: |
       public class A {
           boolean a;
           {
@@ -2817,18 +2830,6 @@ examples:
           }
       }
     language: java
-- description: ''
-  sources:
-  - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanReturn

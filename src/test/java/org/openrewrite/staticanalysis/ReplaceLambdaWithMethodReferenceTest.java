@@ -613,7 +613,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               class Test {
                   List<Object> filter(List<Object> l) {
                       return l.stream()
-                          .filter(org.test.CheckType.class::isInstance)
+                          .filter(CheckType.class::isInstance)
                           .map(CheckType.class::cast)
                           .collect(Collectors.toList());
                   }
@@ -1367,6 +1367,32 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       // Runtime exception when replaced with field::toString
                       Supplier<String> supplierA = () -> field.toString();
                       Supplier<String> supplierB = () -> this.field.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noMethodReferenceForParentheses() {
+        rewriteRun(
+          java(
+            """
+              @FunctionalInterface
+              interface Foo {
+                  void foo();
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.function.Consumer;
+              import java.util.function.Function;
+              class Test {
+                  void onChange(Foo a, Foo b, boolean c) {
+                      Consumer<?> processor = () -> (c ? a : b).foo();
                   }
               }
               """
