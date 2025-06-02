@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
+
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
@@ -238,23 +240,19 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 if (statement instanceof J.WhileLoop) {
                     J.WhileLoop whileLoop = (J.WhileLoop) statement;
                     Expression condition = whileLoop.getCondition().getTree();
-                    if ((isLiteralTrue(condition) || isFinalTrue(condition, cursor)) && !hasBreak(whileLoop)) {
+                    if ((isLiteralValue(condition, Boolean.TRUE) || isFinalTrue(condition, cursor)) && !hasBreak(whileLoop)) {
                         return Collections.singleton(statement);
                     }
                 }
                 if (statement instanceof J.ForLoop) {
                     J.ForLoop forLoop = (J.ForLoop) statement;
                     Expression condition = forLoop.getControl().getCondition();
-                    if ((condition instanceof J.Empty || isLiteralTrue(condition) || isFinalTrue(condition, cursor)) && !hasBreak(forLoop)) {
+                    if ((condition instanceof J.Empty || isLiteralValue(condition, Boolean.TRUE) || isFinalTrue(condition, cursor)) && !hasBreak(forLoop)) {
                         return Collections.singleton(statement);
                     }
                 }
             }
             return Collections.emptySet();
-        }
-
-        private static boolean isLiteralTrue(Expression condition) {
-            return condition instanceof J.Literal && ((J.Literal) condition).getValue() == Boolean.TRUE;
         }
 
         private static boolean isFinalTrue(Expression condition, Cursor cursor) {
