@@ -53,7 +53,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && HasInfiniteLoop.find(getCursor(), switch_, c).isEmpty()) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindInfiniteLoops.find(getCursor(), switch_, c).isEmpty()) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -219,14 +219,14 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
     }
 
-    private static class HasInfiniteLoop {
+    private static class FindInfiniteLoops {
         /**
          * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
          * A result is added to the set when a loop in a {@link J.Case} scope is an infinite loop.
          *
          * @param enclosingSwitch The enclosing {@link J.Switch} subtree to search.
          * @param scope           the {@link J.Case} to use as a target.
-         * @return A set representing whether the last {@link Statement} is an acceptable "break"-able type or has a "fallthrough" comment.
+         * @return A set representing all {@link Statement} which are infinite loops.
          */
         public static Set<J> find(Cursor cursor, J.Switch enclosingSwitch, J.Case scope) {
             for (Statement statement : scope.getStatements()) {
