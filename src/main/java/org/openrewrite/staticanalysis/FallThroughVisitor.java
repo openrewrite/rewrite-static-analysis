@@ -53,7 +53,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
             J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindInfiniteLoops.find(getCursor(), switch_, c).isEmpty()) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindInfiniteLoops.find(getCursor(), c).isEmpty()) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -228,7 +228,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
          * @param scope           the {@link J.Case} to use as a target.
          * @return A set representing all {@link Statement} which are infinite loops.
          */
-        public static Set<J> find(Cursor cursor, J.Switch enclosingSwitch, J.Case scope) {
+        public static Set<J> find(Cursor cursor, J.Case scope) {
             for (Statement statement : scope.getStatements()) {
                 System.out.println();
                 if (statement instanceof J.WhileLoop) {
