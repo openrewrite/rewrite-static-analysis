@@ -477,6 +477,48 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
+    void infiniteLoopWithBreak() {
+        rewriteRun(
+          //language=java
+          java (
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              while (true) {
+                                  break;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              while (true) {
+                                  break;
+                              }
+                              break;
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void nestedSwitch() {
         rewriteRun(
           //language=java
