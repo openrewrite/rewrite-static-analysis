@@ -263,26 +263,22 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         private static boolean declaresFinalTrue(@Nullable J j, J.Identifier identifier) {
-            AtomicBoolean declaresFinalTrue = new AtomicBoolean(false);
-            new JavaIsoVisitor<AtomicBoolean>() {
+            return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
-                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vd, AtomicBoolean atomicBoolean) {
+                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vd, AtomicBoolean declaresFinalTrue) {
                     for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
                         if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
                             declaresFinalTrue.set(true);
                             return vd;
                         }
                     }
-                    return super.visitVariableDeclarations(vd, atomicBoolean);
+                    return super.visitVariableDeclarations(vd, declaresFinalTrue);
                 }
-            }.visit(j, declaresFinalTrue);
-            return declaresFinalTrue.get();
+            }.reduce(j, new AtomicBoolean(false)).get();
         }
 
         private static boolean hasBreak(Statement statement) {
-            AtomicBoolean hasBreak = new AtomicBoolean(false);
-            new JavaIsoVisitor<AtomicBoolean>() {
-
+            return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public @Nullable J visit(@Nullable Tree tree, AtomicBoolean hasBreak) {
                     if (tree instanceof J.Break) {
@@ -291,8 +287,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     }
                     return super.visit(tree, hasBreak);
                 }
-            }.visit(statement, hasBreak);
-            return hasBreak.get();
+            }.reduce(statement, new AtomicBoolean(false)).get();
         }
     }
 }
