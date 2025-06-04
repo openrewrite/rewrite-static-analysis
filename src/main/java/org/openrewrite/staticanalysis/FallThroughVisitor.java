@@ -257,16 +257,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         private static boolean isFinalTrue(Expression condition, Cursor cursor) {
             if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
                 J.Identifier id = (J.Identifier) condition;
-                if (declaresFinalTrue(cursor.getValue(), id)) {
-                    return true;
-                }
-                try {
-                    J.MethodDeclaration md = cursor.dropParentUntil(e -> e instanceof J.Case).getValue();
-                    if (declaresFinalTrue(md, id)) {
-                        return true;
-                    }
-                } catch (Exception ignore) {
-                }
                 try {
                     J.ClassDeclaration cd = cursor.dropParentUntil(e -> e instanceof J.ClassDeclaration).getValue();
                     if (declaresFinalTrue(cd, id)) {
@@ -282,19 +272,15 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         private static boolean declaresFinalTrue(J j, J.Identifier identifier) {
             AtomicBoolean declaresFinalTrue = new AtomicBoolean(false);
             new JavaIsoVisitor<AtomicBoolean>() {
-
                 @Override
-                public @Nullable J visit(@Nullable Tree tree, AtomicBoolean atomicBoolean) {
-                    if (tree instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations vd = (J.VariableDeclarations) tree;
-                        for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
-                            if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
-                                declaresFinalTrue.set(true);
-                                return (J) tree;
-                            }
+                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vd, AtomicBoolean atomicBoolean) {
+                    for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
+                        if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
+                            declaresFinalTrue.set(true);
+                            return vd;
                         }
                     }
-                    return super.visit(tree, atomicBoolean);
+                    return super.visitVariableDeclarations(vd, atomicBoolean);
                 }
             }.visit(j, declaresFinalTrue);
             return declaresFinalTrue.get();
