@@ -252,13 +252,9 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
 
         private static boolean isFinalTrue(@Nullable Expression condition, Cursor cursor) {
             if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
-                J.Identifier id = (J.Identifier) condition;
                 J.ClassDeclaration cd = cursor.firstEnclosing(J.ClassDeclaration.class);
-                if (declaresFinalTrue(cd, id)) {
-                    return true;
-                }
+                return declaresFinalTrue(cd, (J.Identifier) condition);
             }
-
             return false;
         }
 
