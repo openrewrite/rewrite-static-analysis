@@ -57,7 +57,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     public J.Case visitCase(J.Case case_, P p) {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
-            J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
+            J.Switch switch_ = getCursor().firstEnclosing(J.Switch.class);
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && FindInfiniteLoops.find(getCursor(), c).isEmpty()) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
@@ -253,19 +253,16 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         private static boolean isFinalTrue(@Nullable Expression condition, Cursor cursor) {
             if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
                 J.Identifier id = (J.Identifier) condition;
-                try {
-                    J.ClassDeclaration cd = cursor.dropParentUntil(e -> e instanceof J.ClassDeclaration).getValue();
-                    if (declaresFinalTrue(cd, id)) {
-                        return true;
-                    }
-                } catch (Exception ignore) {
+                J.ClassDeclaration cd = cursor.firstEnclosing(J.ClassDeclaration.class);
+                if (declaresFinalTrue(cd, id)) {
+                    return true;
                 }
             }
 
             return false;
         }
 
-        private static boolean declaresFinalTrue(J j, J.Identifier identifier) {
+        private static boolean declaresFinalTrue(@Nullable J j, J.Identifier identifier) {
             AtomicBoolean declaresFinalTrue = new AtomicBoolean(false);
             new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
