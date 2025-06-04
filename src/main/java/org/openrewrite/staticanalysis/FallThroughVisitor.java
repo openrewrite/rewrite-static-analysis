@@ -236,26 +236,22 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
          */
         public static Set<J> find(Cursor cursor, J.Case scope) {
             for (Statement statement : scope.getStatements()) {
+                Expression condition = null;
                 if (statement instanceof J.WhileLoop) {
-                    J.WhileLoop whileLoop = (J.WhileLoop) statement;
-                    Expression condition = whileLoop.getCondition().getTree();
-                    if ((isLiteralValue(condition, Boolean.TRUE) || isFinalTrue(condition, cursor)) && !hasBreak(whileLoop)) {
-                        return Collections.singleton(statement);
-                    }
+                    condition = ((J.WhileLoop) statement).getCondition().getTree();
                 }
                 if (statement instanceof J.ForLoop) {
-                    J.ForLoop forLoop = (J.ForLoop) statement;
-                    Expression condition = forLoop.getControl().getCondition();
-                    if ((condition instanceof J.Empty || isLiteralValue(condition, Boolean.TRUE) || isFinalTrue(condition, cursor)) && !hasBreak(forLoop)) {
-                        return Collections.singleton(statement);
-                    }
+                    condition = ((J.ForLoop) statement).getControl().getCondition();
+                }
+                if ((condition instanceof J.Empty || isLiteralValue(condition, Boolean.TRUE) || isFinalTrue(condition, cursor)) && !hasBreak(statement)) {
+                    return Collections.singleton(statement);
                 }
             }
             return Collections.emptySet();
         }
 
-        private static boolean isFinalTrue(Expression condition, Cursor cursor) {
-            if (condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
+        private static boolean isFinalTrue(@Nullable Expression condition, Cursor cursor) {
+            if (condition != null && condition instanceof J.Identifier && ((J.Identifier) condition).getFieldType() != null && ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
                 J.Identifier id = (J.Identifier) condition;
                 try {
                     J.ClassDeclaration cd = cursor.dropParentUntil(e -> e instanceof J.ClassDeclaration).getValue();
