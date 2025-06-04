@@ -236,7 +236,6 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
          */
         public static Set<J> find(Cursor cursor, J.Case scope) {
             for (Statement statement : scope.getStatements()) {
-                System.out.println();
                 if (statement instanceof J.WhileLoop) {
                     J.WhileLoop whileLoop = (J.WhileLoop) statement;
                     Expression condition = whileLoop.getCondition().getTree();
