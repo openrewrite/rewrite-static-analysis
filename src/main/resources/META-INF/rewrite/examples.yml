@@ -114,6 +114,41 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AnnotateNullableParameters
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      public class PersonBuilder {
+          private String name = "Unknown";
+
+          public PersonBuilder setName(String name) {
+              if (name == null) {
+                  return this;
+              }
+              this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+              return this;
+          }
+      }
+    after: |
+      import org.jspecify.annotations.Nullable;
+
+      public class PersonBuilder {
+          private String name = "Unknown";
+
+          public PersonBuilder setName(@Nullable String name) {
+              if (name == null) {
+                  return this;
+              }
+              this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+              return this;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
 examples:
 - description: ''
