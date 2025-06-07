@@ -23,7 +23,7 @@ import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.marker.SearchResult;
 
 /**
- * Add a search marker if vising a Groovy file
+ * Add a search marker if visiting a Groovy file
  */
 public class GroovyFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_GROOVY_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.groovy.tree.G");

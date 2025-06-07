@@ -40,7 +40,7 @@ import java.util.EnumSet;
  * <ul>
  *     <li>Will NOT change any Protected constructors to Private</li>
  *     <li>
- *         HideUtilityClassConstructorVisitor will ignore classes with a Main method signature ({@code public static void main(String[] args)}.
+ *         HideUtilityClassConstructorVisitor will ignore classes with a Main method signature ({@code public static void main(String[] args)}).
  *         This prevents HideUtilityClassConstructorVisitor from generating a Private constructor on classes which only
  *         serve as application entry points, though they are technically a Utility Class.
  *     </li>
