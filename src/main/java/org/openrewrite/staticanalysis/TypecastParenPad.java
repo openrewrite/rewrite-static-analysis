@@ -38,7 +38,7 @@ public class TypecastParenPad extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Fixes whitespace padding between a typecast type identifier and the enclosing left and right parenthesis. " +
+        return "Fixes whitespace padding between a typecast type identifier and the enclosing left and right parentheses. " +
                "For example, when configured to remove spacing, `( int ) 0L;` becomes `(int) 0L;`.";
     }
 

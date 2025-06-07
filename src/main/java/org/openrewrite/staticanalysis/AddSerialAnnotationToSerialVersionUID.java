@@ -40,7 +40,7 @@ public class AddSerialAnnotationToSerialVersionUID extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Annotation any `serialVersionUID` fields with `@Serial` to indicate it's part of the serialization mechanism.";
+        return "Annotate any `serialVersionUID` fields with `@Serial` to indicate it's part of the serialization mechanism.";
     }
 
     @Override

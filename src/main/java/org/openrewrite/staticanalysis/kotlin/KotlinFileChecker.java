@@ -23,7 +23,7 @@ import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.SearchResult;
 
 /**
- * Add a search marker if vising a Kotlin file
+ * Add a search marker if visiting a Kotlin file
  */
 public class KotlinFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_KOTLIN_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.kotlin.tree.K");
