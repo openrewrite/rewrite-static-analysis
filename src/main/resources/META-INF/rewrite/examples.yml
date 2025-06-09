@@ -360,6 +360,25 @@ examples:
 - description: ''
   sources:
   - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
+          }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
       import java.io.FileReader;
       import java.io.IOException;
 
@@ -379,25 +398,6 @@ examples:
       class A {
           void foo() throws IOException {
               new FileReader("").read();
-          }
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      class A {
-          void foo() throws IllegalAccessException {
-              try {
-                  throw new IllegalAccessException();
-              } catch (Exception e) {
-                  throw e; // `e` is removed below
-              }
-          }
-      }
-    after: |
-      class A {
-          void foo() throws IllegalAccessException {
-              throw new IllegalAccessException();
           }
       }
     language: java
