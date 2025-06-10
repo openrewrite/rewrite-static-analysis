@@ -71,9 +71,9 @@ recipeList:
 #  - org.openrewrite.java.RemoveUnusedImports
 #  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
 #  - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
-  - org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
+#  - org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
   - org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
-  - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
+#  - org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
   - org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
   - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
@@ -100,3 +100,4 @@ recipeList:
   - org.openrewrite.kotlin.cleanup.EqualsMethodUsage
   - org.openrewrite.kotlin.cleanup.ImplicitParameterInLambda
   - org.openrewrite.kotlin.cleanup.ReplaceCharToIntWithCode
+  - org.openrewrite.staticanalysis.CustomImportOrder

@@ -114,6 +114,41 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AnnotateNullableParameters
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      public class PersonBuilder {
+          private String name = "Unknown";
+
+          public PersonBuilder setName(String name) {
+              if (name == null) {
+                  return this;
+              }
+              this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+              return this;
+          }
+      }
+    after: |
+      import org.jspecify.annotations.Nullable;
+
+      public class PersonBuilder {
+          private String name = "Unknown";
+
+          public PersonBuilder setName(@Nullable String name) {
+              if (name == null) {
+                  return this;
+              }
+              this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+              return this;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
 examples:
 - description: ''
@@ -325,6 +360,25 @@ examples:
 - description: ''
   sources:
   - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
+          }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
       import java.io.FileReader;
       import java.io.IOException;
 
@@ -344,25 +398,6 @@ examples:
       class A {
           void foo() throws IOException {
               new FileReader("").read();
-          }
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      class A {
-          void foo() throws IllegalAccessException {
-              try {
-                  throw new IllegalAccessException();
-              } catch (Exception e) {
-                  throw e; // `e` is removed below
-              }
-          }
-      }
-    after: |
-      class A {
-          void foo() throws IllegalAccessException {
-              throw new IllegalAccessException();
           }
       }
     language: java
@@ -468,6 +503,30 @@ examples:
               return n == tee.n;
           }
       }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CustomImportOrder
+examples:
+- description: ''
+  sources:
+  - before: |
+      package com.example;
+
+      import org.apache.commons.lang3.StringUtils;
+      import java.util.Collections;
+      import static java.util.Collections.*;
+
+      class Test {}
+    after: |
+      package com.example;
+
+      import static java.util.Collections.*;
+
+      import java.util.Collections;
+      import org.apache.commons.lang3.StringUtils;
+
+      class Test {}
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
@@ -636,23 +695,6 @@ examples:
 - description: ''
   sources:
   - before: |
-      class A {
-          // C#: int? a
-          Nullable<Integer> a = null;
-          // C#: int? a = 0
-          Nullable<Integer> a = new Nullable<>(0);
-      }
-    after: |
-      class A {
-          // C#: int? a
-          Nullable<Integer> a;
-          // C#: int? a = 0
-          Nullable<Integer> a = new Nullable<>(0);
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
       class Test {
           private int a = 0;
           private long b = 0L;
@@ -693,6 +735,23 @@ examples:
           int[] m = new int[0];
 
           private final Long n = null;
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
+      class A {
+          // C#: int? a
+          Nullable<Integer> a = null;
+          // C#: int? a = 0
+          Nullable<Integer> a = new Nullable<>(0);
+      }
+    after: |
+      class A {
+          // C#: int? a
+          Nullable<Integer> a;
+          // C#: int? a = 0
+          Nullable<Integer> a = new Nullable<>(0);
       }
     language: java
 ---
@@ -1584,6 +1643,8 @@ type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoFinalizedLocalVariables
 examples:
 - description: ''
+  parameters:
+  - 'null'
   sources:
   - before: |
       import java.util.function.Supplier;
@@ -2201,6 +2262,7 @@ recipeName: org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
 examples:
 - description: ''
   parameters:
+  - 'null'
   - 'null'
   - 'null'
   sources:

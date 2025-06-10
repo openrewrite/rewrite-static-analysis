@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
@@ -52,7 +53,7 @@ public class ReplaceTextBlockWithString extends Recipe {
     private static class ReplaceTextBlockWithStringVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
-        public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
+        public @Nullable J visitLiteral(J.Literal literal, ExecutionContext ctx) {
             if (literal.getType() == Primitive.String &&
                 literal.getValue() != null &&
                 literal.getValueSource() != null &&

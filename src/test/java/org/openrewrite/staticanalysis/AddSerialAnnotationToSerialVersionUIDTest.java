@@ -139,7 +139,6 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
     @ParameterizedTest
     @ValueSource(strings = {
       "static final long",
-      "static final long" ,
         "private final long" ,
         "private static long" ,
         "private static final int"

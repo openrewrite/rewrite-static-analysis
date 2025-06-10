@@ -23,6 +23,7 @@ import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -441,6 +442,44 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               @lombok.extern.slf4j.Slf4j
               class A {
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
+    @Test
+    void removeUntilStable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Test {
+                  private String a = "a";
+                  private String ab = a + "b";
+                  private String abc = ab + "c";
+              }
+              """,
+            """
+              public class Test {
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
+    @Test
+    void doNotRemoveWhenThereAreMissingTypes() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),
+          //language=java
+          java(
+            """
+              import can.not.be.Found;
+              public class Test {
+                  private Found notUsed;
               }
               """
           )

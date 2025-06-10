@@ -46,7 +46,7 @@ class JavaElementFactoryTest implements RewriteTest {
     void instanceMethodReference() {
         RecipeSpec spec = RecipeSpec.defaults();
         defaults(spec);
-        SourceFile sourceFile = spec.getParsers().get(0).build().parse(
+        SourceFile sourceFile = spec.getParsers().getFirst().build().parse(
           //language=java
           """
             package foo;
@@ -85,7 +85,7 @@ class JavaElementFactoryTest implements RewriteTest {
     void staticMethodReference() {
         RecipeSpec spec = RecipeSpec.defaults();
         defaults(spec);
-        SourceFile sourceFile = spec.getParsers().get(0).build().parse(
+        SourceFile sourceFile = spec.getParsers().getFirst().build().parse(
           //language=java
           """
             package foo;
@@ -124,7 +124,7 @@ class JavaElementFactoryTest implements RewriteTest {
     void qualifiedStaticMethodReference() {
         RecipeSpec spec = RecipeSpec.defaults();
         defaults(spec);
-        SourceFile sourceFile = spec.getParsers().get(0).build().parse(
+        SourceFile sourceFile = spec.getParsers().getFirst().build().parse(
           //language=java
           """
             package foo;
