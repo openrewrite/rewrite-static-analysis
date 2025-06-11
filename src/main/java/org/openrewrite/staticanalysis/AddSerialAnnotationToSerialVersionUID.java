@@ -21,6 +21,7 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.UsesJavaVersion;
@@ -30,7 +31,8 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.Comparator;
+
+import static java.util.Comparator.comparing;
 
 public class AddSerialAnnotationToSerialVersionUID extends Recipe {
     @Override
@@ -73,8 +75,11 @@ public class AddSerialAnnotationToSerialVersionUID extends Recipe {
                             maybeAddImport("java.io.Serial", false); // GH#373
                             return JavaTemplate.builder("@Serial")
                                     .imports("java.io.Serial")
+                                    .javaParser(JavaParser.fromJavaVersion().dependsOn(
+                                            "package java.io;" +
+                                            "public @interface Serial {}"))
                                     .build()
-                                    .apply(getCursor(), vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                                    .apply(getCursor(), vd.getCoordinates().addAnnotation(comparing(J.Annotation::getSimpleName)));
                         }
                         return vd;
                     }
