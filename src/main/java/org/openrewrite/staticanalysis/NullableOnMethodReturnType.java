@@ -19,6 +19,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
@@ -26,7 +27,6 @@ import org.openrewrite.marker.Markers;
 import java.util.Collections;
 
 import static java.util.Objects.requireNonNull;
-import static org.openrewrite.java.trait.Traits.annotated;
 
 public class NullableOnMethodReturnType extends Recipe {
 
@@ -50,7 +50,7 @@ public class NullableOnMethodReturnType extends Recipe {
                 if (m.getModifiers().isEmpty()) {
                     return m;
                 }
-                return requireNonNull(annotated("*..Nullable")
+                return requireNonNull(new Annotated.Matcher("*..Nullable")
                         .lower(getCursor())
                         .findFirst()
                         .map(nullable -> {
