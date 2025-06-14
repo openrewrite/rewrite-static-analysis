@@ -415,4 +415,38 @@ class RemoveUnusedParamsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void cascadeRemoveUnusedArguments() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                  void method1(String unused) {
+                      method2(unused);
+                  }
+                  void method2(String unused) {
+                      method3(unused);
+                  }
+                  void method3(String unused) {
+                      System.out.println("Hello");
+                  }
+              }
+              """,
+            """
+              public class Test {
+                  void method1() {
+                      method2();
+                  }
+                  void method2() {
+                      method3();
+                  }
+                  void method3() {
+                      System.out.println("Hello");
+                  }
+              }
+              """
+          )
+        );
+    }
 }
