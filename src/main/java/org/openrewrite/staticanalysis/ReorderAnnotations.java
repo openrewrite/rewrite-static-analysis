@@ -29,45 +29,34 @@ import java.util.List;
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class ReorderAnnotations extends Recipe {
-    private static final Comparator<J.Annotation> defaultComparator = Comparator.comparing(J.Annotation::getSimpleName);
-    // TODO: Take in optional Comparator<J.Annotation>, defaulted to alphabetical
+
     @Override
     public String getDisplayName() {
-        return "Reorder annotations in a consistent order";
+        return "Reorder annotations alphabetically";
     }
 
     @Override
     public String getDescription() {
-        return "Reorder annotations based on a provided Comparator class.";
+        return "Consistently order annotations by comparing their simple name.";
     }
 
-    @Value
-    @EqualsAndHashCode(callSuper = false)
-    public static class ReorderAnnotationVisitor extends JavaIsoVisitor<ExecutionContext> {
-        Comparator<J.Annotation> comparator;
-
-        @Override
-        public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-            J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-            List<J.Annotation> annotations = m.getLeadingAnnotations();
-            if (annotations.isEmpty()) {
-                return m;
-            }
-            List<J.Annotation> sortedAnnotations = new ArrayList<>(annotations);
-            sortedAnnotations.sort(comparator);
-            if (sortedAnnotations.equals(annotations)) {
-                return m;
-            }
-            for (int i = 0; i < annotations.size(); i++) {
-                sortedAnnotations.set(i, sortedAnnotations.get(i).withPrefix(annotations.get(i).getPrefix()));
-            }
-
-            return m.withLeadingAnnotations(sortedAnnotations);
-        }
-    }
+    private static final Comparator<J.Annotation> comparator = Comparator.comparing(J.Annotation::getSimpleName);
 
     @Override
     public JavaIsoVisitor<ExecutionContext> getVisitor() {
-        return new ReorderAnnotationVisitor(defaultComparator);
+        return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
+                if (!m.getLeadingAnnotations().isEmpty()) {
+                    List<J.Annotation> sortedAnnotations = new ArrayList<>(m.getLeadingAnnotations());
+                    sortedAnnotations.sort(comparator);
+                    if (!sortedAnnotations.equals(m.getLeadingAnnotations())) {
+                        return autoFormat(m.withLeadingAnnotations(sortedAnnotations), m.getName(), ctx, getCursor().getParentOrThrow());
+                    }
+                }
+                return m;
+            }
+        };
     }
 }
