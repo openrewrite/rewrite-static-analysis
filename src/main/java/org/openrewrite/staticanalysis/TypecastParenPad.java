@@ -25,6 +25,7 @@ import org.openrewrite.java.style.SpacesStyle;
 import org.openrewrite.java.style.TypecastParenPadStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 
 import java.util.Optional;
 
@@ -38,38 +39,39 @@ public class TypecastParenPad extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Fixes whitespace padding between a typecast type identifier and the enclosing left and right parenthesis. " +
-               "For example, when configured to remove spacing, `( int ) 0L;` becomes `(int) 0L;`.";
+        return "Fixes whitespace padding between a typecast type identifier and the enclosing left and right parentheses. " +
+                "For example, when configured to remove spacing, `( int ) 0L;` becomes `(int) 0L;`.";
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new TypecastParenPadVisitor();
-    }
+        return Preconditions.check(
+                Preconditions.not(new GroovyFileChecker<>()),
+                new JavaIsoVisitor<ExecutionContext>() {
+                    SpacesStyle spacesStyle;
+                    TypecastParenPadStyle typecastParenPadStyle;
 
-    private static class TypecastParenPadVisitor extends JavaIsoVisitor<ExecutionContext> {
-        SpacesStyle spacesStyle;
-        TypecastParenPadStyle typecastParenPadStyle;
+                    @Override
+                    public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                        if (tree instanceof JavaSourceFile) {
+                            SourceFile cu = (SourceFile) requireNonNull(tree);
+                            spacesStyle = Optional.ofNullable(cu.getStyle(SpacesStyle.class)).orElse(IntelliJ.spaces());
+                            typecastParenPadStyle = Optional.ofNullable(cu.getStyle(TypecastParenPadStyle.class)).orElse(Checkstyle.typecastParenPadStyle());
 
-        @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                SourceFile cu = (SourceFile) requireNonNull(tree);
-                spacesStyle = Optional.ofNullable(cu.getStyle(SpacesStyle.class)).orElse(IntelliJ.spaces());
-                typecastParenPadStyle = Optional.ofNullable(cu.getStyle(TypecastParenPadStyle.class)).orElse(Checkstyle.typecastParenPadStyle());
+                            spacesStyle = spacesStyle.withWithin(spacesStyle.getWithin().withTypeCastParentheses(typecastParenPadStyle.getSpace()));
+                        }
+                        return super.visit(tree, ctx);
+                    }
 
-                spacesStyle = spacesStyle.withWithin(spacesStyle.getWithin().withTypeCastParentheses(typecastParenPadStyle.getSpace()));
-            }
-            return super.visit(tree, ctx);
-        }
-
-        @Override
-        public J.TypeCast visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
-            J.TypeCast tc = super.visitTypeCast(typeCast, ctx);
-            tc = (J.TypeCast) new SpacesVisitor<>(spacesStyle, null, null, tc)
-                    .visitNonNull(tc, ctx, getCursor().getParentTreeCursor().fork());
-            return tc;
-        }
+                    @Override
+                    public J.TypeCast visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
+                        J.TypeCast tc = super.visitTypeCast(typeCast, ctx);
+                        tc = (J.TypeCast) new SpacesVisitor<>(spacesStyle, null, null, tc)
+                                .visitNonNull(tc, ctx, getCursor().getParentTreeCursor().fork());
+                        return tc;
+                    }
+                }
+        );
     }
 
 }

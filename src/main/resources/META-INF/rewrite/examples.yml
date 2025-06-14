@@ -2837,18 +2837,6 @@ examples:
 - description: ''
   sources:
   - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
-- description: ''
-  sources:
-  - before: |
       public class A {
           boolean a;
           {
@@ -2865,6 +2853,18 @@ examples:
           }
       }
     language: java
+- description: ''
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanReturn
@@ -3183,6 +3183,31 @@ examples:
               default -> "nope";
           };
         }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.TypecastParenPad
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void m() {
+              int i = ( int ) 0L;
+              int j = (int) 0L;
+              int k = (int)0L;
+              int l = ( int )0L;
+          }
+      }
+    after: |
+      class A {
+          void m() {
+              int i = (int) 0L;
+              int j = (int) 0L;
+              int k = (int) 0L;
+              int l = (int) 0L;
+          }
       }
     language: java
 ---
