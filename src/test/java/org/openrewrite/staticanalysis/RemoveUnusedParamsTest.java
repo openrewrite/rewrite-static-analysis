@@ -374,4 +374,45 @@ class RemoveUnusedParamsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void avoidDirectConflict() {
+        rewriteRun(
+          java(
+            """
+              public class Test {
+                  void method() {
+                      System.out.println("Hello");
+                  }
+                  void method(String unused) {
+                      System.out.println("Hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void avoidInheritedConflict() {
+        rewriteRun(
+          java(
+            """
+              public class A {
+                  String method() {
+                      return "A String";
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              public class B extends A {
+                  Long method(String unused) {
+                      return 42L;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
