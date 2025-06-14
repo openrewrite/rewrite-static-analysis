@@ -57,21 +57,18 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                return collectOverrideSignature(super.visitMethodDeclaration(method, ctx), acc);
+                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
+                JavaType.Method mt = m.getMethodType();
+                if (mt != null && mt.isOverride()) {
+                    while (mt != null) {
+                        String signature = buildSignature(mt);
+                        acc.overrideSignatures.add(signature);
+                        mt = mt.getOverride();
+                    }
+                }
+                return m;
             }
         };
-    }
-
-    private J.MethodDeclaration collectOverrideSignature(J.MethodDeclaration m, Accumulator acc) {
-        JavaType.Method mt = m.getMethodType();
-        if (mt != null && mt.isOverride()) {
-            while (mt != null) {
-                String signature = buildSignature(mt);
-                acc.overrideSignatures.add(signature);
-                mt = mt.getOverride();
-            }
-        }
-        return m;
     }
 
     @Override
