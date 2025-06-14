@@ -105,10 +105,8 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         }
 
         private Set<String> collectUsedParameters(J.MethodDeclaration m) {
-            Set<String> used = new HashSet<>();
             Deque<Set<String>> shadowStack = new ArrayDeque<>();
-
-            new JavaIsoVisitor<Set<String>>() {
+            return new JavaIsoVisitor<Set<String>>() {
                 @Override
                 public J.Block visitBlock(J.Block block, Set<String> u) {
                     shadowStack.push(new HashSet<>());
@@ -132,9 +130,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     }
                     return id;
                 }
-            }.visit(m.getBody(), used);
-
-            return used;
+            }.reduce(m.getBody(), new HashSet<>());
         }
 
         private boolean isVisibleParameter(J.Identifier id, J.MethodDeclaration m, Deque<Set<String>> shadowStack) {
