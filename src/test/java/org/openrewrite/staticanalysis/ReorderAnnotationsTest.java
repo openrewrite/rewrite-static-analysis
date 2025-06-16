@@ -153,6 +153,33 @@ class ReorderAnnotationsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void typeAnnotationsLast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+              class A {
+                  @Nullable
+                  @SuppressWarnings("all")
+                  Object typeAnnotationsShould() {
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+              class A {
+                  @SuppressWarnings("all")
+                  @Nullable
+                  Object typeAnnotationsShould() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class NoChange {
         @Test
@@ -186,6 +213,24 @@ class ReorderAnnotationsTest implements RewriteTest {
                   class A {
                       @Test
                       void explicitImplementationClassInApi() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void typeAnnotationAlreadyLast() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.jspecify.annotations.Nullable;
+                  class A {
+                      @SuppressWarnings("all")
+                      @Nullable
+                      Object typeAnnotationsShould() {
                       }
                   }
                   """
