@@ -48,44 +48,44 @@ public class ReorderAnnotations extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (!cd.getLeadingAnnotations().isEmpty()) {
-                    List<J.Annotation> sortedAnnotations = new ArrayList<>(cd.getLeadingAnnotations());
+                J.ClassDeclaration d = super.visitClassDeclaration(classDecl, ctx);
+                if (1 < d.getLeadingAnnotations().size()) {
+                    List<J.Annotation> sortedAnnotations = new ArrayList<>(d.getLeadingAnnotations());
                     sortedAnnotations.sort(comparator);
-                    if (!sortedAnnotations.equals(cd.getLeadingAnnotations())) {
-                        return cd.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
-                                (i, a) -> a.withPrefix(cd.getLeadingAnnotations().get(i).getPrefix())));
+                    if (!sortedAnnotations.equals(d.getLeadingAnnotations())) {
+                        return d.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
+                                (i, a) -> a.withPrefix(d.getLeadingAnnotations().get(i).getPrefix())));
                     }
                 }
-                return cd;
+                return d;
             }
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
-                J.VariableDeclarations fd = super.visitVariableDeclarations(multiVariable, ctx);
-                if (!fd.getLeadingAnnotations().isEmpty()) {
-                    List<J.Annotation> sortedAnnotations = new ArrayList<>(fd.getLeadingAnnotations());
+                J.VariableDeclarations d = super.visitVariableDeclarations(multiVariable, ctx);
+                if (1 < d.getLeadingAnnotations().size()) {
+                    List<J.Annotation> sortedAnnotations = new ArrayList<>(d.getLeadingAnnotations());
                     sortedAnnotations.sort(comparator);
-                    if (!sortedAnnotations.equals(fd.getLeadingAnnotations())) {
-                        return fd.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
-                                (i, a) -> a.withPrefix(fd.getLeadingAnnotations().get(i).getPrefix())));
+                    if (!sortedAnnotations.equals(d.getLeadingAnnotations())) {
+                        return d.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
+                                (i, a) -> a.withPrefix(d.getLeadingAnnotations().get(i).getPrefix())));
                     }
                 }
-                return fd;
+                return d;
             }
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-                if (!md.getLeadingAnnotations().isEmpty()) {
-                    List<J.Annotation> sortedAnnotations = new ArrayList<>(md.getLeadingAnnotations());
+                J.MethodDeclaration d = super.visitMethodDeclaration(method, ctx);
+                if (1 < d.getLeadingAnnotations().size()) {
+                    List<J.Annotation> sortedAnnotations = new ArrayList<>(d.getLeadingAnnotations());
                     sortedAnnotations.sort(comparator);
-                    if (!sortedAnnotations.equals(md.getLeadingAnnotations())) {
-                        return md.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
-                                (i, a) -> a.withPrefix(md.getLeadingAnnotations().get(i).getPrefix())));
+                    if (!sortedAnnotations.equals(d.getLeadingAnnotations())) {
+                        return d.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
+                                (i, a) -> a.withPrefix(d.getLeadingAnnotations().get(i).getPrefix())));
                     }
                 }
-                return md;
+                return d;
             }
         };
     }

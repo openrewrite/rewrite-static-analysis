@@ -18,16 +18,21 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
 class ReorderAnnotationsTest implements RewriteTest {
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new ReorderAnnotations());
+    }
+
     @DocumentExample
     @Test
     void reordersMethodAnnotations() {
         rewriteRun(
-          spec -> spec.recipe(new ReorderAnnotations()),
           //language=java
           java(
             """
@@ -61,7 +66,6 @@ class ReorderAnnotationsTest implements RewriteTest {
     @Test
     void reordersClassAnnotations() {
         rewriteRun(
-          spec -> spec.recipe(new ReorderAnnotations()),
           //language=java
           java(
             """
@@ -87,7 +91,6 @@ class ReorderAnnotationsTest implements RewriteTest {
     @Test
     void reordersFieldAnnotations() {
         rewriteRun(
-          spec -> spec.recipe(new ReorderAnnotations()),
           //language=java
           java(
             """
@@ -112,7 +115,6 @@ class ReorderAnnotationsTest implements RewriteTest {
     void withComments() {
         // Not entirely sure if we'd want to keep comments in the same place, but this at least documents what we do now
         rewriteRun(
-          spec -> spec.recipe(new ReorderAnnotations()),
           //language=java
           java(
             """
@@ -156,7 +158,6 @@ class ReorderAnnotationsTest implements RewriteTest {
         @Test
         void alreadySorted() {
             rewriteRun(
-              spec -> spec.recipe(new ReorderAnnotations()),
               //language=java
               java(
                 """
@@ -166,6 +167,23 @@ class ReorderAnnotationsTest implements RewriteTest {
                   class A {
                       @ExpectedToFail
                       @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+                      @Test
+                      void explicitImplementationClassInApi() {
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void lessThanTwo() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  class A {
                       @Test
                       void explicitImplementationClassInApi() {
                       }
