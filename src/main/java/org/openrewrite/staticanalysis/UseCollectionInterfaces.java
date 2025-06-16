@@ -153,7 +153,7 @@ public class UseCollectionInterfaces extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-                if (mi.getSelect() != null && mi.getSelect().getType() != null && mi.getSelect() instanceof J.Identifier) {
+                if (mi.getSelect() instanceof J.Identifier && mi.getSelect().getType() != null) {
                     JavaType originalType = mi.getSelect().getType();
                     JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(originalType);
                     if (fullyQualified != null) {
