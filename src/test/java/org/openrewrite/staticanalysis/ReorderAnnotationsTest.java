@@ -85,6 +85,30 @@ class ReorderAnnotationsTest implements RewriteTest {
     }
 
     @Test
+    void reordersFieldAnnotations() {
+        rewriteRun(
+          spec -> spec.recipe(new ReorderAnnotations()),
+          //language=java
+          java(
+            """
+              class A {
+                  @SuppressWarnings("all")
+                  @Deprecated
+                  String field;
+              }
+              """,
+            """
+              class A {
+                  @Deprecated
+                  @SuppressWarnings("all")
+                  String field;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void withComments() {
         // Not entirely sure if we'd want to keep comments in the same place, but this at least documents what we do now
         rewriteRun(
