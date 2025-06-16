@@ -1061,4 +1061,24 @@ class UseCollectionInterfacesTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/592")
+    @Test
+    void anonymousInstanceInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class Test {
+                  public int method(Set<Integer> input) {
+                      return new HashSet<>(input).size();
+                  }
+              }
+              """
+          )
+        );
+    }
 }
