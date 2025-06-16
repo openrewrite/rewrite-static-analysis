@@ -72,8 +72,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryModifier")
     @Issue("https://github.com/openrewrite/rewrite/issues/1780")
+    @SuppressWarnings("UnnecessaryModifier")
     @Test
     void doNotAddConstructorToInterface() {
         rewriteRun(
@@ -255,8 +255,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/538")
+    @Test
     void ignoreClassesWithMainMethod() {
         rewriteRun(
           //language=java

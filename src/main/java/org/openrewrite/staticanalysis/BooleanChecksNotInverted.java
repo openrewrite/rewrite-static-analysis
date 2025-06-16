@@ -51,8 +51,8 @@ public class BooleanChecksNotInverted extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
 
-            @SuppressWarnings("ConstantConditions")
             @Override
+            @SuppressWarnings("ConstantConditions")
             public J visitUnary(J.Unary unary, ExecutionContext ctx) {
                 if (unary.getOperator() == J.Unary.Type.Not && unary.getExpression() instanceof J.Parentheses) {
                     J.Parentheses<?> expr = (J.Parentheses<?>) unary.getExpression();

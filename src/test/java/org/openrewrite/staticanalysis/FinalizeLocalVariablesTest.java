@@ -156,8 +156,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/549")
+    @Test
     void catchBlocksIgnored() {
         rewriteRun(
           //language=java
@@ -391,8 +391,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2956")
+    @Test
     void recordShouldNotIntroduceExtraClosingParenthesis() {
         rewriteRun(
           version(
@@ -442,8 +442,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/181")
+    @Test
     void shouldNotFinalizeVariablesWhichAreAssignedInAnonymousClasses() {
         this.rewriteRun(
           // language=java

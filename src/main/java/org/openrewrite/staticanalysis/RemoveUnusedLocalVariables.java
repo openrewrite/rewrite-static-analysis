@@ -68,8 +68,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
         this.withSideEffects = withSideEffects;
     }
 
-    @InlineMe(replacement = "new RemoveUnusedLocalVariables(ignoreVariablesNamed, null, withSideEffects)")
     @Deprecated
+    @InlineMe(replacement = "new RemoveUnusedLocalVariables(ignoreVariablesNamed, null, withSideEffects)")
     public RemoveUnusedLocalVariables(
             String @Nullable [] ignoreVariablesNamed,
             @Nullable Boolean withSideEffects) {

@@ -68,8 +68,8 @@ class ControlFlowIndentationTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     @Issue("https://github.com/openrewrite/rewrite/issues/2277")
+    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     @Test
     void removesIndentationFromStatementAroundIf() {
         rewriteRun(

@@ -57,8 +57,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
+    @Test
     void simplifyLambdaBlockToExpressionWithComments() {
         rewriteRun(
           //language=java
@@ -145,8 +145,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-testing-frameworks/pull/582")
+    @Test
     void simplifyAssertThrows() {
         rewriteRun(
           spec-> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),

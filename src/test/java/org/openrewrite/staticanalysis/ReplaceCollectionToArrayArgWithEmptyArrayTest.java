@@ -29,8 +29,8 @@ class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
         spec.recipe(new ReplaceCollectionToArrayArgWithEmptyArray());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void replaceSizeArgumentWithZero() {
         rewriteRun(
           //language=java

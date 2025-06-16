@@ -167,8 +167,8 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
+    @Test
     void removeTrailingEmptyLines() {
         rewriteRun(
           //language=java
@@ -635,8 +635,8 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     }
 
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3078")
+    @Test
     void visitingQuarkMustNotFail() {
         rewriteRun(
           other(

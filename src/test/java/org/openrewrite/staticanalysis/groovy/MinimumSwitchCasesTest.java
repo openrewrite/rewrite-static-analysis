@@ -62,8 +62,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("GrMethodMayBeStatic")
     @Issue("https://github.com/openrewrite/rewrite/issues/2566")
+    @SuppressWarnings("GrMethodMayBeStatic")
     @Test
     void nonIdentifierEnum() {
         rewriteRun(

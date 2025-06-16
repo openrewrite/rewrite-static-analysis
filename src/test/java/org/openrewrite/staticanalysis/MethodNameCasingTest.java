@@ -390,8 +390,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnusedAssignment")
     @Issue("https://github.com/openrewrite/rewrite/issues/2103")
+    @SuppressWarnings("UnusedAssignment")
     @Test
     void snakeCaseToCamelCase() {
         rewriteRun(

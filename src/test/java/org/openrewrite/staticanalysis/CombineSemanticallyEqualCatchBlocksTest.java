@@ -143,9 +143,9 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
         );
     }
 
-    @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/506")
     @ExpectedToFail
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/506")
+    @Test
     void combineSameSemanticallyEquivalentMethodTypes() {
         rewriteRun(
           //language=java
