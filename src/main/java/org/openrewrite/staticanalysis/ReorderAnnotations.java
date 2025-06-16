@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
@@ -52,7 +53,8 @@ public class ReorderAnnotations extends Recipe {
                     List<J.Annotation> sortedAnnotations = new ArrayList<>(m.getLeadingAnnotations());
                     sortedAnnotations.sort(comparator);
                     if (!sortedAnnotations.equals(m.getLeadingAnnotations())) {
-                        return autoFormat(m.withLeadingAnnotations(sortedAnnotations), m.getName(), ctx, getCursor().getParentOrThrow());
+                        return m.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
+                                (i, a) -> a.withPrefix(m.getLeadingAnnotations().get(i).getPrefix())));
                     }
                 }
                 return m;

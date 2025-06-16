@@ -60,6 +60,7 @@ class ReorderAnnotationsTest implements RewriteTest {
 
     @Test
     void withComments() {
+        // Not entirely sure if we'd want to keep comments in the same place, but this at least documents what we do now
         rewriteRun(
           spec -> spec.recipe(new ReorderAnnotations()),
           //language=java
@@ -69,13 +70,13 @@ class ReorderAnnotationsTest implements RewriteTest {
               import org.junitpioneer.jupiter.ExpectedToFail;
               import org.junitpioneer.jupiter.Issue;
               class A {
-                  // Issue
+                  // Before first
                   @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                  // Test
+                  // Before second
                   @Test
-                  // ExpectedToFail
+                  // Before third
                   @ExpectedToFail
-                  // Method
+                  // Before method
                   void explicitImplementationClassInApi() {
                   }
               }
@@ -85,13 +86,13 @@ class ReorderAnnotationsTest implements RewriteTest {
               import org.junitpioneer.jupiter.ExpectedToFail;
               import org.junitpioneer.jupiter.Issue;
               class A {
-                  // ExpectedToFail
+                  // Before first
                   @ExpectedToFail
-                  // Issue
+                  // Before second
                   @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                  // Test
+                  // Before third
                   @Test
-                  // Method
+                  // Before method
                   void explicitImplementationClassInApi() {
                   }
               }
