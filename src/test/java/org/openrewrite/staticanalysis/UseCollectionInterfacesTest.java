@@ -132,8 +132,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
+    @Test
     void annotatedReturnType() {
         rewriteRun(
           spec -> spec
@@ -260,8 +260,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
+    @Test
     void annotatedFieldType() {
         rewriteRun(
           spec -> spec
@@ -731,8 +731,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/179")
+    @Test
     void enumSetHasDifferentGenericTypeThanSet() {
         rewriteRun(
           //language=java
@@ -935,9 +935,9 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
+    @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite/issues/2973")
     @Test
-    @ExpectedToFail
     void explicitImplementationClassInApi() {
         rewriteRun(
           //language=java

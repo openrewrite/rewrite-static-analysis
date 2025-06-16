@@ -114,9 +114,9 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("JavadocDeclaration")
     @Disabled
     @Issue("https://github.com/openrewrite/rewrite/issues/2437")
+    @SuppressWarnings("JavadocDeclaration")
     @Test
     void renameJavaDocParam() {
         rewriteRun(
@@ -375,8 +375,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/171")
+    @Test
     void renameMultipleOcurrencesDifferentScope() {
         rewriteRun(
           java(

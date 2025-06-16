@@ -64,8 +64,8 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
         this.utilityClassMatcher = new UtilityClassMatcher(style.getIgnoreIfAnnotatedBy());
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
+    @SuppressWarnings("ConstantConditions")
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
         J.ClassDeclaration c = super.visitClassDeclaration(classDecl, p);
         if (!EXCLUDE_CLASS_TYPES.contains(c.getKind()) && !c.hasModifier(J.Modifier.Type.Abstract) && utilityClassMatcher.isRefactorableUtilityClass(getCursor())) {

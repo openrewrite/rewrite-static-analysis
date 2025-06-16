@@ -110,8 +110,8 @@ class UseStandardCharsetTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/moderneinc/support-public/issues/29")
+    @Test
     void nonConstantCharset() {
         rewriteRun(
           //language=java

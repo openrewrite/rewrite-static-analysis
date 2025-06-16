@@ -30,9 +30,9 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
         spec.recipe(new RemoveToStringCallsFromArrayInstances());
     }
 
-    @Test
     @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/44")
+    @Test
     void fixNonCompliantToString() {
         //language=java
         rewriteRun(

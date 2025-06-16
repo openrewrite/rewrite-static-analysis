@@ -395,8 +395,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Issue("https://github.com/openrewrite/rewrite/issues/800")
+    @SuppressWarnings("StatementWithEmptyBody")
     @Test
     void noCases() {
         rewriteRun(
@@ -610,8 +610,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3076")
+    @Test
     void switchExpressions() {
         rewriteRun(
           //language=java
@@ -752,8 +752,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3076")
+    @Test
     void multipleSwitchExpressions() {
         rewriteRun(
           //language=java
