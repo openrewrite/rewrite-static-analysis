@@ -59,6 +59,32 @@ class ReorderAnnotationsTest implements RewriteTest {
     }
 
     @Test
+    void reordersClassAnnotations() {
+        rewriteRun(
+          spec -> spec.recipe(new ReorderAnnotations()),
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.api.Disabled;
+
+              @SuppressWarnings("all")
+              @Disabled
+              class A {
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Disabled;
+
+              @Disabled
+              @SuppressWarnings("all")
+              class A {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void withComments() {
         // Not entirely sure if we'd want to keep comments in the same place, but this at least documents what we do now
         rewriteRun(

@@ -47,6 +47,20 @@ public class ReorderAnnotations extends Recipe {
     public JavaIsoVisitor<ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext executionContext) {
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, executionContext);
+                if (!cd.getLeadingAnnotations().isEmpty()) {
+                    List<J.Annotation> sortedAnnotations = new ArrayList<>(cd.getLeadingAnnotations());
+                    sortedAnnotations.sort(comparator);
+                    if (!sortedAnnotations.equals(cd.getLeadingAnnotations())) {
+                        return cd.withLeadingAnnotations(ListUtils.map(sortedAnnotations,
+                                (i, a) -> a.withPrefix(cd.getLeadingAnnotations().get(i).getPrefix())));
+                    }
+                }
+                return cd;
+            }
+
+            @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if (!m.getLeadingAnnotations().isEmpty()) {
