@@ -21,6 +21,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.NoMissingTypes;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
@@ -106,7 +107,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         }
 
         private Set<String> collectUsedParameters(J.MethodDeclaration m) {
-            Deque<Set<String>> shadowStack = new ArrayDeque<>();
+            Deque<Set<J.Identifier>> shadowStack = new ArrayDeque<>();
             return new JavaIsoVisitor<Set<String>>() {
                 @Override
                 public J.Block visitBlock(J.Block block, Set<String> u) {
@@ -120,7 +121,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
 
                 @Override
                 public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations decl, Set<String> u) {
-                    decl.getVariables().forEach(v -> shadowStack.peek().add(v.getSimpleName()));
+                    decl.getVariables().forEach(v -> shadowStack.peek().add(v.getName()));
                     return super.visitVariableDeclarations(decl, u);
                 }
 
@@ -134,24 +135,26 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             }.reduce(m.getBody(), new HashSet<>());
         }
 
-        private boolean isVisibleParameter(J.Identifier id, J.MethodDeclaration m, Deque<Set<String>> shadowStack) {
-            return !isShadowed(id.getSimpleName(), shadowStack) && isDeclaredAsParameter(id.getSimpleName(), m);
+        private boolean isVisibleParameter(J.Identifier id, J.MethodDeclaration m, Deque<Set<J.Identifier>> shadowStack) {
+            return !isShadowed(id, shadowStack) && isDeclaredAsParameter(id, m);
         }
 
-        private boolean isShadowed(String name, Deque<Set<String>> shadowStack) {
-            for (Set<String> scope : shadowStack) {
-                if (scope.contains(name)) {
-                    return true;
+        private boolean isShadowed(J.Identifier id, Deque<Set<J.Identifier>> shadowStack) {
+            for (Set<J.Identifier> scope : shadowStack) {
+                for (J.Identifier local : scope) {
+                    if (SemanticallyEqual.areEqual(id, local)) {
+                        return true;
+                    }
                 }
             }
             return false;
         }
 
-        private boolean isDeclaredAsParameter(String name, J.MethodDeclaration m) {
+        private boolean isDeclaredAsParameter(J.Identifier id, J.MethodDeclaration m) {
             for (Statement p : m.getParameters()) {
                 if (p instanceof J.VariableDeclarations) {
                     for (J.VariableDeclarations.NamedVariable v : ((J.VariableDeclarations) p).getVariables()) {
-                        if (v.getSimpleName().equals(name)) {
+                        if (v.getSimpleName().equals(id.getSimpleName())) {
                             return true;
                         }
                     }
@@ -173,7 +176,6 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         }
 
         private Statement processVariableDeclaration(J.VariableDeclarations decl, Set<String> usedParams) {
-            // exactly the same code you had in the lambda:
             List<J.VariableDeclarations.NamedVariable> kept = keepUsedVariables(decl, usedParams);
 
             if (!kept.isEmpty()) {
