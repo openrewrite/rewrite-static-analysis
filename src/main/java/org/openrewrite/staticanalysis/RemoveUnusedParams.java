@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.RequiredArgsConstructor;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.NoMissingTypes;
@@ -86,14 +87,14 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
             J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-            if (shouldPruneParameters(m, acc)) {
-                List<Statement> prunedParams = filterUnusedParameters(m, collectUsedParameters(m));
-                return prunedParams.equals(m.getParameters()) ? m : m.withParameters(prunedParams);
+            if (shouldPruneParameters(m)) {
+                List<Statement> prunedParams = filterUnusedParameters(m);
+                return prunedParams == m.getParameters() ? m : m.withParameters(prunedParams);
             }
             return m;
         }
 
-        private boolean shouldPruneParameters(J.MethodDeclaration m, Accumulator acc) {
+        private boolean shouldPruneParameters(J.MethodDeclaration m) {
             if (m.getBody() == null ||
                     m.getMethodType() == null ||
                     m.hasModifier(J.Modifier.Type.Native) ||
@@ -159,26 +160,28 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             return false;
         }
 
-        private List<Statement> filterUnusedParameters(J.MethodDeclaration method, Set<String> usedParams) {
-            List<Statement> result = new ArrayList<>(method.getParameters().size());
-            for (Statement param : method.getParameters()) {
-                if (param instanceof J.VariableDeclarations) {
-                    processVariableDeclaration((J.VariableDeclarations) param, usedParams, result);
-                } else {
-                    result.add(param);
-                }
-            }
-            return result;
+        private List<Statement> filterUnusedParameters(J.MethodDeclaration m) {
+            return ListUtils.map(
+                    m.getParameters(),
+                    p -> {
+                        if (!(p instanceof J.VariableDeclarations)) {
+                            return p;
+                        }
+                        return processVariableDeclaration((J.VariableDeclarations) p, collectUsedParameters(m));
+                    }
+            );
         }
 
-        private void processVariableDeclaration(J.VariableDeclarations decl, Set<String> usedParams, List<Statement> result) {
+        private Statement processVariableDeclaration(J.VariableDeclarations decl, Set<String> usedParams) {
+            // exactly the same code you had in the lambda:
             List<J.VariableDeclarations.NamedVariable> kept = keepUsedVariables(decl, usedParams);
 
             if (!kept.isEmpty()) {
-                result.add(decl.withVariables(kept));
+                return decl.withVariables(kept);
             } else if (!decl.getLeadingAnnotations().isEmpty()) {
-                result.add(decl);
+                return decl;
             }
+            return null;
         }
 
         private List<J.VariableDeclarations.NamedVariable> keepUsedVariables(J.VariableDeclarations decl, Set<String> usedParams) {
