@@ -206,10 +206,26 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     );
 
             String fullSig = MethodMatcher.methodPattern(candidate);
+            String tail       = fullSig.substring(fullSig.indexOf(' ') + 1);
 
             if (acc.overrideSignatures.contains(fullSig)
                     || acc.originalSignatures.get(fullSig.substring(0,fullSig.indexOf(' '))).contains(fullSig)) {
                 return original;
+            }
+
+            JavaType.Method mt = candidate.getMethodType();
+            if (mt != null && mt.getDeclaringType() instanceof JavaType.Class) {
+                JavaType.Class cls       = (JavaType.Class) mt.getDeclaringType();
+                JavaType.Class superCls  = (JavaType.Class) cls.getSupertype();
+                if (superCls != null) {
+                    String superKey = superCls.getFullyQualifiedName() + " " + tail;
+                    Set<String> superSigs = acc.originalSignatures
+                            .getOrDefault(superCls.getFullyQualifiedName(),
+                                    Collections.emptySet());
+                    if (superSigs.contains(superKey)) {
+                        return original;
+                    }
+                }
             }
 
             return candidate;
