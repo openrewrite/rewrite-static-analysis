@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
@@ -198,20 +199,74 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             return kept;
         }
 
-        private J.MethodDeclaration applyPrunedSignature(J.MethodDeclaration original, List<Statement> pruned) {
-            J.MethodDeclaration candidate = original.withParameters(pruned)
-                    .withMethodType(
-                            original.getMethodType()
-                                    .withParameterTypes(collectParameterTypes(pruned))
-                    );
+        private J.MethodDeclaration applyPrunedSignature(J.MethodDeclaration original,
+                                                         List<Statement> pruned) {
+            // Identify exactly which parameter positions were removed
+            List<Statement> originalParams = original.getParameters();
+            Set<Integer> removedIndexes = new HashSet<>();
+            for (int i = 0; i < originalParams.size(); i++) {
+                if (!pruned.contains(originalParams.get(i))) {
+                    removedIndexes.add(i);
+                }
+            }
 
-            String fullSig = MethodMatcher.methodPattern(candidate);
-            if (acc.overrideSignatures.contains(fullSig) ||
-                    acc.originalSignatures.get(fullSig.substring(0,fullSig.indexOf(' '))).contains(fullSig) ||
-                    conflictsWithSuperClassMethods(original, candidate,
-                    fullSig.substring(fullSig.indexOf(' ') + 1)) != null) {
+            // Build the pruned method declaration
+            JavaType.Method originalType = original.getMethodType();
+            List<JavaType> prunedParamTypes = collectParameterTypes(pruned);
+            J.MethodDeclaration candidate = original
+                    .withParameters(pruned)
+                    .withMethodType(originalType.withParameterTypes(prunedParamTypes));
+
+            // Do override/original‐signature/superclass conflict checks
+            String fullSignature = MethodMatcher.methodPattern(candidate);
+            int split = fullSignature.indexOf(' ');
+            String qualifier    = fullSignature.substring(0, split);
+            String signatureTail = fullSignature.substring(split + 1);
+
+            if (acc.overrideSignatures.contains(fullSignature)
+                    || acc.originalSignatures
+                    .getOrDefault(qualifier, Collections.emptySet())
+                    .contains(fullSignature)
+                    || conflictsWithSuperClassMethods(original, candidate, signatureTail) != null) {
                 return original;
             }
+
+            // Schedule a one‐off visitor to prune matching call‐site arguments
+            String oldSignature = MethodMatcher.methodPattern(originalType);
+            doAfterVisit(new JavaIsoVisitor<ExecutionContext>() {
+                private final MethodMatcher matcher = new MethodMatcher(oldSignature);
+
+                @Override
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation invocation,
+                                                                ExecutionContext ctx) {
+                    J.MethodInvocation m = super.visitMethodInvocation(invocation, ctx);
+                    if (matcher.matches(m) && m.getArguments().size() != prunedParamTypes.size()) {
+                        // Trim the argument list
+                        List<Expression> keptArgs = new ArrayList<>();
+                        for (int i = 0; i < m.getArguments().size(); i++) {
+                            if (!removedIndexes.contains(i)) {
+                                keptArgs.add(m.getArguments().get(i));
+                            }
+                        }
+                        // Trim the MethodType parameter list
+                        JavaType.Method mt = m.getMethodType();
+                        List<JavaType> keptTypes = new ArrayList<>();
+                        for (int i = 0; i < mt.getParameterTypes().size(); i++) {
+                            if (!removedIndexes.contains(i)) {
+                                keptTypes.add(mt.getParameterTypes().get(i));
+                            }
+                        }
+                        JavaType.Method updatedType = mt.withParameterTypes(keptTypes);
+                        // Update the name identifier to carry the same type instance
+                        J.Identifier newName = m.getName().withType(updatedType);
+                        return m.withArguments(keptArgs)
+                                .withMethodType(updatedType)
+                                .withName(newName);
+                    }
+                    return m;
+                }
+            });
+
             return candidate;
         }
 
