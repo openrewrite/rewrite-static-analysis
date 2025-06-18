@@ -819,8 +819,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2865")
+    @Test
     void additionalConstructorIgnored() {
         rewriteRun(
           //language=java
@@ -841,8 +841,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/121")
+    @Test
     void mustNotChangeVolatileFields() {
         //language=java
         rewriteRun(
@@ -861,8 +861,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/177")
+    @Test
     void staticFieldAssignedInConstructorNotMadeFinal() {
         //language=java
         rewriteRun(
@@ -879,8 +879,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/177")
+    @Test
     void staticFieldAssignedInBlockNotMadeFinal() {
         //language=java
         rewriteRun(

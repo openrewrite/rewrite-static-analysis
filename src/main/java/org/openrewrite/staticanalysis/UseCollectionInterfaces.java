@@ -153,7 +153,7 @@ public class UseCollectionInterfaces extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-                if (mi.getSelect() != null && mi.getSelect().getType() != null) {
+                if ((mi.getSelect() instanceof J.Identifier || mi.getSelect() instanceof J.FieldAccess) && mi.getSelect().getType() != null) {
                     JavaType originalType = mi.getSelect().getType();
                     JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(originalType);
                     if (fullyQualified != null) {
@@ -226,6 +226,10 @@ public class UseCollectionInterfaces extends Recipe {
             private J.MethodInvocation updateMethodInvocation(J.MethodInvocation mi, JavaType.FullyQualified newType) {
                 if (mi.getSelect() != null) {
                     mi = mi.withSelect(mi.getSelect().withType(newType));
+                    if (mi.getSelect() instanceof J.FieldAccess) {
+                        J.FieldAccess fieldAccess = (J.FieldAccess) mi.getSelect();
+                        mi = mi.withSelect(fieldAccess.withName(fieldAccess.getName().withType(newType)));
+                    }
                 }
                 if (mi.getMethodType() != null) {
                     mi = mi.withMethodType(mi.getMethodType().withDeclaringType(newType));

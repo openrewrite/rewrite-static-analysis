@@ -30,8 +30,8 @@ class NoToStringOnStringTypeTest implements RewriteTest {
     }
 
     @DocumentExample
-    @Test
     @SuppressWarnings("StringOperationCanBeSimplified")
+    @Test
     void toStringOnString() {
         rewriteRun(
           //language=java
@@ -70,8 +70,8 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("StringOperationCanBeSimplified")
+    @Test
     void toStringOnStringVariable() {
         rewriteRun(
           //language=java
@@ -94,8 +94,8 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("StringOperationCanBeSimplified")
+    @Test
     void toStringOnMethodInvocation() {
         rewriteRun(
           //language=java

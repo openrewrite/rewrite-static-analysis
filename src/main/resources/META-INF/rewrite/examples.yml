@@ -360,6 +360,25 @@ examples:
 - description: ''
   sources:
   - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
+          }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
       import java.io.FileReader;
       import java.io.IOException;
 
@@ -379,25 +398,6 @@ examples:
       class A {
           void foo() throws IOException {
               new FileReader("").read();
-          }
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      class A {
-          void foo() throws IllegalAccessException {
-              try {
-                  throw new IllegalAccessException();
-              } catch (Exception e) {
-                  throw e; // `e` is removed below
-              }
-          }
-      }
-    after: |
-      class A {
-          void foo() throws IllegalAccessException {
-              throw new IllegalAccessException();
           }
       }
     language: java
@@ -2494,6 +2494,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReorderAnnotations
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.junit.jupiter.api.Test;
+      import org.junitpioneer.jupiter.ExpectedToFail;
+      import org.junitpioneer.jupiter.Issue;
+      class A {
+          @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+          @Test
+          @ExpectedToFail
+          void explicitImplementationClassInApi() {
+          }
+      }
+    after: |
+      import org.junit.jupiter.api.Test;
+      import org.junitpioneer.jupiter.ExpectedToFail;
+      import org.junitpioneer.jupiter.Issue;
+      class A {
+          @ExpectedToFail
+          @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+          @Test
+          void explicitImplementationClassInApi() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull
 examples:
 - description: ''
@@ -2837,6 +2866,18 @@ examples:
 - description: ''
   sources:
   - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
+- description: ''
+  sources:
+  - before: |
       public class A {
           boolean a;
           {
@@ -2853,18 +2894,6 @@ examples:
           }
       }
     language: java
-- description: ''
-  sources:
-  - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanReturn

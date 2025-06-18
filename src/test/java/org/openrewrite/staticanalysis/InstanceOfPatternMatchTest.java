@@ -766,8 +766,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        @Test
         void ifTwoDifferentInstanceOf() {
             rewriteRun(
               version(
@@ -798,8 +798,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        @Test
         void ifTwoDifferentInstanceOfWithParentheses() {
             rewriteRun(
               version(
@@ -932,8 +932,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/265")
+        @Test
         void multipleCastsInDifferentOperands() {
             rewriteRun(
               //language=java
@@ -1006,8 +1006,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/572")
+        @Test
         void castTypeIsSuperType() {
             rewriteRun(
               //language=java
@@ -1027,8 +1027,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/572")
+        @Test
         void castTypeIsSubType() {
             rewriteRun(
               //language=java
@@ -1251,8 +1251,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/482")
+        @Test
         void castTooSpecific() {
             rewriteRun(
               version(
@@ -1307,8 +1307,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/308")
+        @Test
         void passBareTypeToParameterizedMethod() {
             rewriteRun(
               version(
@@ -1476,8 +1476,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/483")
+        @Test
         void classVariableShadowing() {
             rewriteRun(
               version(
@@ -1513,8 +1513,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/484")
+        @Test
         void enumPatternMatch() {
             rewriteRun(
               version(
@@ -1639,8 +1639,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/307")
+        @Test
         void throwsExceptionWithExtraParentheses() {
             rewriteRun(
               //language=java

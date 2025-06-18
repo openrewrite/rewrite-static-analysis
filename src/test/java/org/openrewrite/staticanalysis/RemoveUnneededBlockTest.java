@@ -415,8 +415,8 @@ class RemoveUnneededBlockTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3073")
+    @Test
     void preserveComments() {
         rewriteRun(
           //language=java
@@ -528,8 +528,8 @@ class RemoveUnneededBlockTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("EmptyFinallyBlock")
+    @Test
     void removeEmptyTryFinallyBlock() {
         rewriteRun(
           //language=java
@@ -575,8 +575,8 @@ class RemoveUnneededBlockTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("EmptyFinallyBlock")
+    @Test
     void keepNonEmptyTryFinallyBlock2() {
         rewriteRun(
           //language=java

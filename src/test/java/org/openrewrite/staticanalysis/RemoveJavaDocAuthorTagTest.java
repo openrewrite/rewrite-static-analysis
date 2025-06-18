@@ -29,9 +29,9 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
         spec.recipe(new RemoveJavaDocAuthorTag());
     }
 
+    @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite/issues/1640")
     @Test
-    @DocumentExample
     void preserveDocsBeforeTag() {
         rewriteRun(
           //language=java

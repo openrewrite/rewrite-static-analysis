@@ -30,8 +30,8 @@ class BufferedWriterCreationTest implements RewriteTest {
         spec.recipe(new BufferedWriterCreationRecipes());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void bufferedReaderCreation() {
         rewriteRun(
           //language=java

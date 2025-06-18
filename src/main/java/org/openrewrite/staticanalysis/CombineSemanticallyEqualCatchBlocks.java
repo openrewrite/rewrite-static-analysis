@@ -715,8 +715,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                 return cu;
             }
 
-            @SuppressWarnings("unchecked")
             @Override
+            @SuppressWarnings("unchecked")
             public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> controlParens, J j) {
                 if (isEqual.get()) {
                     if (!(j instanceof J.ControlParentheses)) {
@@ -1426,8 +1426,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                 return type;
             }
 
-            @SuppressWarnings("unchecked")
             @Override
+            @SuppressWarnings("unchecked")
             public <T extends J> J.Parentheses<T> visitParentheses(J.Parentheses<T> parens, J j) {
                 if (isEqual.get()) {
                     if (!(j instanceof J.Parentheses)) {

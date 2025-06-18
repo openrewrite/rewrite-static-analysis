@@ -98,8 +98,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/260")
+    @Test
     void escapedNewline() {
         rewriteRun(
           //language=java

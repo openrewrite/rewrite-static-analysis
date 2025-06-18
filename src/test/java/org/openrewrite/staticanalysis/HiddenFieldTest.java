@@ -304,8 +304,8 @@ class HiddenFieldTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("ConstantValue")
+    @Test
     void tryResources() {
         rewriteRun(
           //language=java
@@ -340,8 +340,8 @@ class HiddenFieldTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings({"EmptyTryBlock", "CatchMayIgnoreException", "TryWithIdenticalCatches"})
+    @Test
     void catchClause() {
         rewriteRun(
           //language=java

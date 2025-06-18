@@ -129,8 +129,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/798")
     @Disabled
+    @Issue("https://github.com/openrewrite/rewrite/issues/798")
     @Test
     void unwrapExpr() {
         //language=java
