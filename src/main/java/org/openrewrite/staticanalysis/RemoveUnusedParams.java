@@ -39,8 +39,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
          */
         private final Set<String> overrideSignatures = new HashSet<>();
 
-        /** All original signatures (including same-class overloads) **/
-        private final Set<String> originalSignatures = new HashSet<>();
+        private final Map<String,Set<String>> originalSignatures = new HashMap<>();
     }
 
     @Override
@@ -65,11 +64,12 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method mt = m.getMethodType();
-                acc.originalSignatures.add(MethodMatcher.methodPattern(mt));
+                String className = mt.getDeclaringType().toString();
+                acc.originalSignatures.computeIfAbsent(className, k -> new HashSet<>())
+                        .add(MethodMatcher.methodPattern(mt));
                 if (mt != null && mt.isOverride()) {
                     while (mt != null) {
-                        String signature = MethodMatcher.methodPattern(mt);
-                        acc.overrideSignatures.add(signature);
+                        acc.overrideSignatures.add(MethodMatcher.methodPattern(mt));
                         mt = mt.getOverride();
                     }
                 }
@@ -93,7 +93,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
             J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
             if (shouldPruneParameters(m)) {
-                List<Statement> prunedParams = filterUnusedParameters(m);
+                List<Statement> prunedParams = filterUnusedParameters(m, collectUsedParameters(m));
                 return prunedParams == m.getParameters() ? m : applyPrunedSignature(m, prunedParams);
             }
             return m;
@@ -106,8 +106,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     !m.getLeadingAnnotations().isEmpty()) {
                 return false;
             }
-            String signature = MethodMatcher.methodPattern(m.getMethodType());
-            return !acc.overrideSignatures.contains(signature);
+            return !acc.overrideSignatures.contains(MethodMatcher.methodPattern(m.getMethodType()));
         }
 
         private Set<String> collectUsedParameters(J.MethodDeclaration m) {
@@ -167,14 +166,14 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             return false;
         }
 
-        private List<Statement> filterUnusedParameters(J.MethodDeclaration m) {
+        private List<Statement> filterUnusedParameters(J.MethodDeclaration m, Set<String> usedParams) {
             return ListUtils.map(
                     m.getParameters(),
                     p -> {
                         if (!(p instanceof J.VariableDeclarations)) {
                             return p;
                         }
-                        return processVariableDeclaration((J.VariableDeclarations) p, collectUsedParameters(m));
+                        return processVariableDeclaration((J.VariableDeclarations) p, usedParams);
                     }
             );
         }
@@ -207,18 +206,12 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     );
 
             String fullSig = MethodMatcher.methodPattern(candidate);
-            String tail = fullSig.substring(fullSig.indexOf(' ') + 1);
 
-            for (String existing : acc.overrideSignatures) {
-                if (existing.endsWith(tail)) {
-                    return original;
-                }
+            if (acc.overrideSignatures.contains(fullSig)
+                    || acc.originalSignatures.get(fullSig.substring(0,fullSig.indexOf(' '))).contains(fullSig)) {
+                return original;
             }
-            for (String existing : acc.originalSignatures) {
-                if (existing.endsWith(tail)) {
-                    return original;
-                }
-            }
+
             return candidate;
         }
 
