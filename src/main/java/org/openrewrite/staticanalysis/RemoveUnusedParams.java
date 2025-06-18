@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -216,7 +215,6 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             return candidate;
         }
 
-        @Nullable
         private J.MethodDeclaration conflictsWithSuperClassMethods(J.MethodDeclaration original,
                                                                    J.MethodDeclaration candidate, String tail) {
             JavaType.Method mt = candidate.getMethodType();
