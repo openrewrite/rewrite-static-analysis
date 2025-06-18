@@ -225,6 +225,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
 
             if (acc.overrideSignatures.contains(fullSignature) ||
                     acc.originalSignatures
+                    .getOrDefault(qualifier, Collections.emptySet())
                     .contains(fullSignature) ||
                     conflictsWithSuperClassMethods(original, candidate, signatureTail) != null) {
                 return original;
