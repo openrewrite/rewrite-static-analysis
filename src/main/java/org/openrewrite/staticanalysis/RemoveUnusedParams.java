@@ -223,11 +223,10 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             String qualifier    = fullSignature.substring(0, split);
             String signatureTail = fullSignature.substring(split + 1);
 
-            if (acc.overrideSignatures.contains(fullSignature)
-                    || acc.originalSignatures
-                    .getOrDefault(qualifier, Collections.emptySet())
-                    .contains(fullSignature)
-                    || conflictsWithSuperClassMethods(original, candidate, signatureTail) != null) {
+            if (acc.overrideSignatures.contains(fullSignature) ||
+                    acc.originalSignatures
+                    .contains(fullSignature) ||
+                    conflictsWithSuperClassMethods(original, candidate, signatureTail) != null) {
                 return original;
             }
 
