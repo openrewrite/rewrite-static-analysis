@@ -206,9 +206,9 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     );
 
             String fullSig = MethodMatcher.methodPattern(candidate);
-            if (acc.overrideSignatures.contains(fullSig)
-                    || acc.originalSignatures.get(fullSig.substring(0,fullSig.indexOf(' '))).contains(fullSig)
-                    || conflictsWithSuperClassMethods(original, candidate,
+            if (acc.overrideSignatures.contains(fullSig) ||
+                    acc.originalSignatures.get(fullSig.substring(0,fullSig.indexOf(' '))).contains(fullSig) ||
+                    conflictsWithSuperClassMethods(original, candidate,
                     fullSig.substring(fullSig.indexOf(' ') + 1)) != null) {
                 return original;
             }
