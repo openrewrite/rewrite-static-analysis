@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -206,13 +207,18 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     );
 
             String fullSig = MethodMatcher.methodPattern(candidate);
-            String tail       = fullSig.substring(fullSig.indexOf(' ') + 1);
-
             if (acc.overrideSignatures.contains(fullSig)
-                    || acc.originalSignatures.get(fullSig.substring(0,fullSig.indexOf(' '))).contains(fullSig)) {
+                    || acc.originalSignatures.get(fullSig.substring(0,fullSig.indexOf(' '))).contains(fullSig)
+                    || conflictsWithSuperClassMethods(original, candidate,
+                    fullSig.substring(fullSig.indexOf(' ') + 1)) != null) {
                 return original;
             }
+            return candidate;
+        }
 
+        @Nullable
+        private J.MethodDeclaration conflictsWithSuperClassMethods(J.MethodDeclaration original,
+                                                                   J.MethodDeclaration candidate, String tail) {
             JavaType.Method mt = candidate.getMethodType();
             if (mt != null && mt.getDeclaringType() instanceof JavaType.Class) {
                 JavaType.Class cls       = (JavaType.Class) mt.getDeclaringType();
@@ -227,8 +233,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                     }
                 }
             }
-
-            return candidate;
+            return null;
         }
 
         private static List<JavaType> collectParameterTypes(List<Statement> prunedParams) {
