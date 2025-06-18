@@ -38,6 +38,9 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
          * and will not be removed even if they appear unused.
          */
         private final Set<String> overrideSignatures = new HashSet<>();
+
+        /** All original signatures (including same-class overloads) **/
+        private final Set<String> originalSignatures = new HashSet<>();
     }
 
     @Override
@@ -62,6 +65,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method mt = m.getMethodType();
+                acc.originalSignatures.add(MethodMatcher.methodPattern(mt));
                 if (mt != null && mt.isOverride()) {
                     while (mt != null) {
                         String signature = MethodMatcher.methodPattern(mt);
@@ -90,7 +94,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
             if (shouldPruneParameters(m)) {
                 List<Statement> prunedParams = filterUnusedParameters(m);
-                return prunedParams == m.getParameters() ? m : m.withParameters(prunedParams);
+                return prunedParams == m.getParameters() ? m : applyPrunedSignature(m, prunedParams);
             }
             return m;
         }
@@ -177,7 +181,6 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
 
         private Statement processVariableDeclaration(J.VariableDeclarations decl, Set<String> usedParams) {
             List<J.VariableDeclarations.NamedVariable> kept = keepUsedVariables(decl, usedParams);
-
             if (!kept.isEmpty()) {
                 return decl.withVariables(kept);
             } else if (!decl.getLeadingAnnotations().isEmpty()) {
@@ -194,6 +197,45 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
                 }
             }
             return kept;
+        }
+
+        private J.MethodDeclaration applyPrunedSignature(J.MethodDeclaration original, List<Statement> pruned) {
+            J.MethodDeclaration candidate = original.withParameters(pruned)
+                    .withMethodType(
+                            original.getMethodType()
+                                    .withParameterTypes(collectParameterTypes(pruned))
+                    );
+
+            String fullSig = MethodMatcher.methodPattern(candidate);
+            String tail = fullSig.substring(fullSig.indexOf(' ') + 1);
+
+            for (String existing : acc.overrideSignatures) {
+                if (existing.endsWith(tail)) {
+                    return original;
+                }
+            }
+            for (String existing : acc.originalSignatures) {
+                if (existing.endsWith(tail)) {
+                    return original;
+                }
+            }
+            return candidate;
+        }
+
+        private static List<JavaType> collectParameterTypes(List<Statement> prunedParams) {
+            List<JavaType> newParamTypes = new ArrayList<>();
+            for (Statement stmt : prunedParams) {
+                if (stmt instanceof J.VariableDeclarations) {
+                    J.VariableDeclarations decl = (J.VariableDeclarations) stmt;
+                    for (J.VariableDeclarations.NamedVariable v : decl.getVariables()) {
+                        JavaType t = v.getType();
+                        if (t != null) {
+                            newParamTypes.add(t);
+                        }
+                    }
+                }
+            }
+            return newParamTypes;
         }
     }
 }
