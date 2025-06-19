@@ -86,18 +86,29 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                     for (int j = i + 1; j < catches.size(); j++) {
                         J.Try.Catch to = catches.get(j);
                         // Both 'from' and 'to' may be multi-catches.
-                        for (J.Identifier fromIdentifier : getCaughtExceptions(from)) {
-                            for (J.Identifier toIdentifier : getCaughtExceptions(to)) {
-                                if (fromIdentifier.getType() != null && toIdentifier.getType() != null &&
-                                        TypeUtils.isAssignableTo(toIdentifier.getType(), fromIdentifier.getType())) {
-                                    Map<J.Try.Catch, Set<J.Identifier>> subTypesMap = parentChildClassRelationship.computeIfAbsent(from, key -> new HashMap<>());
-                                    Set<J.Identifier> childClassIdentifiers = subTypesMap.computeIfAbsent(to, key -> new HashSet<>());
-                                    childClassIdentifiers.add(fromIdentifier);
-                                }
+                        for (NameTree fromException : getCaughtExceptions(from)) {
+                            for (NameTree toException : getCaughtExceptions(to)) {
+                                JavaType fromType = TypeUtils.asFullyQualified(fromException.getType());
+                                JavaType toType = TypeUtils.asFullyQualified(toException.getType());
+                        
+                                if (fromType != null && toType != null &&
+                                    TypeUtils.isAssignableTo(toType, fromType)) {
+                        
+                                    Map<J.Try.Catch, Set<J.Identifier>> subTypesMap =
+                                        parentChildClassRelationship.computeIfAbsent(from, key -> new HashMap<>());
+                        
+                                    Set<J.Identifier> childClassIdentifiers =
+                                        subTypesMap.computeIfAbsent(to, key -> new HashSet<>());
+                        
+                                    if (fromException instanceof J.Identifier) {
+                                        childClassIdentifiers.add((J.Identifier) fromException);
+                                    }
                             }
                         }
+                        
                     }
-                }
+                    }
+                }    
 
                 // Collect the catches that are safe to combine.
                 Map<J.Try.Catch, List<J.Try.Catch>> combineCatchesMap = new HashMap<>();
@@ -214,65 +225,71 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
             private List<JRightPadded<NameTree>> combineEquivalentCatches() {
                 Set<J.Identifier> removeIdentifiers = new HashSet<>();
-
                 List<JRightPadded<NameTree>> combinedCatches = new ArrayList<>();
+            
                 for (J.Try.Catch equivalentCatch : equivalentCatches) {
                     Set<J.Identifier> childClasses = childClassesToExclude.get(equivalentCatch);
                     if (childClasses != null) {
-                        // Remove child classes that will be unnecessary since the parent exists in the new multi-catch.
                         removeIdentifiers.addAll(childClasses);
                     }
-
-                    // Whitespace works slightly differently between single catches and multi-catches.
-                    // The prefix of each `J.Identifier` is set to `Space.EMPTY` so that auto-format will make all the appropriate changes.
-                    if (isMultiCatch(equivalentCatch)) {
-                        if (equivalentCatch.getParameter().getTree().getTypeExpression() != null) {
-                            J.MultiCatch newMultiCatch = (J.MultiCatch) equivalentCatch.getParameter().getTree().getTypeExpression();
-                            List<JRightPadded<NameTree>> rightPaddedAlternatives = newMultiCatch.getPadding().getAlternatives();
-                            for (JRightPadded<NameTree> alternative : rightPaddedAlternatives) {
-                                J.Identifier identifier = (J.Identifier) alternative.getElement();
-                                identifier = identifier.withPrefix(Space.EMPTY);
-                                alternative = alternative.withElement(identifier);
-                                combinedCatches.add(alternative);
+            
+                    TypeTree typeExpr = equivalentCatch.getParameter().getTree().getTypeExpression();
+                    if (typeExpr instanceof J.MultiCatch) {
+                        J.MultiCatch newMultiCatch = (J.MultiCatch) typeExpr;
+                        List<JRightPadded<NameTree>> rightPaddedAlternatives = newMultiCatch.getPadding().getAlternatives();
+                        for (JRightPadded<NameTree> alternative : rightPaddedAlternatives) {
+                            NameTree name = alternative.getElement();
+                            if (name instanceof J.Identifier) {
+                                J.Identifier identifier = ((J.Identifier) name).withPrefix(Space.EMPTY);
+                                combinedCatches.add(alternative.withElement(identifier));
+                            } else if (name instanceof J.FieldAccess) {
+                                J.FieldAccess fa = ((J.FieldAccess) name).withPrefix(Space.EMPTY);
+                                combinedCatches.add(alternative.withElement(fa));
+                            } else {
+                                combinedCatches.add(alternative); // fallback
                             }
                         }
-                    } else {
-                        if (equivalentCatch.getParameter().getTree().getTypeExpression() != null) {
-                            J.Identifier identifier = ((J.Identifier) equivalentCatch.getParameter().getTree().getTypeExpression());
-                            identifier = identifier.withPrefix(Space.EMPTY);
-                            JRightPadded<NameTree> rightPadded = JRightPadded.build(identifier);
-                            combinedCatches.add(rightPadded);
-                        }
+                    } else if (typeExpr instanceof J.Identifier) {
+                        J.Identifier identifier = ((J.Identifier) typeExpr).withPrefix(Space.EMPTY);
+                        combinedCatches.add(JRightPadded.build(identifier));
+                    } else if (typeExpr instanceof J.FieldAccess) {
+                        J.FieldAccess fa = ((J.FieldAccess) typeExpr).withPrefix(Space.EMPTY);
+                        combinedCatches.add(JRightPadded.build(fa));
                     }
                 }
-
-                // Add exceptions in `scope` last to filter out exceptions that are children of parent classes
-                // that were added into the new catch.
+            
+                TypeTree scopeExpr = scope.getParameter().getTree().getTypeExpression();
                 if (isMultiCatch(scope)) {
-                    J.MultiCatch multiCatch = (J.MultiCatch) scope.getParameter().getTree().getTypeExpression();
-                    if (multiCatch != null) {
+                    if (scopeExpr instanceof J.MultiCatch) {
+                        J.MultiCatch multiCatch = (J.MultiCatch) scopeExpr;
                         List<JRightPadded<NameTree>> alternatives = multiCatch.getPadding().getAlternatives();
                         for (int i = alternatives.size() - 1; i >= 0; i--) {
-                            if (!removeIdentifiers.contains((J.Identifier) alternatives.get(i).getElement())) {
-                                JRightPadded<NameTree> alternative = alternatives.get(i);
-                                alternative = alternative.withElement(alternative.getElement().withPrefix(Space.EMPTY));
-                                // Preserve the order of the original catches.
-                                combinedCatches.add(0, alternative);
+                            NameTree name = alternatives.get(i).getElement();
+                            if (name instanceof J.Identifier && !removeIdentifiers.contains(name)) {
+                                J.Identifier identifier = ((J.Identifier) name).withPrefix(Space.EMPTY);
+                                combinedCatches.add(0, alternatives.get(i).withElement(identifier));
+                            } else {
+                                combinedCatches.add(0, alternatives.get(i));
                             }
                         }
                     }
                 } else {
-                    J.Identifier identifier = (J.Identifier) scope.getParameter().getTree().getTypeExpression();
-                    if (identifier != null && !removeIdentifiers.contains(identifier)) {
-                        identifier = identifier.withPrefix(Space.EMPTY);
-                        JRightPadded<NameTree> newCatch = JRightPadded.build(identifier);
-                        // Preserve the order of the original catches.
-                        combinedCatches.add(0, newCatch);
+                    if (scopeExpr instanceof J.Identifier) {
+                        J.Identifier identifier = (J.Identifier) scopeExpr;
+                        if (!removeIdentifiers.contains(identifier)) {
+                            identifier = identifier.withPrefix(Space.EMPTY);
+                            combinedCatches.add(0, JRightPadded.build(identifier));
+                        }
+                    } else if (scopeExpr instanceof J.FieldAccess) {
+                        J.FieldAccess fa = (J.FieldAccess) scopeExpr;
+                        combinedCatches.add(0, JRightPadded.build(fa.withPrefix(Space.EMPTY)));
                     }
                 }
+            
                 return combinedCatches;
             }
-        }
+            
+    }
 
         private static boolean containSameComments(J.Block body1, J.Block body2) {
             CommentVisitor commentVisitor = new CommentVisitor();
@@ -1795,22 +1812,17 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
         /**
          * Collection the caught exceptions from a {@link J.Try.Catch}.
          */
-        private static Set<J.Identifier> getCaughtExceptions(J.Try.Catch aCatch) {
-            Set<J.Identifier> caughtExceptions = new HashSet<>();
-            if (isMultiCatch(aCatch)) {
-                J.MultiCatch multiCatch = (J.MultiCatch) aCatch.getParameter().getTree().getTypeExpression();
-                if (multiCatch != null) {
-                    for (NameTree alternative : multiCatch.getAlternatives()) {
-                        J.Identifier identifier = (J.Identifier) alternative;
-                        caughtExceptions.add(identifier);
-                    }
-                }
-            } else {
-                J.Identifier identifier = (J.Identifier) aCatch.getParameter().getTree().getTypeExpression();
-                if (identifier != null) {
-                    caughtExceptions.add(identifier);
-                }
+        private static Set<NameTree> getCaughtExceptions(J.Try.Catch aCatch) {
+            Set<NameTree> caughtExceptions = new HashSet<>();
+            TypeTree typeExpr = aCatch.getParameter().getTree().getTypeExpression();
+        
+            if (typeExpr instanceof J.MultiCatch) {
+                J.MultiCatch multiCatch = (J.MultiCatch) typeExpr;
+                caughtExceptions.addAll(multiCatch.getAlternatives());
+            } else if (typeExpr instanceof NameTree) {
+                caughtExceptions.add((NameTree) typeExpr); // Can be J.Identifier or J.FieldAccess
             }
+        
             return caughtExceptions;
         }
 

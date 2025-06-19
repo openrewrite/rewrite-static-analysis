@@ -488,4 +488,47 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
           )
         );
     }
+   
+    @Test
+void catchingNestedClassName() {
+    rewriteRun(
+      java(
+        // Supporting classes with nested exception types
+        """
+        class A {
+            public static class Exception extends RuntimeException {}
+        }
+
+        class B {
+            public static class Exception extends RuntimeException {}
+        }
+        """
+      ),
+      java(
+        // Original code before the recipe is applied
+        """
+        class Test {
+            void method() {
+                try {
+                } catch (A.Exception ex) {
+                } catch (B.Exception ex) {
+                }
+            }
+        }
+        """,
+        // ✅ Expected transformed output
+        """
+        class Test {
+            void method() {
+                try {
+                } catch (A.Exception | B.Exception ex) {
+                }
+            }
+        }
+        """
+      )
+    );
 }
+
+}
+
