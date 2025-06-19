@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -25,6 +26,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Transforms code using manual resource management with finally blocks to use the Java 7+ try-with-resources pattern.
@@ -370,11 +372,13 @@ public class TryWithResources extends Recipe {
                                 // Create a new list of variables with the updated initializer
                                 List<J.VariableDeclarations.NamedVariable> newVars = new ArrayList<>();
                                 for (J.VariableDeclarations.NamedVariable var : singleVarDecl.getVariables()) {
+                                    J.VariableDeclarations.NamedVariable updated =
+                                            isReferencedInBlock(tryable.getBody(), varName) ?
+                                                    var : var.withName(var.getName().withSimpleName("ignored"));
                                     if (var.getSimpleName().equals(varName)) {
-                                        newVars.add(var.withInitializer(initializer));
-                                    } else {
-                                        newVars.add(var);
+                                        updated = updated.withInitializer(initializer);
                                     }
+                                    newVars.add(updated);
                                 }
                                 singleVarDecl = singleVarDecl.withVariables(newVars);
                             }
@@ -428,6 +432,25 @@ public class TryWithResources extends Recipe {
                 tryWithResources = tryWithResources.withBody(tryWithResources.getBody().withStatements(newBodyStatements));
 
                 return tryWithResources;
+            }
+
+            private boolean isReferencedInBlock(J.Block body, String varName) {
+                AtomicBoolean seen = new AtomicBoolean(false);
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.Identifier visitIdentifier(J.Identifier id, ExecutionContext ctx) {
+                        // only count it if it's not the variable in the LHS of an assignment
+                        if (id.getSimpleName().equals(varName)) {
+                            Cursor parent = getCursor().getParentOrThrow();
+                            if (!(parent.getValue() instanceof J.Assignment &&
+                                    ((J.Assignment)parent.getValue()).getVariable() == id)) {
+                                seen.set(true);
+                            }
+                        }
+                        return super.visitIdentifier(id, ctx);
+                    }
+                }.visit(body, null);
+                return seen.get();
             }
 
             private boolean isAssignmentToResource(Statement statement, Set<String> resourceNames) {

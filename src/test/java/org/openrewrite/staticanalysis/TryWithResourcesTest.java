@@ -19,13 +19,15 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
 class TryWithResourcesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new TryWithResources());
+        spec.recipe(new TryWithResources())
+          .typeValidationOptions(TypeValidation.none());
     }
 
     @DocumentExample
@@ -173,6 +175,40 @@ class TryWithResourcesTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+
+    @Test
+    void renameIgnoredIfUnused() {
+        rewriteRun(
+          java(
+            """
+            import java.io.*;
+
+            class Test {
+                public void testConnection() throws IOException {
+                    InputStream in = null;
+                    try {
+                        in = new FileInputStream("file.txt");
+                    } finally {
+                        if (in != null) {
+                            in.close();
+                        }
+                    }
+                }
+            }
+            """,
+            """
+            import java.io.*;
+
+            class Test {
+                public void testConnection() throws IOException {
+                    try (InputStream ignored = new FileInputStream("file.txt")) {
+                    }
+                }
+            }
+            """
           )
         );
     }
