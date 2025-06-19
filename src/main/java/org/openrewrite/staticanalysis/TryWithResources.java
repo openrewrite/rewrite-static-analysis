@@ -61,17 +61,12 @@ public class TryWithResources extends Recipe {
                 J.Try t = super.visitTry(tryable, ctx);
 
                 // Only process try blocks with a finally block
-                if (t.getFinally() == null) {
+                if (Objects.isNull(t.getFinally())) {
                     return t;
                 }
 
                 // Find variable declarations in the try block
-                List<J.VariableDeclarations> variableDeclarations = new ArrayList<>();
-                for (Statement statement : t.getBody().getStatements()) {
-                    if (statement instanceof J.VariableDeclarations) {
-                        variableDeclarations.add((J.VariableDeclarations) statement);
-                    }
-                }
+                List<J.VariableDeclarations> variableDeclarations = collectVariableDeclarations(t);
 
                 if (variableDeclarations.isEmpty()) {
                     return t;
@@ -84,17 +79,23 @@ public class TryWithResources extends Recipe {
                     return t;
                 }
 
-                // Check for resources initialized to null and assigned in the try block
-                Map<String, Expression> resourceInitializers = findResourceInitializers(t, resourcesThatAreClosed.keySet());
-
                 // Transform the try block to use try-with-resources
-                return transformToTryWithResources(t, resourcesThatAreClosed, resourceInitializers);
+                return transformToTryWithResources(t, resourcesThatAreClosed, findResourceInitializers(t, resourcesThatAreClosed.keySet()));
+            }
+
+            private List<J.VariableDeclarations> collectVariableDeclarations(J.Try t) {
+                List<J.VariableDeclarations> variableDeclarations = new ArrayList<>();
+                for (Statement statement : t.getBody().getStatements()) {
+                    if (statement instanceof J.VariableDeclarations) {
+                        variableDeclarations.add((J.VariableDeclarations) statement);
+                    }
+                }
+                return variableDeclarations;
             }
 
             private J.Block processBlock(J.Block body) {
                 // Find all try blocks in the method body
-                List<J.Try> tryBlocks = new ArrayList<>();
-                findTryBlocks(body, tryBlocks);
+                List<J.Try> tryBlocks = findTryBlocks(body);
 
                 if (tryBlocks.isEmpty()) {
                     return body;
@@ -122,11 +123,9 @@ public class TryWithResources extends Recipe {
                         continue;
                     }
 
-                    // Check for resources initialized to null and assigned in the try block
-                    Map<String, Expression> resourceInitializers = findResourceInitializers(tryBlock, resourcesThatAreClosed.keySet());
-
                     // Transform the try block to use try-with-resources
-                    J.Try newTryBlock = transformToTryWithResources(tryBlock, resourcesThatAreClosed, resourceInitializers);
+                    J.Try newTryBlock = transformToTryWithResources(tryBlock, resourcesThatAreClosed,
+                            findResourceInitializers(tryBlock, resourcesThatAreClosed.keySet()));
 
                     // Replace the old try block with the new one and remove the variable declarations
                     newBody = replaceTryBlockAndRemoveDeclarations(newBody, tryBlock, newTryBlock, resourcesThatAreClosed.values());
@@ -155,12 +154,14 @@ public class TryWithResources extends Recipe {
                 return resourceInitializers;
             }
 
-            private void findTryBlocks(J.Block block, List<J.Try> tryBlocks) {
+            private List<J.Try> findTryBlocks(J.Block block) {
+                List<J.Try> tryBlocks = new ArrayList<>();
                 for (Statement statement : block.getStatements()) {
                     if (statement instanceof J.Try) {
                         tryBlocks.add((J.Try) statement);
                     }
                 }
+                return tryBlocks;
             }
 
             private List<J.VariableDeclarations> findVariableDeclarationsBeforeTry(J.Block block, J.Try tryBlock) {
