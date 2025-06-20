@@ -194,8 +194,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
+    @Test
     void typeCastOnConstructorCall() {
         rewriteRun(
           //language=java
@@ -1099,8 +1099,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StringOperationCanBeSimplified")
     @Issue("https://github.com/openrewrite/rewrite/issues/2949")
+    @SuppressWarnings("StringOperationCanBeSimplified")
     @Test
     void anotherSimplerMultipleConstructorsCase() {
         rewriteRun(
@@ -1195,9 +1195,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
 
+    @Issue("https://github.com/openrewrite/rewrite/issues/3071")
     @SuppressWarnings("OptionalOfNullableMisuse")
     @Test
-    @Issue("https://github.com/openrewrite/rewrite/issues/3071")
     void missingImportForDeclaringType() {
         rewriteRun(
           //language=java
@@ -1235,9 +1235,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/200")
     @SuppressWarnings({"ConstantValue"})
     @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/200")
     void nestedType() {
         rewriteRun(
           //language=java
@@ -1275,8 +1275,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
+    @Test
     void dontReplaceLambdaSupplierOfMethodReference() {
         rewriteRun(
           //language=java
@@ -1328,8 +1328,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
+    @Test
     void groupingByGetClass() {
         rewriteRun(
           //language=java

@@ -167,9 +167,9 @@ class InlineVariableTest implements RewriteTest {
         );
     }
 
-    @Test
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Issue("https://github.com/openrewrite/rewrite/issues/3201")
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    @Test
     void preserveComment() {
         rewriteRun(
           //language=java

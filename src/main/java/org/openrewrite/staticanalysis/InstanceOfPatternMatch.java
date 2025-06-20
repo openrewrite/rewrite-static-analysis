@@ -451,8 +451,8 @@ public class InstanceOfPatternMatch extends Recipe {
             return typeCast;
         }
 
-        @SuppressWarnings("NullableProblems")
         @Override
+        @SuppressWarnings("NullableProblems")
         public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
             multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, integer);
             return replacements.processVariableDeclarations(multiVariable);

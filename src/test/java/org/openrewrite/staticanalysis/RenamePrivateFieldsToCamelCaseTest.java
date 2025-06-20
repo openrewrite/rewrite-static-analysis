@@ -587,8 +587,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+    @Test
     void doNotChangeLombokAnnotatedClasses() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
@@ -604,8 +604,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+    @Test
     void doNotChangeLombokAnnotatedFields() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),

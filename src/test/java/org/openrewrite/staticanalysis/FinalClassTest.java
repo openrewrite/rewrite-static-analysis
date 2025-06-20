@@ -58,8 +58,8 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2954")
+    @Test
     void nestedClassWithSubclass() {
         rewriteRun(
           //language=java

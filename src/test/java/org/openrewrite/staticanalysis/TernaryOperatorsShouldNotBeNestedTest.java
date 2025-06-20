@@ -36,8 +36,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
             spec.recipe(new TernaryOperatorsShouldNotBeNested()).allSources(s -> s.markers(javaVersion(11)));
         }
 
-        @Test
         @DocumentExample
+        @Test
         void doReplaceNestedOrTernaryWithIfFollowedByTernary() {
             rewriteRun(
               //language=java
@@ -302,8 +302,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
-        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
         @ExpectedToFail("only directly returned ternaries are taken into account")
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
         @Test
         void doReplaceNestedOrAssignmentTernaryWithIfElse() {
             rewriteRun(
@@ -600,8 +600,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
 
         @Nested
         class ReplaceWithSwitchExpression {
-            @Test
             @DocumentExample
+            @Test
             void doReplaceNestedOrTernaryWithSwitchExpression() {
                 rewriteRun(
                   //language=java

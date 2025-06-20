@@ -30,9 +30,9 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
         spec.recipe(new RemoveHashCodeCallsFromArrayInstances());
     }
 
-    @Test
     @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/44")
+    @Test
     void replaceHashCodeCalls() {
         //language=java
         rewriteRun(

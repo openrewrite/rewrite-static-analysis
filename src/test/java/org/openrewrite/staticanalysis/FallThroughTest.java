@@ -270,9 +270,9 @@ class FallThroughTest implements RewriteTest {
         );
     }
 
-    @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/229")
     @ExpectedToFail
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/229")
+    @Test
     void switchAsLastStatement() {
         rewriteRun(
           //language=java

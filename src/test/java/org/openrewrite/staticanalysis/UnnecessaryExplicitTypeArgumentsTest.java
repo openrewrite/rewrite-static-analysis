@@ -71,8 +71,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
-    @Test
     @ExpectedToFail("Not implemented yet")
+    @Test
     void withinLambda() {
         rewriteRun(
           //language=java
@@ -167,8 +167,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Issue("https://github.com/openrewrite/rewrite/issues/2818")
+    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void assignedToVar() {
         rewriteRun(

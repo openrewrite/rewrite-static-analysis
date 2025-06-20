@@ -313,8 +313,8 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
      * <p>
      * This test just documents the current behavior.
      */
-    @Test
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
+    @Test
     void doesNotChangeNonConstantUnitCount() {
         rewriteRun(
           //language=java
@@ -331,8 +331,8 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/moderneinc/support-public/issues/30")
+    @Test
     void doesNotChangeZeroConstant() {
         rewriteRun(
           //language=java

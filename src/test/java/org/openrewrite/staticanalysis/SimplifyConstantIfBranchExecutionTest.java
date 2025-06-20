@@ -75,8 +75,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/286")
+    @Test
     void doNotChangeParenthesisOnly() {
         rewriteRun(
           //language=java
@@ -145,8 +145,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("DuplicateCondition")
+    @Test
     void simplifyConstantIfTrueOrTrue() {
         rewriteRun(
           //language=java
@@ -1355,8 +1355,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/89")
+    @Test
     void preserveComments() {
         rewriteRun(
           //language=java

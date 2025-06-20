@@ -50,8 +50,8 @@ public class AddSerialAnnotationToSerialVersionUID extends Recipe {
         return Duration.ofMinutes(1);
     }
 
-    @Override
     @NonNull
+    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.and(

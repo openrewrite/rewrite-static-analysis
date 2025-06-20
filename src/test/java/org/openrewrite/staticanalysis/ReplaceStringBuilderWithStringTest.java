@@ -54,8 +54,8 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
+    @Test
     void replaceWhileMaintainingSpaces() {
         rewriteRun(
           //language=java
@@ -230,8 +230,8 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
+    @Test
     void retainComments() {
         rewriteRun(
           //language=java

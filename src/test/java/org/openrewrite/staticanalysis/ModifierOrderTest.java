@@ -73,8 +73,8 @@ class ModifierOrderTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/187")
+    @Test
     void putDefaultModifierAtJLSRightPosition() {
         // default modifier must be placed between abstract and static modifiers
         rewriteRun(

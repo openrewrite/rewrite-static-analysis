@@ -53,8 +53,8 @@ public class RemoveExtraSemicolons extends Recipe {
         return Duration.ofMinutes(1);
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
+    @SuppressWarnings("ConstantConditions")
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
 

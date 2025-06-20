@@ -200,8 +200,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
           ));
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/143")
+    @Test
     void noSelect() {
         rewriteRun(
           //language=java
@@ -219,8 +219,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Issue("https://github.com/moderneinc/customer-requests/issues/190")
+    @SuppressWarnings("StatementWithEmptyBody")
     @Test
     void changeEnumInsideBooleanExpression() {
         rewriteRun(

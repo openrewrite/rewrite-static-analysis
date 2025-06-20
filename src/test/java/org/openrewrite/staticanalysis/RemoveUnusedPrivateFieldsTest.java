@@ -224,8 +224,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3061")
+    @Test
     void findReferencesInOuterScope() {
         rewriteRun(
           //language=java

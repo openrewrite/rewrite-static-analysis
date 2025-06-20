@@ -59,8 +59,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Test
     @DocumentExample
+    @Test
     void repeatedSemicolon() {
         rewriteRun(
           //language=java
@@ -248,8 +248,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/5146")
+    @Test
     void noValuesJustSemicolon() {
         rewriteRun(
           java(

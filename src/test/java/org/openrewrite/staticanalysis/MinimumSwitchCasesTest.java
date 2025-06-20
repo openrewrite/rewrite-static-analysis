@@ -395,8 +395,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Issue("https://github.com/openrewrite/rewrite/issues/800")
+    @SuppressWarnings("StatementWithEmptyBody")
     @Test
     void noCases() {
         rewriteRun(
@@ -610,8 +610,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3076")
+    @Test
     void switchExpressions() {
         rewriteRun(
           //language=java
@@ -752,8 +752,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3076")
+    @Test
     void multipleSwitchExpressions() {
         rewriteRun(
           //language=java
@@ -840,6 +840,48 @@ class MinimumSwitchCasesTest implements RewriteTest {
                       } else {
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/284")
+    @Test
+    void caseWithBitwiseOperation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int variable;
+                  int test() {
+                      switch (variable & 7) {
+                        case 0:
+                            return 0;
+                        default:
+                            doSomethingElse();
+                      }
+                      return 1;
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """,
+            """
+              class Test {
+                  int variable;
+                  int test() {
+                      if ((variable & 7) == 0) {
+                          return 0;
+                      } else {
+                          doSomethingElse();
+                      }
+                      return 1;
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
               }
               """
           )

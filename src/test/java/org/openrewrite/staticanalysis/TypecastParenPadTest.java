@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2025 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,39 +17,43 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings("ToArrayCallWithZeroLengthArrayArgument")
-class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
+class TypecastParenPadTest implements RewriteTest {
+
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new ReplaceCollectionToArrayArgWithEmptyArray());
+        spec.recipe(new TypecastParenPad());
     }
 
     @DocumentExample
     @Test
-    void replaceSizeArgumentWithZero() {
+    void typecastParenPad() {
         rewriteRun(
           //language=java
           java(
             """
-              import java.util.Collection;
-
               class A {
-                  void test(Collection<Integer> args){
-                      Integer [] array = args.toArray(new Integer[args.size()]);
+                  void m() {
+                      int i = ( int ) 0L;
+                      int j = (int) 0L;
+                      int k = (int)0L;
+                      int l = ( int )0L;
                   }
               }
               """,
             """
-              import java.util.Collection;
-
               class A {
-                  void test(Collection<Integer> args){
-                      Integer [] array = args.toArray(new Integer[0]);
+                  void m() {
+                      int i = (int) 0L;
+                      int j = (int) 0L;
+                      int k = (int) 0L;
+                      int l = (int) 0L;
                   }
               }
               """
@@ -57,26 +61,16 @@ class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/561")
     @Test
-    void replaceConstantValueWithZero() {
+    void noChangeForGroovy() {
         rewriteRun(
-          //language=java
-          java(
+          //language=groovy
+          groovy(
             """
-              import java.util.Collection;
-
               class A {
-                  void test(Collection<Integer> args){
-                      Integer[] array = args.toArray(new Integer[4]);
-                  }
-              }
-              """,
-            """
-              import java.util.Collection;
-
-              class A {
-                  void test(Collection<Integer> args){
-                      Integer[] array = args.toArray(new Integer[0]);
+                  void m(Object o) {
+                      int l = ( o as String).length()
                   }
               }
               """

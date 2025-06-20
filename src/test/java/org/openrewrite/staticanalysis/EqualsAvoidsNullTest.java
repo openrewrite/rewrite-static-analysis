@@ -364,8 +364,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-        @Test
         @Disabled("Not yet supported")
+        @Test
         void lambdaGenerics() {
             rewriteRun(
               //language=java
@@ -447,8 +447,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/434")
+        @Test
         void missingWhitespace() {
             rewriteRun(
               // language=java

@@ -85,8 +85,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("EmptyTryBlock")
     @Issue("https://github.com/openrewrite/rewrite/issues/631")
+    @SuppressWarnings("EmptyTryBlock")
     @Test
     void necessaryThrowsFromCloseable() {
         rewriteRun(

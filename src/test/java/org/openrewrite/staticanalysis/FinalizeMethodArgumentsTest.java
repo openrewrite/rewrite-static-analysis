@@ -210,8 +210,8 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/176")
+    @Test
     void doNotReplaceIfAssignedThroughUnaryOrAccumulator() {
         rewriteRun(
           //language=java
