@@ -648,4 +648,22 @@ class CustomImportOrderRecipeTest implements RewriteTest {
             """
           ));
     }
+
+    @Test
+    void doNothingIfNoStyleConfigured() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            package com.example;
+
+            import org.apache.commons.lang3.StringUtils;
+            import java.util.Collections;
+            import static java.util.Collections.*;
+
+            class Test {}
+            """
+          )
+        );
+    }
 }
