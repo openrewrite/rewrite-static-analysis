@@ -59,7 +59,6 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
         );
     }
 
-    @DocumentExample("Grouping concatenation.")
     @Test
     void groupedStringsConcatenation() {
         rewriteRun(
