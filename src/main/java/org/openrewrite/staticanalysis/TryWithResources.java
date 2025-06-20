@@ -346,7 +346,10 @@ public class TryWithResources extends Recipe {
                 return false;
             }
 
-            private J.Try transformToTryWithResources(J.Try tryable, Map<String, J.VariableDeclarations> resourcesThatAreClosed, Map<String, Expression> resourceInitializers) {
+            private J.Try transformToTryWithResources(
+                    J.Try tryable, Map<String,
+                    J.VariableDeclarations> resourcesThatAreClosed,
+                    Map<String, Expression> resourceInitializers) {
                 // Create resources for the try-with-resources statement
                 List<J.Try.Resource> resources = new ArrayList<>();
 
@@ -359,50 +362,7 @@ public class TryWithResources extends Recipe {
                     // Find the named variable
                     for (J.VariableDeclarations.NamedVariable namedVar : varDecl.getVariables()) {
                         if (namedVar.getSimpleName().equals(varName)) {
-                            // Create a new variable declaration with just this variable
-                            J.VariableDeclarations singleVarDecl = varDecl;
-                            if (varDecl.getVariables().size() > 1) {
-                                singleVarDecl = varDecl.withVariables(Collections.singletonList(namedVar));
-                            }
-
-                            // If the resource is initialized to null and assigned in the try block,
-                            // use the assigned value as the initializer
-                            if (resourceInitializers.containsKey(varName)) {
-                                Expression initializer = resourceInitializers.get(varName);
-                                // Create a new list of variables with the updated initializer
-                                List<J.VariableDeclarations.NamedVariable> newVars = new ArrayList<>();
-                                for (J.VariableDeclarations.NamedVariable var : singleVarDecl.getVariables()) {
-                                    J.VariableDeclarations.NamedVariable updated =
-                                            isReferencedInBlock(tryable.getBody(), varName) ?
-                                                    var : var.withName(var.getName().withSimpleName("ignored"));
-                                    if (var.getSimpleName().equals(varName)) {
-                                        updated = updated.withInitializer(initializer);
-                                    }
-                                    newVars.add(updated);
-                                }
-                                singleVarDecl = singleVarDecl.withVariables(newVars);
-                            }
-
-                            // Create a resource with proper spacing
-                            // First resource gets no prefix, others get a newline and indentation
-                            Space prefix;
-                            if (i == 0) {
-                                prefix = Space.EMPTY;
-                            } else {
-                                // For multiple resources, format with newline and indentation for better readability
-                                prefix = entries.size() > 1 ? Space.format("\n             ") : Space.format(" ");
-                            }
-
-                            // Create the resource - only the last one should not have a semicolon
-                            J.Try.Resource resource = new J.Try.Resource(
-                                    Tree.randomId(),
-                                    prefix,
-                                    Markers.EMPTY,
-                                    singleVarDecl.withPrefix(Space.EMPTY),
-                                    i < entries.size() - 1 // Only the last resource should not have a semicolon
-                            );
-
-                            resources.add(resource);
+                            resources.add(createResources(tryable, resourceInitializers, namedVar, varDecl, varName, i, entries));
                             break;
                         }
                     }
@@ -421,6 +381,56 @@ public class TryWithResources extends Recipe {
                     tryWithResources = tryWithResources.withFinally(null);
                 }
 
+                return removeAssignments(resourcesThatAreClosed, tryWithResources);
+            }
+
+            private J.Try.Resource createResources(J.Try tryable, Map<String, Expression> resourceInitializers, J.VariableDeclarations.NamedVariable namedVar, J.VariableDeclarations varDecl, String varName, int i, List<Map.Entry<String, J.VariableDeclarations>> entries) {
+                // Create a new variable declaration with just this variable
+                J.VariableDeclarations singleVarDecl = varDecl;
+                if (varDecl.getVariables().size() > 1) {
+                    singleVarDecl = varDecl.withVariables(Collections.singletonList(namedVar));
+                }
+
+                // If the resource is initialized to null and assigned in the try block,
+                // use the assigned value as the initializer
+                if (resourceInitializers.containsKey(varName)) {
+                    Expression initializer = resourceInitializers.get(varName);
+                    // Create a new list of variables with the updated initializer
+                    List<J.VariableDeclarations.NamedVariable> newVars = new ArrayList<>();
+                    for (J.VariableDeclarations.NamedVariable var : singleVarDecl.getVariables()) {
+                        J.VariableDeclarations.NamedVariable updated =
+                                isReferencedInBlock(tryable.getBody(), varName) ?
+                                        var : var.withName(var.getName().withSimpleName("ignored"));
+                        if (var.getSimpleName().equals(varName)) {
+                            updated = updated.withInitializer(initializer);
+                        }
+                        newVars.add(updated);
+                    }
+                    singleVarDecl = singleVarDecl.withVariables(newVars);
+                }
+
+                // Create a resource with proper spacing
+                // First resource gets no prefix, others get a newline and indentation
+                Space prefix;
+                if (i == 0) {
+                    prefix = Space.EMPTY;
+                } else {
+                    // For multiple resources, format with newline and indentation for better readability
+                    prefix = entries.size() > 1 ? Space.format("\n             ") : Space.format(" ");
+                }
+
+                // Create the resource - only the last one should not have a semicolon
+                J.Try.Resource resource = new J.Try.Resource(
+                        Tree.randomId(),
+                        prefix,
+                        Markers.EMPTY,
+                        singleVarDecl.withPrefix(Space.EMPTY),
+                        i < entries.size() - 1 // Only the last resource should not have a semicolon
+                );
+                return resource;
+            }
+
+            private J.Try removeAssignments(Map<String, J.VariableDeclarations> resourcesThatAreClosed, J.Try tryWithResources) {
                 // Remove assignments to resources in the try block
                 List<Statement> newBodyStatements = new ArrayList<>();
                 for (Statement statement : tryWithResources.getBody().getStatements()) {
@@ -429,9 +439,7 @@ public class TryWithResources extends Recipe {
                         newBodyStatements.add(statement);
                     }
                 }
-                tryWithResources = tryWithResources.withBody(tryWithResources.getBody().withStatements(newBodyStatements));
-
-                return tryWithResources;
+                return tryWithResources.withBody(tryWithResources.getBody().withStatements(newBodyStatements));
             }
 
             private boolean isReferencedInBlock(J.Block body, String varName) {
