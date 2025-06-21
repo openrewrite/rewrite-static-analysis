@@ -67,8 +67,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
           }
       }
       """ );
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+      
     @DocumentExample
     @Test
     void shouldReplaceExceptionWithSingleCheckedException() {
@@ -100,8 +99,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldReplaceExceptionWithMultipleCheckedExceptions() {
@@ -136,8 +134,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldReplaceExceptionWithMultipleCheckedExceptionsFromSingleCall() {
@@ -170,8 +167,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldKeepSpecificCatchAndRemoveGenericWhenCovered() {
@@ -211,8 +207,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldNotModifyWhenOnlySpecificCatchesExist() {
@@ -231,8 +226,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldNotModifyWhenNoCheckedExceptionIsThrown() {
@@ -249,8 +243,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldHandleConstructorThrowingException() {
@@ -282,8 +275,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldHandleConstructorThrowingSpecificExceptionAndAnotherGenericCatch() {
@@ -320,8 +312,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
           }
           """ ));
-        rewriteRun(MOCK_THROWING_CLASS, java(
-                """
+    }
 
     @Test
     void shouldHandleConstructorThrowingExceptionWithExistingSpecificCatch() {
