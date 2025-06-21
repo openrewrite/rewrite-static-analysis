@@ -31,7 +31,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
     }
 
     // Helper SourceSpecs for mock classes that throw checked exceptions
-    private static final SourceSpecs MOCK_THROWING_CLASS = java("""
+    private static final SourceSpecs MOCK_THROWING_CLASS = java(
+            """
       package com.example;
 
       public class MockThrowingClass {
@@ -65,8 +66,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               throw new RuntimeException("Test Runtime Exception");
           }
       }
-      """);
-
+      """ );
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
     @DocumentExample
     @Test
     void shouldReplaceExceptionWithSingleCheckedException() {
@@ -82,7 +84,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """, """
+          """,
+                """
           package com.example;
 
           import java.io.IOException;
@@ -96,8 +99,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldReplaceExceptionWithMultipleCheckedExceptions() {
@@ -114,7 +118,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """, """
+          """,
+                """
           package com.example;
 
           import java.io.IOException;
@@ -130,8 +135,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldReplaceExceptionWithMultipleCheckedExceptionsFromSingleCall() {
@@ -147,7 +153,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """, """
+          """,
+                """
           package com.example;
 
           import java.io.IOException;
@@ -162,8 +169,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldKeepSpecificCatchAndRemoveGenericWhenCovered() {
@@ -184,7 +192,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """, """
+          """,
+                """
           package com.example;
 
           import java.io.IOException;
@@ -201,8 +210,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldNotModifyWhenOnlySpecificCatchesExist() {
@@ -220,8 +230,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldNotModifyWhenNoCheckedExceptionIsThrown() {
@@ -237,8 +248,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldHandleConstructorThrowingException() {
@@ -254,7 +266,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """, """
+          """,
+                """
           package com.example;
 
           import java.sql.SQLException;
@@ -268,8 +281,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldHandleConstructorThrowingSpecificExceptionAndAnotherGenericCatch() {
@@ -288,7 +302,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """, """
+          """,
+                """
           package com.example;
 
           import java.io.IOException;
@@ -304,8 +319,9 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
-    }
+          """ ));
+        rewriteRun(MOCK_THROWING_CLASS, java(
+                """
 
     @Test
     void shouldHandleConstructorThrowingExceptionWithExistingSpecificCatch() {
@@ -327,7 +343,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """, """
+          """,
+                """
           package com.example;
 
           import java.io.IOException;
@@ -345,6 +362,6 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                   }
               }
           }
-          """));
+          """ ));
     }
 }
