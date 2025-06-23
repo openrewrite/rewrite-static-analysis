@@ -198,9 +198,9 @@ public class AnnotateNullableParameters extends Recipe {
         private void handleBinary(J.Binary binary, Set<J.Identifier> nullCheckedParams) {
             Expression maybeParam = null;
 
-            if (binary.getLeft() instanceof J.Literal && ((J.Literal) binary.getLeft()).getValue() == null) {
+            if (J.Literal.isLiteralValue(binary.getLeft(), null)) {
                 maybeParam = binary.getRight();
-            } else if (binary.getRight() instanceof J.Literal && ((J.Literal) binary.getRight()).getValue() == null) {
+            } else if (J.Literal.isLiteralValue(binary.getRight(), null)) {
                 maybeParam = binary.getLeft();
             } else {
                 handleCondition(binary.getLeft(), nullCheckedParams);
