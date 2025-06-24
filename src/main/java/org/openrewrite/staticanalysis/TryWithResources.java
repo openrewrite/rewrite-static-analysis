@@ -15,11 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
@@ -82,7 +78,8 @@ public class TryWithResources extends Recipe {
                 }
 
                 // Transform the try block to use try-with-resources
-                return transformToTryWithResources(t, resourcesThatAreClosed, findResourceInitializers(t, resourcesThatAreClosed.keySet()));
+                J.Try tryWith = transformToTryWithResources(t, resourcesThatAreClosed, findResourceInitializers(t, resourcesThatAreClosed.keySet()));
+                return autoFormat(tryWith, ctx);
             }
 
             private List<J.VariableDeclarations> collectVariableDeclarations(J.Try t) {
@@ -409,25 +406,14 @@ public class TryWithResources extends Recipe {
                     singleVarDecl = singleVarDecl.withVariables(newVars);
                 }
 
-                // Create a resource with proper spacing
-                // First resource gets no prefix, others get a newline and indentation
-                Space prefix;
-                if (i == 0) {
-                    prefix = Space.EMPTY;
-                } else {
-                    // For multiple resources, format with newline and indentation for better readability
-                    prefix = entries.size() > 1 ? Space.format("\n             ") : Space.format(" ");
-                }
-
                 // Create the resource - only the last one should not have a semicolon
-                J.Try.Resource resource = new J.Try.Resource(
+                return new J.Try.Resource(
                         Tree.randomId(),
-                        prefix,
+                        0 < i ? Space.format("\n") : Space.EMPTY,
                         Markers.EMPTY,
                         singleVarDecl.withPrefix(Space.EMPTY),
                         i < entries.size() - 1 // Only the last resource should not have a semicolon
                 );
-                return resource;
             }
 
             private J.Try removeAssignments(Map<String, J.VariableDeclarations> resourcesThatAreClosed, J.Try tryWithResources) {
