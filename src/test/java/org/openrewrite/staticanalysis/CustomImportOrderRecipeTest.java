@@ -47,24 +47,24 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import org.apache.commons.lang3.StringUtils;
-                    import java.util.Collections;
-                    import static java.util.Collections.*;
+              import org.apache.commons.lang3.StringUtils;
+              import java.util.Collections;
+              import static java.util.Collections.*;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
+              import static java.util.Collections.*;
 
-                    import java.util.Collections;
-                    import org.apache.commons.lang3.StringUtils;
+              import java.util.Collections;
+              import org.apache.commons.lang3.StringUtils;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -87,31 +87,31 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
+              import static java.util.Collections.*;
 
-                    import java.time.*;
-                    import javax.net.*;
-                    import static java.io.File.separator;
+              import java.time.*;
+              import javax.net.*;
+              import static java.io.File.separator;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -122,31 +122,31 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
+              import java.time.*;
 
-                    import javax.net.*;
-                    import org.apache.commons.io.FileUtils;
+              import javax.net.*;
+              import org.apache.commons.io.FileUtils;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -158,36 +158,36 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import org.apache.commons.io.FileUtils;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -199,34 +199,34 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import org.apache.commons.lang3.StringUtils;
+              import org.apache.commons.lang3.StringUtils;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import org.apache.commons.lang3.StringUtils;
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.lang3.StringUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -238,35 +238,35 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
-                    import org.apache.commons.io.FileUtils;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import java.time.*;
+              import javax.net.*;
+              import org.apache.commons.io.FileUtils;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -279,33 +279,33 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
-                    import org.apache.commons.io.FileUtils;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import java.time.*;
+              import javax.net.*;
+              import org.apache.commons.io.FileUtils;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.io.File.separator;
-                    import static java.util.Collections.*;
+              import static java.io.File.separator;
+              import static java.util.Collections.*;
 
-                    import java.time.*;
-                    import javax.net.*;
-                    import org.apache.commons.io.FileUtils;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import java.time.*;
+              import javax.net.*;
+              import org.apache.commons.io.FileUtils;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -318,37 +318,37 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import javax.net.*;
-                    import java.time.*;
+              import javax.net.*;
+              import java.time.*;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.io.File.separator;
-                    import static java.util.Collections.*;
+              import static java.io.File.separator;
+              import static java.util.Collections.*;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -360,36 +360,36 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.util.Collections.*;
-                    import static java.io.File.separator;
+              import static java.util.Collections.*;
+              import static java.io.File.separator;
 
-                    import java.time.*;
-                    import javax.net.*;
-                    import org.apache.commons.io.FileUtils;
+              import java.time.*;
+              import javax.net.*;
+              import org.apache.commons.io.FileUtils;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.io.File.separator;
-                    import static java.util.Collections.*;
+              import static java.io.File.separator;
+              import static java.util.Collections.*;
 
-                    import java.time.*;
-                    import javax.net.*;
+              import java.time.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -400,25 +400,25 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import java.awt.Dialog;
-                    import java.awt.Window;
-                    import java.awt.color.ColorSpace;
-                    import java.awt.Frame;
+              import java.awt.Dialog;
+              import java.awt.Window;
+              import java.awt.color.ColorSpace;
+              import java.awt.Frame;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import java.awt.Dialog;
-                    import java.awt.Frame;
-                    import java.awt.Window;
-                    import java.awt.color.ColorSpace;
+              import java.awt.Dialog;
+              import java.awt.Frame;
+              import java.awt.Window;
+              import java.awt.color.ColorSpace;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -432,36 +432,36 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import static java.io.File.separator;
-                    import static java.util.Collections.*;
+              import static java.io.File.separator;
+              import static java.util.Collections.*;
 
-                    import java.time.*;
+              import java.time.*;
 
-                    import javax.net.*;
+              import javax.net.*;
 
-                    import org.apache.commons.io.FileUtils;
+              import org.apache.commons.io.FileUtils;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
-                    import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
-                    import org.apache.commons.io.FileUtils;
-                    import javax.net.*;
-                    import java.time.*;
+              import com.puppycrawl.tools.checkstyle.checks.imports.CustomImportOrderCheck;
+              import com.puppycrawl.tools.checkstyle.checks.imports.ImportOrderCheck;
+              import org.apache.commons.io.FileUtils;
+              import javax.net.*;
+              import java.time.*;
 
-                    import static java.io.File.separator;
-                    import static java.util.Collections.*;
+              import static java.io.File.separator;
+              import static java.util.Collections.*;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -472,21 +472,21 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-            package com.example;
+              package com.example;
 
-            import static java.util.Collections.emptyList;
-            import static java.lang.Math.max;
+              import static java.util.Collections.emptyList;
+              import static java.lang.Math.max;
 
-            class Test {}
-            """,
+              class Test {}
+              """,
             """
-            package com.example;
+              package com.example;
 
-            import static java.lang.Math.max;
-            import static java.util.Collections.emptyList;
+              import static java.lang.Math.max;
+              import static java.util.Collections.emptyList;
 
-            class Test {}
-            """
+              class Test {}
+              """
           )
         );
     }
@@ -498,21 +498,21 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-            package com.example;
+              package com.example;
 
-            import org.apache.commons.io.FileUtils;
-            import com.google.common.collect.Lists;
+              import org.apache.commons.io.FileUtils;
+              import com.google.common.collect.Lists;
 
-            class Test {}
-            """,
+              class Test {}
+              """,
             """
-            package com.example;
+              package com.example;
 
-            import com.google.common.collect.Lists;
-            import org.apache.commons.io.FileUtils;
+              import com.google.common.collect.Lists;
+              import org.apache.commons.io.FileUtils;
 
-            class Test {}
-            """
+              class Test {}
+              """
           )
         );
     }
@@ -526,34 +526,34 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-                    package com.example;
+              package com.example;
 
-                    import com.google.common.annotations.Beta;
-                    import com.google.common.annotations.VisibleForTesting;
-                    import org.apache.commons.io.FileUtils;
+              import com.google.common.annotations.Beta;
+              import com.google.common.annotations.VisibleForTesting;
+              import org.apache.commons.io.FileUtils;
 
-                    import static java.util.Collections.emptyList;
+              import static java.util.Collections.emptyList;
 
-                    import com.google.common.annotations.GwtCompatible;
+              import com.google.common.annotations.GwtCompatible;
 
-                    import java.lang.String;
+              import java.lang.String;
 
-                    class Test {}
-                    """,
+              class Test {}
+              """,
             """
-                    package com.example;
+              package com.example;
 
-                    import com.google.common.annotations.Beta;
-                    import com.google.common.annotations.VisibleForTesting;
-                    import org.apache.commons.io.FileUtils;
-                    import com.google.common.annotations.GwtCompatible;
+              import com.google.common.annotations.Beta;
+              import com.google.common.annotations.VisibleForTesting;
+              import org.apache.commons.io.FileUtils;
+              import com.google.common.annotations.GwtCompatible;
 
-                    import static java.util.Collections.emptyList;
+              import static java.util.Collections.emptyList;
 
-                    import java.lang.String;
+              import java.lang.String;
 
-                    class Test {}
-                    """
+              class Test {}
+              """
           ));
     }
 
@@ -564,31 +564,31 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           // language=java
           java(
             """
-            package com.mycompany.library.util;
+              package com.mycompany.library.util;
 
-            import com.mycompany.other.Helper;
-            import static java.util.Collections.emptyList;
-            import org.junit.Assert;
-            import com.mycompany.library.util.Bar;
-            import com.mycompany.library.Foo;
-            import com.mycompany.library.util.baz.Baz;
+              import com.mycompany.other.Helper;
+              import static java.util.Collections.emptyList;
+              import org.junit.Assert;
+              import com.mycompany.library.util.Bar;
+              import com.mycompany.library.Foo;
+              import com.mycompany.library.util.baz.Baz;
 
-            class Example {}
-            """,
+              class Example {}
+              """,
             """
-            package com.mycompany.library.util;
+              package com.mycompany.library.util;
 
-            import com.mycompany.library.util.Bar;
-            import com.mycompany.library.Foo;
-            import com.mycompany.library.util.baz.Baz;
+              import com.mycompany.library.util.Bar;
+              import com.mycompany.library.Foo;
+              import com.mycompany.library.util.baz.Baz;
 
-            import com.mycompany.other.Helper;
-            import org.junit.Assert;
+              import com.mycompany.other.Helper;
+              import org.junit.Assert;
 
-            import static java.util.Collections.emptyList;
+              import static java.util.Collections.emptyList;
 
-            class Example {}
-            """
+              class Example {}
+              """
           )
         );
     }
@@ -600,10 +600,10 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           // language=java
           java(
             """
-            package com.example;
+              package com.example;
 
-            class Example {}
-            """
+              class Example {}
+              """
           )
         );
     }
@@ -619,13 +619,13 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           // language=java
           java(
             """
-            package com.example;
+              package com.example;
 
-            import foo.A;
-            import bar.B;
+              import foo.A;
+              import bar.B;
 
-            class Example {}
-            """
+              class Example {}
+              """
           )
         );
     }
@@ -637,15 +637,15 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-            package com.example;
+              package com.example;
 
-            import static java.util.Collections.*;
+              import static java.util.Collections.*;
 
-            import java.util.Collections;
-            import org.apache.commons.lang3.StringUtils;
+              import java.util.Collections;
+              import org.apache.commons.lang3.StringUtils;
 
-            class Test {}
-            """
+              class Test {}
+              """
           ));
     }
 
@@ -655,14 +655,14 @@ class CustomImportOrderRecipeTest implements RewriteTest {
           //language=java
           java(
             """
-            package com.example;
+              package com.example;
 
-            import org.apache.commons.lang3.StringUtils;
-            import java.util.Collections;
-            import static java.util.Collections.*;
+              import org.apache.commons.lang3.StringUtils;
+              import static java.util.Collections.*;
+              import java.util.Collections;
 
-            class Test {}
-            """
+              class Test {}
+              """
           )
         );
     }
