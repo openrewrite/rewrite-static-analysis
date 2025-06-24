@@ -59,7 +59,6 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
     void repeatedSemicolon() {
         rewriteRun(

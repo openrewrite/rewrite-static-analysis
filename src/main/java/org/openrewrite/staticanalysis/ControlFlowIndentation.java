@@ -24,11 +24,13 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.format.TabsAndIndentsVisitor;
 import org.openrewrite.java.style.IntelliJ;
+import org.openrewrite.java.style.SpacesStyle;
 import org.openrewrite.java.style.TabsAndIndentsStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.style.Style;
 
 import java.time.Duration;
 import java.util.Set;
@@ -63,17 +65,17 @@ public class ControlFlowIndentation extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            @Nullable
             TabsAndIndentsStyle tabsAndIndentsStyle;
+            @Nullable
+            SpacesStyle spacesStyle;
 
             @Override
-            public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                    TabsAndIndentsStyle style = cu.getStyle(TabsAndIndentsStyle.class);
-                    if (style == null) {
-                        style = IntelliJ.tabsAndIndents();
-                    }
-                    tabsAndIndentsStyle = style;
+                    tabsAndIndentsStyle = Style.from(TabsAndIndentsStyle.class, cu, IntelliJ::tabsAndIndents);
+                    spacesStyle = Style.from(SpacesStyle.class, cu, IntelliJ::spaces);
                 }
                 return super.visit(tree, ctx);
             }
@@ -85,7 +87,10 @@ public class ControlFlowIndentation extends Recipe {
                 return b.withStatements(ListUtils.map(b.getStatements(), (i, statement) -> {
                     if (foundControlFlowRequiringReformatting.get() || shouldReformat(statement)) {
                         foundControlFlowRequiringReformatting.set(true);
-                        return (Statement) new TabsAndIndentsVisitor<>(tabsAndIndentsStyle).visit(statement, ctx, getCursor());
+                        return (Statement) new TabsAndIndentsVisitor<>(
+                                requireNonNull(tabsAndIndentsStyle),
+                                requireNonNull(spacesStyle))
+                                .visit(statement, ctx, getCursor());
                     }
                     return statement;
                 }));
