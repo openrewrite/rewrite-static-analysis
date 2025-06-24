@@ -26,8 +26,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.style.Style;
 
-import static java.util.Objects.requireNonNull;
-
 public class CustomImportOrder extends Recipe {
 
     @Override
@@ -42,20 +40,17 @@ public class CustomImportOrder extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new CustomImportOrderCompilationUnitStyle();
-    }
-
-    private static class CustomImportOrderCompilationUnitStyle extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                CustomImportOrderStyle style = Style.from(CustomImportOrderStyle.class, cu);
-                if (style != null) {
-                    return new CustomImportOrderVisitor<>(style).visitNonNull(cu, ctx);
+        return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                if (tree instanceof JavaSourceFile) {
+                    CustomImportOrderStyle style = Style.from(CustomImportOrderStyle.class, (JavaSourceFile) tree);
+                    if (style != null) {
+                        return new CustomImportOrderVisitor<>(style).visitNonNull(tree, ctx);
+                    }
                 }
+                return (J) tree;
             }
-            return (J) tree;
-        }
+        };
     }
 }
