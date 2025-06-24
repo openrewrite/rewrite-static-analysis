@@ -344,8 +344,8 @@ public class TryWithResources extends Recipe {
             }
 
             private J.Try transformToTryWithResources(
-                    J.Try tryable, Map<String,
-                    J.VariableDeclarations> resourcesThatAreClosed,
+                    J.Try tryable,
+                    Map<String, J.VariableDeclarations> resourcesThatAreClosed,
                     Map<String, Expression> resourceInitializers) {
                 // Create resources for the try-with-resources statement
                 List<J.Try.Resource> resources = new ArrayList<>();
@@ -393,17 +393,14 @@ public class TryWithResources extends Recipe {
                 if (resourceInitializers.containsKey(varName)) {
                     Expression initializer = resourceInitializers.get(varName);
                     // Create a new list of variables with the updated initializer
-                    List<J.VariableDeclarations.NamedVariable> newVars = new ArrayList<>();
-                    for (J.VariableDeclarations.NamedVariable var : singleVarDecl.getVariables()) {
-                        J.VariableDeclarations.NamedVariable updated =
-                                isReferencedInBlock(tryable.getBody(), varName) ?
-                                        var : var.withName(var.getName().withSimpleName("ignored"));
+                    singleVarDecl = singleVarDecl.withVariables(ListUtils.map(singleVarDecl.getVariables(), var -> {
+                        J.VariableDeclarations.NamedVariable updated = isReferencedInBlock(tryable.getBody(), varName) ?
+                                var : var.withName(var.getName().withSimpleName("ignored"));
                         if (var.getSimpleName().equals(varName)) {
-                            updated = updated.withInitializer(initializer);
+                            return updated.withInitializer(initializer);
                         }
-                        newVars.add(updated);
-                    }
-                    singleVarDecl = singleVarDecl.withVariables(newVars);
+                        return var;
+                    }));
                 }
 
                 // Create the resource - only the last one should not have a semicolon
@@ -437,7 +434,7 @@ public class TryWithResources extends Recipe {
                         if (id.getSimpleName().equals(varName)) {
                             Cursor parent = getCursor().getParentOrThrow();
                             if (!(parent.getValue() instanceof J.Assignment &&
-                                    ((J.Assignment)parent.getValue()).getVariable() == id)) {
+                                    ((J.Assignment) parent.getValue()).getVariable() == id)) {
                                 seen.set(true);
                             }
                         }
