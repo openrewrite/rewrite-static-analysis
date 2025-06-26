@@ -415,14 +415,20 @@ public class TryWithResources extends Recipe {
 
             private J.Try removeAssignments(Map<String, J.VariableDeclarations> resourcesThatAreClosed, J.Try tryWithResources) {
                 // Remove assignments to resources in the try block
-                List<Statement> newBodyStatements = new ArrayList<>();
-                for (Statement statement : tryWithResources.getBody().getStatements()) {
-                    if (!(statement instanceof J.Assignment) ||
-                            !isAssignmentToResource(statement, resourcesThatAreClosed.keySet())) {
-                        newBodyStatements.add(statement);
-                    }
-                }
-                return tryWithResources.withBody(tryWithResources.getBody().withStatements(newBodyStatements));
+                return tryWithResources.withBody(tryWithResources.getBody().withStatements(
+                        ListUtils.map(
+                                tryWithResources.getBody().getStatements(),
+                                (statement) -> {
+                                    // drop any assignment to a closed resource
+                                    if (statement instanceof J.Assignment
+                                            && isAssignmentToResource(statement, resourcesThatAreClosed.keySet())) {
+                                        return null;
+                                    }
+                                    // keep everything else
+                                    return statement;
+                                }
+                        )
+                ));
             }
 
             private boolean isReferencedInBlock(J.Block body, String varName) {
@@ -456,39 +462,31 @@ public class TryWithResources extends Recipe {
             }
 
             private J.Block removeCloseStatementsFromFinally(J.Block finallyBlock, Set<String> resourceNames) {
-                List<Statement> newStatements = new ArrayList<>();
-
-                for (Statement statement : finallyBlock.getStatements()) {
-                    boolean shouldKeep = true;
-
-                    if (statement instanceof J.If) {
-                        // Check if it's a null check for a resource
-                        J.If ifStatement = (J.If) statement;
-                        for (String varName : resourceNames) {
-                            if (isNullCheckForVariable(ifStatement.getIfCondition().getTree(), varName)) {
-                                shouldKeep = false;
-                                break;
-                            }
-                        }
-                    } else if (statement instanceof J.MethodInvocation) {
-                        // Check if it's a close call on a resource
-                        J.MethodInvocation methodInvocation = (J.MethodInvocation) statement;
-                        if (methodInvocation.getSimpleName().equals("close")) {
-                            if (methodInvocation.getSelect() instanceof J.Identifier) {
-                                J.Identifier identifier = (J.Identifier) methodInvocation.getSelect();
-                                if (resourceNames.contains(identifier.getSimpleName())) {
-                                    shouldKeep = false;
+                return finallyBlock.withStatements(
+                        ListUtils.map(
+                                finallyBlock.getStatements(),
+                                (statement) -> {
+                                    if (statement instanceof J.If) {
+                                        J.If ifStatement = (J.If) statement;
+                                        for (String varName : resourceNames) {
+                                            if (isNullCheckForVariable(ifStatement.getIfCondition().getTree(), varName)) {
+                                                return null;
+                                            }
+                                        }
+                                    } else if (statement instanceof J.MethodInvocation) {
+                                        J.MethodInvocation methodInvocation = (J.MethodInvocation) statement;
+                                        if ("close".equals(methodInvocation.getSimpleName())
+                                                && methodInvocation.getSelect() instanceof J.Identifier) {
+                                            J.Identifier identifier = (J.Identifier) methodInvocation.getSelect();
+                                            if (resourceNames.contains(identifier.getSimpleName())) {
+                                                return null;
+                                            }
+                                        }
+                                    }
+                                    return statement;
                                 }
-                            }
-                        }
-                    }
-
-                    if (shouldKeep) {
-                        newStatements.add(statement);
-                    }
-                }
-
-                return finallyBlock.withStatements(newStatements);
+                        )
+                );
             }
         };
     }
