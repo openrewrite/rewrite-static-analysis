@@ -420,8 +420,8 @@ public class TryWithResources extends Recipe {
                                 tryWithResources.getBody().getStatements(),
                                 (statement) -> {
                                     // drop any assignment to a closed resource
-                                    if (statement instanceof J.Assignment
-                                            && isAssignmentToResource(statement, resourcesThatAreClosed.keySet())) {
+                                    if (statement instanceof J.Assignment &&
+                                            isAssignmentToResource(statement, resourcesThatAreClosed.keySet())) {
                                         return null;
                                     }
                                     // keep everything else
