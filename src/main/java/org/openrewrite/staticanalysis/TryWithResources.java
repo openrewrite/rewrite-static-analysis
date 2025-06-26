@@ -475,8 +475,8 @@ public class TryWithResources extends Recipe {
                                         }
                                     } else if (statement instanceof J.MethodInvocation) {
                                         J.MethodInvocation methodInvocation = (J.MethodInvocation) statement;
-                                        if ("close".equals(methodInvocation.getSimpleName())
-                                                && methodInvocation.getSelect() instanceof J.Identifier) {
+                                        if ("close".equals(methodInvocation.getSimpleName()) &&
+                                                methodInvocation.getSelect() instanceof J.Identifier) {
                                             J.Identifier identifier = (J.Identifier) methodInvocation.getSelect();
                                             if (resourceNames.contains(identifier.getSimpleName())) {
                                                 return null;
