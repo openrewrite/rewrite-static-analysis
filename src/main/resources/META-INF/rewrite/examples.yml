@@ -427,25 +427,6 @@ examples:
           }
       }
     language: java
-- description: Grouping concatenation.
-  sources:
-  - before: |
-      class A {
-          void method1() {
-              StringBuilder sb = new StringBuilder();
-              String op = "+";
-              sb.append("A" + "B" + "C" + op + "D" + "E");
-          }
-      }
-    after: |
-      class A {
-          void method1() {
-              StringBuilder sb = new StringBuilder();
-              String op = "+";
-              sb.append("A" + "B" + "C").append(op).append("D" + "E");
-          }
-      }
-    language: java
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ControlFlowIndentation
@@ -2074,31 +2055,6 @@ examples:
     after: |
       class Test {
           void test() {
-          }
-      }
-    language: java
-- description: ''
-  sources:
-  - before: |
-      class Test {
-          void test() {
-              int a = 1;;
-              int b = 2;
-              int c = 3;;;
-              int d = 4;
-              int e = 5; ;
-              int f = 6;
-          }
-      }
-    after: |
-      class Test {
-          void test() {
-              int a = 1;
-              int b = 2;
-              int c = 3;
-              int d = 4;
-              int e = 5;
-              int f = 6;
           }
       }
     language: java
