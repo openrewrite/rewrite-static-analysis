@@ -30,8 +30,8 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
         spec.recipe(new SimplifyDurationCreationUnits());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void simplifyLiteralMillisToSeconds() {
         rewriteRun(
           //language=java
@@ -313,8 +313,8 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
      * <p>
      * This test just documents the current behavior.
      */
-    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     @Test
+    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     void doesNotChangeNonConstantUnitCount() {
         rewriteRun(
           //language=java
@@ -331,8 +331,8 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/30")
     @Test
+    @Issue("https://github.com/moderneinc/support-public/issues/30")
     void doesNotChangeZeroConstant() {
         rewriteRun(
           //language=java

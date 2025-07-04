@@ -36,8 +36,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenameLocalVariablesToCamelCase());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void renameAllCapsAcronyms() {
         rewriteRun(
           //language=java
@@ -60,8 +60,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2227")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2227")
     void lowerCamelVariableHasNonLowerCamelVariableSibling() {
         rewriteRun(
           //language=java
@@ -114,10 +114,10 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Test
     @Disabled
     @Issue("https://github.com/openrewrite/rewrite/issues/2437")
     @SuppressWarnings("JavadocDeclaration")
-    @Test
     void renameJavaDocParam() {
         rewriteRun(
           //language=java
@@ -285,8 +285,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     }
 
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     void doNotRenameUnderscoreNumber() {
         rewriteRun(
           //language=java
@@ -304,8 +304,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     void doNotRenameUnderscoresOnly() {
         rewriteRun(
           //language=java
@@ -375,8 +375,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/171")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/171")
     void renameMultipleOcurrencesDifferentScope() {
         rewriteRun(
           java(
@@ -461,8 +461,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/205")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/205")
     void doNotRenameMethodArguments() {
         //language=java
         rewriteRun(

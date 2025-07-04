@@ -30,8 +30,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         spec.recipe(new SimplifyConstantIfBranchExecution());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void simplifyConstantIfTrue() {
         rewriteRun(
           //language=java
@@ -75,8 +75,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/286")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/286")
     void doNotChangeParenthesisOnly() {
         rewriteRun(
           //language=java
@@ -145,8 +145,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("DuplicateCondition")
     @Test
+    @SuppressWarnings("DuplicateCondition")
     void simplifyConstantIfTrueOrTrue() {
         rewriteRun(
           //language=java
@@ -685,8 +685,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("InfiniteLoopStatement")
     @Test
+    @SuppressWarnings("InfiniteLoopStatement")
     void simplifyConstantIfFalseElseWhileTrueEmptyBlock() {
         rewriteRun(
           //language=java
@@ -1355,8 +1355,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/89")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/89")
     void preserveComments() {
         rewriteRun(
           //language=java

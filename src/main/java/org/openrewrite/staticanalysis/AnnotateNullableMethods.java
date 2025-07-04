@@ -31,8 +31,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class AnnotateNullableMethods extends Recipe {
 
     @Option(displayName = "`@Nullable` annotation class",

@@ -30,8 +30,8 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
         spec.recipe(new NullableOnMethodReturnType());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void nullableOnMethodReturnType() {
         rewriteRun(
           //language=java

@@ -38,8 +38,8 @@ class ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest impl
             .activateRecipes("org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull"));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceWithOneArgument() {
         rewriteRun(
           //language=java
@@ -83,8 +83,8 @@ class ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest impl
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/457")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/457")
     void replaceWithOneArgumentAsString() {
         rewriteRun(
           //language=java

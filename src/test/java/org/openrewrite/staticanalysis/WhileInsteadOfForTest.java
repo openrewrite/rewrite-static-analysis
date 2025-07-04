@@ -28,9 +28,9 @@ class WhileInsteadOfForTest implements RewriteTest {
         spec.recipe(new WhileInsteadOfFor());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("ALL")
-    @Test
     void replaceWithWhile() {
         rewriteRun(
           //language=java

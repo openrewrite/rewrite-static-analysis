@@ -33,8 +33,8 @@ class LowercasePackageTest implements RewriteTest {
         spec.recipe(new LowercasePackage());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void lowerCasePackage() {
         rewriteRun(
           java(

@@ -37,8 +37,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         spec.recipe(new UseCollectionInterfaces());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void rawReturnType() {
         rewriteRun(
           //language=java
@@ -132,8 +132,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
     void annotatedReturnType() {
         rewriteRun(
           spec -> spec
@@ -260,8 +260,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
     void annotatedFieldType() {
         rewriteRun(
           spec -> spec
@@ -462,8 +462,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("unchecked")
     @Test
+    @SuppressWarnings("unchecked")
     void enumMap() {
         rewriteRun(
           //language=java
@@ -731,8 +731,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/179")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/179")
     void enumSetHasDifferentGenericTypeThanSet() {
         rewriteRun(
           //language=java
@@ -827,8 +827,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     void privateVariable() {
         rewriteRun(
           //language=java
@@ -852,8 +852,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     void noModifierOnVariable() {
         rewriteRun(
           //language=java
@@ -877,8 +877,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     void privateMethod() {
         rewriteRun(
           //language=java
@@ -906,8 +906,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1703")
     void noModifierOnMethod() {
         rewriteRun(
           //language=java
@@ -935,9 +935,9 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
+    @Test
     @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-    @Test
     void explicitImplementationClassInApi() {
         rewriteRun(
           //language=java
@@ -962,8 +962,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1771")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1771")
     void variableWithVar() {
         var javaRuntimeVersion = System.getProperty("java.runtime.version");
         var javaVendor = System.getProperty("java.vm.vendor");
@@ -1002,8 +1002,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
     void danglingGenericReference() {
         rewriteRun(
           //language=java
@@ -1032,8 +1032,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
     void danglingReference() {
         rewriteRun(
           //language=java
@@ -1062,8 +1062,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
     void removeImportWhenUsingFieldAccess() {
         rewriteRun(
           //language=java
@@ -1093,8 +1093,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/592")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/592")
     void anonymousInstanceInvocation() {
         rewriteRun(
           //language=java

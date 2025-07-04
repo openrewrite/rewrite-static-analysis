@@ -40,8 +40,8 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
         spec.recipe(new IsEmptyCallOnCollections());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void sizeOnClassImplementationCollection() {
         rewriteRun(
           //language=java
@@ -160,8 +160,8 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1112")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1112")
     void formatting() {
         rewriteRun(
           //language=java
@@ -182,8 +182,8 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1120")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1120")
     void lambda() {
         rewriteRun(
           //language=java
@@ -202,8 +202,8 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2813")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2813")
     void forLoop() {
         rewriteRun(
           //language=java

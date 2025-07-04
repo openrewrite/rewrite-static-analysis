@@ -45,8 +45,8 @@ class OperatorWrapTest implements RewriteTest {
         spec.recipe(new OperatorWrap(null));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void binaryOnNewline() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().styles(operatorWrapStyle())),

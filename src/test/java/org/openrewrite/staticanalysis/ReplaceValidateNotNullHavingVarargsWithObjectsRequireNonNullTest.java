@@ -33,8 +33,8 @@ class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest implement
           .recipe(new ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceMethodsWithTwoArg() {
         rewriteRun(
           //language=java

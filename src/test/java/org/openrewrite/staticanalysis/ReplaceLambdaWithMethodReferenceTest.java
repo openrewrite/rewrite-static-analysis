@@ -36,8 +36,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         spec.recipe(new ReplaceLambdaWithMethodReference());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void functionMultiParamReference() {
         rewriteRun(
           //language=java
@@ -105,8 +105,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1926")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1926")
     void multipleMethodInvocations() {
         rewriteRun(
           //language=java
@@ -130,8 +130,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/96")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/96")
     void ignoreAmbiguousMethodReference() {
         rewriteRun(
           //language=java
@@ -171,8 +171,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1772")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1772")
     void typeCastOnMethodInvocationReturnType() {
         rewriteRun(
           //language=java
@@ -194,8 +194,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
     void typeCastOnConstructorCall() {
         rewriteRun(
           //language=java
@@ -366,8 +366,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2875")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2875")
     void instanceOfLeftHandIsNotLambdaParameter() {
         rewriteRun(
           //language=java
@@ -725,8 +725,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2897")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2897")
     void notNullToObjectsNonNullError() {
         rewriteRun(
           //language=java
@@ -790,8 +790,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("Convert2MethodRef")
     @Test
+    @SuppressWarnings("Convert2MethodRef")
     void isEqualToNull() {
         rewriteRun(
           //language=java
@@ -930,8 +930,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2178")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2178")
     void doNotReplaceInvocationWhichAcceptsArgument() {
         rewriteRun(
           //language=java
@@ -1028,8 +1028,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2949")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2949")
     void multipleConstructors() {
         rewriteRun(
           //language=java
@@ -1065,8 +1065,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2949")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2949")
     void anotherMultipleConstructorsCaseEasyUnderstanding() {
         rewriteRun(
           //language=java
@@ -1099,9 +1099,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2949")
     @SuppressWarnings("StringOperationCanBeSimplified")
-    @Test
     void anotherSimplerMultipleConstructorsCase() {
         rewriteRun(
           //language=java
@@ -1124,8 +1124,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2958")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2958")
     void insideIfConditionAfterInstanceOfPatternVariable() {
         rewriteRun(
           //language=java
@@ -1156,8 +1156,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("EmptyTryBlock")
     @Test
+    @SuppressWarnings("EmptyTryBlock")
     void tryInAForLoop() {
         rewriteRun(
           //language=java
@@ -1195,9 +1195,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3071")
     @SuppressWarnings("OptionalOfNullableMisuse")
-    @Test
     void missingImportForDeclaringType() {
         rewriteRun(
           //language=java
@@ -1235,9 +1235,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/200")
     @SuppressWarnings({"ConstantValue"})
-    @Test
     void nestedType() {
         rewriteRun(
           //language=java
@@ -1275,8 +1275,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
     void dontReplaceLambdaSupplierOfMethodReference() {
         rewriteRun(
           //language=java
@@ -1328,8 +1328,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
     void groupingByGetClass() {
         rewriteRun(
           //language=java

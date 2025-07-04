@@ -35,8 +35,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenamePrivateFieldsToCamelCase());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void renamePrivateMembers() {
         rewriteRun(
           //language=java
@@ -83,8 +83,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2461")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2461")
     void upperSnakeToLowerCamel() {
         rewriteRun(
           //language=java
@@ -117,8 +117,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2294")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2294")
     void nameConflict() {
         rewriteRun(
           //language=java
@@ -141,8 +141,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2285")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2285")
     void doesNotRenameAssociatedIdentifiers() {
         rewriteRun(
           //language=java
@@ -478,8 +478,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     void doNotRenameUnderscoreNumber() {
         rewriteRun(
           //language=java
@@ -540,8 +540,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/103")
     void doNotRenameUnderscoresOnly() {
         rewriteRun(
           //language=java
@@ -558,8 +558,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2526")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2526")
     void recordCompactConstructor() {
         rewriteRun(
           spec -> spec.beforeRecipe(cu -> {
@@ -587,8 +587,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
     void doNotChangeLombokAnnotatedClasses() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
@@ -604,8 +604,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
     void doNotChangeLombokAnnotatedFields() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),

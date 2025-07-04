@@ -30,8 +30,8 @@ class UseForEachRemoveInsteadOfSetRemoveAllTest implements RewriteTest {
         spec.recipe(new UseForEachRemoveInsteadOfSetRemoveAll());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void returnExpressionIgnored() {
         rewriteRun(
           //language=java

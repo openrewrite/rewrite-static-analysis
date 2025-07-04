@@ -23,16 +23,16 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings("StatementWithEmptyBody")
 @Issue("https://github.com/openrewrite/rewrite/issues/811")
+@SuppressWarnings("StatementWithEmptyBody")
 class NoEqualityInForConditionTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new NoEqualityInForCondition());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceWithRelationalOperator() {
         rewriteRun(
           //language=java

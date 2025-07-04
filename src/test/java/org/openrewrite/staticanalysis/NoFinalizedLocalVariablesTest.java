@@ -31,8 +31,8 @@ class NoFinalizedLocalVariablesTest implements RewriteTest {
         spec.recipe(new NoFinalizedLocalVariables(null));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removeFinal() {
         rewriteRun(
           //language=java

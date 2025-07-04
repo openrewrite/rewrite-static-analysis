@@ -36,8 +36,8 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
         spec.recipe(new ExplicitLambdaArgumentTypes());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void twoArgumentsWithBlock() {
         rewriteRun(
           //language=java
@@ -74,8 +74,8 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1459")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1459")
     void unknownArgumentType() {
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).methodDeclarations(false).build()),
@@ -615,8 +615,8 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2177")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2177")
     void extendsConstraint() {
         rewriteRun(
           //language=java

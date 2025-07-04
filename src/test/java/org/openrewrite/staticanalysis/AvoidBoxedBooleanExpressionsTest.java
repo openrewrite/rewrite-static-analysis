@@ -29,8 +29,8 @@ class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
         spec.recipe(new AvoidBoxedBooleanExpressions());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void guardAgainstNpe() {
         rewriteRun(
           //language=java

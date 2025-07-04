@@ -40,8 +40,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         spec.recipe(new UnnecessaryParentheses());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void fullUnwrappingDefault() {
         //language=java
         rewriteRun(
@@ -105,8 +105,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2170")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2170")
     void minimumSpace() {
         //language=java
         rewriteRun(
@@ -129,9 +129,9 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
+    @Test
     @Disabled
     @Issue("https://github.com/openrewrite/rewrite/issues/798")
-    @Test
     void unwrapExpr() {
         //language=java
         rewriteRun(
@@ -224,8 +224,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings({"PointlessBooleanExpression", "MismatchedStringCase"})
     @Test
+    @SuppressWarnings({"PointlessBooleanExpression", "MismatchedStringCase"})
     void unwrapLiteral() {
         //language=java
         rewriteRun(
@@ -278,8 +278,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("SillyAssignment")
     @Test
+    @SuppressWarnings("SillyAssignment")
     void unwrapAssignment() {
         //language=java
         rewriteRun(
@@ -519,8 +519,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1486")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1486")
     void unwrapMinusReturnExpression() {
         //language=java
         rewriteRun(
@@ -737,8 +737,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/798")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/798")
     void unwrapDoubleParens() {
         //language=java
         rewriteRun(
@@ -823,8 +823,8 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("PointlessBooleanExpression")
     @Test
+    @SuppressWarnings("PointlessBooleanExpression")
     void doNotUnwrapIfParens() {
         //language=java
         rewriteRun(

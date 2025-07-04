@@ -37,8 +37,8 @@ class FallThroughTest implements RewriteTest {
         spec.recipe(new FallThrough());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
         rewriteRun(
           //language=java
@@ -74,8 +74,8 @@ class FallThroughTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/173")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/173")
     void switchInSwitch() {
         //language=java
         rewriteRun(
@@ -270,9 +270,9 @@ class FallThroughTest implements RewriteTest {
         );
     }
 
+    @Test
     @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/229")
-    @Test
     void switchAsLastStatement() {
         rewriteRun(
           //language=java

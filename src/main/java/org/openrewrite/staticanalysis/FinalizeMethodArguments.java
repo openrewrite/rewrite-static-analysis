@@ -23,7 +23,10 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
 import java.util.List;
@@ -102,8 +105,8 @@ public class FinalizeMethodArguments extends Recipe {
         return method.getModifiers().stream().anyMatch(modifier -> modifier.getType() == J.Modifier.Type.Abstract);
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
 
         J.VariableDeclarations.NamedVariable variable;

@@ -33,8 +33,8 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
         spec.recipe(new PrimitiveWrapperClassConstructorToValueOf());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void newClassToValueOf() {
         rewriteRun(
           //language=java
@@ -71,8 +71,8 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2945")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2945")
     void ternaryWithBinary() {
         rewriteRun(
           //language=java
@@ -150,8 +150,8 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/901")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/901")
     void templateIsNewClassArgumentForNewClass() {
         rewriteRun(
           //language=java

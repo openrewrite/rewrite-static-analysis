@@ -31,8 +31,8 @@ class ExplicitInitializationTest implements RewriteTest {
         spec.recipe(new ExplicitInitialization());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removeExplicitInitialization() {
         rewriteRun(
           //language=java
@@ -116,8 +116,8 @@ class ExplicitInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/101")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/101")
     void ignoreLombokValueField() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
@@ -196,8 +196,8 @@ class ExplicitInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/109")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/109")
     void removeExplicitInitializationInAnonymousSubClasses() {
         rewriteRun(
           //language=java
@@ -254,8 +254,8 @@ class ExplicitInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/109")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/109")
     void ignoreInAnonymousSubClasses() {
         rewriteRun(
           //language=java

@@ -33,8 +33,8 @@ import java.util.List;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     DefaultComesLastStyle style;
 

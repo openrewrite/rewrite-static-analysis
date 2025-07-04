@@ -30,8 +30,8 @@ class UnnecessaryPrimitiveAnnotationsTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath("jsr305"));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void unnecessaryNullable() {
         rewriteRun(
           //language=java

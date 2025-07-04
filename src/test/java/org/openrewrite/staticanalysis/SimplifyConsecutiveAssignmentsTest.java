@@ -29,8 +29,8 @@ class SimplifyConsecutiveAssignmentsTest implements RewriteTest {
         spec.recipe(new SimplifyConsecutiveAssignments());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void assignmentAndIncrement() {
         rewriteRun(
           //language=java

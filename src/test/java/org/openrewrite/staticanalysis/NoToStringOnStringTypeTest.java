@@ -29,9 +29,9 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         spec.recipe(new NoToStringOnStringType());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("StringOperationCanBeSimplified")
-    @Test
     void toStringOnString() {
         rewriteRun(
           //language=java
@@ -70,8 +70,8 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StringOperationCanBeSimplified")
     @Test
+    @SuppressWarnings("StringOperationCanBeSimplified")
     void toStringOnStringVariable() {
         rewriteRun(
           //language=java
@@ -94,8 +94,8 @@ class NoToStringOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StringOperationCanBeSimplified")
     @Test
+    @SuppressWarnings("StringOperationCanBeSimplified")
     void toStringOnMethodInvocation() {
         rewriteRun(
           //language=java

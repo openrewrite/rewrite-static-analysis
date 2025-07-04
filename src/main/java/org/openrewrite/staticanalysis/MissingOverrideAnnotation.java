@@ -32,8 +32,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class MissingOverrideAnnotation extends Recipe {
     @Option(displayName = "Ignore methods in anonymous classes",
             description = "When enabled, ignore missing annotations on methods which override methods when the class definition is within an anonymous class.",

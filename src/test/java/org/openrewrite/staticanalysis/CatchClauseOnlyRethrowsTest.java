@@ -30,8 +30,8 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
         spec.recipe(new CatchClauseOnlyRethrows());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void tryCanBeRemoved() {
         rewriteRun(
           //language=java

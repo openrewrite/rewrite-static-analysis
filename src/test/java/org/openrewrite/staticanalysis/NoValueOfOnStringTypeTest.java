@@ -30,13 +30,13 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         spec.recipe(new NoValueOfOnStringType());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings({
     "UnnecessaryCallToStringValueOf",
     "UnusedAssignment",
     "StringConcatenationMissingWhitespace",
     })
-    @Test
     void valueOfOnLiterals() {
         rewriteRun(
           //language=java
@@ -103,8 +103,8 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryCallToStringValueOf")
     @Test
+    @SuppressWarnings("UnnecessaryCallToStringValueOf")
     void valueOfOnNonStringPrimitiveWithinBinaryConcatenation() {
         rewriteRun(
           //language=java
@@ -143,8 +143,8 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/456")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/456")
     void valueOfOnNonStringPrimitiveWithBinaryArgument() {
         rewriteRun(
           //language=java
@@ -160,8 +160,8 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1200")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1200")
     void valueOfIsMethodInvocationPartOfBinary() {
         rewriteRun(
           //language=java
@@ -181,8 +181,8 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings({"UnnecessaryCallToStringValueOf", "StringConcatenationMissingWhitespace"})
     @Test
+    @SuppressWarnings({"UnnecessaryCallToStringValueOf", "StringConcatenationMissingWhitespace"})
     void valueOfOnStandaloneNonStringPrimitive() {
         rewriteRun(
           //language=java
@@ -221,9 +221,9 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/1200")
     @SuppressWarnings({"IndexOfReplaceableByContains", "StatementWithEmptyBody"})
-    @Test
     void valueOfOnIntWithinBinaryComparison() {
         rewriteRun(
           //language=java
@@ -241,8 +241,8 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryCallToStringValueOf")
     @Test
+    @SuppressWarnings("UnnecessaryCallToStringValueOf")
     void valueOfOnMethodInvocation() {
         rewriteRun(
           //language=java
@@ -273,8 +273,8 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/441")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/441")
     void concatenationExpressionNeedsParentheses() {
         rewriteRun(
           //language=java

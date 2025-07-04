@@ -29,9 +29,9 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
         spec.recipe(new BigDecimalRoundingConstantsToEnums());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings({"deprecation", "ResultOfMethodCallIgnored"})
-    @Test
     void bigDecimalRoundingChangeRoundingMode() {
         rewriteRun(
           //language=java
@@ -71,8 +71,8 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     void bigDecimalRoundingNoChange() {
         rewriteRun(
           //language=java

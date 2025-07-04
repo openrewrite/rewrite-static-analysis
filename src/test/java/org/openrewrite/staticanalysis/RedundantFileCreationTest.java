@@ -28,9 +28,9 @@ class RedundantFileCreationTest implements RewriteTest {
         spec.recipe(new RedundantFileCreation());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings({"resource", "RedundantFileCreation"})
-    @Test
     void redundantFileCreation() {
         rewriteRun(
           //language=java

@@ -30,8 +30,8 @@ class MaskCreditCardNumbersTest implements RewriteTest {
         spec.recipe(new MaskCreditCardNumbers());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void noSpaces() {
         rewriteRun(
           //language=java

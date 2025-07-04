@@ -31,8 +31,8 @@ class UpperCaseLiteralSuffixesTest implements RewriteTest {
         spec.recipe(new UpperCaseLiteralSuffixes());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void useUppercaseLiteralSuffix() {
         rewriteRun(
           //language=java
@@ -63,8 +63,8 @@ class UpperCaseLiteralSuffixesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2429")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2429")
     void usesPrimitive() {
         rewriteRun(
           //language=java

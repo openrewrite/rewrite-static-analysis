@@ -34,8 +34,8 @@ class CommonStaticAnalysisIssuesPerformanceTest implements RewriteTest {
 //          });
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void indexOfOnList() {
         rewriteRun(
           //language=java

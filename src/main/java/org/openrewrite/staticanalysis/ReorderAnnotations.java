@@ -29,8 +29,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class ReorderAnnotations extends Recipe {
 
     @Override
@@ -68,6 +68,7 @@ public class ReorderAnnotations extends Recipe {
                 }
                 return 0;
             })
+            .thenComparing(a -> a.getSimpleName().endsWith("Test")? -1 : 0) // Ensure test annotations are ordered first
             .thenComparing(J.Annotation::getSimpleName);
 
     @Override

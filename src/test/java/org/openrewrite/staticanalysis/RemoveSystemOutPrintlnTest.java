@@ -29,8 +29,8 @@ class RemoveSystemOutPrintlnTest implements RewriteTest {
         spec.recipe(new RemoveSystemOutPrintln());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removePrintln() {
         rewriteRun(
           //language=java

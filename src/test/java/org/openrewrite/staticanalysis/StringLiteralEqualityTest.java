@@ -37,8 +37,8 @@ class StringLiteralEqualityTest implements RewriteTest {
         spec.recipe(new StringLiteralEquality());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void stringLiteralEqualityReplacedWithEquals() {
         rewriteRun(
           //language=java

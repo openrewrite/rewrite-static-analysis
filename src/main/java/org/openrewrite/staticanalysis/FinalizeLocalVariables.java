@@ -95,8 +95,8 @@ public class FinalizeLocalVariables extends Recipe {
         };
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
 
         J.VariableDeclarations.NamedVariable variable;

@@ -30,8 +30,8 @@ class FinalClassTest implements RewriteTest {
         spec.recipe(new FinalClass());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void finalizeClass() {
         rewriteRun(
           //language=java
@@ -58,8 +58,8 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2954")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2954")
     void nestedClassWithSubclass() {
         rewriteRun(
           //language=java
@@ -143,8 +143,8 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1061")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1061")
     void abstractClass() {
         rewriteRun(
           //language=java
@@ -162,8 +162,8 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2339")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2339")
     void classWithAnnotation() {
         rewriteRun(
           //language=java

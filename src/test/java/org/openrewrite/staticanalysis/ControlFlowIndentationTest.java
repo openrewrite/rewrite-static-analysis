@@ -31,9 +31,9 @@ class ControlFlowIndentationTest implements RewriteTest {
         spec.recipe(new ControlFlowIndentation());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings({"SuspiciousIndentAfterControlStatement", "IfStatementWithIdenticalBranches"})
-    @Test
     void removesIndentationFromStatementAfterIfElse() {
         rewriteRun(
           //language=java
@@ -68,9 +68,9 @@ class ControlFlowIndentationTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2277")
     @SuppressWarnings("SuspiciousIndentAfterControlStatement")
-    @Test
     void removesIndentationFromStatementAroundIf() {
         rewriteRun(
           //language=java
@@ -109,8 +109,8 @@ class ControlFlowIndentationTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("DuplicateCondition")
     @Test
+    @SuppressWarnings("DuplicateCondition")
     void leavesIndentationAloneWhenBlocksAreExplicit() {
         rewriteRun(
           //language=java
@@ -172,8 +172,8 @@ class ControlFlowIndentationTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     @Test
+    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     void removesIndentationFromStatementAfterLoop() {
         rewriteRun(
           //language=java

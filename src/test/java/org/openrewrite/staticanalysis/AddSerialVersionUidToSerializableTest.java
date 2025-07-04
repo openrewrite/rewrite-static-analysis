@@ -30,8 +30,8 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
         spec.recipe(new AddSerialVersionUidToSerializable(null));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void addSerialVersionUID() {
         rewriteRun(
           //language=java

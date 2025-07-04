@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     EmptyBlockStyle emptyBlockStyle;
     JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();

@@ -35,8 +35,8 @@ class UseDiamondOperatorTest implements RewriteTest {
         spec.recipe(new UseDiamondOperator());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void useDiamondOperator() {
         rewriteRun(
           //language=java
@@ -184,8 +184,8 @@ class UseDiamondOperatorTest implements RewriteTest {
 
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2274")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2274")
     void returnTypeParamsDoNotMatchNewClassParams() {
         rewriteRun(
           //language=java
@@ -230,8 +230,8 @@ class UseDiamondOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1297")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1297")
     void doNotUseDiamondOperatorsForVariablesHavingNullOrUnknownTypes() {
         rewriteRun(
           //language=java

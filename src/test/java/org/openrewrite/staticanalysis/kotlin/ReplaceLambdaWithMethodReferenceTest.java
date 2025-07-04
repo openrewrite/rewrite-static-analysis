@@ -29,8 +29,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         spec.recipe(new ReplaceLambdaWithMethodReference());
     }
 
-    @ExpectedToFail("Kotlin visitor to be implemented")
     @Test
+    @ExpectedToFail("Kotlin visitor to be implemented")
     void toQualifiedMethodReference() {
         rewriteRun(
           kotlin(
@@ -70,8 +70,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Kotlin visitor to be implemented")
     @Test
+    @ExpectedToFail("Kotlin visitor to be implemented")
     void toUnqualifiedMethodReference() {
         rewriteRun(
           kotlin(

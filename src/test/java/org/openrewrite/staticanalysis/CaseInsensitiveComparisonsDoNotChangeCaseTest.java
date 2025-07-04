@@ -29,8 +29,8 @@ class CaseInsensitiveComparisonsDoNotChangeCaseTest implements RewriteTest {
         spec.recipe(new CaseInsensitiveComparisonsDoNotChangeCase());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void argIsToLowerCase() {
         rewriteRun(
           //language=java

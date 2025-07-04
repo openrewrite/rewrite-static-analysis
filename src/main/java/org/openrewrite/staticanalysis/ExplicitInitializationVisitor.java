@@ -30,8 +30,8 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Iterator;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
     private static final AnnotationMatcher LOMBOK_VALUE = new AnnotationMatcher("@lombok.Value");
     private static final AnnotationMatcher LOMBOK_BUILDER_DEFAULT = new AnnotationMatcher("@lombok.Builder.Default");

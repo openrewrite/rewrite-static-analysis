@@ -30,8 +30,8 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
         spec.recipe(new NestedEnumsAreNotStatic());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void nestedEnumIsStatic() {
         rewriteRun(
           //language=java
@@ -94,8 +94,8 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1222")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1222")
     void doesNotReformatWholeEnum() {
         rewriteRun(
           //language=java

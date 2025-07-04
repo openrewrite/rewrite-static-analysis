@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Extends;
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Super;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class DeclarationSiteTypeVariance extends Recipe {
 
     @Option(displayName = "Variant types",

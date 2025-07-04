@@ -29,9 +29,9 @@ class InlineVariableTest implements RewriteTest {
         spec.recipe(new InlineVariable());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings({"UnnecessaryLocalVariable", "CodeBlock2Expr", "Convert2MethodRef"})
-    @Test
     void inlineVariable() {
         rewriteRun(
           //language=java
@@ -103,8 +103,8 @@ class InlineVariableTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
+    @SuppressWarnings("UnnecessaryLocalVariable")
     void preserveComments() {
         rewriteRun(
           //language=java
@@ -167,9 +167,9 @@ class InlineVariableTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3201")
     @SuppressWarnings("UnnecessaryLocalVariable")
-    @Test
     void preserveComment() {
         rewriteRun(
           //language=java

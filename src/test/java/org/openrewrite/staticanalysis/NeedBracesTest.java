@@ -49,8 +49,8 @@ class NeedBracesTest implements RewriteTest {
         spec.recipe(new NeedBraces());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void addBraces() {
         rewriteRun(
           //language=java
@@ -356,8 +356,8 @@ class NeedBracesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
     void commentsBeforeElseBlockWithNoBraces() {
         rewriteRun(
           //language=java
@@ -403,8 +403,8 @@ class NeedBracesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
     void commentsBeforeElseBlockWithBraces() {
         rewriteRun(
           //language=java
@@ -437,8 +437,8 @@ class NeedBracesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
     void trailingCommentsElseBlock() {
         rewriteRun(
           //language=java

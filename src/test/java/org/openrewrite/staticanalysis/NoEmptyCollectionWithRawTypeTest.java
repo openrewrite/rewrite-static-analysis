@@ -29,8 +29,8 @@ class NoEmptyCollectionWithRawTypeTest implements RewriteTest {
         spec.recipe(new NoEmptyCollectionWithRawType());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void emptyListFullyQualified() {
         rewriteRun(
           //language=java

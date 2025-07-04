@@ -32,8 +32,8 @@ import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class AnnotateNullableParameters extends Recipe {
 
     private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";

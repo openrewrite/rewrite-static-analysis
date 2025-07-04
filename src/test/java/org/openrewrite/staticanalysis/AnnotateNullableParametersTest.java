@@ -37,8 +37,8 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
     @Nested
     class SimpleNullComparison {
-        @DocumentExample
         @Test
+        @DocumentExample
         void singleEqualsNullCase() {
             rewriteRun(
               //language=java
@@ -331,12 +331,12 @@ class AnnotateNullableParametersTest implements RewriteTest {
     @Nested
     class KnownNullCheckers {
 
+        @ParameterizedTest
         @CsvSource({
           "java.util.Objects, Objects.nonNull",
           "org.apache.commons.lang3.StringUtils, StringUtils.isNotBlank",
           "org.apache.commons.lang3.StringUtils, StringUtils.isNotEmpty",
         })
-        @ParameterizedTest
         void knownMethodsPositiveInvocation(String pkg, String methodCall) {
             rewriteRun(
               //language=java
@@ -375,12 +375,12 @@ class AnnotateNullableParametersTest implements RewriteTest {
             );
         }
 
+        @ParameterizedTest
         @CsvSource({
           "java.util.Objects, Objects.isNull",
           "org.apache.commons.lang3.StringUtils, StringUtils.isBlank",
           "org.apache.commons.lang3.StringUtils, StringUtils.isEmpty",
         })
-        @ParameterizedTest
         void knownMethodsNegatedUnary(String pkg, String methodCall) {
             rewriteRun(
               //language=java

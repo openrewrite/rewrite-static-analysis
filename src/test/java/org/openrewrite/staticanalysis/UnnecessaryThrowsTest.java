@@ -32,8 +32,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         spec.recipe(new UnnecessaryThrows());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void unnecessaryThrows() {
         rewriteRun(
           //language=java
@@ -69,8 +69,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2144")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2144")
     void genericException() {
         rewriteRun(
           //language=java
@@ -85,9 +85,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/631")
     @SuppressWarnings("EmptyTryBlock")
-    @Test
     void necessaryThrowsFromCloseable() {
         rewriteRun(
           //language=java
@@ -128,8 +128,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/519")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/519")
     void interfaces() {
         rewriteRun(
           //language=java
@@ -145,8 +145,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/519")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/519")
     void abstractMethods() {
         rewriteRun(
           //language=java
@@ -162,8 +162,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1059")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1059")
     void necessaryThrowsFromStaticMethod() {
         rewriteRun(
           //language=java
@@ -181,8 +181,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
     void necessaryThrowsFromConstructor() {
         rewriteRun(
           //language=java
@@ -202,9 +202,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Test
     @ExpectedToFail("Not yet implemented")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/443")
-    @Test
     void necessaryThrowsFromConstructorWithUnused() {
         rewriteRun(
           //language=java
@@ -236,8 +236,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/897")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/897")
     void necessaryThrowsOnInterfaceWithExplicitOverride() {
         rewriteRun(
           //language=java
@@ -311,8 +311,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1298")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1298")
     void doNotRemoveExceptionCoveringOtherExceptions() {
         rewriteRun(
           //language=java
@@ -332,8 +332,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2105")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2105")
     void preventTransformationIfAnyThrownExceptionHasNullOrUnknownType() {
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.none()),
@@ -354,8 +354,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/429")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/429")
     void interfaceWithGenericTypeThrown() {
         rewriteRun(
 
@@ -396,8 +396,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/apache/maven/pull/2291")
     @Test
+    @Issue("https://github.com/apache/maven/pull/2291")
     void retainExceptionsForOverrides() {
         rewriteRun(
           //language=java

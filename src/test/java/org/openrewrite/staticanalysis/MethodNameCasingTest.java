@@ -35,8 +35,8 @@ class MethodNameCasingTest implements RewriteTest {
         spec.recipe(new MethodNameCasing(false, false));
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2571")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2571")
     void noChangesOnMethodsBeginningWithUnderscore() {
         rewriteRun(
           //language=java
@@ -51,8 +51,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2557")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2557")
     void interfaceMethods() {
         rewriteRun(
           //language=java
@@ -66,8 +66,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2557")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2557")
     void annotationMethods() {
         rewriteRun(
           //language=java
@@ -81,8 +81,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     void correctMethodNameCasing() {
         rewriteRun(
           srcMainJava(
@@ -107,8 +107,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     void doNotRenamePublicMethods() {
         rewriteRun(
           //language=java
@@ -122,8 +122,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     void doNotRenamePublicMethodsNullOptions() {
         rewriteRun(
           spec -> spec.recipe(new MethodNameCasing(null, null)),
@@ -138,8 +138,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2424")
     void okToRenamePublicMethods() {
         rewriteRun(
           spec -> spec.recipe(new MethodNameCasing(true, true)),
@@ -161,8 +161,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1741")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1741")
     void doNotApplyToTest() {
         rewriteRun(
           srcTestJava(
@@ -179,8 +179,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1741")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1741")
     void applyChangeToTest() {
         rewriteRun(
           spec -> spec.recipe(new MethodNameCasing(true, false)),
@@ -390,9 +390,9 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2103")
     @SuppressWarnings("UnusedAssignment")
-    @Test
     void snakeCaseToCamelCase() {
         rewriteRun(
           srcMainJava(
@@ -441,8 +441,8 @@ class MethodNameCasingTest implements RewriteTest {
 
     // This test uses a recipe remove ClassDeclaration types information prior to running the MethodNameCasing recipe.
     // This results in a change with an empty diff, thus before and after sources are identical
-    @Issue("https://github.com/openrewrite/rewrite/issues/2103")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2103")
     void doesNotRenameMethodInvocationsWhenTheMethodDeclarationsClassTypeIsNull() {
         rewriteRun(
           spec -> spec
@@ -554,8 +554,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked", "rawtypes"})
     @Test
+    @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked", "rawtypes"})
     void changeNameOfMethodWithArrayArgument() {
         rewriteRun(
           srcMainJava(
@@ -586,8 +586,8 @@ class MethodNameCasingTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2261")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2261")
     void unknownParameterTypes() {
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.none()),

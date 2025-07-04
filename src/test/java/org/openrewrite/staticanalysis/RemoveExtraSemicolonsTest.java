@@ -36,8 +36,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         spec.recipe(new RemoveExtraSemicolons());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void emptyBlockStatements() {
         rewriteRun(
           //language=java
@@ -92,8 +92,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1587")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1587")
     void enumSemicolons() {
         rewriteRun(
           //language=java
@@ -114,8 +114,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1587")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1587")
     void enumSemicolonsWithOtherStatements() {
         rewriteRun(
           //language=java
@@ -171,8 +171,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/99")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/99")
     void semicolonBeforeStatement() {
         rewriteRun(
           //language=java
@@ -197,8 +197,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/99")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/99")
     void manySemicolonBeforeStatement() {
         rewriteRun(
           //language=java
@@ -247,8 +247,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/5146")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/5146")
     void noValuesJustSemicolon() {
         rewriteRun(
           java(

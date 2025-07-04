@@ -33,8 +33,8 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class EqualsAvoidsNull extends Recipe {
 
     private static final String JAVA_LANG_STRING = "java.lang.String";

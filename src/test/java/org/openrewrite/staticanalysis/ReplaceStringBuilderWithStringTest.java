@@ -30,8 +30,8 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         spec.recipe(new ReplaceStringBuilderWithString());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceLiteralConcatenation() {
         rewriteRun(
           //language=java
@@ -54,8 +54,8 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
     void replaceWhileMaintainingSpaces() {
         rewriteRun(
           //language=java
@@ -194,8 +194,8 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2930")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2930")
     void withConstructor() {
         rewriteRun(
           //language=java
@@ -230,8 +230,8 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
     void retainComments() {
         rewriteRun(
           //language=java

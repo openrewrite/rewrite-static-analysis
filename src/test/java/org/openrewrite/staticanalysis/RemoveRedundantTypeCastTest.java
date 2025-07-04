@@ -31,8 +31,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         spec.recipe(new RemoveRedundantTypeCast());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void downCastParameterizedTypes() {
         rewriteRun(
           //language=java
@@ -67,8 +67,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1784")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1784")
     void objectToObjectArray() {
         rewriteRun(
           //language=java
@@ -84,8 +84,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1783")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1783")
     void parametersDoNotMatch() {
         rewriteRun(
           //language=java
@@ -169,8 +169,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1739")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1739")
     void changeTypeCastInReturn() {
         rewriteRun(
           //language=java
@@ -209,8 +209,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     void redundantTypeCast() {
         rewriteRun(
           //language=java
@@ -307,8 +307,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     void downCast() {
         rewriteRun(
           //language=java
@@ -337,8 +337,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     void downCastExtendedObject() {
         rewriteRun(
           //language=java
@@ -364,8 +364,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     void downCastExtendedObjectArray() {
         rewriteRun(
           //language=java

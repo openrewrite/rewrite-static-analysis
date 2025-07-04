@@ -29,8 +29,8 @@ class IndexOfShouldNotCompareGreaterThanZeroTest implements RewriteTest {
         spec.recipe(new IndexOfShouldNotCompareGreaterThanZero());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void indexOfOnList() {
         rewriteRun(
           //language=java

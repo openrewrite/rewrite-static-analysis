@@ -39,8 +39,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         """
     );
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Test
+    @SuppressWarnings("StatementWithEmptyBody")
     void changeEnumEquals() {
         rewriteRun(
           enumA,
@@ -72,8 +72,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Test
+    @SuppressWarnings("StatementWithEmptyBody")
     void changeEnumNotEquals() {
         rewriteRun(
           enumA,
@@ -105,8 +105,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Test
+    @SuppressWarnings("StatementWithEmptyBody")
     void changeEnumNotEqualsWithParentheses() {
         rewriteRun(
           enumA,
@@ -134,8 +134,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/28")
     @Test
+    @Issue("https://github.com/moderneinc/support-public/issues/28")
     void equals() {
         rewriteRun(
           //language=java
@@ -167,8 +167,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
           ));
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/28")
     @Test
+    @Issue("https://github.com/moderneinc/support-public/issues/28")
     void notEquals() {
         rewriteRun(
           //language=java
@@ -200,8 +200,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
           ));
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/143")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/143")
     void noSelect() {
         rewriteRun(
           //language=java
@@ -219,9 +219,9 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/moderneinc/customer-requests/issues/190")
     @SuppressWarnings("StatementWithEmptyBody")
-    @Test
     void changeEnumInsideBooleanExpression() {
         rewriteRun(
           enumA,
@@ -249,8 +249,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     void lambda() {
         rewriteRun(
           enumA,
@@ -292,8 +292,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     void notLambda() {
         rewriteRun(
           enumA,
@@ -335,8 +335,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     void ternaryExpression() {
         rewriteRun(
           enumA,
@@ -368,8 +368,8 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/513")
     void notTernaryExpression() {
         rewriteRun(
           enumA,

@@ -29,8 +29,8 @@ class UseListSortTest implements RewriteTest {
         spec.recipe(new UseListSort());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void hasSelect() {
         rewriteRun(
           //language=java

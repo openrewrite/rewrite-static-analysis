@@ -29,8 +29,8 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
         spec.recipe(new ReplaceRedundantFormatWithPrintf());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void transformsNonLiteralFormatStringForPrint() {
         rewriteRun(
           //language=java
