@@ -59,8 +59,8 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
           );
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void unwrapRepeatable() {
         rewriteRun(
           //language=java

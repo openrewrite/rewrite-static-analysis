@@ -32,8 +32,8 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath("junit-jupiter-params"));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removeUnusedPrivateMethods() {
         rewriteRun(
           //language=java
@@ -103,8 +103,8 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("MissingSerialAnnotation")
     @Test
+    @SuppressWarnings("MissingSerialAnnotation")
     void doNotRemoveCustomizedSerialization() {
         rewriteRun(
           //language=java
@@ -142,8 +142,8 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1536")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1536")
     void privateMethodWithBoundedGenericTypes() {
         rewriteRun(
           //language=java
@@ -204,8 +204,8 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
     void doNotRemoveMethodsWithUnusedSuppressWarningsOnClass() {
         rewriteRun(
           //language=java
@@ -229,8 +229,8 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/4076")
     void doNotRemoveMethodsWithUnusedSuppressWarningsOnClassNestedClass() {
         rewriteRun(
           //language=java

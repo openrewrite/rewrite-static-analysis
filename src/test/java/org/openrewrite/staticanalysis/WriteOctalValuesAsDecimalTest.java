@@ -29,8 +29,8 @@ class WriteOctalValuesAsDecimalTest implements RewriteTest {
         spec.recipe(new WriteOctalValuesAsDecimal());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void writeAsDecimal() {
         rewriteRun(
           //language=java

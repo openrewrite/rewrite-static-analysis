@@ -29,8 +29,8 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
         spec.recipe(new ObjectFinalizeCallsSuper());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void addsSuperFinalizeInvocation() {
         rewriteRun(
           //language=java

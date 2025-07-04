@@ -33,8 +33,8 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         spec.recipe(new RemoveEmptyJavaDocParameters());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void emptyParam() {
         rewriteRun(
           //language=java
@@ -167,8 +167,8 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/98")
     void removeTrailingEmptyLines() {
         rewriteRun(
           //language=java
@@ -635,8 +635,8 @@ class RemoveEmptyJavaDocParametersTest implements RewriteTest {
     }
 
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/3078")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/3078")
     void visitingQuarkMustNotFail() {
         rewriteRun(
           other(

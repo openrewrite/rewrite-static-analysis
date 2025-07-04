@@ -41,8 +41,8 @@ class JavaElementFactoryTest implements RewriteTest {
         spec.parser(JavaParser.fromJavaVersion().typeCache(typeCache));
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     void instanceMethodReference() {
         RecipeSpec spec = RecipeSpec.defaults();
         defaults(spec);
@@ -80,8 +80,8 @@ class JavaElementFactoryTest implements RewriteTest {
         assertThat(SemanticallyEqual.areEqual(reference, methodReference)).isTrue();
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     void staticMethodReference() {
         RecipeSpec spec = RecipeSpec.defaults();
         defaults(spec);
@@ -119,8 +119,8 @@ class JavaElementFactoryTest implements RewriteTest {
         assertThat(SemanticallyEqual.areEqual(reference, methodReference)).isTrue();
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     void qualifiedStaticMethodReference() {
         RecipeSpec spec = RecipeSpec.defaults();
         defaults(spec);

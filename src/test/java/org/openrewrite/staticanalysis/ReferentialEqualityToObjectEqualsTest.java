@@ -33,8 +33,8 @@ class ReferentialEqualityToObjectEqualsTest implements RewriteTest {
         spec.recipe(new ReferentialEqualityToObjectEquals());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void bothSidesOverrideEquals() {
         rewriteRun(
           //language=java

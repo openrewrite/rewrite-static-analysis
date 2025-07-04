@@ -29,8 +29,8 @@ class ReorderAnnotationsTest implements RewriteTest {
         spec.recipe(new ReorderAnnotations());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void reordersMethodAnnotations() {
         rewriteRun(
           //language=java

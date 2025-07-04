@@ -30,8 +30,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         spec.recipe(new ReplaceLambdaWithMethodReference());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2566")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2566")
     void groovyLangClosure() {
         rewriteRun(
           groovy(

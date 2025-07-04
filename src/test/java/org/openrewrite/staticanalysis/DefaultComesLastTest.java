@@ -40,8 +40,8 @@ class DefaultComesLastTest implements RewriteTest {
         spec.recipe(new DefaultComesLast());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void moveDefaultToLastAlongWithItsStatementsAndAddBreakIfNecessary() {
         rewriteRun(
           //language=java
@@ -332,9 +332,9 @@ class DefaultComesLastTest implements RewriteTest {
         );
     }
 
+    @Test
     @EnabledForJreRange(min = JRE.JAVA_21)
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/461")
-    @Test
     void exhaustiveSwitch() {
         //language=java
         rewriteRun(
@@ -354,8 +354,8 @@ class DefaultComesLastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     void moveDefaultToLastWithFallThrough() {
         rewriteRun(
           //language=java
@@ -396,8 +396,8 @@ class DefaultComesLastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     void dontMoveDefaultToLastWithFallThroughAndStatements() {
         rewriteRun(
           //language=java
@@ -425,8 +425,8 @@ class DefaultComesLastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     void dontMoveDefaultToLastFromMiddleWithFallThroughAndStatements() {
         rewriteRun(
           //language=java
@@ -454,8 +454,8 @@ class DefaultComesLastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     void moveFallThroughBlockWithDefaultWithStatements() {
         rewriteRun(
           //language=java
@@ -503,8 +503,8 @@ class DefaultComesLastTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/4")
     void moveFallThroughBlockWithDefaultWithoutStatements() {
         rewriteRun(
           //language=java

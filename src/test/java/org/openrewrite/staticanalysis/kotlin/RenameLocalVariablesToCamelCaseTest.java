@@ -31,8 +31,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenameLocalVariablesToCamelCase());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void regular() {
         rewriteRun(
           kotlin(
@@ -52,8 +52,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Disabled("A bug to be fixed")
     @Test
+    @Disabled("A bug to be fixed")
     void renameBothVariableAndUsage() {
         rewriteRun(
           kotlin(

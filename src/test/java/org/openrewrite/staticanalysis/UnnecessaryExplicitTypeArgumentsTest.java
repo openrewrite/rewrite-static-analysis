@@ -35,8 +35,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         spec.recipe(new UnnecessaryExplicitTypeArguments());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void unnecessaryExplicitTypeArguments() {
         rewriteRun(
           //language=java
@@ -71,8 +71,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Not implemented yet")
     @Test
+    @ExpectedToFail("Not implemented yet")
     void withinLambda() {
         rewriteRun(
           //language=java
@@ -107,8 +107,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1211")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1211")
     void doesNotIntroduceAmbiguity() {
         rewriteRun(
           //language=java
@@ -139,9 +139,9 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Test
     @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/164")
-    @Test
     void doesNotRemoveNecessaryTypeArguments() {
         rewriteRun(
           //language=java
@@ -167,9 +167,9 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2818")
     @SuppressWarnings("UnnecessaryLocalVariable")
-    @Test
     void assignedToVar() {
         rewriteRun(
           //language=java
@@ -304,8 +304,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
             );
         }
 
-        @ExpectedToFail("Not matching yet")
         @Test
+        @ExpectedToFail("Not matching yet")
         void changeIfHasTypeInference() {
             rewriteRun(
               kotlin(

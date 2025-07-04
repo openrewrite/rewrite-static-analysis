@@ -31,8 +31,8 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         spec.recipe(new FinalizeMethodArguments());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceWithFinalModifier() {
         rewriteRun(
           //language=java
@@ -53,8 +53,8 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/3133")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/3133")
     void twoParameters() {
         rewriteRun(
           //language=java
@@ -77,8 +77,8 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/3135")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/3135")
     void ignoreAbstractMethod() {
         rewriteRun(
           //language=java
@@ -210,8 +210,8 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/176")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/176")
     void doNotReplaceIfAssignedThroughUnaryOrAccumulator() {
         rewriteRun(
           //language=java

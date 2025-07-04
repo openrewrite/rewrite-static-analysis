@@ -31,8 +31,8 @@ class TypecastParenPadTest implements RewriteTest {
         spec.recipe(new TypecastParenPad());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void typecastParenPad() {
         rewriteRun(
           //language=java
@@ -61,8 +61,8 @@ class TypecastParenPadTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/561")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/561")
     void noChangeForGroovy() {
         rewriteRun(
           //language=groovy

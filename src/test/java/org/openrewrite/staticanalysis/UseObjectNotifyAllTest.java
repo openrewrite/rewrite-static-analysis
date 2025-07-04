@@ -29,8 +29,8 @@ class UseObjectNotifyAllTest implements RewriteTest {
         spec.recipe(new UseObjectNotifyAll());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1645")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1645")
     void useObjectNotifyAll() {
         rewriteRun(
           //language=java

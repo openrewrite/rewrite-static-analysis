@@ -39,8 +39,8 @@ class CustomImportOrderRecipeTest implements RewriteTest {
         spec.recipe(new CustomImportOrder());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void ordersStaticThenStandardThenThirdPartyWithNoGroupBlankLine() {
         rewriteRun(
           customImportOrder(style -> style.withSeparateLineBetweenGroups(false)),

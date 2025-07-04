@@ -29,8 +29,8 @@ class UseSystemLineSeparatorTest implements RewriteTest {
         spec.recipe(new UseSystemLineSeparator());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2363")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2363")
     void useSystemLineSeparator() {
         rewriteRun(
           //language=java
@@ -55,8 +55,8 @@ class UseSystemLineSeparatorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2363")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2363")
     void useSystemLineSeparatorStaticImport() {
         rewriteRun(
           //language=java

@@ -29,8 +29,8 @@ class RemoveCallsToSystemGcTest implements RewriteTest {
         spec.recipe(new RemoveCallsToSystemGc());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void noGc() {
         rewriteRun(
           //language=java

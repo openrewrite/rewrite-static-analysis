@@ -29,8 +29,8 @@ class AtomicPrimitiveEqualsUsesGetTest implements RewriteTest {
         spec.recipe(new AtomicPrimitiveEqualsUsesGet());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void usesEquals() {
         rewriteRun(
           //language=java

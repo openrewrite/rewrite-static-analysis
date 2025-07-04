@@ -29,8 +29,8 @@ class RenameExceptionInEmptyCatchTest implements RewriteTest {
         spec.recipe(new RenameExceptionInEmptyCatch());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void nameScopeTest() {
         rewriteRun(
           //language=java
@@ -121,8 +121,8 @@ class RenameExceptionInEmptyCatchTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("all")
     @Test
+    @SuppressWarnings("all")
     void multipleCatches() {
         rewriteRun(
           //language=java

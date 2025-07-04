@@ -30,8 +30,8 @@ class NeedBracesTest implements RewriteTest {
         spec.recipe(new NeedBraces());
     }
 
-    @Disabled("AutoFormat needs to be updated to support Kotlin")
     @Test
+    @Disabled("AutoFormat needs to be updated to support Kotlin")
     void addBracesForIfBranch() {
         rewriteRun(
           //language=kotlin

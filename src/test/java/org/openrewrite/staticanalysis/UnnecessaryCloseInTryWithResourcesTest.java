@@ -29,8 +29,8 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
         spec.recipe(new UnnecessaryCloseInTryWithResources());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void hasUnnecessaryClose() {
         rewriteRun(
           //language=java

@@ -30,8 +30,8 @@ class ReplaceStackWithDequeTest implements RewriteTest {
         spec.recipe(new ReplaceStackWithDeque());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceStack() {
         rewriteRun(
           //language=java
@@ -64,8 +64,8 @@ class ReplaceStackWithDequeTest implements RewriteTest {
         );
     }
 
-    @Disabled
     @Test
+    @Disabled
     void doNotReplaceIfReturned() {
         rewriteRun(
           //language=java
@@ -86,8 +86,8 @@ class ReplaceStackWithDequeTest implements RewriteTest {
         );
     }
 
-    @Disabled
     @Test
+    @Disabled
     void dataFlow() {
         rewriteRun(
           spec -> spec.recipe(new FindMethods("java.util.Stack <constructor>(..)", false, "data")),

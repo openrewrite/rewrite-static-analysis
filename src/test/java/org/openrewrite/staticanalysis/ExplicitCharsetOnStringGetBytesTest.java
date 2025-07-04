@@ -23,9 +23,9 @@ import static org.openrewrite.java.Assertions.java;
 
 class ExplicitCharsetOnStringGetBytesTest implements RewriteTest {
 
+    @Test
     @DocumentExample
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Test
     void addUtf8() {
         rewriteRun(
           spec -> spec.recipe(new ExplicitCharsetOnStringGetBytes(null)),

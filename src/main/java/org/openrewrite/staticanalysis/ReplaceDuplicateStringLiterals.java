@@ -35,8 +35,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceDuplicateStringLiterals extends Recipe {
 
     @Option(displayName = "Apply recipe to test source set",
@@ -288,8 +288,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     /**
      * ReplaceStringLiterals in a class with a reference to a `private static final String` with the provided variable name.
      */
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class ReplaceStringLiterals extends JavaVisitor<ExecutionContext> {
         J.ClassDeclaration isClass;
         Map<J.Literal, String> replacements;

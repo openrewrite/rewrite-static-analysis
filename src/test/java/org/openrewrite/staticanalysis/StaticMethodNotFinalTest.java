@@ -25,9 +25,9 @@ import static org.openrewrite.java.Assertions.java;
 @Issue("https://github.com/openrewrite/rewrite/issues/466")
 class StaticMethodNotFinalTest implements RewriteTest {
 
+    @Test
     @DocumentExample
     @SuppressWarnings("FinalStaticMethod")
-    @Test
     void removeFinalFromStaticMethods() {
         rewriteRun(
           spec -> spec.recipe(new StaticMethodNotFinal()),

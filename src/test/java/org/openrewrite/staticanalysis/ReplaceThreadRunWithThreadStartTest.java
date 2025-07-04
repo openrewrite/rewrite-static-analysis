@@ -33,9 +33,9 @@ class ReplaceThreadRunWithThreadStartTest implements RewriteTest {
           .activateRecipes("org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart"));
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("CallToThreadRun")
-    @Test
     void replaceThreadRun() {
         rewriteRun(
           //language=java

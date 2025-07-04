@@ -29,8 +29,8 @@ class SimplifyCompoundStatementTest implements RewriteTest {
         spec.recipe(new SimplifyCompoundStatement());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removeCompoundAnd() {
         rewriteRun(
           //language=java

@@ -30,8 +30,8 @@ class CovariantEqualsTest implements RewriteTest {
         spec.recipe(new CovariantEquals());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceWithNonCovariantEquals() {
         rewriteRun(
           //language=java
@@ -62,8 +62,8 @@ class CovariantEqualsTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
+    @SuppressWarnings("UnnecessaryLocalVariable")
     void replaceMultiStatementReturnBody() {
         rewriteRun(
           //language=java
@@ -155,8 +155,8 @@ class CovariantEqualsTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
+    @SuppressWarnings("UnnecessaryLocalVariable")
     void replaceEqualsMaintainsExistingAnnotations() {
         rewriteRun(
           //language=java
@@ -189,8 +189,8 @@ class CovariantEqualsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/653")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/653")
     void replaceWithNonCovariantEqualsWhenNested() {
         rewriteRun(
           //language=java
@@ -298,8 +298,8 @@ class CovariantEqualsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2775")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2775")
     void equalsInInterface() {
         rewriteRun(
           //language=java

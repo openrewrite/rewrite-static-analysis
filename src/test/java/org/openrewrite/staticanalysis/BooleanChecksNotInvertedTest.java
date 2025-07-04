@@ -24,9 +24,9 @@ import static org.openrewrite.java.Assertions.java;
 @SuppressWarnings("DoubleNegation")
 class BooleanChecksNotInvertedTest implements RewriteTest {
 
+    @Test
     @DocumentExample
     @SuppressWarnings("StatementWithEmptyBody")
-    @Test
     void rspec1940() {
         rewriteRun(
           spec -> spec.recipe(new BooleanChecksNotInverted()),

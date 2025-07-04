@@ -31,8 +31,8 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
         spec.recipe(new MoveFieldAnnotationToType("org.openrewrite..*"));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void fieldAnnotation() {
         rewriteRun(
           //language=java

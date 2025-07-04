@@ -29,8 +29,8 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
         spec.recipe(new UseJavaStyleArrayDeclarations());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void javaStyleArrayForVariableDeclarations() {
         rewriteRun(
           //language=java

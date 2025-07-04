@@ -31,8 +31,8 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanExpression());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void simplifyEqualsLiteralTrueIf() {
         rewriteRun(
           java(
@@ -310,8 +310,8 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/502")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/502")
     void autoFormatIsConditionallyApplied() {
         rewriteRun(
           java(

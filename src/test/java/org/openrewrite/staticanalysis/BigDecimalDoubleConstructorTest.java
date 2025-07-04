@@ -30,8 +30,8 @@ class BigDecimalDoubleConstructorTest implements RewriteTest {
         spec.recipe(new BigDecimalDoubleConstructorRecipe());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void bigDecimalDoubleConstructor() {
         rewriteRun(
           java(

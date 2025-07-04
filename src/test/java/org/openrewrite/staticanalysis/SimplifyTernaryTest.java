@@ -22,8 +22,8 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 class SimplifyTernaryTest implements RewriteTest {
-    @DocumentExample
     @Test
+    @DocumentExample
     void simplified() {
         rewriteRun(
           spec -> spec.recipe(new SimplifyTernaryRecipes()),

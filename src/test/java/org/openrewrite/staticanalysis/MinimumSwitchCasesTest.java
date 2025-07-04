@@ -31,8 +31,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         spec.recipe(new MinimumSwitchCases());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void caseWithReturnInsteadOfBreak() {
         rewriteRun(
           //language=java
@@ -72,8 +72,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     void primitiveAndDefault() {
         rewriteRun(
           //language=java
@@ -200,8 +200,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     void twoPrimitives() {
         rewriteRun(
           //language=java
@@ -241,8 +241,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     void stringAndDefault() {
         rewriteRun(
           //language=java
@@ -282,8 +282,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     void twoStrings() {
         rewriteRun(
           //language=java
@@ -323,8 +323,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     void onePrimitive() {
         rewriteRun(
           //language=java
@@ -359,8 +359,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/800")
     void oneString() {
         rewriteRun(
           //language=java
@@ -395,9 +395,9 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/800")
     @SuppressWarnings("StatementWithEmptyBody")
-    @Test
     void noCases() {
         rewriteRun(
           //language=java
@@ -415,8 +415,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1212")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1212")
     void importsOnEnum() {
         //noinspection EnhancedSwitchMigration
         rewriteRun(
@@ -532,8 +532,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1701")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1701")
     void removeBreaksFromCaseBody() {
         rewriteRun(
           //language=java
@@ -569,8 +569,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2258")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2258")
     void defaultOnly() {
         rewriteRun(
           //language=java
@@ -610,8 +610,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/3076")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/3076")
     void switchExpressions() {
         rewriteRun(
           //language=java
@@ -701,8 +701,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings({"ConstantValue", "DataFlowIssue"})
     @Test
+    @SuppressWarnings({"ConstantValue", "DataFlowIssue"})
     void nestedSwitches() {
         rewriteRun(
           //language=java
@@ -752,8 +752,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/3076")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/3076")
     void multipleSwitchExpressions() {
         rewriteRun(
           //language=java
@@ -847,8 +847,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
     }
 
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/284")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/284")
     void caseWithBitwiseOperation() {
         rewriteRun(
           //language=java

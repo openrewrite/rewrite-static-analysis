@@ -32,8 +32,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         spec.recipe(new FinalizeLocalVariables());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void localVariablesAreMadeFinal() {
         rewriteRun(
           //language=java
@@ -60,8 +60,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1478")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1478")
     void initializedInWhileLoop() {
         rewriteRun(
           //language=java
@@ -156,8 +156,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/549")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/549")
     void catchBlocksIgnored() {
         rewriteRun(
           //language=java
@@ -274,8 +274,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1357")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1357")
     void forLoopVariablesIgnored() {
         rewriteRun(
           //language=java
@@ -391,8 +391,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2956")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2956")
     void recordShouldNotIntroduceExtraClosingParenthesis() {
         rewriteRun(
           version(
@@ -442,8 +442,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/181")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/181")
     void shouldNotFinalizeVariablesWhichAreAssignedInAnonymousClasses() {
         this.rewriteRun(
           // language=java
@@ -464,8 +464,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/359")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/359")
     void initializedInTryWithResources() {
         rewriteRun(
           //language=java

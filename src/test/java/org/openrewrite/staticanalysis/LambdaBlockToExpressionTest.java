@@ -32,9 +32,9 @@ class LambdaBlockToExpressionTest implements RewriteTest {
             .parser(JavaParser.fromJavaVersion().logCompilationWarningsAndErrors(true));
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("CodeBlock2Expr")
-    @Test
     void simplifyLambdaBlockToExpression() {
         rewriteRun(
           //language=java
@@ -57,8 +57,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
     void simplifyLambdaBlockToExpressionWithComments() {
         rewriteRun(
           //language=java
@@ -84,8 +84,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/162")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/162")
     void noChangeIfLambdaBlockWithAmbiguousMethod() {
         //language=java
         rewriteRun(
@@ -114,8 +114,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/236")
     void simplifyLambdaBlockReturningVoidAsWell2() {
         //language=java
         rewriteRun(
@@ -145,8 +145,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-testing-frameworks/pull/582")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-testing-frameworks/pull/582")
     void simplifyAssertThrows() {
         rewriteRun(
           spec-> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),

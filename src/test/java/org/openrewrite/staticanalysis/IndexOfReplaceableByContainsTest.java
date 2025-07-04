@@ -28,8 +28,8 @@ class IndexOfReplaceableByContainsTest implements RewriteTest {
         spec.recipe(new IndexOfReplaceableByContains());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void stringIndexOfReplaceableByContains() {
         rewriteRun(
           //language=java

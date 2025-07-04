@@ -40,8 +40,8 @@ class HiddenFieldTest implements RewriteTest {
         spec.recipe(new HiddenField());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void constructorParameter() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreConstructorParameter(false)),
@@ -304,8 +304,8 @@ class HiddenFieldTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("ConstantValue")
     @Test
+    @SuppressWarnings("ConstantValue")
     void tryResources() {
         rewriteRun(
           //language=java
@@ -340,8 +340,8 @@ class HiddenFieldTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings({"EmptyTryBlock", "CatchMayIgnoreException", "TryWithIdenticalCatches"})
     @Test
+    @SuppressWarnings({"EmptyTryBlock", "CatchMayIgnoreException", "TryWithIdenticalCatches"})
     void catchClause() {
         rewriteRun(
           //language=java
@@ -376,8 +376,8 @@ class HiddenFieldTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings({"Convert2MethodRef", "ResultOfMethodCallIgnored"})
     @Test
+    @SuppressWarnings({"Convert2MethodRef", "ResultOfMethodCallIgnored"})
     void lambdaWithTypedParameterHides() {
         rewriteRun(
           //language=java
@@ -549,8 +549,8 @@ class HiddenFieldTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnusedAssignment")
     @Test
+    @SuppressWarnings("UnusedAssignment")
     void ignoreStaticMethodsAndInitializers() {
         rewriteRun(
           //language=java
@@ -695,8 +695,8 @@ class HiddenFieldTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1129")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1129")
     void ignoreVoidSettersAndSettersThatReturnItsClass() {
         rewriteRun(
           hiddenFieldStyle(style -> style.withIgnoreSetter(true).withSetterCanReturnItsClass(true)),

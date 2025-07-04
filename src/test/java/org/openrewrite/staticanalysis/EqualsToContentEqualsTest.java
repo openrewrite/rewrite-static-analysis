@@ -31,8 +31,8 @@ class EqualsToContentEqualsTest implements RewriteTest {
           .recipe(new EqualsToContentEquals());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceStringBuilder() {
         //language=java
         rewriteRun(

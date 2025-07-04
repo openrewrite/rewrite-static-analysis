@@ -29,8 +29,8 @@ class RemoveCallsToObjectFinalizeTest implements RewriteTest {
         spec.recipe(new RemoveCallsToObjectFinalize());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removeCallToFinalize() {
         rewriteRun(
           //language=java

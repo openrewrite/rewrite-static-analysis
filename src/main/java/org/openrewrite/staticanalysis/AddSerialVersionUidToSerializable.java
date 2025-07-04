@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class AddSerialVersionUidToSerializable extends Recipe {
 
     @Option(displayName = "New serial version UID",

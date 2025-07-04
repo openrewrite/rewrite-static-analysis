@@ -32,8 +32,8 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
           .allSources(sourceSpec -> sourceSpec.markers(javaVersion(17)));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void addSerialAnnotation() {
         rewriteRun(
           //language=java

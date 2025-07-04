@@ -35,9 +35,9 @@ class EmptyBlockTest implements RewriteTest {
         spec.recipe(new EmptyBlock());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("ClassInitializerMayBeStatic")
-    @Test
     void emptySwitch() {
         rewriteRun(
           //language=java
@@ -78,8 +78,8 @@ class EmptyBlockTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("EmptySynchronizedStatement")
     @Test
+    @SuppressWarnings("EmptySynchronizedStatement")
     void emptySynchronized() {
         rewriteRun(
           //language=java
@@ -175,8 +175,8 @@ class EmptyBlockTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("RedundantFileCreation")
     @Test
+    @SuppressWarnings("RedundantFileCreation")
     void emptyCatchBlockWithExceptionAndEmptyFinally() {
         rewriteRun(
           //language=java
@@ -264,8 +264,8 @@ class EmptyBlockTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnusedAssignment")
     @Test
+    @SuppressWarnings("UnusedAssignment")
     void extractSideEffectsFromEmptyIfsWithNoElse() {
         rewriteRun(
           //language=java

@@ -35,8 +35,8 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
           .recipe(new ReplaceOptionalIsPresentWithIfPresent());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void ignoreReturnInsideLambda() {
         rewriteRun(
           //language=java
@@ -412,8 +412,8 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
         );
     }
 
-    @Disabled("Due to limitation of FinalizeLocalVariables functionality")
     @Test
+    @Disabled("Due to limitation of FinalizeLocalVariables functionality")
     void replace2() {
         rewriteRun(
           //language=java
@@ -724,8 +724,8 @@ class ReplaceOptionalIsPresentWithIfPresentTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/435")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/435")
     void doNothingIfMethodThrowsException() {
         rewriteRun(
           //language=java

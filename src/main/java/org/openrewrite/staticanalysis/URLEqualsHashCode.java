@@ -22,13 +22,13 @@ import org.openrewrite.java.template.RecipeDescriptor;
 import java.net.URI;
 import java.net.URL;
 
-@SuppressWarnings("UrlHashCode")
 @RecipeDescriptor(
         name = "URL Equals and Hash Code",
         description = "Uses of `equals()` and `hashCode()` cause `java.net.URL` to make blocking internet connections. " +
                       "Instead, use `java.net.URI`.",
         tags = {"RSPEC-2112"}
 )
+@SuppressWarnings("UrlHashCode")
 public class URLEqualsHashCode {
 
     @RecipeDescriptor(

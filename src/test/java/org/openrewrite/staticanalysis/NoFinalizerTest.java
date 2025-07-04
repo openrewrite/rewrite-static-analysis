@@ -23,9 +23,9 @@ import static org.openrewrite.java.Assertions.java;
 
 class NoFinalizerTest implements RewriteTest {
 
+    @Test
     @DocumentExample
     @SuppressWarnings("FinalizeCalledExplicitly")
-    @Test
     void noFinalizer() {
         rewriteRun(
           spec -> spec.recipe(new NoFinalizer()),

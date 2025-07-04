@@ -30,9 +30,9 @@ class ExternalizableHasNoArgConstructorTest implements RewriteTest {
         spec.recipe(new ExternalizableHasNoArgsConstructor());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Test
     void needsNoArgsConstructor() {
         rewriteRun(
           //language=java

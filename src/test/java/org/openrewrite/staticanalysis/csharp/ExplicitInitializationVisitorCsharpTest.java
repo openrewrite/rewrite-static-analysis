@@ -47,8 +47,8 @@ class ExplicitInitializationVisitorCsharpTest implements RewriteTest {
           );
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removeExplicitInitialization() {
         rewriteRun(
           //language=java

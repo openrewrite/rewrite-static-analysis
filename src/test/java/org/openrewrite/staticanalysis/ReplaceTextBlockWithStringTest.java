@@ -31,8 +31,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
         spec.recipe(new ReplaceTextBlockWithString()).allSources(s -> s.markers(javaVersion(14)));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void newLine() {
         rewriteRun(
           //language=java

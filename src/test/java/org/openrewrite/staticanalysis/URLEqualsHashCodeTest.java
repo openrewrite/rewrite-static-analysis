@@ -29,8 +29,8 @@ class URLEqualsHashCodeTest implements RewriteTest {
         spec.recipe(new URLEqualsHashCodeRecipes());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void urlHashCode() {
         rewriteRun(
           java(

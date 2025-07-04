@@ -30,8 +30,8 @@ class SortedSetStreamToLinkedHashSetTest implements RewriteTest {
         spec.recipe(new SortedSetStreamToLinkedHashSet());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void changeSortedSetStreamToLinkedHashSet() {
         rewriteRun(
           //language=java

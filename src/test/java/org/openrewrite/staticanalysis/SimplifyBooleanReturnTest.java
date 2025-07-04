@@ -32,8 +32,8 @@ class SimplifyBooleanReturnTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanReturn());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void simplifyBooleanReturn() {
         rewriteRun(
           //language=java
@@ -222,8 +222,8 @@ class SimplifyBooleanReturnTest implements RewriteTest {
     }
 
 
-    @Issue("https://github.com/openrewrite/rewrite-migrate-java/pull/671#discussion_r1947004208")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/pull/671#discussion_r1947004208")
     void avoidDoubleNegation() {
         rewriteRun(
           //language=java

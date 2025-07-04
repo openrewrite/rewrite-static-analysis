@@ -30,8 +30,8 @@ class UseStandardCharsetTest implements RewriteTest {
         spec.recipe(new UseStandardCharset());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void changeCharsetForName() {
         rewriteRun(
           //language=java
@@ -81,8 +81,8 @@ class UseStandardCharsetTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2450")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2450")
     void convertAnyValidName() {
         rewriteRun(
           //language=java
@@ -110,8 +110,8 @@ class UseStandardCharsetTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-public/issues/29")
     @Test
+    @Issue("https://github.com/moderneinc/support-public/issues/29")
     void nonConstantCharset() {
         rewriteRun(
           //language=java

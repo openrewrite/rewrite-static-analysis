@@ -19,7 +19,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.CustomImportOrderStyle;
-import org.openrewrite.java.style.CustomImportOrderStyle.GroupWithDepth;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
@@ -29,8 +28,8 @@ import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.compile;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class CustomImportOrderVisitor<P> extends JavaIsoVisitor<P> {
     CustomImportOrderStyle style;
 

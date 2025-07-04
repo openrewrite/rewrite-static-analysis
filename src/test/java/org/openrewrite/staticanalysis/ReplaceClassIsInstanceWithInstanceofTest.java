@@ -31,8 +31,8 @@ class ReplaceClassIsInstanceWithInstanceofTest implements RewriteTest {
         spec.recipe(new ReplaceClassIsInstanceWithInstanceof());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void changeInstanceOf() {
         rewriteRun(
           //language=java

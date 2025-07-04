@@ -30,8 +30,8 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
         spec.recipe(new RenameMethodsNamedHashcodeEqualOrToString());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void noncompliantMethodNames() {
         rewriteRun(
           //language=java

@@ -32,9 +32,9 @@ class MinimumSwitchCasesTest implements RewriteTest {
         spec.recipe(new MinimumSwitchCases());
     }
 
+    @Test
     @DocumentExample
     @ExpectedToFail("Temporarily until we have investigated why the behavior has changed here")
-    @Test
     void twoCases() {
         rewriteRun(
           //language=groovy
@@ -62,9 +62,9 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2566")
     @SuppressWarnings("GrMethodMayBeStatic")
-    @Test
     void nonIdentifierEnum() {
         rewriteRun(
           //language=groovy

@@ -44,8 +44,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     /**
      * Should be a utility class since all methods are static, but class has public constructor
      */
-    @DocumentExample
     @Test
+    @DocumentExample
     void changePublicConstructorToPrivate() {
         rewriteRun(
           //language=java
@@ -72,9 +72,9 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/1780")
     @SuppressWarnings("UnnecessaryModifier")
-    @Test
     void doNotAddConstructorToInterface() {
         rewriteRun(
           //language=java
@@ -255,8 +255,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/538")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/538")
     void ignoreClassesWithMainMethod() {
         rewriteRun(
           //language=java
@@ -489,8 +489,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1060")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1060")
     void identifyAbstractClass() {
         rewriteRun(
           //language=java
@@ -611,8 +611,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1058")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1058")
     void doesNotChangePackagePrivateEnumConstructorToPrivate() {
         rewriteRun(
           //language=java
@@ -632,8 +632,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1058")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1058")
     void enumClass() {
         rewriteRun(
           //language=java
@@ -650,8 +650,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1058")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1058")
     void emptyRecord() {
         rewriteRun(
           version(java(

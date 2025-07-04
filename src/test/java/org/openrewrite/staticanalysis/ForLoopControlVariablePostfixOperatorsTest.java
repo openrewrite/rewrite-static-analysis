@@ -29,8 +29,8 @@ class ForLoopControlVariablePostfixOperatorsTest implements RewriteTest {
         spec.recipe(new ForLoopControlVariablePostfixOperators());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void forLoopPostfixInductionVariableCounter() {
         rewriteRun(
           //language=java

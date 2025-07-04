@@ -24,8 +24,8 @@ import static org.openrewrite.java.Assertions.java;
 @SuppressWarnings({"UnnecessaryContinue", "UnnecessaryReturnStatement"})
 class NoRedundantJumpStatementsTest implements RewriteTest {
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void noRedundantJumpStatements() {
         rewriteRun(
           spec -> spec.recipe(new NoRedundantJumpStatements()),

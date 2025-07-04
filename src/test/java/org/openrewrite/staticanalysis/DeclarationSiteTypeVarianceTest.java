@@ -38,8 +38,8 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
         ));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void inOutVariance() {
         rewriteRun(
           //language=java

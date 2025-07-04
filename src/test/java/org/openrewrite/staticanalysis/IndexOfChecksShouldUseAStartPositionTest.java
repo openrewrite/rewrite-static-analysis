@@ -29,8 +29,8 @@ class IndexOfChecksShouldUseAStartPositionTest implements RewriteTest {
         spec.recipe(new IndexOfChecksShouldUseAStartPosition());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void changeLhsWithLiteral() {
         rewriteRun(
           //language=java
@@ -69,8 +69,8 @@ class IndexOfChecksShouldUseAStartPositionTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1225")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1225")
     void intentIsStringDoesNotStartWithSearchString() {
         rewriteRun(
           //language=java

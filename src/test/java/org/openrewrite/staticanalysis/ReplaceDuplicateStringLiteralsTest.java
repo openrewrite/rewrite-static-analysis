@@ -31,8 +31,8 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         spec.recipe(new ReplaceDuplicateStringLiterals(true));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceRedundantFinalStrings() {
         rewriteRun(
           //language=java
@@ -74,8 +74,8 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1740")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1740")
     void doesNotApplyToTest() {
         rewriteRun(
           spec -> spec.recipe(new ReplaceDuplicateStringLiterals(false)),
@@ -94,8 +94,8 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1740")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1740")
     void sourcesEnabled() {
         rewriteRun(
           srcTestJava(
@@ -622,8 +622,8 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2329")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2329")
     void unicodeCharacterEquivalents() {
         rewriteRun(
           //language=java
@@ -647,8 +647,8 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2330")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2330")
     void enumDefinition() {
         rewriteRun(
           //language=java
@@ -728,8 +728,8 @@ class ReplaceDuplicateStringLiteralsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/384")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/384")
     void staticWithObjectArray() {
         rewriteRun(
           //language=java

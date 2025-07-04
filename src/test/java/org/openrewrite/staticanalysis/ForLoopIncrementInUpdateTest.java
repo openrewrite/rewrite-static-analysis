@@ -28,9 +28,9 @@ class ForLoopIncrementInUpdateTest implements RewriteTest {
         spec.recipe(new ForLoopIncrementInUpdate());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("StatementWithEmptyBody")
-    @Test
     void moveIncrementToUpdate() {
         rewriteRun(
           //language=java

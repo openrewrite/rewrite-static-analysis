@@ -30,9 +30,9 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         spec.recipe(new NoDoubleBraceInitialization());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("WrapperTypeMayBePrimitive")
-    @Test
     void addStatementInForLoop() {
         rewriteRun(
           //language=java
@@ -100,8 +100,8 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/356")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/356")
     void dropsConstructorCollectionParameterInClass() {
         rewriteRun(
           //language=java
@@ -132,8 +132,8 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2674")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2674")
     void possibleMistakenlyMissedAddingToCollection() {
         rewriteRun(
           //language=java
@@ -173,8 +173,8 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2674")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2674")
     void possibleMistakenlyMissedAddingToCollectionWithDifferentMethodName() {
         rewriteRun(
           //language=java
@@ -219,8 +219,8 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2674")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2674")
     void noCollectionInitializedInDoubleBraceIgnored() {
         rewriteRun(
           //language=java
@@ -506,8 +506,8 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/407")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/407")
     void skipDoubleBraceInInterface() {
         rewriteRun(
           //language=java

@@ -28,9 +28,9 @@ class NewStringBuilderBufferWithCharArgumentTest implements RewriteTest {
         spec.recipe(new NewStringBuilderBufferWithCharArgument());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings("NewStringBufferWithCharArgument")
-    @Test
     void charIsConstructorArg() {
         rewriteRun(
           //language=java

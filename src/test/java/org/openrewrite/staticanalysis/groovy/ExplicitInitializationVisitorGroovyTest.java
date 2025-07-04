@@ -31,16 +31,16 @@ class ExplicitInitializationVisitorGroovyTest implements RewriteTest {
         spec.recipe(new ExplicitInitialization());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1272")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1272")
     void gTypes() {
         rewriteRun(
           groovy("int a = 0")
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1272")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1272")
     void removeExplicitInitialization() {
         rewriteRun(
           groovy(

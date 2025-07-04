@@ -30,9 +30,9 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
         spec.recipe(new NoPrimitiveWrappersForToStringOrCompareTo());
     }
 
+    @Test
     @DocumentExample
     @SuppressWarnings({"removal", "UnnecessaryTemporaryOnConversionToString"})
-    @Test
     void noPrimitiveWrapperForToString() {
         rewriteRun(
           //language=java
@@ -63,8 +63,8 @@ class NoPrimitiveWrappersForToStringOrCompareToTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UseCompareMethod")
     @Test
+    @SuppressWarnings("UseCompareMethod")
     void noPrimitiveWrapperForCompareTo() {
         rewriteRun(
           //language=java

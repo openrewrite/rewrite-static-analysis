@@ -32,8 +32,8 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           .recipe(new AnnotateNullableMethods(null));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void methodReturnsNullLiteral() {
         rewriteRun(
           //language=java

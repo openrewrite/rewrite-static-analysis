@@ -31,8 +31,8 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
         spec.recipe(new AbstractClassPublicConstructor());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replacePublicByProtected() {
         rewriteRun(
           //language=java
@@ -83,8 +83,8 @@ class AbstractClassPublicConstructorTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/449")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/449")
     void noReplaceOnNestedClasses() {
         rewriteRun(
           //language=java

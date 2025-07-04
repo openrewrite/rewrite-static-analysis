@@ -31,8 +31,8 @@ class RemoveUnneededAssertionTest implements RewriteTest {
         spec.recipe(new RemoveUnneededAssertion());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void assertTrue() {
         rewriteRun(
           //language=java

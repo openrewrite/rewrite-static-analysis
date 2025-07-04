@@ -91,8 +91,8 @@ class MissingOverrideAnnotationTest implements RewriteTest {
       }
       """;
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void whenIgnoreAnonymousClassMethodsIsFalseAndAMethodOverridesWithinAnAnonymousClass() {
         rewriteRun(
           spec -> spec.recipe(new MissingOverrideAnnotation(false)),

@@ -31,9 +31,9 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
           .recipe(new ReplaceWeekYearWithYear());
     }
 
+    @Test
     @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/58")
-    @Test
     void changeSimpleDateFormat() {
         //language=java
         rewriteRun(

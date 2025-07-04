@@ -30,8 +30,8 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         spec.recipe(new SimplifyBooleanExpression());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void regular() {
         rewriteRun(
           kotlin(

@@ -33,8 +33,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
         spec.recipe(new EqualsAvoidsNull());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void invertConditional() {
         rewriteRun(
           //language=java
@@ -158,12 +158,12 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Nested
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     class ReplaceConstantMethodArg {
 
-        @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/398")
         @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/398")
         void one() {
             rewriteRun(
               // language=java
@@ -364,8 +364,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-        @Disabled("Not yet supported")
         @Test
+        @Disabled("Not yet supported")
         void lambdaGenerics() {
             rewriteRun(
               //language=java
@@ -447,8 +447,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/434")
         @Test
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/434")
         void missingWhitespace() {
             rewriteRun(
               // language=java
@@ -476,8 +476,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
         }
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/442")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/442")
     void retainCompareToAsToNotChangeOrder() {
         rewriteRun(
           //language=java

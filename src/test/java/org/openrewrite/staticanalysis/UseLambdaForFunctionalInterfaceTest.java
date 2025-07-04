@@ -32,8 +32,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         spec.recipe(new UseLambdaForFunctionalInterface());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void useLambda() {
         rewriteRun(
           //language=java
@@ -59,9 +59,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/10")
     @SuppressWarnings("removal")
-    @Test
     void castingAmbiguity() {
         rewriteRun(
           spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
@@ -105,9 +105,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/194")
     @SuppressWarnings("ConstantConditions")
-    @Test
     void gson() {
         rewriteRun(
           spec -> spec.recipe(new UseLambdaForFunctionalInterface())
@@ -150,8 +150,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     @Test
+    @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     void usedAsStatementWithNonInferrableType() {
         rewriteRun(
           spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
@@ -172,8 +172,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Disabled("The recipe currently avoids simplifying anonymous classes that use the this keyword.")
     @Test
+    @Disabled("The recipe currently avoids simplifying anonymous classes that use the this keyword.")
     void useLambdaThenSimplifyFurther() {
         rewriteRun(
           spec -> spec.recipes(
@@ -231,8 +231,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnusedAssignment")
     @Test
+    @SuppressWarnings("UnusedAssignment")
     void emptyLambda() {
         rewriteRun(
           //language=java
@@ -266,8 +266,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1828")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1828")
     void nestedLambdaInMethodArgument() {
         rewriteRun(
           //language=java
@@ -330,8 +330,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
+    @SuppressWarnings("UnnecessaryLocalVariable")
     void dontUseLambdaWhenShadowsLocalVariable() {
         rewriteRun(
           //language=java
@@ -355,9 +355,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/1915")
     @SuppressWarnings("UnnecessaryLocalVariable")
-    @Test
     void dontUseLambdaWhenShadowsClassField() {
         rewriteRun(
           //language=java
@@ -381,9 +381,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/1915")
     @SuppressWarnings("UnnecessaryLocalVariable")
-    @Test
     void dontUseLambdaWhenShadowsMethodDeclarationParam() {
         rewriteRun(
           //language=java
@@ -465,8 +465,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("DataFlowIssue")
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void noReplaceOnReferenceToUninitializedFinalField() {
         rewriteRun(
           //language=java
@@ -664,8 +664,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/support-app/issues/17")
     @Test
+    @Issue("https://github.com/moderneinc/support-app/issues/17")
     void lambdaWithComplexTypeInference() {
         rewriteRun(
           //language=java
@@ -736,8 +736,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/309")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/309")
     void dontUseLambdaForMethodWithTypeParameter() {
         //language=java
         rewriteRun(
@@ -775,8 +775,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
     void dontUseLambdaWhenEnumAccessesStaticFieldFromConstructor() {
         rewriteRun(
           //language=java
@@ -803,8 +803,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
     void dontUseLambdaWhenEnumAccessesStaticFieldFromFromMethod() {
         rewriteRun(
           //language=java

@@ -33,8 +33,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         spec.recipe(new RemoveUnusedPrivateFields());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void removeUnusedPrivateField() {
         rewriteRun(
           //language=java
@@ -164,8 +164,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
+    @SuppressWarnings("UnnecessaryLocalVariable")
     void nameIsShadowed() {
         rewriteRun(
           //language=java
@@ -224,8 +224,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/3061")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/3061")
     void findReferencesInOuterScope() {
         rewriteRun(
           //language=java
@@ -403,8 +403,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
     @ParameterizedTest
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
     @ValueSource(strings = {
       "@lombok.Data",
       "@lombok.Value",
@@ -426,8 +426,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/242")
     void doRemoveFieldsIfLombokLoggingAnnotationIsPresent() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
@@ -448,8 +448,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
     void removeUntilStable() {
         rewriteRun(
           //language=java
@@ -469,8 +469,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
     void doNotRemoveWhenThereAreMissingTypes() {
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),

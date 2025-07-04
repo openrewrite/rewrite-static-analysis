@@ -30,8 +30,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         spec.recipe(new FixStringFormatExpressions());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void newLineFormat() {
         rewriteRun(
           //language=java
@@ -98,8 +98,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/260")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/260")
     void escapedNewline() {
         rewriteRun(
           //language=java

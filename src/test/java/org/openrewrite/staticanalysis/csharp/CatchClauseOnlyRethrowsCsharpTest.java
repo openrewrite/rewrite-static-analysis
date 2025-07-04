@@ -38,8 +38,8 @@ class CatchClauseOnlyRethrowsCsharpTest implements RewriteTest {
         spec.recipe(toCsRecipe(new CatchClauseOnlyRethrows()));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void verifyCsharpImplicitThrow() {
         rewriteRun(
           //language=java

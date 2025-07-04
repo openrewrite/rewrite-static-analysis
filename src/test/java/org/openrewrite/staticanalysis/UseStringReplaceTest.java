@@ -31,9 +31,9 @@ class UseStringReplaceTest implements RewriteTest {
         spec.recipe(new UseStringReplace());
     }
 
+    @Test
     @DisplayName("String#replaceAll replaced by String#replace, because first argument is not a regular expression")
     @DocumentExample
-    @Test
     void replaceAllReplacedByReplace() {
         rewriteRun(
           //language=java
@@ -58,9 +58,9 @@ class UseStringReplaceTest implements RewriteTest {
         );
     }
 
+    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2222")
     @SuppressWarnings("ReplaceOnLiteralHasNoEffect")
-    @Test
     void literalValueSourceAccountsForEscapeCharacters() {
         rewriteRun(
           //language=java
@@ -79,8 +79,8 @@ class UseStringReplaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1781")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/1781")
     void replaceAllContainsEscapedQuotes() {
         rewriteRun(
           //language=java
@@ -103,8 +103,8 @@ class UseStringReplaceTest implements RewriteTest {
         );
     }
 
-    @DisplayName("String#replaceAll replaced by String#replace, because first argument is not a regular expression and it contains special characters")
     @Test
+    @DisplayName("String#replaceAll replaced by String#replace, because first argument is not a regular expression and it contains special characters")
     void replaceAllReplacedByReplaceWithSpecialCharacters() {
         rewriteRun(
           //language=java
@@ -129,8 +129,8 @@ class UseStringReplaceTest implements RewriteTest {
         );
     }
 
-    @DisplayName("String#replaceAll is not replaced by String#replace, because first argument is a real regular expression")
     @Test
+    @DisplayName("String#replaceAll is not replaced by String#replace, because first argument is a real regular expression")
     void replaceAllUnchanged() {
         rewriteRun(
           //language=java
@@ -147,9 +147,9 @@ class UseStringReplaceTest implements RewriteTest {
         );
     }
 
+    @Test
     @DisplayName("String#replaceAll is not replaced by String#replace, because second argument has a backslash in it")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/301")
-    @Test
     void replaceAllUnchangedIfBackslashInReplacementString() {
         rewriteRun(
           //language=java
@@ -165,9 +165,9 @@ class UseStringReplaceTest implements RewriteTest {
         );
     }
 
+    @Test
     @DisplayName("String#replaceAll is not replaced by String#replace, because second argument has a dollar sign in it")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/301")
-    @Test
     void replaceAllUnchangedIfDollarInReplacementString() {
         rewriteRun(
           //language=java
@@ -188,8 +188,8 @@ class UseStringReplaceTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/330")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/330")
     void equalsSignOnlyWhenSafeToReplace() {
         //language=java
         rewriteRun(

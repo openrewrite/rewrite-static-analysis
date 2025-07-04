@@ -30,8 +30,8 @@ class UnnecessaryCatchTest implements RewriteTest {
         spec.recipe(new UnnecessaryCatch(false, false));
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void unwrapTry() {
         rewriteRun(
           //language=java

@@ -25,8 +25,8 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
-@SuppressWarnings("UnnecessaryModifier")
 @Issue("https://github.com/openrewrite/rewrite/issues/466")
+@SuppressWarnings("UnnecessaryModifier")
 class ModifierOrderTest implements RewriteTest {
 
     @Override
@@ -34,8 +34,8 @@ class ModifierOrderTest implements RewriteTest {
         spec.recipe(new ModifierOrder());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void changeModifierOrder() {
         rewriteRun(
           //language=java
@@ -73,8 +73,8 @@ class ModifierOrderTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/187")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/187")
     void putDefaultModifierAtJLSRightPosition() {
         // default modifier must be placed between abstract and static modifiers
         rewriteRun(

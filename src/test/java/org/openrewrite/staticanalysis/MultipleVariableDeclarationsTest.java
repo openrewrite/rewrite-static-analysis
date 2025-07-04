@@ -31,8 +31,8 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
         spec.recipe(new MultipleVariableDeclarations());
     }
 
-    @DocumentExample
     @Test
+    @DocumentExample
     void replaceWithIndividualVariableDeclarations() {
         rewriteRun(
           //language=java
@@ -66,8 +66,8 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/812")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/812")
     void arrayDimensionsBeforeName() {
         rewriteRun(
           //language=java
@@ -91,8 +91,8 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/812")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/812")
     void arrayDimensionsBeforeName2() {
         rewriteRun(
           //language=java
@@ -195,8 +195,8 @@ class MultipleVariableDeclarationsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2287")
     @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/2287")
     void removeNewlinesFromMultivariablePrefix() {
         rewriteRun(
           //language=java
