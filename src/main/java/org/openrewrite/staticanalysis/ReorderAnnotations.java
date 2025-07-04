@@ -68,6 +68,7 @@ public class ReorderAnnotations extends Recipe {
                 }
                 return 0;
             })
+            .thenComparing(a -> a.getSimpleName().endsWith("Test")? -1 : 0) // Ensure test annotations are ordered first
             .thenComparing(J.Annotation::getSimpleName);
 
     @Override

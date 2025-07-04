@@ -52,9 +52,9 @@ class ReorderAnnotationsTest implements RewriteTest {
               import org.junitpioneer.jupiter.ExpectedToFail;
               import org.junitpioneer.jupiter.Issue;
               class A {
+                  @Test
                   @ExpectedToFail
                   @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                  @Test
                   void explicitImplementationClassInApi() {
                   }
               }
@@ -139,11 +139,11 @@ class ReorderAnnotationsTest implements RewriteTest {
               import org.junitpioneer.jupiter.Issue;
               class A {
                   // Before first
-                  @ExpectedToFail
-                  // Before second
-                  @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                  // Before third
                   @Test
+                  // Before second
+                  @ExpectedToFail
+                  // Before third
+                  @Issue("https://github.com/openrewrite/rewrite/issues/2973")
                   // Before method
                   void explicitImplementationClassInApi() {
                   }
@@ -192,9 +192,9 @@ class ReorderAnnotationsTest implements RewriteTest {
                   import org.junitpioneer.jupiter.ExpectedToFail;
                   import org.junitpioneer.jupiter.Issue;
                   class A {
+                      @Test
                       @ExpectedToFail
                       @Issue("https://github.com/openrewrite/rewrite/issues/2973")
-                      @Test
                       void explicitImplementationClassInApi() {
                       }
                   }
