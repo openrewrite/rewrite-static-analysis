@@ -399,51 +399,51 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         @Override
-        public J visitBinary(J.Binary original, Integer integer) {
-            Expression newLeft = (Expression) super.visitNonNull(original.getLeft(), integer);
-            if (newLeft != original.getLeft()) {
+        public J visitBinary(J.Binary binary, Integer p) {
+            J.Binary b = binary.withLeft((Expression) visitNonNull(binary.getLeft(), p));
+            if (b.getLeft() != binary.getLeft()) {
                 // The left side changed, so the right side should see any introduced variable names
-                J.Binary replacement = original.withLeft(newLeft);
-                Cursor widenedCursor = updateCursor(replacement);
+                Cursor widenedCursor = updateCursor(b);
 
                 Expression newRight;
-                if (original.getRight() instanceof J.InstanceOf) {
-                    newRight = replacements.processInstanceOf((J.InstanceOf) original.getRight(), widenedCursor);
-                } else if (original.getRight() instanceof J.Parentheses &&
-                           ((J.Parentheses<?>) original.getRight()).getTree() instanceof J.InstanceOf) {
+                if (binary.getRight() instanceof J.InstanceOf) {
+                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor);
+                } else if (binary.getRight() instanceof J.Parentheses &&
+                           ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
                     @SuppressWarnings("unchecked")
-                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) original.getRight();
+                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
                     newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
                 } else {
-                    newRight = (Expression) super.visitNonNull(original.getRight(), integer, widenedCursor);
+                    newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
-                return replacement.withRight(newRight);
+                return b.withRight(newRight);
+            } else {
+                // The left side didn't change, so the right side doesn't need to see any introduced variable names
+                return b.withRight((Expression) visitNonNull(binary.getRight(), p));
             }
-            // The left side didn't change, so the right side doesn't need to see any introduced variable names
-            return super.visitBinary(original, integer);
         }
 
         @Override
-        public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer executionContext) {
-            instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, executionContext);
+        public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
+            instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
             instanceOf = replacements.processInstanceOf(instanceOf, getCursor());
             return instanceOf;
         }
 
         @Override
-        public <T extends J> J visitParentheses(J.Parentheses<T> parens, Integer executionContext) {
+        public <T extends J> J visitParentheses(J.Parentheses<T> parens, Integer p) {
             if (parens.getTree() instanceof J.TypeCast) {
                 J replacement = replacements.processTypeCast((J.TypeCast) parens.getTree(), getCursor());
                 if (replacement != null) {
                     return replacement.withPrefix(parens.getPrefix());
                 }
             }
-            return super.visitParentheses(parens, executionContext);
+            return super.visitParentheses(parens, p);
         }
 
         @Override
-        public J visitTypeCast(J.TypeCast typeCast, Integer executionContext) {
-            typeCast = (J.TypeCast) super.visitTypeCast(typeCast, executionContext);
+        public J visitTypeCast(J.TypeCast typeCast, Integer p) {
+            typeCast = (J.TypeCast) super.visitTypeCast(typeCast, p);
             J replacement = replacements.processTypeCast(typeCast, getCursor());
             if (replacement != null) {
                 return replacement;
@@ -453,8 +453,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
         @Override
         @SuppressWarnings("NullableProblems")
-        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
-            multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, integer);
+        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer p) {
+            multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, p);
             return replacements.processVariableDeclarations(multiVariable);
         }
     }
