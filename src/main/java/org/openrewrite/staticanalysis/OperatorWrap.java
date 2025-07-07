@@ -30,8 +30,8 @@ import org.openrewrite.java.tree.TypeTree;
 
 import static java.util.Objects.requireNonNull;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class OperatorWrap extends Recipe {
 
     @Option(displayName = "Operator wrapping style",

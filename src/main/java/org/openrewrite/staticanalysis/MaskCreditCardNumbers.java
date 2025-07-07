@@ -26,8 +26,8 @@ import org.openrewrite.java.tree.J;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class MaskCreditCardNumbers extends Recipe {
 
     @Override

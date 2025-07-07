@@ -37,9 +37,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
 @Incubating(since = "7.6.0")
+@Value
 public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
     private static final Pattern NEXT_NAME_PATTERN = Pattern.compile("(.+)(\\d+)");
     HiddenFieldStyle style;

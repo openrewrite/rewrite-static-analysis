@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
     private static final MethodMatcher OPTIONAL_IS_PRESENT = new MethodMatcher("java.util.Optional isPresent()");
     private static final MethodMatcher OPTIONAL_GET = new MethodMatcher("java.util.Optional get()");
@@ -231,8 +231,8 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
         }
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     public static class ReplaceMethodCallWithVariableVisitor extends JavaVisitor<ExecutionContext> {
         J.Identifier lambdaParameterIdentifier;
         J.Identifier methodSelector;

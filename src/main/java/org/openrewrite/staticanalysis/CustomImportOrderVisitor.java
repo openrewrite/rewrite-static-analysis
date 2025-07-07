@@ -29,8 +29,8 @@ import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.compile;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class CustomImportOrderVisitor<P> extends JavaIsoVisitor<P> {
     CustomImportOrderStyle style;
 

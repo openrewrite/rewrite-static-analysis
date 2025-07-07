@@ -309,8 +309,8 @@ public class FinalizePrivateFields extends Recipe {
         }
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class FindLastIdentifier extends JavaIsoVisitor<List<J.Identifier>> {
 
         /**
