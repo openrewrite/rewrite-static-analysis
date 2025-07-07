@@ -110,14 +110,10 @@ public class FixStringFormatExpressions extends Recipe {
                         if (arg0 instanceof J.Literal) {
                             J.Literal fmt = (J.Literal) arg0;
                             if (fmt.getValue() != null) {
-                                String v = fmt.getValue().toString();
-                                v = NEWLINE_PATTERN.matcher(v).replaceAll("%n");
-                                fmt = fmt.withValue(v);
+                                fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().toString()).replaceAll("%n"));
                             }
                             if (fmt.getValueSource() != null) {
-                                String vs = fmt.getValueSource();
-                                vs = ESCAPED_NEWLINE_PATTERN.matcher(vs).replaceAll("%n");
-                                fmt = fmt.withValueSource(vs);
+                                fmt = fmt.withValueSource(ESCAPED_NEWLINE_PATTERN.matcher(fmt.getValueSource()).replaceAll("%n"));
                             }
                             return fmt;
                         }

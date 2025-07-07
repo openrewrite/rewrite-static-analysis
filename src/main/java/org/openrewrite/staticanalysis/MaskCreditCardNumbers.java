@@ -38,11 +38,11 @@ public class MaskCreditCardNumbers extends Recipe {
     @Override
     public String getDescription() {
         return "When encountering string literals which appear to be credit card numbers, " +
-               "mask the last eight digits with the letter 'X'.";
+                "mask the last eight digits with the letter 'X'.";
     }
 
     private static final Pattern CC_PATTERN = Pattern.compile("([0-9]{4} ?[0-9]{4} ?)([0-9]{4} ?[0-9]{4} ?)");
-    private static final Pattern DIGIT_PATTERN = Pattern.compile("[0-9]");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -50,11 +50,11 @@ public class MaskCreditCardNumbers extends Recipe {
             @Override
             public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 J.Literal l = super.visitLiteral(literal, ctx);
-                if(l.getValue() instanceof String) {
+                if (l.getValue() instanceof String) {
                     String value = (String) l.getValue();
                     Matcher m = CC_PATTERN.matcher(value);
-                    if(m.matches()) {
-                        String masked = m.group(1) +maskDigits(m.group(2));
+                    if (m.matches()) {
+                        String masked = m.group(1) + maskDigits(m.group(2));
                         l = l.withValue(masked)
                                 .withValueSource("\"" + masked + "\"");
                     }
