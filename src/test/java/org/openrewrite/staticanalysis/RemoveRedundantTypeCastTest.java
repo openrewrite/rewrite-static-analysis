@@ -557,7 +557,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                  return Optional.of((Bar) getBarImpl()).orElse(getBar());
                }
             }
-            """));
-    }
+            """
+          )
+        );
 }
 
