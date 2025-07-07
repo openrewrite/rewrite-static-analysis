@@ -60,24 +60,6 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     }
 
     @Test
-    void literalConcatenationIgnored() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void method1() {
-                      StringBuilder sb = new StringBuilder();
-                      sb.append("A" + "B" + "C");
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample("Grouping concatenation.")
-    @Test
     void groupedStringsConcatenation() {
         rewriteRun(
           //language=java
@@ -97,6 +79,23 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
                       StringBuilder sb = new StringBuilder();
                       String op = "+";
                       sb.append("A" + "B" + "C").append(op).append("D" + "E");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void literalConcatenationIgnored() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void method1() {
+                      StringBuilder sb = new StringBuilder();
+                      sb.append("A" + "B" + "C");
                   }
               }
               """

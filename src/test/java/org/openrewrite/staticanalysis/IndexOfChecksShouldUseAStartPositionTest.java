@@ -29,6 +29,30 @@ class IndexOfChecksShouldUseAStartPositionTest implements RewriteTest {
         spec.recipe(new IndexOfChecksShouldUseAStartPosition());
     }
 
+    @DocumentExample
+    @Test
+    void changeLhsWithLiteral() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean hasIndex(String str) {
+                      return str.indexOf("x") > 2;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean hasIndex(String str) {
+                      return str.indexOf("x", 2) > -1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotChangeCompliantRhs() {
         rewriteRun(
@@ -55,30 +79,6 @@ class IndexOfChecksShouldUseAStartPositionTest implements RewriteTest {
               class Test {
                   boolean doesNotStartWithX(String str) {
                       return str.indexOf("x") > 0;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void changeLhsWithLiteral() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  boolean hasIndex(String str) {
-                      return str.indexOf("x") > 2;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  boolean hasIndex(String str) {
-                      return str.indexOf("x", 2) > -1;
                   }
               }
               """

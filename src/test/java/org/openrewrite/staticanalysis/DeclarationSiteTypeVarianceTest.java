@@ -38,24 +38,6 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
         ));
     }
 
-    @Test
-    void validation() {
-        assertThat(new DeclarationSiteTypeVariance(
-          List.of("java.util.function.Function<INVALID, OUT>"),
-          List.of("java.lang.*"),
-          null
-        ).validate().isInvalid()).isTrue();
-    }
-
-    @Test
-    void validationWhenNull() {
-        assertThat(new DeclarationSiteTypeVariance(
-          null,
-          null,
-          null
-        ).validate().isInvalid()).isTrue();
-    }
-
     @DocumentExample
     @Test
     void inOutVariance() {
@@ -85,6 +67,24 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void validation() {
+        assertThat(new DeclarationSiteTypeVariance(
+          List.of("java.util.function.Function<INVALID, OUT>"),
+          List.of("java.lang.*"),
+          null
+        ).validate().isInvalid()).isTrue();
+    }
+
+    @Test
+    void validationWhenNull() {
+        assertThat(new DeclarationSiteTypeVariance(
+          null,
+          null,
+          null
+        ).validate().isInvalid()).isTrue();
     }
 
     @Test

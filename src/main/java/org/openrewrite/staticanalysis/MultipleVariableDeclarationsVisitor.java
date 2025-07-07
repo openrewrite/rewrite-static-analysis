@@ -18,10 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
@@ -48,7 +45,10 @@ public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<Executio
             List<J.VariableDeclarations> newDecls = new ArrayList<>(mv.getVariables().size());
             for (int i = 0; i < mv.getVariables().size(); i++) {
                 J.VariableDeclarations.NamedVariable nv = mv.getVariables().get(i);
-                List<JLeftPadded<Space>> dimensions = ListUtils.concatAll(mv.getDimensionsBeforeName(), nv.getDimensionsAfterName());
+                TypeTree typeExpression = mv.getTypeExpression();
+                for (JLeftPadded<Space> dim : nv.getDimensionsAfterName()) {
+                    typeExpression = new J.ArrayType(randomId(), Space.EMPTY, Markers.EMPTY, typeExpression, null, dim, new JavaType.Array(null, typeExpression.getType(), null));
+                }
                 nv = nv.withDimensionsAfterName(emptyList()).withPrefix(Space.EMPTY);
                 J.VariableDeclarations vd = new J.VariableDeclarations(
                         randomId(),
@@ -56,9 +56,9 @@ public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<Executio
                         Markers.EMPTY,
                         mv.getLeadingAnnotations(),
                         mv.getModifiers(),
-                        mv.getTypeExpression(),
+                        typeExpression,
                         mv.getVarargs(),
-                        dimensions,
+                        emptyList(),
                         Collections.singletonList(JRightPadded.build(nv))
                 );
                 if (i == 0) {

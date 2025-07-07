@@ -40,41 +40,6 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         spec.recipe(new UnnecessaryParentheses());
     }
 
-    private static Consumer<RecipeSpec> unnecessaryParentheses(UnaryOperator<UnnecessaryParenthesesStyle> with) {
-        return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
-          singletonList(
-            new NamedStyles(
-              Tree.randomId(), "test", "test", "test", emptySet(),
-              singletonList(with.apply(new UnnecessaryParenthesesStyle(false, false, false, false, false,
-                false, false, false, false, false, false, false, false, false,
-                false, false, false, false, false, false, false, false, false))))))
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/2170")
-    @Test
-    void minimumSpace() {
-        //language=java
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  int test() {
-                      return (1);
-                  }
-              }
-              """,
-            """
-              class Test {
-                  int test() {
-                      return 1;
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void fullUnwrappingDefault() {
@@ -129,8 +94,43 @@ class UnnecessaryParenthesesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/798")
+    private static Consumer<RecipeSpec> unnecessaryParentheses(UnaryOperator<UnnecessaryParenthesesStyle> with) {
+        return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
+          singletonList(
+            new NamedStyles(
+              Tree.randomId(), "test", "test", "test", emptySet(),
+              singletonList(with.apply(new UnnecessaryParenthesesStyle(false, false, false, false, false,
+                false, false, false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false, false, false))))))
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/2170")
+    @Test
+    void minimumSpace() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int test() {
+                      return (1);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int test() {
+                      return 1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Disabled
+    @Issue("https://github.com/openrewrite/rewrite/issues/798")
     @Test
     void unwrapExpr() {
         //language=java
@@ -268,7 +268,7 @@ class UnnecessaryParenthesesTest implements RewriteTest {
                       String t = ("literallyString" + "stringLiteral");
                       if (s == null) {
                           s = null;
-                      } else if (("someLiteral".toLowerCase()).equals(s)) {
+                      } else if ("someLiteral".toLowerCase().equals(s)) {
                           s = null;
                       }
                   }

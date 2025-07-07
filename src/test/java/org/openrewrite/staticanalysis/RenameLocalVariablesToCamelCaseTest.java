@@ -36,27 +36,6 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenameLocalVariablesToCamelCase());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/2227")
-    @Test
-    void lowerCamelVariableHasNonLowerCamelVariableSibling() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void m()  {
-                      final int _secure = 0;
-                      boolean secure = _secure > 0;
-                      
-                      int _notSecure = 0;
-                      boolean notSecure = _notSecure < 1;
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void renameAllCapsAcronyms() {
@@ -74,6 +53,27 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
               class Test {
                   void test() {
                       String id;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/2227")
+    @Test
+    void lowerCamelVariableHasNonLowerCamelVariableSibling() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void m()  {
+                      final int _secure = 0;
+                      boolean secure = _secure > 0;
+
+                      int _notSecure = 0;
+                      boolean notSecure = _notSecure < 1;
                   }
               }
               """
@@ -114,9 +114,9 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("JavadocDeclaration")
     @Disabled
     @Issue("https://github.com/openrewrite/rewrite/issues/2437")
+    @SuppressWarnings("JavadocDeclaration")
     @Test
     void renameJavaDocParam() {
         rewriteRun(
@@ -273,9 +273,9 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
                       public List<String> testFoo() {
                           return new ArrayList<>() {
                               private final int DO_NOT_CHANGE = 1;
-                         
+
                           };
-                          
+
                       }
                   }
 
@@ -375,8 +375,8 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/171")
+    @Test
     void renameMultipleOcurrencesDifferentScope() {
         rewriteRun(
           java(

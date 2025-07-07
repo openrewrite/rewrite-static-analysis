@@ -25,7 +25,9 @@ import org.openrewrite.analysis.dataflow.FindLocalFlowPaths;
 import org.openrewrite.java.ChangeType;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.TypeTree;
 
 public class ReplaceStackWithDeque extends Recipe {
     @Override
@@ -59,8 +61,8 @@ public class ReplaceStackWithDeque extends Recipe {
                 };
 
                 if (v.getInitializer() != null && FindLocalFlowPaths.noneMatch(getCursor(), returned)) {
-                    v = (J.VariableDeclarations.NamedVariable) new ChangeType("java.util.Stack", "java.util.ArrayDeque", false)
-                            .getVisitor().visitNonNull(v, ctx, getCursor().getParentOrThrow());
+                    v = v.withInitializer((Expression) new ChangeType("java.util.Stack", "java.util.ArrayDeque", false)
+                            .getVisitor().visitNonNull(v.getInitializer(), ctx, getCursor().getParentOrThrow()));
                     getCursor().putMessageOnFirstEnclosing(J.VariableDeclarations.class, "replace", true);
                 }
 
@@ -71,8 +73,8 @@ public class ReplaceStackWithDeque extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations v = super.visitVariableDeclarations(multiVariable, ctx);
                 if (getCursor().getMessage("replace", false)) {
-                    v = (J.VariableDeclarations) new ChangeType("java.util.Stack", "java.util.Deque", false)
-                            .getVisitor().visitNonNull(v, ctx, getCursor().getParentOrThrow());
+                    v = v.withTypeExpression((TypeTree) new ChangeType("java.util.Stack", "java.util.Deque", false)
+                            .getVisitor().visit(v.getTypeExpression(), ctx, getCursor().getParentOrThrow()));
                     maybeAddImport("java.util.ArrayDeque");
                     maybeAddImport("java.util.Deque");
                 }

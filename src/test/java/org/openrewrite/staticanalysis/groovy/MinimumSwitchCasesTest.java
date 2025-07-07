@@ -32,38 +32,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
         spec.recipe(new MinimumSwitchCases());
     }
 
-    @SuppressWarnings("GrMethodMayBeStatic")
-    @Issue("https://github.com/openrewrite/rewrite/issues/2566")
-    @Test
-    void nonIdentifierEnum() {
-        rewriteRun(
-          //language=groovy
-          groovy(
-            """
-              import java.nio.file.*
-              class Test {
-                  void test(OpenOption o) {
-                      switch(o) {
-                          case StandardOpenOption.READ:
-                              System.out.println("read")
-                      }
-                  }
-              }
-              """,
-            """
-              import java.nio.file.*
-              class Test {
-                  void test(OpenOption o) {
-                      if (o == StandardOpenOption.READ) {
-                          System.out.println("read")
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @ExpectedToFail("Temporarily until we have investigated why the behavior has changed here")
     @Test
@@ -88,6 +56,38 @@ class MinimumSwitchCasesTest implements RewriteTest {
                   println("prod")
               } else {
                   println("default")
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/2566")
+    @SuppressWarnings("GrMethodMayBeStatic")
+    @Test
+    void nonIdentifierEnum() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              import java.nio.file.*
+              class Test {
+                  void test(OpenOption o) {
+                      switch(o) {
+                          case StandardOpenOption.READ:
+                              System.out.println("read")
+                      }
+                  }
+              }
+              """,
+            """
+              import java.nio.file.*
+              class Test {
+                  void test(OpenOption o) {
+                      if (o == StandardOpenOption.READ) {
+                          System.out.println("read")
+                      }
+                  }
               }
               """
           )

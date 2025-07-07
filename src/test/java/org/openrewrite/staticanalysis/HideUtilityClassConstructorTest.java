@@ -25,7 +25,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static java.util.Collections.emptySet;
@@ -39,22 +39,6 @@ class HideUtilityClassConstructorTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new HideUtilityClassConstructor());
-    }
-
-    @SuppressWarnings("UnnecessaryModifier")
-    @Issue("https://github.com/openrewrite/rewrite/issues/1780")
-    @Test
-    void doNotAddConstructorToInterface() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public interface A {
-                  public static final String utility = "";
-              }
-              """
-          )
-        );
     }
 
     /**
@@ -82,6 +66,22 @@ class HideUtilityClassConstructorTest implements RewriteTest {
 
                   public static void utility() {
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/1780")
+    @SuppressWarnings("UnnecessaryModifier")
+    @Test
+    void doNotAddConstructorToInterface() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public interface A {
+                  public static final String utility = "";
               }
               """
           )
@@ -255,8 +255,8 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/538")
+    @Test
     void ignoreClassesWithMainMethod() {
         rewriteRun(
           //language=java
@@ -354,7 +354,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
               public class A extends B {
                   public A() {
                   }
-              
+
                   public static void doSomething() {
                   }
               }
@@ -544,7 +544,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
           singletonList(
             new NamedStyles(
               randomId(), "test", "test", "test", emptySet(), singletonList(
-              new HideUtilityClassConstructorStyle(Arrays.asList(ignoreIfAnnotatedBy))
+              new HideUtilityClassConstructorStyle(List.of(ignoreIfAnnotatedBy))
             )
             )
           )
@@ -569,13 +569,13 @@ class HideUtilityClassConstructorTest implements RewriteTest {
           java(
             """
               import lombok.experimental.UtilityClass;
-              
+
               @UtilityClass
               public class DoNotChangeMeA {
                   public static void utility() {
                   }
               }
-              
+
               @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
               class DoNotChangeMeB {
                   public static void utility() {

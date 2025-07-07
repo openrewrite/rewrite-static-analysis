@@ -29,26 +29,6 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
         spec.recipe(new BigDecimalRoundingConstantsToEnums());
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Test
-    void bigDecimalRoundingNoChange() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.math.BigDecimal;import java.math.RoundingMode;class A {
-                  void divide() {
-                      BigDecimal bd = BigDecimal.valueOf(10);
-                      BigDecimal bd2 = BigDecimal.valueOf(2);
-                      BigDecimal bd3 = bd.divide(bd2, RoundingMode.DOWN);
-                      bd3.setScale(2, RoundingMode.HALF_EVEN);
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @SuppressWarnings({"deprecation", "ResultOfMethodCallIgnored"})
     @Test
@@ -58,7 +38,7 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
           java(
             """
               import java.math.BigDecimal;
-                            
+
               class A {
                   void divide() {
                       BigDecimal bd = BigDecimal.valueOf(10);
@@ -74,7 +54,7 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
             """
               import java.math.BigDecimal;
               import java.math.RoundingMode;
-                            
+
               class A {
                   void divide() {
                       BigDecimal bd = BigDecimal.valueOf(10);
@@ -84,6 +64,26 @@ class BigDecimalRoundingConstantsToEnumsTest implements RewriteTest {
                       bd.divide(bd2, 1, RoundingMode.CEILING);
                       bd.divide(bd2, 1, RoundingMode.DOWN);
                       bd.setScale(2, RoundingMode.DOWN);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
+    void bigDecimalRoundingNoChange() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.math.BigDecimal;import java.math.RoundingMode;class A {
+                  void divide() {
+                      BigDecimal bd = BigDecimal.valueOf(10);
+                      BigDecimal bd2 = BigDecimal.valueOf(2);
+                      BigDecimal bd3 = bd.divide(bd2, RoundingMode.DOWN);
+                      bd3.setScale(2, RoundingMode.HALF_EVEN);
                   }
               }
               """

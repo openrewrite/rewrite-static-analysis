@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -38,7 +40,7 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-              
+
               class Example implements Serializable {
                   private static final long serialVersionUID = 1L;
               }
@@ -46,7 +48,7 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
             """
               import java.io.Serial;
               import java.io.Serializable;
-              
+
               class Example implements Serializable {
                   @Serial
                   private static final long serialVersionUID = 1L;
@@ -60,20 +62,20 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
     void shouldAddToNewFieldWhenChained() {
         rewriteRun(
           spec -> spec.recipes(
-            new AddSerialVersionUidToSerializable(),
+            new AddSerialVersionUidToSerializable(null),
             new AddSerialAnnotationToSerialVersionUID()),
           //language=java
           java(
             """
               import java.io.Serializable;
-              
+
               class Example implements Serializable {
               }
               """,
             """
               import java.io.Serial;
               import java.io.Serializable;
-              
+
               class Example implements Serializable {
                   @Serial
                   private static final long serialVersionUID = 1;
@@ -91,7 +93,7 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
             """
               import java.io.Serializable;
               import java.io.Serial;
-              
+
               class Example implements Serializable {
                   String var1 = "first variable";
                   @Serial
@@ -124,7 +126,7 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-              
+
               class Example implements Serializable {
                   private static final long serialVersionUID = 1L;
               }
@@ -134,26 +136,29 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
         );
     }
 
-    @Test
-    void shouldNotAnnotateOtherFields() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+      "static final long",
+        "private final long" ,
+        "private static long" ,
+        "private static final int"
+    })
+    void shouldNotAnnotateOtherFields(String modifiers) {
         rewriteRun(
           //language=java
           java(
             """
               import java.io.Serializable;
-              
+
               class Example implements Serializable {
-                  static final long serialVersionUID = 1L;
-                  private final long serialVersionUID = 1L;
-                  private static long serialVersionUID = 1L;
-                  private static final int serialVersionUID = 1L;
+                  %s serialVersionUID = 1L;
                   private static final long foo = 1L;
-              
+
                   void doSomething() {
                       long serialVersionUID = 1L;
                   }
               }
-              """
+              """.formatted(modifiers)
           )
         );
     }
@@ -165,7 +170,7 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
           java(
             """
               import java.io.Serializable;
-              
+
               class Outer implements Serializable {
                   private static final long serialVersionUID = 1;
                   static class Inner implements Serializable {
@@ -176,7 +181,7 @@ class AddSerialAnnotationToSerialVersionUIDTest implements RewriteTest {
             """
               import java.io.Serial;
               import java.io.Serializable;
-              
+
               class Outer implements Serializable {
                   @Serial
                   private static final long serialVersionUID = 1;

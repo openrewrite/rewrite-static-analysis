@@ -57,8 +57,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1")
+    @Test
     void simplifyLambdaBlockToExpressionWithComments() {
         rewriteRun(
           //language=java
@@ -122,7 +122,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
           java(
             """
               public class Main {
-              
+
                 public void run() {
                   Runnable runHelloWorld = () -> {
                       System.out.println("Hello world!");
@@ -133,7 +133,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
               """,
             """
               public class Main {
-              
+
                 public void run() {
                   Runnable runHelloWorld = () ->
                       System.out.println("Hello world!");
@@ -145,8 +145,8 @@ class LambdaBlockToExpressionTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-testing-frameworks/pull/582")
+    @Test
     void simplifyAssertThrows() {
         rewriteRun(
           spec-> spec.parser(JavaParser.fromJavaVersion().classpath("junit")),
@@ -154,7 +154,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
           java(
             """
             import static org.junit.jupiter.api.Assertions.assertThrows;
-            
+
             class Test {
                 void test() {
                     assertThrows(IllegalArgumentException.class, () -> {
@@ -168,7 +168,7 @@ class LambdaBlockToExpressionTest implements RewriteTest {
             """,
             """
             import static org.junit.jupiter.api.Assertions.assertThrows;
-            
+
             class Test {
                 void test() {
                     assertThrows(IllegalArgumentException.class, () ->

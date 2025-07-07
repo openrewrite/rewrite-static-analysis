@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.Issue;
@@ -259,7 +258,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           }
                       }
                   }
-                  """, """
+                  """,
+                    """
                   import java.util.Collections;
                   import java.util.List;
                   public class A {
@@ -353,7 +353,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                         return Collections.emptyList();
                       }
                   }
-                  """, """
+                  """,
+                    """
                   import java.util.Collections;
                   import java.util.List;
                   import java.util.Map;
@@ -526,7 +527,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Issue("https://github.com/openrewrite/rewrite/issues/2787")
-        @Disabled
         @Test
         void nestedPotentiallyConflictingIfs() {
             rewriteRun(
@@ -547,13 +547,99 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                 """
                   public class A {
                       void test(Object o) {
-                          if (o instanceof String string) {
-                              if (o instanceof String string1) {
-                                  System.out.println(string1);
+                          if (o instanceof String string1) {
+                              if (o instanceof String string) {
+                                  System.out.println(string);
                               }
-                              System.out.println(string);
+                              System.out.println(string1);
                           }
                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/481")
+        @Test
+        void conflictingWithLocalVariable() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar) {
+                               System.out.println(((Bar)o));
+                               Bar bar = null;
+                               if (o instanceof FooBar) {
+                                   System.out.println(((FooBar)o));
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
+                  }
+                  """,
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar bar2) {
+                               System.out.println(bar2);
+                               Bar bar = null;
+                               if (o instanceof FooBar fooBar) {
+                                   System.out.println(fooBar);
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/334")
+        @Test
+        void conflictingWithOtherInstanceOf() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar) {
+                               System.out.println(((Bar)o));
+                               if (o instanceof FooBar) {
+                                   System.out.println(((FooBar)o));
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
+                  }
+                  """,
+                """
+                  public class Main {
+                       public class Bar {}
+                       public class FooBar {}
+                       public static void main(String[] args) {
+                           Object o = new Object();
+                           if (o instanceof Bar bar2) {
+                               System.out.println(bar2);
+                               if (o instanceof FooBar bar) {
+                                   System.out.println(bar);
+                                   Bar bar1 = null;
+                               }
+                           }
+                       }
                   }
                   """
               )
@@ -680,8 +766,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        @Test
         void ifTwoDifferentInstanceOf() {
             rewriteRun(
               version(
@@ -712,8 +798,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/174")
+        @Test
         void ifTwoDifferentInstanceOfWithParentheses() {
             rewriteRun(
               version(
@@ -846,8 +932,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/265")
+        @Test
         void multipleCastsInDifferentOperands() {
             rewriteRun(
               //language=java
@@ -919,6 +1005,48 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/572")
+        @Test
+        void castTypeIsSuperType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                      void test(Object o) {
+                          if (o instanceof Car) {
+                              ((Vehicle) o).start();
+                          }
+                      }
+                      private static abstract class Vehicle { abstract void start(); }
+                      private static class Car extends Vehicle { void start() {} }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/572")
+        @Test
+        void castTypeIsSubType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Main {
+                      void test(Object o) {
+                          if (o instanceof Car) {
+                              ((Vehicle) o).start();
+                          }
+                      }
+                      private static abstract class Vehicle { abstract void start(); }
+                      private static class Car extends Vehicle { void start() {} }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @Nested
@@ -932,7 +1060,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                 """
                   public class A {
                       boolean test(Object o) {
-                          return o instanceof String[] && ((java.lang.String[]) o).length > 1 || ((String[]) o).length > 2;
+                          return o instanceof String[] && ((String[]) o).length > 1 || ((String[]) o).length > 2;
                       }
                   }
                   """,
@@ -1081,15 +1209,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           return o instanceof List ? ((List<Object>) o).get(0) : o.toString();
                       }
                   }
-                  """/*,
-                """
-                  import java.util.List;
-                  public class A {
-                      Object test(Object o) {
-                          return o instanceof List<?> l ? l.get(0) : o.toString();
-                      }
-                  }
-                  """*/
+                  """
               )
             );
         }
@@ -1123,6 +1243,130 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                           if (t instanceof List) {
                               List<T> l = (List<T>) t;
                               System.out.println(l.size());
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/482")
+        @Test
+        void castTooSpecific() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                         class B<T> {}
+                         void method() {
+                             Object o = new Object();
+                             if (o instanceof B) {
+                                 B<String> bString = (B) o;
+                                 System.out.println(bString);
+                             }
+                         }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Test
+        void bareAssignmentButParameterizedCheck() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        class B<T> {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B<?>) {
+                                B b = (B)o;
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        class B<T> {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B b) {
+                            }
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/308")
+        @Test
+        void passBareTypeToParameterizedMethod() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        class B<T> {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B) {
+                                param((B)o);
+                            }
+                        }
+                        void param(B<String> b) {}
+                    }
+                    """,
+                  """
+                    class A {
+                        class B<T> {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B b) {
+                                param(b);
+                            }
+                        }
+                        void param(B<String> b) {}
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Test
+        void multipleVariablesOneNotAcceptableToCast() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+                  public class A {
+                      void test(Object o1, Object o2) {
+                          if (o1 instanceof String && o2 instanceof List<?>) {
+                              String s = (String) o1;
+                              List<String> l = (List) o2;
+                              l.add(s);
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+                  public class A {
+                      void test(Object o1, Object o2) {
+                          if (o1 instanceof String s && o2 instanceof List<?>) {
+                              List<String> l = (List) o2;
+                              l.add(s);
                           }
                       }
                   }
@@ -1231,6 +1475,139 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               )
             );
         }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/483")
+        @Test
+        void classVariableShadowing() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        class B {}
+                        Object b;
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B) {
+                                B b = (B) o;
+                                System.out.println(b);
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        class B {}
+                        Object b;
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B b) {
+                                System.out.println(b);
+                            }
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/484")
+        @Test
+        void enumPatternMatch() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        enum B {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B) {
+                                B e = (B) o;
+                                System.out.println(e);
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        enum B {}
+                        void method() {
+                            Object o = new Object();
+                            if (o instanceof B e) {
+                                System.out.println(e);
+                            }
+                        }
+                    }
+                    """
+                ), 17
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/528")
+        @Test
+        void matchingPrimitiveVariableInBody() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    class A {
+                        void test(Object o, Integer integer) {
+                            if (o instanceof Integer) {
+                                for (int j = 0; j < (int) o; j++) {
+                                }
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        void test(Object o, Integer integer) {
+                            if (o instanceof Integer integer1) {
+                                for (int j = 0; j < integer1; j++) {
+                                }
+                            }
+                        }
+                    }
+                    """
+                ), 17)
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/532")
+        @Test
+        void varVariableDeclaration() {
+            rewriteRun(
+              version(
+                //language=java
+                java(
+                  """
+                    public class A {
+                        void test(Object o) {
+                            if (o instanceof String) {
+                                final var str = (String) o;
+                                System.out.println(str.toUpperCase());
+                            }
+                        }
+                    }
+                    """,
+                  """
+                    public class A {
+                        void test(Object o) {
+                            if (o instanceof String str) {
+                                System.out.println(str.toUpperCase());
+                            }
+                        }
+                    }
+                    """
+                ), 17)
+            );
+        }
     }
 
     @Nested
@@ -1262,8 +1639,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/307")
+        @Test
         void throwsExceptionWithExtraParentheses() {
             rewriteRun(
               //language=java
@@ -1292,5 +1669,40 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+    }
+    @Test
+    void nestedVariables() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                public class A {
+                    Throwable wrap(Throwable cause) {
+                        if (cause instanceof Error) {
+                            if (cause instanceof OutOfMemoryError) {
+                                throw ((OutOfMemoryError) cause);
+                            }
+                            return (Error) cause;
+                        }
+                        return cause;
+                    }
+                }
+                """,
+              """
+                public class A {
+                    Throwable wrap(Throwable cause) {
+                        if (cause instanceof Error error1) {
+                            if (cause instanceof OutOfMemoryError error) {
+                                throw error;
+                            }
+                            return error1;
+                        }
+                        return cause;
+                    }
+                }
+                """
+            ), 17)
+        );
     }
 }

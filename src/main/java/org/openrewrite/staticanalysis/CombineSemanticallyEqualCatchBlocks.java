@@ -40,7 +40,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
     @Override
     public String getDescription() {
         return "Combine catches in a try that contain semantically equivalent blocks. " +
-                "No change will be made when a caught exception exists if combing catches may change application behavior or type attribution is missing.";
+                "No change will be made when a caught exception exists if combining catches may change application behavior or type attribution is missing.";
     }
 
     @Override
@@ -715,8 +715,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                 return cu;
             }
 
-            @SuppressWarnings("unchecked")
             @Override
+            @SuppressWarnings("unchecked")
             public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> controlParens, J j) {
                 if (isEqual.get()) {
                     if (!(j instanceof J.ControlParentheses)) {
@@ -1426,8 +1426,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                 return type;
             }
 
-            @SuppressWarnings("unchecked")
             @Override
+            @SuppressWarnings("unchecked")
             public <T extends J> J.Parentheses<T> visitParentheses(J.Parentheses<T> parens, J j) {
                 if (isEqual.get()) {
                     if (!(j instanceof J.Parentheses)) {

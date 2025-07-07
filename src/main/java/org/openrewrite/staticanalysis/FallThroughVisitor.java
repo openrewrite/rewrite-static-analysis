@@ -17,6 +17,8 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -27,8 +29,11 @@ import org.openrewrite.marker.Markers;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
+import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -51,9 +56,9 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     public J.Case visitCase(J.Case case_, P p) {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
-            J.Switch switch_ = getCursor().dropParentUntil(J.Switch.class::isInstance).getValue();
+            J.Switch switch_ = getCursor().firstEnclosing(J.Switch.class);
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
-                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty()) {
+                if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
                 }
             }
@@ -148,7 +153,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     return !statements.isEmpty() && breaks(statements.get(statements.size() - 1));
                 } else if (s instanceof J.If) {
                     J.If iff = (J.If) s;
-                    return iff.getElsePart() != null && breaks(iff.getThenPart()) && breaks(iff.getThenPart());
+                    return iff.getElsePart() != null && breaks(iff.getThenPart());
                 } else if (s instanceof J.Label) {
                     return breaks(((J.Label) s).getStatement());
                 } else if (s instanceof J.Try) {
@@ -214,9 +219,66 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 }
                 return case_;
             }
-
         }
-
     }
 
+    private static class FindInfiniteLoops {
+        /**
+         * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
+         * A result is added to the set when a loop in a {@link J.Case} scope is an infinite loop.
+         *
+         * @param case_ the {@link J.Case} to use as a target.
+         * @return A set representing all {@link Statement} which are infinite loops.
+         */
+        public static boolean find(Cursor cursor, J.Case case_) {
+            for (Statement statement : case_.getStatements()) {
+                Expression condition = null;
+                if (statement instanceof J.WhileLoop) {
+                    condition = ((J.WhileLoop) statement).getCondition().getTree();
+                } else if (statement instanceof J.ForLoop) {
+                    condition = ((J.ForLoop) statement).getControl().getCondition();
+                }
+                if ((condition instanceof J.Empty || isLiteralValue(condition, Boolean.TRUE) || isFinalTrue(condition, cursor)) &&
+                        !hasBreak(statement)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean isFinalTrue(@Nullable Expression condition, Cursor cursor) {
+            if (condition instanceof J.Identifier &&
+                    ((J.Identifier) condition).getFieldType() != null &&
+                    ((J.Identifier) condition).getFieldType().hasFlags(Flag.Final)) {
+                J.ClassDeclaration cd = cursor.firstEnclosing(J.ClassDeclaration.class);
+                return declaresFinalTrue(cd, (J.Identifier) condition);
+            }
+            return false;
+        }
+
+        private static boolean declaresFinalTrue(J.@Nullable ClassDeclaration classDeclaration, J.Identifier identifier) {
+            return new JavaIsoVisitor<AtomicBoolean>() {
+                @Override
+                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vd, AtomicBoolean declaresFinalTrue) {
+                    for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
+                        if (v.getName().getSimpleName().equals(identifier.getSimpleName()) && v.getInitializer() instanceof J.Literal && ((J.Literal) v.getInitializer()).getValue() == Boolean.TRUE) {
+                            declaresFinalTrue.set(true);
+                            return vd;
+                        }
+                    }
+                    return super.visitVariableDeclarations(vd, declaresFinalTrue);
+                }
+            }.reduce(classDeclaration, new AtomicBoolean(false)).get();
+        }
+
+        private static boolean hasBreak(Statement statement) {
+            return new JavaIsoVisitor<AtomicBoolean>() {
+                @Override
+                public J.Break visitBreak(J.Break breakStatement, AtomicBoolean atomicBoolean) {
+                    atomicBoolean.set(true);
+                    return breakStatement;
+                }
+            }.reduce(statement, new AtomicBoolean(false)).get();
+        }
+    }
 }

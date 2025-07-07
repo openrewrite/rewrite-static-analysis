@@ -34,29 +34,6 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         spec.recipe(new FinalizePrivateFields());
     }
 
-    @Test
-    void modifierAndVariableTypeFlagSet() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  private static String TEST_STRING = "ABC";
-              }
-              """,
-            """
-              class A {
-                  private static final String TEST_STRING = "ABC";
-              }
-              """, spec -> spec.afterRecipe(cu -> {
-                J.VariableDeclarations declarations = (J.VariableDeclarations) cu.getClasses().get(
-                  0).getBody().getStatements().get(0);
-                assertThat(declarations.getModifiers()).anySatisfy(
-                  m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
-                assertThat(declarations.getVariables().get(0).getVariableType().getFlags()).contains(Flag.Final);
-            })));
-    }
-
     @DocumentExample("Finalize private field.")
     @Test
     void fieldWithInitializerMadeFinal() {
@@ -80,7 +57,31 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                       return name;
                   }
               }
-              """));
+              """
+          ));
+    }
+
+    @Test
+    void modifierAndVariableTypeFlagSet() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private static String TEST_STRING = "ABC";
+              }
+              """,
+            """
+              class A {
+                  private static final String TEST_STRING = "ABC";
+              }
+              """,
+                spec -> spec.afterRecipe(cu -> {
+                    J.VariableDeclarations declarations = (J.VariableDeclarations) cu.getClasses().getFirst().getBody().getStatements().getFirst();
+                    assertThat(declarations.getModifiers()).anySatisfy(
+                            m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
+                    assertThat(declarations.getVariables().getFirst().getVariableType().getFlags()).contains(Flag.Final);
+                })));
     }
 
     @Test
@@ -803,11 +804,11 @@ class FinalizePrivateFieldsTest implements RewriteTest {
           java(
             """
               import lombok.Data;
-                          
+
               @Data
               public class B {
                   private int num = 0;
-                          
+
                   void func() {
                       B b = new B();
                       // b.setNum(1);
@@ -818,8 +819,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2865")
+    @Test
     void additionalConstructorIgnored() {
         rewriteRun(
           //language=java
@@ -840,28 +841,28 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/121")
+    @Test
     void mustNotChangeVolatileFields() {
         //language=java
         rewriteRun(
           java(
             """
               public final class Reproducer {
-              
+
                   private Reproducer() {
                   }
-              
+
                   private static volatile String foo = "this becomes final volatile, which is invalid";
-              
+
               }
               """
           )
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/177")
+    @Test
     void staticFieldAssignedInConstructorNotMadeFinal() {
         //language=java
         rewriteRun(
@@ -878,8 +879,8 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/177")
+    @Test
     void staticFieldAssignedInBlockNotMadeFinal() {
         //language=java
         rewriteRun(

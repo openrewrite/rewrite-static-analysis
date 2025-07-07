@@ -43,7 +43,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
                       String s2 = "hello world\\n%s".formatted("again");
                   }
               }
-              """, """
+              """,
+                """
               class T {
                   static {
                       String s = String.format("hello world%n%s", "again");
@@ -97,8 +98,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/260")
+    @Test
     void escapedNewline() {
         rewriteRun(
           //language=java

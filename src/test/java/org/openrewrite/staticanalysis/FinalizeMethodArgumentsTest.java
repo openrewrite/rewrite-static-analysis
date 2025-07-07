@@ -31,6 +31,28 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         spec.recipe(new FinalizeMethodArguments());
     }
 
+    @DocumentExample
+    @Test
+    void replaceWithFinalModifier() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class TestClass {
+                  private void getAccaCouponData(String responsiveRequestConfig, String card) {
+                  }
+              }
+              """,
+            """
+              class TestClass {
+                  private void getAccaCouponData(final String responsiveRequestConfig, final String card) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/3133")
     @Test
     void twoParameters() {
@@ -100,28 +122,6 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
-    @Test
-    void replaceWithFinalModifier() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class TestClass {
-                  private void getAccaCouponData(String responsiveRequestConfig, String card) {
-                  }
-              }
-              """,
-            """
-              class TestClass {
-                  private void getAccaCouponData(final String responsiveRequestConfig, final String card) {
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void replaceWithFinalModifierWhenAnnotated() {
         rewriteRun(
@@ -149,42 +149,42 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
           java(
             """
               package responsive.utils.subevent;
-               
+
                import responsive.enums.subevent.SubeventTypes;
                import responsive.model.dto.card.SubEvent;
                import java.util.List;
                import org.springframework.beans.factory.annotation.Value;
                import org.springframework.stereotype.Component;
-               
+
                import static responsive.enums.matchdata.MatchDataTitleSeparator.AT;
                import static responsive.enums.matchdata.MatchDataTitleSeparator.VS;
                import static java.lang.String.format;
                import static org.apache.commons.lang3.StringUtils.splitByWholeSeparator;
-               
+
                /**
                 * Created by mza05 on 13/10/2017.
                 */
                @Component
                class SubeventUtils {
-               
+
                    private static final String SUBEVENT_FORMAT = "%s%s%s";
                    private final List<Integer> categoryGroupIdForChangeSubeventName;
-               
+
                    public SubeventUtils(
                            @Value("#{'${responsive.category.group.id.change.subevent.name}'.split(',')}")  final List<Integer> categoryGroupIdForChangeSubeventName) {
                        this.categoryGroupIdForChangeSubeventName = categoryGroupIdForChangeSubeventName;
                    }
-               
+
                    public static boolean isSubeventOfSpecifiedType(final SubEvent subEvent, final List<SubeventTypes> requiredTypes) {
-               
+
                        if (subEvent.getType() == null) {
                            return false;
                        }
                        return requiredTypes.stream()
                                .anyMatch(requiredType -> requiredType.getType().equalsIgnoreCase(subEvent.getType()));
-               
+
                    }
-               
+
                    /**
                     * Change SubeventName by CategoryGroupId and rebub
                     * @param subeventName
@@ -192,7 +192,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
                     * @return
                     */
                    public String getSubeventNameForCategoryGroupId(final String subeventName, final Integer categoryGroupId) {
-               
+
                        if  (subeventName != null && categoryGroupId != null
                                && subeventName.contains(AT.getSeparator())
                                && categoryGroupIdForChangeSubeventName.contains(categoryGroupId)) {
@@ -201,7 +201,7 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
                                return format(SUBEVENT_FORMAT, subeventTeamSplit[0], VS.getSeparator(), subeventTeamSplit[1]);
                            }
                        }
-               
+
                        return subeventName;
                    }
                }
@@ -210,8 +210,8 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/176")
+    @Test
     void doNotReplaceIfAssignedThroughUnaryOrAccumulator() {
         rewriteRun(
           //language=java
@@ -221,25 +221,25 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
                 protected int addFinalToThisVar(int unalteredVariable) {
                   return unalteredVariable;
                 }
-                            
+
                 protected int increment(int variableToIncrement) {
                   variableToIncrement++;
                   return variableToIncrement;
                 }
-                            
+
                 protected int preIncrement(int variableToPreIncrement) {
                   return ++variableToPreIncrement;
                 }
-                            
+
                 protected int decrement(int variableToDecrement) {
                   variableToDecrement--;
                   return variableToDecrement;
                 }
-                            
+
                 protected int preDecrement(int variableToPreDecrement) {
                   return --variableToPreDecrement;
                 }
-                            
+
                 protected int accumulate(int add, int accumulator) {
                   accumulator += add;
                   return accumulator;
@@ -251,25 +251,25 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
                 protected int addFinalToThisVar(final int unalteredVariable) {
                   return unalteredVariable;
                 }
-                            
+
                 protected int increment(int variableToIncrement) {
                   variableToIncrement++;
                   return variableToIncrement;
                 }
-                            
+
                 protected int preIncrement(int variableToPreIncrement) {
                   return ++variableToPreIncrement;
                 }
-                            
+
                 protected int decrement(int variableToDecrement) {
                   variableToDecrement--;
                   return variableToDecrement;
                 }
-                            
+
                 protected int preDecrement(int variableToPreDecrement) {
                   return --variableToPreDecrement;
                 }
-                            
+
                 protected int accumulate(int add, int accumulator) {
                   accumulator += add;
                   return accumulator;

@@ -31,8 +31,45 @@ class ControlFlowIndentationTest implements RewriteTest {
         spec.recipe(new ControlFlowIndentation());
     }
 
-    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
+    @DocumentExample
+    @SuppressWarnings({"SuspiciousIndentAfterControlStatement", "IfStatementWithIdenticalBranches"})
+    @Test
+    void removesIndentationFromStatementAfterIfElse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void test() {
+                      if(true) {
+                          foo();
+                      } else
+                          foo();
+                          foo();
+                  }
+
+                  static void foo(){}
+              }
+              """,
+            """
+              class A {
+                  void test() {
+                      if(true) {
+                          foo();
+                      } else
+                          foo();
+                      foo();
+                  }
+
+                  static void foo(){}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2277")
+    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     @Test
     void removesIndentationFromStatementAroundIf() {
         rewriteRun(
@@ -89,43 +126,6 @@ class ControlFlowIndentationTest implements RewriteTest {
                               foo();
                       }
                               foo();
-                  }
-
-                  static void foo(){}
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @SuppressWarnings({"SuspiciousIndentAfterControlStatement", "IfStatementWithIdenticalBranches"})
-    @Test
-    void removesIndentationFromStatementAfterIfElse() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void test() {
-                      if(true) {
-                          foo();
-                      } else
-                          foo();
-                          foo();
-                  }
-
-                  static void foo(){}
-              }
-              """,
-            """
-              class A {
-                  void test() {
-                      if(true) {
-                          foo();
-                      } else
-                          foo();
-                      foo();
                   }
 
                   static void foo(){}

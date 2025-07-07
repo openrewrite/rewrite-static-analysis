@@ -33,7 +33,7 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
               //language=java
               """
                 package com.example;
-                                                        
+
                 import java.lang.annotation.ElementType;
                 import java.lang.annotation.Target;
 
@@ -45,11 +45,11 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
               //language=java
               """
                 package com.example;
-                                                        
+
                 import java.lang.annotation.ElementType;
                 import java.lang.annotation.Repeatable;
                 import java.lang.annotation.Target;
-                                                        
+
                 @Repeatable(Tests.class)
                 @Target(ElementType.TYPE)
                 public @interface Annotation {

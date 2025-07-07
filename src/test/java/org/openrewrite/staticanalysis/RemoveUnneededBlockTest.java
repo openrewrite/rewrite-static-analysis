@@ -30,6 +30,32 @@ class RemoveUnneededBlockTest implements RewriteTest {
         spec.recipe(new RemoveUnneededBlock());
     }
 
+    @DocumentExample
+    @Test
+    void simplifyNestedBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  void test() {
+                      {
+                          System.out.println("hello!");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  void test() {
+                      System.out.println("hello!");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotChangeMethod() {
         rewriteRun(
@@ -151,32 +177,6 @@ class RemoveUnneededBlockTest implements RewriteTest {
                       { "a", "b" },
                       { "c", "d" }
                   };
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void simplifyNestedBlock() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  void test() {
-                      {
-                          System.out.println("hello!");
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  void test() {
-                      System.out.println("hello!");
-                  }
               }
               """
           )
@@ -415,8 +415,8 @@ class RemoveUnneededBlockTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3073")
+    @Test
     void preserveComments() {
         rewriteRun(
           //language=java
@@ -469,6 +469,37 @@ class RemoveUnneededBlockTest implements RewriteTest {
     }
 
     @Test
+    void inlineNonLastBlockContainingVariableDeclarationsIfAlsoContainsReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void SomeFunction() {
+                      {
+                          int i = 0;
+                          return;
+                      }
+                      {
+                          System.out.println("hello world!");
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void SomeFunction() {
+                      int i = 0;
+                      return;
+                      System.out.println("hello world!");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void inlineLastBlockContainingVariableDeclarations() {
         rewriteRun(
           //language=java
@@ -497,8 +528,8 @@ class RemoveUnneededBlockTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("EmptyFinallyBlock")
+    @Test
     void removeEmptyTryFinallyBlock() {
         rewriteRun(
           //language=java
@@ -544,8 +575,8 @@ class RemoveUnneededBlockTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("EmptyFinallyBlock")
+    @Test
     void keepNonEmptyTryFinallyBlock2() {
         rewriteRun(
           //language=java

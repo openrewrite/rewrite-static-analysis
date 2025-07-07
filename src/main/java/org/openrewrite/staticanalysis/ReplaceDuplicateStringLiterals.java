@@ -86,8 +86,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 return super.visit(tree, ctx);
             }
 
-            @SuppressWarnings("UnusedAssignment")
             @Override
+            @SuppressWarnings("UnusedAssignment")
             public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 if (classDecl.getType() == null) {
                     return classDecl;

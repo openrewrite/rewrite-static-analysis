@@ -29,6 +29,8 @@ import org.openrewrite.java.tree.*;
 import java.time.Duration;
 import java.util.*;
 
+import static org.openrewrite.java.tree.J.Modifier.Type.*;
+
 public class UnnecessaryThrows extends Recipe {
 
     @Override
@@ -40,10 +42,10 @@ public class UnnecessaryThrows extends Recipe {
     public String getDescription() {
         return "Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions if:\n" +
                 "\n" +
-                "- The declaring class or the method declaration is `final`.\n" +
-                "- The method declaration is `static` or `private`.\n" +
-                "- The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
-                "- The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
+                " - The declaring class or the method declaration is `final`.\n" +
+                " - The method declaration is `static` or `private`.\n" +
+                " - The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
+                " - The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
     }
 
     @Override
@@ -136,74 +138,82 @@ public class UnnecessaryThrows extends Recipe {
 
                 return m;
             }
+
+            private Set<JavaType.FullyQualified> findExceptionCandidates(J.@Nullable MethodDeclaration method) {
+
+                if (method == null || method.getMethodType() == null || method.isAbstract() || method.isConstructor()) {
+                    return Collections.emptySet();
+                }
+
+                // Do not change the API of methods that may be overridden
+                if (method.hasModifier(Protected) && !method.hasModifier(Final)) {
+                    J.ClassDeclaration cd = getCursor().firstEnclosing(J.ClassDeclaration.class);
+                    if (cd != null && !cd.hasModifier(Final)) {
+                        return Collections.emptySet();
+                    }
+                }
+
+                //Collect all checked exceptions.
+                Set<JavaType.FullyQualified> candidates = new TreeSet<>(Comparator.comparing(JavaType.FullyQualified::getFullyQualifiedName));
+
+                if (method.getThrows() != null) {
+                    for (NameTree exception : method.getThrows()) {
+                        if (exception.getType() == null || exception.getType() instanceof JavaType.Unknown) {
+                            return Collections.emptySet();
+                        }
+                        if (exception.getType() instanceof JavaType.FullyQualified && !TypeUtils.isAssignableTo("java.lang.RuntimeException", exception.getType())) {
+                            candidates.add(TypeUtils.asFullyQualified(exception.getType()));
+                        }
+                    }
+                }
+
+                if (candidates.isEmpty()) {
+                    return Collections.emptySet();
+                }
+
+                //noinspection ConstantConditions
+                if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
+                        method.isAbstract() || method.hasModifier(Static) ||
+                        method.hasModifier(Private) ||
+                        method.hasModifier(Final)) {
+                    //Consider all checked exceptions as candidates if the type/method are final or the method is private or static.
+                    return candidates;
+                }
+
+                //Remove any candidates that are defined in an overridden method.
+                Optional<JavaType.Method> superMethod = TypeUtils.findOverriddenMethod(method.getMethodType());
+                if (superMethod.isPresent()) {
+                    JavaType.Method baseMethod = superMethod.get();
+                    baseMethod.getThrownExceptions();
+                    for (JavaType baseException : baseMethod.getThrownExceptions()) {
+                        if (baseException instanceof JavaType.FullyQualified) {
+                            candidates.remove(baseException);
+                        }
+                    }
+                }
+                if (!candidates.isEmpty()) {
+                    //Remove any candidates that are defined in Javadocs for the method.
+                    new JavaVisitor<Set<JavaType.FullyQualified>>() {
+                        @Override
+                        protected JavadocVisitor<Set<JavaType.FullyQualified>> getJavadocVisitor() {
+                            return new JavadocVisitor<Set<JavaType.FullyQualified>>(this) {
+                                @Override
+                                public Javadoc visitThrows(Javadoc.Throws aThrows, Set<JavaType.FullyQualified> candidates) {
+                                    if (aThrows.getExceptionName() instanceof TypeTree) {
+                                        JavaType.FullyQualified exceptionType = TypeUtils.asFullyQualified(((TypeTree) aThrows.getExceptionName()).getType());
+                                        if (exceptionType != null) {
+                                            candidates.remove(exceptionType);
+                                        }
+                                    }
+                                    return super.visitThrows(aThrows, candidates);
+                                }
+                            };
+                        }
+                    }.visit(method, candidates);
+                }
+                return candidates;
+            }
         };
     }
 
-
-    private Set<JavaType.FullyQualified> findExceptionCandidates(J.@Nullable MethodDeclaration method) {
-
-        if (method == null || method.getMethodType() == null || method.isAbstract() || method.isConstructor()) {
-            return Collections.emptySet();
-        }
-
-        //Collect all checked exceptions.
-        Set<JavaType.FullyQualified> candidates = new TreeSet<>(Comparator.comparing(JavaType.FullyQualified::getFullyQualifiedName));
-
-        if (method.getThrows() != null) {
-            for (NameTree exception : method.getThrows()) {
-                if (exception.getType() == null || exception.getType() instanceof JavaType.Unknown) {
-                    return Collections.emptySet();
-                }
-                if (exception.getType() instanceof JavaType.FullyQualified && !TypeUtils.isAssignableTo("java.lang.RuntimeException", exception.getType())) {
-                    candidates.add(TypeUtils.asFullyQualified(exception.getType()));
-                }
-            }
-        }
-
-        if (candidates.isEmpty()) {
-            return Collections.emptySet();
-        }
-
-        //noinspection ConstantConditions
-        if ((method.getMethodType().getDeclaringType() != null && method.getMethodType().getDeclaringType().getFlags().contains(Flag.Final)) ||
-                method.isAbstract() || method.hasModifier(J.Modifier.Type.Static) ||
-                method.hasModifier(J.Modifier.Type.Private) ||
-                method.hasModifier(J.Modifier.Type.Final)) {
-            //Consider all checked exceptions as candidates if the type/method are final or the method is private or static.
-            return candidates;
-        }
-
-        //Remove any candidates that are defined in an overridden method.
-        Optional<JavaType.Method> superMethod = TypeUtils.findOverriddenMethod(method.getMethodType());
-        if (superMethod.isPresent()) {
-            JavaType.Method baseMethod = superMethod.get();
-            baseMethod.getThrownExceptions();
-            for (JavaType baseException : baseMethod.getThrownExceptions()) {
-                if (baseException instanceof JavaType.FullyQualified) {
-                    candidates.remove(baseException);
-                }
-            }
-        }
-        if (!candidates.isEmpty()) {
-            //Remove any candidates that are defined in Javadocs for the method.
-            new JavaVisitor<Set<JavaType.FullyQualified>>() {
-                @Override
-                protected JavadocVisitor<Set<JavaType.FullyQualified>> getJavadocVisitor() {
-                    return new JavadocVisitor<Set<JavaType.FullyQualified>>(this) {
-                        @Override
-                        public Javadoc visitThrows(Javadoc.Throws aThrows, Set<JavaType.FullyQualified> candidates) {
-                            if (aThrows.getExceptionName() instanceof TypeTree) {
-                                JavaType.FullyQualified exceptionType = TypeUtils.asFullyQualified(((TypeTree) aThrows.getExceptionName()).getType());
-                                if (exceptionType != null) {
-                                    candidates.remove(exceptionType);
-                                }
-                            }
-                            return super.visitThrows(aThrows, candidates);
-                        }
-                    };
-                }
-            }.visit(method, candidates);
-        }
-        return candidates;
-    }
 }

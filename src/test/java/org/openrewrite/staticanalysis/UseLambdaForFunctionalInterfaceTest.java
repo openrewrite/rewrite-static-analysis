@@ -32,8 +32,35 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         spec.recipe(new UseLambdaForFunctionalInterface());
     }
 
-    @SuppressWarnings("removal")
+    @DocumentExample
+    @Test
+    void useLambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
+                      @Override
+                      public Integer apply(Integer n) {
+                          return n + 1;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = n -> n + 1;
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/10")
+    @SuppressWarnings("removal")
     @Test
     void castingAmbiguity() {
         rewriteRun(
@@ -78,8 +105,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/194")
+    @SuppressWarnings("ConstantConditions")
     @Test
     void gson() {
         rewriteRun(
@@ -172,33 +199,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                   Runnable r = Test.this::execute;
 
                   void execute() {}
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void useLambda() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
-                      @Override
-                      public Integer apply(Integer n) {
-                          return n + 1;
-                      }
-                  };
-              }
-              """,
-            """
-              import java.util.function.Function;
-              class Test {
-                  Function<Integer, Integer> f = n -> n + 1;
               }
               """
           )
@@ -355,8 +355,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Issue("https://github.com/openrewrite/rewrite/issues/1915")
+    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void dontUseLambdaWhenShadowsClassField() {
         rewriteRun(
@@ -381,8 +381,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("UnnecessaryLocalVariable")
     @Issue("https://github.com/openrewrite/rewrite/issues/1915")
+    @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void dontUseLambdaWhenShadowsMethodDeclarationParam() {
         rewriteRun(
@@ -465,8 +465,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("DataFlowIssue")
+    @Test
     void noReplaceOnReferenceToUninitializedFinalField() {
         rewriteRun(
           //language=java
@@ -664,8 +664,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/moderneinc/support-app/issues/17")
+    @Test
     void lambdaWithComplexTypeInference() {
         rewriteRun(
           //language=java
@@ -736,8 +736,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/309")
+    @Test
     void dontUseLambdaForMethodWithTypeParameter() {
         //language=java
         rewriteRun(
@@ -775,8 +775,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
+    @Test
     void dontUseLambdaWhenEnumAccessesStaticFieldFromConstructor() {
         rewriteRun(
           //language=java
@@ -803,8 +803,8 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/413")
+    @Test
     void dontUseLambdaWhenEnumAccessesStaticFieldFromFromMethod() {
         rewriteRun(
           //language=java

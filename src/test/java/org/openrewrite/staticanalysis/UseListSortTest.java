@@ -40,7 +40,7 @@ class UseListSortTest implements RewriteTest {
               import java.util.Comparator;
               import java.util.List;
               import java.util.Collections;
-                          
+
               class T {
                   public void sortUsersById(List<String> names) {
                       Collections.sort(names);
@@ -52,7 +52,7 @@ class UseListSortTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.Comparator;
               import java.util.List;
-                          
+
               class T {
                   public void sortUsersById(List<String> names) {
                       names.sort(null);
@@ -73,9 +73,9 @@ class UseListSortTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.Comparator;
               import java.util.List;
-                          
+
               import static java.util.Collections.sort;
-                          
+
               class T {
                   public void sortUsersById(List<String> names) {
                       sort(names);
@@ -87,7 +87,7 @@ class UseListSortTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.Comparator;
               import java.util.List;
-                          
+
               class T {
                   public void sortUsersById(List<String> names) {
                       names.sort(null);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.staticanalysis.charp;
+package org.openrewrite.staticanalysis.csharp;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -29,7 +29,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.staticanalysis.charp.JavaToCsharp.toCsRecipe;
+import static org.openrewrite.staticanalysis.csharp.JavaToCsharp.toCsRecipe;
 
 class CatchClauseOnlyRethrowsCsharpTest implements RewriteTest {
 

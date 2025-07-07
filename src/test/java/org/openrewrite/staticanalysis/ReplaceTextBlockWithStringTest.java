@@ -53,7 +53,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                 String str =
                         "\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -78,7 +79,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                 String str =
                         "line1\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -102,7 +104,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                 String str =
                         "line1";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -129,7 +132,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "line1\\n" +
                         "line2\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -155,7 +159,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "line1\\n" +
                         "line2";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -182,7 +187,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "line1\\n" +
                         "    line2\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -211,7 +217,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "\\n" +
                         "line1\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -240,7 +247,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "\\n" +
                         "\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -271,7 +279,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "\\n" +
                         "line2\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -296,7 +305,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                 String str = "line1\\n" +
                         "line2\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -325,7 +335,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "line1\\n" +
                         "line2\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -358,7 +369,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                         "line1\\n" +
                         "line2\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -383,7 +395,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                 String str =
                         "\\"line1\\"\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -408,7 +421,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                 String str =
                         "\\"\\"\\"line1\\"\\"\\"\\n";
             }
-            """));
+            """
+          ));
     }
 
     @Test
@@ -433,7 +447,8 @@ class ReplaceTextBlockWithStringTest implements RewriteTest {
                 String str =
                         "Γειά σου Κόσμε\\n";
             }
-            """));
+            """
+          ));
     }
 
 }

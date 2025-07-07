@@ -519,8 +519,8 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
             14));
     }
 
-    @Test
     @Disabled("Not supported")
+    @Test
     void negationLocalVariable() {
         rewriteRun(
           version(
@@ -558,8 +558,8 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
             14));
     }
 
-    @Test
     @Disabled("Not supported")
+    @Test
     void negationWithoutElse() {
         rewriteRun(
           version(

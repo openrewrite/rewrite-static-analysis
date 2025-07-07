@@ -60,9 +60,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
                 if (STRING_BUILDER_TO_STRING.matches(method)) {
-                    List<Expression> methodCallsChain = new ArrayList<>();
                     List<Expression> arguments = new ArrayList<>();
-                    boolean isFlattenable = flatMethodInvocationChain(method, methodCallsChain, arguments);
+                    boolean isFlattenable = flatMethodInvocationChain(method, arguments);
                     if (!isFlattenable || arguments.isEmpty()) {
                         return m;
                     }
@@ -70,7 +69,15 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     Collections.reverse(arguments);
                     arguments = adjustExpressions(method, arguments);
 
-                    Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments).withPrefix(method.getPrefix());
+                    Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments);
+                    if (additive == null) {
+                        return m;
+                    }
+
+                    if (arguments.get(0).getComments().isEmpty() || !arguments.get(0).getPrefix().getWhitespace().startsWith("\n")) {
+                        additive = additive.withPrefix(method.getPrefix());
+                    }
+
                     if (isAMethodSelect(method)) {
                         additive = new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(additive));
                     }
@@ -112,7 +119,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                             }
                         }
                     } else if (!(arg instanceof J.Identifier || arg instanceof J.Literal || arg instanceof J.MethodInvocation)) {
-                        return new J.Parentheses<>(randomId(), Space.EMPTY, Markers.EMPTY, JRightPadded.build(arg));
+                        return new J.Parentheses<>(randomId(), arg.getPrefix(), Markers.EMPTY, JRightPadded.build(arg.withPrefix(Space.EMPTY)));
                     }
                     return arg;
                 });
@@ -121,14 +128,12 @@ public class ReplaceStringBuilderWithString extends Recipe {
             /**
              * Return true if the method calls chain is like "new StringBuilder().append("A")....append("B");"
              *
-             * @param method      a StringBuilder.toString() method call
-             * @param methodChain output methods chain
-             * @param arguments   output expression list to be chained by '+'.
+             * @param method    a StringBuilder.toString() method call
+             * @param arguments output expression list to be chained by '+'.
              */
-            private boolean flatMethodInvocationChain(J.MethodInvocation method, List<Expression> methodChain, List<Expression> arguments) {
+            private boolean flatMethodInvocationChain(J.MethodInvocation method, List<Expression> arguments) {
                 Expression select = method.getSelect();
                 while (select != null) {
-                    methodChain.add(select);
                     if (!(select instanceof J.MethodInvocation)) {
                         break;
                     }
@@ -144,7 +149,12 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     if (args.size() != 1) {
                         return false;
                     } else {
-                        arguments.add(args.get(0));
+                        JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
+                        if (jrp == null) {
+                            arguments.add(args.get(0));
+                        } else {
+                            arguments.add(args.get(0).withPrefix(jrp.getAfter()));
+                        }
                     }
                 }
 
@@ -154,6 +164,10 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     J.NewClass nc = (J.NewClass) select;
                     if (nc.getArguments().size() == 1 && TypeUtils.isString(nc.getArguments().get(0).getType())) {
                         arguments.add(nc.getArguments().get(0));
+                    } else if (!arguments.isEmpty()) {
+                        Expression lastArgument = arguments.get(arguments.size() - 1);
+                        Space formattedPrefix = lastArgument.getComments().isEmpty() ? Space.EMPTY : lastArgument.getPrefix();
+                        arguments.set(arguments.size() - 1, lastArgument.withPrefix(formattedPrefix));
                     }
                     return true;
                 }

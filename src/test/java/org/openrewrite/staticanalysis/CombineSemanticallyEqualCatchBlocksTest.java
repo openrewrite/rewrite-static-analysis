@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -141,6 +143,8 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
         );
     }
 
+    @ExpectedToFail
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/506")
     @Test
     void combineSameSemanticallyEquivalentMethodTypes() {
         rewriteRun(

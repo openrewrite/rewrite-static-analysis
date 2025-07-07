@@ -36,8 +36,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
             spec.recipe(new TernaryOperatorsShouldNotBeNested()).allSources(s -> s.markers(javaVersion(11)));
         }
 
-        @Test
         @DocumentExample
+        @Test
         void doReplaceNestedOrTernaryWithIfFollowedByTernary() {
             rewriteRun(
               //language=java
@@ -302,8 +302,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
-        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
         @ExpectedToFail("only directly returned ternaries are taken into account")
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
         @Test
         void doReplaceNestedOrAssignmentTernaryWithIfElse() {
             rewriteRun(
@@ -499,7 +499,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                   class Test {
                     public String determineSomething(String a, String b) {
                       //this should be before the if and followed by a new line
-                     
+
                       return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope"; //this should be behind the ternary
                     }
                   }
@@ -508,7 +508,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                   class Test {
                     public String determineSomething(String a, String b) {
                         //this should be before the if and followed by a new line
-                        
+
                         if ("a".equals(a)) {
                             return "a";
                         }
@@ -532,7 +532,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
                   static String c(){return "c";}
                   static String nope(){return "nope";}
                 }
-                """),
+                """
+              ),
               java(
                 """
                   class Test {
@@ -599,8 +600,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
 
         @Nested
         class ReplaceWithSwitchExpression {
-            @Test
             @DocumentExample
+            @Test
             void doReplaceNestedOrTernaryWithSwitchExpression() {
                 rewriteRun(
                   //language=java
@@ -1065,7 +1066,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       class Test {
                         public String determineSomething(String a, String b) {
                             //this should be before the if and followed by a new line
-                        
+
                             return "a".equals(a) ? "a" : "b".equals(a) ? "b" : "nope"; //this should be behind the ternary
                         }
                       }
@@ -1074,7 +1075,7 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       class Test {
                         public String determineSomething(String a, String b) {
                             //this should be before the if and followed by a new line
-                            
+
                             return switch (a) {
                                 case "a" -> "a";
                                 case "b" -> "b";
@@ -1099,7 +1100,8 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       static String c(){return "c";}
                       static String nope(){return "nope";}
                     }
-                    """),
+                    """
+                  ),
                   java(
                     """
                       class Test {

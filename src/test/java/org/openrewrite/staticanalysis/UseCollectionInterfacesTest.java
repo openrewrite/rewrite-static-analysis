@@ -37,44 +37,6 @@ class UseCollectionInterfacesTest implements RewriteTest {
         spec.recipe(new UseCollectionInterfaces());
     }
 
-    @Test
-    void noTargetInUse() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Collections;
-              import java.util.Set;
-              
-              class Test {
-                  Set<Integer> method() {
-                      return Collections.emptySet();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void returnIsAlreadyInterface() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.HashSet;
-              import java.util.Set;
-
-              class Test {
-                  public Set<Integer> method() {
-                      return new HashSet<>();
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void rawReturnType() {
@@ -96,6 +58,44 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
               class Test {
                   public Set method() {
+                      return new HashSet<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noTargetInUse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collections;
+              import java.util.Set;
+
+              class Test {
+                  Set<Integer> method() {
+                      return Collections.emptySet();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnIsAlreadyInterface() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class Test {
+                  public Set<Integer> method() {
                       return new HashSet<>();
                   }
               }
@@ -132,8 +132,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
+    @Test
     void annotatedReturnType() {
         rewriteRun(
           spec -> spec
@@ -156,7 +156,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.Set;
 
               import org.jetbrains.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable Set<@Nullable Integer> method() {
                       return new HashSet<>();
@@ -260,8 +260,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/223")
+    @Test
     void annotatedFieldType() {
         rewriteRun(
           spec -> spec
@@ -282,7 +282,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.Set;
 
               import org.jetbrains.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable Set<@Nullable Integer> values = new HashSet<>();
               }
@@ -731,8 +731,8 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/179")
+    @Test
     void enumSetHasDifferentGenericTypeThanSet() {
         rewriteRun(
           //language=java
@@ -741,7 +741,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
           java(
             """
               import java.util.EnumSet;
-              
+
               class Test {
                   public EnumSet values = EnumSet.allOf(A.class);
                   void iterate() {
@@ -935,9 +935,9 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
+    @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite/issues/2973")
     @Test
-    @ExpectedToFail
     void explicitImplementationClassInApi() {
         rewriteRun(
           //language=java
@@ -997,6 +997,117 @@ class UseCollectionInterfacesTest implements RewriteTest {
                   myEntry: [[ key: value ]]
               ]
               runPipeline(myMap: myMap)
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
+    @Test
+    void danglingGenericReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.ConcurrentLinkedQueue;
+
+              class B {
+                  private final ConcurrentLinkedQueue<String> widgetDataList;
+                  public void foo() {
+                    widgetDataList.add("TEST");
+                  }
+              }
+              """,
+            """
+              import java.util.Queue;
+
+              class B {
+                  private final Queue<String> widgetDataList;
+                  public void foo() {
+                    widgetDataList.add("TEST");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
+    @Test
+    void danglingReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.ConcurrentLinkedQueue;
+
+              class B {
+                  private final ConcurrentLinkedQueue widgetDataList;
+                  public void foo() {
+                    widgetDataList.add("TEST");
+                  }
+              }
+              """,
+            """
+              import java.util.Queue;
+
+              class B {
+                  private final Queue widgetDataList;
+                  public void foo() {
+                    widgetDataList.add("TEST");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/357")
+    @Test
+    void removeImportWhenUsingFieldAccess() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class Test {
+                  private final HashSet<Integer> set;
+                  public int method() {
+                      return this.set.size();
+                  }
+              }
+              """,
+            """
+              import java.util.Set;
+
+              class Test {
+                  private final Set<Integer> set;
+                  public int method() {
+                      return this.set.size();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/592")
+    @Test
+    void anonymousInstanceInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class Test {
+                  public int method(Set<Integer> input) {
+                      return new HashSet<>(input).size();
+                  }
+              }
               """
           )
         );

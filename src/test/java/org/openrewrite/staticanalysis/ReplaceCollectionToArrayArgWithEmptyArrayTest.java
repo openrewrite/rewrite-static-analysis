@@ -29,15 +29,15 @@ class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
         spec.recipe(new ReplaceCollectionToArrayArgWithEmptyArray());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void replaceSizeArgumentWithZero() {
         rewriteRun(
           //language=java
           java(
             """
               import java.util.Collection;
-              
+
               class A {
                   void test(Collection<Integer> args){
                       Integer [] array = args.toArray(new Integer[args.size()]);
@@ -46,7 +46,7 @@ class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
               """,
             """
               import java.util.Collection;
-              
+
               class A {
                   void test(Collection<Integer> args){
                       Integer [] array = args.toArray(new Integer[0]);
@@ -64,7 +64,7 @@ class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
           java(
             """
               import java.util.Collection;
-              
+
               class A {
                   void test(Collection<Integer> args){
                       Integer[] array = args.toArray(new Integer[4]);
@@ -73,7 +73,7 @@ class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
               """,
             """
               import java.util.Collection;
-              
+
               class A {
                   void test(Collection<Integer> args){
                       Integer[] array = args.toArray(new Integer[0]);

@@ -32,6 +32,43 @@ class UnnecessaryThrowsTest implements RewriteTest {
         spec.recipe(new UnnecessaryThrows());
     }
 
+    @DocumentExample
+    @Test
+    void unnecessaryThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;
+              import java.io.FileNotFoundException;
+              import java.io.IOException;
+              import java.io.UncheckedIOException;
+              class Test {
+                  private void changed() throws FileNotFoundException, UncheckedIOException {
+                  }
+
+                  void unchanged() throws IOException, UncheckedIOException {
+                      new FileInputStream("test");
+                  }
+              }
+              """,
+            """
+              import java.io.FileInputStream;
+              import java.io.IOException;
+              import java.io.UncheckedIOException;
+              class Test {
+                  private void changed() throws UncheckedIOException {
+                  }
+
+                  void unchanged() throws IOException, UncheckedIOException {
+                      new FileInputStream("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2144")
     @Test
     void genericException() {
@@ -48,45 +85,8 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
-    @Test
-    void unnecessaryThrows() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.FileInputStream;
-              import java.io.FileNotFoundException;
-              import java.io.IOException;
-              import java.io.UncheckedIOException;
-              class Test {
-                  private void test() throws FileNotFoundException, UncheckedIOException {
-                  }
-
-                  void test() throws IOException, UncheckedIOException {
-                      new FileInputStream("test");
-                  }
-              }
-              """,
-            """
-              import java.io.FileInputStream;
-              import java.io.IOException;
-              import java.io.UncheckedIOException;
-              class Test {
-                  private void test() throws UncheckedIOException {
-                  }
-
-                  void test() throws IOException, UncheckedIOException {
-                      new FileInputStream("test");
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @SuppressWarnings("EmptyTryBlock")
     @Issue("https://github.com/openrewrite/rewrite/issues/631")
+    @SuppressWarnings("EmptyTryBlock")
     @Test
     void necessaryThrowsFromCloseable() {
         rewriteRun(
@@ -365,7 +365,9 @@ class UnnecessaryThrowsTest implements RewriteTest {
               public interface FooVisitor<T, E extends Exception> {
                   T visit(Foo.Event event) throws E;
               }
-              """),
+              """
+
+          ),
           //language=java
           java(
             """
@@ -388,6 +390,68 @@ class UnnecessaryThrowsTest implements RewriteTest {
 
                   public record Event() { }
                   public static class MyException extends Exception { }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/apache/maven/pull/2291")
+    @Test
+    void retainExceptionsForOverrides() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+              class A {
+                  // Someone marked this protected, and added exceptions that implementers can optionally use
+                  protected void method() throws FileNotFoundException {
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import java.io.FileNotFoundException;
+              class B extends A {
+                  @Override
+                  protected void method() throws FileNotFoundException {
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import java.io.FileNotFoundException;
+              class C1 extends B {
+                  @Override
+                  protected final void method() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class C1 extends B {
+                  @Override
+                  protected final void method() {
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import java.io.FileNotFoundException;
+              final class C2 extends B {
+                  @Override
+                  protected void method() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              final class C2 extends B {
+                  @Override
+                  protected void method() {
+                  }
               }
               """
           )

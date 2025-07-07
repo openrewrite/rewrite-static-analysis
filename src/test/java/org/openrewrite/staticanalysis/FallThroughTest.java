@@ -37,6 +37,43 @@ class FallThroughTest implements RewriteTest {
         spec.recipe(new FallThrough());
     }
 
+    @DocumentExample
+    @Test
+    void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  int i;
+                  {
+                      switch (i) {
+                      case 0:
+                          i++;
+                      case 99:
+                          i++;
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  int i;
+                  {
+                      switch (i) {
+                      case 0:
+                          i++;
+                          break;
+                      case 99:
+                          i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/173")
     @Test
     void switchInSwitch() {
@@ -78,43 +115,6 @@ class FallThroughTest implements RewriteTest {
                          case 2 -> n+2;
                          default -> n;
                       };
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void addBreakWhenPreviousCaseHasCodeButLacksBreak() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  int i;
-                  {
-                      switch (i) {
-                      case 0:
-                          i++;
-                      case 99:
-                          i++;
-                      }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  int i;
-                  {
-                      switch (i) {
-                      case 0:
-                          i++;
-                          break;
-                      case 99:
-                          i++;
-                      }
                   }
               }
               """
@@ -257,7 +257,7 @@ class FallThroughTest implements RewriteTest {
                       switch (i) {
                       }
                   }
-                  
+
                   public void oneCase(int i) {
                       switch (i) {
                           case 0:
@@ -270,9 +270,9 @@ class FallThroughTest implements RewriteTest {
         );
     }
 
-    @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/229")
     @ExpectedToFail
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/229")
+    @Test
     void switchAsLastStatement() {
         rewriteRun(
           //language=java
@@ -477,6 +477,48 @@ class FallThroughTest implements RewriteTest {
     }
 
     @Test
+    void infiniteLoopWithBreak() {
+        rewriteRun(
+          //language=java
+          java (
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              while (true) {
+                                  break;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              while (true) {
+                                  break;
+                              }
+                              break;
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void nestedSwitch() {
         rewriteRun(
           //language=java
@@ -516,6 +558,222 @@ class FallThroughTest implements RewriteTest {
                                   default:
                                       System.out.print("other");
                               }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNestedInLiteralTrue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A, B, C, D
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              for (; true; ) {
+                                  return;
+                              }
+                          case B:
+                              while (true) {
+                                  return;
+                              }
+                          case C:
+                              for (; true; ) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                          case D:
+                              while (true) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B, C, D
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              for (; true; ) {
+                                  return;
+                              }
+                          case B:
+                              while (true) {
+                                  return;
+                              }
+                          case C:
+                              for (; true; ) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          case D:
+                              while (true) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+    @Test
+    void returnNestedInInfiniteForLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              for (; ; ) {
+                                  return;
+                              }
+                          case B:
+                              for (; ; ) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A, B
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      switch(a) {
+                          case A:
+                              for (; ; ) {
+                                  return;
+                              }
+                          case B:
+                              for (; ; ) {
+                                  if (false) {
+                                      break;
+                                  }
+                                  return;
+                              }
+                              break;
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNestedInNonFinalBooleanInfiniteLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Enum {
+                  A
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      switch(a) {
+                          case A:
+                              while (b) {
+                                  return;
+                              }
+                          default:
+                      }
+                  }
+              }
+              """,
+            """
+              enum Enum {
+                  A
+              }
+              public class Test {
+                  void foo(Enum a) {
+                      boolean b = true;
+                      switch(a) {
+                          case A:
+                              while (b) {
+                                  return;
+                              }
+                              break;
+                          default:
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void returnNestedInFinalBooleanInfiniteLoop() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              enum Enum {
+                  A, B, C
+              }
+              public class Test {
+
+                  final boolean classBoolean = true;
+
+                  void foo(Enum a) {
+                      final boolean methodBoolean = true;
+                      switch(a) {
+                          case A:
+                              while (classBoolean) {
+                                  return;
+                              }
+                          case B:
+                              while (methodBoolean) {
+                                  return;
+                              }
+                          case C:
+                              final boolean caseBoolean = true;
+                              while (caseBoolean) {
+                                  return;
+                              }
+                          default:
                       }
                   }
               }

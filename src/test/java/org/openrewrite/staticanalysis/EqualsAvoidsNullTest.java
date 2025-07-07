@@ -66,9 +66,9 @@ class EqualsAvoidsNullTest implements RewriteTest {
     @Test
     void leaveCharAlone() {
         rewriteRun(
-            //language=java
-            java(
-              """
+          //language=java
+          java(
+            """
               import java.util.List;
 
               class A {
@@ -76,7 +76,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       return objects.get(0).equals(1) || objects.get(0).equals('a');
                   }
               }
-              """)
+              """
+          )
         );
     }
 
@@ -111,7 +112,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
     void nullLiteral() {
         rewriteRun(
           //language=java
-          java("""
+          java(
+                """
               public class A {
                     void foo(String s) {
                         if(s.equals(null)) {
@@ -126,7 +128,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
                         }
                     }
                 }
-              """)
+              """
+          )
         );
     }
 
@@ -361,8 +364,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-        @Test
         @Disabled("Not yet supported")
+        @Test
         void lambdaGenerics() {
             rewriteRun(
               //language=java
@@ -444,8 +447,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-        @Test
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/434")
+        @Test
         void missingWhitespace() {
             rewriteRun(
               // language=java
@@ -492,36 +495,139 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
-    @Test
-    void literalAndConstant() {
-        rewriteRun(
-          spec -> spec.recipe(new EqualsAvoidsNull()),
-          // language=java
-          java(
-            """
-            package com.helloworld;
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/472")
+    @Nested
+    class EqualsAvoidsNullNonIdempotent {
+        @Test
+        void literalAndConstant() {
+            rewriteRun(
+              spec -> spec.recipe(new EqualsAvoidsNull()),
+              // language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = "";
+                      public void foo() {
+                          FOO.equals("");
+                          "".equals(FOO);
+                      }
+                  }
+                  """,
+                """
+                  public class Foo {
+                      private static final String FOO = "";
+                      public void foo() {
+                          "".equals(FOO);
+                          "".equals(FOO);
+                      }
+                  }
+                  """
+              ));
+        }
 
-            public class Foo {
-                private static final String FOO = "";
+        @Test
+        void rawOnRaw() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void bar() {
+                          "FOO".equals("BAR");
+                          "FOO".equalsIgnoreCase("BAR");
+                      }
+                  }
+                  """
+              )
+            );
+        }
 
-                public void foo() {
-                    FOO.equals("");
-                    "".equals(FOO);
-                }
-            }
-            """,
-            """
-            package com.helloworld;
+        @Test
+        void referenceOnReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      private static final String BAR = null;
+                      public void bar() {
+                          BAR.equals(FOO);
+                      }
+                  }
+                  """
+              )
+            );
+        }
 
-            public class Foo {
-                private static final String FOO = "";
+        @Test
+        void rawOverReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          FOO.equals("RAW");
+                          _null.equals("RAW");
+                          _null2.equals("RAW");
+                      }
+                  }
+                  """
+                ,
+                    """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null2 = null;
+                          "RAW".equals(FOO);
+                          "RAW".equals(_null);
+                          "RAW".equals(_null2);
+                      }
+                  }
+                  """
+              )
+            );
+        }
 
-                public void foo() {
-                    "".equals(FOO);
-                    "".equals(FOO);
-                }
-            }
-            """
-            ));
+        @Test
+        void rawOverLocalReference() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null1 = null;
+                          String _null2 = null;
+                          _null.equals(FOO);
+                          _null2.equals(FOO);
+                          _null.equals(_null);
+                          _null2.equals(_null2);
+                          _null1.equals(_null2);
+                      }
+                  }
+                  """
+                ,
+                    """
+                  public class Foo {
+                      private static final String FOO = null;
+                      public void bar(String _null) {
+                          String _null1 = null;
+                          String _null2 = null;
+                          FOO.equals(_null);
+                          FOO.equals(_null2);
+                          _null.equals(_null);
+                          _null2.equals(_null2);
+                          _null1.equals(_null2);
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

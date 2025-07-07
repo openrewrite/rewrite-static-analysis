@@ -30,22 +30,6 @@ class UseStandardCharsetTest implements RewriteTest {
         spec.recipe(new UseStandardCharset());
     }
 
-    @Test
-    void notAStandardCharset() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.nio.charset.Charset;
-
-              class Test {
-                  Charset WINDOWS_1252 = Charset.forName("Windows-1252");
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void changeCharsetForName() {
@@ -81,6 +65,22 @@ class UseStandardCharsetTest implements RewriteTest {
         );
     }
 
+    @Test
+    void notAStandardCharset() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.charset.Charset;
+
+              class Test {
+                  Charset WINDOWS_1252 = Charset.forName("Windows-1252");
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2450")
     @Test
     void convertAnyValidName() {
@@ -110,8 +110,8 @@ class UseStandardCharsetTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/moderneinc/support-public/issues/29")
+    @Test
     void nonConstantCharset() {
         rewriteRun(
           //language=java

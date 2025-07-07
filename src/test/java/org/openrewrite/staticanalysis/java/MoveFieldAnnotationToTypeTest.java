@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -30,11 +31,19 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
         spec.recipe(new MoveFieldAnnotationToType("org.openrewrite..*"));
     }
 
+    @DocumentExample
     @Test
-    void alreadyOnInnerClass() {
+    void fieldAnnotation() {
         rewriteRun(
           //language=java
           java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              import org.openrewrite.xml.tree.Xml;
+              class Test {
+                  @Nullable Xml.Tag tag;
+              }
+              """,
             """
               import org.openrewrite.internal.lang.Nullable;
               import org.openrewrite.xml.tree.Xml;
@@ -47,18 +56,10 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
     }
 
     @Test
-    @DocumentExample
-    void fieldAnnotation() {
+    void alreadyOnInnerClass() {
         rewriteRun(
           //language=java
           java(
-            """
-              import org.openrewrite.internal.lang.Nullable;
-              import org.openrewrite.xml.tree.Xml;
-              class Test {
-                  @Nullable Xml.Tag tag;
-              }
-              """,
             """
               import org.openrewrite.internal.lang.Nullable;
               import org.openrewrite.xml.tree.Xml;
@@ -203,7 +204,7 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
           java(
             """
               package org.openrewrite;
-              
+
               public class Test {
                  public void someFunction(@org.openrewrite.internal.lang.Nullable org.openrewrite.internal.MetricsHelper metrics) {
                  }
@@ -211,12 +212,53 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
               """,
             """
               package org.openrewrite;
-              
+
               import org.openrewrite.internal.lang.Nullable;
-              
+
               public class Test {
                  public void someFunction(org.openrewrite.internal.@Nullable MetricsHelper metrics) {
                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package a;
+              public class B {
+                  public static class C {}
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              import a.B;
+              import org.openrewrite.internal.lang.Nullable;
+
+              public class Foo {
+                  @Nullable
+                  public B.C bar() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import a.B;
+              import org.openrewrite.internal.lang.Nullable;
+
+              public class Foo {
+
+                  public B.@Nullable C bar() {
+                      return null;
+                  }
               }
               """
           )

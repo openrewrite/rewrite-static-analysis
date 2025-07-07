@@ -294,4 +294,22 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
             ), 17)
         );
     }
+
+    @Test
+    void javadoc() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                /**
+                 * @see java.lang.Runtime#exec(String, String[], java.io.File)
+                 */
+                class B {
+                }
+                """
+           ), 18)
+        );
+    }
+
 }

@@ -29,6 +29,32 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
         spec.recipe(new RemoveJavaDocAuthorTag());
     }
 
+    @DocumentExample
+    @Issue("https://github.com/openrewrite/rewrite/issues/1640")
+    @Test
+    void preserveDocsBeforeTag() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              /**
+               * Java doc text.
+               *
+               * @author fname.lname, fname.lname
+               */
+              class Test {}
+              """,
+            """
+              /**
+               * Java doc text.
+               *
+               */
+              class Test {}
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1640")
     @Test
     void tagOnFirstLine() {
@@ -81,32 +107,6 @@ class RemoveJavaDocAuthorTagTest implements RewriteTest {
               class Test {}
               """,
             """
-              class Test {}
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite/issues/1640")
-    @Test
-    @DocumentExample
-    void preserveDocsBeforeTag() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              /**
-               * Java doc text.
-               *
-               * @author fname.lname, fname.lname
-               */
-              class Test {}
-              """,
-            """
-              /**
-               * Java doc text.
-               *
-               */
               class Test {}
               """
           )

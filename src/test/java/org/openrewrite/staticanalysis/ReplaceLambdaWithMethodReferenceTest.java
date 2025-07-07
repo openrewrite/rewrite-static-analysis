@@ -36,6 +36,58 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         spec.recipe(new ReplaceLambdaWithMethodReference());
     }
 
+    @DocumentExample
+    @Test
+    void functionMultiParamReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+
+                  ChangeListener listener = (o, oldVal, newVal) -> {
+                      onChange(o, oldVal, newVal);
+                  };
+
+                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+                      String strVal = newVal.toString();
+                      System.out.println(strVal);
+                  }
+
+                  interface ObservableValue<T> {
+                  }
+
+                  @FunctionalInterface
+                  interface ChangeListener<T> {
+                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+
+                  ChangeListener listener = this::onChange;
+
+                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+                      String strVal = newVal.toString();
+                      System.out.println(strVal);
+                  }
+
+                  interface ObservableValue<T> {
+                  }
+
+                  @FunctionalInterface
+                  interface ChangeListener<T> {
+                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void dontSelectCastFromTypeVariable() {
         rewriteRun(
@@ -64,7 +116,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.nio.file.Paths;
               import java.util.List;
               import java.util.stream.Collectors;
-                            
+
               class Test {
                   Path path = Paths.get("");
                   List<String> method(List<String> l) {
@@ -86,7 +138,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.stream.Stream;
-                            
+
               class Test {
                   Stream<String> method() {
                       return Stream.of(1, 32, 12, 15, 23).map(x -> Integer.toString(x));
@@ -142,8 +194,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/201")
+    @Test
     void typeCastOnConstructorCall() {
         rewriteRun(
           //language=java
@@ -241,7 +293,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             //language=java
             """
               import org.test.CheckType;
-                            
+
               import java.util.List;
               import java.util.stream.Collectors;
 
@@ -345,58 +397,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
-    @Test
-    void functionMultiParamReference() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.function.Function;
-              class Test {
-                            
-                  ChangeListener listener = (o, oldVal, newVal) -> {
-                      onChange(o, oldVal, newVal);
-                  };
-                  
-                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
-                      String strVal = newVal.toString();
-                      System.out.println(strVal);
-                  }
-
-                  interface ObservableValue<T> {
-                  }
-
-                  @FunctionalInterface
-                  interface ChangeListener<T> {
-                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
-                  }
-              }
-              """,
-            """
-              import java.util.function.Function;
-              class Test {
-                            
-                  ChangeListener listener = this::onChange;
-                  
-                  protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
-                      String strVal = newVal.toString();
-                      System.out.println(strVal);
-                  }
-
-                  interface ObservableValue<T> {
-                  }
-
-                  @FunctionalInterface
-                  interface ChangeListener<T> {
-                      void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void nonStaticMethods() {
         rewriteRun(
@@ -404,7 +404,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               import java.util.Collections;
-                            
+
               class Test2 {
                   class Test {
                       Runnable r = () -> run();
@@ -420,7 +420,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               """,
             """
               import java.util.Collections;
-                            
+
               class Test2 {
                   class Test {
                       Runnable r = this::run;
@@ -606,14 +606,14 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             //language=java
             """
               import org.test.CheckType;
-                            
+
               import java.util.List;
               import java.util.stream.Collectors;
 
               class Test {
                   List<Object> filter(List<Object> l) {
                       return l.stream()
-                          .filter(org.test.CheckType.class::isInstance)
+                          .filter(CheckType.class::isInstance)
                           .map(CheckType.class::cast)
                           .collect(Collectors.toList());
                   }
@@ -680,7 +680,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               """,
             """
               import java.util.function.BiFunction;
-               
+
               class Test {
                   void foo() {
                       BiFunction<Integer, Integer, Integer> f = Integer::compareTo;
@@ -860,7 +860,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   Function<Integer, String> f = (i) -> {
                       return this.execute(i);
                   };
-                  
+
                   String execute(Integer i) {
                       return i.toString();
                   }
@@ -871,7 +871,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
               class Test {
                   Function<Integer, String> f = this::execute;
-                  
+
                   String execute(Integer i) {
                       return i.toString();
                   }
@@ -919,7 +919,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           java(
             """
               package abc;
-                            
+
               class M {
                   MyFunction getFunction(String fcn) {
                       return () -> fcn;
@@ -959,7 +959,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-                            
+
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -979,7 +979,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-                            
+
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -1008,7 +1008,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               import java.util.ArrayList;
               import java.util.function.Function;
               import java.util.function.Supplier;
-                            
+
               class A {
                   void foo() {
                       Supplier<?> s;
@@ -1099,8 +1099,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("StringOperationCanBeSimplified")
     @Issue("https://github.com/openrewrite/rewrite/issues/2949")
+    @SuppressWarnings("StringOperationCanBeSimplified")
     @Test
     void anotherSimplerMultipleConstructorsCase() {
         rewriteRun(
@@ -1195,9 +1195,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
     }
 
 
+    @Issue("https://github.com/openrewrite/rewrite/issues/3071")
     @SuppressWarnings("OptionalOfNullableMisuse")
     @Test
-    @Issue("https://github.com/openrewrite/rewrite/issues/3071")
     void missingImportForDeclaringType() {
         rewriteRun(
           //language=java
@@ -1235,9 +1235,9 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/200")
     @SuppressWarnings({"ConstantValue"})
     @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/200")
     void nestedType() {
         rewriteRun(
           //language=java
@@ -1275,8 +1275,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/132")
+    @Test
     void dontReplaceLambdaSupplierOfMethodReference() {
         rewriteRun(
           //language=java
@@ -1328,8 +1328,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/237")
+    @Test
     void groupingByGetClass() {
         rewriteRun(
           //language=java
@@ -1337,7 +1337,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
             """
               import java.util.*;
               import java.util.stream.*;
-                          
+
               class Animal {}
               class Cat extends Animal {}
               class Dog extends Animal {}
@@ -1365,8 +1365,34 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                   Object field;
                   void foo() {
                       // Runtime exception when replaced with field::toString
-                      Supplier<String> supplier = () -> field.toString();
-                      Supplier<String> supplier = () -> this.field.toString();
+                      Supplier<String> supplierA = () -> field.toString();
+                      Supplier<String> supplierB = () -> this.field.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noMethodReferenceForParentheses() {
+        rewriteRun(
+          java(
+            """
+              @FunctionalInterface
+              interface Foo {
+                  void foo();
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.function.Consumer;
+              import java.util.function.Function;
+              class Test {
+                  void onChange(Foo a, Foo b, boolean c) {
+                      Consumer<?> processor = () -> (c ? a : b).foo();
                   }
               }
               """

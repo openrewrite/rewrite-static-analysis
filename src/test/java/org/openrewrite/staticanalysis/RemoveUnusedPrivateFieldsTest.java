@@ -23,6 +23,7 @@ import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -30,6 +31,25 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new RemoveUnusedPrivateFields());
+    }
+
+    @DocumentExample
+    @Test
+    void removeUnusedPrivateField() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Test {
+                  private String notUsed;
+              }
+              """,
+            """
+              public class Test {
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -125,25 +145,6 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
-    @Test
-    void removeUnusedPrivateField() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class Test {
-                  private String notUsed;
-              }
-              """,
-            """
-              public class Test {
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void removeUnusedPrivateFieldImport() {
         rewriteRun(
@@ -223,8 +224,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/3061")
+    @Test
     void findReferencesInOuterScope() {
         rewriteRun(
           //language=java
@@ -232,11 +233,11 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               public class Vehicle {
                   private VehicleUsage vehicleUsage;
-                            
+
                   public class VehicleUsage {
                       private final String vehicleId;
                   }
-                            
+
                   public void doSomethingWithAVehicle() {
                       vehicleUsage = new VehicleUsage();
                       vehicleUsage.vehicleId = "vu50";
@@ -257,7 +258,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                  // Some comment
                  private int a;
               }
-              """, """
+              """,
+                """
               public class Test {
               }
               """
@@ -274,7 +276,8 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               public class Test {
                   private int a; // Some comment
               }
-              """, """
+              """,
+                """
               public class Test {
               }
               """
@@ -291,15 +294,16 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               public class Test {
                   private int a;
                   private int b; // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a;
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -322,15 +326,16 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                     multiline
                     comment
                   */
-                  
+
                   public void test() {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a;
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -351,16 +356,17 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
                   private int a;
                   private int b;
                   // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a;
                   // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -378,15 +384,16 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               public class Test {
                   private int a, b; // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
               }
-              """, """
+              """,
+                """
               public class Test {
                   private int a; // Some comment
-                  
+
                   public void test() {
                       a = 42;
                   }
@@ -435,6 +442,44 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               @lombok.extern.slf4j.Slf4j
               class A {
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
+    @Test
+    void removeUntilStable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Test {
+                  private String a = "a";
+                  private String ab = a + "b";
+                  private String abc = ab + "c";
+              }
+              """,
+            """
+              public class Test {
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
+    @Test
+    void doNotRemoveWhenThereAreMissingTypes() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false)),
+          //language=java
+          java(
+            """
+              import can.not.be.Found;
+              public class Test {
+                  private Found notUsed;
               }
               """
           )

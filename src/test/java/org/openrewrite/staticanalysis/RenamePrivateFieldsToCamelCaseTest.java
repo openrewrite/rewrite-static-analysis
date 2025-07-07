@@ -35,6 +35,54 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         spec.recipe(new RenamePrivateFieldsToCamelCase());
     }
 
+    @DocumentExample
+    @Test
+    void renamePrivateMembers() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private int DoChange = 10;
+                  public int DoNotChangePublicMember;
+                  int DoNotChangeDefaultMember;
+
+                  public int getTen() {
+                      return DoChange;
+                  }
+
+                  public int getTwenty() {
+                      return this.DoChange * 2;
+                  }
+
+                  public int getThirty() {
+                      return DoChange * 3;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  private int doChange = 10;
+                  public int DoNotChangePublicMember;
+                  int DoNotChangeDefaultMember;
+
+                  public int getTen() {
+                      return doChange;
+                  }
+
+                  public int getTwenty() {
+                      return this.doChange * 2;
+                  }
+
+                  public int getThirty() {
+                      return doChange * 3;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2461")
     @Test
     void upperSnakeToLowerCamel() {
@@ -106,7 +154,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
                       MY_STRING.toLowerCase();
                       AB.INNER_STRING.toLowerCase();
                   }
-              
+
                   private static class AB {
                       private static String INNER_STRING = "var";
                       void doSomething() {
@@ -122,7 +170,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
                       myString.toLowerCase();
                       AB.INNER_STRING.toLowerCase();
                   }
-              
+
                   private static class AB {
                       private static String INNER_STRING = "var";
                       void doSomething() {
@@ -213,60 +261,12 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
             """
               class Test {
                   private int DoNoTChange;
-                  
+
                   public int addTwenty(String doNoTChange) {
                       return DoNoTChange + 20;
                   }
                   public int addTen(String value) {
                       return DoNoTChange + 10;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void renamePrivateMembers() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private int DoChange = 10;
-                  public int DoNotChangePublicMember;
-                  int DoNotChangeDefaultMember;
-
-                  public int getTen() {
-                      return DoChange;
-                  }
-
-                  public int getTwenty() {
-                      return this.DoChange * 2;
-                  }
-
-                  public int getThirty() {
-                      return DoChange * 3;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  private int doChange = 10;
-                  public int DoNotChangePublicMember;
-                  int DoNotChangeDefaultMember;
-
-                  public int getTen() {
-                      return doChange;
-                  }
-
-                  public int getTwenty() {
-                      return this.doChange * 2;
-                  }
-
-                  public int getThirty() {
-                      return doChange * 3;
                   }
               }
               """
@@ -317,7 +317,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
             """
               class Test {
                   private int test = new InnerClass().DoNotChange + new InnerClass().DoNotChange2;
-                  
+
                   private class InnerClass{
                       public int DoNotChange = 10;
                       private int DoNotChange2 = 10;
@@ -336,7 +336,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
             """
               class Test {
                   private int DoChange = 10;
-                  
+
                   private class InnerClass{
                       private int test = DoChange + 1;
                   }
@@ -345,7 +345,7 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
             """
               class Test {
                   private int doChange = 10;
-                  
+
                   private class InnerClass{
                       private int test = doChange + 1;
                   }
@@ -587,8 +587,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+    @Test
     void doNotChangeLombokAnnotatedClasses() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
@@ -604,8 +604,8 @@ class RenamePrivateFieldsToCamelCaseTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/267")
+    @Test
     void doNotChangeLombokAnnotatedFields() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),

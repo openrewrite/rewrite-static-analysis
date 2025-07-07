@@ -38,9 +38,9 @@ public class RemoveExtraSemicolons extends Recipe {
     public String getDescription() {
         //language=markdown
         return "Removes not needed semicolons. Semicolons are considered not needed:\n" +
-                "* Optional semicolons at the end of try-with-resources,\n" +
-                "* after the last enum value if no field or method is defined,\n" +
-                "* no statement between two semicolon.";
+                " * Optional semicolons at the end of try-with-resources,\n" +
+                " * after the last enum value if no field or method is defined,\n" +
+                " * no statement between two semicolon.";
     }
 
     @Override
@@ -53,8 +53,8 @@ public class RemoveExtraSemicolons extends Recipe {
         return Duration.ofMinutes(1);
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
+    @SuppressWarnings("ConstantConditions")
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
 

@@ -24,6 +24,7 @@ import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -92,7 +93,9 @@ public class AnnotateNullableMethods extends Recipe {
                             .build()
                             .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                     doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotatedMethod));
-                    return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor().visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
+                    doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
+                    return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor()
+                            .visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
                 }
                 return md;
             }
@@ -174,6 +177,10 @@ public class AnnotateNullableMethods extends Recipe {
             }
             if (returnExpression instanceof J.MethodInvocation) {
                 return isKnowNullableMethod((J.MethodInvocation) returnExpression);
+            }
+            if (returnExpression instanceof J.Ternary) {
+                J.Ternary ternary = (J.Ternary) returnExpression;
+                return maybeIsNull(ternary.getTruePart()) || maybeIsNull(ternary.getFalsePart());
             }
             return false;
         }

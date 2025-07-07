@@ -30,45 +30,6 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         spec.recipe(new SimplifyConstantIfBranchExecution());
     }
 
-    @Test
-    void doNotChangeNonIf() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  public void test() {
-                      boolean b = true;
-                      if (!b) {
-                          System.out.println("hello");
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/286")
-    void doNotChangeParenthesisOnly() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              public class A {
-                  public void test() {
-                      boolean b = true;
-                      if (!(b)) {
-                          System.out.println("hello");
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void simplifyConstantIfTrue() {
@@ -88,6 +49,45 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
               public class A {
                   public void test() {
                       System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeNonIf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      boolean b = true;
+                      if (!b) {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/286")
+    @Test
+    void doNotChangeParenthesisOnly() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void test() {
+                      boolean b = true;
+                      if (!(b)) {
+                          System.out.println("hello");
+                      }
                   }
               }
               """
@@ -145,8 +145,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @Test
     @SuppressWarnings("DuplicateCondition")
+    @Test
     void simplifyConstantIfTrueOrTrue() {
         rewriteRun(
           //language=java
@@ -188,6 +188,68 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
             """
               public class A {
                   public void test() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyConstantIfTrueWithReturnImpliedFalseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public boolean test() {
+                      if (true) {
+                          Object x;
+                          return true;
+                      }
+                      Object x;
+                      return false;
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public boolean test() {
+                      Object x;
+                      return true;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyConstantIfTrueNestedWithReturnImpliedFalseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public boolean test() {
+                      if (true) {
+                          Object x;
+                          if (true) {
+                              return true;
+                          }
+                          {
+                              Object y;
+                          }
+                      }
+                      return false;
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public boolean test() {
+                      Object x;
+                      return true;
                   }
               }
               """
@@ -1293,8 +1355,8 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/89")
+    @Test
     void preserveComments() {
         rewriteRun(
           //language=java
@@ -1334,7 +1396,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                   boolean trueCondition2 = false ? false : true;
                   boolean trueCondition3 = !true ? false : true;
                   boolean trueCondition4 = !false ? true : false;
-              
+
                   boolean falseCondition1 = true ? false : true;
                   boolean falseCondition2 = false ? true : false;
                   boolean falseCondition3 = !false ? false : true;
@@ -1347,7 +1409,7 @@ class SimplifyConstantIfBranchExecutionTest implements RewriteTest {
                   boolean trueCondition2 = true;
                   boolean trueCondition3 = true;
                   boolean trueCondition4 = true;
-              
+
                   boolean falseCondition1 = false;
                   boolean falseCondition2 = false;
                   boolean falseCondition3 = false;

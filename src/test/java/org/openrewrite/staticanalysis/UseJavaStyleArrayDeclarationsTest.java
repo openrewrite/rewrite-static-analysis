@@ -29,23 +29,6 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
         spec.recipe(new UseJavaStyleArrayDeclarations());
     }
 
-    @Test
-    void javaStyleArrayDeclarations() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  int[] i = null;
-                  public int[] getCount(int[] val) {
-                      return null;
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void javaStyleArrayForVariableDeclarations() {
@@ -57,7 +40,7 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
                   int i[];
                   int j[][];
                   int c[], d[];
-                  
+
                   void someMethod(int i[]) {
                   }
               }
@@ -67,8 +50,25 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
                   int[] i;
                   int[][] j;
                   int[] c, d;
-                  
+
                   void someMethod(int[] i) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void javaStyleArrayDeclarations() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  int[] i = null;
+                  public int[] getCount(int[] val) {
+                      return null;
                   }
               }
               """

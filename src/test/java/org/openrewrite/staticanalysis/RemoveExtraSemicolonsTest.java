@@ -36,6 +36,62 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         spec.recipe(new RemoveExtraSemicolons());
     }
 
+    @DocumentExample
+    @Test
+    void emptyBlockStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      ;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void repeatedSemicolon() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      int a = 1;;
+                      int b = 2;
+                      int c = 3;;;
+                      int d = 4;
+                      int e = 5; ;
+                      int f = 6;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      int a = 1;
+                      int b = 2;
+                      int c = 3;
+                      int d = 4;
+                      int e = 5;
+                      int f = 6;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1587")
     @Test
     void enumSemicolons() {
@@ -76,29 +132,6 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
-    @Test
-    void emptyBlockStatements() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void test() {
-                      ;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void test() {
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void tryWithResources() {
         rewriteRun(
@@ -129,7 +162,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                 public J.Try visitTry(J.Try t, Object o) {
                     List<J.Try.Resource> resources = t.getResources();
                     assertThat(resources).isNotNull();
-                    assertThat(resources.get(0).isTerminatedWithSemicolon()).isTrue();
+                    assertThat(resources.getFirst().isTerminatedWithSemicolon()).isTrue();
                     assertThat(resources.get(1).isTerminatedWithSemicolon()).isFalse();
                     return t;
                 }
@@ -214,42 +247,8 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
-    @Test
-    @DocumentExample
-    void repeatedSemicolon() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void test() {
-                      int a = 1;;
-                      int b = 2;
-                      int c = 3;;;
-                      int d = 4;
-                      int e = 5; ;
-                      int f = 6;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void test() {
-                      int a = 1;
-                      int b = 2;
-                      int c = 3;
-                      int d = 4;
-                      int e = 5;
-                      int f = 6;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/5146")
+    @Test
     void noValuesJustSemicolon() {
         rewriteRun(
           java(

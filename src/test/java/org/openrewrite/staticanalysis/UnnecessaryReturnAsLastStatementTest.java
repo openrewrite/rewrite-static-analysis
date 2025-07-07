@@ -28,8 +28,8 @@ class UnnecessaryReturnAsLastStatementTest implements RewriteTest {
         spec.recipe(new UnnecessaryReturnAsLastStatement());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void simpleReturn() {
         //language=java
         rewriteRun(

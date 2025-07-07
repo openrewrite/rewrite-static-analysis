@@ -1,0 +1,3788 @@
+# Copyright 2025 the original author or authors.
+# <p>
+# Licensed under the Moderne Source Available License (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# <p>
+# https://docs.moderne.io/licensing/moderne-source-available-license
+# <p>
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AbstractClassPublicConstructor
+examples:
+- description: ''
+  sources:
+  - before: |
+      abstract class Test {
+          public Test() {
+          }
+      }
+    after: |
+      abstract class Test {
+          protected Test() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AddSerialAnnotationToSerialVersionUID
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.io.Serializable;
+
+      class Example implements Serializable {
+          private static final long serialVersionUID = 1L;
+      }
+    after: |
+      import java.io.Serial;
+      import java.io.Serializable;
+
+      class Example implements Serializable {
+          @Serial
+          private static final long serialVersionUID = 1L;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      import java.io.Serializable;
+
+      public class Example implements Serializable {
+          private String fred;
+          private int numberOfFreds;
+      }
+    after: |
+      import java.io.Serializable;
+
+      public class Example implements Serializable {
+          private static final long serialVersionUID = 1;
+          private String fred;
+          private int numberOfFreds;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AnnotateNullableMethods
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      public class Test {
+
+          public String getString() {
+              return null;
+          }
+
+          public String getStringWithMultipleReturn() {
+              if (System.currentTimeMillis() % 2 == 0) {
+                  return "Not null";
+              }
+              return null;
+          }
+      }
+    after: |
+      import org.jspecify.annotations.Nullable;
+
+      public class Test {
+
+          public @Nullable String getString() {
+              return null;
+          }
+
+          public @Nullable String getStringWithMultipleReturn() {
+              if (System.currentTimeMillis() % 2 == 0) {
+                  return "Not null";
+              }
+              return null;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AnnotateNullableParameters
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      public class PersonBuilder {
+          private String name = "Unknown";
+
+          public PersonBuilder setName(String name) {
+              if (name == null) {
+                  return this;
+              }
+              this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+              return this;
+          }
+      }
+    after: |
+      import org.jspecify.annotations.Nullable;
+
+      public class PersonBuilder {
+          private String name = "Unknown";
+
+          public PersonBuilder setName(@Nullable String name) {
+              if (name == null) {
+                  return this;
+              }
+              this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+              return this;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.concurrent.atomic.AtomicInteger;
+      import java.util.concurrent.atomic.AtomicLong;
+      import java.util.concurrent.atomic.AtomicBoolean;
+
+      class A {
+          boolean areEqual(AtomicInteger i1, AtomicInteger i2) {
+              return i1.equals(i2);
+          }
+          boolean areEqual(AtomicLong l1, AtomicLong l2) {
+              return l1.equals(l2);
+          }
+          boolean areEqual(AtomicBoolean b1, AtomicBoolean b2) {
+              return b1.equals(b2);
+          }
+      }
+    after: |
+      import java.util.concurrent.atomic.AtomicInteger;
+      import java.util.concurrent.atomic.AtomicLong;
+      import java.util.concurrent.atomic.AtomicBoolean;
+
+      class A {
+          boolean areEqual(AtomicInteger i1, AtomicInteger i2) {
+              return i1.get() == i2.get();
+          }
+          boolean areEqual(AtomicLong l1, AtomicLong l2) {
+              return l1.get() == l2.get();
+          }
+          boolean areEqual(AtomicBoolean b1, AtomicBoolean b2) {
+              return b1.get() == b2.get();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AvoidBoxedBooleanExpressions
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          Boolean b;
+          int test() {
+              if (b) {
+                  return 1;
+              } else {
+                  return 2;
+              }
+          }
+      }
+    after: |
+      class Test {
+          Boolean b;
+          int test() {
+              if (Boolean.TRUE.equals(b)) {
+                  return 1;
+              } else {
+                  return 2;
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.math.BigDecimal;
+      class Test {
+          void test(double d) {
+              BigDecimal bd = new BigDecimal(1.0);
+              BigDecimal bd2 = new BigDecimal(d);
+          }
+      }
+    after: |
+      import java.math.BigDecimal;
+      class Test {
+          void test(double d) {
+              BigDecimal bd = BigDecimal.valueOf(1.0);
+              BigDecimal bd2 = BigDecimal.valueOf(d);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.math.BigDecimal;
+
+      class A {
+          void divide() {
+              BigDecimal bd = BigDecimal.valueOf(10);
+              BigDecimal bd2 = BigDecimal.valueOf(2);
+              BigDecimal bd3 = bd.divide(bd2, BigDecimal.ROUND_DOWN);
+              bd.divide(bd2, 1);
+              bd.divide(bd2, 1, BigDecimal.ROUND_CEILING);
+              bd.divide(bd2, 1, 1);
+              bd.setScale(2, 1);
+          }
+      }
+    after: |
+      import java.math.BigDecimal;
+      import java.math.RoundingMode;
+
+      class A {
+          void divide() {
+              BigDecimal bd = BigDecimal.valueOf(10);
+              BigDecimal bd2 = BigDecimal.valueOf(2);
+              BigDecimal bd3 = bd.divide(bd2, RoundingMode.DOWN);
+              bd.divide(bd2, RoundingMode.DOWN);
+              bd.divide(bd2, 1, RoundingMode.CEILING);
+              bd.divide(bd2, 1, RoundingMode.DOWN);
+              bd.setScale(2, RoundingMode.DOWN);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.BooleanChecksNotInverted
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class Test {
+          int i;
+          int a;
+          void test() {
+              if ( !(a == 2)) {
+              }
+              boolean b = !(i < 10);
+          }
+      }
+    after: |
+      public class Test {
+          int i;
+          int a;
+          void test() {
+              if ( a != 2) {
+              }
+              boolean b = i >= 10;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.BufferedWriterCreationRecipes
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.io.BufferedWriter;
+      import java.io.FileWriter;
+      import java.io.File;
+      import java.io.IOException;
+
+      public class BufferedWriterCreationTest {
+          public void createBufferedWriter(File f) throws IOException {
+              try (BufferedWriter writer = new BufferedWriter(new FileWriter(f))) {
+
+              }
+          }
+      }
+    after: |
+      import java.io.BufferedWriter;
+      import java.io.File;
+      import java.io.IOException;
+      import java.nio.file.Files;
+
+      public class BufferedWriterCreationTest {
+          public void createBufferedWriter(File f) throws IOException {
+              try (BufferedWriter writer = Files.newBufferedWriter(f.toPath())) {
+
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          boolean isSame(String arg1, String arg2) {
+              return arg1.equalsIgnoreCase(arg2.toLowerCase());
+          }
+      }
+    after: |
+      class A {
+          boolean isSame(String arg1, String arg2) {
+              return arg1.equalsIgnoreCase(arg2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
+          }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
+      import java.io.FileReader;
+      import java.io.IOException;
+
+      class A {
+          void foo() throws IOException {
+              try {
+                  new FileReader("").read();
+              } catch (IOException e) {
+                  throw e;
+              }
+          }
+      }
+    after: |
+      import java.io.FileReader;
+      import java.io.IOException;
+
+      class A {
+          void foo() throws IOException {
+              new FileReader("").read();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+examples:
+- description: Chain `StringBuilder.append()` calls instead of the '+' operator to
+    efficiently concatenate strings and numbers.
+  sources:
+  - before: |
+      class A {
+          void method1() {
+              StringBuilder sb = new StringBuilder();
+              String op = "+";
+              sb.append("A" + op + "B");
+              sb.append(1 + op + 2);
+          }
+      }
+    after: |
+      class A {
+          void method1() {
+              StringBuilder sb = new StringBuilder();
+              String op = "+";
+              sb.append("A").append(op).append("B");
+              sb.append(1).append(op).append(2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ControlFlowIndentation
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void test() {
+              if(true) {
+                  foo();
+              } else
+                  foo();
+                  foo();
+          }
+
+          static void foo(){}
+      }
+    after: |
+      class A {
+          void test() {
+              if(true) {
+                  foo();
+              } else
+                  foo();
+              foo();
+          }
+
+          static void foo(){}
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CovariantEquals
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int n;
+
+          public boolean equals(Test tee) {
+              return n == tee.n;
+          }
+      }
+    after: |
+      class Test {
+          int n;
+
+          @Override
+          public boolean equals(Object obj) {
+              if (obj == this) return true;
+              if (obj == null || getClass() != obj.getClass()) return false;
+              Test tee = (Test) obj;
+              return n == tee.n;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CustomImportOrder
+examples:
+- description: ''
+  sources:
+  - before: |
+      package com.example;
+
+      import org.apache.commons.lang3.StringUtils;
+      import java.util.Collections;
+      import static java.util.Collections.*;
+
+      class Test {}
+    after: |
+      package com.example;
+
+      import static java.util.Collections.*;
+
+      import java.util.Collections;
+      import org.apache.commons.lang3.StringUtils;
+
+      class Test {}
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.DeclarationSiteTypeVariance
+examples:
+- description: ''
+  parameters:
+  - List.of("java.util.function.Function<IN, OUT>")
+  - List.of("java.lang.*")
+  - 'true'
+  sources:
+  - before: |
+      import java.util.function.Function;
+      class Test {
+          void test(Function<In, Out> f) {
+          }
+      }
+    after: |
+      import java.util.function.Function;
+      class Test {
+          void test(Function<? super In, ? extends Out> f) {
+          }
+      }
+    language: java
+  - before: |
+      interface In {}
+      interface Out {}
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.DefaultComesLast
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int n;
+          {
+              switch (n) {
+                  case 1:
+                      break;
+                  case 2:
+                      break;
+                  default:
+                      System.out.println("default");
+                      break;
+                  case 3:
+                      System.out.println("case3");
+              }
+          }
+      }
+    after: |
+      class Test {
+          int n;
+          {
+              switch (n) {
+                  case 1:
+                      break;
+                  case 2:
+                      break;
+                  case 3:
+                      System.out.println("case3");
+                      break;
+                  default:
+                      System.out.println("default");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.EmptyBlock
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          {
+              int i = 0;
+              switch(i) {
+              }
+          }
+      }
+    after: |
+      public class A {
+          {
+              int i = 0;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.EqualsAvoidsNull
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          {
+              String s = null;
+              if(s.equals("test")) {}
+              if(s.equalsIgnoreCase("test")) {}
+              System.out.println(s.contentEquals("test"));
+          }
+      }
+    after: |
+      public class A {
+          {
+              String s = null;
+              if("test".equals(s)) {}
+              if("test".equalsIgnoreCase(s)) {}
+              System.out.println("test".contentEquals(s));
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.EqualsToContentEquals
+examples:
+- description: ''
+  sources:
+  - before: |
+      class SomeClass {
+          boolean foo(StringBuilder sb) {
+              String str = "example string";
+              return str.equals(sb.toString());
+          }
+      }
+    after: |
+      class SomeClass {
+          boolean foo(StringBuilder sb) {
+              String str = "example string";
+              return str.contentEquals(sb);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ExplicitCharsetOnStringGetBytes
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      public class Test {
+          void test() {
+              String s = "hi";
+              s.getBytes();
+          }
+      }
+    after: |
+      import java.nio.charset.StandardCharsets;
+
+      public class Test {
+          void test() {
+              String s = "hi";
+              s.getBytes(StandardCharsets.UTF_8);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ExplicitInitialization
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          private int a = 0;
+          private long b = 0L;
+          private short c = 0;
+          private int d = 1;
+          private long e = 2L;
+          private int f;
+          private char g = '\0';
+
+          private boolean h = false;
+          private boolean i = true;
+
+          private Object j = new Object();
+          private Object k = null;
+
+          int[] l = null;
+          int[] m = new int[0];
+
+          private final Long n = null;
+      }
+    after: |
+      class Test {
+          private int a;
+          private long b;
+          private short c;
+          private int d = 1;
+          private long e = 2L;
+          private int f;
+          private char g;
+
+          private boolean h;
+          private boolean i = true;
+
+          private Object j = new Object();
+          private Object k;
+
+          int[] l;
+          int[] m = new int[0];
+
+          private final Long n = null;
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
+      class A {
+          // C#: int? a
+          Nullable<Integer> a = null;
+          // C#: int? a = 0
+          Nullable<Integer> a = new Nullable<>(0);
+      }
+    after: |
+      class A {
+          // C#: int? a
+          Nullable<Integer> a;
+          // C#: int? a = 0
+          Nullable<Integer> a = new Nullable<>(0);
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ExplicitLambdaArgumentTypes
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.function.BiPredicate;
+
+      class Test {
+          static void run(BiPredicate<String, Object> bc) {
+          }
+
+          static void method() {
+              run((a, b) -> {
+                  return a.isEmpty();
+              });
+          }
+      }
+    after: |
+      import java.util.function.BiPredicate;
+
+      class Test {
+          static void run(BiPredicate<String, Object> bc) {
+          }
+
+          static void method() {
+              run((String a, Object b) -> {
+                  return a.isEmpty();
+              });
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.io.Externalizable;
+      import java.io.IOException;
+      import java.io.ObjectInput;
+      import java.io.ObjectOutput;
+
+      public class MyThing implements Externalizable {
+          private String a;
+          private String b;
+
+          public MyThing(String a, String b) {
+              this.a = a;
+              this.b = b;
+          }
+
+          @Override
+          public void writeExternal(ObjectOutput out) throws IOException {}
+
+          @Override
+          public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
+      }
+    after: |
+      import java.io.Externalizable;
+      import java.io.IOException;
+      import java.io.ObjectInput;
+      import java.io.ObjectOutput;
+
+      public class MyThing implements Externalizable {
+          private String a;
+          private String b;
+
+          public MyThing() {
+          }
+
+          public MyThing(String a, String b) {
+              this.a = a;
+              this.b = b;
+          }
+
+          @Override
+          public void writeExternal(ObjectOutput out) throws IOException {}
+
+          @Override
+          public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {}
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FallThrough
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          int i;
+          {
+              switch (i) {
+              case 0:
+                  i++;
+              case 99:
+                  i++;
+              }
+          }
+      }
+    after: |
+      public class A {
+          int i;
+          {
+              switch (i) {
+              case 0:
+                  i++;
+                  break;
+              case 99:
+                  i++;
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FinalClass
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          private A(String s) {
+          }
+
+          private A() {
+          }
+      }
+    after: |
+      public final class A {
+          private A(String s) {
+          }
+
+          private A() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FinalizeLocalVariables
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          public void test() {
+              int n = 1;
+              for(int i = 0; i < n; i++) {
+              }
+          }
+      }
+    after: |
+      class A {
+          public void test() {
+              final int n = 1;
+              for(int i = 0; i < n; i++) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FinalizeMethodArguments
+examples:
+- description: ''
+  sources:
+  - before: |
+      class TestClass {
+          private void getAccaCouponData(String responsiveRequestConfig, String card) {
+          }
+      }
+    after: |
+      class TestClass {
+          private void getAccaCouponData(final String responsiveRequestConfig, final String card) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FinalizePrivateFields
+examples:
+- description: Finalize private field.
+  sources:
+  - before: |
+      class A {
+          private String name = "ABC";
+
+          String getName() {
+              return name;
+          }
+      }
+    after: |
+      class A {
+          private final String name = "ABC";
+
+          String getName() {
+              return name;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FixStringFormatExpressions
+examples:
+- description: ''
+  sources:
+  - before: |
+      class T {
+          static {
+              String s = String.format("hello world\n%s", "again");
+              String s2 = "hello world\n%s".formatted("again");
+          }
+      }
+    after: |
+      class T {
+          static {
+              String s = String.format("hello world%n%s", "again");
+              String s2 = "hello world%n%s".formatted("again");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ForLoopControlVariablePostfixOperators
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          static void method(int n) {
+              for (int i = 0; i < n; ++i) {
+                  // empty
+              }
+          }
+      }
+    after: |
+      class Test {
+          static void method(int n) {
+              for (int i = 0; i < n; i++) {
+                  // empty
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ForLoopIncrementInUpdate
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              int h, j;
+              for (int i = 0; i < 10; h++, j++) {
+                  i++;
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              int h, j;
+              for (int i = 0; i < 10; h++, i++, j++) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.HiddenField
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          private String field;
+
+          public A(String field) {
+          }
+      }
+    after: |
+      public class A {
+          private String field;
+
+          public A(String field1) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.HideUtilityClassConstructor
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          public A() {
+          }
+
+          public static void utility() {
+          }
+      }
+    after: |
+      public class A {
+          private A() {
+          }
+
+          public static void utility() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.IndexOfChecksShouldUseAStartPosition
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          boolean hasIndex(String str) {
+              return str.indexOf("x") > 2;
+          }
+      }
+    after: |
+      class Test {
+          boolean hasIndex(String str) {
+              return str.indexOf("x", 2) > -1;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.IndexOfReplaceableByContains
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          static boolean hasIndex(String str) {
+              if (str.indexOf("str") > -1) {
+              }
+              return str.indexOf("str") >= 0;
+          }
+      }
+    after: |
+      class Test {
+          static boolean hasIndex(String str) {
+              if (str.contains("str")) {
+              }
+              return str.contains("str");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          static boolean hasIndex(List<String> strList, String str) {
+              if (strList.indexOf(str) > 0) {
+              }
+              return strList.indexOf(str) > 0;
+          }
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          static boolean hasIndex(List<String> strList, String str) {
+              if (strList.indexOf(str) >= 1) {
+              }
+              return strList.indexOf(str) >= 1;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.InlineVariable
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.List;
+      import java.util.stream.Collectors;
+
+      class Test {
+          int test() {
+              int n = 0;
+              return n;
+          }
+
+          int test2() {
+              int n = 0;
+              System.out.println(n);
+              return n;
+          }
+
+          void test3() {}
+
+          void test4(String arg) throws IllegalArgumentException {
+              if (arg == null || arg.isEmpty()) {
+                  IllegalArgumentException e = new IllegalArgumentException("arg should not be empty or null");
+                  throw e;
+              }
+          }
+
+          List<String> testLambda(List<String> names) {
+              return names.stream().map(n -> {
+                  String un = n.toLowerCase();
+                  return un;
+              }).collect(Collectors.toList());
+          }
+      }
+    after: |
+      import java.util.List;
+      import java.util.stream.Collectors;
+
+      class Test {
+          int test() {
+              return 0;
+          }
+
+          int test2() {
+              int n = 0;
+              System.out.println(n);
+              return n;
+          }
+
+          void test3() {}
+
+          void test4(String arg) throws IllegalArgumentException {
+              if (arg == null || arg.isEmpty()) {
+                  throw new IllegalArgumentException("arg should not be empty or null");
+              }
+          }
+
+          List<String> testLambda(List<String> names) {
+              return names.stream().map(n -> {
+                  return n.toLowerCase();
+              }).collect(Collectors.toList());
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.IsEmptyCallOnCollections
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.ArrayList;
+      class Test {
+          public boolean isZeroSize() {
+              return new ArrayList<String>() {
+                  boolean test() {
+                      return size() == 0;
+                  }
+              }.test();
+          }
+      }
+    after: |
+      import java.util.ArrayList;
+      class Test {
+          public boolean isZeroSize() {
+              return new ArrayList<String>() {
+                  boolean test() {
+                      return isEmpty();
+                  }
+              }.test();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.LambdaBlockToExpression
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.function.Function;
+      class Test {
+          Function<Integer, Integer> f = n -> {
+              return n+1;
+          };
+      }
+    after: |
+      import java.util.function.Function;
+      class Test {
+          Function<Integer, Integer> f = n -> n+1;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.LowercasePackage
+examples:
+- description: ''
+  sources:
+  - before: |
+      package com.UPPERCASE.CamelCase;
+      class A {}
+    after: |
+      package com.uppercase.camelcase;
+      class A {}
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MaskCreditCardNumbers
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          String cc = "1234567890123456";
+      }
+    after: |
+      class A {
+          String cc = "12345678XXXXXXXX";
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MinimumSwitchCases
+examples:
+- description: ''
+  sources:
+  - before: |
+      def s = "prod"
+      switch(s) {
+          case "prod":
+              println("prod")
+              break
+          default:
+              println("default")
+              break
+      }
+    after: |
+      def s = "prod"
+      if (s == "prod") {
+          println("prod")
+      } else {
+          println("default")
+      }
+    language: groovy
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int variable;
+          int test() {
+              switch (variable) {
+                case 0:
+                    return 0;
+                default:
+                    doSomethingElse();
+              }
+              return 1;
+          }
+          void doSomething() {}
+          void doSomethingElse() {}
+      }
+    after: |
+      class Test {
+          int variable;
+          int test() {
+              if (variable == 0) {
+                  return 0;
+              } else {
+                  doSomethingElse();
+              }
+              return 1;
+          }
+          void doSomething() {}
+          void doSomethingElse() {}
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MissingOverrideAnnotation
+examples:
+- description: ''
+  parameters:
+  - 'false'
+  sources:
+  - before: |
+      package com.example;
+
+      class Test {
+          public void method() {
+              //noinspection all
+              Runnable t = new Runnable() {
+                  public void run() {
+                  }
+              };
+          }
+      }
+    after: |
+      package com.example;
+
+      class Test {
+          public void method() {
+              //noinspection all
+              Runnable t = new Runnable() {
+                  @Override
+                  public void run() {
+                  }
+              };
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ModifierOrder
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.internal.lang.Nullable;
+      class Test {
+          static /* comment */ public strictfp @Nullable transient Integer test() {
+          }
+      }
+    after: |
+      import org.openrewrite.internal.lang.Nullable;
+      class Test {
+          public /* comment */ static transient @Nullable strictfp Integer test() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MultipleVariableDeclarations
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int n = 0, m = 0;
+          int o = 0, p;
+          int s, t = 0;
+
+          public void method() {
+              for (int i = 0, j = 0; ; ) ;
+          }
+      }
+    after: |
+      class Test {
+          int n = 0;
+          int m = 0;
+          int o = 0;
+          int p;
+          int s;
+          int t = 0;
+
+          public void method() {
+              for (int i = 0, j = 0; ; ) ;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NeedBraces
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          static void addToWhile() {
+              while (true) ;
+          }
+
+          static void addToWhileWithBody() {
+              while (true) return;
+          }
+
+          static void addToIf(int n) {
+              if (n == 1) return;
+              // foo
+          }
+
+          static void addToIfElse(int n) {
+              if (n == 1) return;
+              else return;
+          }
+
+          static void addToIfElseIfElse(int n) {
+              if (n == 1) return;
+              else if (n == 2) return;
+              else return;
+          }
+
+          static void addToDoWhile(Object obj) {
+              do obj.notify(); while (true);
+          }
+
+          static void addToIterativeFor(Object obj) {
+              for (int i = 0; ; ) obj.notify();
+          }
+      }
+    after: |
+      class Test {
+          static void addToWhile() {
+              while (true) {
+              }
+          }
+
+          static void addToWhileWithBody() {
+              while (true) {
+                  return;
+              }
+          }
+
+          static void addToIf(int n) {
+              if (n == 1) {
+                  return;
+              }
+              // foo
+          }
+
+          static void addToIfElse(int n) {
+              if (n == 1) {
+                  return;
+              } else {
+                  return;
+              }
+          }
+
+          static void addToIfElseIfElse(int n) {
+              if (n == 1) {
+                  return;
+              } else if (n == 2) {
+                  return;
+              } else {
+                  return;
+              }
+          }
+
+          static void addToDoWhile(Object obj) {
+              do {
+                  obj.notify();
+              } while (true);
+          }
+
+          static void addToIterativeFor(Object obj) {
+              for (int i = 0; ; ) {
+                  obj.notify();
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NestedEnumsAreNotStatic
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+
+          static enum ABC {
+              A, B, C
+          }
+
+          private static enum DEF {
+              D, E, F
+          }
+      }
+    after: |
+      class A {
+
+          enum ABC {
+              A, B, C
+          }
+
+          private enum DEF {
+              D, E, F
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NewStringBuilderBufferWithCharArgument
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          StringBuffer buffer = new StringBuffer('a');
+          StringBuilder builder = new StringBuilder('a');
+          char notALiteral = 'c';
+          StringBuffer buffer2 = new StringBuffer(notALiteral);
+      }
+    after: |
+      class A {
+          StringBuffer buffer = new StringBuffer("a");
+          StringBuilder builder = new StringBuilder("a");
+          char notALiteral = 'c';
+          StringBuffer buffer2 = new StringBuffer(String.valueOf(notALiteral));
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoDoubleBraceInitialization
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Set;
+      import java.util.LinkedHashSet;
+      class A {
+          void a() {
+              Integer CNT = 10;
+              final Set<Integer> keys = new LinkedHashSet<>(){{
+                  for (int i = 0; i < CNT; i++) {
+                      add(i);
+                  }
+              }};
+          }
+      }
+    after: |
+      import java.util.Set;
+      import java.util.LinkedHashSet;
+      class A {
+          void a() {
+              Integer CNT = 10;
+              final Set<Integer> keys = new LinkedHashSet<>();
+              for (int i = 0; i < CNT; i++) {
+                  keys.add(i);
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoEmptyCollectionWithRawType
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          List<Integer> l = java.util.Collections.EMPTY_LIST;
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          List<Integer> l = java.util.Collections.emptyList();
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoEqualityInForCondition
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              for (int i = 0; i != 10; i++) {
+              }
+              for (int i = 10; i != 0; i--) {
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              for (int i = 0; i < 10; i++) {
+              }
+              for (int i = 10; i > 0; i--) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoFinalizedLocalVariables
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      import java.util.function.Supplier;
+      class T {
+          final int field = 0;
+          public void test(final String s) {
+              final int n = 0;
+              new Supplier<>() {
+                  final int innerField = 0;
+                  public String get() {
+                      return s;
+                  }
+              };
+          }
+      }
+    after: |
+      import java.util.function.Supplier;
+      class T {
+          final int field = 0;
+          public void test(String s) {
+              int n = 0;
+              new Supplier<>() {
+                  final int innerField = 0;
+                  public String get() {
+                      return s;
+                  }
+              };
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoFinalizer
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          public void method() {
+          }
+
+          @Override
+          protected void finalize() throws Throwable {
+              super.finalize();
+          }
+
+          protected void finalize(Object param) throws Throwable {
+              super.finalize();
+          }
+      }
+    after: |
+      class Test {
+          public void method() {
+          }
+
+          protected void finalize(Object param) throws Throwable {
+              super.finalize();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoPrimitiveWrappersForToStringOrCompareTo
+examples:
+- description: ''
+  sources:
+  - before: |
+      class T {
+           String a = new Integer(3).toString();
+           String b = Long.valueOf(3).toString();
+           String c = Double.valueOf(3.0).toString();
+           String d = Float.valueOf("4").toString();
+           String e = new Float("3").toString();
+           String f = Boolean.valueOf(true).toString();
+           String G = Boolean.valueOf("true").toString();
+      }
+    after: |
+      class T {
+           String a = Integer.toString(3);
+           String b = Long.toString(3);
+           String c = Double.toString(3.0);
+           String d = Float.valueOf("4").toString();
+           String e = new Float("3").toString();
+           String f = Boolean.toString(true);
+           String G = Boolean.valueOf("true").toString();
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoRedundantJumpStatements
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          boolean condition1;
+          boolean condition2;
+          void test() {
+              while (condition1) {
+                  if (condition2) {
+                      continue;
+                  } else {
+                      System.out.println();
+                  }
+              }
+              return;
+          }
+      }
+    after: |
+      class Test {
+          boolean condition1;
+          boolean condition2;
+          void test() {
+              while (condition1) {
+                  if (!condition2) {
+                      System.out.println();
+                  }
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoToStringOnStringType
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          static String method() {
+              return "hello".toString();
+          }
+      }
+    after: |
+      class Test {
+          static String method() {
+              return "hello";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NoValueOfOnStringType
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          static void method(char[] data) {
+              String str = String.valueOf("changeMe");
+              str = String.valueOf(0);
+              str = "changeMe" + String.valueOf(0);
+              str = String.valueOf(data);
+              str = "changeMe" + String.valueOf(data);
+              str = String.valueOf(data, 0, 0);
+              str = "doNotChangeMe" + String.valueOf(data, 0, 0);
+          }
+      }
+    after: |
+      class Test {
+          static void method(char[] data) {
+              String str = "changeMe";
+              str = String.valueOf(0);
+              str = "changeMe" + 0;
+              str = String.valueOf(data);
+              str = "changeMe" + String.valueOf(data);
+              str = String.valueOf(data, 0, 0);
+              str = "doNotChangeMe" + String.valueOf(data, 0, 0);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.NullableOnMethodReturnType
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.internal.lang.Nullable;
+      class Test {
+          @Nullable
+          public String test() {
+          }
+      }
+    after: |
+      import org.openrewrite.internal.lang.Nullable;
+      class Test {
+
+          public @Nullable String test() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ObjectFinalizeCallsSuper
+examples:
+- description: ''
+  sources:
+  - before: |
+      class F {
+          Object o = new Object();
+
+          @Override
+          protected void finalize() throws Throwable {
+              o = null;
+          }
+      }
+    after: |
+      class F {
+          Object o = new Object();
+
+          @Override
+          protected void finalize() throws Throwable {
+              o = null;
+              super.finalize();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.OperatorWrap
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      class Test {
+          static void method() {
+              String s = "aaa" +
+                      "b" + "c";
+          }
+      }
+    after: |
+      class Test {
+          static void method() {
+              String s = "aaa"
+                      + "b" + "c";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          Boolean bool = new Boolean(true);
+          Byte b = new Byte("1");
+          Character c = new Character('c');
+          Double d = new Double(1.0);
+          Float f = new Float(1.1f);
+          Long l = new Long(1);
+          Short sh = new Short("12");
+          short s3 = 3;
+          Short sh3 = new Short(s3);
+          Integer i = new Integer(1);
+      }
+    after: |
+      class A {
+          Boolean bool = Boolean.valueOf(true);
+          Byte b = Byte.valueOf("1");
+          Character c = Character.valueOf('c');
+          Double d = Double.valueOf(1.0);
+          Float f = Float.valueOf(1.1f);
+          Long l = Long.valueOf(1);
+          Short sh = Short.valueOf("12");
+          short s3 = 3;
+          Short sh3 = Short.valueOf(s3);
+          Integer i = Integer.valueOf(1);
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RedundantFileCreation
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.io.*;
+      class Test {
+          void test() throws IOException {
+              new FileInputStream(new File("test"));
+          }
+      }
+    after: |
+      import java.io.FileInputStream;
+      import java.io.IOException;
+      class Test {
+          void test() throws IOException {
+              new FileInputStream("test");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReferentialEqualityToObjectEquals
+examples:
+- description: ''
+  sources:
+  - before: |
+      class T {
+          void doSomething() {
+              A a1 = new A();
+              A a2 = new A();
+              if (a1 == a2) {}
+          }
+          class A {
+              @Override
+              public boolean equals(Object anObject) {return true;}
+          }
+      }
+    after: |
+      class T {
+          void doSomething() {
+              A a1 = new A();
+              A a2 = new A();
+              if (a1.equals(a2)) {}
+          }
+          class A {
+              @Override
+              public boolean equals(Object anObject) {return true;}
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveCallsToObjectFinalize
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+
+              @Override
+              protected void finalize() {
+                  super.finalize();
+              }
+
+              public static void main(String[] args) throws Throwable {
+
+                  A a = new A();
+                  System.out.println("Clean object");
+                  a.finalize();
+              }
+          }
+    after: |
+      public class A {
+
+              @Override
+              protected void finalize() {
+                  super.finalize();
+              }
+
+              public static void main(String[] args) throws Throwable {
+
+                  A a = new A();
+                  System.out.println("Clean object");
+              }
+          }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveCallsToSystemGc
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          public String gc() {
+             return "here gc stands for good call";
+          }
+
+          public static void main(String[] args) {
+              gc();
+              System.gc();
+              if (1 > 0) {
+                  System.gc();
+              }
+          }
+      }
+    after: |
+      public class A {
+          public String gc() {
+             return "here gc stands for good call";
+          }
+
+          public static void main(String[] args) {
+              gc();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveEmptyJavaDocParameters
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          /**
+           * @param arg0
+           */
+          void method(int arg0) {
+          }
+      }
+    after: |
+      class Test {
+          void method(int arg0) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveExtraSemicolons
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              ;
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveHashCodeCallsFromArrayInstances
+examples:
+- description: ''
+  sources:
+  - before: |
+      class SomeClass {
+        public static void main(String[] args) {
+          int argHash = args.hashCode();
+        }
+      }
+    after: |
+      import java.util.Arrays;
+
+      class SomeClass {
+        public static void main(String[] args) {
+          int argHash = Arrays.hashCode(args);
+        }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveJavaDocAuthorTag
+examples:
+- description: ''
+  sources:
+  - before: |
+      /**
+       * Java doc text.
+       *
+       * @author fname.lname, fname.lname
+       */
+      class Test {}
+    after: |
+      /**
+       * Java doc text.
+       *
+       */
+      class Test {}
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveRedundantTypeCast
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          Object o = (List<String>) method();
+          Object o2 = (List<? extends String>) method();
+          Object o3 = (List<? super String>) method();
+
+          List<String> method() {
+              return null;
+          }
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          Object o = method();
+          Object o2 = method();
+          Object o3 = method();
+
+          List<String> method() {
+              return null;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveSystemOutPrintln
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              System.out.println("Hello, world!");
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveToStringCallsFromArrayInstances
+examples:
+- description: ''
+  sources:
+  - before: |
+      class SomeClass {
+        public static void main(String[] args) {
+          String argStr = args.toString();
+        }
+      }
+    after: |
+      import java.util.Arrays;
+
+      class SomeClass {
+        public static void main(String[] args) {
+          String argStr = Arrays.toString(args);
+        }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnneededAssertion
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          public void m() {
+              System.out.println("Hello");
+              assert true;
+              System.out.println("World");
+          }
+      }
+    after: |
+      public class A {
+          public void m() {
+              System.out.println("Hello");
+              System.out.println("World");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnneededBlock
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          void test() {
+              {
+                  System.out.println("hello!");
+              }
+          }
+      }
+    after: |
+      public class A {
+          void test() {
+              System.out.println("hello!");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
+examples:
+- description: ''
+  parameters:
+  - 'null'
+  - 'null'
+  - 'null'
+  sources:
+  - before: |
+      class Test {
+          static int method(int x) {
+              int a = 0;
+              int b = 0;
+              return a;
+          }
+      }
+    after: |
+      class Test {
+          static int method(int x) {
+              int a = 0;
+              return a;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnusedPrivateFields
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class Test {
+          private String notUsed;
+      }
+    after: |
+      public class Test {
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          private void unused() {
+          }
+
+          public void dontRemove() {
+              dontRemove2();
+          }
+
+          private void dontRemove2() {
+          }
+      }
+    after: |
+      class Test {
+
+          public void dontRemove() {
+              dontRemove2();
+          }
+
+          private void dontRemove2() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RenameExceptionInEmptyCatch
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int ignored = 0;
+          void method(int ignored1) {
+              int ignored2 = 0;
+              for (int ignored3 = 0; ignored3 < 10; ignored3++) { // scope does not apply.
+                  int ignored4 = 0; // scope does not apply.
+              }
+              if (ignored1 > 0) {
+                  int ignored5 = 0; // scope does not apply.
+              }
+              try {
+                  int ignored6 = 0; // scope does not apply.
+              } catch (Exception ex) {
+              }
+          }
+      }
+    after: |
+      class Test {
+          int ignored = 0;
+          void method(int ignored1) {
+              int ignored2 = 0;
+              for (int ignored3 = 0; ignored3 < 10; ignored3++) { // scope does not apply.
+                  int ignored4 = 0; // scope does not apply.
+              }
+              if (ignored1 > 0) {
+                  int ignored5 = 0; // scope does not apply.
+              }
+              try {
+                  int ignored6 = 0; // scope does not apply.
+              } catch (Exception ignored3) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              String ID;
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              String id;
+          }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
+      fun foo() {
+          var EMPTY_METAS = HashMap<String, Any>()
+          EMPTY_METAS.isEmpty()
+      }
+    after: |
+      fun foo() {
+          var emptyMetas = HashMap<String, Any>()
+          emptyMetas.isEmpty()
+      }
+    language: kotlin
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
+examples:
+- description: ''
+  sources:
+  - before: |
+      interface ITest {
+          int HASHcoDE();
+
+          boolean equal(Object obj);
+
+          String tostring();
+      }
+
+      class Test {
+          public int hashcode() {
+              return 0;
+          }
+
+          public boolean equal(Object obj) {
+              return false;
+          }
+
+          public String tostring() {
+              return "";
+          }
+      }
+    after: |
+      interface ITest {
+          int hashCode();
+
+          boolean equals(Object obj);
+
+          String toString();
+      }
+
+      class Test {
+          public int hashCode() {
+              return 0;
+          }
+
+          public boolean equals(Object obj) {
+              return false;
+          }
+
+          public String toString() {
+              return "";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          private int DoChange = 10;
+          public int DoNotChangePublicMember;
+          int DoNotChangeDefaultMember;
+
+          public int getTen() {
+              return DoChange;
+          }
+
+          public int getTwenty() {
+              return this.DoChange * 2;
+          }
+
+          public int getThirty() {
+              return DoChange * 3;
+          }
+      }
+    after: |
+      class Test {
+          private int doChange = 10;
+          public int DoNotChangePublicMember;
+          int DoNotChangeDefaultMember;
+
+          public int getTen() {
+              return doChange;
+          }
+
+          public int getTwenty() {
+              return this.doChange * 2;
+          }
+
+          public int getThirty() {
+              return doChange * 3;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReorderAnnotations
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.junit.jupiter.api.Test;
+      import org.junitpioneer.jupiter.ExpectedToFail;
+      import org.junitpioneer.jupiter.Issue;
+      class A {
+          @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+          @Test
+          @ExpectedToFail
+          void explicitImplementationClassInApi() {
+          }
+      }
+    after: |
+      import org.junit.jupiter.api.Test;
+      import org.junitpioneer.jupiter.ExpectedToFail;
+      import org.junitpioneer.jupiter.Issue;
+      class A {
+          @ExpectedToFail
+          @Issue("https://github.com/openrewrite/rewrite/issues/2973")
+          @Test
+          void explicitImplementationClassInApi() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.apache.commons.lang3.Validate;
+
+      class Test {
+          void test(Object obj) {
+              Validate.notNull(obj);
+          }
+      }
+    after: |
+      import java.util.Objects;
+
+      class Test {
+          void test(Object obj) {
+              Objects.requireNonNull(obj);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void foo() {
+              String s = "";
+              boolean result = String.class.isInstance(s);
+              result = Integer.class.isInstance(s);
+          }
+      }
+    after: |
+      class A {
+          void foo() {
+              String s = "";
+              boolean result = s instanceof String;
+              result = s instanceof Integer;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceCollectionToArrayArgWithEmptyArray
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Collection;
+
+      class A {
+          void test(Collection<Integer> args){
+              Integer [] array = args.toArray(new Integer[args.size()]);
+          }
+      }
+    after: |
+      import java.util.Collection;
+
+      class A {
+          void test(Collection<Integer> args){
+              Integer [] array = args.toArray(new Integer[0]);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceDuplicateStringLiterals
+examples:
+- description: ''
+  parameters:
+  - 'true'
+  sources:
+  - before: |
+      package org.foo;
+      class A {
+          final String val1 = "value";
+          final String val2 = "value";
+          final String val3 = "value";
+      }
+    after: |
+      package org.foo;
+      class A {
+          private static final String VALUE = "value";
+          final String val1 = VALUE;
+          final String val2 = VALUE;
+          final String val3 = VALUE;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.function.Function;
+      class Test {
+
+          ChangeListener listener = (o, oldVal, newVal) -> {
+              onChange(o, oldVal, newVal);
+          };
+
+          protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+              String strVal = newVal.toString();
+              System.out.println(strVal);
+          }
+
+          interface ObservableValue<T> {
+          }
+
+          @FunctionalInterface
+          interface ChangeListener<T> {
+              void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+          }
+      }
+    after: |
+      import java.util.function.Function;
+      class Test {
+
+          ChangeListener listener = this::onChange;
+
+          protected void onChange(ObservableValue<?> o, Object oldVal, Object newVal) {
+              String strVal = newVal.toString();
+              System.out.println(strVal);
+          }
+
+          interface ObservableValue<T> {
+          }
+
+          @FunctionalInterface
+          interface ChangeListener<T> {
+              void changed(ObservableValue<? extends T> observable, T oldValue, T newValue);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceOptionalIsPresentWithIfPresent
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Optional;
+      import java.util.function.Supplier;
+      public class A {
+          Supplier<Integer> s = () -> { return 1; };
+          int method(Optional<Integer> o) {
+              if (o.isPresent()) {
+                  s = () -> {
+                      return 2;
+                  };
+              }
+              return s.get();
+          }
+      }
+    after: |
+      import java.util.Optional;
+      import java.util.function.Supplier;
+      public class A {
+          Supplier<Integer> s = () -> { return 1; };
+          int method(Optional<Integer> o) {
+              o.ifPresent(obj -> {
+                  s = () -> {
+                      return 2;
+                  };
+              });
+              return s.get();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceRedundantFormatWithPrintf
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test(String arg) {
+              String formatString = "hello %s%n";
+              System.out.print(String.format(formatString, arg));
+          }
+      }
+    after: |
+      class Test {
+          void test(String arg) {
+              String formatString = "hello %s%n";
+              System.out.printf(formatString, arg);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceStackWithDeque
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Stack;
+
+      class Test {
+          void test() {
+              Stack<Integer> stack = new Stack<>();
+              stack.add(1);
+              stack.add(2);
+          }
+      }
+    after: |
+      import java.util.ArrayDeque;
+      import java.util.Deque;
+      import java.util.Stack;
+
+      class Test {
+          void test() {
+              Deque<Integer> stack = new ArrayDeque<>();
+              stack.add(1);
+              stack.add(2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void foo() {
+              String s = new StringBuilder().append("A").append("B").toString();
+          }
+      }
+    after: |
+      class A {
+          void foo() {
+              String s = "A" + "B";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceTextBlockWithString
+examples:
+- description: ''
+  sources:
+  - before: |
+      package com.example;
+
+      public class Test {
+          String str =
+                  """
+                  """;
+      }
+    after: |
+      package com.example;
+
+      public class Test {
+          String str =
+                  "\n";
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          public static void main(String[] args) {
+             Runnable r = ()-> System.out.println("Hello world");
+             Thread myThread = new Thread(r);
+             myThread.run();
+          }
+      }
+    after: |
+      public class A {
+          public static void main(String[] args) {
+             Runnable r = ()-> System.out.println("Hello world");
+             Thread myThread = new Thread(r);
+             myThread.start();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.apache.commons.lang3.Validate;
+      class Test {
+          void test(Object obj) {
+              Validate.notNull(obj, "Object should not be null");
+          }
+      }
+    after: |
+      import java.util.Objects;
+
+      class Test {
+          void test(Object obj) {
+              Objects.requireNonNull(obj, "Object should not be null");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceWeekYearWithYear
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.text.SimpleDateFormat;
+      import java.util.Date;
+
+      class Test {
+        public void formatDate() {
+          Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
+          String result = new SimpleDateFormat("YYYY/MM/dd").format(date);
+        }
+      }
+    after: |
+      import java.text.SimpleDateFormat;
+      import java.util.Date;
+
+      class Test {
+        public void formatDate() {
+          Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
+          String result = new SimpleDateFormat("yyyy/MM/dd").format(date);
+        }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpression
+examples:
+- description: ''
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          boolean a;
+          {
+              if(true == a) {
+              }
+          }
+      }
+    after: |
+      public class A {
+          boolean a;
+          {
+              if(a) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyBooleanReturn
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          boolean ifNoElse() {
+              if (isOddMillis()) {
+                  return true;
+              }
+              return false;
+          }
+
+          static boolean isOddMillis() {
+              boolean even = System.currentTimeMillis() % 2 == 0;
+              if (even == true) {
+                  return false;
+              }
+              else {
+                  return true;
+              }
+          }
+      }
+    after: |
+      public class A {
+          boolean ifNoElse() {
+              return isOddMillis();
+          }
+
+          static boolean isOddMillis() {
+              boolean even = System.currentTimeMillis() % 2 == 0;
+              return !(even == true);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyCompoundStatement
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              boolean b = true;
+              b &= true;
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              boolean b = true;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyConsecutiveAssignments
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int test() {
+              int x = 1;
+              x++;
+              x *= 2;
+              return x;
+          }
+      }
+    after: |
+      class Test {
+          int test() {
+              int x = (1 + 1) * 2;
+              return x;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyConstantIfBranchExecution
+examples:
+- description: ''
+  sources:
+  - before: |
+      public class A {
+          public void test() {
+              if (true) {
+                  System.out.println("hello");
+              }
+          }
+      }
+    after: |
+      public class A {
+          public void test() {
+              System.out.println("hello");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyDurationCreationUnits
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.time.Duration;
+
+      public class Test {
+          static Duration duration = Duration.ofMillis(5000);
+      }
+    after: |
+      import java.time.Duration;
+
+      public class Test {
+          static Duration duration = Duration.ofSeconds(5);
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyTernaryRecipes
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          boolean trueCondition1 = true ? true : false;
+          boolean trueCondition2 = false ? false : true;
+          boolean trueCondition3 = booleanExpression() ? true : false;
+          boolean trueCondition4 = trueCondition1 && trueCondition2 ? true : false;
+          boolean trueCondition5 = !true ? false : true;
+          boolean trueCondition6 = !false ? true : false;
+
+          boolean falseCondition1 = true ? false : true;
+          boolean falseCondition2 = !false ? false : true;
+          boolean falseCondition3 = booleanExpression() ? false : true;
+          boolean falseCondition4 = trueCondition1 && trueCondition2 ? false : true;
+          boolean falseCondition5 = !false ? false : true;
+          boolean falseCondition6 = !true ? true : false;
+
+          boolean binary1 = booleanExpression() && booleanExpression() ? true : false;
+          boolean binary2 = booleanExpression() && booleanExpression() ? false : true;
+          boolean binary3 = booleanExpression() || booleanExpression() ? true : false;
+          boolean binary4 = booleanExpression() || booleanExpression() ? false : true;
+
+          boolean booleanExpression() {
+            return true;
+          }
+      }
+    after: |
+      class Test {
+          boolean trueCondition1 = true;
+          boolean trueCondition2 = true;
+          boolean trueCondition3 = booleanExpression();
+          boolean trueCondition4 = trueCondition1 && trueCondition2;
+          boolean trueCondition5 = true;
+          boolean trueCondition6 = true;
+
+          boolean falseCondition1 = false;
+          boolean falseCondition2 = false;
+          boolean falseCondition3 = !booleanExpression();
+          boolean falseCondition4 = !(trueCondition1 && trueCondition2);
+          boolean falseCondition5 = false;
+          boolean falseCondition6 = false;
+
+          boolean binary1 = booleanExpression() && booleanExpression();
+          boolean binary2 = !(booleanExpression() && booleanExpression());
+          boolean binary3 = booleanExpression() || booleanExpression();
+          boolean binary4 = !(booleanExpression() || booleanExpression());
+
+          boolean booleanExpression() {
+            return true;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SortedSetStreamToLinkedHashSet
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Set;
+      import java.util.stream.Collectors;
+
+      class A {
+        void method(Set<Integer> set) {
+            Set<Integer> sorted = set.stream().sorted().collect(Collectors.toSet());
+        }
+      }
+    after: |
+      import java.util.LinkedHashSet;
+      import java.util.Set;
+      import java.util.stream.Collectors;
+
+      class A {
+        void method(Set<Integer> set) {
+            Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.StaticMethodNotFinal
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          public static final void main(String[] args) {
+          }
+      }
+    after: |
+      class Test {
+          public static void main(String[] args) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.StringLiteralEquality
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.List;
+      class Test {
+          public String getString() {
+              return "stringy";
+          }
+
+          public void method(String str) {
+              if (str.length() > 1 && str == "test") ;
+              if ("test" == str) ;
+              if ("test" == "test") ;
+              if ("test" == new String("test")) ;
+              if ("test" == getString());
+              boolean flag = (str == "test");
+              while ("test" == str) {
+              }
+          }
+
+          public void findPeter(List<Friend> friends) {
+              friends.stream().filter(e -> e.name == "peter");
+          }
+
+          class Friend {
+              String name;
+          }
+      }
+    after: |
+      import java.util.List;
+      class Test {
+          public String getString() {
+              return "stringy";
+          }
+
+          public void method(String str) {
+              if (str.length() > 1 && "test".equals(str)) ;
+              if ("test".equals(str)) ;
+              if ("test".equals("test")) ;
+              if ("test".equals(new String("test"))) ;
+              if ("test".equals(getString()));
+              boolean flag = ("test".equals(str));
+              while ("test".equals(str)) {
+              }
+          }
+
+          public void findPeter(List<Friend> friends) {
+              friends.stream().filter(e -> "peter".equals(e.name));
+          }
+
+          class Friend {
+              String name;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.TernaryOperatorsShouldNotBeNested
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+        public String determineSomething(String a, String b) {
+          return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+        }
+      }
+    after: |
+      class Test {
+        public String determineSomething(String a, String b) {
+            if ("a".equals(a)) {
+                return "a";
+            }
+            return "b".equals(b) ? "b" : "nope";
+        }
+      }
+    language: java
+- description: ''
+  sources:
+  - before: |
+      class Test {
+        public String determineSomething(String a, String b) {
+          return "a".equals(a) ? "a" : "b".equals(a) ? "b" : "nope";
+        }
+      }
+    after: |
+      class Test {
+        public String determineSomething(String a, String b) {
+          return switch (a) {
+              case "a" -> "a";
+              case "b" -> "b";
+              default -> "nope";
+          };
+        }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.TypecastParenPad
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void m() {
+              int i = ( int ) 0L;
+              int j = (int) 0L;
+              int k = (int)0L;
+              int l = ( int )0L;
+          }
+      }
+    after: |
+      class A {
+          void m() {
+              int i = (int) 0L;
+              int j = (int) 0L;
+              int k = (int) 0L;
+              int l = (int) 0L;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.URLEqualsHashCodeRecipes
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.net.URL;
+
+      class Test {
+          public void test() {
+              URL url = new URL("https://example.com");
+              int hash = url.hashCode();
+          }
+      }
+    after: |
+      import java.net.URI;
+      import java.net.URL;
+
+      class Test {
+          public void test() {
+              URL url = new URL("https://example.com");
+              int hash = URI.create(url.toString()).hashCode();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryCatch
+examples:
+- description: ''
+  parameters:
+  - 'false'
+  - 'false'
+  sources:
+  - before: |
+      import java.io.IOException;
+
+      public class AnExample {
+          public void method() {
+              try {
+                  java.util.Base64.getDecoder().decode("abc".getBytes());
+              } catch (IOException e) {
+                  System.out.println("an exception!");
+              }
+          }
+      }
+    after: |
+      public class AnExample {
+          public void method() {
+              java.util.Base64.getDecoder().decode("abc".getBytes());
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.io.FileWriter;
+      import java.util.Scanner;
+
+      class A {
+          public void doSomething() {
+              try (FileWriter fileWriter = new FileWriter("test"); Scanner scanner = new Scanner("abc")) {
+                  fileWriter.write('c');
+                  scanner.close();
+              }
+          }
+      }
+    after: |
+      import java.io.FileWriter;
+      import java.util.Scanner;
+
+      class A {
+          public void doSomething() {
+              try (FileWriter fileWriter = new FileWriter("test"); Scanner scanner = new Scanner("abc")) {
+                  fileWriter.write('c');
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          <T> T test() {
+              String s = this.<String>test();
+              Object o = this.<String>test();
+              return this.<T>test();
+          }
+
+          Object o() {
+              return this.<String>test();
+          }
+      }
+    after: |
+      class Test {
+          <T> T test() {
+              String s = this.test();
+              Object o = this.<String>test();
+              return this.test();
+          }
+
+          Object o() {
+              return this.<String>test();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryParentheses
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.*;
+
+      class Test {
+          int square(int a, int b) {
+              int square = (a * b);
+
+              int sumOfSquares = 0;
+              for (int i = (0); i < 10; i++) {
+                  sumOfSquares += (square(i * i, i));
+              }
+              double num = (10.0);
+
+              List<String> list = Arrays.asList("a1", "b1", "c1");
+              list.stream()
+                      .filter((s) -> s.startsWith("c"))
+                      .forEach(System.out::println);
+
+              return (square);
+          }
+      }
+    after: |
+      import java.util.*;
+
+      class Test {
+          int square(int a, int b) {
+              int square = a * b;
+
+              int sumOfSquares = 0;
+              for (int i = 0; i < 10; i++) {
+                  sumOfSquares += square(i * i, i);
+              }
+              double num = 10.0;
+
+              List<String> list = Arrays.asList("a1", "b1", "c1");
+              list.stream()
+                      .filter(s -> s.startsWith("c"))
+                      .forEach(System.out::println);
+
+              return square;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
+examples:
+- description: ''
+  sources:
+  - before: |
+      import javax.annotation.CheckForNull;
+      import javax.annotation.Nullable;
+      class A {
+          @CheckForNull
+          public int getCount(@Nullable int val) {
+              return val;
+          }
+      }
+    after: |
+      class A {
+
+          public int getCount(int val) {
+              return val;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Hello {
+          void world() {
+              System.out.println("Hello world");
+              return;
+          }
+      }
+    after: |
+      class Hello {
+          void world() {
+              System.out.println("Hello world");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryThrows
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.io.FileInputStream;
+      import java.io.FileNotFoundException;
+      import java.io.IOException;
+      import java.io.UncheckedIOException;
+      class Test {
+          private void changed() throws FileNotFoundException, UncheckedIOException {
+          }
+
+          void unchanged() throws IOException, UncheckedIOException {
+              new FileInputStream("test");
+          }
+      }
+    after: |
+      import java.io.FileInputStream;
+      import java.io.IOException;
+      import java.io.UncheckedIOException;
+      class Test {
+          private void changed() throws UncheckedIOException {
+          }
+
+          void unchanged() throws IOException, UncheckedIOException {
+              new FileInputStream("test");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnwrapRepeatableAnnotations
+examples:
+- description: ''
+  sources:
+  - before: |
+      import com.example.*;
+
+      @Annotations({@Annotation, @Annotation})
+      class Test {
+      }
+    after: |
+      import com.example.*;
+
+      @Annotation
+      @Annotation
+      class Test {
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          long lp = 1l;
+          Long l = 100l;
+          Double d = 100.0d;
+          Float f = 100f;
+          Integer i = 0;
+          Long l2 = 0x100000000l;
+          String s = "hello";
+      }
+    after: |
+      class Test {
+          long lp = 1L;
+          Long l = 100L;
+          Double d = 100.0D;
+          Float f = 100F;
+          Integer i = 0;
+          Long l2 = 0x100000000L;
+          String s = "hello";
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseCollectionInterfaces
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.HashSet;
+
+      class Test {
+          public HashSet method() {
+              return new HashSet<>();
+          }
+      }
+    after: |
+      import java.util.HashSet;
+      import java.util.Set;
+
+      class Test {
+          public Set method() {
+              return new HashSet<>();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseDiamondOperator
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.*;
+
+      class Test<X, Y> {
+          void test() {
+              List<String> ls = new ArrayList<String>();
+              Map<X,Y> map = new HashMap<X,Y>();
+              List<String> ls2 = new ArrayList<String>() {
+              };
+          }
+      }
+    after: |
+      import java.util.*;
+
+      class Test<X, Y> {
+          void test() {
+              List<String> ls = new ArrayList<>();
+              Map<X,Y> map = new HashMap<>();
+              List<String> ls2 = new ArrayList<String>() {
+              };
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseForEachRemoveInsteadOfSetRemoveAll
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Collection;
+      import java.util.Collections;
+      import java.util.HashSet;
+      import java.util.List;
+      import java.util.Set;
+
+      class T {
+          static {
+              Set<String> s = new HashSet<>();
+              List<String> l = Collections.singletonList("a");
+              s.removeAll(l);
+          }
+
+          Set<String> removeFromSet(Set<String> s, Collection<String> c) {
+              s.removeAll(c);
+              return s;
+          }
+      }
+    after: |
+      import java.util.Collection;
+      import java.util.Collections;
+      import java.util.HashSet;
+      import java.util.List;
+      import java.util.Set;
+
+      class T {
+          static {
+              Set<String> s = new HashSet<>();
+              List<String> l = Collections.singletonList("a");
+              l.forEach(s::remove);
+          }
+
+          Set<String> removeFromSet(Set<String> s, Collection<String> c) {
+              c.forEach(s::remove);
+              return s;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          int i[];
+          int j[][];
+          int c[], d[];
+
+          void someMethod(int i[]) {
+          }
+      }
+    after: |
+      class A {
+          int[] i;
+          int[][] j;
+          int[] c, d;
+
+          void someMethod(int[] i) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.function.Function;
+      class Test {
+          Function<Integer, Integer> f = new Function<Integer, Integer>() {
+              @Override
+              public Integer apply(Integer n) {
+                  return n + 1;
+              }
+          };
+      }
+    after: |
+      import java.util.function.Function;
+      class Test {
+          Function<Integer, Integer> f = n -> n + 1;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseListSort
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.ArrayList;
+      import java.util.Comparator;
+      import java.util.List;
+      import java.util.Collections;
+
+      class T {
+          public void sortUsersById(List<String> names) {
+              Collections.sort(names);
+              Collections.sort(names, Comparator.naturalOrder());
+          }
+      }
+    after: |
+      import java.util.ArrayList;
+      import java.util.Comparator;
+      import java.util.List;
+
+      class T {
+          public void sortUsersById(List<String> names) {
+              names.sort(null);
+              names.sort(Comparator.naturalOrder());
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseStandardCharset
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.nio.charset.Charset;
+
+      class Test {
+          Charset US_ASCII = Charset.forName("US-ASCII");
+          Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
+          Charset UTF_8 = Charset.forName("UTF-8");
+          Charset UTF_16 = Charset.forName("UTF-16");
+          Charset UTF_16BE = Charset.forName("UTF-16BE");
+          Charset UTF_16LE = Charset.forName("UTF-16LE");
+      }
+    after: |
+      import java.nio.charset.Charset;
+      import java.nio.charset.StandardCharsets;
+
+      class Test {
+          Charset US_ASCII = StandardCharsets.US_ASCII;
+          Charset ISO_8859_1 = StandardCharsets.ISO_8859_1;
+          Charset UTF_8 = StandardCharsets.UTF_8;
+          Charset UTF_16 = StandardCharsets.UTF_16;
+          Charset UTF_16BE = StandardCharsets.UTF_16BE;
+          Charset UTF_16LE = StandardCharsets.UTF_16LE;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseStringReplace
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          public void method() {
+              String someText = "Bob is a Bird... Bob is a Plane... Bob is Superman!";
+              String newText = someText.replaceAll("Bob is", "It's");
+          }
+      }
+    after: |
+      class Test {
+          public void method() {
+              String someText = "Bob is a Bird... Bob is a Plane... Bob is Superman!";
+              String newText = someText.replace("Bob is", "It's");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.WhileInsteadOfFor
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              for (; 1 == 2 ;) {
+                  System.out.println("i'm going to say hi a lot");
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              while (1 == 2) {
+                  System.out.println("i'm going to say hi a lot");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test() {
+              int m = 010;
+              short m2 = 010;
+              int n = 0x01;
+              int o = 0b01;
+              int p = 12;
+              int q = 1;
+              long r = 0L;
+              float s = 0.01f;
+              double t = 0.01;
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              int m = 8;
+              short m2 = 8;
+              int n = 0x01;
+              int o = 0b01;
+              int p = 12;
+              int q = 1;
+              long r = 0L;
+              float s = 0.01f;
+              double t = 0.01;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType
+examples:
+- description: ''
+  parameters:
+  - org.openrewrite..*
+  sources:
+  - before: |
+      import org.openrewrite.internal.lang.Nullable;
+      import org.openrewrite.xml.tree.Xml;
+      class Test {
+          @Nullable Xml.Tag tag;
+      }
+    after: |
+      import org.openrewrite.internal.lang.Nullable;
+      import org.openrewrite.xml.tree.Xml;
+      class Test {
+          Xml.@Nullable Tag tag;
+      }
+    language: java

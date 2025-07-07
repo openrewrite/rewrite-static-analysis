@@ -24,7 +24,7 @@ import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.marker.SearchResult;
 
 /**
- * Add a search marker if vising a CSharp file
+ * Add a search marker if visiting a CSharp file
  */
 public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_CSHARP_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.csharp.tree.Cs");

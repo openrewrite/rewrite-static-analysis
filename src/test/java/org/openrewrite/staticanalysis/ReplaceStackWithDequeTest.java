@@ -38,7 +38,7 @@ class ReplaceStackWithDequeTest implements RewriteTest {
           java(
             """
               import java.util.Stack;
-              
+
               class Test {
                   void test() {
                       Stack<Integer> stack = new Stack<>();
@@ -51,7 +51,7 @@ class ReplaceStackWithDequeTest implements RewriteTest {
               import java.util.ArrayDeque;
               import java.util.Deque;
               import java.util.Stack;
-              
+
               class Test {
                   void test() {
                       Deque<Integer> stack = new ArrayDeque<>();
@@ -72,7 +72,7 @@ class ReplaceStackWithDequeTest implements RewriteTest {
           java(
             """
               import java.util.Stack;
-              
+
               class Test {
                   Stack<Integer> test() {
                       Stack<Integer> stack = new Stack<>();
@@ -95,7 +95,7 @@ class ReplaceStackWithDequeTest implements RewriteTest {
           java(
             """
               import java.util.Stack;
-              
+
               class Test {
                   Stack<Integer> test() {
                       Stack<Integer> stack = new Stack<>();

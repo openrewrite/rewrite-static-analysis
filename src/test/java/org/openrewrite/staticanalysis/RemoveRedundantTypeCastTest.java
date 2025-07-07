@@ -31,6 +31,42 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         spec.recipe(new RemoveRedundantTypeCast());
     }
 
+    @DocumentExample
+    @Test
+    void downCastParameterizedTypes() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Test {
+                  Object o = (List<String>) method();
+                  Object o2 = (List<? extends String>) method();
+                  Object o3 = (List<? super String>) method();
+
+                  List<String> method() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+                  Object o = method();
+                  Object o2 = method();
+                  Object o3 = method();
+
+                  List<String> method() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1784")
     @Test
     void objectToObjectArray() {
@@ -301,7 +337,6 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Test
     void downCastParameterizedTypes() {
         rewriteRun(

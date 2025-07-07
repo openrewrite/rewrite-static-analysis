@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2025 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,39 +17,60 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
-class UseDiamondOperatorWithVarTest implements RewriteTest {
+class TypecastParenPadTest implements RewriteTest {
+
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new UseDiamondOperator());
+        spec.recipe(new TypecastParenPad());
     }
 
     @DocumentExample
-    @SuppressWarnings("Convert2Diamond")
     @Test
-    void doNotConvertVar() {
+    void typecastParenPad() {
         rewriteRun(
           //language=java
           java(
             """
-              import java.util.*;
-              class Test {
-                  void test() {
-                      var ls1 = new ArrayList<String>();
-                      List<String> ls2 = new ArrayList<String>();
+              class A {
+                  void m() {
+                      int i = ( int ) 0L;
+                      int j = (int) 0L;
+                      int k = (int)0L;
+                      int l = ( int )0L;
                   }
               }
               """,
             """
-              import java.util.*;
-              class Test {
-                  void test() {
-                      var ls1 = new ArrayList<String>();
-                      List<String> ls2 = new ArrayList<>();
+              class A {
+                  void m() {
+                      int i = (int) 0L;
+                      int j = (int) 0L;
+                      int k = (int) 0L;
+                      int l = (int) 0L;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/561")
+    @Test
+    void noChangeForGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class A {
+                  void m(Object o) {
+                      int l = ( o as String).length()
                   }
               }
               """

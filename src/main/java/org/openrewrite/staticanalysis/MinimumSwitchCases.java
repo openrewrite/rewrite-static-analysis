@@ -18,12 +18,11 @@ package org.openrewrite.staticanalysis;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import lombok.With;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.RecipeRunException;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.service.ImportService;
@@ -127,7 +126,12 @@ public class MinimumSwitchCases extends Recipe {
                                     return super.visitSwitch(switch_, ctx);
                                 }
                             } else {
+                                List<Statement> breaks = new ArrayList<>();
+                                new BreakFinderVisitor().visit(aCase, breaks);
                                 Statement lastStatement = aCase.getStatements().isEmpty() ? null : aCase.getStatements().get(aCase.getStatements().size() - 1);
+                                if (breaks.size() > 1) {
+                                    return super.visitSwitch(switch_, ctx);
+                                }
                                 if (j != statements.size() - 1 && !(lastStatement instanceof J.Break || lastStatement instanceof J.Return)) {
                                     return super.visitSwitch(switch_, ctx);
                                 }
@@ -209,7 +213,7 @@ public class MinimumSwitchCases extends Recipe {
                             }
                         }
 
-                        return autoFormat(generatedIf, ctx);
+                        return autoFormat(super.visit(generatedIf, ctx), ctx);
                     } catch (RecipeRunException e) {
                         // JavaTemplate has problems on some Groovy files, don't currently have a way to adapt it appropriately
                         return switch_;
@@ -284,6 +288,19 @@ public class MinimumSwitchCases extends Recipe {
 
         public DefaultOnly() {
             id = randomId();
+        }
+    }
+
+    private static class BreakFinderVisitor extends JavaIsoVisitor<List<Statement>> {
+
+        @Override
+        public @Nullable J visit(@Nullable Tree tree, List<Statement> statements) {
+            if (tree instanceof J.Break) {
+                statements.add((J.Break) tree);
+            } else if (tree instanceof J.Switch) {
+                return (J) tree;
+            }
+            return super.visit(tree, statements);
         }
     }
 }

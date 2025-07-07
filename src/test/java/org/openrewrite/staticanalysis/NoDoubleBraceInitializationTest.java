@@ -30,6 +30,44 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         spec.recipe(new NoDoubleBraceInitialization());
     }
 
+    @DocumentExample
+    @SuppressWarnings("WrapperTypeMayBePrimitive")
+    @Test
+    void addStatementInForLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Set;
+              import java.util.LinkedHashSet;
+              class A {
+                  void a() {
+                      Integer CNT = 10;
+                      final Set<Integer> keys = new LinkedHashSet<>(){{
+                          for (int i = 0; i < CNT; i++) {
+                              add(i);
+                          }
+                      }};
+                  }
+              }
+              """,
+            """
+              import java.util.Set;
+              import java.util.LinkedHashSet;
+              class A {
+                  void a() {
+                      Integer CNT = 10;
+                      final Set<Integer> keys = new LinkedHashSet<>();
+                      for (int i = 0; i < CNT; i++) {
+                          keys.add(i);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void dropsConstructorCollectionParameterInMethod() {
         rewriteRun(
@@ -276,44 +314,6 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
                             add("b");
                           }
                         });
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @SuppressWarnings("WrapperTypeMayBePrimitive")
-    @Test
-    void addStatementInForLoop() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.util.Set;
-              import java.util.LinkedHashSet;
-              class A {
-                  void a() {
-                      Integer CNT = 10;
-                      final Set<Integer> keys = new LinkedHashSet<>(){{
-                          for (int i = 0; i < CNT; i++) {
-                              add(i);
-                          }
-                      }};
-                  }
-              }
-              """,
-            """
-              import java.util.Set;
-              import java.util.LinkedHashSet;
-              class A {
-                  void a() {
-                      Integer CNT = 10;
-                      final Set<Integer> keys = new LinkedHashSet<>();
-                      for (int i = 0; i < CNT; i++) {
-                          keys.add(i);
-                      }
-                  }
               }
               """
           )

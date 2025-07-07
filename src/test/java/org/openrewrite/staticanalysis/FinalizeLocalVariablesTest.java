@@ -32,34 +32,6 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         spec.recipe(new FinalizeLocalVariables());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite/issues/1478")
-    @Test
-    void initializedInWhileLoop() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.BufferedReader;
-              class T {
-                  public void doSomething(StringBuilder sb, BufferedReader br) {
-                      String line;
-                      try {
-                          while ((line = br.readLine()) != null) {
-                              sb.append(line);
-                          }
-                      } catch (Exception e) {
-                          error("Exception", e);
-                      }
-                  }
-                  private static void error(String s, Exception e) {
-                  
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void localVariablesAreMadeFinal() {
@@ -81,6 +53,34 @@ class FinalizeLocalVariablesTest implements RewriteTest {
                       final int n = 1;
                       for(int i = 0; i < n; i++) {
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/1478")
+    @Test
+    void initializedInWhileLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.BufferedReader;
+              class T {
+                  public void doSomething(StringBuilder sb, BufferedReader br) {
+                      String line;
+                      try {
+                          while ((line = br.readLine()) != null) {
+                              sb.append(line);
+                          }
+                      } catch (Exception e) {
+                          error("Exception", e);
+                      }
+                  }
+                  private static void error(String s, Exception e) {
+
                   }
               }
               """
@@ -156,15 +156,15 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/549")
+    @Test
     void catchBlocksIgnored() {
         rewriteRun(
           //language=java
           java(
             """
               import java.io.IOException;
-              
+
               class Test {
                   static {
                       try {
@@ -282,7 +282,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           java(
             """
               import java.util.concurrent.FutureTask;
-                            
+
               class A {
                   void f() {
                       for(FutureTask<?> future; (future = new FutureTask<>(() -> "hello world")) != null;) { }
@@ -299,7 +299,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           //language=java
           java(
             """
-              class A {             
+              class A {
                   static {
                       for (int i = 0; i < 10; i++) {
                           // no-op
@@ -317,7 +317,7 @@ class FinalizeLocalVariablesTest implements RewriteTest {
           //language=java
           java(
             """
-              class A {             
+              class A {
                   static {
                       for (int i = 0; i < 10;) {
                           i = 11;
@@ -391,8 +391,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/2956")
+    @Test
     void recordShouldNotIntroduceExtraClosingParenthesis() {
         rewriteRun(
           version(
@@ -442,8 +442,8 @@ class FinalizeLocalVariablesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/181")
+    @Test
     void shouldNotFinalizeVariablesWhichAreAssignedInAnonymousClasses() {
         this.rewriteRun(
           // language=java
@@ -458,6 +458,63 @@ class FinalizeLocalVariablesTest implements RewriteTest {
                     return super.toString() + this.count;
                   }
                 };
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/359")
+    @Test
+    void initializedInTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileOutputStream;
+              class T {
+                  public void doSomething() {
+                      try (FileOutputStream out = new FileOutputStream("......")) {
+                          //...
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void initializedInTryCatchFinally() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileOutputStream;
+              class T {
+                  public void doSomething() {
+                      try {
+                          String someValue = "some value";
+                      } catch (Exception e) {
+                          String someExceptionValue = "some exception value";
+                      } finally {
+                          String someFinallyValue = "some finally value";
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.FileOutputStream;
+              class T {
+                  public void doSomething() {
+                      try {
+                          final String someValue = "some value";
+                      } catch (Exception e) {
+                          final String someExceptionValue = "some exception value";
+                      } finally {
+                          final String someFinallyValue = "some finally value";
+                      }
+                  }
               }
               """
           )

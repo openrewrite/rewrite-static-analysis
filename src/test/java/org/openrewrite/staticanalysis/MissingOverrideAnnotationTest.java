@@ -34,7 +34,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Language("java")
     String testInterface = """
       package com.example;
-      
+
       interface TestInterface {
           void testInterface();
       }
@@ -43,7 +43,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Language("java")
     String testInterface0 = """
       package com.example;
-      
+
       interface TestInterface0 {
           void testInterface0();
       }
@@ -52,7 +52,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Language("java")
     String testInterfaceExtension = """
       package com.example;
-      
+
       interface TestInterfaceExtension extends TestInterface0 {
           void testInterfaceExtension();
       }
@@ -61,7 +61,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Language("java")
     String testParentParent = """
       package com.example;
-      
+
       class TestParentParent {
           public void testParentParent() {
           }
@@ -71,7 +71,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Language("java")
     String testParent = """
       package com.example;
-      
+
       class TestParent extends TestParentParent {
           public void testParent() {
           }
@@ -81,7 +81,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
     @Language("java")
     String abstractTestParent = """
       package com.example;
-      
+
       abstract class AbstractTestParent {
           abstract boolean isAbstractBoolean();
 
@@ -90,6 +90,44 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           }
       }
       """;
+
+    @DocumentExample
+    @Test
+    void whenIgnoreAnonymousClassMethodsIsFalseAndAMethodOverridesWithinAnAnonymousClass() {
+        rewriteRun(
+          spec -> spec.recipe(new MissingOverrideAnnotation(false)),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              class Test {
+                  public void method() {
+                      //noinspection all
+                      Runnable t = new Runnable() {
+                          public void run() {
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              package com.example;
+
+              class Test {
+                  public void method() {
+                      //noinspection all
+                      Runnable t = new Runnable() {
+                          @Override
+                          public void run() {
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
 
     @Test
     void whenAMethodOverridesFromAParent() {
@@ -100,7 +138,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test extends TestParentParent {
                   public void testParentParent() {
                   }
@@ -111,7 +149,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test extends TestParentParent {
                   @Override
                   public void testParentParent() {
@@ -136,7 +174,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test extends TestParent {
                   public void testParent() {
                   }
@@ -147,7 +185,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test extends TestParent {
                   @Override
                   public void testParent() {
@@ -170,7 +208,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test implements TestInterface {
                   public void testInterface() {
                   }
@@ -181,7 +219,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test implements TestInterface {
                   @Override
                   public void testInterface() {
@@ -206,7 +244,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test implements TestInterface, TestInterface0 {
                   public void testInterface() {
                   }
@@ -220,7 +258,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test implements TestInterface, TestInterface0 {
                   @Override
                   public void testInterface() {
@@ -249,7 +287,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test implements TestInterfaceExtension {
                   public void testInterfaceExtension() {
                   }
@@ -263,7 +301,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test implements TestInterfaceExtension {
                   @Override
                   public void testInterfaceExtension() {
@@ -294,7 +332,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test extends TestParent implements TestInterface {
                   public void testParent() {
                   }
@@ -308,7 +346,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test extends TestParent implements TestInterface {
                   @Override
                   public void testParent() {
@@ -333,7 +371,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               import java.util.Collection;
               import java.util.Collections;
 
@@ -348,7 +386,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               import java.util.Collection;
               import java.util.Collections;
 
@@ -371,7 +409,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test extends AbstractTestParent {
                   public boolean isAbstractBoolean() {
                       return false;
@@ -384,7 +422,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test extends AbstractTestParent {
                   @Override
                   public boolean isAbstractBoolean() {
@@ -412,7 +450,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test extends TestParent {
                   @Override
                   public void testParent() {
@@ -431,49 +469,11 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
-              class Test {
-                  public void method() {
-                      //noinspection all
-                      Runnable t = new Runnable() {
-                          public void run() {
-                          }
-                      };
-                  }
-              }
-              """
-          )
-        );
-    }
 
-    @DocumentExample
-    @Test
-    void whenIgnoreAnonymousClassMethodsIsFalseAndAMethodOverridesWithinAnAnonymousClass() {
-        rewriteRun(
-          spec -> spec.recipe(new MissingOverrideAnnotation(false)),
-          //language=java
-          java(
-            """
-              package com.example;
-              
               class Test {
                   public void method() {
                       //noinspection all
                       Runnable t = new Runnable() {
-                          public void run() {
-                          }
-                      };
-                  }
-              }
-              """,
-            """
-              package com.example;
-              
-              class Test {
-                  public void method() {
-                      //noinspection all
-                      Runnable t = new Runnable() {
-                          @Override
                           public void run() {
                           }
                       };
@@ -492,7 +492,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
           java(
             """
               package com.example;
-              
+
               class Test {
                   public String toString() {
                       return super.toString();
@@ -501,7 +501,7 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """,
             """
               package com.example;
-              
+
               class Test {
                   @Override
                   public String toString() {
@@ -511,5 +511,17 @@ class MissingOverrideAnnotationTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void cloneInInterface() {
+        rewriteRun(
+          java(
+            """
+            public interface Reproducer extends Cloneable {
+              Reproducer clone();
+            }
+            """
+          ));
     }
 }

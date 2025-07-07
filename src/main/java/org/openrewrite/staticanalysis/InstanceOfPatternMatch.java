@@ -52,8 +52,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`." +
-               " Currently, this recipe supports `if` statements and ternary operator expressions.";
+        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`. " +
+               "Currently, this recipe supports `if` statements and ternary operator expressions.";
     }
 
     @Override
@@ -188,10 +188,11 @@ public class InstanceOfPatternMatch extends Recipe {
         @SuppressWarnings("SuspiciousMethodCalls")
         public void registerTypeCast(J.TypeCast typeCast, Cursor cursor) {
             Expression expression = typeCast.getExpression();
-            JavaType type = typeCast.getClazz().getTree().getType();
+            JavaType castType = typeCast.getClazz().getTree().getType();
 
             Optional<ExpressionAndType> match = instanceOfs.keySet().stream()
-                    .filter(k -> TypeUtils.isAssignableTo(type, k.getType()) &&
+                    .filter(k -> hasSameRawType(castType, k.getType()) &&
+                                 isCheckedCastCompatible(castType) &&
                                  SemanticallyEqual.areEqual(k.getExpression(), expression))
                     .findAny();
             if (match.isPresent()) {
@@ -201,11 +202,11 @@ public class InstanceOfPatternMatch extends Recipe {
                 for (Iterator<?> it = cursor.getPath(); it.hasNext(); ) {
                     Object next = it.next();
                     if (validContexts.contains(next)) {
-                        if (isAcceptableTypeCast(typeCast) && isTheSameAsOtherTypeCasts(typeCast, instanceOf)) {
+                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent)) {
                             if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
-                                !variablesToDelete.containsKey(instanceOf)) {
+                                    !variablesToDelete.containsKey(instanceOf)) {
                                 variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
-                                        requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class).getTypeExpression())));
+                                        requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
                             } else {
                                 replacements.put(typeCast, instanceOf);
                             }
@@ -225,10 +226,49 @@ public class InstanceOfPatternMatch extends Recipe {
             }
         }
 
-        private boolean isAcceptableTypeCast(J.TypeCast typeCast) {
-            TypeTree typeTree = typeCast.getClazz().getTree();
-            if (typeTree instanceof J.ParameterizedType) {
-                return requireNonNull(((J.ParameterizedType) typeTree).getTypeParameters()).stream().allMatch(J.Wildcard.class::isInstance);
+        private boolean hasSameRawType(JavaType firstType, JavaType secondType) {
+            JavaType firstRawType = getRawType(firstType);
+            JavaType secondRawType = getRawType(secondType);
+
+            return TypeUtils.isAssignableTo(firstRawType, secondRawType) && TypeUtils.isAssignableTo(secondRawType, firstRawType);
+        }
+
+        private JavaType getRawType(JavaType type) {
+            if(type instanceof JavaType.Parameterized) {
+                return ((JavaType.Parameterized) type).getType();
+            }
+
+            return type;
+        }
+
+        private boolean isCheckedCastCompatible(JavaType castType) {
+            if(!(castType instanceof JavaType.Parameterized)) {
+                return true;
+            }
+
+            JavaType.Parameterized parameterizedCastTargetType = (JavaType.Parameterized) castType;
+            return parameterizedCastTargetType.getTypeParameters().stream()
+                    .allMatch(typeParameter -> {
+                        if (!(typeParameter instanceof JavaType.GenericTypeVariable)) {
+                            return false;
+                        }
+
+                        JavaType.GenericTypeVariable genericTypeVariable = (JavaType.GenericTypeVariable) typeParameter;
+                        return genericTypeVariable.getBounds().isEmpty() && "?".equals(genericTypeVariable.getName());
+                    });
+        }
+
+        private boolean isAcceptableTypeCast(JavaType type) {
+            if (type instanceof JavaType.Parameterized) {
+                return requireNonNull(((JavaType.Parameterized) type).getTypeParameters()).stream().allMatch(JavaType.GenericTypeVariable.class::isInstance);
+            }
+            return true;
+        }
+
+        private boolean isAcceptableParentTypeCast(Cursor parent) {
+            // if the parent is a variable declaration, that declaration must also have an acceptable generic type
+            if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable) {
+                return isAcceptableTypeCast(requireNonNull(((J.VariableDeclarations.NamedVariable) parent.getValue()).getType()));
             }
             return true;
         }
@@ -251,24 +291,27 @@ public class InstanceOfPatternMatch extends Recipe {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
             }
-            JavaType type = ((TypedTree) instanceOf.getClazz()).getType();
             String name = patternVariableName(instanceOf, cursor);
+            TypedTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
+            TypedTree currentTypeTree = (TypedTree) instanceOf.getClazz();
+
+            // handle primitives, they must not appear in instanceof's
+            if (typeCastTypeTree.getType() instanceof JavaType.Primitive ||
+                    typeCastTypeTree.getMarkers().findFirst(JavaVarKeyword.class).isPresent()) {
+                // we have checked for the correct assignability beforehand
+                // so we can just use type from the original instanceof
+                typeCastTypeTree = currentTypeTree;
+            }
+
             J.InstanceOf result = instanceOf.withPattern(new J.Identifier(
                     randomId(),
                     Space.build(" ", emptyList()),
                     Markers.EMPTY,
                     emptyList(),
                     name,
-                    type,
-                    null));
-
-            J currentTypeTree = instanceOf.getClazz();
-            TypeTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
-            // If type tree from type cast is not parameterized then NVM. Instance of should already have proper type
-            if (typeCastTypeTree instanceof J.ParameterizedType) {
-                J.ParameterizedType parameterizedType = (J.ParameterizedType) typeCastTypeTree;
-                result = result.withClazz(parameterizedType.withId(Tree.randomId()).withPrefix(currentTypeTree.getPrefix()));
-            }
+                    typeCastTypeTree.getType(),
+                    null))
+                    .withClazz(typeCastTypeTree.withPrefix(currentTypeTree.getPrefix()).withId(Tree.randomId()));
 
             // update entry in replacements to share the pattern variable name
             for (Map.Entry<J.TypeCast, J.InstanceOf> entry : replacements.entrySet()) {
@@ -298,15 +341,24 @@ public class InstanceOfPatternMatch extends Recipe {
 
         private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor) {
             VariableNameStrategy strategy;
+            JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
             if (root instanceof J.If) {
                 VariableAndTypeTree variableData = variablesToDelete.get(instanceOf);
-                strategy = variableData != null ?
-                        VariableNameStrategy.exact(variableData.getVariable().getSimpleName()) :
-                        VariableNameStrategy.normal(contextScopes.get(instanceOf));
+                if (variableData != null) {
+                    // under the assumption that the code compiled previously we don't need to check for duplicates
+                    return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
+                }
+                strategy = VariableNameStrategy.normal(contextScopes.get(instanceOf));
             } else {
                 strategy = VariableNameStrategy.short_();
             }
-            String baseName = strategy.variableName(((TypeTree) instanceOf.getClazz()).getType());
+            String baseName = strategy.variableName(type);
+            if (root instanceof J.If) {
+                J.If enclosingIf = cursor.firstEnclosing(J.If.class);
+                String nameInIfScope = VariableNameUtils.generateVariableName(baseName, new Cursor(cursor, enclosingIf), INCREMENT_NUMBER);
+                String nameInCursorScope = VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
+                return nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
+            }
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
@@ -347,51 +399,51 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         @Override
-        public J visitBinary(J.Binary original, Integer integer) {
-            Expression newLeft = (Expression) super.visitNonNull(original.getLeft(), integer);
-            if (newLeft != original.getLeft()) {
+        public J visitBinary(J.Binary binary, Integer p) {
+            J.Binary b = binary.withLeft((Expression) visitNonNull(binary.getLeft(), p));
+            if (b.getLeft() != binary.getLeft()) {
                 // The left side changed, so the right side should see any introduced variable names
-                J.Binary replacement = original.withLeft(newLeft);
-                Cursor widenedCursor = updateCursor(replacement);
+                Cursor widenedCursor = updateCursor(b);
 
                 Expression newRight;
-                if (original.getRight() instanceof J.InstanceOf) {
-                    newRight = replacements.processInstanceOf((J.InstanceOf) original.getRight(), widenedCursor);
-                } else if (original.getRight() instanceof J.Parentheses &&
-                           ((J.Parentheses<?>) original.getRight()).getTree() instanceof J.InstanceOf) {
+                if (binary.getRight() instanceof J.InstanceOf) {
+                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor);
+                } else if (binary.getRight() instanceof J.Parentheses &&
+                           ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
                     @SuppressWarnings("unchecked")
-                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) original.getRight();
+                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
                     newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
                 } else {
-                    newRight = (Expression) super.visitNonNull(original.getRight(), integer, widenedCursor);
+                    newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
-                return replacement.withRight(newRight);
+                return b.withRight(newRight);
+            } else {
+                // The left side didn't change, so the right side doesn't need to see any introduced variable names
+                return b.withRight((Expression) visitNonNull(binary.getRight(), p));
             }
-            // The left side didn't change, so the right side doesn't need to see any introduced variable names
-            return super.visitBinary(original, integer);
         }
 
         @Override
-        public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer executionContext) {
-            instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, executionContext);
+        public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
+            instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
             instanceOf = replacements.processInstanceOf(instanceOf, getCursor());
             return instanceOf;
         }
 
         @Override
-        public <T extends J> J visitParentheses(J.Parentheses<T> parens, Integer executionContext) {
+        public <T extends J> J visitParentheses(J.Parentheses<T> parens, Integer p) {
             if (parens.getTree() instanceof J.TypeCast) {
                 J replacement = replacements.processTypeCast((J.TypeCast) parens.getTree(), getCursor());
                 if (replacement != null) {
                     return replacement.withPrefix(parens.getPrefix());
                 }
             }
-            return super.visitParentheses(parens, executionContext);
+            return super.visitParentheses(parens, p);
         }
 
         @Override
-        public J visitTypeCast(J.TypeCast typeCast, Integer executionContext) {
-            typeCast = (J.TypeCast) super.visitTypeCast(typeCast, executionContext);
+        public J visitTypeCast(J.TypeCast typeCast, Integer p) {
+            typeCast = (J.TypeCast) super.visitTypeCast(typeCast, p);
             J replacement = replacements.processTypeCast(typeCast, getCursor());
             if (replacement != null) {
                 return replacement;
@@ -399,10 +451,10 @@ public class InstanceOfPatternMatch extends Recipe {
             return typeCast;
         }
 
-        @SuppressWarnings("NullableProblems")
         @Override
-        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
-            multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, integer);
+        @SuppressWarnings("NullableProblems")
+        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer p) {
+            multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, p);
             return replacements.processVariableDeclarations(multiVariable);
         }
     }

@@ -16,10 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.RemoveUnusedImports;
@@ -56,8 +53,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new NoMissingTypes(), new JavaIsoVisitor<ExecutionContext>() {
-
+        JavaIsoVisitor<ExecutionContext> visitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDeclaration, ExecutionContext ctx) {
                 if (unusedWarningsSuppressed(classDeclaration)) {
@@ -72,7 +68,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                     if (arguments != null) {
                         for (Expression argument : arguments) {
                             if (J.Literal.isLiteralValue(argument, "all") ||
-                                J.Literal.isLiteralValue(argument, "unused")) {
+                                    J.Literal.isLiteralValue(argument, "unused")) {
                                 return true;
                             }
                         }
@@ -82,13 +78,12 @@ public class RemoveUnusedPrivateMethods extends Recipe {
             }
 
             @Override
-            public  J.@Nullable MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method,
-                    ExecutionContext ctx) {
+            public J.@Nullable MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 JavaType.Method methodType = method.getMethodType();
                 if (methodType != null && methodType.hasFlags(Flag.Private) &&
-                    !method.isConstructor() &&
-                    service(AnnotationService.class).getAllAnnotations(getCursor()).isEmpty()) {
+                        !method.isConstructor() &&
+                        service(AnnotationService.class).getAllAnnotations(getCursor()).isEmpty()) {
 
                     J.ClassDeclaration classDeclaration = getCursor().firstEnclosing(J.ClassDeclaration.class);
                     if (classDeclaration == null) {
@@ -132,7 +127,8 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
                 return m;
             }
-        });
+        };
+        return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
     }
 
 }

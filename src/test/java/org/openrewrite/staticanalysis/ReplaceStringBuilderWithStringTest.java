@@ -54,6 +54,61 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
+    @Test
+    void replaceWhileMaintainingSpaces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      String scenarioOne = new StringBuilder()
+                          .append("A")
+                          .append("B")
+                          .append("C")
+                          .toString();
+                      String scenarioTwo = new StringBuilder("A")
+                          .append("B")
+                          .append("C")
+                          .toString();
+                      String scenarioThree = new StringBuilder()
+                          .append("A")
+                          .append("B")
+                          .append("C")
+                          .append(testString())
+                          .toString();
+                  }
+
+                  String testString() {
+                      return "testString";
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      String scenarioOne = "A" +
+                          "B" +
+                          "C";
+                      String scenarioTwo = "A" +
+                          "B" +
+                          "C";
+                      String scenarioThree = "A" +
+                          "B" +
+                          "C" +
+                          testString();
+                  }
+
+                  String testString() {
+                      return "testString";
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void replaceLiteralConcatenationWithReturn() {
         rewriteRun(
@@ -168,6 +223,107 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
                   }
                   String name() {
                       return "name";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/88")
+    @Test
+    void retainComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      String scenarioOne = new StringBuilder()
+                          // A
+                          .append("A")
+                          // B
+                          .append("B")
+                          // C
+                          .append("C")
+                          .toString();
+                      String scenarioTwo = new StringBuilder("A")
+                          // B
+                          .append("B")
+                          // C
+                          .append("C")
+                          .toString();
+                      String scenarioThree = new StringBuilder()
+                          // A
+                          .append("A")
+                          // B
+                          .append("B")
+                          // C
+                          .append("C")
+                          // test method
+                          .append(testString())
+                          .toString();
+                      String scenarioFour = new StringBuilder()
+                          // 1 + 1
+                          .append(1 + 1)
+                          // 1
+                          .append(1)
+                          .toString();
+                      String scenarioFive = new StringBuilder()
+                          // A
+                          .append("A")
+                          // 1 + 1
+                          .append(1 + 1)
+                          // 1
+                          .append(1)
+                          .toString();
+                  }
+
+                  String testString() {
+                      return "testString";
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      String scenarioOne =
+                          // A
+                          "A" +
+                          // B
+                          "B" +
+                          // C
+                          "C";
+                      String scenarioTwo = "A" +
+                          // B
+                          "B" +
+                          // C
+                          "C";
+                      String scenarioThree =
+                          // A
+                          "A" +
+                          // B
+                          "B" +
+                          // C
+                          "C" +
+                          // test method
+                          testString();
+                      String scenarioFour =
+                          // 1 + 1
+                          String.valueOf(1 + 1) +
+                          // 1
+                          1;
+                      String scenarioFive =
+                          // A
+                          "A" +
+                          // 1 + 1
+                          (1 + 1) +
+                          // 1
+                          1;
+                  }
+
+                  String testString() {
+                      return "testString";
                   }
               }
               """

@@ -29,23 +29,6 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
         spec.recipe(new ReplaceRedundantFormatWithPrintf());
     }
 
-    @Test
-    void doesNotModifyNonLiteralFormatStringForPrintln() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void test(String arg) {
-                      String formatString = "hello %s%n";
-                      System.out.println(String.format(formatString, arg));
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void transformsNonLiteralFormatStringForPrint() {
@@ -73,13 +56,30 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
     }
 
     @Test
+    void doesNotModifyNonLiteralFormatStringForPrintln() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(String arg) {
+                      String formatString = "hello %s%n";
+                      System.out.println(String.format(formatString, arg));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void modifiesCorrectArgumentGivenLocale() {
         rewriteRun(
           //language=java
           java(
             """
               import java.util.Locale;
-              
+
               class Test {
                   void test(String arg) {
                       System.out.println(String.format(Locale.ENGLISH, "hello %s", arg));
@@ -104,10 +104,10 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
         rewriteRun(
           //language=java
           java(
-            """              
+            """
               class Test {
                   static class PrintStreamSubclass extends java.io.PrintStream {}
-             
+
                   void test(PrintStreamSubclass stream, String arg) {
                       stream.println(String.format("hello %s", arg));
                   }
@@ -116,7 +116,7 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
             """
               class Test {
                   static class PrintStreamSubclass extends java.io.PrintStream {}
-                  
+
                   void test(PrintStreamSubclass stream, String arg) {
                       stream.printf("hello %s%n", arg);
                   }

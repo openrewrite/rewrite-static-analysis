@@ -30,9 +30,9 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
         spec.recipe(new RemoveHashCodeCallsFromArrayInstances());
     }
 
-    @Test
     @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/44")
+    @Test
     void replaceHashCodeCalls() {
         //language=java
         rewriteRun(
@@ -43,15 +43,17 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
                 int argHash = args.hashCode();
               }
             }
-            """, """
+            """,
+                """
             import java.util.Arrays;
-            
+
             class SomeClass {
               public static void main(String[] args) {
                 int argHash = Arrays.hashCode(args);
               }
             }
-            """)
+            """
+          )
         );
     }
 
@@ -65,24 +67,26 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
               void foo() {
                 int hashCode = getArr().hashCode();
               }
-              
+
               public int[] getArr() {
                 return new int[]{1, 2, 3};
               }
             }
-            """, """
+            """,
+                """
             import java.util.Arrays;
-            
+
             class SomeClass {
               void foo() {
                 int hashCode = Arrays.hashCode(getArr());
               }
-              
+
               public int[] getArr() {
                 return new int[]{1, 2, 3};
               }
             }
-            """)
+            """
+          )
         );
     }
 
@@ -98,7 +102,8 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
                 int hashCode = name.hashCode();
               }
             }
-            """)
+            """
+          )
         );
     }
 }
