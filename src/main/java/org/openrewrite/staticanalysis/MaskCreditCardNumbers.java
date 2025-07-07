@@ -42,6 +42,7 @@ public class MaskCreditCardNumbers extends Recipe {
     }
 
     private static final Pattern CC_PATTERN = Pattern.compile("([0-9]{4} ?[0-9]{4} ?)([0-9]{4} ?[0-9]{4} ?)");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile("[0-9]");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -64,6 +65,6 @@ public class MaskCreditCardNumbers extends Recipe {
     }
 
     private static String maskDigits(String digits) {
-        return digits.replaceAll("[0-9]", "X");
+        return DIGIT_PATTERN.matcher(digits).replaceAll("X");
     }
 }
