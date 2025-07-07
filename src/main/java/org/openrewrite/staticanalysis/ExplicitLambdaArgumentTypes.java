@@ -164,13 +164,13 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 while (elemType instanceof JavaType.Array) {
                     elemType = ((JavaType.Array) elemType).getElemType();
                 }
-                
+
                 // Build the base type expression
                 TypeTree result = buildTypeTree(elemType, space);
                 if (result == null) {
                     return null;
                 }
-                
+
                 // Count dimensions and build array type
                 JavaType currentType = type;
                 while (currentType instanceof JavaType.Array) {
