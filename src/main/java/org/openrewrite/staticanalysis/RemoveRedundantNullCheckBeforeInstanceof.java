@@ -59,16 +59,7 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 J.Binary bi = (J.Binary) super.visitBinary(binary, ctx);
-
-                if (bi.getOperator() == J.Binary.Type.And) {
-                    // Try to simplify the expression by removing redundant null checks
-                    Expression simplified = simplifyExpression(bi);
-                    if (simplified != bi) {
-                        return simplified;
-                    }
-                }
-
-                return bi;
+                return simplifyExpression(bi);
             }
 
             private Expression simplifyExpression(J.Binary binary) {
@@ -82,11 +73,6 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
                 // Recursively simplify left side if it's also an AND expression
                 if (left instanceof J.Binary && ((J.Binary) left).getOperator() == J.Binary.Type.And) {
                     left = simplifyExpression((J.Binary) left);
-                }
-
-                // Recursively simplify right side if it's also an AND expression
-                if (right instanceof J.Binary && ((J.Binary) right).getOperator() == J.Binary.Type.And) {
-                    right = simplifyExpression((J.Binary) right);
                 }
 
                 // Check if we have a pattern: (expr != null) && (expr instanceof Type)
@@ -108,50 +94,16 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
                     J.InstanceOf instanceOf = (J.InstanceOf) right;
 
                     // Check if the rightmost part of left is a null check for the same expression
-                    Expression rightmostOfLeft = getRightmost(leftBinary);
+                    Expression rightmostOfLeft = leftBinary.getRight();
                     if (rightmostOfLeft instanceof J.Binary) {
-                        J.Binary nullCheck = (J.Binary) rightmostOfLeft;
-                        if (isRedundantNullCheck(nullCheck, instanceOf)) {
+                        if (isRedundantNullCheck((J.Binary) rightmostOfLeft, instanceOf)) {
                             // Remove the null check from the left side
-                            Expression newLeft = removeRightmost(leftBinary);
-                            if (newLeft == null) {
-                                // If removing rightmost leaves nothing, just return the instanceof
-                                return instanceOf.withPrefix(binary.getPrefix());
-                            } else {
-                                // Otherwise, return newLeft && instanceof
-                                return binary.withLeft(newLeft).withRight(instanceOf);
-                            }
+                            return binary.withLeft(leftBinary.getLeft()).withRight(instanceOf);
                         }
                     }
                 }
 
-                // If no simplification was made, but children were simplified, return updated binary
-                if (left != binary.getLeft() || right != binary.getRight()) {
-                    return binary.withLeft(left).withRight(right);
-                }
-
                 return binary;
-            }
-
-            private Expression getRightmost(J.Binary binary) {
-                if (binary.getOperator() == J.Binary.Type.And && binary.getRight() instanceof J.Binary &&
-                        ((J.Binary) binary.getRight()).getOperator() == J.Binary.Type.And) {
-                    return getRightmost((J.Binary) binary.getRight());
-                }
-                return binary.getRight();
-            }
-
-            private Expression removeRightmost(J.Binary binary) {
-                if (binary.getOperator() == J.Binary.Type.And && binary.getRight() instanceof J.Binary &&
-                        ((J.Binary) binary.getRight()).getOperator() == J.Binary.Type.And) {
-                    Expression newRight = removeRightmost((J.Binary) binary.getRight());
-                    if (newRight == null) {
-                        return binary.getLeft();
-                    }
-                    return binary.withRight(newRight);
-                }
-                // We're at the rightmost, so removing it means returning just the left
-                return binary.getLeft();
             }
 
             private boolean isRedundantNullCheck(J.Binary nullCheck, J.InstanceOf instanceOf) {
