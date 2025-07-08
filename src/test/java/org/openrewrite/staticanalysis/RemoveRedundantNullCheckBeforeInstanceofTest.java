@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ConstantConditions"})
+@SuppressWarnings({"ConstantConditions", "ConditionCoveredByFurtherCondition"})
 class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
 
     @Override
@@ -262,7 +262,6 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
 
     @Test
     void removeRedundantNullCheckWithTwoVariables() {
-        // Recipe processes one null check at a time, so only the first redundant check is removed
         rewriteRun(
           //language=java
           java(
@@ -278,7 +277,7 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
             """
               class A {
                   void foo(String s, Object obj) {
-                      if (s instanceof String && obj != null && obj instanceof String) {
+                      if (s instanceof String && obj instanceof String) {
                           System.out.println("Both are strings");
                       }
                   }
@@ -288,4 +287,138 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
         );
     }
 
+    @Test
+    void doNotChangeWhenNullCheckForDifferentVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(String s, Object obj) {
+                      if (s != null && obj instanceof String) {
+                          System.out.println("Mixed check");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenMultipleInstanceofWithoutMatchingNullChecks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object a, Object b, Object c) {
+                      if (a instanceof String && b instanceof Integer && c != null) {
+                          System.out.println("Mixed types");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenNullCheckBetweenUnrelatedInstanceof() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object a, Object b, Object c) {
+                      if (a instanceof String && b != null && c instanceof Integer) {
+                          System.out.println("Null check for different variable");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenComplexMixedConditions() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(String s, Object obj, Integer num) {
+                      if (s instanceof String && obj != null && num instanceof Integer && obj.hashCode() > 0) {
+                          System.out.println("Complex condition");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenNullCheckAfterInstanceof() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object a, Object b) {
+                      if (a instanceof String && b instanceof Integer && a != null && b != null) {
+                          System.out.println("Null checks after instanceof");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void partialRemovalWithMixedConditions() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object a, Object b, Object c) {
+                      if (a != null && a instanceof String && b != null && c instanceof Integer) {
+                          System.out.println("Only first null check is redundant");
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Object a, Object b, Object c) {
+                      if (a instanceof String && b != null && c instanceof Integer) {
+                          System.out.println("Only first null check is redundant");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOnlySequentialNullChecks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object a, Object b) {
+                      if (a != null && b != null && a instanceof String && b instanceof Integer) {
+                          System.out.println("Both null checks are redundant");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

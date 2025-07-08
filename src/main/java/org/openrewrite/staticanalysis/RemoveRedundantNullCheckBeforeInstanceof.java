@@ -24,7 +24,6 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -61,36 +60,110 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 J.Binary bi = (J.Binary) super.visitBinary(binary, ctx);
 
-                // Look for pattern: x != null && x instanceof Type
-                if (bi.getOperator() == J.Binary.Type.And &&
-                    bi.getLeft() instanceof J.Binary &&
-                    bi.getRight() instanceof J.InstanceOf) {
-
-                    J.Binary check = (J.Binary) bi.getLeft();
-                    J.InstanceOf instanceOf = (J.InstanceOf) bi.getRight();
-
-                    // Check if left is a null check (x != null or null != x)
-                    if (check.getOperator() == J.Binary.Type.NotEqual) {
-                        Expression nullCheckedExpr = null;
-
-                        if (check.getLeft() instanceof J.Literal &&
-                            ((J.Literal) check.getLeft()).getType() == JavaType.Primitive.Null) {
-                            nullCheckedExpr = check.getRight();
-                        } else if (check.getRight() instanceof J.Literal &&
-                                   ((J.Literal) check.getRight()).getType() == JavaType.Primitive.Null) {
-                            nullCheckedExpr = check.getLeft();
-                        }
-
-                        // Check if the same expression is used in both null check and instanceof
-                        if (nullCheckedExpr != null &&
-                            SemanticallyEqual.areEqual(nullCheckedExpr, instanceOf.getExpression())) {
-                            // Return just the instanceof check, preserving the original prefix
-                            return instanceOf.withPrefix(bi.getPrefix());
-                        }
+                if (bi.getOperator() == J.Binary.Type.And) {
+                    // Try to simplify the expression by removing redundant null checks
+                    Expression simplified = simplifyExpression(bi);
+                    if (simplified != bi) {
+                        return simplified;
                     }
                 }
 
                 return bi;
+            }
+
+            private Expression simplifyExpression(J.Binary binary) {
+                if (binary.getOperator() != J.Binary.Type.And) {
+                    return binary;
+                }
+
+                Expression left = binary.getLeft();
+                Expression right = binary.getRight();
+
+                // Recursively simplify left side if it's also an AND expression
+                if (left instanceof J.Binary && ((J.Binary) left).getOperator() == J.Binary.Type.And) {
+                    left = simplifyExpression((J.Binary) left);
+                }
+
+                // Recursively simplify right side if it's also an AND expression
+                if (right instanceof J.Binary && ((J.Binary) right).getOperator() == J.Binary.Type.And) {
+                    right = simplifyExpression((J.Binary) right);
+                }
+
+                // Check if we have a pattern: (expr != null) && (expr instanceof Type)
+                if (left instanceof J.Binary && right instanceof J.InstanceOf) {
+                    J.Binary nullCheck = (J.Binary) left;
+                    J.InstanceOf instanceOf = (J.InstanceOf) right;
+
+                    if (isRedundantNullCheck(nullCheck, instanceOf)) {
+                        // Return just the instanceof check
+                        return instanceOf.withPrefix(binary.getPrefix());
+                    }
+                }
+
+                // After recursive simplification, check if we have:
+                // (... && expr != null) && (expr instanceof Type)
+                if (left instanceof J.Binary && ((J.Binary) left).getOperator() == J.Binary.Type.And &&
+                        right instanceof J.InstanceOf) {
+                    J.Binary leftBinary = (J.Binary) left;
+                    J.InstanceOf instanceOf = (J.InstanceOf) right;
+
+                    // Check if the rightmost part of left is a null check for the same expression
+                    Expression rightmostOfLeft = getRightmost(leftBinary);
+                    if (rightmostOfLeft instanceof J.Binary) {
+                        J.Binary nullCheck = (J.Binary) rightmostOfLeft;
+                        if (isRedundantNullCheck(nullCheck, instanceOf)) {
+                            // Remove the null check from the left side
+                            Expression newLeft = removeRightmost(leftBinary);
+                            if (newLeft == null) {
+                                // If removing rightmost leaves nothing, just return the instanceof
+                                return instanceOf.withPrefix(binary.getPrefix());
+                            } else {
+                                // Otherwise, return newLeft && instanceof
+                                return binary.withLeft(newLeft).withRight(instanceOf);
+                            }
+                        }
+                    }
+                }
+
+                // If no simplification was made, but children were simplified, return updated binary
+                if (left != binary.getLeft() || right != binary.getRight()) {
+                    return binary.withLeft(left).withRight(right);
+                }
+
+                return binary;
+            }
+
+            private Expression getRightmost(J.Binary binary) {
+                if (binary.getOperator() == J.Binary.Type.And && binary.getRight() instanceof J.Binary &&
+                        ((J.Binary) binary.getRight()).getOperator() == J.Binary.Type.And) {
+                    return getRightmost((J.Binary) binary.getRight());
+                }
+                return binary.getRight();
+            }
+
+            private Expression removeRightmost(J.Binary binary) {
+                if (binary.getOperator() == J.Binary.Type.And && binary.getRight() instanceof J.Binary &&
+                        ((J.Binary) binary.getRight()).getOperator() == J.Binary.Type.And) {
+                    Expression newRight = removeRightmost((J.Binary) binary.getRight());
+                    if (newRight == null) {
+                        return binary.getLeft();
+                    }
+                    return binary.withRight(newRight);
+                }
+                // We're at the rightmost, so removing it means returning just the left
+                return binary.getLeft();
+            }
+
+            private boolean isRedundantNullCheck(J.Binary nullCheck, J.InstanceOf instanceOf) {
+                if (nullCheck.getOperator() == J.Binary.Type.NotEqual) {
+                    if (J.Literal.isLiteralValue(nullCheck.getLeft(), null)) {
+                        return SemanticallyEqual.areEqual(nullCheck.getRight(), instanceOf.getExpression());
+                    }
+                    if (J.Literal.isLiteralValue(nullCheck.getRight(), null)) {
+                        return SemanticallyEqual.areEqual(nullCheck.getLeft(), instanceOf.getExpression());
+                    }
+                }
+                return false;
             }
         };
     }
