@@ -59,21 +59,12 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 J.Binary bi = (J.Binary) super.visitBinary(binary, ctx);
-                return simplifyExpression(bi);
-            }
-
-            private Expression simplifyExpression(J.Binary binary) {
-                if (binary.getOperator() != J.Binary.Type.And) {
-                    return binary;
+                if (bi.getOperator() != J.Binary.Type.And) {
+                    return bi;
                 }
 
-                Expression left = binary.getLeft();
-                Expression right = binary.getRight();
-
-                // Recursively simplify left side if it's also an AND expression
-                if (left instanceof J.Binary && ((J.Binary) left).getOperator() == J.Binary.Type.And) {
-                    left = simplifyExpression((J.Binary) left);
-                }
+                Expression left = bi.getLeft();
+                Expression right = bi.getRight();
 
                 // Check if we have a pattern: (expr != null) && (expr instanceof Type)
                 if (left instanceof J.Binary && right instanceof J.InstanceOf) {
@@ -82,11 +73,11 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
                     if (isRedundantNullCheck(nullCheck, instanceOf)) {
                         // Return just the instanceof check
-                        return instanceOf.withPrefix(binary.getPrefix());
+                        return instanceOf.withPrefix(bi.getPrefix());
                     }
                 }
 
-                // After recursive simplification, check if we have:
+                // Check if we have chained patterns like:
                 // (... && expr != null) && (expr instanceof Type)
                 if (left instanceof J.Binary && ((J.Binary) left).getOperator() == J.Binary.Type.And &&
                         right instanceof J.InstanceOf) {
@@ -95,15 +86,14 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
                     // Check if the rightmost part of left is a null check for the same expression
                     Expression rightmostOfLeft = leftBinary.getRight();
-                    if (rightmostOfLeft instanceof J.Binary) {
-                        if (isRedundantNullCheck((J.Binary) rightmostOfLeft, instanceOf)) {
-                            // Remove the null check from the left side
-                            return binary.withLeft(leftBinary.getLeft()).withRight(instanceOf);
-                        }
+                    if (rightmostOfLeft instanceof J.Binary &&
+                            isRedundantNullCheck((J.Binary) rightmostOfLeft, instanceOf)) {
+                        // Remove the null check from the left side
+                        return bi.withLeft(leftBinary.getLeft()).withRight(instanceOf);
                     }
                 }
 
-                return binary;
+                return bi;
             }
 
             private boolean isRedundantNullCheck(J.Binary nullCheck, J.InstanceOf instanceOf) {
