@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2025 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -55,41 +54,20 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-                J j = super.visitBinary(binary, ctx);
-                if (!(j instanceof J.Binary)) {
-                    return j;
+                if (J.Literal.isLiteralValue(binary.getLeft(), "") &&
+                        binary.getOperator() == J.Binary.Type.Addition &&
+                        binary.getRight().getType() != JavaType.Primitive.String &&
+                        !J.Literal.isLiteralValue(binary.getRight(), null)) {
+                    return JavaTemplate.apply(
+                                    "String.valueOf(#{any()})",
+                                    getCursor(),
+                                    binary.getCoordinates().replace(),
+                                    binary.getRight() instanceof J.Parentheses ?
+                                            ((J.Parentheses<?>) binary.getRight()).getTree() :
+                                            binary.getRight())
+                            .withPrefix(binary.getPrefix());
                 }
-
-                J.Binary b = (J.Binary) j;
-
-                // Check if this is a string concatenation (+ operator)
-                if (b.getOperator() != J.Binary.Type.Addition) {
-                    return b;
-                }
-
-                // Check if left side is an empty string literal
-                if (J.Literal.isLiteralValue(b.getLeft(), "")) {
-                    Expression right = b.getRight();
-
-                    // Skip if right side is already a string
-                    if (TypeUtils.isString(right.getType())) {
-                        return b;
-                    }
-
-                    // Skip if right side is null literal
-                    if (J.Literal.isLiteralValue(right, null)) {
-                        return b;
-                    }
-
-                    // Replace with String.valueOf()
-                    maybeAddImport("java.lang.String");
-                    return JavaTemplate.builder("String.valueOf(#{any()})")
-                            .build()
-                            .apply(getCursor(), b.getCoordinates().replace(), right)
-                            .withPrefix(b.getPrefix());
-                }
-
-                return b;
+                return super.visitBinary(binary, ctx);
             }
         };
     }
