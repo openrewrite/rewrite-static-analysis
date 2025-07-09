@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings("RedundantArrayCreation")
+@SuppressWarnings({"RedundantArrayCreation", "ArraysAsListWithZeroOrOneArgument"})
 class SimplifyArraysAsListTest implements RewriteTest {
 
     @Override
@@ -268,6 +268,44 @@ class SimplifyArraysAsListTest implements RewriteTest {
                           "a", // first
                           "b", // second
                           "c");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeMultiDimensionalArrayWithInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<String[]> list = Arrays.asList(new String[][]{{"a", "b"}, {"c", "d"}});
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeMultiDimensionalArrayWithExplicitDimensions() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<String[]> list = Arrays.asList(new String[2][3]);
                   }
               }
               """

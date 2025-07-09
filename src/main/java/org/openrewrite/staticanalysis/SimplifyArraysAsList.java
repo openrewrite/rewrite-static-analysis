@@ -22,9 +22,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.J.ArrayDimension;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -60,26 +58,11 @@ public class SimplifyArraysAsList extends Recipe {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-
-                if (ARRAYS_AS_LIST.matches(mi) && mi.getArguments().size() == 1) {
-                    Expression arg = mi.getArguments().get(0);
-                    if (arg instanceof J.NewArray) {
-                        J.NewArray newArray = (J.NewArray) arg;
-                        if (newArray.getInitializer() != null) {
-                            // Check that there are no explicit dimensions or empty dimensions
-                            // The dimensions is a List<ArrayDimension>
-                            boolean hasEmptyDimensions = true;
-                            for (ArrayDimension dim : newArray.getDimensions()) {
-                                if (!(dim.getIndex() instanceof J.Empty)) {
-                                    hasEmptyDimensions = false;
-                                    break;
-                                }
-                            }
-                            if (hasEmptyDimensions) {
-                                // Simply replace the argument list with the initializer elements
-                                return mi.withArguments(newArray.getInitializer());
-                            }
-                        }
+                if (ARRAYS_AS_LIST.matches(mi) && mi.getArguments().size() == 1 &&
+                        mi.getArguments().get(0) instanceof J.NewArray) {
+                    J.NewArray newArray = (J.NewArray) mi.getArguments().get(0);
+                    if (newArray.getDimensions().size() == 1 && newArray.getInitializer() != null) {
+                        return mi.withArguments(newArray.getInitializer());
                     }
                 }
                 return mi;
