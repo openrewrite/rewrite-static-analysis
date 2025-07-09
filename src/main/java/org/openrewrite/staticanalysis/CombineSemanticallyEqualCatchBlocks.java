@@ -204,7 +204,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             @Override
             public J visitCatch(J.Try.Catch _catch, ExecutionContext ctx) {
                 J.Try.Catch c = (J.Try.Catch) super.visitCatch(_catch, ctx);
-                if (c == scope && !isMultiCatch(c)) {
+                if (c == scope && !(c.getParameter().getTree().getTypeExpression() instanceof J.MultiCatch)) {
                     if (c.getParameter().getTree().getTypeExpression() != null) {
                         List<JRightPadded<NameTree>> combinedCatches = combineEquivalentCatches();
                         c = maybeAutoFormat(c, c.withParameter(c.getParameter()
@@ -253,17 +253,14 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                 }
 
                 TypeTree scopeExpr = scope.getParameter().getTree().getTypeExpression();
-                if (isMultiCatch(scope)) {
-                    J.MultiCatch multiCatch = (J.MultiCatch) scope.getParameter().getTree().getTypeExpression();
-                    if (multiCatch != null) {
-                        List<JRightPadded<NameTree>> alternatives = multiCatch.getPadding().getAlternatives();
-                        for (int i = alternatives.size() - 1; i >= 0; i--) {
-                            NameTree name = alternatives.get(i).getElement();
-                            if (name instanceof J.Identifier && !removeIdentifiers.contains(name)) {
-                                combinedCatches.add(0, alternatives.get(i).withElement(((J.Identifier) name).withPrefix(EMPTY)));
-                            } else if (!(name instanceof J.Identifier)) {
-                                combinedCatches.add(0, alternatives.get(i));
-                            }
+                if (scopeExpr instanceof J.MultiCatch) {
+                    List<JRightPadded<NameTree>> alternatives = ((J.MultiCatch) scopeExpr).getPadding().getAlternatives();
+                    for (int i = alternatives.size() - 1; i >= 0; i--) {
+                        NameTree name = alternatives.get(i).getElement();
+                        if (name instanceof J.Identifier && !removeIdentifiers.contains(name)) {
+                            combinedCatches.add(0, alternatives.get(i).withElement(((J.Identifier) name).withPrefix(EMPTY)));
+                        } else if (!(name instanceof J.Identifier)) {
+                            combinedCatches.add(0, alternatives.get(i));
                         }
                     }
                 } else {
@@ -1808,15 +1805,6 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                 return singletonList(typeExpr);
             }
             return emptyList();
-        }
-
-        /**
-         * Returns true of a {@link J.Try.Catch} is a {@link J.MultiCatch}.
-         * Note: A null type expression will produce a false negative, but the recipe will not
-         * change catches with a null type.
-         */
-        private static boolean isMultiCatch(J.Try.Catch aCatch) {
-            return aCatch.getParameter().getTree().getTypeExpression() instanceof J.MultiCatch;
         }
     }
 }
