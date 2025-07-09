@@ -17,10 +17,12 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"ConstantConditions", "ConditionCoveredByFurtherCondition"})
 class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
@@ -416,6 +418,25 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
                           System.out.println("Both null checks are redundant");
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/pull/5736")
+    @Test
+    void kotlinIsNotInstanceOf() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                fun foo(s: Object?) {
+                  if (s != null && s !is String) {
+                    println("Not null nor String")
+                  }
+                }
               }
               """
           )

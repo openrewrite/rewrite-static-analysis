@@ -18,12 +18,14 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -55,7 +57,7 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 J.Binary bi = (J.Binary) super.visitBinary(binary, ctx);
@@ -107,6 +109,6 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
                 }
                 return false;
             }
-        };
+        });
     }
 }
