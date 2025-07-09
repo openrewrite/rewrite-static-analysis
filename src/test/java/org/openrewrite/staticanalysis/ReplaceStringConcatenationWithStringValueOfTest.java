@@ -296,7 +296,7 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
             """
               class Test {
                   void method() {
-                      String s = String.valueOf(/* comment */ 123);
+                      String s = String.valueOf(123);
                   }
               }
               """

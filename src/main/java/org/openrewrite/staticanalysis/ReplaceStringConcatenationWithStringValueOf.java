@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -56,15 +57,13 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 if (J.Literal.isLiteralValue(binary.getLeft(), "") &&
                         binary.getOperator() == J.Binary.Type.Addition &&
-                        binary.getRight().getType() != JavaType.Primitive.String &&
+                        !TypeUtils.isString(binary.getRight().getType()) &&
                         !J.Literal.isLiteralValue(binary.getRight(), null)) {
-                    return JavaTemplate.apply(
-                                    "String.valueOf(#{any()})",
-                                    getCursor(),
-                                    binary.getCoordinates().replace(),
-                                    binary.getRight() instanceof J.Parentheses ?
-                                            ((J.Parentheses<?>) binary.getRight()).getTree() :
-                                            binary.getRight())
+                    return JavaTemplate.builder("String.valueOf(#{any()})")
+                            .build()
+                            .apply(getCursor(), 
+                                   binary.getCoordinates().replace(),
+                                   binary.getRight())
                             .withPrefix(binary.getPrefix());
                 }
                 return super.visitBinary(binary, ctx);
