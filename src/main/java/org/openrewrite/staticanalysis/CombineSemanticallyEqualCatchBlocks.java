@@ -273,7 +273,6 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
                 return combinedCatches;
             }
-
         }
 
         private static boolean containSameComments(J.Block body1, J.Block body2) {
