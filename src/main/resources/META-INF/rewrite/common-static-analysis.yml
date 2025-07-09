@@ -78,6 +78,7 @@ recipeList:
   - org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
   - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
   - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
+  - org.openrewrite.staticanalysis.ReplaceStringConcatenationWithStringValueOf
   - org.openrewrite.staticanalysis.SimplifyBooleanExpression
   - org.openrewrite.staticanalysis.SimplifyBooleanReturn
 #  - org.openrewrite.staticanalysis.SimplifyTernaryRecipes
