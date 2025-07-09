@@ -27,7 +27,8 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.Collections.emptyMap;
+import static java.util.Collections.*;
+import static org.openrewrite.java.tree.Space.EMPTY;
 
 @Incubating(since = "7.25.0")
 public class CombineSemanticallyEqualCatchBlocks extends Recipe {
@@ -208,7 +209,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                         List<JRightPadded<NameTree>> combinedCatches = combineEquivalentCatches();
                         c = maybeAutoFormat(c, c.withParameter(c.getParameter()
                                 .withTree(c.getParameter().getTree()
-                                        .withTypeExpression(new J.MultiCatch(Tree.randomId(), Space.EMPTY, Markers.EMPTY, combinedCatches)))),
+                                        .withTypeExpression(new J.MultiCatch(Tree.randomId(), EMPTY, Markers.EMPTY, combinedCatches)))),
                                 ctx);
                     }
                 }
@@ -228,32 +229,26 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
                     TypeTree typeExpr = equivalentCatch.getParameter().getTree().getTypeExpression();
                     if (typeExpr instanceof J.MultiCatch) {
-                        J.MultiCatch newMultiCatch = (J.MultiCatch) typeExpr;
-                        List<JRightPadded<NameTree>> rightPaddedAlternatives = newMultiCatch.getPadding().getAlternatives();
-                        for (JRightPadded<NameTree> alternative : rightPaddedAlternatives) {
+                        for (JRightPadded<NameTree> alternative : ((J.MultiCatch) typeExpr).getPadding().getAlternatives()) {
                             NameTree name = alternative.getElement();
-                            if (name instanceof J.Identifier && removeIdentifiers.contains((J.Identifier) name)) {
-                                continue; // ✅ Skip redundant subtype
-                            }
                             if (name instanceof J.Identifier) {
-                                J.Identifier identifier = ((J.Identifier) name).withPrefix(Space.EMPTY);
-                                combinedCatches.add(alternative.withElement(identifier));
+                                if (removeIdentifiers.contains((J.Identifier) name)) {
+                                    continue; // Skip redundant subtype
+                                }
+                                combinedCatches.add(alternative.withElement(((J.Identifier) name).withPrefix(EMPTY)));
                             } else if (name instanceof J.FieldAccess) {
-                                J.FieldAccess fa = ((J.FieldAccess) name).withPrefix(Space.EMPTY);
-                                combinedCatches.add(alternative.withElement(fa));
+                                combinedCatches.add(alternative.withElement(((J.FieldAccess) name).withPrefix(EMPTY)));
                             } else {
                                 combinedCatches.add(alternative); // fallback
                             }
                         }
                     } else if (typeExpr instanceof J.Identifier) {
                         J.Identifier identifier = (J.Identifier) typeExpr;
-    if (!removeIdentifiers.contains(identifier)) {
-        identifier = identifier.withPrefix(Space.EMPTY);
-        combinedCatches.add(JRightPadded.build(identifier));
-    }
+                        if (!removeIdentifiers.contains(identifier)) {
+                            combinedCatches.add(JRightPadded.build(identifier.withPrefix(EMPTY)));
+                        }
                     } else if (typeExpr instanceof J.FieldAccess) {
-                        J.FieldAccess fa = ((J.FieldAccess) typeExpr).withPrefix(Space.EMPTY);
-                        combinedCatches.add(JRightPadded.build(fa));
+                        combinedCatches.add(JRightPadded.build(((J.FieldAccess) typeExpr).withPrefix(EMPTY)));
                     }
                 }
 
@@ -265,8 +260,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                         for (int i = alternatives.size() - 1; i >= 0; i--) {
                             NameTree name = alternatives.get(i).getElement();
                             if (name instanceof J.Identifier && !removeIdentifiers.contains(name)) {
-                                J.Identifier identifier = ((J.Identifier) name).withPrefix(Space.EMPTY);
-                                combinedCatches.add(0, alternatives.get(i).withElement(identifier));
+                                combinedCatches.add(0, alternatives.get(i).withElement(((J.Identifier) name).withPrefix(EMPTY)));
                             } else if (!(name instanceof J.Identifier)) {
                                 combinedCatches.add(0, alternatives.get(i));
                             }
@@ -274,13 +268,9 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                     }
                 } else {
                     if (scopeExpr instanceof J.Identifier && !removeIdentifiers.contains(scopeExpr)) {
-                        J.Identifier identifier = ((J.Identifier) scopeExpr).withPrefix(Space.EMPTY);
-        combinedCatches.add(0, JRightPadded.build(identifier));
-
-                        
+                        combinedCatches.add(0, JRightPadded.build(((J.Identifier) scopeExpr).withPrefix(EMPTY)));
                     } else if (scopeExpr instanceof J.FieldAccess) {
-                        J.FieldAccess fa = (J.FieldAccess) scopeExpr;
-                        combinedCatches.add(0, JRightPadded.build(fa.withPrefix(Space.EMPTY)));
+                        combinedCatches.add(0, JRightPadded.build(((J.FieldAccess) scopeExpr).withPrefix(EMPTY)));
                     }
                 }
 
@@ -1810,18 +1800,14 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
         /**
          * Collection the caught exceptions from a {@link J.Try.Catch}.
          */
-        private static Set<NameTree> getCaughtExceptions(J.Try.Catch aCatch) {
-            Set<NameTree> caughtExceptions = new HashSet<>();
+        private static List<NameTree> getCaughtExceptions(J.Try.Catch aCatch) {
             TypeTree typeExpr = aCatch.getParameter().getTree().getTypeExpression();
-
             if (typeExpr instanceof J.MultiCatch) {
-                J.MultiCatch multiCatch = (J.MultiCatch) typeExpr;
-                caughtExceptions.addAll(multiCatch.getAlternatives());
+                return ((J.MultiCatch) typeExpr).getAlternatives();
             } else if (typeExpr != null) { // Can be J.Identifier or J.FieldAccess
-                caughtExceptions.add(typeExpr);
+                return singletonList(typeExpr);
             }
-
-            return caughtExceptions;
+            return emptyList();
         }
 
         /**
