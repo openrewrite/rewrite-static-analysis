@@ -2101,6 +2101,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void foo(String s) {
+              if (s != null && s instanceof String) {
+                  System.out.println("String value: " + s);
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo(String s) {
+              if (s instanceof String) {
+                  System.out.println("String value: " + s);
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveRedundantTypeCast
 examples:
 - description: ''
