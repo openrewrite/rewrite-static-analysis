@@ -22,10 +22,12 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 public class SimplifyArraysAsList extends Recipe {
@@ -61,7 +63,10 @@ public class SimplifyArraysAsList extends Recipe {
                 if (ARRAYS_AS_LIST.matches(mi) && mi.getArguments().size() == 1 &&
                         mi.getArguments().get(0) instanceof J.NewArray) {
                     J.NewArray newArray = (J.NewArray) mi.getArguments().get(0);
-                    if (newArray.getDimensions().size() == 1 && newArray.getInitializer() != null) {
+                    List<Expression> elements = newArray.getInitializer();
+                    if (newArray.getDimensions().size() == 1 && elements != null &&
+                            // Skip transformation if there's exactly one null element to avoid ambiguity
+                            (elements.size() != 1 || !J.Literal.isLiteralValue(elements.get(0), null))) {
                         return mi.withArguments(newArray.getInitializer());
                     }
                 }

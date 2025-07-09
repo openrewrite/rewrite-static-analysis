@@ -312,4 +312,81 @@ class SimplifyArraysAsListTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotChangeSingleNullElement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<Object> list = Arrays.asList(new Object[]{null});
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyArrayWithMultipleNullElements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<Object> list = Arrays.asList(new Object[]{null, null, null});
+                  }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<Object> list = Arrays.asList(null, null, null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyArrayWithMixedNullAndNonNullElements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<Object> list = Arrays.asList(new Object[]{"a", null, "b"});
+                  }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  void method() {
+                      List<Object> list = Arrays.asList("a", null, "b");
+                  }
+              }
+              """
+          )
+        );
+    }
 }
