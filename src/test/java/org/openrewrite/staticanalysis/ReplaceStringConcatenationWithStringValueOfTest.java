@@ -273,7 +273,7 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
             """
               class Test {
                   void method() {
-                      String result = "Result: " + (String.valueOf(42));
+                      String result = "Result: " + String.valueOf(42);
                   }
               }
               """
