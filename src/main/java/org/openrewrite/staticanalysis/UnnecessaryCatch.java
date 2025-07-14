@@ -17,20 +17,28 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Option;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.NewClass;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -65,6 +73,13 @@ public class UnnecessaryCatch extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+
+            private static final String JAVA_LANG_EXCEPTION = "java.lang.Exception";
+            private static final String JAVA_LANG_ERROR = "java.lang.Error";
+            private static final String JAVA_LANG_RUNTIME_EXCEPTION = "java.lang.RuntimeException";
+            private static final String JAVA_LANG_THROWABLE = "java.lang.Throwable";
+            private static final String TRY_CATCH_TEMPLATE = "try {} catch (%s %s) {}";
+            private static final String MULTI_CATCH_SEPARATOR = "|";
 
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
@@ -119,27 +134,133 @@ public class UnnecessaryCatch extends Recipe {
                     return t;
                 }
 
-                //!e.isAssignableTo("java.lang.RuntimeException")
+                Set<JavaType> unnecessaryTypes = getUnnecessaryTypes(t, thrownExceptions);
+                if(unnecessaryTypes.isEmpty()) {
+                    return t;
+                }
+
+                for (JavaType type : unnecessaryTypes) {
+                    maybeRemoveImport(TypeUtils.asFullyQualified(type));
+                }
+
                 //For any checked exceptions being caught, if the exception is not thrown, remove the catch block.
                 return t.withCatches(ListUtils.map(t.getCatches(), (i, aCatch) -> {
                     JavaType parameterType = aCatch.getParameter().getType();
-                    if (parameterType == null || TypeUtils.isAssignableTo("java.lang.RuntimeException", parameterType)) {
-                        return aCatch;
+
+                    if (parameterType instanceof JavaType.MultiCatch) {
+                        JavaType.MultiCatch mc = (JavaType.MultiCatch) parameterType;
+                        String retainedTypes = mc.getThrowableTypes().stream()
+                                .filter(it -> !unnecessaryTypes.contains(it))
+                                .map(TypeUtils::asFullyQualified)
+                                .filter(Objects::nonNull)
+                                .map(JavaType.FullyQualified::getClassName)
+                                .collect(Collectors.joining(MULTI_CATCH_SEPARATOR));
+
+                        String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
+                        J.Try tempTry = JavaTemplate.builder(String.format(TRY_CATCH_TEMPLATE, retainedTypes, variableName))
+                                .contextSensitive()
+                                .build()
+                                .apply(
+                                        new Cursor(getCursor(), t),
+                                        t.getCoordinates().replace()
+                                );
+
+                        return aCatch.withParameter(tempTry.getCatches().get(0).getParameter());
+
+                    } else if (unnecessaryTypes.contains(parameterType)) {
+                        return null;
                     }
-                    if (!includeJavaLangException && TypeUtils.isOfClassType(parameterType, "java.lang.Exception")) {
-                        return aCatch;
+
+                    return aCatch;
+                }));
+            }
+
+            /**
+             * Retrieves a set of unique checked exception types declared within the catch blocks
+             * of a given {@link J.Try} statement. This method supports both single and multi-catch
+             * declarations.
+             *
+             * @param aTry The {@link J.Try} statement to analyze.
+             * @return A {@link Set} of {@link JavaType} instances representing the caught checked exceptions.
+             * An empty set is returned if no checked exceptions are found.
+             */
+            private Set<JavaType> getUnnecessaryTypes(J.Try aTry, Collection<JavaType> thrownExceptions) {
+                Set<JavaType> caughtExceptions = new HashSet<>();
+
+                for (J.Try.Catch c : aTry.getCatches()) {
+                    JavaType type = c.getParameter().getType();
+                    if (type == null) {
+                        continue;
                     }
-                    if (!includeJavaLangThrowable && TypeUtils.isOfClassType(parameterType, "java.lang.Throwable")) {
-                        return aCatch;
-                    }
-                    for (JavaType e : thrownExceptions) {
-                        if (TypeUtils.isAssignableTo(e, parameterType)) {
-                            return aCatch;
+
+                    if (type instanceof JavaType.MultiCatch) {
+                        for (JavaType throwable : ((JavaType.MultiCatch) type).getThrowableTypes()) {
+                            if (isCheckedException(throwable) || isGenericTypeRemovableByOption(throwable)) {
+                                caughtExceptions.add(throwable);
+                            }
+                        }
+                    } else { // Single catch
+                        if (isCheckedException(type) || isGenericTypeRemovableByOption(type)) {
+                            caughtExceptions.add(c.getParameter().getType());
                         }
                     }
-                    maybeRemoveImport(TypeUtils.asFullyQualified(parameterType));
-                    return null;
-                }));
+                }
+
+                caughtExceptions.removeAll(thrownExceptions);
+                return caughtExceptions;
+            }
+
+            private boolean isGenericTypeRemovableByOption(JavaType type) {
+                if (includeJavaLangException && TypeUtils.isOfClassType(type, JAVA_LANG_EXCEPTION)) {
+                    return true;
+                }
+
+                return includeJavaLangThrowable && TypeUtils.isOfClassType(type, JAVA_LANG_THROWABLE);
+            }
+
+            /**
+             * Determines if a given {@link JavaType} represents a checked exception.
+             * A checked exception is a subclass of {@code java.lang.Throwable} that is not
+             * a subclass of {@code java.lang.RuntimeException} or {@code java.lang.Error}.
+             * <a href="https://docs.oracle.com/javase/specs/jls/se7/html/jls-11.html#:~:text=The%20checked%20exception%20classes%20are,and%20Error%20and%20its%20subclasses.">Source</a>
+             *
+             * @param type The {@link JavaType} to evaluate.
+             * @return {@code true} if the type is a checked exception; {@code false} otherwise.
+             */
+            private boolean isCheckedException(JavaType type) {
+                if (!(type instanceof JavaType.Class)) {
+                    return false;
+                }
+
+                JavaType.Class exceptionClass = (JavaType.Class) type;
+
+                boolean isSubclassOfException = TypeUtils.isAssignableTo(JAVA_LANG_EXCEPTION, exceptionClass);
+                boolean isSubclassOfRuntimeException = TypeUtils.isAssignableTo(JAVA_LANG_RUNTIME_EXCEPTION, exceptionClass);
+                boolean isSubclassOfError = TypeUtils.isAssignableTo(JAVA_LANG_ERROR, exceptionClass);
+                boolean isExceptionItself = TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_EXCEPTION);
+                boolean isThrowableItself = TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_THROWABLE);
+
+                if (!isSubclassOfException) {
+                    return false;
+                }
+
+                if (isSubclassOfRuntimeException) {
+                    return false;
+                }
+
+                if (isSubclassOfError) {
+                    return false;
+                }
+
+                if (isExceptionItself) {
+                    return false;
+                }
+
+                if (isThrowableItself) {
+                    return false;
+                }
+
+                return true;
             }
         };
     }
