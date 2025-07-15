@@ -28,7 +28,6 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.NewClass;
 import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
@@ -135,7 +134,7 @@ public class UnnecessaryCatch extends Recipe {
                 }
 
                 Set<JavaType> unnecessaryTypes = getUnnecessaryTypes(t, thrownExceptions);
-                if(unnecessaryTypes.isEmpty()) {
+                if (unnecessaryTypes.isEmpty()) {
                     return t;
                 }
 
@@ -155,6 +154,10 @@ public class UnnecessaryCatch extends Recipe {
                                 .filter(Objects::nonNull)
                                 .map(JavaType.FullyQualified::getClassName)
                                 .collect(Collectors.joining(MULTI_CATCH_SEPARATOR));
+
+                        if (retainedTypes.isEmpty()) {
+                            return null;
+                        }
 
                         String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
                         J.Try tempTry = JavaTemplate.builder(String.format(TRY_CATCH_TEMPLATE, retainedTypes, variableName))
