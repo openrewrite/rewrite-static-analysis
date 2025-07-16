@@ -399,4 +399,27 @@ class UnnecessaryCatchTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotRemoveCatchForConstructorThatThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.jar.JarFile;
+              import java.util.zip.ZipException;
+
+              class Scratch {
+                  JarFile method(String name) {
+                      try {
+                          return new JarFile(name); // throws IOException
+                      } catch (ZipException e) { // extends IOException
+                          // Catches subset
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
