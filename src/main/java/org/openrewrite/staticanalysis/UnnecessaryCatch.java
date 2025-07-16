@@ -136,15 +136,9 @@ public class UnnecessaryCatch extends Recipe {
                     TypeTree typeExpression = aCatch.getParameter().getTree().getTypeExpression();
                     if (typeExpression instanceof J.MultiCatch) {
                         J.MultiCatch multiCatch = (J.MultiCatch) typeExpression;
-                        List<NameTree> alternatives = ListUtils.map(multiCatch.getAlternatives(), typeTree -> {
-                            if (typeTree instanceof TypeTree) {
-                                JavaType type = ((TypeTree) typeTree).getType();
-                                if (unnecessaryTypes.contains(type)) {
-                                    return null; // Remove this type from the multi-catch
-                                }
-                            }
-                            return typeTree;
-                        });
+                        List<NameTree> alternatives = ListUtils.map(multiCatch.getAlternatives(), typeTree ->
+                                typeTree != null && unnecessaryTypes.contains(typeTree.getType()) ? null : typeTree
+                        );
                         if (alternatives.isEmpty()) {
                             return null;
                         }
