@@ -87,6 +87,11 @@ public class UnnecessaryCatch extends Recipe {
             public J.Try visitTry(J.Try tryable, ExecutionContext ctx) {
                 J.Try t = super.visitTry(tryable, ctx);
 
+                if (t.getResources() != null) {
+                    // Hard to determine if `close()` might throw any exceptions, so do not make any changes for now
+                    return t;
+                }
+
                 List<JavaType> thrownExceptions = new ArrayList<>();
                 AtomicBoolean missingTypeInformation = new AtomicBoolean(false);
                 //Collect any checked exceptions thrown from the try block.

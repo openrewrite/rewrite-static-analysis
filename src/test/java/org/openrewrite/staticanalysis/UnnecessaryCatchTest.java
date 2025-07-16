@@ -377,4 +377,26 @@ class UnnecessaryCatchTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotRemoveCatchForCloseOnTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.io.StringWriter;
+
+              class Scratch {
+                  void method() {
+                      try (StringWriter sw = new StringWriter()) {
+                      } catch (IOException e) {
+                          // Caught on .close()
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
