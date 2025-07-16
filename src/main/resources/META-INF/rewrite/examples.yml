@@ -429,6 +429,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CollectionToArrayShouldHaveProperType
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          void test(List<String> list) {
+              String[] array = (String[]) list.toArray();
+          }
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          void test(List<String> list) {
+              String[] array = list.toArray(new String[0]);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ControlFlowIndentation
 examples:
 - description: ''
@@ -2836,6 +2859,31 @@ examples:
           Date date = new SimpleDateFormat("yyyy/MM/dd").parse("2015/12/31");
           String result = new SimpleDateFormat("yyyy/MM/dd").format(date);
         }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyArraysAsList
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Arrays;
+      import java.util.List;
+
+      class Test {
+          void method() {
+              List<String> list = Arrays.asList(new String[]{"w", "k", "s"});
+          }
+      }
+    after: |
+      import java.util.Arrays;
+      import java.util.List;
+
+      class Test {
+          void method() {
+              List<String> list = Arrays.asList("w", "k", "s");
+          }
       }
     language: java
 ---

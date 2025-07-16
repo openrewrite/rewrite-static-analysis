@@ -30,8 +30,8 @@ class CollectionToArrayShouldHaveProperTypeTest implements RewriteTest {
         spec.recipe(new CollectionToArrayShouldHaveProperType());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void basicCase() {
         rewriteRun(
           //language=java
