@@ -114,6 +114,18 @@ public class UnnecessaryCatch extends Recipe {
                         }
                         return super.visitMethodInvocation(method, integer);
                     }
+
+                    @Override
+                    public J.Throw visitThrow(J.Throw thrown, Integer integer) {
+                        JavaType type = thrown.getException().getType();
+                        if (type == null) {
+                            //Do not make any changes if there is missing type information.
+                            missingTypeInformation.set(true);
+                        } else {
+                            thrownExceptions.add(type);
+                        }
+                        return super.visitThrow(thrown, integer);
+                    }
                 }.visit(t.getBody(), 0);
 
                 //If there is any missing type information, it is not safe to make any transformations.

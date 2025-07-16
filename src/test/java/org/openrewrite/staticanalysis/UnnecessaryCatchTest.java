@@ -358,4 +358,23 @@ class UnnecessaryCatchTest implements RewriteTest {
         );
     }
 
+    @Test
+    void doNotRemoveCatchOfThrownException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Scratch {
+                  void method() {
+                      try {
+                          throw new ClassNotFoundException();
+                      } catch (ClassNotFoundException e) {
+                          // Caught
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
