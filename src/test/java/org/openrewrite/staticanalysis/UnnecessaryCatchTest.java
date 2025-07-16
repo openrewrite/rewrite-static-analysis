@@ -133,19 +133,19 @@ class UnnecessaryCatchTest implements RewriteTest {
           //language=java
           java(
             """
-                    import java.io.IOException;
-                    import java.sql.SQLException;
+              import java.io.IOException;
+              import java.sql.SQLException;
 
-                    public class AnExample {
-                        public void method() {
-                            try {
-                                java.util.Base64.getDecoder().decode("abc".getBytes());
-                            } catch (IOException | SQLException e) {
-                                System.out.println("an exception!");
-                            }
-                        }
-                    }
-                    """,
+              public class AnExample {
+                  public void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IOException | SQLException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """,
             """
               public class AnExample {
                   public void method() {
