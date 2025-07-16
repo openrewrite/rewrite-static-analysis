@@ -17,18 +17,17 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Option;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.NewClass;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -68,8 +67,6 @@ public class UnnecessaryCatch extends Recipe {
             private static final String JAVA_LANG_ERROR = "java.lang.Error";
             private static final String JAVA_LANG_RUNTIME_EXCEPTION = "java.lang.RuntimeException";
             private static final String JAVA_LANG_THROWABLE = "java.lang.Throwable";
-            private static final String TRY_CATCH_TEMPLATE = "try {} catch (%s %s) {}";
-            private static final String MULTI_CATCH_SEPARATOR = "|";
 
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
@@ -135,36 +132,31 @@ public class UnnecessaryCatch extends Recipe {
 
                 //For any checked exceptions being caught, if the exception is not thrown, remove the catch block.
                 return t.withCatches(ListUtils.map(t.getCatches(), (i, aCatch) -> {
-                    JavaType parameterType = aCatch.getParameter().getType();
-
-                    if (parameterType instanceof JavaType.MultiCatch) {
-                        JavaType.MultiCatch mc = (JavaType.MultiCatch) parameterType;
-                        String retainedTypes = mc.getThrowableTypes().stream()
-                                .filter(it -> !unnecessaryTypes.contains(it))
-                                .map(TypeUtils::asFullyQualified)
-                                .filter(Objects::nonNull)
-                                .map(JavaType.FullyQualified::getClassName)
-                                .collect(Collectors.joining(MULTI_CATCH_SEPARATOR));
-
-                        if (retainedTypes.isEmpty()) {
+                    J.ControlParentheses<J.VariableDeclarations> parameter = aCatch.getParameter();
+                    TypeTree typeExpression = aCatch.getParameter().getTree().getTypeExpression();
+                    if (typeExpression instanceof J.MultiCatch) {
+                        J.MultiCatch multiCatch = (J.MultiCatch) typeExpression;
+                        List<NameTree> alternatives = ListUtils.map(multiCatch.getAlternatives(), typeTree -> {
+                            if (typeTree instanceof TypeTree) {
+                                JavaType type = ((TypeTree) typeTree).getType();
+                                if (unnecessaryTypes.contains(type)) {
+                                    return null; // Remove this type from the multi-catch
+                                }
+                            }
+                            return typeTree;
+                        });
+                        if (alternatives.isEmpty()) {
                             return null;
                         }
-
-                        String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
-                        J.Try tempTry = JavaTemplate.builder(String.format(TRY_CATCH_TEMPLATE, retainedTypes, variableName))
-                                .contextSensitive()
-                                .build()
-                                .apply(
-                                        new Cursor(getCursor(), t),
-                                        t.getCoordinates().replace()
-                                );
-
-                        return aCatch.withParameter(tempTry.getCatches().get(0).getParameter());
-
-                    } else if (unnecessaryTypes.contains(parameterType)) {
+                        J.MultiCatch.Padding padding = multiCatch.withAlternatives(alternatives).getPadding();
+                        J.MultiCatch rightTrimmed = padding.withAlternatives(
+                                ListUtils.mapLast(padding.getAlternatives(), last -> last.withAfter(Space.EMPTY)));
+                        return aCatch.withParameter(aCatch.getParameter().withTree(
+                                aCatch.getParameter().getTree().withTypeExpression(rightTrimmed)));
+                    }
+                    if (unnecessaryTypes.contains(parameter.getType())) {
                         return null;
                     }
-
                     return aCatch;
                 }));
             }

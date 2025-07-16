@@ -38,8 +38,8 @@ class UnnecessaryCatchTest implements RewriteTest {
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IOException e) {
@@ -49,8 +49,8 @@ class UnnecessaryCatchTest implements RewriteTest {
               }
               """,
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       java.util.Base64.getDecoder().decode("abc".getBytes());
                   }
               }
@@ -67,8 +67,8 @@ class UnnecessaryCatchTest implements RewriteTest {
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IOException e1) {
@@ -80,8 +80,8 @@ class UnnecessaryCatchTest implements RewriteTest {
               }
               """,
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IllegalStateException e2) {
@@ -102,8 +102,8 @@ class UnnecessaryCatchTest implements RewriteTest {
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IllegalArgumentException | IllegalStateException | IOException e) {
@@ -113,8 +113,8 @@ class UnnecessaryCatchTest implements RewriteTest {
               }
               """,
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IllegalArgumentException | IllegalStateException e) {
@@ -136,8 +136,8 @@ class UnnecessaryCatchTest implements RewriteTest {
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IOException | SQLException e) {
@@ -147,8 +147,8 @@ class UnnecessaryCatchTest implements RewriteTest {
               }
               """,
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       java.util.Base64.getDecoder().decode("abc".getBytes());
                   }
               }
@@ -163,8 +163,8 @@ class UnnecessaryCatchTest implements RewriteTest {
           //language=java
           java(
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IllegalStateException e) {
@@ -185,8 +185,8 @@ class UnnecessaryCatchTest implements RewriteTest {
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           fred();
                       } catch (IOException e) {
@@ -194,7 +194,7 @@ class UnnecessaryCatchTest implements RewriteTest {
                       }
                   }
 
-                  public void fred() throws IOException {
+                  void fred() throws IOException {
                   }
               }
               """
@@ -210,8 +210,8 @@ class UnnecessaryCatchTest implements RewriteTest {
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           new Fred();
                       } catch (IOException e) {
@@ -219,8 +219,8 @@ class UnnecessaryCatchTest implements RewriteTest {
                       }
                   }
 
-                  public static class Fred {
-                      public Fred() throws IOException {}
+                  static class Fred {
+                      Fred() throws IOException {}
                   }
 
               }
