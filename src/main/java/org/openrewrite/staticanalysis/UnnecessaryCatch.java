@@ -208,7 +208,6 @@ public class UnnecessaryCatch extends Recipe {
                 if (includeJavaLangException && TypeUtils.isOfClassType(type, JAVA_LANG_EXCEPTION)) {
                     return true;
                 }
-
                 return includeJavaLangThrowable && TypeUtils.isOfClassType(type, JAVA_LANG_THROWABLE);
             }
 
@@ -225,36 +224,12 @@ public class UnnecessaryCatch extends Recipe {
                 if (!(type instanceof JavaType.Class)) {
                     return false;
                 }
-
                 JavaType.Class exceptionClass = (JavaType.Class) type;
-
-                boolean isSubclassOfException = TypeUtils.isAssignableTo(JAVA_LANG_EXCEPTION, exceptionClass);
-                boolean isSubclassOfRuntimeException = TypeUtils.isAssignableTo(JAVA_LANG_RUNTIME_EXCEPTION, exceptionClass);
-                boolean isSubclassOfError = TypeUtils.isAssignableTo(JAVA_LANG_ERROR, exceptionClass);
-                boolean isExceptionItself = TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_EXCEPTION);
-                boolean isThrowableItself = TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_THROWABLE);
-
-                if (!isSubclassOfException) {
-                    return false;
-                }
-
-                if (isSubclassOfRuntimeException) {
-                    return false;
-                }
-
-                if (isSubclassOfError) {
-                    return false;
-                }
-
-                if (isExceptionItself) {
-                    return false;
-                }
-
-                if (isThrowableItself) {
-                    return false;
-                }
-
-                return true;
+                return TypeUtils.isAssignableTo(JAVA_LANG_EXCEPTION, exceptionClass) &&
+                        !TypeUtils.isAssignableTo(JAVA_LANG_RUNTIME_EXCEPTION, exceptionClass) &&
+                        !TypeUtils.isAssignableTo(JAVA_LANG_ERROR, exceptionClass) &&
+                        !TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_EXCEPTION) &&
+                        !TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_THROWABLE);
             }
         };
     }
