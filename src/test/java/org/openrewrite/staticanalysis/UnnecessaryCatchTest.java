@@ -95,7 +95,40 @@ class UnnecessaryCatchTest implements RewriteTest {
     }
 
     @Test
-    void removeFromMultiCatch() {
+    void removeFirstFromMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class AnExample {
+                  void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IOException | IllegalArgumentException | IllegalStateException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """,
+            """
+              class AnExample {
+                  void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IllegalArgumentException | IllegalStateException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeMiddleFromMultiCatch() {
         rewriteRun(
           //language=java
           java(

@@ -142,11 +142,11 @@ public class UnnecessaryCatch extends Recipe {
                         if (alternatives.isEmpty()) {
                             return null;
                         }
-                        J.MultiCatch.Padding padding = multiCatch.withAlternatives(alternatives).getPadding();
-                        J.MultiCatch rightTrimmed = padding.withAlternatives(
-                                ListUtils.mapLast(padding.getAlternatives(), last -> last.withAfter(Space.EMPTY)));
+                        List<NameTree> leftTrimmed = ListUtils.mapFirst(alternatives, first -> first.withPrefix(multiCatch.getAlternatives().get(0).getPrefix()));
+                        J.MultiCatch.Padding padding = multiCatch.withAlternatives(leftTrimmed).getPadding();
+                        List<JRightPadded<NameTree>> rightTrimmed = ListUtils.mapLast(padding.getAlternatives(), last -> last.withAfter(Space.EMPTY));
                         return aCatch.withParameter(aCatch.getParameter().withTree(
-                                aCatch.getParameter().getTree().withTypeExpression(rightTrimmed)));
+                                aCatch.getParameter().getTree().withTypeExpression(padding.withAlternatives(rightTrimmed))));
                     }
                     if (unnecessaryTypes.contains(parameter.getType())) {
                         return null;
