@@ -447,4 +447,28 @@ class UnnecessaryCatchTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotRemoveCatchOnMethodChain() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.net.InetAddress;
+
+              class Scratch {
+                  void method(String name) {
+                      String host;
+                      try {
+                          host = InetAddress.getLocalHost().getCanonicalHostName();
+                      } catch (IOException ignore) {
+                          host = "ignored";
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
