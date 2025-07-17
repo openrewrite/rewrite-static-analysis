@@ -203,8 +203,24 @@ public class UnnecessaryCatch extends Recipe {
                     }
                 }
 
-                caughtExceptions.removeAll(thrownExceptions);
-                return caughtExceptions;
+                // Filter out caught exceptions that are necessary
+                Set<JavaType> unnecessaryExceptions = new HashSet<>(caughtExceptions);
+                unnecessaryExceptions.removeAll(thrownExceptions);
+
+                // Also filter out caught exceptions that are subtypes of thrown exceptions
+                // For example, if IOException is thrown, don't remove catch for ZipException
+                Set<JavaType> toKeep = new HashSet<>();
+                for (JavaType caughtException : unnecessaryExceptions) {
+                    for (JavaType thrownException : thrownExceptions) {
+                        if (TypeUtils.isAssignableTo(thrownException, caughtException)) {
+                            toKeep.add(caughtException);
+                            break;
+                        }
+                    }
+                }
+                unnecessaryExceptions.removeAll(toKeep);
+
+                return unnecessaryExceptions;
             }
 
             private boolean isGenericTypeRemovableByOption(JavaType type) {
