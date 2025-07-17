@@ -215,8 +215,8 @@ public class UnnecessaryCatch extends Recipe {
                         continue;
                     }
                     for (JavaType thrownException : thrownExceptions) {
-                        if (TypeUtils.isAssignableTo(thrownException, caughtException)
-                                || TypeUtils.isAssignableTo(caughtException, thrownException)) {
+                        if (TypeUtils.isAssignableTo(thrownException, caughtException) ||
+                                TypeUtils.isAssignableTo(caughtException, thrownException)) {
                             toKeep.add(caughtException);
                             break;
                         }
