@@ -422,4 +422,29 @@ class UnnecessaryCatchTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotRemoveCatchForWiderCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class Scratch {
+                  void foo() throws FileNotFoundException {} // extends IOException
+
+                  void method(String name) {
+                      try {
+                          foo();
+                      } catch (IOException e) {
+                          // Catches FileNotFoundException
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
