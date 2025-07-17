@@ -211,8 +211,12 @@ public class UnnecessaryCatch extends Recipe {
                 // For example, if IOException is thrown, don't remove catch for ZipException
                 Set<JavaType> toKeep = new HashSet<>();
                 for (JavaType caughtException : unnecessaryExceptions) {
+                    if (isGenericTypeRemovableByOption(caughtException)) {
+                        continue;
+                    }
                     for (JavaType thrownException : thrownExceptions) {
-                        if (TypeUtils.isAssignableTo(thrownException, caughtException)) {
+                        if (TypeUtils.isAssignableTo(thrownException, caughtException)
+                                || TypeUtils.isAssignableTo(caughtException, thrownException)) {
                             toKeep.add(caughtException);
                             break;
                         }
