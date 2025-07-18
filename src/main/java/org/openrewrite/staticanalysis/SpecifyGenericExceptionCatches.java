@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -65,15 +66,12 @@ public class SpecifyGenericExceptionCatches extends Recipe {
 
                 if (hasGenericCatch(t)) {
                     Set<JavaType> caughtExceptions = getCaughtExceptions(t);
-                    Set<JavaType> thrownExceptions = getThrownExceptions(t);
+                    Set<JavaType> thrownExceptions = getDeclaredThrownExceptions(t);
                     thrownExceptions.removeAll(caughtExceptions); // Remove exceptions that are already specifically caught
 
                     if (!thrownExceptions.isEmpty()) {
-                        List<J.Try.Catch> updatedCatches = t.getCatches().stream()
-                                .map(c -> updateCatchIfGeneric(c, thrownExceptions))
-                                .collect(Collectors.toList());
-
-                        return t.withCatches(updatedCatches);
+                        return t.withCatches(ListUtils.map(t.getCatches(), c ->
+                            updateCatchIfGeneric(c, thrownExceptions)));
                     }
                 }
 
@@ -100,13 +98,11 @@ public class SpecifyGenericExceptionCatches extends Recipe {
 
             private Set<JavaType> getCaughtExceptions(J.Try aTry) {
                 Set<JavaType> caughtExceptions = new HashSet<>();
-
                 for (J.Try.Catch c : aTry.getCatches()) {
                     if (c.getParameter().getType() != null) {
                         caughtExceptions.add(c.getParameter().getType());
                     }
                 }
-
                 return caughtExceptions;
             }
 
@@ -117,7 +113,7 @@ public class SpecifyGenericExceptionCatches extends Recipe {
              * @param aTry the try block to analyze
              * @return a set of exception types that may be thrown by code in the try block
              */
-            private Set<JavaType> getThrownExceptions(J.Try aTry) {
+            private Set<JavaType> getDeclaredThrownExceptions(J.Try aTry) {
                 return new JavaIsoVisitor<Set<JavaType>>() {
                     @Override
                     public J.NewClass visitNewClass(J.NewClass nc, Set<JavaType> set) {
