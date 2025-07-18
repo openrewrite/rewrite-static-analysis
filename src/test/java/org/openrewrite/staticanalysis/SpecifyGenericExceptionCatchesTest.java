@@ -31,7 +31,7 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().dependsOn(
               //language=java
               """
-                public class MockThrowingClass {
+                class MockThrowingClass {
 
                     MockThrowingClass() {
                     }

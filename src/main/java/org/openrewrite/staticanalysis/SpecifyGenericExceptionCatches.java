@@ -118,8 +118,7 @@ public class SpecifyGenericExceptionCatches extends Recipe {
              * @return a set of exception types that may be thrown by code in the try block
              */
             private Set<JavaType> getThrownExceptions(J.Try aTry) {
-                Set<JavaType> thrownExceptions = new HashSet<>();
-                new JavaIsoVisitor<Set<JavaType>>() {
+                return new JavaIsoVisitor<Set<JavaType>>() {
                     @Override
                     public J.NewClass visitNewClass(J.NewClass nc, Set<JavaType> set) {
                         if (nc.getConstructorType() != null) {
@@ -135,8 +134,7 @@ public class SpecifyGenericExceptionCatches extends Recipe {
                         }
                         return super.visitMethodInvocation(mi, set);
                     }
-                }.visit(aTry.getBody(), thrownExceptions);
-                return thrownExceptions;
+                }.reduce(aTry.getBody(), new HashSet<>());
             }
 
             /**
