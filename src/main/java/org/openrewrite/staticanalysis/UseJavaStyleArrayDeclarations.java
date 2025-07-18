@@ -15,15 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.J.VariableDeclarations;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.*;
+import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.util.Collections;
@@ -51,21 +46,36 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public VariableDeclarations visitVariableDeclarations(VariableDeclarations multiVariable, ExecutionContext ctx) {
-                VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
                 List<JLeftPadded<Space>> dimensions = getCursor().pollMessage("VAR_DIMENSIONS");
-                if (dimensions != null) {
-                    varDecls = varDecls.withDimensionsBeforeName(dimensions);
+                if (dimensions != null && varDecls.getTypeExpression() != null) {
+                    // Build array type by wrapping the type expression
+                    TypeTree typeExpression = varDecls.getTypeExpression();
+                    JavaType type = varDecls.getType();
+                    for (JLeftPadded<Space> dim : dimensions) {
+                        type = new JavaType.Array(null, type, null);
+                        typeExpression = new J.ArrayType(
+                                Tree.randomId(),
+                                Space.EMPTY,
+                                Markers.EMPTY,
+                                typeExpression,
+                                null,
+                                dim,
+                                type
+                        );
+                    }
+                    varDecls = varDecls.withTypeExpression(typeExpression);
                 }
                 return varDecls;
             }
 
             @Override
-            public VariableDeclarations.NamedVariable visitVariable(VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
-                VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
+            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+                J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
                 if (!nv.getDimensionsAfterName().isEmpty()) {
-                    getCursor().dropParentUntil(VariableDeclarations.class::isInstance).putMessage("VAR_DIMENSIONS", nv.getDimensionsAfterName());
-                    nv = nv.withDimensionsAfterName(ListUtils.map(nv.getDimensionsAfterName(), dim -> null));
+                    getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance).putMessage("VAR_DIMENSIONS", nv.getDimensionsAfterName());
+                    nv = nv.withDimensionsAfterName(Collections.emptyList());
                 }
                 return nv;
             }

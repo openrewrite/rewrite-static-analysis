@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"CStyleArrayDeclaration", "InfiniteLoopStatement", "StatementWithEmptyBody", "ForLoopReplaceableByWhile"})
+@SuppressWarnings({"CStyleArrayDeclaration", "StatementWithEmptyBody", "ForLoopReplaceableByWhile"})
 class MultipleVariableDeclarationsTest implements RewriteTest {
 
     @Override

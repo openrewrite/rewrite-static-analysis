@@ -158,8 +158,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Nested
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     class ReplaceConstantMethodArg {
 
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/398")

@@ -103,14 +103,6 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                         typeExpression = buildTypeTree(wildcard.getBoundedType().getType(), Space.EMPTY);
                     }
                     multiVariable = multiVariable.withTypeExpression(typeExpression);
-                    int arrayDimensions = countDimensions(nv.getType());
-                    if (arrayDimensions > 0) {
-                        List<JLeftPadded<Space>> dimensions = new ArrayList<>();
-                        for (int index = 0; index < arrayDimensions; index++) {
-                            dimensions.add(new JLeftPadded<>(Space.EMPTY, Space.EMPTY, Markers.EMPTY));
-                        }
-                        multiVariable = multiVariable.withDimensionsBeforeName(dimensions);
-                    }
                     multiVariable = multiVariable.withVariables(ListUtils.map(multiVariable.getVariables(), (index, variable) -> {
                         if (index == 0) {
                             return variable.withPrefix(variable.getPrefix().withWhitespace(" "));
@@ -166,7 +158,34 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     return identifier;
                 }
             } else if (type instanceof JavaType.Array) {
-                return (buildTypeTree(((JavaType.Array) type).getElemType(), space));
+                JavaType.Array arrayType = (JavaType.Array) type;
+                // Get the base element type
+                JavaType elemType = arrayType.getElemType();
+                while (elemType instanceof JavaType.Array) {
+                    elemType = ((JavaType.Array) elemType).getElemType();
+                }
+
+                // Build the base type expression
+                TypeTree result = buildTypeTree(elemType, space);
+                if (result == null) {
+                    return null;
+                }
+
+                // Count dimensions and build array type
+                JavaType currentType = type;
+                while (currentType instanceof JavaType.Array) {
+                    result = new J.ArrayType(
+                            Tree.randomId(),
+                            Space.EMPTY,
+                            Markers.EMPTY,
+                            result,
+                            null,
+                            new JLeftPadded<>(Space.EMPTY, Space.EMPTY, Markers.EMPTY),
+                            currentType
+                    );
+                    currentType = ((JavaType.Array) currentType).getElemType();
+                }
+                return result;
             } else if (type instanceof JavaType.Variable) {
                 return buildTypeTree(((JavaType.Variable) type).getType(), space);
             } else if (type instanceof JavaType.GenericTypeVariable) {
@@ -224,19 +243,6 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             }
             return JContainer.build(Space.EMPTY, typeExpressions, Markers.EMPTY);
         }
-    }
-
-    private static int countDimensions(JavaType type) {
-        if (!(type instanceof JavaType.Array)) {
-            return 0;
-        }
-
-        int count = 0;
-        while (type instanceof JavaType.Array) {
-            type = ((JavaType.Array) type).getElemType();
-            count++;
-        }
-        return count;
     }
 
 }

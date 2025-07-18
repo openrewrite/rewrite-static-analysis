@@ -33,8 +33,8 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class RemoveUnusedPrivateFields extends Recipe {
     private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
