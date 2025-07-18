@@ -31,36 +31,38 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().dependsOn(
               //language=java
               """
-                package com.example;
-
                 public class MockThrowingClass {
 
-                    public MockThrowingClass() {
+                    MockThrowingClass() {
                     }
 
-                     public MockThrowingClass(boolean throwSQLException) throws java.sql.SQLException {
+                     MockThrowingClass(boolean throwSQLException) throws java.sql.SQLException {
                         if (throwSQLException) {
                             throw new java.sql.SQLException("Test Constructor SQL Exception");
                         }
                      }
 
-                    public void throwsIOException() throws java.io.IOException {
+                    void throwsIOException() throws java.io.IOException {
                         throw new java.io.IOException("Test IO Exception");
                     }
 
-                    public void throwsSQLException() throws java.sql.SQLException {
+                    void throwsSQLException() throws java.sql.SQLException {
                         throw new java.sql.SQLException("Test SQL Exception");
                     }
 
-                    public void throwsBothIOAndSQL() throws java.io.IOException, java.sql.SQLException {
+                    void throwsBothIOAndSQL() throws java.io.IOException, java.sql.SQLException {
                         throw new java.io.IOException("Test IO or SQL Exception");
                     }
 
-                    public void throwsNothing() {
+                    void throwsNothing() {
                         // This method throws no checked exceptions
                     }
 
-                    public void throwsRuntimeException() throws RuntimeException {
+                    void throwsDeclaredRuntimeException() throws RuntimeException {
+                        throw new RuntimeException("Test Runtime Exception");
+                    }
+
+                    void throwsUndeclaredRuntimeException() {
                         throw new RuntimeException("Test Runtime Exception");
                     }
                 }
@@ -75,10 +77,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsIOException();
                       } catch (Exception e) {
@@ -88,12 +88,10 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
               """,
             """
-              package com.example;
-
               import java.io.IOException;
 
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsIOException();
                       } catch (IOException e) {
@@ -111,10 +109,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsIOException();
                           new MockThrowingClass().throwsSQLException();
@@ -125,13 +121,11 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
               """,
             """
-              package com.example;
-
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsIOException();
                           new MockThrowingClass().throwsSQLException();
@@ -150,10 +144,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsBothIOAndSQL();
                       } catch (Exception e) {
@@ -163,13 +155,11 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
               """,
             """
-              package com.example;
-
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsBothIOAndSQL();
                       } catch (IOException | SQLException e) {
@@ -187,13 +177,11 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsBothIOAndSQL();
                       } catch (IOException e) {
@@ -205,13 +193,11 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
               """,
             """
-              package com.example;
-
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsBothIOAndSQL();
                       } catch (IOException e) {
@@ -231,12 +217,10 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
               import java.io.IOException;
 
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass().throwsIOException();
                       } catch (IOException e) {
@@ -254,10 +238,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
-              public class MyService {
-                  public void doSomething() {
+              class MyService {
+                  void doSomething() {
                       try {
                           new MockThrowingClass(); // Nothing thrown
                       } catch (Exception e) {
@@ -275,10 +257,8 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
-              public class MyService {
-                  public void createObject() {
+              class MyService {
+                  void createObject() {
                       try {
                           new MockThrowingClass(true); // Throws SQLException
                       } catch (Exception e) {
@@ -288,12 +268,10 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
               """,
             """
-              package com.example;
-
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void createObject() {
+              class MyService {
+                  void createObject() {
                       try {
                           new MockThrowingClass(true); // Throws SQLException
                       } catch (SQLException e) {
@@ -311,12 +289,10 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
               import java.io.IOException;
 
-              public class MyService {
-                  public void createAndHandle() {
+              class MyService {
+                  void createAndHandle() {
                       try {
                           new MockThrowingClass(true); // Throws SQLException
                           new MockThrowingClass().throwsIOException();
@@ -327,13 +303,11 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
               """,
             """
-              package com.example;
-
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void createAndHandle() {
+              class MyService {
+                  void createAndHandle() {
                       try {
                           new MockThrowingClass(true); // Throws SQLException
                           new MockThrowingClass().throwsIOException();
@@ -352,13 +326,11 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              package com.example;
-
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void createAndHandle() {
+              class MyService {
+                  void createAndHandle() {
                       try {
                           new MockThrowingClass(true); // Throws SQLException
                           new MockThrowingClass().throwsIOException();
@@ -371,13 +343,11 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
               }
               """,
             """
-              package com.example;
-
               import java.io.IOException;
               import java.sql.SQLException;
 
-              public class MyService {
-                  public void createAndHandle() {
+              class MyService {
+                  void createAndHandle() {
                       try {
                           new MockThrowingClass(true); // Throws SQLException
                           new MockThrowingClass().throwsIOException();
@@ -385,6 +355,58 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
                           System.out.println("Caught sql exception: " + e.getMessage());
                       } catch (IOException e) {
                           System.out.println("Caught generic: " + e.getMessage());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void declaredRuntimeException() {
+        rewriteRun(
+          java(
+            """
+              class MyService {
+                  void doSomething() {
+                      try {
+                          new MockThrowingClass().throwsDeclaredRuntimeException();
+                      } catch (Exception e) {
+                          // This is a generic catch block that should be replaced
+                          System.out.println("Caught exception: " + e.getMessage());
+                      }
+                  }
+              }
+              """,
+            """
+              class MyService {
+                  void doSomething() {
+                      try {
+                          new MockThrowingClass().throwsDeclaredRuntimeException();
+                      } catch (java.lang.RuntimeException e) {
+                          // This is a generic catch block that should be replaced
+                          System.out.println("Caught exception: " + e.getMessage());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void undeclaredRuntimeException() {
+        rewriteRun(
+          java(
+            """
+              class MyService {
+                  void doSomething() {
+                      try {
+                          new MockThrowingClass().throwsUndeclaredRuntimeException();
+                      } catch (Exception e) {
+                          // This is a generic catch block that should be replaced
+                          System.out.println("Caught exception: " + e.getMessage());
                       }
                   }
               }
