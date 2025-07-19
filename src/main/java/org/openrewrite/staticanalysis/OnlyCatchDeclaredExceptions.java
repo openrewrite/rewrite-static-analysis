@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-public class SpecifyGenericExceptionCatches extends Recipe {
+public class OnlyCatchDeclaredExceptions extends Recipe {
 
     @Override
     public String getDisplayName() {

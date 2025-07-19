@@ -23,11 +23,11 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-class SpecifyGenericExceptionCatchesTest implements RewriteTest {
+class OnlyCatchDeclaredExceptionsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new SpecifyGenericExceptionCatches())
+        spec.recipe(new OnlyCatchDeclaredExceptions())
           .parser(JavaParser.fromJavaVersion().dependsOn(
               //language=java
               """
