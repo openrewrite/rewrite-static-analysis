@@ -67,7 +67,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                         Set<JavaType> declaredThrown = getDeclaredThrownExceptions(t);
                         declaredThrown.removeAll(getCaughtExceptions(t));
                         if (!declaredThrown.isEmpty()) {
-                            return updateCatch(c, declaredThrown);
+                            return multiCatchWithDeclaredExceptions(c, declaredThrown);
                         }
                     }
                     return c;
@@ -108,29 +108,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 }.reduce(aTry.getBody(), new HashSet<>());
             }
 
-            /**
-             * Updates a generic catch block (catching java.lang.Exception) to catch only the specific
-             * exception types that are actually thrown within the try block.
-             *
-             * <p>This method transforms generic catch blocks like:
-             * <pre>{@code
-             * catch (Exception e) { ... }
-             * }</pre>
-             *
-             * into specific single or multi-catch blocks like:
-             * <pre>{@code
-             * catch (IOException e) { ... }
-             * // or
-             * catch (IOException | SQLException e) { ... }
-             * }</pre>
-             *
-             * @param aCatch the catch block to potentially update
-             * @param thrownExceptions the set of specific exception types thrown in the try block
-             *                        that are not already caught by other catch clauses
-             * @return the original catch block if it doesn't catch java.lang.Exception,
-             *         otherwise a new catch block with specific exception types
-             */
-            private J.Try.Catch updateCatch(J.Try.Catch aCatch, Set<JavaType> thrownExceptions) {
+            private J.Try.Catch multiCatchWithDeclaredExceptions(J.Try.Catch aCatch, Set<JavaType> thrownExceptions) {
                 String throwableTypes = thrownExceptions.stream()
                         .map(TypeUtils::asFullyQualified)
                         .filter(Objects::nonNull)
