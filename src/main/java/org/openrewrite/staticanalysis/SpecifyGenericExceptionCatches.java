@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -36,21 +37,20 @@ public class SpecifyGenericExceptionCatches extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Replace `catch(Exception)` with specific exceptions thrown in the try block";
+        return "Replace `catch(Exception)` with specific declared exceptions thrown in the try block";
     }
 
     @Override
     public String getDescription() {
         return "Replaces `catch(Exception e)` blocks with a multi-catch block " +
-                "(`catch (SpecificException1 | SpecificException2 e)`) containing only the checked exceptions " +
-                "explicitly thrown by method or constructor invocations within the `try` block that are not " +
-                "already caught by more specific `catch` clauses. If no checked exceptions are found that " +
-                "require catching, the generic `catch` block is removed.";
+                "(`catch (SpecificException1 | SpecificException2 e)`) containing only the exceptions declared " +
+                "thrown by method or constructor invocations within the `try` block that are not already caught " +
+                "by more specific `catch` clauses.";
     }
 
     @Override
     public Set<String> getTags() {
-        return Collections.unmodifiableSet(new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221")));
+        return new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));
     }
 
     @Override
@@ -65,26 +65,16 @@ public class SpecifyGenericExceptionCatches extends Recipe {
                 J.Try t = super.visitTry(aTry, ctx);
 
                 if (hasGenericCatch(t)) {
-                    Set<JavaType> caughtExceptions = getCaughtExceptions(t);
                     Set<JavaType> thrownExceptions = getDeclaredThrownExceptions(t);
-                    thrownExceptions.removeAll(caughtExceptions); // Remove exceptions that are already specifically caught
+                    thrownExceptions.removeAll(getCaughtExceptions(t)); // Remove exceptions that are already specifically caught
 
                     if (!thrownExceptions.isEmpty()) {
                         return t.withCatches(ListUtils.map(t.getCatches(), c ->
-                            updateCatchIfGeneric(c, thrownExceptions)));
+                                updateCatchIfGeneric(c, thrownExceptions)));
                     }
                 }
 
                 return t;
-            }
-
-            private boolean isGenericCatch(J.Try.Catch aCatch) {
-                FullyQualified fq = TypeUtils.asFullyQualified(aCatch.getParameter().getType());
-                if (fq != null) {
-                    String fqn = fq.getFullyQualifiedName();
-                    return TypeUtils.fullyQualifiedNamesAreEqual(JAVA_LANG_EXCEPTION, fqn);
-                }
-                return false;
             }
 
             private boolean hasGenericCatch(J.Try aTry) {
@@ -96,39 +86,36 @@ public class SpecifyGenericExceptionCatches extends Recipe {
                 return false;
             }
 
+            private boolean isGenericCatch(J.Try.Catch aCatch) {
+                FullyQualified fq = TypeUtils.asFullyQualified(aCatch.getParameter().getType());
+                if (fq != null) {
+                    String fqn = fq.getFullyQualifiedName();
+                    return TypeUtils.fullyQualifiedNamesAreEqual(JAVA_LANG_EXCEPTION, fqn);
+                }
+                return false;
+            }
+
             private Set<JavaType> getCaughtExceptions(J.Try aTry) {
                 Set<JavaType> caughtExceptions = new HashSet<>();
                 for (J.Try.Catch c : aTry.getCatches()) {
-                    if (c.getParameter().getType() != null) {
-                        caughtExceptions.add(c.getParameter().getType());
+                    JavaType type = c.getParameter().getType();
+                    if (type instanceof JavaType.MultiCatch) {
+                        caughtExceptions.addAll(((JavaType.MultiCatch) type).getThrowableTypes());
+                    } else if (type != null) {
+                        caughtExceptions.add(type);
                     }
                 }
                 return caughtExceptions;
             }
 
-            /**
-             * Collects all checked exceptions that are explicitly thrown by method invocations
-             * and constructor calls within the try block.
-             *
-             * @param aTry the try block to analyze
-             * @return a set of exception types that may be thrown by code in the try block
-             */
             private Set<JavaType> getDeclaredThrownExceptions(J.Try aTry) {
                 return new JavaIsoVisitor<Set<JavaType>>() {
                     @Override
-                    public J.NewClass visitNewClass(J.NewClass nc, Set<JavaType> set) {
-                        if (nc.getConstructorType() != null) {
-                            set.addAll(nc.getConstructorType().getThrownExceptions());
+                    public @Nullable JavaType visitType(@Nullable JavaType javaType, Set<JavaType> javaTypes) {
+                        if (javaType instanceof JavaType.Method) {
+                            javaTypes.addAll(((JavaType.Method) javaType).getThrownExceptions());
                         }
-                        return super.visitNewClass(nc, set);
-                    }
-
-                    @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, Set<JavaType> set) {
-                        if (mi.getMethodType() != null) {
-                            set.addAll(mi.getMethodType().getThrownExceptions());
-                        }
-                        return super.visitMethodInvocation(mi, set);
+                        return super.visitType(javaType, javaTypes);
                     }
                 }.reduce(aTry.getBody(), new HashSet<>());
             }

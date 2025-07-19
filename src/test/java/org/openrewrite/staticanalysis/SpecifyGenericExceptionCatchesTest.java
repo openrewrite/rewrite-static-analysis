@@ -364,6 +364,45 @@ class SpecifyGenericExceptionCatchesTest implements RewriteTest {
     }
 
     @Test
+    void shouldHandleExistingMultiCatch() {
+        rewriteRun(
+          java(
+            """
+              import java.io.IOException;
+
+              class MyService {
+                  void doSomething() {
+                      try {
+                          new MockThrowingClass().throwsBothIOAndSQL();
+                      } catch (IOException | NullPointerException e) {
+                          System.out.println("Multi exception: " + e.getMessage());
+                      } catch (Exception e) {
+                          System.out.println("Caught exception: " + e.getMessage());
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+              import java.sql.SQLException;
+
+              class MyService {
+                  void doSomething() {
+                      try {
+                          new MockThrowingClass().throwsBothIOAndSQL();
+                      } catch (IOException | NullPointerException e) {
+                          System.out.println("Multi exception: " + e.getMessage());
+                      } catch (SQLException e) {
+                          System.out.println("Caught exception: " + e.getMessage());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void declaredRuntimeException() {
         rewriteRun(
           java(
