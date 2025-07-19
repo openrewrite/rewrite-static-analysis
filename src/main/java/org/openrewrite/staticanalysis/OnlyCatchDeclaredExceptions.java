@@ -30,8 +30,8 @@ import org.openrewrite.java.tree.JavaType.FullyQualified;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.joining;
 
 public class OnlyCatchDeclaredExceptions extends Recipe {
 
@@ -57,33 +57,21 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
     public JavaVisitor<ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             private static final String JAVA_LANG_EXCEPTION = "java.lang.Exception";
-            private static final String MULTI_CATCH_SEPARATOR = "|";
-            private static final String TRY_CATCH_TEMPLATE = "try {} catch (%s %s) {}";
 
             @Override
             public J.Try visitTry(J.Try aTry, ExecutionContext ctx) {
                 J.Try t = super.visitTry(aTry, ctx);
-
-                if (hasGenericCatch(t)) {
-                    Set<JavaType> thrownExceptions = getDeclaredThrownExceptions(t);
-                    thrownExceptions.removeAll(getCaughtExceptions(t)); // Remove exceptions that are already specifically caught
-
-                    if (!thrownExceptions.isEmpty()) {
-                        return t.withCatches(ListUtils.map(t.getCatches(), c ->
-                                updateCatchIfGeneric(c, thrownExceptions)));
-                    }
-                }
-
-                return t;
-            }
-
-            private boolean hasGenericCatch(J.Try aTry) {
-                for (J.Try.Catch c : aTry.getCatches()) {
+                return t.withCatches(ListUtils.map(t.getCatches(), c -> {
                     if (isGenericCatch(c)) {
-                        return true;
+                        // Find declared thrown exceptions that are not already specifically caught
+                        Set<JavaType> declaredThrown = getDeclaredThrownExceptions(t);
+                        declaredThrown.removeAll(getCaughtExceptions(t));
+                        if (!declaredThrown.isEmpty()) {
+                            return updateCatch(c, declaredThrown);
+                        }
                     }
-                }
-                return false;
+                    return c;
+                }));
             }
 
             private boolean isGenericCatch(J.Try.Catch aCatch) {
@@ -142,31 +130,23 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
              * @return the original catch block if it doesn't catch java.lang.Exception,
              *         otherwise a new catch block with specific exception types
              */
-            private J.Try.Catch updateCatchIfGeneric(J.Try.Catch aCatch, Set<JavaType> thrownExceptions) {
-                if (!isGenericCatch(aCatch)) {
-                    return aCatch;
-                }
-
-                // Preserve the existing variable name from the original generic catch block
-                String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
-
+            private J.Try.Catch updateCatch(J.Try.Catch aCatch, Set<JavaType> thrownExceptions) {
                 String throwableTypes = thrownExceptions.stream()
                         .map(TypeUtils::asFullyQualified)
                         .filter(Objects::nonNull)
                         .sorted(Comparator.comparing(FullyQualified::getClassName))
                         .map(FullyQualified::getFullyQualifiedName)
-                        .collect(Collectors.joining(MULTI_CATCH_SEPARATOR));
+                        .collect(joining("|"));
 
                 J.Try aTry = getCursor().firstEnclosing(J.Try.class);
                 assert aTry != null;
 
-                J.Try tempTry = JavaTemplate.builder(String.format(TRY_CATCH_TEMPLATE, throwableTypes, variableName))
+                // Preserve the existing variable name from the original generic catch block
+                String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
+                J.Try tempTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))
                         .contextSensitive()
                         .build()
-                        .apply(
-                                new Cursor(getCursor(), aTry),
-                                aTry.getCoordinates().replace()
-                        );
+                        .apply(new Cursor(getCursor(), aTry), aTry.getCoordinates().replace());
 
                 J.ControlParentheses<J.VariableDeclarations> cp = tempTry.getCatches().get(0).getParameter();
                 doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(cp.getTree()));
