@@ -423,7 +423,7 @@ class OnlyCatchDeclaredExceptionsTest implements RewriteTest {
                   void doSomething() {
                       try {
                           new MockThrowingClass().throwsDeclaredRuntimeException();
-                      } catch (java.lang.RuntimeException e) {
+                      } catch (RuntimeException e) {
                           // This is a generic catch block that should be replaced
                           System.out.println("Caught exception: " + e.getMessage());
                       }

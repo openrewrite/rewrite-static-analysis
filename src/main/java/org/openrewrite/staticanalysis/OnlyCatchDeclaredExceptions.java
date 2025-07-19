@@ -20,7 +20,6 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -30,6 +29,7 @@ import org.openrewrite.java.tree.TypeUtils;
 import java.util.*;
 
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public class OnlyCatchDeclaredExceptions extends Recipe {
 
@@ -52,7 +52,6 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
     public Set<String> getTags() {
         return new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));
     }
-
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -108,29 +107,30 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
             }
 
             private J.Try.Catch multiCatchWithDeclaredExceptions(J.Try.Catch aCatch, Set<JavaType> thrownExceptions) {
-                String throwableTypes = thrownExceptions.stream()
+                List<FullyQualified> fqs = thrownExceptions.stream()
                         .map(TypeUtils::asFullyQualified)
                         .filter(Objects::nonNull)
                         .sorted(Comparator.comparing(FullyQualified::getClassName))
-                        .map(FullyQualified::getFullyQualifiedName)
+                        .collect(toList());
+                String throwableTypes = fqs
+                        .stream()
+                        .map(FullyQualified::getClassName)
                         .collect(joining("|"));
+                String[] imports = fqs.stream().map(FullyQualified::getFullyQualifiedName).toArray(String[]::new);
+                Arrays.stream(imports).forEach(this::maybeAddImport);
 
-                J.Try aTry = getCursor().firstEnclosing(J.Try.class);
-                assert aTry != null;
+                J.Try surroundingTry = getCursor().firstEnclosing(J.Try.class);
+                assert surroundingTry != null;
 
                 // Preserve the existing variable name from the original generic catch block
                 String variableName = aCatch.getParameter().getTree().getVariables().get(0).getSimpleName();
-                J.Try tempTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))
-                        .contextSensitive()
+                J.Try generatedTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))
+                        .imports(imports)
                         .build()
-                        .apply(new Cursor(getCursor(), aTry), aTry.getCoordinates().replace());
-
-                J.ControlParentheses<J.VariableDeclarations> cp = tempTry.getCatches().get(0).getParameter();
-                doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(cp.getTree()));
-                return aCatch.withParameter(cp);
+                        .apply(new Cursor(getCursor(), surroundingTry), surroundingTry.getCoordinates().replace());
+                return aCatch.withParameter(generatedTry.getCatches().get(0).getParameter());
             }
         };
         return Preconditions.check(new UsesType<>(JAVA_LANG_EXCEPTION, false), visitor);
     }
-
 }
