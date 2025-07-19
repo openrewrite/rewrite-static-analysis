@@ -117,7 +117,9 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                         .map(FullyQualified::getClassName)
                         .collect(joining("|"));
                 String[] imports = fqs.stream().map(FullyQualified::getFullyQualifiedName).toArray(String[]::new);
-                Arrays.stream(imports).forEach(this::maybeAddImport);
+                for (String s : imports) {
+                    maybeAddImport(s, false);
+                }
 
                 J.Try surroundingTry = getCursor().firstEnclosing(J.Try.class);
                 assert surroundingTry != null;
