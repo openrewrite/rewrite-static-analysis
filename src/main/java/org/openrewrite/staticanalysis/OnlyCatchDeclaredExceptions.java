@@ -16,14 +16,12 @@
 package org.openrewrite.staticanalysis;
 
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.ShortenFullyQualifiedTypeReferences;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.JavaType.FullyQualified;
@@ -34,6 +32,8 @@ import java.util.*;
 import static java.util.stream.Collectors.joining;
 
 public class OnlyCatchDeclaredExceptions extends Recipe {
+
+    private static final String JAVA_LANG_EXCEPTION = "java.lang.Exception";
 
     @Override
     public String getDisplayName() {
@@ -53,11 +53,10 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
         return new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));
     }
 
-    @Override
-    public JavaVisitor<ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-            private static final String JAVA_LANG_EXCEPTION = "java.lang.Exception";
 
+    @Override
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        JavaIsoVisitor<ExecutionContext> visitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Try visitTry(J.Try aTry, ExecutionContext ctx) {
                 J.Try t = super.visitTry(aTry, ctx);
@@ -131,6 +130,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 return aCatch.withParameter(cp);
             }
         };
+        return Preconditions.check(new UsesType<>(JAVA_LANG_EXCEPTION, false), visitor);
     }
 
 }
