@@ -257,7 +257,6 @@ public class MinimumSwitchCases extends Recipe {
     }
 
     private static J.If createIfForEnum(Expression expression, Expression enumTree) {
-        J.If generatedIf;
         if (enumTree instanceof J.Identifier) {
             enumTree = new J.FieldAccess(
                     randomId(),
