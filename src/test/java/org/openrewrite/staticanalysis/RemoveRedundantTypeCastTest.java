@@ -532,34 +532,30 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     @Test
     void dontRemoveNecessaryDowncast() {
         rewriteRun(
-          spec -> spec.recipe(new RemoveRedundantTypeCast()),
           // language=java
           java(
             """
-            package com.helloworld;
+              import java.util.Optional;
 
-            import java.util.Optional;
+              public class Foo {
+                  public interface Bar {}
 
-            public class Foo {
-                public interface Bar {}
+                  public static class BarImpl implements Bar {}
 
-                public static class BarImpl implements Bar {}
+                  private Bar getBar() {
+                      return new BarImpl();
+                  }
 
-                private Bar getBar() {
-                    return new BarImpl();
-                }
+                  private BarImpl getBarImpl() {
+                      return new BarImpl();
+                  }
 
-                private BarImpl getBarImpl() {
-                    return new BarImpl();
-                }
-
-                public Bar baz() {
-                 return Optional.of((Bar) getBarImpl()).orElse(getBar());
-               }
-            }
-            """
+                  public Bar baz() {
+                   return Optional.of((Bar) getBarImpl()).orElse(getBar());
+                 }
+              }
+              """
           )
         );
     }
 }
-
