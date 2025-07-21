@@ -103,6 +103,24 @@ class InlineReturnValueTest implements RewriteTest {
     }
 
     @Test
+    void doNotInlineWhenField() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String result;
+                  String process(String input) {
+                      result = input.trim();
+                      return result;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotInlineWhenVariableUsedElsewhere() {
         rewriteRun(
           //language=java

@@ -24,6 +24,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.ArrayList;
@@ -102,6 +103,18 @@ public class InlineReturnValue extends Recipe {
             }
 
             private J.Block handleAssignment(J.Assignment secondLastStatement, J.Identifier returnedIdentifier, J.Return returnStatement, List<Statement> statements, int secondLastIndex, J.Block b) {
+                Expression variable = secondLastStatement.getVariable();
+                if (!(variable instanceof J.Identifier)) {
+                    return b;
+                }
+
+                // Only inline local variable assignments, not fields
+                J.Identifier assignedIdentifier = (J.Identifier) variable;
+                if (assignedIdentifier.getFieldType() == null ||
+                        !(assignedIdentifier.getFieldType().getOwner() instanceof JavaType.Method)) {
+                    return b;
+                }
+
                 // Check if the left-hand side matches the returned identifier
                 if (!SemanticallyEqual.areEqual(secondLastStatement.getVariable(), returnedIdentifier)) {
                     return b;
