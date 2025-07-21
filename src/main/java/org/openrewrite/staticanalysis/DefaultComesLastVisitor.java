@@ -94,8 +94,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
         casesWithDefaultLast = addBreakToLastCase(casesWithDefaultLast, p);
         casesWithDefaultLast.addAll(maybeReorderFallthroughCases(defaultCases, p));
-        casesWithDefaultLast = ListUtils.mapLast(casesWithDefaultLast, this::removeBreak);
-        return casesWithDefaultLast;
+        return ListUtils.mapLast(casesWithDefaultLast, this::removeBreak);
     }
 
     private List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, P p) {

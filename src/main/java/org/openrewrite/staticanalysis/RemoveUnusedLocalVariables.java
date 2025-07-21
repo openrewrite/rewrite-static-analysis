@@ -249,17 +249,14 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
         @Override
         public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext ctx) {
-            //noinspection unchecked
-            c = (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
+            return (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
                     .visitNonNull(c, ctx, getCursor().getParentOrThrow());
-            return c;
         }
 
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
-            return m;
+            return m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
         }
     }
 
