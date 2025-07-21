@@ -22,10 +22,10 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 
 public class UnwrapElseAfterReturn extends Recipe {
@@ -51,58 +51,31 @@ public class UnwrapElseAfterReturn extends Recipe {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = visitAndCast(block, ctx, super::visitBlock);
-
-                List<Statement> statements = b.getStatements();
-                List<Statement> newStatements = statements;
-
-                for (int i = 0; i < statements.size(); i++) {
-                    Statement statement = statements.get(i);
+                J.Block after = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
-
                         if (ifStatement.getElsePart() != null && endsWithReturn(ifStatement.getThenPart())) {
                             J.If newIf = ifStatement.withElsePart(null);
-                            newStatements = ListUtils.map(newStatements, stmt -> stmt == ifStatement ? newIf : stmt);
-
                             Statement elsePart = ifStatement.getElsePart().getBody();
-
                             if (elsePart instanceof J.Block) {
                                 J.Block elseBlock = (J.Block) elsePart;
-                                for (int j = 0; j < elseBlock.getStatements().size(); j++) {
-                                    Statement elseStmt = elseBlock.getStatements().get(j);
-                                    if (j == 0) {
-                                        // Combine comments from the else block itself and the first statement
-                                        List<Comment> elseComments = elseBlock.getPrefix().getComments();
-                                        List<Comment> stmtComments = elseStmt.getPrefix().getComments();
-                                        String whitespace = ifStatement.getElsePart().getPrefix().getWhitespace();
-
-                                        if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
-                                            elseStmt = elseStmt.withPrefix(
-                                                Space.build(whitespace, ListUtils.concatAll(elseComments, stmtComments))
-                                            );
-                                        } else {
-                                            elseStmt = elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
-                                        }
+                                return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
+                                    // Combine comments from the else block itself and the first statement
+                                    List<Comment> elseComments = elseBlock.getPrefix().getComments();
+                                    List<Comment> stmtComments = elseStmt.getPrefix().getComments();
+                                    if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
+                                        return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
                                     }
-                                    newStatements = ListUtils.insert(newStatements, elseStmt, i + 1 + j);
-                                }
-                                // Update index to account for inserted statements
-                                i += elseBlock.getStatements().size();
-                            } else {
-                                Statement elseStmt = elsePart.withPrefix(ifStatement.getElsePart().getPrefix());
-                                newStatements = ListUtils.insert(newStatements, elseStmt, i + 1);
-                                // Update index to account for inserted statement
-                                i += 1;
+                                    String whitespace = ifStatement.getElsePart().getPrefix().getWhitespace();
+                                    return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
+                                }));
                             }
+                            return Arrays.asList(newIf, elsePart.<Statement>withPrefix(ifStatement.getElsePart().getPrefix()));
                         }
                     }
-                }
-
-                if (newStatements != statements) {
-                    return maybeAutoFormat(b, b.withStatements(newStatements), ctx);
-                }
-
-                return b;
+                    return statement;
+                }));
+                return maybeAutoFormat(b, after, ctx);
             }
 
             private boolean endsWithReturn(Statement statement) {

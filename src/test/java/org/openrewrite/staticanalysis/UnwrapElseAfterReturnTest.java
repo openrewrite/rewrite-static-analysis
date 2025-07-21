@@ -255,7 +255,8 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       if (condition) {
                           // Return early for true condition
                           return 1;
-                      } // Handle false condition
+                      }
+                      // Handle false condition
                       int result = 2;
                       return result;
                   }
