@@ -485,4 +485,51 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/321")
+    @Test
+    void doNotRemoveFieldAfterTypeChange() {
+        rewriteRun(
+          spec -> spec.recipes(
+            new UseCollectionInterfaces(),
+            new RemoveUnusedPrivateFields()
+          ),
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.HashSet;
+
+              public class Main {
+                  private static final HashSet<String> allowedMethods = new HashSet<>(Arrays.asList(
+                      "GET", "HEAD", "TRACE", "OPTIONS"));
+
+                  public boolean matches(String method) {
+                      if (allowedMethods.contains(method)) {
+                          return false;
+                      }
+                      return true;
+                  }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              public class Main {
+                  private static final Set<String> allowedMethods = new HashSet<>(Arrays.asList(
+                      "GET", "HEAD", "TRACE", "OPTIONS"));
+
+                  public boolean matches(String method) {
+                      if (allowedMethods.contains(method)) {
+                          return false;
+                      }
+                      return true;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
