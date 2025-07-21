@@ -537,11 +537,9 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
             """
               import java.util.Optional;
 
-              public class Foo {
-                  public interface Bar {}
-
-                  public static class BarImpl implements Bar {}
-
+              interface Bar {}
+              class BarImpl implements Bar {}
+              class Foo {
                   private Bar getBar() {
                       return new BarImpl();
                   }
