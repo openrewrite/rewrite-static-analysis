@@ -1800,7 +1800,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             TypeTree typeExpr = aCatch.getParameter().getTree().getTypeExpression();
             if (typeExpr instanceof J.MultiCatch) {
                 return ((J.MultiCatch) typeExpr).getAlternatives();
-            } else if (typeExpr != null) { // Can be J.Identifier or J.FieldAccess
+            }
+            if (typeExpr != null) { // Can be J.Identifier or J.FieldAccess
                 return singletonList(typeExpr);
             }
             return emptyList();

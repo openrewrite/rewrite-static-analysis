@@ -76,7 +76,8 @@ public class RemoveRedundantTypeCast extends Recipe {
                     JavaType.Method methodType = methodCall.getMethodType();
                     if (methodType == null || hasMethodOverloading(methodType)) {
                         return visited;
-                    } else if (!methodType.getParameterTypes().isEmpty()) {
+                    }
+                    if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);

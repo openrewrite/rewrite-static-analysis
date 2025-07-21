@@ -72,18 +72,17 @@ public class UseSystemLineSeparator extends Recipe {
                                 .build();
 
                         return template.apply(getCursor(), method.getCoordinates().replace(), method.getSelect());
-                    } else {
-                        // static import scenario
-                        maybeRemoveImport("java.lang.System.getProperty");
-                        maybeAddImport("java.lang.System", "lineSeparator");
-
-                        final JavaTemplate template = JavaTemplate
-                                .builder("lineSeparator()")
-                                .staticImports("java.lang.System.lineSeparator")
-                                .build();
-
-                        return template.apply(getCursor(), method.getCoordinates().replace());
                     }
+                    // static import scenario
+                    maybeRemoveImport("java.lang.System.getProperty");
+                    maybeAddImport("java.lang.System", "lineSeparator");
+
+                    final JavaTemplate template = JavaTemplate
+                            .builder("lineSeparator()")
+                            .staticImports("java.lang.System.lineSeparator")
+                            .build();
+
+                    return template.apply(getCursor(), method.getCoordinates().replace());
                 }
 
                 return invocation;

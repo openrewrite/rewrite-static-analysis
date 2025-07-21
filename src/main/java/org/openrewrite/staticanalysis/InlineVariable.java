@@ -72,16 +72,18 @@ public class InlineVariable extends Recipe {
                                 bl = bl.withStatements(ListUtils.map(statements, (i, statement) -> {
                                     if (i == statements.size() - 2) {
                                         return null;
-                                    } else if (i == statements.size() - 1) {
+                                    }
+                                    if (i == statements.size() - 1) {
                                         if (statement instanceof J.Return) {
                                             J.Return return_ = (J.Return) statement;
                                             return return_.withExpression(requireNonNull(identDefinition.getInitializer())
-                                                            .withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
+                                                    .withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
                                                     .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), return_.getComments())));
-                                        } else if (statement instanceof J.Throw) {
+                                        }
+                                        if (statement instanceof J.Throw) {
                                             J.Throw thrown = (J.Throw) statement;
                                             return thrown.withException(requireNonNull(identDefinition.getInitializer())
-                                                            .withPrefix(requireNonNull(thrown.getException()).getPrefix()))
+                                                    .withPrefix(requireNonNull(thrown.getException()).getPrefix()))
                                                     .withPrefix(varDec.getPrefix().withComments(ListUtils.concatAll(varDec.getComments(), thrown.getComments())));
                                         }
                                     }

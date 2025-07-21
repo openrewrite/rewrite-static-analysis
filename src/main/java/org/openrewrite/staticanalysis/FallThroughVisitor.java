@@ -151,12 +151,15 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 if (s instanceof J.Block) {
                     List<Statement> statements = ((J.Block) s).getStatements();
                     return !statements.isEmpty() && breaks(statements.get(statements.size() - 1));
-                } else if (s instanceof J.If) {
+                }
+                if (s instanceof J.If) {
                     J.If iff = (J.If) s;
                     return iff.getElsePart() != null && breaks(iff.getThenPart());
-                } else if (s instanceof J.Label) {
+                }
+                if (s instanceof J.Label) {
                     return breaks(((J.Label) s).getStatement());
-                } else if (s instanceof J.Try) {
+                }
+                if (s instanceof J.Try) {
                     J.Try try_ = (J.Try) s;
                     if (try_.getFinally() != null && breaks(try_.getFinally())) {
                         return true;

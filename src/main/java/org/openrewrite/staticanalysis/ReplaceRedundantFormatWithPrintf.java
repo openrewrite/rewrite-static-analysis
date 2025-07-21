@@ -178,13 +178,13 @@ public class ReplaceRedundantFormatWithPrintf extends Recipe {
             return literal
                     .withValueSource(valueSource.substring(0, valueSource.length() - 3) + "%n" + "\"\"\"")
                     .withValue(newStringValue);
-        } else if (valueSource != null && valueSource.startsWith("\"") && valueSource.endsWith("\"")) {
+        }
+        if (valueSource != null && valueSource.startsWith("\"") && valueSource.endsWith("\"")) {
             // regular string literal
             return literal
                     .withValueSource(valueSource.substring(0, valueSource.length() - 1) + "%n" + "\"")
                     .withValue(newStringValue);
-        } else {
-            return null;
         }
+        return null;
     }
 }

@@ -185,11 +185,12 @@ public class ChainStringBuilderAppendCalls extends Recipe {
             }
 
             return flatAdditiveExpressions(b.getLeft(), expressionList) &&
-                   flatAdditiveExpressions(b.getRight(), expressionList);
-        } else if (expression instanceof J.Literal ||
-                   expression instanceof J.Identifier ||
-                   expression instanceof J.MethodInvocation ||
-                   expression instanceof J.Parentheses) {
+                    flatAdditiveExpressions(b.getRight(), expressionList);
+        }
+        if (expression instanceof J.Literal ||
+                expression instanceof J.Identifier ||
+                expression instanceof J.MethodInvocation ||
+                expression instanceof J.Parentheses) {
             expressionList.add(expression.withPrefix(Space.EMPTY));
             return true;
         }

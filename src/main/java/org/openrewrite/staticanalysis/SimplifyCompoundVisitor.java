@@ -33,7 +33,8 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
             if (isLiteralTrue(cleanedUpAssignment)) {
                 //noinspection DataFlowIssue
                 return null;
-            } else if (isLiteralFalse(cleanedUpAssignment)) {
+            }
+            if (isLiteralFalse(cleanedUpAssignment)) {
                 return maybeAutoFormat(
                         assignOp,
                         new J.Assignment(
@@ -51,7 +52,8 @@ public class SimplifyCompoundVisitor extends JavaVisitor<ExecutionContext> {
             if (isLiteralFalse(cleanedUpAssignment)) {
                 //noinspection DataFlowIssue
                 return null;
-            } else if (isLiteralTrue(cleanedUpAssignment)) {
+            }
+            if (isLiteralTrue(cleanedUpAssignment)) {
                 return maybeAutoFormat(
                         assignOp,
                         new J.Assignment(

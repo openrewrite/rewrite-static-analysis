@@ -176,11 +176,13 @@ public class MoveFieldAnnotationToType extends Recipe {
                         q = q.withName(q.getName().withPrefix(q.getName().getPrefix().withWhitespace(" ")));
                     }
                     return q;
-                } else if (qualifiedClassRef instanceof J.ParameterizedType &&
-                           ((J.ParameterizedType) qualifiedClassRef).getClazz() instanceof TypeTree) {
+                }
+                if (qualifiedClassRef instanceof J.ParameterizedType &&
+                        ((J.ParameterizedType) qualifiedClassRef).getClazz() instanceof TypeTree) {
                     J.ParameterizedType pt = (J.ParameterizedType) qualifiedClassRef;
                     return pt.withClazz(annotateInnerClass((TypeTree) pt.getClazz(), usedAnnotation));
-                } else if (qualifiedClassRef instanceof J.ArrayType) {
+                }
+                if (qualifiedClassRef instanceof J.ArrayType) {
                     J.ArrayType at = (J.ArrayType) qualifiedClassRef;
                     at = at.withAnnotations(ListUtils.concat(annotation.withPrefix(Space.SINGLE_SPACE), at.getAnnotations()));
                     return at;

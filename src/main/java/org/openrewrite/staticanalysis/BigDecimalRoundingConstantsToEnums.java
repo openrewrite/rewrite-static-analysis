@@ -107,7 +107,8 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
             private boolean isConvertibleBigDecimalConstant(J elem) {
                 if (elem instanceof J.Literal) {
                     return true;
-                } else if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
+                }
+                if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
                     J.FieldAccess fa = (J.FieldAccess) elem;
                     return fa.getTarget().getType() != null && TypeUtils.isOfClassType(fa.getTarget().getType(), "java.math.BigDecimal");
                 }
