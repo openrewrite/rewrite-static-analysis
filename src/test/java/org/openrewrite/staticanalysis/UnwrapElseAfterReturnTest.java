@@ -332,4 +332,48 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void chainedIfElseIfElse() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(String str) {
+                      if ("one".equals(str)) {
+                          return 1;
+                      } else if ("two".equals(str)) {
+                          return 2;
+                      } else if ("three".equals(str)) {
+                          return 3;
+                      } else if ("four".equals(str)) {
+                          return 4;
+                      } else {
+                          return Integer.MAX_VALUE;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(String str) {
+                      if ("one".equals(str)) {
+                          return 1;
+                      }
+                      if ("two".equals(str)) {
+                          return 2;
+                      }
+                      if ("three".equals(str)) {
+                          return 3;
+                      }
+                      if ("four".equals(str)) {
+                          return 4;
+                      }
+                      return Integer.MAX_VALUE;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
