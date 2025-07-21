@@ -346,8 +346,6 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                           return 2;
                       } else if ("three".equals(str)) {
                           return 3;
-                      } else if ("four".equals(str)) {
-                          return 4;
                       } else {
                           return Integer.MAX_VALUE;
                       }
@@ -365,9 +363,6 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       }
                       if ("three".equals(str)) {
                           return 3;
-                      }
-                      if ("four".equals(str)) {
-                          return 4;
                       }
                       return Integer.MAX_VALUE;
                   }

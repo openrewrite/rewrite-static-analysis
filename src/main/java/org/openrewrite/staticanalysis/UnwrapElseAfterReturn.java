@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.Repeat;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
@@ -47,7 +48,7 @@ public class UnwrapElseAfterReturn extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<ExecutionContext>() {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = visitAndCast(block, ctx, super::visitBlock);
@@ -92,5 +93,6 @@ public class UnwrapElseAfterReturn extends Recipe {
                 return false;
             }
         };
+        return Repeat.repeatUntilStable(javaVisitor);
     }
 }
