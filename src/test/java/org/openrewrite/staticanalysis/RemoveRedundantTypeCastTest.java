@@ -560,5 +560,6 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
             """
           )
         );
+    }
 }
 
