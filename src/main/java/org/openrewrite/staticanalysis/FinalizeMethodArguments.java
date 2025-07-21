@@ -102,8 +102,8 @@ public class FinalizeMethodArguments extends Recipe {
         return method.getModifiers().stream().anyMatch(modifier -> modifier.getType() == J.Modifier.Type.Abstract);
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
 
         J.VariableDeclarations.NamedVariable variable;

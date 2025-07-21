@@ -29,8 +29,8 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class MoveFieldAnnotationToType extends Recipe {
 
     @Option(displayName = "Annotation type",

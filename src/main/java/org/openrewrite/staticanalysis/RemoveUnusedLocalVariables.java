@@ -33,9 +33,9 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
+@Value
 public class RemoveUnusedLocalVariables extends Recipe {
     @Incubating(since = "7.17.2")
     @Option(displayName = "Ignore matching variable names",
@@ -242,8 +242,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
      * Take an assignment in a context other than a variable declaration, such as the arguments of a function invocation or if condition,
      * and remove the assignment, leaving behind the value being assigned.
      */
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class PruneAssignmentExpression extends JavaIsoVisitor<ExecutionContext> {
         J.Assignment assignment;
 
@@ -263,8 +263,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
         }
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class AssignmentToLiteral extends JavaVisitor<ExecutionContext> {
         J.Assignment assignment;
 

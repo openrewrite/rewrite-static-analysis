@@ -280,9 +280,9 @@ public class MinimumSwitchCases extends Recipe {
         return generatedIf;
     }
 
+    @AllArgsConstructor
     @Value
     @With
-    @AllArgsConstructor
     private static class DefaultOnly implements Marker {
         UUID id;
 

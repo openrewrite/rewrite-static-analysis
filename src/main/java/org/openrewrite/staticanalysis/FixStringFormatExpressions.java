@@ -35,6 +35,8 @@ public class FixStringFormatExpressions extends Recipe {
 
     // %[argument_index$][flags][width][.precision][t]conversion
     private static final Pattern FS_PATTERN = Pattern.compile("%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
+    private static final Pattern NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\n");
+    private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\\\n");
 
     private static final MethodMatcher FORMAT_MATCHER = new MethodMatcher("java.lang.String format(..)");
     private static final MethodMatcher FORMATTED_MATCHER = new MethodMatcher("java.lang.String formatted(..)");
@@ -108,10 +110,10 @@ public class FixStringFormatExpressions extends Recipe {
                         if (arg0 instanceof J.Literal) {
                             J.Literal fmt = (J.Literal) arg0;
                             if (fmt.getValue() != null) {
-                                fmt = fmt.withValue(fmt.getValue().toString().replaceAll("(?<!\\\\)\n", "%n"));
+                                fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().toString()).replaceAll("%n"));
                             }
                             if (fmt.getValueSource() != null) {
-                                fmt = fmt.withValueSource(fmt.getValueSource().replaceAll("(?<!\\\\)\\\\n", "%n"));
+                                fmt = fmt.withValueSource(ESCAPED_NEWLINE_PATTERN.matcher(fmt.getValueSource()).replaceAll("%n"));
                             }
                             return fmt;
                         }

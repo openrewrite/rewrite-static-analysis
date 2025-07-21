@@ -831,8 +831,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings({"CastCanBeRemovedNarrowingVariableType", "ClassInitializerMayBeStatic"})
     @Nested
+    @SuppressWarnings({"CastCanBeRemovedNarrowingVariableType", "ClassInitializerMayBeStatic"})
     class Ternary {
 
         @Test
@@ -1138,8 +1138,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Nested
+    @SuppressWarnings("unchecked")
     class Generics {
         @Test
         void wildcardInstanceOf() {
@@ -1376,8 +1376,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Nested
+    @SuppressWarnings({"unchecked", "rawtypes"})
     class Various {
         @Test
         void unaryWithoutSideEffects() {

@@ -34,8 +34,8 @@ import org.openrewrite.java.tree.TypeUtils;
 import java.time.Duration;
 import java.util.*;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.MethodNameChange>> {
 
     @Option(displayName = "Apply recipe to test source set",
