@@ -112,6 +112,21 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return visitedTypeCast;
                 }
 
+                // Special case: if this cast is in a generic method call that's part of a method chain,
+                // the cast might be necessary to control generic type inference
+                if (parentValue instanceof J.MethodInvocation &&
+                        TypeUtils.isAssignableTo(castType, expressionType) &&
+                        !castType.equals(expressionType)) {
+                    // Check if the method returns a generic type
+                    JavaType.Method methodType = ((J.MethodInvocation) parentValue).getMethodType();
+                    if (methodType != null && methodType.getReturnType() instanceof JavaType.Parameterized) {
+                        // This cast is widening the type (e.g., BarImpl to Bar) in a generic context
+                        // which might affect how the generic type is inferred in method chains
+                        // Keep the cast to be safe
+                        return visitedTypeCast;
+                    }
+                }
+
                 if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
                     TypeUtils.isOfType(targetType, expressionType) ||
                     TypeUtils.isAssignableTo(targetType, expressionType)) {
