@@ -166,10 +166,8 @@ public class UseForEachLoop extends Recipe {
                     if (expr1 == null || expr2 == null) return false;
                     if (expr1 == expr2) return true;
 
-                    // Compare by type first
                     if (expr1.getClass() != expr2.getClass()) return false;
 
-                    // Handle different expression types
                     if (expr1 instanceof J.Identifier) {
                         J.Identifier id1 = (J.Identifier) expr1;
                         J.Identifier id2 = (J.Identifier) expr2;
@@ -189,7 +187,6 @@ public class UseForEachLoop extends Recipe {
                         if (!method1.getSimpleName().equals(method2.getSimpleName())) return false;
                         if (!isSameExpression(method1.getSelect(), method2.getSelect())) return false;
 
-                        // Compare arguments
                         if (method1.getArguments().size() != method2.getArguments().size()) return false;
                         for (int i = 0; i < method1.getArguments().size(); i++) {
                             if (!isSameExpression(method1.getArguments().get(i), method2.getArguments().get(i))) {
