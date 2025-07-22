@@ -83,6 +83,7 @@ public class InlineVariable extends Recipe {
                                 if (assignedVar.getFieldType() != null &&
                                         assignedVar.getFieldType().getOwner() instanceof JavaType.Method &&
                                         SemanticallyEqual.areEqual(assignedVar, identReturned)) {
+                                    doAfterVisit(new RemoveUnusedLocalVariables(null, null, null).getVisitor());
                                     return inlineExpression(assignment.getAssignment(), bl, statements, assignment.getPrefix(), assignment.getComments());
                                 }
                             }

@@ -270,7 +270,6 @@ class InlineVariableTest implements RewriteTest {
             """
               class Test {
                   String test() {
-                      String result;
                       return "hello";
                   }
               }
@@ -296,7 +295,6 @@ class InlineVariableTest implements RewriteTest {
             """
               class Test {
                   void test() {
-                      RuntimeException e;
                       throw new RuntimeException("error");
                   }
               }
@@ -322,7 +320,6 @@ class InlineVariableTest implements RewriteTest {
             """
               class Test {
                   String test(String input) {
-                      String result;
                       return input.trim().toUpperCase();
                   }
               }
@@ -369,7 +366,6 @@ class InlineVariableTest implements RewriteTest {
             """
               class Test {
                   String test() {
-                      String result;
                       // important assignment
                       // trailing comment
                       return "value";
@@ -438,7 +434,6 @@ class InlineVariableTest implements RewriteTest {
             """
               class Test {
                   String test() {
-                      String variable = null;
                       return toString();
                   }
               }
