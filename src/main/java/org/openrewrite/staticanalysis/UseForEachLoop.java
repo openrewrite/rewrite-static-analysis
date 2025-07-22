@@ -313,7 +313,7 @@ public class UseForEachLoop extends Recipe {
                 }
 
                 @Override
-                public J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
+                public @Nullable J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
                     if (variableDeclarations.getVariables().size() == 1) {
                         J.VariableDeclarations.NamedVariable variable = variableDeclarations.getVariables().get(0);
                         if (variable.getInitializer() != null && isCollectionOrArrayAccess(variable.getInitializer(), indexVarName, collection)) {
