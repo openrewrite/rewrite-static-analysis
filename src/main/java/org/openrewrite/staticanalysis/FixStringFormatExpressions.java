@@ -95,13 +95,12 @@ public class FixStringFormatExpressions extends Recipe {
                                 argIndex++;
                             }
                             int finalArgIndex = argIndex;
-                            mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
+                            return mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
                                 if (i == 0 || i < finalArgIndex) {
                                     return arg;
                                 }
                                 return null;
                             }));
-                            return mi;
                         }
                         return mi;
                     }

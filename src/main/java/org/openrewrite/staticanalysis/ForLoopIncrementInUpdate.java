@@ -87,16 +87,13 @@ public class ForLoopIncrementInUpdate extends Recipe {
                                             Comparator.comparing(s -> s.printTrimmed(getCursor()), Comparator.naturalOrder())
                                     )));
 
-                                    //noinspection ConstantConditions
-                                    f = f.withBody((Statement) new JavaVisitor<ExecutionContext>() {
+                                    return f.withBody((Statement) new JavaVisitor<ExecutionContext>() {
 
                                         @Override
                                         public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                                             return tree == unary ? null : super.visit(tree, ctx);
                                         }
                                     }.visit(f.getBody(), ctx));
-
-                                    return f;
                                 }
                             }
                         }

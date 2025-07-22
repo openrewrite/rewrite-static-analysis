@@ -184,8 +184,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                 }
                 if (qualifiedClassRef instanceof J.ArrayType) {
                     J.ArrayType at = (J.ArrayType) qualifiedClassRef;
-                    at = at.withAnnotations(ListUtils.concat(annotation.withPrefix(Space.SINGLE_SPACE), at.getAnnotations()));
-                    return at;
+                    return at.withAnnotations(ListUtils.concat(annotation.withPrefix(Space.SINGLE_SPACE), at.getAnnotations()));
                 }
                 return qualifiedClassRef;
             }

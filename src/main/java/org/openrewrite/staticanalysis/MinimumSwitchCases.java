@@ -255,7 +255,6 @@ public class MinimumSwitchCases extends Recipe {
     }
 
     private static J.If createIfForEnum(Expression expression, Expression enumTree) {
-        J.If generatedIf;
         if (enumTree instanceof J.Identifier) {
             enumTree = new J.FieldAccess(
                     randomId(),
@@ -267,7 +266,7 @@ public class MinimumSwitchCases extends Recipe {
             );
         }
         J.Binary ifCond = JavaElementFactory.newLogicalExpression(J.Binary.Type.Equal, expression, enumTree);
-        generatedIf = new J.If(
+        return new J.If(
                 randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
@@ -275,7 +274,6 @@ public class MinimumSwitchCases extends Recipe {
                 JRightPadded.build(J.Block.createEmptyBlock()),
                 null
         );
-        return generatedIf;
     }
 
     @AllArgsConstructor

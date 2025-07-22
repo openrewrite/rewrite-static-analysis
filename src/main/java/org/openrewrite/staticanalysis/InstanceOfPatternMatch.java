@@ -424,8 +424,7 @@ public class InstanceOfPatternMatch extends Recipe {
         @Override
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
-            instanceOf = replacements.processInstanceOf(instanceOf, getCursor());
-            return instanceOf;
+            return replacements.processInstanceOf(instanceOf, getCursor());
         }
 
         @Override
