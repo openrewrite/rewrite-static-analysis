@@ -108,9 +108,9 @@ class UseForEachLoopTest implements RewriteTest {
             import java.util.List;
 
             class Test {
-                void test(List<String> names) {
-                    for (String name : names) {
-                        System.out.println(name);
+                void test(List<Integer> numbers) {
+                    for (String number : numbers) {
+                        System.out.println(number);
                     }
                 }
             }
