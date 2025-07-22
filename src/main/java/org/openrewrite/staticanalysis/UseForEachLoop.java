@@ -93,12 +93,23 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                if (!(condition.getRight() instanceof J.MethodInvocation)) {
-                    return super.visitForLoop(forLoop, ctx);
-                }
-
-                J.MethodInvocation sizeCall = (J.MethodInvocation) condition.getRight();
-                if (!"size".equals(sizeCall.getSimpleName()) || !((sizeCall.getArguments().isEmpty()) || (sizeCall.getArguments().size() == 1 && sizeCall.getArguments().get(0) instanceof J.Empty))) {
+                // Handle both collection.size() and array.length patterns
+                J collection;
+                if (condition.getRight() instanceof J.MethodInvocation) {
+                    // Handle collection.size() pattern
+                    J.MethodInvocation sizeCall = (J.MethodInvocation) condition.getRight();
+                    if (!"size".equals(sizeCall.getSimpleName()) || !((sizeCall.getArguments().isEmpty()) || (sizeCall.getArguments().size() == 1 && sizeCall.getArguments().get(0) instanceof J.Empty))) {
+                        return super.visitForLoop(forLoop, ctx);
+                    }
+                    collection = sizeCall.getSelect();
+                } else if (condition.getRight() instanceof J.FieldAccess) {
+                    // Handle array.length pattern
+                    J.FieldAccess lengthAccess = (J.FieldAccess) condition.getRight();
+                    if (!"length".equals(lengthAccess.getSimpleName())) {
+                        return super.visitForLoop(forLoop, ctx);
+                    }
+                    collection = lengthAccess.getTarget();
+                } else {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
@@ -116,8 +127,6 @@ public class UseForEachLoop extends Recipe {
                         !((J.Identifier) unaryUpdate.getExpression()).getSimpleName().equals(indexVarName)) {
                     return super.visitForLoop(forLoop, ctx);
                 }
-
-                J collection = sizeCall.getSelect();
 
                 JavaTemplate template = JavaTemplate.builder("for (String name : #{any()}) #{any()}")
                         .build();
@@ -167,6 +176,26 @@ public class UseForEachLoop extends Recipe {
                         );
                     }
                     return super.visitMethodInvocation(method, o);
+                }
+
+                @Override
+                public J visitArrayAccess(J.ArrayAccess arrayAccess, Object o) {
+                    // Replace array[i] with the new variable
+                    if (arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
+                            indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
+                            isSameExpression(arrayAccess.getIndexed(), collection)) {
+
+                        return new J.Identifier(
+                                Tree.randomId(),
+                                arrayAccess.getPrefix(),
+                                Markers.EMPTY,
+                                Collections.emptyList(),
+                                newVariableName,
+                                arrayAccess.getType(),
+                                null
+                        );
+                    }
+                    return super.visitArrayAccess(arrayAccess, o);
                 }
 
                 private boolean isSameExpression(J expr1, J expr2) {

@@ -76,12 +76,10 @@ class UseForEachLoopTest implements RewriteTest {
               }
             """,
             """
-            import java.util.List;
-
             class Test {
-                void test(List<String> names) {
+                void test(String[] names) {
                     for (String name : names) {
-                        System.out.println(names);
+                        System.out.println(name);
                     }
                 }
             }
