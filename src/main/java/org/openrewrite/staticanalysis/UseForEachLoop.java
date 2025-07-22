@@ -21,6 +21,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.Space;
@@ -238,35 +239,13 @@ public class UseForEachLoop extends Recipe {
                                 method.getArguments().size() == 1 &&
                                 method.getArguments().get(0) instanceof J.Identifier &&
                                 indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
-                                isSameExpression(method.getSelect(), collection);
+                                SemanticallyEqual.areEqual(method.getSelect(), collection);
                     } else if (initializer instanceof J.ArrayAccess) {
                         J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
                         return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
                                 indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
-                                isSameExpression(arrayAccess.getIndexed(), collection);
+                                SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection);
                     }
-                    return false;
-                }
-
-                private boolean isSameExpression(J expr1, J expr2) {
-                    if (expr1 == null || expr2 == null) return false;
-                    if (expr1 == expr2) return true;
-
-                    if (expr1.getClass() != expr2.getClass()) return false;
-
-                    if (expr1 instanceof J.Identifier) {
-                        J.Identifier id1 = (J.Identifier) expr1;
-                        J.Identifier id2 = (J.Identifier) expr2;
-                        return id1.getSimpleName().equals(id2.getSimpleName());
-                    }
-
-                    if (expr1 instanceof J.FieldAccess) {
-                        J.FieldAccess field1 = (J.FieldAccess) expr1;
-                        J.FieldAccess field2 = (J.FieldAccess) expr2;
-                        return field1.getSimpleName().equals(field2.getSimpleName()) &&
-                                isSameExpression(field1.getTarget(), field2.getTarget());
-                    }
-
                     return false;
                 }
             }
@@ -305,7 +284,7 @@ public class UseForEachLoop extends Recipe {
 
                         // Mark that we're inside a valid access to avoid flagging the identifier
                         boolean wasInsideValidAccess = insideValidAccess;
-                        if (isSameExpression(method.getSelect(), collection)) {
+                        if (SemanticallyEqual.areEqual(method.getSelect(), collection)) {
                             insideValidAccess = true;
                         } else {
                             // Accessing a different collection is invalid
@@ -327,7 +306,7 @@ public class UseForEachLoop extends Recipe {
 
                         // Mark that we're inside a valid access to avoid flagging the identifier
                         boolean wasInsideValidAccess = insideValidAccess;
-                        if (isSameExpression(arrayAccess.getIndexed(), collection)) {
+                        if (SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection)) {
                             insideValidAccess = true;
                         } else {
                             // Accessing a different array is invalid
@@ -341,28 +320,6 @@ public class UseForEachLoop extends Recipe {
                     return super.visitArrayAccess(arrayAccess, o);
                 }
 
-
-                private boolean isSameExpression(J expr1, J expr2) {
-                    if (expr1 == null || expr2 == null) return false;
-                    if (expr1 == expr2) return true;
-
-                    if (expr1.getClass() != expr2.getClass()) return false;
-
-                    if (expr1 instanceof J.Identifier) {
-                        J.Identifier id1 = (J.Identifier) expr1;
-                        J.Identifier id2 = (J.Identifier) expr2;
-                        return id1.getSimpleName().equals(id2.getSimpleName());
-                    }
-
-                    if (expr1 instanceof J.FieldAccess) {
-                        J.FieldAccess field1 = (J.FieldAccess) expr1;
-                        J.FieldAccess field2 = (J.FieldAccess) expr2;
-                        return field1.getSimpleName().equals(field2.getSimpleName()) &&
-                                isSameExpression(field1.getTarget(), field2.getTarget());
-                    }
-
-                    return false; // For simplicity, only handle basic cases
-                }
             }
 
             private class SimpleBodyTransformer extends JavaVisitor<Object> {
@@ -416,7 +373,7 @@ public class UseForEachLoop extends Recipe {
                             method.getArguments().size() == 1 &&
                             method.getArguments().get(0) instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
-                            isSameExpression(method.getSelect(), collection)) {
+                            SemanticallyEqual.areEqual(method.getSelect(), collection)) {
 
                         return new J.Identifier(
                                 Tree.randomId(),
@@ -439,12 +396,12 @@ public class UseForEachLoop extends Recipe {
                                 method.getArguments().size() == 1 &&
                                 method.getArguments().get(0) instanceof J.Identifier &&
                                 indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
-                                isSameExpression(method.getSelect(), collection);
+                                SemanticallyEqual.areEqual(method.getSelect(), collection);
                     } else if (initializer instanceof J.ArrayAccess) {
                         J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
                         return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
                                 indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
-                                isSameExpression(arrayAccess.getIndexed(), collection);
+                                SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection);
                     }
                     return false;
                 }
@@ -454,7 +411,7 @@ public class UseForEachLoop extends Recipe {
                     // Replace array[i] with the new variable
                     if (arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
-                            isSameExpression(arrayAccess.getIndexed(), collection)) {
+                            SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection)) {
 
                         return new J.Identifier(
                                 Tree.randomId(),
@@ -469,62 +426,6 @@ public class UseForEachLoop extends Recipe {
                     return super.visitArrayAccess(arrayAccess, o);
                 }
 
-                private boolean isSameExpression(J expr1, J expr2) {
-                    if (expr1 == null || expr2 == null) return false;
-                    if (expr1 == expr2) return true;
-
-                    if (expr1.getClass() != expr2.getClass()) return false;
-
-                    if (expr1 instanceof J.Identifier) {
-                        J.Identifier id1 = (J.Identifier) expr1;
-                        J.Identifier id2 = (J.Identifier) expr2;
-                        return id1.getSimpleName().equals(id2.getSimpleName());
-                    }
-
-                    if (expr1 instanceof J.FieldAccess) {
-                        J.FieldAccess field1 = (J.FieldAccess) expr1;
-                        J.FieldAccess field2 = (J.FieldAccess) expr2;
-                        return field1.getSimpleName().equals(field2.getSimpleName()) &&
-                                isSameExpression(field1.getTarget(), field2.getTarget());
-                    }
-
-                    if (expr1 instanceof J.MethodInvocation) {
-                        J.MethodInvocation method1 = (J.MethodInvocation) expr1;
-                        J.MethodInvocation method2 = (J.MethodInvocation) expr2;
-                        if (!method1.getSimpleName().equals(method2.getSimpleName())) return false;
-                        if (!isSameExpression(method1.getSelect(), method2.getSelect())) return false;
-
-                        if (method1.getArguments().size() != method2.getArguments().size()) return false;
-                        for (int i = 0; i < method1.getArguments().size(); i++) {
-                            if (!isSameExpression(method1.getArguments().get(i), method2.getArguments().get(i))) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-
-                    if (expr1 instanceof J.ArrayAccess) {
-                        J.ArrayAccess arr1 = (J.ArrayAccess) expr1;
-                        J.ArrayAccess arr2 = (J.ArrayAccess) expr2;
-                        return isSameExpression(arr1.getIndexed(), arr2.getIndexed()) &&
-                                isSameExpression(arr1.getDimension().getIndex(), arr2.getDimension().getIndex());
-                    }
-
-                    if (expr1 instanceof J.Literal) {
-                        J.Literal lit1 = (J.Literal) expr1;
-                        J.Literal lit2 = (J.Literal) expr2;
-                        return java.util.Objects.equals(lit1.getValue(), lit2.getValue());
-                    }
-
-                    if (expr1 instanceof J.Parentheses) {
-                        J.Parentheses par1 = (J.Parentheses) expr1;
-                        J.Parentheses par2 = (J.Parentheses) expr2;
-                        return isSameExpression(par1.getTree(), par2.getTree());
-                    }
-
-                    // For other types, fall back to reference equality
-                    return expr1 == expr2;
-                }
             }
         };
     }
