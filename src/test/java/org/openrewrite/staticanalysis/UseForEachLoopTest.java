@@ -281,4 +281,24 @@ class UseForEachLoopTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void noChangeWhenNoCollectionAccess() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Test {
+                  void test(List<String> names) {
+                      for (int i = 0; i < names.size(); i++) {
+                          System.out.println("Processing item " + i);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
