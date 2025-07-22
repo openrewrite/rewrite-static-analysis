@@ -133,10 +133,13 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                JavaTemplate template = JavaTemplate.builder("for (String name : #{any()}) #{any()}")
+                // Determine the appropriate variable name for the for-each loop
+                String forEachVarName = determineForEachVariableName(forLoop.getBody(), indexVarName, collection);
+
+                JavaTemplate template = JavaTemplate.builder("for (String " + forEachVarName + " : #{any()}) #{any()}")
                         .build();
 
-                Statement transformedBody = (Statement) new SimpleBodyTransformer(indexVarName, collection, "name").visit(forLoop.getBody(), getCursor());
+                Statement transformedBody = (Statement) new SimpleBodyTransformer(indexVarName, collection, forEachVarName).visit(forLoop.getBody(), getCursor());
 
                 J.ForEachLoop forEachLoop = template.apply(getCursor(), forLoop.getCoordinates().replace(),
                         collection, transformedBody);
@@ -150,10 +153,115 @@ public class UseForEachLoop extends Recipe {
                 return fixedForEachLoop;
             }
 
+            private String determineForEachVariableName(Statement body, String indexVarName, J collection) {
+                // First, check if there's a variable declaration that assigns from collection access
+                VariableNameDetector detector = new VariableNameDetector(indexVarName, collection);
+                detector.visit(body, null);
+
+                String detectedName = detector.getDetectedVariableName();
+                if (detectedName != null) {
+                    return detectedName;
+                }
+
+                // Otherwise, derive from collection name
+                return deriveVariableNameFromCollection(collection);
+            }
+
+            private String deriveVariableNameFromCollection(J collection) {
+                String collectionName = getCollectionName(collection);
+                if (collectionName == null) {
+                    return "item"; // fallback
+                }
+
+                // Convert plural to singular: "numbers" -> "number", "names" -> "name"
+                if (collectionName.endsWith("s") && collectionName.length() > 1) {
+                    return collectionName.substring(0, collectionName.length() - 1);
+                }
+
+                // If not plural, append "Item": "data" -> "dataItem"
+                return collectionName + "Item";
+            }
+
+            private String getCollectionName(J collection) {
+                if (collection instanceof J.Identifier) {
+                    return ((J.Identifier) collection).getSimpleName();
+                } else if (collection instanceof J.FieldAccess) {
+                    return ((J.FieldAccess) collection).getSimpleName();
+                }
+                return null;
+            }
+
             private boolean isValidForTransformation(Statement body, String indexVarName, J collection) {
                 ValidationVisitor validator = new ValidationVisitor(indexVarName, collection);
                 validator.visit(body, null);
                 return validator.isValid();
+            }
+
+            private class VariableNameDetector extends JavaVisitor<Object> {
+                private final String indexVarName;
+                private final J collection;
+                private String detectedVariableName = null;
+
+                public VariableNameDetector(String indexVarName, J collection) {
+                    this.indexVarName = indexVarName;
+                    this.collection = collection;
+                }
+
+                public String getDetectedVariableName() {
+                    return detectedVariableName;
+                }
+
+                @Override
+                public J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
+                    // Check if this is a variable declaration that assigns from collection access
+                    if (variableDeclarations.getVariables().size() == 1) {
+                        J.VariableDeclarations.NamedVariable variable = variableDeclarations.getVariables().get(0);
+                        if (variable.getInitializer() != null && isCollectionAccess(variable.getInitializer())) {
+                            detectedVariableName = variable.getSimpleName();
+                        }
+                    }
+                    return super.visitVariableDeclarations(variableDeclarations, o);
+                }
+
+                private boolean isCollectionAccess(J initializer) {
+                    // Check if the initializer is collection.get(i) or array[i]
+                    if (initializer instanceof J.MethodInvocation) {
+                        J.MethodInvocation method = (J.MethodInvocation) initializer;
+                        return "get".equals(method.getSimpleName()) &&
+                                method.getArguments().size() == 1 &&
+                                method.getArguments().get(0) instanceof J.Identifier &&
+                                indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
+                                isSameExpression(method.getSelect(), collection);
+                    } else if (initializer instanceof J.ArrayAccess) {
+                        J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
+                        return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
+                                indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
+                                isSameExpression(arrayAccess.getIndexed(), collection);
+                    }
+                    return false;
+                }
+
+                private boolean isSameExpression(J expr1, J expr2) {
+                    if (expr1 == null || expr2 == null) return false;
+                    if (expr1 == expr2) return true;
+
+                    if (expr1.getClass() != expr2.getClass()) return false;
+
+                    if (expr1 instanceof J.Identifier) {
+                        J.Identifier id1 = (J.Identifier) expr1;
+                        J.Identifier id2 = (J.Identifier) expr2;
+                        return id1.getSimpleName().equals(id2.getSimpleName());
+                    }
+
+                    if (expr1 instanceof J.FieldAccess) {
+                        J.FieldAccess field1 = (J.FieldAccess) expr1;
+                        J.FieldAccess field2 = (J.FieldAccess) expr2;
+                        return field1.getSimpleName().equals(field2.getSimpleName()) &&
+                                isSameExpression(field1.getTarget(), field2.getTarget());
+                    }
+
+                    return false;
+                }
             }
 
             private class ValidationVisitor extends JavaVisitor<Object> {
