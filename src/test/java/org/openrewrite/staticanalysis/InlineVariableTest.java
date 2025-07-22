@@ -212,4 +212,148 @@ class InlineVariableTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void inlineAssignmentReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test() {
+                      String result;
+                      result = "hello";
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test() {
+                      String result;
+                      return "hello";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineAssignmentThrow() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      RuntimeException e;
+                      e = new RuntimeException("error");
+                      throw e;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      RuntimeException e;
+                      throw new RuntimeException("error");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineComplexAssignmentReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(String input) {
+                      String result;
+                      result = input.trim().toUpperCase();
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(String input) {
+                      String result;
+                      return input.trim().toUpperCase();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInlineFieldAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private String field;
+
+                  String test() {
+                      field = "value";
+                      return field;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+
+    @Test
+    void preserveCommentsOnAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test() {
+                      String result;
+                      // important assignment
+                      result = "value"; // trailing comment
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test() {
+                      String result;
+                      // important assignment
+                      // trailing comment
+                      return "value";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInlineWhenMultipleVariables() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String getString() {
+                      String a = "Hello", b = "World";
+                      return a;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
