@@ -97,17 +97,14 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Handle both collection.size() and array.length patterns
                 J collection;
                 if (condition.getRight() instanceof J.MethodInvocation) {
-                    // Handle collection.size() pattern
                     J.MethodInvocation sizeCall = (J.MethodInvocation) condition.getRight();
                     if (!"size".equals(sizeCall.getSimpleName()) || !((sizeCall.getArguments().isEmpty()) || (sizeCall.getArguments().size() == 1 && sizeCall.getArguments().get(0) instanceof J.Empty))) {
                         return super.visitForLoop(forLoop, ctx);
                     }
                     collection = sizeCall.getSelect();
                 } else if (condition.getRight() instanceof J.FieldAccess) {
-                    // Handle array.length pattern
                     J.FieldAccess lengthAccess = (J.FieldAccess) condition.getRight();
                     if (!"length".equals(lengthAccess.getSimpleName())) {
                         return super.visitForLoop(forLoop, ctx);
@@ -132,12 +129,10 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Check if the loop body only accesses the same collection being iterated
                 if (!isValidForTransformation(forLoop.getBody(), indexVarName, collection)) {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Determine the appropriate variable name for the for-each loop
                 String forEachVarName = determineForEachVariableName(forLoop.getBody(), indexVarName, collection);
 
                 JavaTemplate template = JavaTemplate.builder("for (String " + forEachVarName + " : #{any()}) #{any()}")
@@ -158,35 +153,29 @@ public class UseForEachLoop extends Recipe {
             }
 
             private String determineForEachVariableName(Statement body, String indexVarName, J collection) {
-                // First, check if there's a variable declaration that assigns from collection access
                 VariableNameDetector detector = new VariableNameDetector(indexVarName, collection);
                 detector.visit(body, null);
 
                 String detectedName = detector.getDetectedVariableName();
                 if (detectedName != null) {
-                    // Found existing variable, use it directly (no collision check needed since it already exists)
                     return detectedName;
                 }
 
-                // Otherwise, derive from collection name and ensure no clashes
                 String derivedName = deriveVariableNameFromCollection(collection);
 
-                // Use VariableNameUtils to handle potential collisions
                 return VariableNameUtils.generateVariableName(derivedName, getCursor(), INCREMENT_NUMBER);
             }
 
             private String deriveVariableNameFromCollection(J collection) {
                 String collectionName = getCollectionName(collection);
                 if (collectionName == null) {
-                    return "item"; // fallback
+                    return "item";
                 }
 
-                // Convert plural to singular: "numbers" -> "number", "names" -> "name"
                 if (collectionName.endsWith("s") && collectionName.length() > 1) {
                     return collectionName.substring(0, collectionName.length() - 1);
                 }
 
-                // If not plural, append "Item": "data" -> "dataItem"
                 return collectionName + "Item";
             }
 
@@ -221,7 +210,6 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
-                    // Check if this is a variable declaration that assigns from collection access
                     if (variableDeclarations.getVariables().size() == 1) {
                         J.VariableDeclarations.NamedVariable variable = variableDeclarations.getVariables().get(0);
                         if (variable.getInitializer() != null && isCollectionAccess(variable.getInitializer())) {
@@ -232,7 +220,6 @@ public class UseForEachLoop extends Recipe {
                 }
 
                 private boolean isCollectionAccess(J initializer) {
-                    // Check if the initializer is collection.get(i) or array[i]
                     if (initializer instanceof J.MethodInvocation) {
                         J.MethodInvocation method = (J.MethodInvocation) initializer;
                         return "get".equals(method.getSimpleName()) &&
@@ -267,7 +254,6 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitIdentifier(J.Identifier identifier, Object o) {
-                    // If index variable is used for anything other than valid collection access, it's invalid
                     if (indexVarName.equals(identifier.getSimpleName()) && !insideValidAccess) {
                         valid = false;
                     }
@@ -276,18 +262,15 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitMethodInvocation(J.MethodInvocation method, Object o) {
-                    // Check method calls like collection.get(i) or otherCollection.get(i)
                     if ("get".equals(method.getSimpleName()) &&
                             method.getArguments().size() == 1 &&
                             method.getArguments().get(0) instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName())) {
 
-                        // Mark that we're inside a valid access to avoid flagging the identifier
                         boolean wasInsideValidAccess = insideValidAccess;
                         if (SemanticallyEqual.areEqual(method.getSelect(), collection)) {
                             insideValidAccess = true;
                         } else {
-                            // Accessing a different collection is invalid
                             valid = false;
                         }
 
@@ -300,16 +283,13 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitArrayAccess(J.ArrayAccess arrayAccess, Object o) {
-                    // Check array access like array[i] or otherArray[i]
                     if (arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName())) {
 
-                        // Mark that we're inside a valid access to avoid flagging the identifier
                         boolean wasInsideValidAccess = insideValidAccess;
                         if (SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection)) {
                             insideValidAccess = true;
                         } else {
-                            // Accessing a different array is invalid
                             valid = false;
                         }
 
@@ -326,7 +306,7 @@ public class UseForEachLoop extends Recipe {
                 private final String indexVarName;
                 private final J collection;
                 private final String newVariableName;
-                private String variableToReplace = null; // Variable that should be replaced with newVariableName
+                private String variableToReplace = null;
 
                 public SimpleBodyTransformer(String indexVarName, J collection, String newVariableName) {
                     this.indexVarName = indexVarName;
@@ -336,13 +316,10 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
-                    // Check if this is a variable declaration that assigns from collection access
                     if (variableDeclarations.getVariables().size() == 1) {
                         J.VariableDeclarations.NamedVariable variable = variableDeclarations.getVariables().get(0);
                         if (variable.getInitializer() != null && isCollectionAccess(variable.getInitializer())) {
-                            // Store the variable name to replace later uses
                             variableToReplace = variable.getSimpleName();
-                            // Remove this variable declaration by returning null
                             return null;
                         }
                     }
@@ -351,7 +328,6 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitIdentifier(J.Identifier identifier, Object o) {
-                    // Replace uses of the removed variable with the new for-each variable
                     if (variableToReplace != null && variableToReplace.equals(identifier.getSimpleName())) {
                         return new J.Identifier(
                                 Tree.randomId(),
@@ -368,7 +344,6 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitMethodInvocation(J.MethodInvocation method, Object o) {
-                    // Replace collection.get(i) with the new variable
                     if ("get".equals(method.getSimpleName()) &&
                             method.getArguments().size() == 1 &&
                             method.getArguments().get(0) instanceof J.Identifier &&
@@ -389,7 +364,6 @@ public class UseForEachLoop extends Recipe {
                 }
 
                 private boolean isCollectionAccess(J initializer) {
-                    // Check if the initializer is collection.get(i) or array[i]
                     if (initializer instanceof J.MethodInvocation) {
                         J.MethodInvocation method = (J.MethodInvocation) initializer;
                         return "get".equals(method.getSimpleName()) &&
@@ -408,7 +382,6 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitArrayAccess(J.ArrayAccess arrayAccess, Object o) {
-                    // Replace array[i] with the new variable
                     if (arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
                             SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection)) {
