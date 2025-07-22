@@ -371,4 +371,67 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void chainedIfElseIfElseWithMissingReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(String str) {
+                      if ("one".equals(str)) {
+                          return 1;
+                      } else if ("two".equals(str)) {
+                          System.out.println("two");
+                      } else if ("three".equals(str)) {
+                          return 3;
+                      } else {
+                          return Integer.MAX_VALUE;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(String str) {
+                      if ("one".equals(str)) {
+                          return 1;
+                      }
+                      if ("two".equals(str)) {
+                          System.out.println("two");
+                      } else if ("three".equals(str)) {
+                          return 3;
+                      } else {
+                          return Integer.MAX_VALUE;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedIfWithReturnInInnerIf() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String foo(boolean someCondition, boolean somethingRare) {
+                      if (someCondition) {
+                          // default logic
+                          if (somethingRare) {
+                              return "terminate all processing";
+                          }
+                      } else {
+                          // non-standard logic
+                          return "else branch result";
+                      }
+                      return "continue processing";
+                  }
+              }
+              """
+          )
+        );
+    }
 }
