@@ -20,6 +20,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.Space;
@@ -28,6 +29,8 @@ import org.openrewrite.marker.Markers;
 
 import java.util.Collections;
 import java.time.Duration;
+
+import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
 public class UseForEachLoop extends Recipe {
 
@@ -160,11 +163,15 @@ public class UseForEachLoop extends Recipe {
 
                 String detectedName = detector.getDetectedVariableName();
                 if (detectedName != null) {
+                    // Found existing variable, use it directly (no collision check needed since it already exists)
                     return detectedName;
                 }
 
-                // Otherwise, derive from collection name
-                return deriveVariableNameFromCollection(collection);
+                // Otherwise, derive from collection name and ensure no clashes
+                String derivedName = deriveVariableNameFromCollection(collection);
+
+                // Use VariableNameUtils to handle potential collisions
+                return VariableNameUtils.generateVariableName(derivedName, getCursor(), INCREMENT_NUMBER);
             }
 
             private String deriveVariableNameFromCollection(J collection) {

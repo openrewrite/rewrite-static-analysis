@@ -152,6 +152,37 @@ class UseForEachLoopTest implements RewriteTest {
     }
 
     @Test
+    void notClashVariableNames() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Test {
+                  void test(List<Integer> numbers, java.util.Date number) {
+                      for (int i = 0; i < numbers.size(); ++i) {
+                          System.out.println(numbers.get(i));
+                      }
+                  }
+              }
+            """,
+            """
+            import java.util.List;
+
+            class Test {
+                void test(List<Integer> numbers, java.util.Date number) {
+                    for (String number1 : numbers) {
+                        System.out.println(number1);
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
     void noChangeWhenIndexUsedForOtherPurposes() {
         rewriteRun(
           //language=java
