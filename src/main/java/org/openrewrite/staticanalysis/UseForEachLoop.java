@@ -17,19 +17,19 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.Space;
-import org.openrewrite.Tree;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
 import java.time.Duration;
+import java.util.Collections;
 
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 

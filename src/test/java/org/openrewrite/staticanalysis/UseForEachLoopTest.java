@@ -36,15 +36,15 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
               """
-              import java.util.List;
+            import java.util.List;
 
-              class Test {
-                  void test(List<String> names) {
-                      for (int i = 0; i < names.size(); i++) {
-                          System.out.println(names.get(i));
-                      }
-                  }
-              }
+            class Test {
+                void test(List<String> names) {
+                    for (int i = 0; i < names.size(); i++) {
+                        System.out.println(names.get(i));
+                    }
+                }
+            }
             """,
             """
             import java.util.List;
@@ -67,16 +67,16 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-            import java.util.List;
+          import java.util.List;
 
-            class Test {
-                void test(List<String> names) {
-                    for (int i = 0; i < names.size(); i++) {
-                        String name = names.get(i);
-                        System.out.println(name);
-                    }
-                }
-            }
+          class Test {
+              void test(List<String> names) {
+                  for (int i = 0; i < names.size(); i++) {
+                      String name = names.get(i);
+                      System.out.println(name);
+                  }
+              }
+          }
           """,
             """
             import java.util.List;
@@ -99,13 +99,13 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-              class Test {
-                  void test(String[] names) {
-                      for (int i = 0; i < names.length; i++) {
-                          System.out.println(names[i]);
-                      }
-                  }
-              }
+            class Test {
+                void test(String[] names) {
+                    for (int i = 0; i < names.length; i++) {
+                        System.out.println(names[i]);
+                    }
+                }
+            }
             """,
             """
             class Test {
@@ -126,15 +126,15 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-              import java.util.List;
+            import java.util.List;
 
-              class Test {
-                  void test(List<Integer> numbers) {
-                      for (int i = 0; i < numbers.size(); ++i) {
-                          System.out.println(numbers.get(i));
-                      }
-                  }
-              }
+            class Test {
+                void test(List<Integer> numbers) {
+                    for (int i = 0; i < numbers.size(); ++i) {
+                        System.out.println(numbers.get(i));
+                    }
+                }
+            }
             """,
             """
             import java.util.List;
@@ -157,15 +157,15 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-              import java.util.List;
+            import java.util.List;
 
-              class Test {
-                  void test(List<Integer> numbers, java.util.Date number) {
-                      for (int i = 0; i < numbers.size(); ++i) {
-                          System.out.println(numbers.get(i));
-                      }
-                  }
-              }
+            class Test {
+                void test(List<Integer> numbers, java.util.Date number) {
+                    for (int i = 0; i < numbers.size(); ++i) {
+                        System.out.println(numbers.get(i));
+                    }
+                }
+            }
             """,
             """
             import java.util.List;
