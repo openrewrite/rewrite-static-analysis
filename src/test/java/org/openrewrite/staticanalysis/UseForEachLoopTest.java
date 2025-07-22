@@ -51,7 +51,7 @@ class UseForEachLoopTest implements RewriteTest {
 
             class Test {
                 void test(List<String> names) {
-                    for (String name: names) {
+                    for (String name : names) {
                         System.out.println(name);
                     }
                 }
@@ -80,7 +80,7 @@ class UseForEachLoopTest implements RewriteTest {
 
             class Test {
                 void test(List<String> names) {
-                    for (String name: names) {
+                    for (String name : names) {
                         System.out.println(names);
                     }
                 }
@@ -111,7 +111,7 @@ class UseForEachLoopTest implements RewriteTest {
 
             class Test {
                 void test(List<String> names) {
-                    for (String name: names) {
+                    for (String name : names) {
                         System.out.println(name);
                     }
                 }

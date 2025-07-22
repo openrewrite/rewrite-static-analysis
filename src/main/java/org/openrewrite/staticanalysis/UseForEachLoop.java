@@ -118,7 +118,7 @@ public class UseForEachLoop extends Recipe {
 
                 J collection = sizeCall.getSelect();
 
-                JavaTemplate template = JavaTemplate.builder("for (String name : #{any()}) #{any()}")
+                JavaTemplate template = JavaTemplate.builder("for (String name: #{any()}) #{any()}")
                         .build();
 
                 Statement transformedBody = (Statement) new SimpleBodyTransformer(indexVarName, collection, "name").visit(forLoop.getBody(), getCursor());
