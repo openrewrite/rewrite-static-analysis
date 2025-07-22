@@ -164,8 +164,62 @@ public class UseForEachLoop extends Recipe {
 
                 private boolean isSameExpression(J expr1, J expr2) {
                     if (expr1 == null || expr2 == null) return false;
+                    if (expr1 == expr2) return true;
 
-                    return true;
+                    // Compare by type first
+                    if (expr1.getClass() != expr2.getClass()) return false;
+
+                    // Handle different expression types
+                    if (expr1 instanceof J.Identifier) {
+                        J.Identifier id1 = (J.Identifier) expr1;
+                        J.Identifier id2 = (J.Identifier) expr2;
+                        return id1.getSimpleName().equals(id2.getSimpleName());
+                    }
+
+                    if (expr1 instanceof J.FieldAccess) {
+                        J.FieldAccess field1 = (J.FieldAccess) expr1;
+                        J.FieldAccess field2 = (J.FieldAccess) expr2;
+                        return field1.getSimpleName().equals(field2.getSimpleName()) &&
+                                isSameExpression(field1.getTarget(), field2.getTarget());
+                    }
+
+                    if (expr1 instanceof J.MethodInvocation) {
+                        J.MethodInvocation method1 = (J.MethodInvocation) expr1;
+                        J.MethodInvocation method2 = (J.MethodInvocation) expr2;
+                        if (!method1.getSimpleName().equals(method2.getSimpleName())) return false;
+                        if (!isSameExpression(method1.getSelect(), method2.getSelect())) return false;
+
+                        // Compare arguments
+                        if (method1.getArguments().size() != method2.getArguments().size()) return false;
+                        for (int i = 0; i < method1.getArguments().size(); i++) {
+                            if (!isSameExpression(method1.getArguments().get(i), method2.getArguments().get(i))) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+
+                    if (expr1 instanceof J.ArrayAccess) {
+                        J.ArrayAccess arr1 = (J.ArrayAccess) expr1;
+                        J.ArrayAccess arr2 = (J.ArrayAccess) expr2;
+                        return isSameExpression(arr1.getIndexed(), arr2.getIndexed()) &&
+                                isSameExpression(arr1.getDimension().getIndex(), arr2.getDimension().getIndex());
+                    }
+
+                    if (expr1 instanceof J.Literal) {
+                        J.Literal lit1 = (J.Literal) expr1;
+                        J.Literal lit2 = (J.Literal) expr2;
+                        return java.util.Objects.equals(lit1.getValue(), lit2.getValue());
+                    }
+
+                    if (expr1 instanceof J.Parentheses) {
+                        J.Parentheses par1 = (J.Parentheses) expr1;
+                        J.Parentheses par2 = (J.Parentheses) expr2;
+                        return isSameExpression(par1.getTree(), par2.getTree());
+                    }
+
+                    // For other types, fall back to reference equality
+                    return expr1 == expr2;
                 }
             }
         };
