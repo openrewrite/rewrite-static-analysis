@@ -111,9 +111,8 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             } else if (defaultCase != null) {
                 if (!aCase.getStatements().isEmpty() && i != cases.size() - 1) {
                     return cases;
-                } else {
-                    postDefaultCases.add(aCase);
                 }
+                postDefaultCases.add(aCase);
             } else {
                 preDefaultCases.add(aCase);
             }

@@ -77,7 +77,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                 }
 
                 return buildReplacement(select, mi);
-            } else if (METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(mi))) {
+            }
+            if (METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(mi))) {
                 // deals with edge cases where .toString() is called implicitly
                 JavaType.Method methodType = mi.getMethodType();
                 if (methodType == null) {
@@ -88,8 +89,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                 for (int i = 0; i < arguments.size(); i++) {
                     Expression arg = arguments.get(i);
                     if (arg.getType() instanceof JavaType.Array &&
-                        (i > parameterTypes.size() - 1 ||
-                         !(parameterTypes.get(i) instanceof JavaType.Array))) {
+                            (i > parameterTypes.size() - 1 ||
+                                    !(parameterTypes.get(i) instanceof JavaType.Array))) {
                         getCursor().putMessage("METHOD_KEY", mi);
                         break;
                     }

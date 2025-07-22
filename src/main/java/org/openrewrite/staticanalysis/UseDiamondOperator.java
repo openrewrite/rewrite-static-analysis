@@ -179,9 +179,8 @@ public class UseDiamondOperator extends Recipe {
         private JavaType getMethodParamType(JavaType.Method methodType, int paramIndex) {
             if (methodType.hasFlags(Flag.Varargs) && paramIndex >= methodType.getParameterTypes().size() - 1) {
                 return ((JavaType.Array) methodType.getParameterTypes().get(methodType.getParameterTypes().size() - 1)).getElemType();
-            } else {
-                return methodType.getParameterTypes().get(paramIndex);
             }
+            return methodType.getParameterTypes().get(paramIndex);
         }
 
         @Override
@@ -219,11 +218,10 @@ public class UseDiamondOperator extends Recipe {
                 if (newClassType.getTypeParameters() != null) {
                     if (paramTypes.size() != newClassType.getTypeParameters().size() || hasAnnotations(newClassType)) {
                         return newClass;
-                    } else {
-                        for (int i = 0; i < paramTypes.size(); i++) {
-                            if (!TypeUtils.isAssignableTo(paramTypes.get(i), newClassType.getTypeParameters().get(i).getType())) {
-                                return newClass;
-                            }
+                    }
+                    for (int i = 0; i < paramTypes.size(); i++) {
+                        if (!TypeUtils.isAssignableTo(paramTypes.get(i), newClassType.getTypeParameters().get(i).getType())) {
+                            return newClass;
                         }
                     }
                     newClassType.getTypeParameters().stream()
@@ -240,7 +238,8 @@ public class UseDiamondOperator extends Recipe {
                 J.ParameterizedType parameterizedType = (J.ParameterizedType) type;
                 if (hasAnnotations(parameterizedType.getClazz())) {
                     return true;
-                } else if (parameterizedType.getTypeParameters() != null) {
+                }
+                if (parameterizedType.getTypeParameters() != null) {
                     for (Expression typeParameter : parameterizedType.getTypeParameters()) {
                         if (hasAnnotations(typeParameter)) {
                             return true;

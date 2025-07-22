@@ -126,11 +126,14 @@ public class AddSerialVersionUidToSerializable extends Recipe {
             private boolean requiresSerialVersionField(@Nullable JavaType type) {
                 if (type == null) {
                     return false;
-                } else if (type instanceof JavaType.Primitive) {
+                }
+                if (type instanceof JavaType.Primitive) {
                     return true;
-                } else if (type instanceof JavaType.Array) {
+                }
+                if (type instanceof JavaType.Array) {
                     return requiresSerialVersionField(((JavaType.Array) type).getElemType());
-                } else if (type instanceof JavaType.Parameterized) {
+                }
+                if (type instanceof JavaType.Parameterized) {
                     JavaType.Parameterized parameterized = (JavaType.Parameterized) type;
                     if (parameterized.isAssignableTo("java.util.Collection") || parameterized.isAssignableTo("java.util.Map")) {
                         //If the type is either a collection or a map, make sure the type parameters are serializable. We

@@ -48,6 +48,11 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 }
 
                 Object enclosing = getCursor().getParentTreeCursor().getValue();
+
+                if (enclosing instanceof J.Ternary) {
+                    return m; // may be necessary for type inference
+                }
+
                 JavaType inferredType = null;
                 if (enclosing instanceof J.MethodInvocation) {
                     if (shouldRetainOnStaticMethod(methodType)) {

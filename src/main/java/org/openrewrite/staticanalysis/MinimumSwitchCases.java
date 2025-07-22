@@ -151,9 +151,8 @@ public class MinimumSwitchCases extends Recipe {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
-                                } else {
-                                    generatedIf = ifString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                                 }
+                                generatedIf = ifString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else if (isDefault(cases[1])) {
                                 generatedIf = ifElseString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else {
@@ -184,9 +183,8 @@ public class MinimumSwitchCases extends Recipe {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
-                                } else {
-                                    generatedIf = ifPrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                                 }
+                                generatedIf = ifPrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else if (isDefault(cases[1])) {
                                 generatedIf = ifElsePrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else {

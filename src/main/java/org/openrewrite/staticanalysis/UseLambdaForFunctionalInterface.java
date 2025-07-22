@@ -293,9 +293,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             Object next = path.next();
             if (next instanceof J.Block) {
                 return true;
-            } else if (next instanceof J && !(next instanceof J.MethodInvocation)) {
+            }
+            if (next instanceof J && !(next instanceof J.MethodInvocation)) {
                 return false;
-            } else if (next instanceof J.MethodInvocation) {
+            }
+            if (next instanceof J.MethodInvocation) {
                 for (Expression argument : ((J.MethodInvocation) next).getArguments()) {
                     if (argument == last) {
                         return false;

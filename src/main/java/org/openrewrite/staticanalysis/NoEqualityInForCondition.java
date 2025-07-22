@@ -95,11 +95,14 @@ public class NoEqualityInForCondition extends Recipe {
 
                 if (condition.getLeft() instanceof J.Identifier) {
                     return simpleName.equals(((J.Identifier) condition.getLeft()).getSimpleName());
-                } else if (condition.getLeft() instanceof J.FieldAccess) {
+                }
+                if (condition.getLeft() instanceof J.FieldAccess) {
                     return simpleName.equals(((J.FieldAccess) condition.getLeft()).getSimpleName());
-                } else if (condition.getRight() instanceof J.Identifier) {
+                }
+                if (condition.getRight() instanceof J.Identifier) {
                     return simpleName.equals(((J.Identifier) condition.getRight()).getSimpleName());
-                } else if (condition.getRight() instanceof J.FieldAccess) {
+                }
+                if (condition.getRight() instanceof J.FieldAccess) {
                     return simpleName.equals(((J.FieldAccess) condition.getRight()).getSimpleName());
                 }
                 return false;

@@ -146,19 +146,21 @@ final class JavaElementFactory {
             JavaType.Class classType = (JavaType.Class) type;
             if (classType.getFullyQualifiedName().equals("java.lang.Class")) {
                 return classType;
-            } else if (classType.getFullyQualifiedName().equals("java.lang.Object")) {
+            }
+            if (classType.getFullyQualifiedName().equals("java.lang.Object")) {
                 for (JavaType.Method method : classType.getMethods()) {
                     if (method.getName().equals("getClass")) {
                         return getClassType(method.getReturnType());
                     }
                 }
                 return null;
-            } else {
-                return getClassType(classType.getSupertype());
             }
-        } else if (type instanceof JavaType.Parameterized) {
+            return getClassType(classType.getSupertype());
+        }
+        if (type instanceof JavaType.Parameterized) {
             return getClassType(((JavaType.Parameterized) type).getType());
-        } else if (type instanceof JavaType.GenericTypeVariable) {
+        }
+        if (type instanceof JavaType.GenericTypeVariable) {
             return getClassType(((JavaType.GenericTypeVariable) type).getBounds().get(0));
         } else if (type instanceof JavaType.Array) {
             return getClassType(((JavaType.Array) type).getElemType());

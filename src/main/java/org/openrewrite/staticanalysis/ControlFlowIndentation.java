@@ -99,7 +99,8 @@ public class ControlFlowIndentation extends Recipe {
             boolean shouldReformat(Statement s) {
                 if (s instanceof J.If) {
                     return shouldReformat((J.If) s);
-                } else if (s instanceof Loop) {
+                }
+                if (s instanceof Loop) {
                     Statement body = ((Loop) s).getBody();
                     return !(body instanceof J.Block);
                 }
