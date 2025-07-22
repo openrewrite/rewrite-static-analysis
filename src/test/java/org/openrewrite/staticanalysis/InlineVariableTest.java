@@ -103,6 +103,46 @@ class InlineVariableTest implements RewriteTest {
         );
     }
 
+    @Test
+    void inlineSwitch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  String test(int n) {
+                      String s = switch (n) {
+                          case 1 -> "one";
+                          case 2 -> "two";
+                          case 3 -> "three";
+                          default -> "unknown";
+                      };
+                      return s;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  String test(int n) {
+                      return switch (n) {
+                          case 1 -> "one";
+                          case 2 -> "two";
+                          case 3 -> "three";
+                          default -> "unknown";
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void preserveComments() {
