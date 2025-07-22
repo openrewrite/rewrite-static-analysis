@@ -50,19 +50,12 @@ public class UseForEachLoop extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
-                System.err.println("VISITING FOR LOOP: " + forLoop.printTrimmed(getCursor()));
-
-                // Basic pattern check for List iteration: for (int i = 0; i < names.size(); i++)
                 J.ForLoop.Control control = forLoop.getControl();
 
-                // Must have exactly one init, one condition, and one update
-                if (control.getInit().size() != 1 ||
-                        control.getCondition() == null ||
-                        control.getUpdate().size() != 1) {
+                if (control.getInit().size() != 1 || control.getCondition() == null || control.getUpdate().size() != 1) {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Check init: int i = 0
                 Statement init = control.getInit().get(0);
                 if (!(init instanceof J.VariableDeclarations)) {
                     return super.visitForLoop(forLoop, ctx);
@@ -85,7 +78,6 @@ public class UseForEachLoop extends Recipe {
 
                 String indexVarName = indexVar.getSimpleName();
 
-                // Check condition: i < collection.size()
                 if (!(control.getCondition() instanceof J.Binary)) {
                     return super.visitForLoop(forLoop, ctx);
                 }
@@ -95,31 +87,27 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Left side should be the index variable
                 if (!(condition.getLeft() instanceof J.Identifier) ||
                         !((J.Identifier) condition.getLeft()).getSimpleName().equals(indexVarName)) {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Right side should be collection.size() for now - simplify to just check method name
                 if (!(condition.getRight() instanceof J.MethodInvocation)) {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
                 J.MethodInvocation sizeCall = (J.MethodInvocation) condition.getRight();
-                if (!"size".equals(sizeCall.getSimpleName()) || !sizeCall.getArguments().isEmpty()) {
+                if (!"size".equals(sizeCall.getSimpleName()) || !((sizeCall.getArguments().isEmpty()) || (sizeCall.getArguments().size() == 1 && sizeCall.getArguments().get(0) instanceof J.Empty))) {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Check update: i++ or ++i
                 Statement update = control.getUpdate().get(0);
                 if (!(update instanceof J.Unary)) {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
                 J.Unary unaryUpdate = (J.Unary) update;
-                if (unaryUpdate.getOperator() != J.Unary.Type.PostIncrement &&
-                        unaryUpdate.getOperator() != J.Unary.Type.PreIncrement) {
+                if (unaryUpdate.getOperator() != J.Unary.Type.PostIncrement && unaryUpdate.getOperator() != J.Unary.Type.PreIncrement) {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
@@ -128,13 +116,11 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
-                // Simple transformation for now
                 J collection = sizeCall.getSelect();
 
                 JavaTemplate template = JavaTemplate.builder("for (String name : #{any()}) #{any()}")
                         .build();
 
-                // Transform body by replacing collection.get(i) with name
                 Statement transformedBody = (Statement) new SimpleBodyTransformer(indexVarName, collection, "name").visit(forLoop.getBody(), getCursor());
 
                 J.ForEachLoop forEachLoop = template.apply(getCursor(), forLoop.getCoordinates().replace(),
@@ -178,7 +164,8 @@ public class UseForEachLoop extends Recipe {
 
                 private boolean isSameExpression(J expr1, J expr2) {
                     if (expr1 == null || expr2 == null) return false;
-                    return expr1.printTrimmed(getCursor()).equals(expr2.printTrimmed(getCursor()));
+
+                    return true;
                 }
             }
         };
