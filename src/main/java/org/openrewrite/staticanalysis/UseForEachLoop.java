@@ -245,11 +245,44 @@ public class UseForEachLoop extends Recipe {
                 private final String indexVarName;
                 private final J collection;
                 private final String newVariableName;
+                private String variableToReplace = null; // Variable that should be replaced with newVariableName
 
                 public SimpleBodyTransformer(String indexVarName, J collection, String newVariableName) {
                     this.indexVarName = indexVarName;
                     this.collection = collection;
                     this.newVariableName = newVariableName;
+                }
+
+                @Override
+                public J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
+                    // Check if this is a variable declaration that assigns from collection access
+                    if (variableDeclarations.getVariables().size() == 1) {
+                        J.VariableDeclarations.NamedVariable variable = variableDeclarations.getVariables().get(0);
+                        if (variable.getInitializer() != null && isCollectionAccess(variable.getInitializer())) {
+                            // Store the variable name to replace later uses
+                            variableToReplace = variable.getSimpleName();
+                            // Remove this variable declaration by returning null
+                            return null;
+                        }
+                    }
+                    return super.visitVariableDeclarations(variableDeclarations, o);
+                }
+
+                @Override
+                public J visitIdentifier(J.Identifier identifier, Object o) {
+                    // Replace uses of the removed variable with the new for-each variable
+                    if (variableToReplace != null && variableToReplace.equals(identifier.getSimpleName())) {
+                        return new J.Identifier(
+                                Tree.randomId(),
+                                identifier.getPrefix(),
+                                Markers.EMPTY,
+                                Collections.emptyList(),
+                                newVariableName,
+                                identifier.getType(),
+                                null
+                        );
+                    }
+                    return super.visitIdentifier(identifier, o);
                 }
 
                 @Override
@@ -272,6 +305,24 @@ public class UseForEachLoop extends Recipe {
                         );
                     }
                     return super.visitMethodInvocation(method, o);
+                }
+
+                private boolean isCollectionAccess(J initializer) {
+                    // Check if the initializer is collection.get(i) or array[i]
+                    if (initializer instanceof J.MethodInvocation) {
+                        J.MethodInvocation method = (J.MethodInvocation) initializer;
+                        return "get".equals(method.getSimpleName()) &&
+                                method.getArguments().size() == 1 &&
+                                method.getArguments().get(0) instanceof J.Identifier &&
+                                indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
+                                isSameExpression(method.getSelect(), collection);
+                    } else if (initializer instanceof J.ArrayAccess) {
+                        J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
+                        return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
+                                indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
+                                isSameExpression(arrayAccess.getIndexed(), collection);
+                    }
+                    return false;
                 }
 
                 @Override

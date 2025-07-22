@@ -62,6 +62,38 @@ class UseForEachLoopTest implements RewriteTest {
     }
 
     @Test
+    void removeVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            import java.util.List;
+
+            class Test {
+                void test(List<String> names) {
+                    for (int i = 0; i < names.size(); i++) {
+                        String name = names.get(i);
+                        System.out.println(name);
+                    }
+                }
+            }
+          """,
+            """
+            import java.util.List;
+
+            class Test {
+                void test(List<String> names) {
+                    for (String name : names) {
+                        System.out.println(name);
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
     void transformArrayIteration() {
         rewriteRun(
           //language=java
