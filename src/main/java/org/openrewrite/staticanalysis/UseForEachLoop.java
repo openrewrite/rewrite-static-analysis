@@ -138,10 +138,9 @@ public class UseForEachLoop extends Recipe {
                 JavaTemplate template = JavaTemplate.builder("for (String " + forEachVarName + " : #{any()}) #{any()}")
                         .build();
 
-                Statement transformedBody = (Statement) new SimpleBodyTransformer(indexVarName, collection, forEachVarName).visit(forLoop.getBody(), getCursor());
+                Statement transformedBody = (Statement) new BodyTransformer(indexVarName, collection, forEachVarName).visit(forLoop.getBody(), getCursor());
 
-                J.ForEachLoop forEachLoop = template.apply(getCursor(), forLoop.getCoordinates().replace(),
-                        collection, transformedBody);
+                J.ForEachLoop forEachLoop = template.apply(getCursor(), forLoop.getCoordinates().replace(), collection, transformedBody);
 
                 J.ForEachLoop.Control foreachControl = forEachLoop.getControl();
                 J iterable = foreachControl.getIterable();
@@ -300,13 +299,13 @@ public class UseForEachLoop extends Recipe {
 
             }
 
-            private class SimpleBodyTransformer extends JavaVisitor<Object> {
+            private class BodyTransformer extends JavaVisitor<Object> {
                 private final String indexVarName;
                 private final J collection;
                 private final String newVariableName;
                 private String variableToReplace;
 
-                public SimpleBodyTransformer(String indexVarName, J collection, String newVariableName) {
+                public BodyTransformer(String indexVarName, J collection, String newVariableName) {
                     this.indexVarName = indexVarName;
                     this.collection = collection;
                     this.newVariableName = newVariableName;
