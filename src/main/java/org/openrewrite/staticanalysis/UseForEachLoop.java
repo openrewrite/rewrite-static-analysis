@@ -145,11 +145,9 @@ public class UseForEachLoop extends Recipe {
 
                 J.ForEachLoop.Control foreachControl = forEachLoop.getControl();
                 J iterable = foreachControl.getIterable();
-                J.ForEachLoop fixedForEachLoop = forEachLoop.withControl(
+                return forEachLoop.withControl(
                         foreachControl.withIterable(iterable.withPrefix(Space.format(" ")))
                 );
-
-                return fixedForEachLoop;
             }
 
             private String determineForEachVariableName(Statement body, String indexVarName, J collection) {
@@ -214,7 +212,7 @@ public class UseForEachLoop extends Recipe {
             private class VariableNameDetector extends JavaVisitor<Object> {
                 private final String indexVarName;
                 private final J collection;
-                private String detectedVariableName = null;
+                private String detectedVariableName;
 
                 public VariableNameDetector(String indexVarName, J collection) {
                     this.indexVarName = indexVarName;
@@ -241,7 +239,7 @@ public class UseForEachLoop extends Recipe {
                 private final String indexVarName;
                 private final J collection;
                 private boolean valid = true;
-                private boolean insideValidAccess = false;
+                private boolean insideValidAccess;
 
                 public ValidationVisitor(String indexVarName, J collection) {
                     this.indexVarName = indexVarName;
@@ -306,7 +304,7 @@ public class UseForEachLoop extends Recipe {
                 private final String indexVarName;
                 private final J collection;
                 private final String newVariableName;
-                private String variableToReplace = null;
+                private String variableToReplace;
 
                 public SimpleBodyTransformer(String indexVarName, J collection, String newVariableName) {
                     this.indexVarName = indexVarName;
