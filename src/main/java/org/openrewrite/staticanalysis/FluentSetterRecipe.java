@@ -40,22 +40,15 @@ import static org.openrewrite.Tree.randomId;
 @Value
 public class FluentSetterRecipe extends Recipe {
 
-    @Option(displayName = "Include all void methods", description =
-            "Whether to convert all void methods to return `this`, not just setters. "
-                    + "When false, only methods matching setter patterns will be converted.", required = false)
+    @Option(displayName = "Include all void methods", description = "Whether to convert all void methods to return `this`, not just setters. When false, only methods matching setter patterns will be converted.", required = false)
     @Nullable
     Boolean includeAllVoidMethods;
 
-    @Option(displayName = "Method name pattern", description =
-            "A regular expression pattern to match method names. "
-                    + "Only methods matching this pattern will be converted. "
-                    + "Defaults to setter pattern when includeAllVoidMethods is false.", example = "set.*", required = false)
+    @Option(displayName = "Method name pattern", description = "A regular expression pattern to match method names. Only methods matching this pattern will be converted. Defaults to setter pattern when includeAllVoidMethods is false.", example = "set.*", required = false)
     @Nullable
     String methodNamePattern;
 
-    @Option(displayName = "Exclude method patterns", description =
-            "A regular expression pattern for method names to exclude from conversion. "
-                    + "Methods matching this pattern will not be converted.", example = "main|run", required = false)
+    @Option(displayName = "Exclude method patterns", description = "A regular expression pattern for method names to exclude from conversion. Methods matching this pattern will not be converted.", example = "main|run", required = false)
     @Nullable
     String excludeMethodPattern;
 
@@ -66,8 +59,7 @@ public class FluentSetterRecipe extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Converts void setter methods (and optionally other void methods) to return `this` "
-                + "to enable method chaining and fluent interfaces.";
+        return "Converts void setter methods (and optionally other void methods) to return `this` to enable method chaining and fluent interfaces.";
     }
 
     @Override
@@ -75,8 +67,7 @@ public class FluentSetterRecipe extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method,
-                                                              ExecutionContext ctx) {
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 method = super.visitMethodDeclaration(method, ctx);
                 if (!shouldConvertMethod(method)) {
                     return method;
@@ -93,23 +84,12 @@ public class FluentSetterRecipe extends Recipe {
                     className = className.substring(className.lastIndexOf('.') + 1);
                 }
 
-                Space returnTypeSpace = method.getReturnTypeExpression() == null ? Space.EMPTY
-                        : method.getReturnTypeExpression().getPrefix();
-                Markers returnTypeMarkers = method.getReturnTypeExpression() == null ? Markers.EMPTY
-                        : method.getReturnTypeExpression().getMarkers();
+                Space returnTypeSpace = method.getReturnTypeExpression() == null ? Space.EMPTY : method.getReturnTypeExpression().getPrefix();
+                Markers returnTypeMarkers = method.getReturnTypeExpression() == null ? Markers.EMPTY : method.getReturnTypeExpression().getMarkers();
 
-                J.Identifier returnTypeIdentifier = new J.Identifier(
-                        randomId(),
-                        returnTypeSpace,
-                        returnTypeMarkers,
-                        emptyList(),
-                        className,
-                        classType,
-                        null
-                );
+                J.Identifier returnTypeIdentifier = new J.Identifier(randomId(), returnTypeSpace, returnTypeMarkers, emptyList(), className, classType, null);
 
-                J.MethodDeclaration updatedMethod = method
-                        .withReturnTypeExpression(returnTypeIdentifier);
+                J.MethodDeclaration updatedMethod = method.withReturnTypeExpression(returnTypeIdentifier);
 
                 if (updatedMethod.getBody() != null) {
                     Space indentation;
@@ -120,26 +100,9 @@ public class FluentSetterRecipe extends Recipe {
                         indentation = updatedMethod.getBody().getPrefix();
                     }
 
-                    J.Return returnThis = new J.Return(
-                            randomId(),
-                            Space.format("\n" + indentation.getIndent()),
-                            Markers.EMPTY,
-                            new J.Identifier(
-                                    randomId(),
-                                    Space.SINGLE_SPACE,
-                                    Markers.EMPTY,
-                                    emptyList(),
-                                    "this",
-                                    classType,
-                                    null
-                            )
-                    );
+                    J.Return returnThis = new J.Return(randomId(), Space.format("\n" + indentation.getIndent()), Markers.EMPTY, new J.Identifier(randomId(), Space.SINGLE_SPACE, Markers.EMPTY, emptyList(), "this", classType, null));
 
-                    updatedMethod = updatedMethod.withBody(
-                            updatedMethod.getBody().withStatements(
-                                    ListUtils.concat(updatedMethod.getBody().getStatements(), returnThis)
-                            )
-                    );
+                    updatedMethod = updatedMethod.withBody(updatedMethod.getBody().withStatements(ListUtils.concat(updatedMethod.getBody().getStatements(), returnThis)));
                 }
 
                 return updatedMethod;
@@ -147,8 +110,7 @@ public class FluentSetterRecipe extends Recipe {
 
 
             private boolean shouldConvertMethod(J.MethodDeclaration method) {
-                if (method.getReturnTypeExpression() == null
-                        || method.getReturnTypeExpression().getType() != JavaType.Primitive.Void) {
+                if (method.getReturnTypeExpression() == null || method.getReturnTypeExpression().getType() != JavaType.Primitive.Void) {
                     return false;
                 }
 
