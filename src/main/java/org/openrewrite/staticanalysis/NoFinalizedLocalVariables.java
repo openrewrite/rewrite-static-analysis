@@ -76,7 +76,8 @@ public class NoFinalizedLocalVariables extends Recipe {
                             if (next instanceof J.ClassDeclaration || next instanceof J.NewClass) {
                                 // this variable is a field
                                 return mv;
-                            } else if (next instanceof J.MethodDeclaration || next instanceof J.Lambda) {
+                            }
+                            if (next instanceof J.MethodDeclaration || next instanceof J.Lambda) {
                                 return removeFinal(mv);
                             }
                         }

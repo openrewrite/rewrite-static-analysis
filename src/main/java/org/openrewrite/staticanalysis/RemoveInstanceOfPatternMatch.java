@@ -408,9 +408,11 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                     Object tree = iter.next();
                     if (tree.equals(iff.getIfCondition())) {
                         return UsageContext.CONDITION;
-                    } else if (tree.equals(iff.getThenPart())) {
+                    }
+                    if (tree.equals(iff.getThenPart())) {
                         return UsageContext.THEN_PART;
-                    } else if (tree.equals(iff.getElsePart())) {
+                    }
+                    if (tree.equals(iff.getElsePart())) {
                         return UsageContext.ELSE_PART;
                     }
                 }

@@ -409,18 +409,16 @@ public class InstanceOfPatternMatch extends Recipe {
                 if (binary.getRight() instanceof J.InstanceOf) {
                     newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor);
                 } else if (binary.getRight() instanceof J.Parentheses &&
-                           ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
-                    @SuppressWarnings("unchecked")
-                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
+                        ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
+                    @SuppressWarnings("unchecked") J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
                     newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
                 } else {
                     newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
                 return b.withRight(newRight);
-            } else {
-                // The left side didn't change, so the right side doesn't need to see any introduced variable names
-                return b.withRight((Expression) visitNonNull(binary.getRight(), p));
             }
+            // The left side didn't change, so the right side doesn't need to see any introduced variable names
+            return b.withRight((Expression) visitNonNull(binary.getRight(), p));
         }
 
         @Override
@@ -495,7 +493,8 @@ public class InstanceOfPatternMatch extends Recipe {
             if (style == Style.EXACT) {
                 //noinspection DataFlowIssue
                 return name;
-            } else if (type instanceof JavaType.FullyQualified) {
+            }
+            if (type instanceof JavaType.FullyQualified) {
                 String className = ((JavaType.FullyQualified) type).getClassName();
                 className = className.substring(className.lastIndexOf('.') + 1);
                 String baseName = null;
@@ -547,10 +546,12 @@ public class InstanceOfPatternMatch extends Recipe {
                     break;
                 }
                 return candidate;
-            } else if (type instanceof JavaType.Primitive) {
+            }
+            if (type instanceof JavaType.Primitive) {
                 String keyword = ((JavaType.Primitive) type).getKeyword();
                 return style == Style.SHORT ? keyword.substring(0, 1) : keyword;
-            } else if (type instanceof JavaType.Array) {
+            }
+            if (type instanceof JavaType.Array) {
                 JavaType elemType = ((JavaType.Array) type).getElemType();
                 while (elemType instanceof JavaType.Array) {
                     elemType = ((JavaType.Array) elemType).getElemType();

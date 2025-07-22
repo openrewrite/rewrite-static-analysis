@@ -87,9 +87,8 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     J.Parentheses<J> par = (J.Parentheses<J>) tree;
                     J inner = mapInstanceOf(par.getTree(), fun);
                     return par.withTree(inner);
-                } else {
-                    throw new IllegalArgumentException("Expected J.InstanceOf or J.Parentheses, but got: " + tree.getClass());
                 }
+                throw new IllegalArgumentException("Expected J.InstanceOf or J.Parentheses, but got: " + tree.getClass());
             }
 
             private boolean isObjectClass(@Nullable Expression expression) {
