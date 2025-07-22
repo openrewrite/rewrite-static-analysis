@@ -21,10 +21,8 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -63,8 +61,8 @@ public class InlineVariable extends Recipe {
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block bl = super.visitBlock(block, ctx);
                 List<Statement> statements = bl.getStatements();
-                if (statements.size() > 1) {
-                    String identReturned = identReturned(statements);
+                if (1 < statements.size()) {
+                    J.Identifier identReturned = identReturnedOrThrown(statements);
                     if (identReturned != null) {
                         Statement secondLastStatement = statements.get(statements.size() - 2);
                         if (secondLastStatement instanceof J.VariableDeclarations) {
@@ -72,8 +70,9 @@ public class InlineVariable extends Recipe {
                             // Only inline if there's exactly one variable declared
                             if (varDec.getVariables().size() == 1) {
                                 J.VariableDeclarations.NamedVariable identDefinition = varDec.getVariables().get(0);
-                                if (varDec.getLeadingAnnotations().isEmpty() && identDefinition.getSimpleName().equals(identReturned)) {
-                                    bl = inlineExpression(statements, bl, identDefinition.getInitializer(), varDec.getPrefix(), varDec.getComments());
+                                if (varDec.getLeadingAnnotations().isEmpty() &&
+                                        SemanticallyEqual.areEqual(identDefinition.getName(), identReturned)) {
+                                    return inlineExpression(identDefinition.getInitializer(), bl, statements, varDec.getPrefix(), varDec.getComments());
                                 }
                             }
                         } else if (secondLastStatement instanceof J.Assignment) {
@@ -83,8 +82,8 @@ public class InlineVariable extends Recipe {
                                 // Only inline local variable assignments, not fields
                                 if (assignedVar.getFieldType() != null &&
                                         assignedVar.getFieldType().getOwner() instanceof JavaType.Method &&
-                                        assignedVar.getSimpleName().equals(identReturned)) {
-                                    bl = inlineExpression(statements, bl, assignment.getAssignment(), assignment.getPrefix(), assignment.getComments());
+                                        SemanticallyEqual.areEqual(assignedVar, identReturned)) {
+                                    return inlineExpression(assignment.getAssignment(), bl, statements, assignment.getPrefix(), assignment.getComments());
                                 }
                             }
                         }
@@ -93,8 +92,8 @@ public class InlineVariable extends Recipe {
                 return bl;
             }
 
-            private J.Block inlineExpression(List<Statement> statements, J.Block bl, @Nullable Expression expression,
-                                             org.openrewrite.java.tree.Space prefix, List<org.openrewrite.java.tree.Comment> comments) {
+            private J.Block inlineExpression(@Nullable Expression expression, J.Block bl, List<Statement> statements,
+                                             Space prefix, List<Comment> comments) {
                 if (expression == null) {
                     return bl;
                 }
@@ -102,16 +101,18 @@ public class InlineVariable extends Recipe {
                 return bl.withStatements(ListUtils.map(statements, (i, statement) -> {
                     if (i == statements.size() - 2) {
                         return null;
-                    } else if (i == statements.size() - 1) {
+                    }
+                    if (i == statements.size() - 1) {
                         if (statement instanceof J.Return) {
                             J.Return return_ = (J.Return) statement;
-                            return return_.withExpression(expression
-                                            .withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
+                            return return_
+                                    .withExpression(expression.withPrefix(requireNonNull(return_.getExpression()).getPrefix()))
                                     .withPrefix(prefix.withComments(ListUtils.concatAll(comments, return_.getComments())));
-                        } else if (statement instanceof J.Throw) {
+                        }
+                        if (statement instanceof J.Throw) {
                             J.Throw thrown = (J.Throw) statement;
-                            return thrown.withException(expression
-                                            .withPrefix(requireNonNull(thrown.getException()).getPrefix()))
+                            return thrown.
+                                    withException(expression.withPrefix(requireNonNull(thrown.getException()).getPrefix()))
                                     .withPrefix(prefix.withComments(ListUtils.concatAll(comments, thrown.getComments())));
                         }
                     }
@@ -119,19 +120,19 @@ public class InlineVariable extends Recipe {
                 }));
             }
 
-            private @Nullable String identReturned(List<Statement> stats) {
+            private J.@Nullable Identifier identReturnedOrThrown(List<Statement> stats) {
                 Statement lastStatement = stats.get(stats.size() - 1);
                 if (lastStatement instanceof J.Return) {
                     J.Return return_ = (J.Return) lastStatement;
                     Expression expression = return_.getExpression();
                     if (expression instanceof J.Identifier &&
                             !(expression.getType() instanceof JavaType.Array)) {
-                        return ((J.Identifier) expression).getSimpleName();
+                        return ((J.Identifier) expression);
                     }
                 } else if (lastStatement instanceof J.Throw) {
                     J.Throw thr = (J.Throw) lastStatement;
                     if (thr.getException() instanceof J.Identifier) {
-                        return ((J.Identifier) thr.getException()).getSimpleName();
+                        return ((J.Identifier) thr.getException());
                     }
                 }
                 return null;
