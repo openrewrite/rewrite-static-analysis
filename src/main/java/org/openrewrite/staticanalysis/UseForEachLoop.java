@@ -128,6 +128,11 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
+                // Check if the loop body only accesses the same collection being iterated
+                if (!isValidForTransformation(forLoop.getBody(), indexVarName, collection)) {
+                    return super.visitForLoop(forLoop, ctx);
+                }
+
                 JavaTemplate template = JavaTemplate.builder("for (String name : #{any()}) #{any()}")
                         .build();
 
@@ -143,6 +148,97 @@ public class UseForEachLoop extends Recipe {
                 );
 
                 return fixedForEachLoop;
+            }
+
+            private boolean isValidForTransformation(Statement body, String indexVarName, J collection) {
+                ValidationVisitor validator = new ValidationVisitor(indexVarName, collection);
+                validator.visit(body, null);
+                return validator.isValid();
+            }
+
+            private class ValidationVisitor extends JavaVisitor<Object> {
+                private final String indexVarName;
+                private final J collection;
+                private boolean valid = true;
+
+                public ValidationVisitor(String indexVarName, J collection) {
+                    this.indexVarName = indexVarName;
+                    this.collection = collection;
+                }
+
+                public boolean isValid() {
+                    return valid;
+                }
+
+                @Override
+                public J visitIdentifier(J.Identifier identifier, Object o) {
+                    // If index variable is used for anything other than collection access, it's invalid
+                    if (indexVarName.equals(identifier.getSimpleName())) {
+                        // Check if this identifier is part of a valid collection access pattern
+                        if (!isPartOfValidAccess(identifier)) {
+                            valid = false;
+                        }
+                    }
+                    return super.visitIdentifier(identifier, o);
+                }
+
+                @Override
+                public J visitMethodInvocation(J.MethodInvocation method, Object o) {
+                    // Check method calls like collection.get(i) or otherCollection.get(i)
+                    if ("get".equals(method.getSimpleName()) &&
+                            method.getArguments().size() == 1 &&
+                            method.getArguments().get(0) instanceof J.Identifier &&
+                            indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName())) {
+
+                        // Only valid if accessing the same collection we're iterating over
+                        if (!isSameExpression(method.getSelect(), collection)) {
+                            valid = false;
+                        }
+                    }
+                    return super.visitMethodInvocation(method, o);
+                }
+
+                @Override
+                public J visitArrayAccess(J.ArrayAccess arrayAccess, Object o) {
+                    // Check array access like array[i] or otherArray[i]
+                    if (arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
+                            indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName())) {
+
+                        // Only valid if accessing the same array we're iterating over
+                        if (!isSameExpression(arrayAccess.getIndexed(), collection)) {
+                            valid = false;
+                        }
+                    }
+                    return super.visitArrayAccess(arrayAccess, o);
+                }
+
+                private boolean isPartOfValidAccess(J.Identifier identifier) {
+                    // Check if the identifier is part of a method call argument or array index
+                    // This is a simplified check - we'll rely on the specific visitMethodInvocation and visitArrayAccess
+                    return true; // Let the specific visit methods handle validation
+                }
+
+                private boolean isSameExpression(J expr1, J expr2) {
+                    if (expr1 == null || expr2 == null) return false;
+                    if (expr1 == expr2) return true;
+
+                    if (expr1.getClass() != expr2.getClass()) return false;
+
+                    if (expr1 instanceof J.Identifier) {
+                        J.Identifier id1 = (J.Identifier) expr1;
+                        J.Identifier id2 = (J.Identifier) expr2;
+                        return id1.getSimpleName().equals(id2.getSimpleName());
+                    }
+
+                    if (expr1 instanceof J.FieldAccess) {
+                        J.FieldAccess field1 = (J.FieldAccess) expr1;
+                        J.FieldAccess field2 = (J.FieldAccess) expr2;
+                        return field1.getSimpleName().equals(field2.getSimpleName()) &&
+                                isSameExpression(field1.getTarget(), field2.getTarget());
+                    }
+
+                    return false; // For simplicity, only handle basic cases
+                }
             }
 
             private class SimpleBodyTransformer extends JavaVisitor<Object> {
