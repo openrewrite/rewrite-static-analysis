@@ -194,6 +194,23 @@ public class UseForEachLoop extends Recipe {
                 return validator.isValid();
             }
 
+            private boolean isCollectionOrArrayAccess(J initializer, String indexVarName, J collection) {
+                if (initializer instanceof J.MethodInvocation) {
+                    J.MethodInvocation method = (J.MethodInvocation) initializer;
+                    return "get".equals(method.getSimpleName()) &&
+                            method.getArguments().size() == 1 &&
+                            method.getArguments().get(0) instanceof J.Identifier &&
+                            indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
+                            SemanticallyEqual.areEqual(method.getSelect(), collection);
+                } else if (initializer instanceof J.ArrayAccess) {
+                    J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
+                    return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
+                            indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
+                            SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection);
+                }
+                return false;
+            }
+
             private class VariableNameDetector extends JavaVisitor<Object> {
                 private final String indexVarName;
                 private final J collection;
@@ -212,28 +229,11 @@ public class UseForEachLoop extends Recipe {
                 public J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
                     if (variableDeclarations.getVariables().size() == 1) {
                         J.VariableDeclarations.NamedVariable variable = variableDeclarations.getVariables().get(0);
-                        if (variable.getInitializer() != null && isCollectionAccess(variable.getInitializer())) {
+                        if (variable.getInitializer() != null && isCollectionOrArrayAccess(variable.getInitializer(), indexVarName, collection)) {
                             detectedVariableName = variable.getSimpleName();
                         }
                     }
                     return super.visitVariableDeclarations(variableDeclarations, o);
-                }
-
-                private boolean isCollectionAccess(J initializer) {
-                    if (initializer instanceof J.MethodInvocation) {
-                        J.MethodInvocation method = (J.MethodInvocation) initializer;
-                        return "get".equals(method.getSimpleName()) &&
-                                method.getArguments().size() == 1 &&
-                                method.getArguments().get(0) instanceof J.Identifier &&
-                                indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
-                                SemanticallyEqual.areEqual(method.getSelect(), collection);
-                    } else if (initializer instanceof J.ArrayAccess) {
-                        J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
-                        return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
-                                indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
-                                SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection);
-                    }
-                    return false;
                 }
             }
 
@@ -318,7 +318,7 @@ public class UseForEachLoop extends Recipe {
                 public J visitVariableDeclarations(J.VariableDeclarations variableDeclarations, Object o) {
                     if (variableDeclarations.getVariables().size() == 1) {
                         J.VariableDeclarations.NamedVariable variable = variableDeclarations.getVariables().get(0);
-                        if (variable.getInitializer() != null && isCollectionAccess(variable.getInitializer())) {
+                        if (variable.getInitializer() != null && isCollectionOrArrayAccess(variable.getInitializer(), indexVarName, collection)) {
                             variableToReplace = variable.getSimpleName();
                             return null;
                         }
@@ -363,22 +363,6 @@ public class UseForEachLoop extends Recipe {
                     return super.visitMethodInvocation(method, o);
                 }
 
-                private boolean isCollectionAccess(J initializer) {
-                    if (initializer instanceof J.MethodInvocation) {
-                        J.MethodInvocation method = (J.MethodInvocation) initializer;
-                        return "get".equals(method.getSimpleName()) &&
-                                method.getArguments().size() == 1 &&
-                                method.getArguments().get(0) instanceof J.Identifier &&
-                                indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
-                                SemanticallyEqual.areEqual(method.getSelect(), collection);
-                    } else if (initializer instanceof J.ArrayAccess) {
-                        J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
-                        return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
-                                indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
-                                SemanticallyEqual.areEqual(arrayAccess.getIndexed(), collection);
-                    }
-                    return false;
-                }
 
                 @Override
                 public J visitArrayAccess(J.ArrayAccess arrayAccess, Object o) {
