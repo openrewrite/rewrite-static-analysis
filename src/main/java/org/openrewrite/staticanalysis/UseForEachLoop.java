@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.Tree;
 import org.openrewrite.marker.Markers;
 
@@ -118,7 +119,7 @@ public class UseForEachLoop extends Recipe {
 
                 J collection = sizeCall.getSelect();
 
-                JavaTemplate template = JavaTemplate.builder("for (String name: #{any()}) #{any()}")
+                JavaTemplate template = JavaTemplate.builder("for (String name : #{any()}) #{any()}")
                         .build();
 
                 Statement transformedBody = (Statement) new SimpleBodyTransformer(indexVarName, collection, "name").visit(forLoop.getBody(), getCursor());
@@ -126,7 +127,13 @@ public class UseForEachLoop extends Recipe {
                 J.ForEachLoop forEachLoop = template.apply(getCursor(), forLoop.getCoordinates().replace(),
                         collection, transformedBody);
 
-                return forEachLoop;
+                J.ForEachLoop.Control foreachControl = forEachLoop.getControl();
+                J iterable = foreachControl.getIterable();
+                J.ForEachLoop fixedForEachLoop = forEachLoop.withControl(
+                        foreachControl.withIterable(iterable.withPrefix(Space.format(" ")))
+                );
+
+                return fixedForEachLoop;
             }
 
             private class SimpleBodyTransformer extends JavaVisitor<Object> {
