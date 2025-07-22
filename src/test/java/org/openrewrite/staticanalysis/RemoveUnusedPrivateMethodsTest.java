@@ -1151,7 +1151,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
                           try {
                               Mapper.Builder builder = currentBuilder.get();
                               for (int i = 1; i < parts.length; i++) {
-                                  List<Mapper.Builder> childBuilders = getChildBuilders(builder);
+                                  List<Mapper.Builder> childBuilders = getChildBuilders(builder); // fixme gets removed
                                   int finalI = i;
 
                                   // First try to find in regular child builders
