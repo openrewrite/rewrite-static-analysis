@@ -434,4 +434,165 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void simpleIfElseWithThrow() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void foo(boolean condition) {
+                      if (condition) {
+                          throw new IllegalArgumentException("Invalid condition");
+                      } else {
+                          System.out.println("Valid condition");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void foo(boolean condition) {
+                      if (condition) {
+                          throw new IllegalArgumentException("Invalid condition");
+                      }
+                      System.out.println("Valid condition");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void ifElseWithBlocksAndThrow() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void validateInput(String input) {
+                      if (input == null) {
+                          System.err.println("Null input detected");
+                          throw new NullPointerException("Input cannot be null");
+                      } else {
+                          System.out.println("Processing input: " + input);
+                          input = input.trim();
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void validateInput(String input) {
+                      if (input == null) {
+                          System.err.println("Null input detected");
+                          throw new NullPointerException("Input cannot be null");
+                      }
+                      System.out.println("Processing input: " + input);
+                      input = input.trim();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mixedReturnAndThrow() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String process(int value) {
+                      if (value < 0) {
+                          throw new IllegalArgumentException("Negative value");
+                      } else if (value == 0) {
+                          return "zero";
+                      } else {
+                          return "positive";
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String process(int value) {
+                      if (value < 0) {
+                          throw new IllegalArgumentException("Negative value");
+                      }
+                      if (value == 0) {
+                          return "zero";
+                      }
+                      return "positive";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void throwWithoutBraces() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void check(boolean flag) {
+                      if (flag)
+                          throw new RuntimeException("Flag is true");
+                      else {
+                          System.out.println("Flag is false");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void check(boolean flag) {
+                      if (flag)
+                          throw new RuntimeException("Flag is true");
+                      System.out.println("Flag is false");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void throwInTryCatch() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void process(String data) {
+                      try {
+                          if (data == null) {
+                              throw new IllegalArgumentException("Data is null");
+                          } else {
+                              data.toLowerCase();
+                          }
+                      } catch (Exception e) {
+                          System.err.println("Error: " + e.getMessage());
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void process(String data) {
+                      try {
+                          if (data == null) {
+                              throw new IllegalArgumentException("Data is null");
+                          }
+                          data.toLowerCase();
+                      } catch (Exception e) {
+                          System.err.println("Error: " + e.getMessage());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

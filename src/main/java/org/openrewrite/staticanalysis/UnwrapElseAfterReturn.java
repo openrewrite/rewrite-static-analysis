@@ -33,12 +33,13 @@ public class UnwrapElseAfterReturn extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Unwrap else block after return";
+        return "Unwrap else block after return or throw statement";
     }
 
     @Override
     public String getDescription() {
-        return "Unwraps the else block when the if block ends with a return statement, reducing nesting and improving code readability.";
+        return "Unwraps the else block when the if block ends with a return or throw statement, " +
+                "reducing nesting and improving code readability.";
     }
 
     @Override
@@ -55,7 +56,7 @@ public class UnwrapElseAfterReturn extends Recipe {
                 J.Block after = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
-                        if (ifStatement.getElsePart() != null && endsWithReturn(ifStatement.getThenPart())) {
+                        if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
                             J.If newIf = ifStatement.withElsePart(null);
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.Block) {
@@ -79,15 +80,15 @@ public class UnwrapElseAfterReturn extends Recipe {
                 return maybeAutoFormat(b, after, ctx);
             }
 
-            private boolean endsWithReturn(Statement statement) {
-                if (statement instanceof J.Return) {
+            private boolean endsWithReturnOrThrow(Statement statement) {
+                if (statement instanceof J.Return || statement instanceof J.Throw) {
                     return true;
                 }
                 if (statement instanceof J.Block) {
                     J.Block block = (J.Block) statement;
                     if (!block.getStatements().isEmpty()) {
                         Statement lastStatement = block.getStatements().get(block.getStatements().size() - 1);
-                        return lastStatement instanceof J.Return;
+                        return lastStatement instanceof J.Return || lastStatement instanceof J.Throw;
                     }
                 }
                 return false;
