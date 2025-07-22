@@ -160,6 +160,7 @@ public class UseForEachLoop extends Recipe {
                 private final String indexVarName;
                 private final J collection;
                 private boolean valid = true;
+                private boolean insideValidAccess = false;
 
                 public ValidationVisitor(String indexVarName, J collection) {
                     this.indexVarName = indexVarName;
@@ -172,12 +173,9 @@ public class UseForEachLoop extends Recipe {
 
                 @Override
                 public J visitIdentifier(J.Identifier identifier, Object o) {
-                    // If index variable is used for anything other than collection access, it's invalid
-                    if (indexVarName.equals(identifier.getSimpleName())) {
-                        // Check if this identifier is part of a valid collection access pattern
-                        if (!isPartOfValidAccess(identifier)) {
-                            valid = false;
-                        }
+                    // If index variable is used for anything other than valid collection access, it's invalid
+                    if (indexVarName.equals(identifier.getSimpleName()) && !insideValidAccess) {
+                        valid = false;
                     }
                     return super.visitIdentifier(identifier, o);
                 }
@@ -190,10 +188,18 @@ public class UseForEachLoop extends Recipe {
                             method.getArguments().get(0) instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName())) {
 
-                        // Only valid if accessing the same collection we're iterating over
-                        if (!isSameExpression(method.getSelect(), collection)) {
+                        // Mark that we're inside a valid access to avoid flagging the identifier
+                        boolean wasInsideValidAccess = insideValidAccess;
+                        if (isSameExpression(method.getSelect(), collection)) {
+                            insideValidAccess = true;
+                        } else {
+                            // Accessing a different collection is invalid
                             valid = false;
                         }
+
+                        J result = super.visitMethodInvocation(method, o);
+                        insideValidAccess = wasInsideValidAccess;
+                        return result;
                     }
                     return super.visitMethodInvocation(method, o);
                 }
@@ -204,19 +210,22 @@ public class UseForEachLoop extends Recipe {
                     if (arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName())) {
 
-                        // Only valid if accessing the same array we're iterating over
-                        if (!isSameExpression(arrayAccess.getIndexed(), collection)) {
+                        // Mark that we're inside a valid access to avoid flagging the identifier
+                        boolean wasInsideValidAccess = insideValidAccess;
+                        if (isSameExpression(arrayAccess.getIndexed(), collection)) {
+                            insideValidAccess = true;
+                        } else {
+                            // Accessing a different array is invalid
                             valid = false;
                         }
+
+                        J result = super.visitArrayAccess(arrayAccess, o);
+                        insideValidAccess = wasInsideValidAccess;
+                        return result;
                     }
                     return super.visitArrayAccess(arrayAccess, o);
                 }
 
-                private boolean isPartOfValidAccess(J.Identifier identifier) {
-                    // Check if the identifier is part of a method call argument or array index
-                    // This is a simplified check - we'll rely on the specific visitMethodInvocation and visitArrayAccess
-                    return true; // Let the specific visit methods handle validation
-                }
 
                 private boolean isSameExpression(J expr1, J expr2) {
                     if (expr1 == null || expr2 == null) return false;
