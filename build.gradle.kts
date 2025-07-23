@@ -43,3 +43,7 @@ dependencies {
     testRuntimeOnly("org.openrewrite:rewrite-java-21")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
 }
+
+tasks.withType<Test> {
+    jvmArgs("-Xmx1g", "-Xms512m")
+}

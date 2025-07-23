@@ -26,6 +26,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -53,7 +54,8 @@ public class UnwrapElseAfterReturn extends Recipe {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = visitAndCast(block, ctx, super::visitBlock);
-                J.Block after = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
+                List<Comment> endComments = new ArrayList<>();
+                J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
                         if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
@@ -61,6 +63,7 @@ public class UnwrapElseAfterReturn extends Recipe {
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.Block) {
                                 J.Block elseBlock = (J.Block) elsePart;
+                                endComments.addAll(elseBlock.getEnd().getComments());
                                 return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
                                     // Combine comments from the else block itself and the first statement
                                     List<Comment> elseComments = elseBlock.getPrefix().getComments();
@@ -77,7 +80,13 @@ public class UnwrapElseAfterReturn extends Recipe {
                     }
                     return statement;
                 }));
-                return maybeAutoFormat(b, after, ctx);
+
+                if (!endComments.isEmpty()) {
+                    List<Comment> mergedComments = ListUtils.concatAll(endComments, b.getEnd().getComments());
+                    alteredBlock = alteredBlock.withEnd(b.getEnd().withComments(mergedComments));
+                }
+
+                return maybeAutoFormat(b, alteredBlock, ctx);
             }
 
             private boolean endsWithReturnOrThrow(Statement statement) {
