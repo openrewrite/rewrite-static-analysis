@@ -188,9 +188,11 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     currentType = ((JavaType.Array) currentType).getElemType();
                 }
                 return result;
-            } else if (type instanceof JavaType.Variable) {
+            }
+            if (type instanceof JavaType.Variable) {
                 return buildTypeTree(((JavaType.Variable) type).getType(), space);
-            } else if (type instanceof JavaType.GenericTypeVariable) {
+            }
+            if (type instanceof JavaType.GenericTypeVariable) {
                 JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
 
                 if (!genericType.getName().equals("?")) {

@@ -162,11 +162,14 @@ final class JavaElementFactory {
         }
         if (type instanceof JavaType.GenericTypeVariable) {
             return getClassType(((JavaType.GenericTypeVariable) type).getBounds().get(0));
-        } else if (type instanceof JavaType.Array) {
+        }
+        if (type instanceof JavaType.Array) {
             return getClassType(((JavaType.Array) type).getElemType());
-        } else if (type instanceof JavaType.Variable) {
+        }
+        if (type instanceof JavaType.Variable) {
             return getClassType(((JavaType.Variable) type).getOwner());
-        } else if (type instanceof JavaType.Method) {
+        }
+        if (type instanceof JavaType.Method) {
             return getClassType(((JavaType.Method) type).getDeclaringType());
         }
         return null;

@@ -3536,6 +3536,32 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnwrapElseAfterReturn
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int foo(boolean condition) {
+              if (condition) {
+                  return 1;
+              } else {
+                  return 2;
+              }
+          }
+      }
+    after: |
+      class Test {
+          int foo(boolean condition) {
+              if (condition) {
+                  return 1;
+              }
+              return 2;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnwrapRepeatableAnnotations
 examples:
 - description: ''
