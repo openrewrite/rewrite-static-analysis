@@ -53,13 +53,13 @@ class PreferEarlyReturnTest implements RewriteTest {
 
                   void logError(String message) {}
 
-                  class Order {
-                      boolean isValid() { return true; }
-                      void validate() {}
-                      void calculateTax() {}
-                      void applyDiscount() {}
-                      void processPayment() {}
-                      void sendConfirmation() {}
+                  interface Order {
+                      boolean isValid();
+                      void validate();
+                      void calculateTax();
+                      void applyDiscount();
+                      void processPayment();
+                      void sendConfirmation();
                   }
               }
               """,
@@ -80,13 +80,13 @@ class PreferEarlyReturnTest implements RewriteTest {
 
                   void logError(String message) {}
 
-                  class Order {
-                      boolean isValid() { return true; }
-                      void validate() {}
-                      void calculateTax() {}
-                      void applyDiscount() {}
-                      void processPayment() {}
-                      void sendConfirmation() {}
+                  interface Order {
+                      boolean isValid();
+                      void validate();
+                      void calculateTax();
+                      void applyDiscount();
+                      void processPayment();
+                      void sendConfirmation();
                   }
               }
               """
@@ -115,14 +115,14 @@ class PreferEarlyReturnTest implements RewriteTest {
                       }
                   }
 
-                  class User {
-                      boolean isActive() { return true; }
-                      boolean isSuspended() { return false; }
-                      void updateLastLogin() {}
-                      void incrementLoginCount() {}
-                      void loadPreferences() {}
-                      void initializeSession() {}
-                      void logActivity() {}
+                  interface User {
+                      boolean isActive();
+                      boolean isSuspended();
+                      void updateLastLogin();
+                      void incrementLoginCount();
+                      void loadPreferences();
+                      void initializeSession();
+                      void logActivity();
                   }
               }
               """,
@@ -141,14 +141,14 @@ class PreferEarlyReturnTest implements RewriteTest {
                       return true;
                   }
 
-                  class User {
-                      boolean isActive() { return true; }
-                      boolean isSuspended() { return false; }
-                      void updateLastLogin() {}
-                      void incrementLoginCount() {}
-                      void loadPreferences() {}
-                      void initializeSession() {}
-                      void logActivity() {}
+                  interface User {
+                      boolean isActive();
+                      boolean isSuspended();
+                      void updateLastLogin();
+                      void incrementLoginCount();
+                      void loadPreferences();
+                      void initializeSession();
+                      void logActivity();
                   }
               }
               """
@@ -176,10 +176,10 @@ class PreferEarlyReturnTest implements RewriteTest {
                       }
                   }
 
-                  class Data {
-                      boolean isValid() { return true; }
-                      String transform() { return "test"; }
-                      void log(String s) {}
+                  interface Data {
+                      boolean isValid();
+                      String transform();
+                      void log(String s);
                   }
               }
               """,
@@ -197,10 +197,10 @@ class PreferEarlyReturnTest implements RewriteTest {
                       return result;
                   }
 
-                  class Data {
-                      boolean isValid() { return true; }
-                      String transform() { return "test"; }
-                      void log(String s) {}
+                  interface Data {
+                      boolean isValid();
+                      String transform();
+                      void log(String s);
                   }
               }
               """
@@ -225,9 +225,9 @@ class PreferEarlyReturnTest implements RewriteTest {
                       }
                   }
 
-                  class Item {
-                      void process() {}
-                      void save() {}
+                  interface Item {
+                      void process();
+                      void save();
                   }
               }
               """
@@ -263,13 +263,13 @@ class PreferEarlyReturnTest implements RewriteTest {
                   void notifyAdmin() {}
                   void incrementErrorCounter() {}
 
-                  class Request {
-                      boolean isValid() { return true; }
-                      void validate() {}
-                      void authorize() {}
-                      void execute() {}
-                      void logSuccess() {}
-                      void notifyClients() {}
+                  interface Request {
+                      boolean isValid();
+                      void validate();
+                      void authorize();
+                      void execute();
+                      void logSuccess();
+                      void notifyClients();
                   }
               }
               """
@@ -296,13 +296,13 @@ class PreferEarlyReturnTest implements RewriteTest {
                       // No else block, so no early return to add
                   }
 
-                  class Event {
-                      boolean isActive() { return true; }
-                      void handle() {}
-                      void dispatch() {}
-                      void complete() {}
-                      void cleanup() {}
-                      void logCompletion() {}
+                  interface Event {
+                      boolean isActive();
+                      void handle();
+                      void dispatch();
+                      void complete();
+                      void cleanup();
+                      void logCompletion();
                   }
               }
               """
@@ -335,13 +335,13 @@ class PreferEarlyReturnTest implements RewriteTest {
 
                   void logError(String message) {}
 
-                  class Payment {
-                      boolean isAuthorized() { return true; }
-                      void validate() {}
-                      void checkFraud() {}
-                      void deductAmount() {}
-                      void recordTransaction() {}
-                      void sendReceipt() {}
+                  interface Payment {
+                      boolean isAuthorized();
+                      void validate();
+                      void checkFraud();
+                      void deductAmount();
+                      void recordTransaction();
+                      void sendReceipt();
                   }
               }
               """,
@@ -364,13 +364,13 @@ class PreferEarlyReturnTest implements RewriteTest {
 
                   void logError(String message) {}
 
-                  class Payment {
-                      boolean isAuthorized() { return true; }
-                      void validate() {}
-                      void checkFraud() {}
-                      void deductAmount() {}
-                      void recordTransaction() {}
-                      void sendReceipt() {}
+                  interface Payment {
+                      boolean isAuthorized();
+                      void validate();
+                      void checkFraud();
+                      void deductAmount();
+                      void recordTransaction();
+                      void sendReceipt();
                   }
               }
               """
@@ -398,15 +398,15 @@ class PreferEarlyReturnTest implements RewriteTest {
                       }
                   }
 
-                  class Transaction {
-                      boolean isValid() { return true; }
-                      boolean isPending() { return false; }
-                      boolean isExpired() { return false; }
-                      void authorize() {}
-                      void validate() {}
-                      void execute() {}
-                      void commit() {}
-                      void notifyParties() {}
+                  interface Transaction {
+                      boolean isValid();
+                      boolean isPending();
+                      boolean isExpired();
+                      void authorize();
+                      void validate();
+                      void execute();
+                      void commit();
+                      void notifyParties();
                   }
               }
               """,
@@ -424,15 +424,15 @@ class PreferEarlyReturnTest implements RewriteTest {
                       tx.notifyParties();
                   }
 
-                  class Transaction {
-                      boolean isValid() { return true; }
-                      boolean isPending() { return false; }
-                      boolean isExpired() { return false; }
-                      void authorize() {}
-                      void validate() {}
-                      void execute() {}
-                      void commit() {}
-                      void notifyParties() {}
+                  interface Transaction {
+                      boolean isValid();
+                      boolean isPending();
+                      boolean isExpired();
+                      void authorize();
+                      void validate();
+                      void execute();
+                      void commit();
+                      void notifyParties();
                   }
               }
               """
@@ -461,14 +461,14 @@ class PreferEarlyReturnTest implements RewriteTest {
                       }
                   }
 
-                  class Input {
-                      boolean isValid() { return true; }
-                      boolean hasRequiredFields() { return true; }
-                      String normalize() { return "normalized"; }
-                      String validate() { return "validated"; }
-                      String transform() { return "transformed"; }
-                      String encrypt() { return "encrypted"; }
-                      String format(String... parts) { return String.join("-", parts); }
+                  interface Input {
+                      boolean isValid();
+                      boolean hasRequiredFields();
+                      String normalize();
+                      String validate();
+                      String transform();
+                      String encrypt();
+                      String format(String... parts);
                   }
               }
               """,
@@ -487,14 +487,14 @@ class PreferEarlyReturnTest implements RewriteTest {
                       return result;
                   }
 
-                  class Input {
-                      boolean isValid() { return true; }
-                      boolean hasRequiredFields() { return true; }
-                      String normalize() { return "normalized"; }
-                      String validate() { return "validated"; }
-                      String transform() { return "transformed"; }
-                      String encrypt() { return "encrypted"; }
-                      String format(String... parts) { return String.join("-", parts); }
+                  interface Input {
+                      boolean isValid();
+                      boolean hasRequiredFields();
+                      String normalize();
+                      String validate();
+                      String transform();
+                      String encrypt();
+                      String format(String... parts);
                   }
               }
               """
