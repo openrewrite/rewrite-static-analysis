@@ -595,4 +595,34 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void comments() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1; // end 1
+                      } else {
+                          return 2; // end 2
+                      } // end else
+                  }
+              }
+            """,
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1; // end 1
+                      }
+                      return 2; // end 2
+                      // end else
+                  }
+              }
+              """
+          )
+        );
+    }
 }
