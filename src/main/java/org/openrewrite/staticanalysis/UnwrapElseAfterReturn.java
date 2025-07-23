@@ -117,26 +117,21 @@ public class UnwrapElseAfterReturn extends Recipe {
 
             private boolean isInVoidMethod() {
                 // Walk up the cursor to find the enclosing method declaration
-                try {
-                    return getCursor().getPathAsStream()
-                        .filter(J.MethodDeclaration.class::isInstance)
-                        .map(J.MethodDeclaration.class::cast)
-                        .findFirst()
-                        .map(method -> {
-                            if (method.getReturnTypeExpression() == null) {
-                                return true; // Constructor
-                            }
-                            if (method.getReturnTypeExpression() instanceof J.Primitive) {
-                                J.Primitive primitive = (J.Primitive) method.getReturnTypeExpression();
-                                return primitive.getType() == JavaType.Primitive.Void;
-                            }
-                            return false;
-                        })
-                        .orElse(false);
-                } catch (Exception e) {
-                    // If there's any issue with cursor traversal, be conservative
+                J.MethodDeclaration method = getCursor().dropParentUntil(J.MethodDeclaration.class::isInstance).getValue();
+                if (method == null) {
                     return false;
                 }
+                
+                if (method.getReturnTypeExpression() == null) {
+                    return true; // Constructor
+                }
+                
+                if (method.getReturnTypeExpression() instanceof J.Primitive) {
+                    J.Primitive primitive = (J.Primitive) method.getReturnTypeExpression();
+                    return primitive.getType() == JavaType.Primitive.Void;
+                }
+                
+                return false;
             }
 
             private List<Statement> unwrapElseBlock(J.If ifStatement, boolean addReturnToIfBlock) {
