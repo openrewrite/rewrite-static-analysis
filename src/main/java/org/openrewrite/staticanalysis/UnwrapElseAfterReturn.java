@@ -66,7 +66,7 @@ public class UnwrapElseAfterReturn extends Recipe {
                                 return unwrapElseBlock(ifStatement, false);
                             }
                             // Case 2: Void method with one big if-else (no return/throw)
-                            else if (isVoidMethodWithSingleIfElse(block, ifStatement)) {
+                            if (isVoidMethodWithSingleIfElse(block, ifStatement)) {
                                 return unwrapElseBlock(ifStatement, true);
                             }
                         }
@@ -95,23 +95,23 @@ public class UnwrapElseAfterReturn extends Recipe {
                 if (methodBlock.getStatements().size() != 1) {
                     return false;
                 }
-                
+
                 // Must be in a void method
                 if (!isInVoidMethod()) {
                     return false;
                 }
-                
+
                 // The if statement must not already end with return/throw
                 if (endsWithReturnOrThrow(ifStatement.getThenPart())) {
                     return false;
                 }
-                
+
                 // Both if and else parts should be blocks (not single statements)
-                if (!(ifStatement.getThenPart() instanceof J.Block) || 
+                if (!(ifStatement.getThenPart() instanceof J.Block) ||
                     !(ifStatement.getElsePart().getBody() instanceof J.Block)) {
                     return false;
                 }
-                
+
                 return true;
             }
 
@@ -121,16 +121,16 @@ public class UnwrapElseAfterReturn extends Recipe {
                 if (method == null) {
                     return false;
                 }
-                
+
                 if (method.getReturnTypeExpression() == null) {
                     return true; // Constructor
                 }
-                
+
                 if (method.getReturnTypeExpression() instanceof J.Primitive) {
                     J.Primitive primitive = (J.Primitive) method.getReturnTypeExpression();
                     return primitive.getType() == JavaType.Primitive.Void;
                 }
-                
+
                 return false;
             }
 
@@ -145,16 +145,16 @@ public class UnwrapElseAfterReturn extends Recipe {
                         Markers.EMPTY,
                         null
                     );
-                    
+
                     // Add return to the end of the if block
                     thenPart = ifBlock.withStatements(
                         ListUtils.concat(ifBlock.getStatements(), returnStmt)
                     );
                 }
-                
+
                 // Create new if statement without else part
                 J.If newIf = ifStatement.withThenPart(thenPart).withElsePart(null);
-                
+
                 // Unwrap else block statements
                 Statement elsePart = ifStatement.getElsePart().getBody();
                 if (elsePart instanceof J.Block) {
