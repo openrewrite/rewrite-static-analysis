@@ -63,11 +63,11 @@ public class UnwrapElseAfterReturn extends Recipe {
                         if (ifStatement.getElsePart() != null) {
                             // Case 1: If block already ends with return/throw
                             if (endsWithReturnOrThrow(ifStatement.getThenPart())) {
-                                return unwrapElseBlock(ifStatement);
+                                return unwrapElseBlock(ifStatement, false);
                             }
                             // Case 2: Void method with one big if-else (no return/throw)
                             else if (isVoidMethodWithSingleIfElse(block, ifStatement)) {
-                                return unwrapElseBlockWithReturn(ifStatement);
+                                return unwrapElseBlock(ifStatement, true);
                             }
                         }
                     }
@@ -139,42 +139,26 @@ public class UnwrapElseAfterReturn extends Recipe {
                 }
             }
 
-            private List<Statement> unwrapElseBlock(J.If ifStatement) {
-                // Original logic for existing case
-                J.If newIf = ifStatement.withElsePart(null);
-                Statement elsePart = ifStatement.getElsePart().getBody();
-                if (elsePart instanceof J.Block) {
-                    J.Block elseBlock = (J.Block) elsePart;
-                    return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
-                        // Combine comments from the else block itself and the first statement
-                        List<Comment> elseComments = elseBlock.getPrefix().getComments();
-                        List<Comment> stmtComments = elseStmt.getPrefix().getComments();
-                        if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
-                            return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
-                        }
-                        String whitespace = ifStatement.getElsePart().getPrefix().getWhitespace();
-                        return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
-                    }));
+            private List<Statement> unwrapElseBlock(J.If ifStatement, boolean addReturnToIfBlock) {
+                // Prepare the if block - add return statement if needed
+                Statement thenPart = ifStatement.getThenPart();
+                if (addReturnToIfBlock && thenPart instanceof J.Block) {
+                    J.Block ifBlock = (J.Block) thenPart;
+                    J.Return returnStmt = new J.Return(
+                        Tree.randomId(),
+                        Space.SINGLE_SPACE,
+                        Markers.EMPTY,
+                        null
+                    );
+                    
+                    // Add return to the end of the if block
+                    thenPart = ifBlock.withStatements(
+                        ListUtils.concat(ifBlock.getStatements(), returnStmt)
+                    );
                 }
-                return Arrays.asList(newIf, elsePart.<Statement>withPrefix(ifStatement.getElsePart().getPrefix()));
-            }
-
-            private List<Statement> unwrapElseBlockWithReturn(J.If ifStatement) {
-                // Add return statement to the if block
-                J.Block ifBlock = (J.Block) ifStatement.getThenPart();
-                J.Return returnStmt = new J.Return(
-                    Tree.randomId(),
-                    Space.SINGLE_SPACE,
-                    Markers.EMPTY,
-                    null
-                );
                 
-                // Add return to the end of the if block
-                J.Block newIfBlock = ifBlock.withStatements(
-                    ListUtils.concat(ifBlock.getStatements(), returnStmt)
-                );
-                
-                J.If newIf = ifStatement.withThenPart(newIfBlock).withElsePart(null);
+                // Create new if statement without else part
+                J.If newIf = ifStatement.withThenPart(thenPart).withElsePart(null);
                 
                 // Unwrap else block statements
                 Statement elsePart = ifStatement.getElsePart().getBody();
