@@ -69,15 +69,15 @@ public class PreferEarlyReturn extends Recipe {
     }
 
     private static class PreferEarlyReturnVisitor extends JavaVisitor<ExecutionContext> {
-        
+
         @Override
         public J visitIf(J.If ifStatement, ExecutionContext ctx) {
             J.If if_ = (J.If) super.visitIf(ifStatement, ctx);
-            
+
             if (!isEligibleForEarlyReturn(if_)) {
                 return if_;
             }
-            
+
             J.ControlParentheses invertedCondition = invertCondition(if_.getIfCondition());
             J.If newIf = if_.withIfCondition(invertedCondition)
                     .withThenPart(if_.getElsePart().getBody())
@@ -87,51 +87,51 @@ public class PreferEarlyReturn extends Recipe {
                             Markers.EMPTY,
                             JRightPadded.build(if_.getThenPart())
                     ));
-            
+
             doAfterVisit(new UnwrapElseAfterReturn().getVisitor());
-            
+
             return newIf;
         }
-        
+
         private boolean isEligibleForEarlyReturn(J.If ifStatement) {
             if (ifStatement.getElsePart() == null) {
                 return false;
             }
-            
+
             if (!(ifStatement.getThenPart() instanceof J.Block)) {
                 return false;
             }
-            
+
             if (!(ifStatement.getElsePart().getBody() instanceof J.Block)) {
                 return false;
             }
-            
+
             J.Block thenBlock = (J.Block) ifStatement.getThenPart();
             J.Block elseBlock = (J.Block) ifStatement.getElsePart().getBody();
-            
+
             int thenStatements = countStatements(thenBlock);
             int elseStatements = countStatements(elseBlock);
-            
+
             if (thenStatements < 5 || elseStatements > 2) {
                 return false;
             }
-            
+
             return hasReturnOrThrowStatement(elseBlock);
         }
-        
+
         private int countStatements(J.Block block) {
             if (block == null || block.getStatements() == null) {
                 return 0;
             }
-            
+
             return block.getStatements().size();
         }
-        
+
         private boolean hasReturnOrThrowStatement(J.Block block) {
             if (block == null || block.getStatements() == null) {
                 return false;
             }
-            
+
             AtomicBoolean hasReturnOrThrow = new AtomicBoolean(false);
             new JavaVisitor<AtomicBoolean>() {
                 @Override
@@ -139,77 +139,44 @@ public class PreferEarlyReturn extends Recipe {
                     flag.set(true);
                     return return_;
                 }
-                
+
                 @Override
                 public J visitThrow(J.Throw thrown, AtomicBoolean flag) {
                     flag.set(true);
                     return thrown;
                 }
             }.visit(block, hasReturnOrThrow);
-            
+
             return hasReturnOrThrow.get();
         }
-        
+
         private J.ControlParentheses invertCondition(J.ControlParentheses condition) {
             if (condition == null || !(condition.getTree() instanceof Expression)) {
                 return condition;
             }
-            
-            Expression expr = (Expression) condition.getTree();
-            Expression inverted = invertExpression(expr);
-            
+
+            Expression inverted = invertExpression((Expression) condition.getTree());
+
             return condition.withTree(inverted);
         }
-        
+
         private Expression invertExpression(Expression expr) {
+            Expression toNegate = expr;
             if (expr instanceof J.Binary) {
-                J.Binary binary = (J.Binary) expr;
-                
-                if (binary.getOperator() == J.Binary.Type.And) {
-                    Expression leftInverted = invertExpression(binary.getLeft());
-                    Expression rightInverted = invertExpression(binary.getRight());
-                    return binary.withOperator(J.Binary.Type.Or)
-                            .withLeft(leftInverted)
-                            .withRight(rightInverted.withPrefix(Space.SINGLE_SPACE));
-                } else if (binary.getOperator() == J.Binary.Type.Or) {
-                    Expression leftInverted = invertExpression(binary.getLeft());
-                    Expression rightInverted = invertExpression(binary.getRight());
-                    return binary.withOperator(J.Binary.Type.And)
-                            .withLeft(leftInverted)
-                            .withRight(rightInverted.withPrefix(Space.SINGLE_SPACE));
-                } else if (binary.getOperator() == J.Binary.Type.Equal) {
-                    return binary.withOperator(J.Binary.Type.NotEqual);
-                } else if (binary.getOperator() == J.Binary.Type.NotEqual) {
-                    return binary.withOperator(J.Binary.Type.Equal);
-                } else if (binary.getOperator() == J.Binary.Type.LessThan) {
-                    return binary.withOperator(J.Binary.Type.GreaterThanOrEqual);
-                } else if (binary.getOperator() == J.Binary.Type.LessThanOrEqual) {
-                    return binary.withOperator(J.Binary.Type.GreaterThan);
-                } else if (binary.getOperator() == J.Binary.Type.GreaterThan) {
-                    return binary.withOperator(J.Binary.Type.LessThanOrEqual);
-                } else if (binary.getOperator() == J.Binary.Type.GreaterThanOrEqual) {
-                    return binary.withOperator(J.Binary.Type.LessThan);
-                }
-            } else if (expr instanceof J.Unary) {
-                J.Unary unary = (J.Unary) expr;
-                if (unary.getOperator() == J.Unary.Type.Not) {
-                    return unary.getExpression();
-                }
-            } else if (expr instanceof J.Parentheses) {
-                @SuppressWarnings("unchecked")
-                J.Parentheses<Expression> parens = (J.Parentheses<Expression>) expr;
-                if (parens.getTree() instanceof Expression) {
-                    Expression innerInverted = invertExpression(parens.getTree());
-                    return parens.withTree(innerInverted);
-                }
+                toNegate = new J.Parentheses<>(
+                        randomId(),
+                        expr.getPrefix(),
+                        Markers.EMPTY,
+                        JRightPadded.build(expr.withPrefix(Space.EMPTY))
+                );
             }
-            
+
             return new J.Unary(
                     randomId(),
-                    expr.getPrefix(),
+                    toNegate.getPrefix(),
                     Markers.EMPTY,
                     new JLeftPadded<>(Space.EMPTY, J.Unary.Type.Not, Markers.EMPTY),
-                    expr.withPrefix(Space.EMPTY),
+                    toNegate.withPrefix(Space.EMPTY),
                     JavaType.Primitive.Boolean
             );
         }

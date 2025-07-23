@@ -66,7 +66,7 @@ class PreferEarlyReturnTest implements RewriteTest {
             """
               class Test {
                   void processOrder(Order order) {
-                      if (order == null || !order.isValid()) {
+                      if (!(order != null && order.isValid())) {
                           logError("Invalid order");
                           return;
                       }
@@ -129,7 +129,7 @@ class PreferEarlyReturnTest implements RewriteTest {
             """
               class Test {
                   boolean processUser(User user) {
-                      if (user == null || !user.isActive() || user.isSuspended()) {
+                      if (!(user != null && user.isActive() && !user.isSuspended())) {
                           return false;
                       }
                       // Main processing logic
@@ -186,7 +186,7 @@ class PreferEarlyReturnTest implements RewriteTest {
             """
               class Test {
                   String processData(Data data) {
-                      if (data == null || !data.isValid()) {
+                      if (!(data != null && data.isValid())) {
                           return null;
                       }
                       // Process the data
@@ -349,7 +349,7 @@ class PreferEarlyReturnTest implements RewriteTest {
               class Test {
                   void processPayment(Payment payment) {
                       // Check if payment is valid
-                      if (payment == null || !payment.isAuthorized()) {
+                      if (!(payment != null && payment.isAuthorized())) {
                           // Payment is invalid
                           logError("Unauthorized payment");
                           return;
@@ -413,7 +413,7 @@ class PreferEarlyReturnTest implements RewriteTest {
             """
               class Test {
                   void processTransaction(Transaction tx) {
-                      if (tx == null || (!tx.isValid() && !tx.isPending()) || tx.isExpired()) {
+                      if (!(tx != null && (tx.isValid() || tx.isPending()) && !tx.isExpired())) {
                           return;
                       }
                       // Process transaction
@@ -475,7 +475,7 @@ class PreferEarlyReturnTest implements RewriteTest {
             """
               class Test {
                   String validateAndProcess(Input input) {
-                      if (input == null || !input.isValid() || !input.hasRequiredFields()) {
+                      if (!(input != null && input.isValid() && input.hasRequiredFields())) {
                           throw new IllegalArgumentException("Invalid input");
                       }
                       // Process the input
