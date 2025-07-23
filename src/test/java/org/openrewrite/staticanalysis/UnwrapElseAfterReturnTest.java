@@ -597,7 +597,7 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
     }
 
     @Test
-    void comments() {
+    void commentsEverywhere() {
         rewriteRun(
           java(
             """
@@ -619,6 +619,66 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       }
                       return 2; // end 2
                       // end else
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void commentsOnlyInBlocks() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                int foo(boolean condition) {
+                    if (condition) {
+                        return 1; // end 1
+                    } else {
+                        return 2; // end 2
+                    }
+                }
+            }
+            """,
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1; // end 1
+                      }
+                      return 2; // end 2
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void commentsOnlyInBlocksWithNewLine() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                int foo(boolean condition) {
+                    if (condition) {
+                        return 1; // end 1
+                    } else {
+                        return 2;
+                        // next line after 2
+                    }
+                }
+            }
+            """,
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1; // end 1
+                      }
+                      return 2;
+                      // next line after 2
                   }
               }
               """
