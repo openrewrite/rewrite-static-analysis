@@ -61,11 +61,26 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
                     if (isNot) {
                         parent.putMessage("REMOVE_UNARY_NOT", parent.getValue());
                     }
+
+                    // Check if the method invocation is part of a binary expression with equality/inequality operators
+                    // In such cases, we need parentheses to avoid chained equality operators
+                    boolean needsParentheses = false;
+                    if (!isNot && parent.getValue() instanceof J.Binary) {
+                        J.Binary binary = parent.getValue();
+                        J.Binary.Type op = binary.getOperator();
+                        // Only add parentheses when the parent binary uses equality/inequality operators
+                        needsParentheses = op == J.Binary.Type.Equal || op == J.Binary.Type.NotEqual;
+                    }
+
                     String code = "#{any()} " + (isNot ? "!=" : "==") + " #{any()}";
-                    return autoFormat(JavaTemplate
-                            .builder(code)
-                            .build()
-                            .apply(updateCursor(m), m.getCoordinates().replace(), m.getSelect(), m.getArguments().get(0)), ctx);
+                    return autoFormat(
+                            JavaTemplate.apply(
+                                    needsParentheses? "(" + code + ")" : code,
+                                    updateCursor(m),
+                                    m.getCoordinates().replace(),
+                                    m.getSelect(),
+                                    m.getArguments().get(0)),
+                            ctx);
                 }
                 return m;
             }

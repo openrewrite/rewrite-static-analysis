@@ -400,4 +400,30 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/657")
+    @Test
+    void parenthesesRequiredInBinaryExpression() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.time.DayOfWeek;
+              class Test {
+                  void method() {
+                      boolean foo = true == DayOfWeek.MONDAY.equals(DayOfWeek.TUESDAY);
+                  }
+              }
+              """,
+            """
+              import java.time.DayOfWeek;
+              class Test {
+                  void method() {
+                      boolean foo = true == (DayOfWeek.MONDAY == DayOfWeek.TUESDAY);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
