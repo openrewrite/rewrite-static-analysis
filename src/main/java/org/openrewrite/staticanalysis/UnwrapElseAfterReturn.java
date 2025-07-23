@@ -23,13 +23,12 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class UnwrapElseAfterReturn extends Recipe {
 
@@ -55,7 +54,7 @@ public class UnwrapElseAfterReturn extends Recipe {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = visitAndCast(block, ctx, super::visitBlock);
-                AtomicReference<Space> endWhitespace = new AtomicReference<>(null);
+                List<Comment> endComments = new ArrayList<>();
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
@@ -64,7 +63,7 @@ public class UnwrapElseAfterReturn extends Recipe {
                             Statement elsePart = ifStatement.getElsePart().getBody();
                             if (elsePart instanceof J.Block) {
                                 J.Block elseBlock = (J.Block) elsePart;
-                                endWhitespace.set(elseBlock.getEnd());
+                                endComments.addAll(elseBlock.getEnd().getComments());
                                 return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
                                     // Combine comments from the else block itself and the first statement
                                     List<Comment> elseComments = elseBlock.getPrefix().getComments();
@@ -82,11 +81,9 @@ public class UnwrapElseAfterReturn extends Recipe {
                     return statement;
                 }));
 
-                if (endWhitespace.get() != null) {
-                    Space originalEnd = b.getEnd();
-                    Space elseEnd = endWhitespace.get();
-                    List<Comment> mergedComments = ListUtils.concatAll(elseEnd.getComments(), originalEnd.getComments());
-                    alteredBlock = alteredBlock.withEnd(originalEnd.withComments(mergedComments));
+                if (!endComments.isEmpty()) {
+                    List<Comment> mergedComments = ListUtils.concatAll(endComments, b.getEnd().getComments());
+                    alteredBlock = alteredBlock.withEnd(b.getEnd().withComments(mergedComments));
                 }
 
                 return maybeAutoFormat(b, alteredBlock, ctx);
