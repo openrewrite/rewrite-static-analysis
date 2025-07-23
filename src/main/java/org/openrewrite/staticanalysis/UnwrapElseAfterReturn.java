@@ -18,12 +18,16 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
+import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -56,23 +60,15 @@ public class UnwrapElseAfterReturn extends Recipe {
                 J.Block after = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
-                        if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
-                            J.If newIf = ifStatement.withElsePart(null);
-                            Statement elsePart = ifStatement.getElsePart().getBody();
-                            if (elsePart instanceof J.Block) {
-                                J.Block elseBlock = (J.Block) elsePart;
-                                return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
-                                    // Combine comments from the else block itself and the first statement
-                                    List<Comment> elseComments = elseBlock.getPrefix().getComments();
-                                    List<Comment> stmtComments = elseStmt.getPrefix().getComments();
-                                    if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
-                                        return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
-                                    }
-                                    String whitespace = ifStatement.getElsePart().getPrefix().getWhitespace();
-                                    return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
-                                }));
+                        if (ifStatement.getElsePart() != null) {
+                            // Case 1: If block already ends with return/throw
+                            if (endsWithReturnOrThrow(ifStatement.getThenPart())) {
+                                return unwrapElseBlock(ifStatement);
                             }
-                            return Arrays.asList(newIf, elsePart.<Statement>withPrefix(ifStatement.getElsePart().getPrefix()));
+                            // Case 2: Void method with one big if-else (no return/throw)
+                            else if (isVoidMethodWithSingleIfElse(block, ifStatement)) {
+                                return unwrapElseBlockWithReturn(ifStatement);
+                            }
                         }
                     }
                     return statement;
@@ -92,6 +88,110 @@ public class UnwrapElseAfterReturn extends Recipe {
                     }
                 }
                 return false;
+            }
+
+            private boolean isVoidMethodWithSingleIfElse(J.Block methodBlock, J.If ifStatement) {
+                // Check if the method block contains only this if statement
+                if (methodBlock.getStatements().size() != 1) {
+                    return false;
+                }
+                
+                // Must be in a void method
+                if (!isInVoidMethod()) {
+                    return false;
+                }
+                
+                // The if statement must not already end with return/throw
+                if (endsWithReturnOrThrow(ifStatement.getThenPart())) {
+                    return false;
+                }
+                
+                // Both if and else parts should be blocks (not single statements)
+                if (!(ifStatement.getThenPart() instanceof J.Block) || 
+                    !(ifStatement.getElsePart().getBody() instanceof J.Block)) {
+                    return false;
+                }
+                
+                return true;
+            }
+
+            private boolean isInVoidMethod() {
+                // Walk up the cursor to find the enclosing method declaration
+                try {
+                    return getCursor().getPathAsStream()
+                        .filter(J.MethodDeclaration.class::isInstance)
+                        .map(J.MethodDeclaration.class::cast)
+                        .findFirst()
+                        .map(method -> {
+                            if (method.getReturnTypeExpression() == null) {
+                                return true; // Constructor
+                            }
+                            if (method.getReturnTypeExpression() instanceof J.Primitive) {
+                                J.Primitive primitive = (J.Primitive) method.getReturnTypeExpression();
+                                return primitive.getType() == JavaType.Primitive.Void;
+                            }
+                            return false;
+                        })
+                        .orElse(false);
+                } catch (Exception e) {
+                    // If there's any issue with cursor traversal, be conservative
+                    return false;
+                }
+            }
+
+            private List<Statement> unwrapElseBlock(J.If ifStatement) {
+                // Original logic for existing case
+                J.If newIf = ifStatement.withElsePart(null);
+                Statement elsePart = ifStatement.getElsePart().getBody();
+                if (elsePart instanceof J.Block) {
+                    J.Block elseBlock = (J.Block) elsePart;
+                    return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
+                        // Combine comments from the else block itself and the first statement
+                        List<Comment> elseComments = elseBlock.getPrefix().getComments();
+                        List<Comment> stmtComments = elseStmt.getPrefix().getComments();
+                        if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
+                            return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
+                        }
+                        String whitespace = ifStatement.getElsePart().getPrefix().getWhitespace();
+                        return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
+                    }));
+                }
+                return Arrays.asList(newIf, elsePart.<Statement>withPrefix(ifStatement.getElsePart().getPrefix()));
+            }
+
+            private List<Statement> unwrapElseBlockWithReturn(J.If ifStatement) {
+                // Add return statement to the if block
+                J.Block ifBlock = (J.Block) ifStatement.getThenPart();
+                J.Return returnStmt = new J.Return(
+                    Tree.randomId(),
+                    Space.SINGLE_SPACE,
+                    Markers.EMPTY,
+                    null
+                );
+                
+                // Add return to the end of the if block
+                J.Block newIfBlock = ifBlock.withStatements(
+                    ListUtils.concat(ifBlock.getStatements(), returnStmt)
+                );
+                
+                J.If newIf = ifStatement.withThenPart(newIfBlock).withElsePart(null);
+                
+                // Unwrap else block statements
+                Statement elsePart = ifStatement.getElsePart().getBody();
+                if (elsePart instanceof J.Block) {
+                    J.Block elseBlock = (J.Block) elsePart;
+                    return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
+                        // Combine comments from the else block itself and the first statement
+                        List<Comment> elseComments = elseBlock.getPrefix().getComments();
+                        List<Comment> stmtComments = elseStmt.getPrefix().getComments();
+                        if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
+                            return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
+                        }
+                        String whitespace = ifStatement.getElsePart().getPrefix().getWhitespace();
+                        return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
+                    }));
+                }
+                return Arrays.asList(newIf, elsePart.<Statement>withPrefix(ifStatement.getElsePart().getPrefix()));
             }
         };
         return Repeat.repeatUntilStable(javaVisitor);
