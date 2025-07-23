@@ -426,4 +426,39 @@ class CompareEnumsWithEqualityOperatorTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/3")
+    @Test
+    void negatedEnumComparisonInComplexBooleanExpression() {
+        rewriteRun(
+          enumA,
+          //language=java
+          java(
+            """
+              import a.A;
+              class Test {
+                  boolean hasField(String field) {
+                      return true;
+                  }
+                  void method(A field, Object entry) {
+                      if ((!A.FOO.equals(field) && !A.BAR.equals(field)) || !hasField("test")) {
+                      }
+                  }
+              }
+              """,
+            """
+              import a.A;
+              class Test {
+                  boolean hasField(String field) {
+                      return true;
+                  }
+                  void method(A field, Object entry) {
+                      if ((A.FOO != field && A.BAR != field) || !hasField("test")) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
