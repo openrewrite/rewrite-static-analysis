@@ -74,15 +74,11 @@ public class PreferEarlyReturn extends Recipe {
         public J visitIf(J.If ifStatement, ExecutionContext ctx) {
             J.If if_ = (J.If) super.visitIf(ifStatement, ctx);
             
-            // Check if this if-else statement is eligible for early return refactoring
             if (!isEligibleForEarlyReturn(if_)) {
                 return if_;
             }
             
-            // Invert the condition
             J.ControlParentheses invertedCondition = invertCondition(if_.getIfCondition());
-            
-            // Create a new if statement with the inverted condition and the else block content
             J.If newIf = if_.withIfCondition(invertedCondition)
                     .withThenPart(if_.getElsePart().getBody())
                     .withElsePart(new J.If.Else(
@@ -92,24 +88,20 @@ public class PreferEarlyReturn extends Recipe {
                             JRightPadded.build(if_.getThenPart())
                     ));
             
-            // Mark that we need to apply UnwrapElseAfterReturn in a second pass
             doAfterVisit(new UnwrapElseAfterReturn().getVisitor());
             
             return newIf;
         }
         
         private boolean isEligibleForEarlyReturn(J.If ifStatement) {
-            // Must have an else block
             if (ifStatement.getElsePart() == null) {
                 return false;
             }
             
-            // The then part must be a block
             if (!(ifStatement.getThenPart() instanceof J.Block)) {
                 return false;
             }
             
-            // The else part must be a block (not another if)
             if (!(ifStatement.getElsePart().getBody() instanceof J.Block)) {
                 return false;
             }
@@ -117,16 +109,13 @@ public class PreferEarlyReturn extends Recipe {
             J.Block thenBlock = (J.Block) ifStatement.getThenPart();
             J.Block elseBlock = (J.Block) ifStatement.getElsePart().getBody();
             
-            // Count statements
             int thenStatements = countStatements(thenBlock);
             int elseStatements = countStatements(elseBlock);
             
-            // Check heuristics: then block >= 5 statements, else block <= 2 statements
             if (thenStatements < 5 || elseStatements > 2) {
                 return false;
             }
             
-            // Else block must contain a return or throw statement
             return hasReturnOrThrowStatement(elseBlock);
         }
         
@@ -135,7 +124,6 @@ public class PreferEarlyReturn extends Recipe {
                 return 0;
             }
             
-            // Simply count the direct statements in the block
             return block.getStatements().size();
         }
         
@@ -177,57 +165,45 @@ public class PreferEarlyReturn extends Recipe {
             if (expr instanceof J.Binary) {
                 J.Binary binary = (J.Binary) expr;
                 
-                // Handle AND/OR with De Morgan's laws
                 if (binary.getOperator() == J.Binary.Type.And) {
-                    // A && B becomes !A || !B
                     Expression leftInverted = invertExpression(binary.getLeft());
                     Expression rightInverted = invertExpression(binary.getRight());
                     return binary.withOperator(J.Binary.Type.Or)
                             .withLeft(leftInverted)
                             .withRight(rightInverted.withPrefix(Space.SINGLE_SPACE));
                 } else if (binary.getOperator() == J.Binary.Type.Or) {
-                    // A || B becomes !A && !B
                     Expression leftInverted = invertExpression(binary.getLeft());
                     Expression rightInverted = invertExpression(binary.getRight());
                     return binary.withOperator(J.Binary.Type.And)
                             .withLeft(leftInverted)
                             .withRight(rightInverted.withPrefix(Space.SINGLE_SPACE));
                 } else if (binary.getOperator() == J.Binary.Type.Equal) {
-                    // == becomes !=
                     return binary.withOperator(J.Binary.Type.NotEqual);
                 } else if (binary.getOperator() == J.Binary.Type.NotEqual) {
-                    // != becomes ==
                     return binary.withOperator(J.Binary.Type.Equal);
                 } else if (binary.getOperator() == J.Binary.Type.LessThan) {
-                    // < becomes >=
                     return binary.withOperator(J.Binary.Type.GreaterThanOrEqual);
                 } else if (binary.getOperator() == J.Binary.Type.LessThanOrEqual) {
-                    // <= becomes >
                     return binary.withOperator(J.Binary.Type.GreaterThan);
                 } else if (binary.getOperator() == J.Binary.Type.GreaterThan) {
-                    // > becomes <=
                     return binary.withOperator(J.Binary.Type.LessThanOrEqual);
                 } else if (binary.getOperator() == J.Binary.Type.GreaterThanOrEqual) {
-                    // >= becomes <
                     return binary.withOperator(J.Binary.Type.LessThan);
                 }
             } else if (expr instanceof J.Unary) {
                 J.Unary unary = (J.Unary) expr;
                 if (unary.getOperator() == J.Unary.Type.Not) {
-                    // Double negation: !!expr becomes expr
                     return unary.getExpression();
                 }
             } else if (expr instanceof J.Parentheses) {
                 @SuppressWarnings("unchecked")
                 J.Parentheses<Expression> parens = (J.Parentheses<Expression>) expr;
-                // Invert the expression inside parentheses
                 if (parens.getTree() instanceof Expression) {
                     Expression innerInverted = invertExpression(parens.getTree());
                     return parens.withTree(innerInverted);
                 }
             }
             
-            // For all other expressions, add a NOT operator
             return new J.Unary(
                     randomId(),
                     expr.getPrefix(),
