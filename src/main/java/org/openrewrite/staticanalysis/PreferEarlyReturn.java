@@ -126,8 +126,8 @@ public class PreferEarlyReturn extends Recipe {
                 return false;
             }
             
-            // Else block must contain a return statement
-            return hasReturnStatement(elseBlock);
+            // Else block must contain a return or throw statement
+            return hasReturnOrThrowStatement(elseBlock);
         }
         
         private int countStatements(J.Block block) {
@@ -139,21 +139,27 @@ public class PreferEarlyReturn extends Recipe {
             return block.getStatements().size();
         }
         
-        private boolean hasReturnStatement(J.Block block) {
+        private boolean hasReturnOrThrowStatement(J.Block block) {
             if (block == null || block.getStatements() == null) {
                 return false;
             }
             
-            AtomicBoolean hasReturn = new AtomicBoolean(false);
+            AtomicBoolean hasReturnOrThrow = new AtomicBoolean(false);
             new JavaVisitor<AtomicBoolean>() {
                 @Override
-                public J visitReturn(J.Return return_, AtomicBoolean hasReturnFlag) {
-                    hasReturnFlag.set(true);
+                public J visitReturn(J.Return return_, AtomicBoolean flag) {
+                    flag.set(true);
                     return return_;
                 }
-            }.visit(block, hasReturn);
+                
+                @Override
+                public J visitThrow(J.Throw thrown, AtomicBoolean flag) {
+                    flag.set(true);
+                    return thrown;
+                }
+            }.visit(block, hasReturnOrThrow);
             
-            return hasReturn.get();
+            return hasReturnOrThrow.get();
         }
         
         private J.ControlParentheses invertCondition(J.ControlParentheses condition) {

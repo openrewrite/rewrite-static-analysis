@@ -50,9 +50,9 @@ class PreferEarlyReturnTest implements RewriteTest {
                           return;
                       }
                   }
-                  
+
                   void logError(String message) {}
-                  
+
                   class Order {
                       boolean isValid() { return true; }
                       void validate() {}
@@ -77,9 +77,9 @@ class PreferEarlyReturnTest implements RewriteTest {
                       order.processPayment();
                       order.sendConfirmation();
                   }
-                  
+
                   void logError(String message) {}
-                  
+
                   class Order {
                       boolean isValid() { return true; }
                       void validate() {}
@@ -101,7 +101,7 @@ class PreferEarlyReturnTest implements RewriteTest {
           java(
             """
               class Test {
-                  void processUser(User user) {
+                  boolean processUser(User user) {
                       if (user != null && user.isActive() && !user.isSuspended()) {
                           // Main processing logic
                           user.updateLastLogin();
@@ -109,11 +109,12 @@ class PreferEarlyReturnTest implements RewriteTest {
                           user.loadPreferences();
                           user.initializeSession();
                           user.logActivity();
+                          return true;
                       } else {
-                          return;
+                          return false;
                       }
                   }
-                  
+
                   class User {
                       boolean isActive() { return true; }
                       boolean isSuspended() { return false; }
@@ -127,9 +128,9 @@ class PreferEarlyReturnTest implements RewriteTest {
               """,
             """
               class Test {
-                  void processUser(User user) {
+                  boolean processUser(User user) {
                       if (user == null || !user.isActive() || user.isSuspended()) {
-                          return;
+                          return false;
                       }
                       // Main processing logic
                       user.updateLastLogin();
@@ -137,8 +138,9 @@ class PreferEarlyReturnTest implements RewriteTest {
                       user.loadPreferences();
                       user.initializeSession();
                       user.logActivity();
+                      return true;
                   }
-                  
+
                   class User {
                       boolean isActive() { return true; }
                       boolean isSuspended() { return false; }
@@ -173,7 +175,7 @@ class PreferEarlyReturnTest implements RewriteTest {
                           return null;
                       }
                   }
-                  
+
                   class Data {
                       boolean isValid() { return true; }
                       String transform() { return "test"; }
@@ -194,7 +196,7 @@ class PreferEarlyReturnTest implements RewriteTest {
                       data.log(result);
                       return result;
                   }
-                  
+
                   class Data {
                       boolean isValid() { return true; }
                       String transform() { return "test"; }
@@ -222,7 +224,7 @@ class PreferEarlyReturnTest implements RewriteTest {
                           return;
                       }
                   }
-                  
+
                   class Item {
                       void process() {}
                       void save() {}
@@ -256,11 +258,11 @@ class PreferEarlyReturnTest implements RewriteTest {
                           return;
                       }
                   }
-                  
+
                   void logError(String message) {}
                   void notifyAdmin() {}
                   void incrementErrorCounter() {}
-                  
+
                   class Request {
                       boolean isValid() { return true; }
                       void validate() {}
@@ -293,7 +295,7 @@ class PreferEarlyReturnTest implements RewriteTest {
                       }
                       // No else block, so no early return to add
                   }
-                  
+
                   class Event {
                       boolean isActive() { return true; }
                       void handle() {}
@@ -330,9 +332,9 @@ class PreferEarlyReturnTest implements RewriteTest {
                           return;
                       }
                   }
-                  
+
                   void logError(String message) {}
-                  
+
                   class Payment {
                       boolean isAuthorized() { return true; }
                       void validate() {}
@@ -359,9 +361,9 @@ class PreferEarlyReturnTest implements RewriteTest {
                       payment.recordTransaction(); // Record in database
                       payment.sendReceipt(); // Send receipt to customer
                   }
-                  
+
                   void logError(String message) {}
-                  
+
                   class Payment {
                       boolean isAuthorized() { return true; }
                       void validate() {}
@@ -395,7 +397,7 @@ class PreferEarlyReturnTest implements RewriteTest {
                           return;
                       }
                   }
-                  
+
                   class Transaction {
                       boolean isValid() { return true; }
                       boolean isPending() { return false; }
@@ -421,7 +423,7 @@ class PreferEarlyReturnTest implements RewriteTest {
                       tx.commit();
                       tx.notifyParties();
                   }
-                  
+
                   class Transaction {
                       boolean isValid() { return true; }
                       boolean isPending() { return false; }
@@ -431,6 +433,68 @@ class PreferEarlyReturnTest implements RewriteTest {
                       void execute() {}
                       void commit() {}
                       void notifyParties() {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void methodThrowingExceptionInElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String validateAndProcess(Input input) {
+                      if (input != null && input.isValid() && input.hasRequiredFields()) {
+                          // Process the input
+                          String normalized = input.normalize();
+                          String validated = input.validate();
+                          String transformed = input.transform();
+                          String encrypted = input.encrypt();
+                          String result = input.format(normalized, validated, transformed, encrypted);
+                          return result;
+                      } else {
+                          throw new IllegalArgumentException("Invalid input");
+                      }
+                  }
+
+                  class Input {
+                      boolean isValid() { return true; }
+                      boolean hasRequiredFields() { return true; }
+                      String normalize() { return "normalized"; }
+                      String validate() { return "validated"; }
+                      String transform() { return "transformed"; }
+                      String encrypt() { return "encrypted"; }
+                      String format(String... parts) { return String.join("-", parts); }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String validateAndProcess(Input input) {
+                      if (input == null || !input.isValid() || !input.hasRequiredFields()) {
+                          throw new IllegalArgumentException("Invalid input");
+                      }
+                      // Process the input
+                      String normalized = input.normalize();
+                      String validated = input.validate();
+                      String transformed = input.transform();
+                      String encrypted = input.encrypt();
+                      String result = input.format(normalized, validated, transformed, encrypted);
+                      return result;
+                  }
+
+                  class Input {
+                      boolean isValid() { return true; }
+                      boolean hasRequiredFields() { return true; }
+                      String normalize() { return "normalized"; }
+                      String validate() { return "validated"; }
+                      String transform() { return "transformed"; }
+                      String encrypt() { return "encrypted"; }
+                      String format(String... parts) { return String.join("-", parts); }
                   }
               }
               """
