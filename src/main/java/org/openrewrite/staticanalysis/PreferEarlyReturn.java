@@ -24,6 +24,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
+import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
@@ -73,17 +74,28 @@ public class PreferEarlyReturn extends Recipe {
         public J visitIf(J.If ifStatement, ExecutionContext ctx) {
             J.If if_ = (J.If) super.visitIf(ifStatement, ctx);
             
-            // TODO: Implement the logic to:
-            // 1. Check if this if-else statement is eligible for early return refactoring
-            // 2. Count statements in if block (must be >= 5)
-            // 3. Count statements in else block (must be <= 2)
-            // 4. Check that else block contains a return statement
-            // 5. Invert the condition (handle De Morgan's laws)
-            // 6. Move else block content to before the if statement
-            // 7. Unwrap the if block content
-            // 8. Remove the now-empty if-else structure
+            // Check if this if-else statement is eligible for early return refactoring
+            if (!isEligibleForEarlyReturn(if_)) {
+                return if_;
+            }
             
-            return if_;
+            // Invert the condition
+            J.ControlParentheses invertedCondition = invertCondition(if_.getIfCondition());
+            
+            // Create a new if statement with the inverted condition and the else block content
+            J.If newIf = if_.withIfCondition(invertedCondition)
+                    .withThenPart(if_.getElsePart().getBody())
+                    .withElsePart(new J.If.Else(
+                            randomId(),
+                            if_.getElsePart().getPrefix(),
+                            Markers.EMPTY,
+                            JRightPadded.build(if_.getThenPart())
+                    ));
+            
+            // Apply UnwrapElseAfterReturn to handle the unwrapping
+            newIf = (J.If) new UnwrapElseAfterReturn().getVisitor().visit(newIf, ctx);
+            
+            return newIf;
         }
         
         private boolean isEligibleForEarlyReturn(J.If ifStatement) {
