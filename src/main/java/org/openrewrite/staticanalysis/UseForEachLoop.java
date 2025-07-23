@@ -24,9 +24,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.search.SemanticallyEqual;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -134,6 +132,10 @@ public class UseForEachLoop extends Recipe {
                     return super.visitForLoop(forLoop, ctx);
                 }
 
+                if (!isIterableOrArray(collection)) {
+                    return super.visitForLoop(forLoop, ctx);
+                }
+
                 String forEachVarName = determineForEachVariableName(forLoop.getBody(), indexVarName, collection);
 
                 JavaTemplate template = JavaTemplate.builder("for (String " + forEachVarName + " : #{any()}) #{any()}")
@@ -190,6 +192,20 @@ public class UseForEachLoop extends Recipe {
                 ValidationVisitor validator = new ValidationVisitor(indexVarName, collection);
                 validator.visit(body, null);
                 return validator.isValid();
+            }
+
+            private boolean isIterableOrArray(J collection) {
+                if (collection == null || !(collection instanceof TypedTree)) {
+                    return false;
+                }
+
+                JavaType type = ((TypedTree) collection).getType();
+                if (type == null) {
+                    return false;
+                }
+
+                return type instanceof JavaType.Array ||
+                       TypeUtils.isAssignableTo("java.lang.Iterable", type);
             }
 
             private boolean isCollectionOrArrayAccess(J initializer, String indexVarName, J collection) {

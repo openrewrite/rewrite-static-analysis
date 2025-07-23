@@ -301,4 +301,34 @@ class UseForEachLoopTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void noChangeWhenCustomCollectionLikeClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  static class CustomContainer {
+                      private String[] items = {"a", "b", "c"};
+
+                      public String get(int index) {
+                          return items[index];
+                      }
+
+                      public int size() {
+                          return items.length;
+                      }
+                  }
+
+                  void test(CustomContainer container) {
+                      for (int i = 0; i < container.size(); i++) {
+                          System.out.println(container.get(i));
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
