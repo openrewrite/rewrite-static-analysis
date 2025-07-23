@@ -92,8 +92,8 @@ public class PreferEarlyReturn extends Recipe {
                             JRightPadded.build(if_.getThenPart())
                     ));
             
-            // Apply UnwrapElseAfterReturn to handle the unwrapping
-            newIf = (J.If) new UnwrapElseAfterReturn().getVisitor().visit(newIf, ctx);
+            // Mark that we need to apply UnwrapElseAfterReturn in a second pass
+            doAfterVisit(new UnwrapElseAfterReturn().getVisitor());
             
             return newIf;
         }
@@ -135,25 +135,8 @@ public class PreferEarlyReturn extends Recipe {
                 return 0;
             }
             
-            AtomicInteger count = new AtomicInteger(0);
-            new JavaVisitor<AtomicInteger>() {
-                @Override
-                public J visitBlock(J.Block block, AtomicInteger counter) {
-                    // Don't visit nested blocks
-                    return block;
-                }
-                
-                @Override
-                public J visitStatement(Statement statement, AtomicInteger counter) {
-                    // Count each statement, but don't count block statements themselves
-                    if (!(statement instanceof J.Block)) {
-                        counter.incrementAndGet();
-                    }
-                    return super.visitStatement(statement, counter);
-                }
-            }.visit(block, count);
-            
-            return count.get();
+            // Simply count the direct statements in the block
+            return block.getStatements().size();
         }
         
         private boolean hasReturnStatement(J.Block block) {
