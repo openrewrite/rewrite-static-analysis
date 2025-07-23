@@ -17,24 +17,15 @@ package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JRightPadded;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.openrewrite.Tree.randomId;
 
@@ -48,8 +39,8 @@ public class PreferEarlyReturn extends Recipe {
     @Override
     public String getDescription() {
         return "Refactors methods to use early returns for error/edge cases, reducing nesting and improving readability. " +
-               "The recipe identifies if-else statements where the if block contains the main logic (≥5 statements) and the " +
-               "else block contains a simple return (≤2 statements). It then inverts the condition and moves the else block " +
+               "The recipe heuristically identifies if-else statements where the if block contains the main logic and the " +
+               "else block contains a simple return. It then inverts the condition and moves the else block " +
                "to the beginning of the method with an early return, allowing the main logic to be un-indented.";
     }
 
@@ -78,7 +69,7 @@ public class PreferEarlyReturn extends Recipe {
                 return if_;
             }
 
-            J.ControlParentheses invertedCondition = invertCondition(if_.getIfCondition());
+            J.ControlParentheses<Expression> invertedCondition = if_.getIfCondition().withTree(invertExpression(if_.getIfCondition().getTree()));
             J.If newIf = if_.withIfCondition(invertedCondition)
                     .withThenPart(if_.getElsePart().getBody())
                     .withElsePart(new J.If.Else(
@@ -94,37 +85,24 @@ public class PreferEarlyReturn extends Recipe {
         }
 
         private boolean isEligibleForEarlyReturn(J.If ifStatement) {
-            if (ifStatement.getElsePart() == null) {
-                return false;
-            }
-
-            if (!(ifStatement.getThenPart() instanceof J.Block)) {
-                return false;
-            }
-
-            if (!(ifStatement.getElsePart().getBody() instanceof J.Block)) {
+            if (ifStatement.getElsePart() == null ||
+                !(ifStatement.getThenPart() instanceof J.Block) ||
+                !(ifStatement.getElsePart().getBody() instanceof J.Block)) {
                 return false;
             }
 
             J.Block thenBlock = (J.Block) ifStatement.getThenPart();
             J.Block elseBlock = (J.Block) ifStatement.getElsePart().getBody();
 
-            int thenStatements = countStatements(thenBlock);
-            int elseStatements = countStatements(elseBlock);
+            int thenStatements = (thenBlock == null || thenBlock.getStatements() == null) ? 0 : thenBlock.getStatements().size();
+            int elseStatements = (elseBlock == null || elseBlock.getStatements() == null) ? 0 : elseBlock.getStatements().size();
 
-            if (thenStatements < 5 || elseStatements > 2) {
+            if (thenStatements < 5 || (thenStatements - elseStatements) < 2) {
+                // heuristics for determining if the then block is the "main flow" over the else block
                 return false;
             }
 
             return hasReturnOrThrowStatement(elseBlock);
-        }
-
-        private int countStatements(J.Block block) {
-            if (block == null || block.getStatements() == null) {
-                return 0;
-            }
-
-            return block.getStatements().size();
         }
 
         private boolean hasReturnOrThrowStatement(J.Block block) {
@@ -148,16 +126,6 @@ public class PreferEarlyReturn extends Recipe {
             }.visit(block, hasReturnOrThrow);
 
             return hasReturnOrThrow.get();
-        }
-
-        private J.ControlParentheses invertCondition(J.ControlParentheses condition) {
-            if (condition == null || !(condition.getTree() instanceof Expression)) {
-                return condition;
-            }
-
-            Expression inverted = invertExpression((Expression) condition.getTree());
-
-            return condition.withTree(inverted);
         }
 
         private Expression invertExpression(Expression expr) {
