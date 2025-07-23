@@ -595,4 +595,150 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void voidMethodWithBigIfElseNoReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void processUser(boolean isAdmin) {
+                      if (isAdmin) {
+                          System.out.println("Processing admin user");
+                          performAdminTasks();
+                          logAdminActivity();
+                          sendAdminNotification();
+                      } else {
+                          System.out.println("Processing regular user");
+                          performRegularTasks();
+                          logUserActivity();
+                          sendUserNotification();
+                      }
+                  }
+                  
+                  void performAdminTasks() {}
+                  void logAdminActivity() {}
+                  void sendAdminNotification() {}
+                  void performRegularTasks() {}
+                  void logUserActivity() {}
+                  void sendUserNotification() {}
+              }
+              """,
+            """
+              class Test {
+                  void processUser(boolean isAdmin) {
+                      if (isAdmin) {
+                          System.out.println("Processing admin user");
+                          performAdminTasks();
+                          logAdminActivity();
+                          sendAdminNotification();
+                          return;
+                      }
+                      System.out.println("Processing regular user");
+                      performRegularTasks();
+                      logUserActivity();
+                      sendUserNotification();
+                  }
+                  
+                  void performAdminTasks() {}
+                  void logAdminActivity() {}
+                  void sendAdminNotification() {}
+                  void performRegularTasks() {}
+                  void logUserActivity() {}
+                  void sendUserNotification() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void voidMethodWithNestedIfElseNoReturn() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void handleRequest(String type, boolean urgent) {
+                      if (type.equals("email")) {
+                          if (urgent) {
+                              sendUrgentEmail();
+                          } else {
+                              sendRegularEmail();
+                          }
+                          logEmailSent();
+                      } else {
+                          if (urgent) {
+                              sendUrgentSms();
+                          } else {
+                              sendRegularSms();
+                          }
+                          logSmsSent();
+                      }
+                  }
+                  
+                  void sendUrgentEmail() {}
+                  void sendRegularEmail() {}
+                  void logEmailSent() {}
+                  void sendUrgentSms() {}
+                  void sendRegularSms() {}
+                  void logSmsSent() {}
+              }
+              """,
+            """
+              class Test {
+                  void handleRequest(String type, boolean urgent) {
+                      if (type.equals("email")) {
+                          if (urgent) {
+                              sendUrgentEmail();
+                          } else {
+                              sendRegularEmail();
+                          }
+                          logEmailSent();
+                          return;
+                      }
+                      if (urgent) {
+                          sendUrgentSms();
+                      } else {
+                          sendRegularSms();
+                      }
+                      logSmsSent();
+                  }
+                  
+                  void sendUrgentEmail() {}
+                  void sendRegularEmail() {}
+                  void logEmailSent() {}
+                  void sendUrgentSms() {}
+                  void sendRegularSms() {}
+                  void logSmsSent() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void shouldNotTransformWhenMethodHasMoreThanJustIfElse() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void processData(boolean condition) {
+                      System.out.println("Starting processing");
+                      if (condition) {
+                          System.out.println("Condition is true");
+                          doSomething();
+                      } else {
+                          System.out.println("Condition is false");
+                          doSomethingElse();
+                      }
+                      System.out.println("Finished processing");
+                  }
+                  
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
 }
