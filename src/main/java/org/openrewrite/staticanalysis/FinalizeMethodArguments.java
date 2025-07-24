@@ -23,7 +23,10 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 
 import java.util.List;
@@ -69,8 +72,7 @@ public class FinalizeMethodArguments extends Recipe {
                 }
 
                 List<Statement> parameters = ListUtils.map(declarations.getParameters(), FinalizeMethodArguments::updateParam);
-                declarations = declarations.withParameters(parameters);
-                return declarations;
+                return declarations.withParameters(parameters);
             }
 
             private void checkIfAssigned(final AtomicBoolean assigned, final Statement p) {
@@ -176,8 +178,7 @@ public class FinalizeMethodArguments extends Recipe {
             J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) p;
             if (variableDeclarations.getModifiers().isEmpty()) {
                 variableDeclarations = updateModifiers(variableDeclarations, !((J.VariableDeclarations) p).getLeadingAnnotations().isEmpty());
-                variableDeclarations = updateDeclarations(variableDeclarations);
-                return variableDeclarations;
+                return updateDeclarations(variableDeclarations);
             }
         }
         return p;

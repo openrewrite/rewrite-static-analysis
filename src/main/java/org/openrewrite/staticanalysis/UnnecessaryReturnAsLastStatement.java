@@ -53,10 +53,12 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
             private @Nullable Statement maybeRemoveReturn(Statement s) {
                 if (s instanceof J.Return && ((J.Return) s).getExpression() == null) {
                     return null;
-                } else if (s instanceof J.Block) {
+                }
+                if (s instanceof J.Block) {
                     J.Block block = (J.Block) s;
                     return block.withStatements(ListUtils.mapLast(block.getStatements(), this::maybeRemoveReturn));
-                } else if (s instanceof J.If) {
+                }
+                if (s instanceof J.If) {
                     J.If ifStatement = (J.If) s;
                     Statement trimmedThen = maybeRemoveReturn(ifStatement.getThenPart());
                     if (trimmedThen != ifStatement.getThenPart() && trimmedThen != null) {

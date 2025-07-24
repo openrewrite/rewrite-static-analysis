@@ -252,4 +252,403 @@ class InlineVariableTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void inlineAssignmentReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test() {
+                      String result;
+                      result = "hello";
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test() {
+                      return "hello";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineAssignmentThrow() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test() {
+                      RuntimeException e;
+                      e = new RuntimeException("error");
+                      throw e;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      throw new RuntimeException("error");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineComplexAssignmentReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(String input) {
+                      String result;
+                      result = input.trim().toUpperCase();
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(String input) {
+                      return input.trim().toUpperCase();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInlineFieldAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private String field;
+
+                  String test() {
+                      field = "value";
+                      return field;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+
+    @Test
+    void preserveCommentsOnAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test() {
+                      String result;
+                      // important assignment
+                      result = "value"; // trailing comment
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test() {
+                      // important assignment
+                      // trailing comment
+                      return "value";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInlineWhenMultipleVariables() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String getString() {
+                      String a = "Hello", b = "World";
+                      return a;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineAssignmentToParameter() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(String param) {
+                      param = toString();
+                      return param;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(String param) {
+                      return toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineMultipleAssignmentsBeforeReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test() {
+                      String variable = null;
+                      variable = toString();
+                      return variable;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test() {
+                      return toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineAssignmentWithMethodCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String spy() { return "spy"; }
+
+                  String test() {
+                      String variable = spy();
+                      return variable;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String spy() { return "spy"; }
+
+                  String test() {
+                      return spy();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineAssignmentInElseBlockWhilePreservingIfBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(boolean condition) {
+                      String variable = toString();
+                      if (condition) {
+                          return variable;
+                      } else {
+                          variable = "foo";
+                          return variable;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(boolean condition) {
+                      String variable = toString();
+                      if (condition) {
+                          return variable;
+                      } else {
+                          return "foo";
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineVariableInElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(boolean condition) {
+                      if (condition) {
+                          return "bar";
+                      } else {
+                          String variable = "foo";
+                          return variable;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(boolean condition) {
+                      if (condition) {
+                          return "bar";
+                      } else {
+                          return "foo";
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineAssignmentInTryBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test() {
+                      try {
+                          String result = someMethod();
+                          return result;
+                      } catch (Exception e) {
+                          return null;
+                      }
+                  }
+
+                  String someMethod() throws Exception {
+                      return "value";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test() {
+                      try {
+                          return someMethod();
+                      } catch (Exception e) {
+                          return null;
+                      }
+                  }
+
+                  String someMethod() throws Exception {
+                      return "value";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineVariableWithCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  Object test() {
+                      String str = (String) getObject();
+                      return str;
+                  }
+
+                  Object getObject() {
+                      return "string";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  Object test() {
+                      return (String) getObject();
+                  }
+
+                  Object getObject() {
+                      return "string";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void inlineVariableWithTernary() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(boolean flag) {
+                      String result = flag ? "yes" : "no";
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(boolean flag) {
+                      return flag ? "yes" : "no";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInlineWhenVariableIsReassigned() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(boolean condition) {
+                      String result = "initial";
+                      if (condition) {
+                          result = "changed";
+                      }
+                      return result;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

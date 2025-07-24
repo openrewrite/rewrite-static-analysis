@@ -151,9 +151,8 @@ public class MinimumSwitchCases extends Recipe {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
-                                } else {
-                                    generatedIf = ifString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                                 }
+                                generatedIf = ifString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else if (isDefault(cases[1])) {
                                 generatedIf = ifElseString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else {
@@ -184,9 +183,8 @@ public class MinimumSwitchCases extends Recipe {
                             if (cases[1] == null) {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
-                                } else {
-                                    generatedIf = ifPrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                                 }
+                                generatedIf = ifPrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else if (isDefault(cases[1])) {
                                 generatedIf = ifElsePrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else {
@@ -257,7 +255,6 @@ public class MinimumSwitchCases extends Recipe {
     }
 
     private static J.If createIfForEnum(Expression expression, Expression enumTree) {
-        J.If generatedIf;
         if (enumTree instanceof J.Identifier) {
             enumTree = new J.FieldAccess(
                     randomId(),
@@ -269,7 +266,7 @@ public class MinimumSwitchCases extends Recipe {
             );
         }
         J.Binary ifCond = JavaElementFactory.newLogicalExpression(J.Binary.Type.Equal, expression, enumTree);
-        generatedIf = new J.If(
+        return new J.If(
                 randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
@@ -277,7 +274,6 @@ public class MinimumSwitchCases extends Recipe {
                 JRightPadded.build(J.Block.createEmptyBlock()),
                 null
         );
-        return generatedIf;
     }
 
     @AllArgsConstructor

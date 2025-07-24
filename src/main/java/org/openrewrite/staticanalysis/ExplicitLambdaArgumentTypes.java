@@ -117,14 +117,16 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
         private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
             if (type == null || type instanceof JavaType.Unknown) {
                 return null;
-            } else if (type instanceof JavaType.Primitive) {
+            }
+            if (type instanceof JavaType.Primitive) {
                 return new J.Primitive(
                         Tree.randomId(),
                         space,
                         Markers.EMPTY,
                         (JavaType.Primitive) type
                 );
-            } else if (type instanceof JavaType.FullyQualified) {
+            }
+            if (type instanceof JavaType.FullyQualified) {
 
                 JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
 
@@ -153,11 +155,11 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                             new JavaType.Parameterized(null, fq, fq.getTypeParameters())
                     );
 
-                } else {
-                    maybeAddImport(fq);
-                    return identifier;
                 }
-            } else if (type instanceof JavaType.Array) {
+                maybeAddImport(fq);
+                return identifier;
+            }
+            if (type instanceof JavaType.Array) {
                 JavaType.Array arrayType = (JavaType.Array) type;
                 // Get the base element type
                 JavaType elemType = arrayType.getElemType();
@@ -186,9 +188,11 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     currentType = ((JavaType.Array) currentType).getElemType();
                 }
                 return result;
-            } else if (type instanceof JavaType.Variable) {
+            }
+            if (type instanceof JavaType.Variable) {
                 return buildTypeTree(((JavaType.Variable) type).getType(), space);
-            } else if (type instanceof JavaType.GenericTypeVariable) {
+            }
+            if (type instanceof JavaType.GenericTypeVariable) {
                 JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
 
                 if (!genericType.getName().equals("?")) {

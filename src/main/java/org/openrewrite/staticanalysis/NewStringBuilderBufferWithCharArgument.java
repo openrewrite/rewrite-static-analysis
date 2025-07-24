@@ -66,10 +66,9 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                                     l = l.withValueSource(l.getValueSource().replace("'", "\""));
                                 }
                                 return l;
-                            } else {
-                                return JavaTemplate.builder("String.valueOf(#{any()})").build()
-                                        .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace(), arg);
                             }
+                            return JavaTemplate.builder("String.valueOf(#{any()})").build()
+                                    .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace(), arg);
                         }));
                     }
                 }
