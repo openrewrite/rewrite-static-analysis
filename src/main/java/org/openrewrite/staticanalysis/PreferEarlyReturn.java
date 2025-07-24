@@ -15,6 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -62,6 +64,15 @@ public class PreferEarlyReturn extends Recipe {
     private static class PreferEarlyReturnVisitor extends JavaVisitor<ExecutionContext> {
 
         @Override
+        public @Nullable J postVisit(@NonNull J tree, ExecutionContext executionContext) {
+            J ret = super.postVisit(tree, executionContext);
+            if (getCursor().pollMessage("PREFER_EARLY_RETURN") != null) {
+                ret = (J) new UnwrapElseAfterReturn().getVisitor().visit(ret, executionContext, getCursor().getParent());
+            }
+            return ret;
+        }
+
+        @Override
         public J visitIf(J.If ifStatement, ExecutionContext ctx) {
             J.If if_ = (J.If) super.visitIf(ifStatement, ctx);
 
@@ -79,8 +90,8 @@ public class PreferEarlyReturn extends Recipe {
                             JRightPadded.build(if_.getThenPart())
                     ));
 
-            doAfterVisit(new UnwrapElseAfterReturn().getVisitor());
-
+            newIf = maybeAutoFormat(if_, newIf, ctx);
+            getCursor().dropParentUntil(J.Block.class::isInstance).putMessage("PREFER_EARLY_RETURN", "unwrap");
             return newIf;
         }
 
