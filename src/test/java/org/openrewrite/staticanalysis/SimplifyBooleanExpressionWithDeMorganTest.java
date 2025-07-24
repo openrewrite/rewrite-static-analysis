@@ -288,4 +288,27 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
           )
         );
     }
+
+
+    @Test
+    void mixedOperators() {
+        // As a human I probably wouldn't dare to change it probably, but it's not wrong, and it's not worse than the original, so be it.
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                boolean a, b, c;
+                boolean x = !(a && !b || c);
+            }
+            """,
+            """
+            class Test {
+                boolean a, b, c;
+                boolean x = (!a || b) && !c;
+            }
+            """
+          )
+        );
+    }
 }

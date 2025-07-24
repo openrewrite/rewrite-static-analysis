@@ -93,7 +93,8 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                             comments.addAll(parenthesesBinary.getComments());
                             comments.addAll(binary.getComments());
                             prefix = prefix.withComments(comments);
-                            return binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
+                            binary = binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
+                            return new ParenthesizeVisitor<>().visit(binary, ctx);
                         } else {
                             J.Binary visitedBinary = binary.withLeft(left).withRight(right);
                             return unary.withExpression(parenthesesBinary.withTree(visitedBinary));
@@ -118,30 +119,6 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                         expression.withPrefix(Space.EMPTY),
                         JavaType.Primitive.Boolean
                 );
-            }
-
-            /**
-             * Check if all operators in a chained binary expression are the same.
-             * Handles nesting on both left and right sides.
-             */
-            private boolean allOperatorsAreSame(J.Binary binary, J.Binary.Type expectedOperator) {
-                if (binary.getOperator() != expectedOperator) {
-                    return false;
-                }
-
-                if (binary.getLeft() instanceof J.Binary) {
-                    if (!allOperatorsAreSame((J.Binary) binary.getLeft(), expectedOperator)) {
-                        return false;
-                    }
-                }
-
-                if (binary.getRight() instanceof J.Binary) {
-                    if (!allOperatorsAreSame((J.Binary) binary.getRight(), expectedOperator)) {
-                        return false;
-                    }
-                }
-
-                return true;
             }
         };
     }
