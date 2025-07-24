@@ -236,4 +236,31 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void deMorganWithinNonBoolean() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(boolean a, boolean b, boolean c, boolean d) {
+                    if ((!(a && !b)) == (!(!c || !d))) {
+                        System.out.println("Complex boolean comparison");
+                    }
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(boolean a, boolean b, boolean c, boolean d) {
+                    if ((!a || b) == (c && d)) {
+                        System.out.println("Complex boolean comparison");
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
 }
