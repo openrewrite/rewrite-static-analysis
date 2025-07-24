@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jetbrains.annotations.NotNull;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
