@@ -238,6 +238,24 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
     }
 
     @Test
+    void noChangeWhenMixedOperators() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(boolean a, boolean b, boolean c) {
+                    if (!(a && !b || c)) {
+                        System.out.println("Mixed operators");
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
     void deMorganWithinNonBoolean() {
         rewriteRun(
           //language=java

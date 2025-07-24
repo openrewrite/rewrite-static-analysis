@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.ParenthesizeVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
@@ -75,24 +76,23 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                         } else if (binary.getOperator() == J.Binary.Type.Or) {
                             newOperator = J.Binary.Type.And;
                         }
-                        Expression leftAltered = requireNonNull((Expression) visit(binary.getLeft(), ctx));
-                        Expression rightAltered = requireNonNull((Expression) visit(binary.getRight(), ctx));
+                        Expression left = binary.getLeft();
+                        Expression right = binary.getRight();
 
                         if (newOperator != null) {
-                            Expression leftNegated = negate(leftAltered, binary.getLeft().getPrefix());
-                            Expression rightNegated = negate(rightAltered, binary.getRight().getPrefix());
+                            left = negate(left);
+                            left = (Expression) new ParenthesizeVisitor<>().visit(left, ctx);
+                            right = negate(right);
+                            right = (Expression) new ParenthesizeVisitor<>().visit(right, ctx);
+                        }
 
-                            return new J.Binary(
-                                    binary.getId(),
-                                    unary.getPrefix(),
-                                    unary.getMarkers(),
-                                    leftNegated,
-                                    binary.getPadding().getOperator().withElement(newOperator),
-                                    rightNegated,
-                                    JavaType.Primitive.Boolean
-                            );
+                        left = (Expression) this.visit(left, ctx);
+                        right = (Expression) this.visit(right, ctx);
+
+                        if (newOperator != null) {
+                            return binary.withLeft(left).withRight(right).withOperator(newOperator);
                         } else {
-                            J.Binary visitedBinary = binary.withLeft(leftAltered).withRight(rightAltered);
+                            J.Binary visitedBinary = binary.withLeft(left).withRight(right);
                             return unary.withExpression(parenthesesBinary.withTree(visitedBinary));
                         }
                     }
@@ -100,16 +100,16 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                 return requireNonNull(super.visitUnary(unary, ctx));
             }
 
-            private Expression negate(Expression expression, Space prefix) {
+            private Expression negate(Expression expression) {
                 if (expression instanceof J.Unary) {
                     J.Unary unaryExpr = (J.Unary) expression;
                     if (unaryExpr.getOperator() == J.Unary.Type.Not) {
-                        return unaryExpr.getExpression().withPrefix(prefix);
+                        return unaryExpr.getExpression().withPrefix(expression.getPrefix());
                     }
                 }
                 return new J.Unary(
                         Tree.randomId(),
-                        prefix,
+                        expression.getPrefix(),
                         Markers.EMPTY,
                         new JLeftPadded<>(Space.EMPTY, J.Unary.Type.Not, Markers.EMPTY),
                         expression.withPrefix(Space.EMPTY),
@@ -122,23 +122,18 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
              * Handles nesting on both left and right sides.
              */
             private boolean allOperatorsAreSame(J.Binary binary, J.Binary.Type expectedOperator) {
-                // Check current operator
                 if (binary.getOperator() != expectedOperator) {
                     return false;
                 }
 
-                // Recursively check left side if it's a binary expression
                 if (binary.getLeft() instanceof J.Binary) {
-                    J.Binary leftBinary = (J.Binary) binary.getLeft();
-                    if (!allOperatorsAreSame(leftBinary, expectedOperator)) {
+                    if (!allOperatorsAreSame((J.Binary) binary.getLeft(), expectedOperator)) {
                         return false;
                     }
                 }
 
-                // Recursively check right side if it's a binary expression
                 if (binary.getRight() instanceof J.Binary) {
-                    J.Binary rightBinary = (J.Binary) binary.getRight();
-                    if (!allOperatorsAreSame(rightBinary, expectedOperator)) {
+                    if (!allOperatorsAreSame((J.Binary) binary.getRight(), expectedOperator)) {
                         return false;
                     }
                 }
