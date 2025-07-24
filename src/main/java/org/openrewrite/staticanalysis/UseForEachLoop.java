@@ -182,7 +182,8 @@ public class UseForEachLoop extends Recipe {
             private String getCollectionName(J collection) {
                 if (collection instanceof J.Identifier) {
                     return ((J.Identifier) collection).getSimpleName();
-                } else if (collection instanceof J.FieldAccess) {
+                }
+                if (collection instanceof J.FieldAccess) {
                     return ((J.FieldAccess) collection).getSimpleName();
                 }
                 return null;
