@@ -37,7 +37,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (!(a && b)) {
+                    if (!(a && !b)) {
                         System.out.println("Not both");
                     }
                 }
@@ -46,7 +46,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (!a || !b) {
+                    if (!a || b) {
                         System.out.println("Not both");
                     }
                 }
@@ -64,7 +64,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (!(a || b)) {
+                    if (!(!a || b)) {
                         System.out.println("Neither");
                     }
                 }
@@ -73,7 +73,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (!a && !b) {
+                    if (a && !b) {
                         System.out.println("Neither");
                     }
                 }

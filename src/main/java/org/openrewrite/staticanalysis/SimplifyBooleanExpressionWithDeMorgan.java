@@ -20,6 +20,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.JavaType;
@@ -29,6 +30,8 @@ import org.openrewrite.marker.Markers;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
 
@@ -57,74 +60,54 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
 
+            private Expression negate(Expression expression, Space prefix) {
+                if (expression instanceof J.Unary) {
+                    J.Unary unaryExpr = (J.Unary) expression;
+                    if (unaryExpr.getOperator() == J.Unary.Type.Not) {
+                        return unaryExpr.getExpression().withPrefix(prefix);
+                    }
+                }
+                return new J.Unary(
+                        Tree.randomId(),
+                        prefix,
+                        Markers.EMPTY,
+                        new JLeftPadded<>(Space.EMPTY, J.Unary.Type.Not, Markers.EMPTY),
+                        expression.withPrefix(Space.EMPTY),
+                        JavaType.Primitive.Boolean
+                );
+            }
+
             @Override
             public J visitUnary(J.Unary unary, ExecutionContext ctx) {
                 if (unary.getOperator() == J.Unary.Type.Not && unary.getExpression() instanceof J.Parentheses) {
                     J.Parentheses<?> parentheses = (J.Parentheses<?>) unary.getExpression();
                     if (parentheses.getTree() instanceof J.Binary) {
                         J.Binary binary = (J.Binary) parentheses.getTree();
-                        
-                        // Apply De Morgan's laws
+
+                        J.Binary.Type newOperator = null;
                         if (binary.getOperator() == J.Binary.Type.And) {
-                            // !(a && b) -> !a || !b
-                            J.Unary leftNegated = new J.Unary(
-                                    Tree.randomId(),
-                                    binary.getLeft().getPrefix(),
-                                    Markers.EMPTY,
-                                    new JLeftPadded<>(Space.EMPTY, J.Unary.Type.Not, Markers.EMPTY),
-                                    binary.getLeft().withPrefix(Space.EMPTY),
-                                    JavaType.Primitive.Boolean
-                            );
-                            J.Unary rightNegated = new J.Unary(
-                                    Tree.randomId(),
-                                    Space.EMPTY,
-                                    Markers.EMPTY,
-                                    new JLeftPadded<>(Space.EMPTY, J.Unary.Type.Not, Markers.EMPTY),
-                                    binary.getRight().withPrefix(Space.EMPTY),
-                                    JavaType.Primitive.Boolean
-                            );
-                            
-                            return new J.Binary(
-                                    binary.getId(),
-                                    unary.getPrefix(),
-                                    unary.getMarkers(),
-                                    leftNegated,
-                                    JLeftPadded.build(J.Binary.Type.Or).withBefore(Space.SINGLE_SPACE),
-                                    rightNegated.withPrefix(Space.SINGLE_SPACE),
-                                    JavaType.Primitive.Boolean
-                            );
+                            newOperator = J.Binary.Type.Or;
                         } else if (binary.getOperator() == J.Binary.Type.Or) {
-                            // !(a || b) -> !a && !b
-                            J.Unary leftNegated = new J.Unary(
-                                    Tree.randomId(),
-                                    binary.getLeft().getPrefix(),
-                                    Markers.EMPTY,
-                                    new JLeftPadded<>(Space.EMPTY, J.Unary.Type.Not, Markers.EMPTY),
-                                    binary.getLeft().withPrefix(Space.EMPTY),
-                                    JavaType.Primitive.Boolean
-                            );
-                            J.Unary rightNegated = new J.Unary(
-                                    Tree.randomId(),
-                                    Space.EMPTY,
-                                    Markers.EMPTY,
-                                    new JLeftPadded<>(Space.EMPTY, J.Unary.Type.Not, Markers.EMPTY),
-                                    binary.getRight().withPrefix(Space.EMPTY),
-                                    JavaType.Primitive.Boolean
-                            );
-                            
-                            return new J.Binary(
-                                    binary.getId(),
-                                    unary.getPrefix(),
-                                    unary.getMarkers(),
-                                    leftNegated,
-                                    JLeftPadded.build(J.Binary.Type.And).withBefore(Space.SINGLE_SPACE),
-                                    rightNegated.withPrefix(Space.SINGLE_SPACE),
-                                    JavaType.Primitive.Boolean
-                            );
+                            newOperator = J.Binary.Type.And;
+                        } else {
+                            return binary;
                         }
+                        // TODO recurse to left and right
+                        Expression leftNegated = negate(binary.getLeft(), binary.getLeft().getPrefix());
+                        Expression rightNegated = negate(binary.getRight(), Space.SINGLE_SPACE);
+
+                        return new J.Binary(
+                                binary.getId(),
+                                unary.getPrefix(),
+                                unary.getMarkers(),
+                                leftNegated,
+                                binary.getPadding().getOperator().withElement(newOperator),
+                                rightNegated,
+                                JavaType.Primitive.Boolean
+                        );
                     }
                 }
-                return super.visitUnary(unary, ctx);
+                return requireNonNull(super.visitUnary(unary, ctx));
             }
         };
     }
