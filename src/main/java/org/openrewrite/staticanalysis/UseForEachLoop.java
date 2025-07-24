@@ -217,7 +217,8 @@ public class UseForEachLoop extends Recipe {
                             method.getArguments().get(0) instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) method.getArguments().get(0)).getSimpleName()) &&
                             SemanticallyEqual.areEqual(method.getSelect(), collection);
-                } else if (initializer instanceof J.ArrayAccess) {
+                }
+                if (initializer instanceof J.ArrayAccess) {
                     J.ArrayAccess arrayAccess = (J.ArrayAccess) initializer;
                     return arrayAccess.getDimension().getIndex() instanceof J.Identifier &&
                             indexVarName.equals(((J.Identifier) arrayAccess.getDimension().getIndex()).getSimpleName()) &&
