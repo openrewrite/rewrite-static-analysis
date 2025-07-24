@@ -64,7 +64,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (!(!a || /*Bee Bee Bee*/ b)) {
+                    if /*0*/(/*1*/!/*2*/(/*3*/!a || /*Bee Bee Bee*/ b)) {
                         System.out.println("Neither");
                     }
                 }
@@ -73,7 +73,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (a && /*Bee Bee Bee*/ !b) {
+                    if /*0*/(/*1*//*2*//*3*/a && /*Bee Bee Bee*/ !b) {
                         System.out.println("Neither");
                     }
                 }
@@ -217,6 +217,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
     @Test
     void nested() {
         rewriteRun(
+          // NOTE: the parens around (z || y) in the output are not necessary, but they are not wrong. We might look into having them removed.
           //language=java
           java(
             """
@@ -229,7 +230,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean w, boolean x, boolean y, boolean z) {
-                    boolean result = (!w || !x) || (z || y);
+                    boolean result = !w || !x || (z || y);
                 }
             }
             """
@@ -238,16 +239,22 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
     }
 
     @Test
-    void noChangeWhenMixedOperators() {
+    void nested2() {
         rewriteRun(
           //language=java
+          // NOTE: the parens around (z || y) in the output are not necessary, but they are not wrong. We might look into having them removed.
           java(
             """
             class Test {
-                void test(boolean a, boolean b, boolean c) {
-                    if (!(a && !b || c)) {
-                        System.out.println("Mixed operators");
-                    }
+                void test(boolean w, boolean x, boolean y, boolean z) {
+                    boolean result = !((w || x) && !(z || y));
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(boolean w, boolean x, boolean y, boolean z) {
+                    boolean result = !w && !x || (z || y);
                 }
             }
             """

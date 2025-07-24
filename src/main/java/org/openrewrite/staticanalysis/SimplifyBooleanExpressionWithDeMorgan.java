@@ -22,15 +22,13 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.ParenthesizeVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -90,7 +88,12 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                         right = (Expression) this.visit(right, ctx);
 
                         if (newOperator != null) {
-                            return binary.withLeft(left).withRight(right).withOperator(newOperator);
+                            Space prefix = unary.getPrefix();
+                            List<Comment> comments = new ArrayList<>(prefix.getComments());
+                            comments.addAll(parenthesesBinary.getComments());
+                            comments.addAll(binary.getComments());
+                            prefix = prefix.withComments(comments);
+                            return binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
                         } else {
                             J.Binary visitedBinary = binary.withLeft(left).withRight(right);
                             return unary.withExpression(parenthesesBinary.withTree(visitedBinary));
