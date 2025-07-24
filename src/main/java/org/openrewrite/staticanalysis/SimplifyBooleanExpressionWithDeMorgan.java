@@ -87,18 +87,17 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                         left = (Expression) this.visit(left, ctx);
                         right = (Expression) this.visit(right, ctx);
 
-                        if (newOperator != null) {
-                            Space prefix = unary.getPrefix();
-                            List<Comment> comments = new ArrayList<>(prefix.getComments());
-                            comments.addAll(parenthesesBinary.getComments());
-                            comments.addAll(binary.getComments());
-                            prefix = prefix.withComments(comments);
-                            binary = binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
-                            return new ParenthesizeVisitor<>().visit(binary, ctx);
-                        } else {
+                        if (newOperator == null) {
                             J.Binary visitedBinary = binary.withLeft(left).withRight(right);
                             return unary.withExpression(parenthesesBinary.withTree(visitedBinary));
                         }
+                        Space prefix = unary.getPrefix();
+                        List<Comment> comments = new ArrayList<>(prefix.getComments());
+                        comments.addAll(parenthesesBinary.getComments());
+                        comments.addAll(binary.getComments());
+                        prefix = prefix.withComments(comments);
+                        binary = binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
+                        return new ParenthesizeVisitor<>().visit(binary, ctx);
                     }
                 }
                 return requireNonNull(super.visitUnary(unary, ctx));
