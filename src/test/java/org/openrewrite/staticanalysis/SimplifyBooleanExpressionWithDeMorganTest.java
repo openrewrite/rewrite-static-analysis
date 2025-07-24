@@ -64,7 +64,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (!(!a || b)) {
+                    if (!(!a || /*Bee Bee Bee*/ b)) {
                         System.out.println("Neither");
                     }
                 }
@@ -73,7 +73,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (a && !b) {
+                    if (a && /*Bee Bee Bee*/ !b) {
                         System.out.println("Neither");
                     }
                 }

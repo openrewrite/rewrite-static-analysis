@@ -93,7 +93,7 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
 
                         // TODO recurse to left and right
                         Expression leftNegated = negate(binary.getLeft(), binary.getLeft().getPrefix());
-                        Expression rightNegated = negate(binary.getRight(), Space.SINGLE_SPACE);
+                        Expression rightNegated = negate(binary.getRight(), binary.getRight().getPrefix());
 
                         if (newOperator != null) {
                             return new J.Binary(
