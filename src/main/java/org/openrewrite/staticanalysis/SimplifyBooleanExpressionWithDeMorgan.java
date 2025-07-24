@@ -89,22 +89,25 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                             newOperator = J.Binary.Type.Or;
                         } else if (binary.getOperator() == J.Binary.Type.Or) {
                             newOperator = J.Binary.Type.And;
-                        } else {
-                            return binary;
                         }
+
                         // TODO recurse to left and right
                         Expression leftNegated = negate(binary.getLeft(), binary.getLeft().getPrefix());
                         Expression rightNegated = negate(binary.getRight(), Space.SINGLE_SPACE);
 
-                        return new J.Binary(
-                                binary.getId(),
-                                unary.getPrefix(),
-                                unary.getMarkers(),
-                                leftNegated,
-                                binary.getPadding().getOperator().withElement(newOperator),
-                                rightNegated,
-                                JavaType.Primitive.Boolean
-                        );
+                        if (newOperator != null) {
+                            return new J.Binary(
+                                    binary.getId(),
+                                    unary.getPrefix(),
+                                    unary.getMarkers(),
+                                    leftNegated,
+                                    binary.getPadding().getOperator().withElement(newOperator),
+                                    rightNegated,
+                                    JavaType.Primitive.Boolean
+                            );
+                        } else {
+                            return unary; // TODO recursion here as well
+                        }
                     }
                 }
                 return requireNonNull(super.visitUnary(unary, ctx));
