@@ -111,29 +111,6 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
     }
 
     @Test
-    void transformVariableExpressions() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-            class Test {
-                void test(boolean isValid, boolean isEnabled) {
-                    boolean result = !(isValid || isEnabled);
-                }
-            }
-            """,
-            """
-            class Test {
-                void test(boolean isValid, boolean isEnabled) {
-                    boolean result = !isValid && !isEnabled;
-                }
-            }
-            """
-          )
-        );
-    }
-
-    @Test
     void noChangeWhenNoParentheses() {
         rewriteRun(
           //language=java
@@ -159,7 +136,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b) {
-                    if (a && b) {
+                    if ((a && b)) {
                         System.out.println("No negation");
                     }
                 }
@@ -188,14 +165,14 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
     }
 
     @Test
-    void transformParenthesizedOrExpression() {
+    void triple() {
         rewriteRun(
           //language=java
           java(
             """
             class Test {
                 void test(boolean a, boolean b, boolean c) {
-                    if (!((a || b) || c)) {
+                    if (!(a || !b || c)) {
                         System.out.println("None are true");
                     }
                 }
@@ -204,7 +181,7 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
             """
             class Test {
                 void test(boolean a, boolean b, boolean c) {
-                    if (!a && !b && !c) {
+                    if (!a && b && !c) {
                         System.out.println("None are true");
                     }
                 }
@@ -215,21 +192,44 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
     }
 
     @Test
-    void transformParenthesizedAndExpression() {
+    void quadruple() {
         rewriteRun(
           //language=java
           java(
             """
             class Test {
-                void test(boolean w, boolean x, boolean y) {
-                    boolean result = !((w && x) && y);
+                static void test(boolean a, boolean b, boolean c, boolean d) {
+                    return !(a && !b && c && !d);
                 }
             }
             """,
             """
             class Test {
-                void test(boolean w, boolean x, boolean y) {
-                    boolean result = !w || !x || !y;
+                static void test(boolean a, boolean b, boolean c, boolean d) {
+                    return !a || b || !c || d;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void nested() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(boolean w, boolean x, boolean y, boolean z) {
+                    boolean result = !((w && x) && !(z || y));
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(boolean w, boolean x, boolean y, boolean z) {
+                    boolean result = (!w || !x) || (z || y);
                 }
             }
             """
