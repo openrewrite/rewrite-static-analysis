@@ -46,7 +46,7 @@ public class UseForEachLoop extends Recipe {
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return Duration.ofMinutes(2);
     }
 
     @Override
