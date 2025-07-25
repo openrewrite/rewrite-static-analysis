@@ -311,4 +311,25 @@ class SimplifyBooleanExpressionWithDeMorganTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void mixedOperators2() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                boolean a, b, c;
+                boolean x = a && !(b && c);
+            }
+            """,
+            """
+            class Test {
+                boolean a, b, c;
+                boolean x = a && (!b || !c);
+            }
+            """
+          )
+        );
+    }
 }
