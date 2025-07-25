@@ -15,6 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -95,11 +97,20 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
                         comments.addAll(parenthesesBinary.getComments());
                         comments.addAll(binary.getComments());
                         prefix = prefix.withComments(comments);
-                        binary = binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
-                        return new ParenthesizeVisitor<>().visit(binary, ctx);
+                        getCursor().getParent().putMessage("MIGHT_NEED_PARENTHESES", true);
+                        return binary.withLeft(left).withRight(right).withOperator(newOperator).withPrefix(prefix);
                     }
                 }
                 return requireNonNull(super.visitUnary(unary, ctx));
+            }
+
+            @Override
+            public @Nullable J postVisit(@NonNull J tree, ExecutionContext ctx) {
+                J ret = super.postVisit(tree, ctx);
+                if (getCursor().pollMessage("MIGHT_NEED_PARENTHESES") != null) {
+                    return new ParenthesizeVisitor<>().visit(ret, ctx);
+                };
+                return ret;
             }
 
             private Expression negate(Expression expression) {
