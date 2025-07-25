@@ -107,8 +107,8 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
             @Override
             public @Nullable J postVisit(@NonNull J tree, ExecutionContext ctx) {
                 J ret = super.postVisit(tree, ctx);
+                if (getCursor().pollMessage("MIGHT_NEED_PARENTHESES") != null) {
                     return new ParenthesizeVisitor<>().visit(ret, ctx);
-                    return new ParenthesizeVisitor<>().visit(ret, executionContext);
                 };
                 return ret;
             }
