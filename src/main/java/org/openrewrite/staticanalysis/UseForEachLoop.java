@@ -258,6 +258,7 @@ public class UseForEachLoop extends Recipe {
                 private final J collection;
                 private boolean valid = true;
                 private boolean insideValidAccess;
+                private boolean insideInvalidAccess;
 
                 public ValidationVisitor(String indexVarName, J collection) {
                     this.indexVarName = indexVarName;
@@ -308,6 +309,9 @@ public class UseForEachLoop extends Recipe {
                         } else {
                             valid = false;
                         }
+                        if (insideInvalidAccess) {
+                            valid = false;
+                        }
 
                         J result = super.visitArrayAccess(arrayAccess, o);
                         insideValidAccess = wasInsideValidAccess;
@@ -316,6 +320,13 @@ public class UseForEachLoop extends Recipe {
                     return super.visitArrayAccess(arrayAccess, o);
                 }
 
+                @Override
+                public J visitAssignment(J.Assignment assignment, Object o) {
+                    this.insideInvalidAccess = true;
+                    this.visit(assignment.getVariable(), o);
+                    this.insideInvalidAccess = false;
+                    return super.visitAssignment(assignment, o);
+                }
             }
 
             private class BodyTransformer extends JavaVisitor<Object> {
