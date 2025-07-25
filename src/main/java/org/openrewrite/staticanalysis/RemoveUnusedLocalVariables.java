@@ -29,7 +29,6 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -89,11 +88,6 @@ public class RemoveUnusedLocalVariables extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S1481");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
