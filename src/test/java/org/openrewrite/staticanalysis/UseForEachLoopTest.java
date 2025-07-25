@@ -331,4 +331,22 @@ class UseForEachLoopTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void noChangeWhenArrayAccessOnLeftSideOfAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(String[] names) {
+                    for (int i = 0; i < names.length; i++) {
+                        names[i] = "modified";
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
 }
