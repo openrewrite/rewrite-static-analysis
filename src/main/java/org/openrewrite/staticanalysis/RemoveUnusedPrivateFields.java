@@ -29,7 +29,6 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -51,11 +50,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S1068");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override

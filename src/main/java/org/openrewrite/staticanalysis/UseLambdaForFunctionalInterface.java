@@ -25,7 +25,6 @@ import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -51,11 +50,6 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     @Override
     public Set<String> getTags() {
         return singleton("RSPEC-S1604");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
