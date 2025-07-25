@@ -349,4 +349,56 @@ class UseForEachLoopTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void iteratingOverCustomType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            import java.util.List;
+
+            class Test {
+                static class Person {
+                    String name;
+                    int age;
+
+                    Person(String name, int age) {
+                        this.name = name;
+                        this.age = age;
+                    }
+                }
+
+                void test(List<Person> people) {
+                    for (int i = 0; i < people.size(); i++) {
+                        Person person = people.get(i);
+                        System.out.println(person.name + " is " + person.age + " years old");
+                    }
+                }
+            }
+            """,
+            """
+            import java.util.List;
+
+            class Test {
+                static class Person {
+                    String name;
+                    int age;
+
+                    Person(String name, int age) {
+                        this.name = name;
+                        this.age = age;
+                    }
+                }
+
+                void test(List<Person> people) {
+                    for (Person person : people) {
+                        System.out.println(person.name + " is " + person.age + " years old");
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
 }
