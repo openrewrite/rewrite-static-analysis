@@ -62,7 +62,8 @@ public class RemoveUnusedPrivateFields extends Recipe {
             class CheckField {
                 J.VariableDeclarations declarations;
 
-                @Nullable Statement nextStatement;
+                @Nullable
+                Statement nextStatement;
             }
 
             @Override
@@ -78,7 +79,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                 List<CheckField> checkFields = new ArrayList<>();
                 // Do not remove fields with `serialVersionUID` name.
                 boolean skipSerialVersionUID = cd.getType() == null ||
-                                               cd.getType().isAssignableTo("java.io.Serializable");
+                        cd.getType().isAssignableTo("java.io.Serializable");
 
                 List<Statement> statements = cd.getBody().getStatements();
                 for (int i = 0; i < statements.size(); i++) {
@@ -87,8 +88,8 @@ public class RemoveUnusedPrivateFields extends Recipe {
                         J.VariableDeclarations vd = (J.VariableDeclarations) statement;
                         // RSPEC-S1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
-                            vd.getLeadingAnnotations().isEmpty() &&
-                            vd.hasModifier(J.Modifier.Type.Private)) {
+                                vd.getLeadingAnnotations().isEmpty() &&
+                                vd.hasModifier(J.Modifier.Type.Private)) {
                             Statement nextStatement = i < statements.size() - 1 ? statements.get(i + 1) : null;
                             checkFields.add(new CheckField(vd, nextStatement));
                         }
@@ -136,10 +137,10 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
             private boolean isSerialVersionUid(J.VariableDeclarations vd) {
                 return vd.hasModifier(J.Modifier.Type.Private) &&
-                       vd.hasModifier(J.Modifier.Type.Static) &&
-                       vd.hasModifier(J.Modifier.Type.Final) &&
-                       TypeUtils.isOfClassType(vd.getType(), "long") &&
-                       vd.getVariables().stream().anyMatch(it -> "serialVersionUID".equals(it.getSimpleName()));
+                        vd.hasModifier(J.Modifier.Type.Static) &&
+                        vd.hasModifier(J.Modifier.Type.Final) &&
+                        TypeUtils.isOfClassType(vd.getType(), "long") &&
+                        vd.getVariables().stream().anyMatch(it -> "serialVersionUID".equals(it.getSimpleName()));
             }
         };
         return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
@@ -182,7 +183,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                                         JavaType.FullyQualified ownerType = TypeUtils.asFullyQualified(identifier.getFieldType().getOwner());
                                         JavaType.FullyQualified parentType = parent.getType();
                                         if (ownerType != null && parentType != null &&
-                                            ownerType.getFullyQualifiedName().equals(parentType.getFullyQualifiedName())) {
+                                                TypeUtils.fullyQualifiedNamesAreEqual(ownerType.getFullyQualifiedName(), parentType.getFullyQualifiedName())) {
                                             match = nameMatch;
                                         }
                                     }
@@ -190,8 +191,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
                                 if (match != null) {
                                     Cursor parentCursor = getCursor().dropParentUntil(is ->
-                                            is instanceof J.VariableDeclarations ||
-                                            is instanceof J.ClassDeclaration);
+                                            is instanceof J.VariableDeclarations || is instanceof J.ClassDeclaration);
 
                                     if (!(parentCursor.getValue() instanceof J.VariableDeclarations && parentCursor.getValue() == declarations)) {
                                         if (declarations.getVariables().contains(match)) {
