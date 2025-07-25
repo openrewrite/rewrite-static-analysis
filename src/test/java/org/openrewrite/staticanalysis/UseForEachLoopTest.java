@@ -35,28 +35,28 @@ class UseForEachLoopTest implements RewriteTest {
         rewriteRun(
           //language=java
           java(
+            """
+              import java.util.List;
+
+              class Test {
+                  void test(List<String> names) {
+                      for (int i = 0; i < names.size(); i++) {
+                          System.out.println(names.get(i));
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Test {
+                  void test(List<String> names) {
+                      for (String name : names) {
+                          System.out.println(name);
+                      }
+                  }
+              }
               """
-            import java.util.List;
-
-            class Test {
-                void test(List<String> names) {
-                    for (int i = 0; i < names.size(); i++) {
-                        System.out.println(names.get(i));
-                    }
-                }
-            }
-            """,
-            """
-            import java.util.List;
-
-            class Test {
-                void test(List<String> names) {
-                    for (String name : names) {
-                        System.out.println(name);
-                    }
-                }
-            }
-            """
           )
         );
     }
@@ -67,28 +67,28 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-          import java.util.List;
+              import java.util.List;
 
-          class Test {
-              void test(List<String> names) {
-                  for (int i = 0; i < names.size(); i++) {
-                      String name = names.get(i);
-                      System.out.println(name);
+              class Test {
+                  void test(List<String> names) {
+                      for (int i = 0; i < names.size(); i++) {
+                          String name = names.get(i);
+                          System.out.println(name);
+                      }
                   }
               }
-          }
-          """,
+              """,
             """
-            import java.util.List;
+              import java.util.List;
 
-            class Test {
-                void test(List<String> names) {
-                    for (String name : names) {
-                        System.out.println(name);
-                    }
-                }
-            }
-            """
+              class Test {
+                  void test(List<String> names) {
+                      for (String name : names) {
+                          System.out.println(name);
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -99,23 +99,23 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-            class Test {
-                void test(String[] names) {
-                    for (int i = 0; i < names.length; i++) {
-                        System.out.println(names[i]);
-                    }
-                }
-            }
-            """,
+              class Test {
+                  void test(String[] names) {
+                      for (int i = 0; i < names.length; i++) {
+                          System.out.println(names[i]);
+                      }
+                  }
+              }
+              """,
             """
-            class Test {
-                void test(String[] names) {
-                    for (String name : names) {
-                        System.out.println(name);
-                    }
-                }
-            }
-            """
+              class Test {
+                  void test(String[] names) {
+                      for (String name : names) {
+                          System.out.println(name);
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -126,27 +126,27 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-            import java.util.List;
+              import java.util.List;
 
-            class Test {
-                void test(List<Integer> numbers) {
-                    for (int i = 0; i < numbers.size(); ++i) {
-                        System.out.println(numbers.get(i));
-                    }
-                }
-            }
-            """,
+              class Test {
+                  void test(List<Integer> numbers) {
+                      for (int i = 0; i < numbers.size(); ++i) {
+                          System.out.println(numbers.get(i));
+                      }
+                  }
+              }
+              """,
             """
-            import java.util.List;
+              import java.util.List;
 
-            class Test {
-                void test(List<Integer> numbers) {
-                    for (String number : numbers) {
-                        System.out.println(number);
-                    }
-                }
-            }
-            """
+              class Test {
+                  void test(List<Integer> numbers) {
+                      for (Integer number : numbers) {
+                          System.out.println(number);
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -157,27 +157,27 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-            import java.util.List;
+              import java.util.List;
 
-            class Test {
-                void test(List<Integer> numbers, java.util.Date number) {
-                    for (int i = 0; i < numbers.size(); ++i) {
-                        System.out.println(numbers.get(i));
-                    }
-                }
-            }
-            """,
+              class Test {
+                  void test(List<Integer> numbers, java.util.Date number) {
+                      for (int i = 0; i < numbers.size(); ++i) {
+                          System.out.println(numbers.get(i));
+                      }
+                  }
+              }
+              """,
             """
-            import java.util.List;
+              import java.util.List;
 
-            class Test {
-                void test(List<Integer> numbers, java.util.Date number) {
-                    for (String number1 : numbers) {
-                        System.out.println(number1);
-                    }
-                }
-            }
-            """
+              class Test {
+                  void test(List<Integer> numbers, java.util.Date number) {
+                      for (Integer number1 : numbers) {
+                          System.out.println(number1);
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -338,14 +338,14 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-            class Test {
-                void test(String[] names) {
-                    for (int i = 0; i < names.length; i++) {
-                        names[i] = "modified";
-                    }
-                }
-            }
-            """
+              class Test {
+                  void test(String[] names) {
+                      for (int i = 0; i < names.length; i++) {
+                          names[i] = "modified";
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -356,48 +356,48 @@ class UseForEachLoopTest implements RewriteTest {
           //language=java
           java(
             """
-            import java.util.List;
+              import java.util.List;
 
-            class Test {
-                static class Person {
-                    String name;
-                    int age;
+              class Test {
+                  static class Person {
+                      String name;
+                      int age;
 
-                    Person(String name, int age) {
-                        this.name = name;
-                        this.age = age;
-                    }
-                }
+                      Person(String name, int age) {
+                          this.name = name;
+                          this.age = age;
+                      }
+                  }
 
-                void test(List<Person> people) {
-                    for (int i = 0; i < people.size(); i++) {
-                        Person person = people.get(i);
-                        System.out.println(person.name + " is " + person.age + " years old");
-                    }
-                }
-            }
-            """,
+                  void test(List<Person> people) {
+                      for (int i = 0; i < people.size(); i++) {
+                          Person person = people.get(i);
+                          System.out.println(person.name + " is " + person.age + " years old");
+                      }
+                  }
+              }
+              """,
             """
-            import java.util.List;
+              import java.util.List;
 
-            class Test {
-                static class Person {
-                    String name;
-                    int age;
+              class Test {
+                  static class Person {
+                      String name;
+                      int age;
 
-                    Person(String name, int age) {
-                        this.name = name;
-                        this.age = age;
-                    }
-                }
+                      Person(String name, int age) {
+                          this.name = name;
+                          this.age = age;
+                      }
+                  }
 
-                void test(List<Person> people) {
-                    for (Person person : people) {
-                        System.out.println(person.name + " is " + person.age + " years old");
-                    }
-                }
-            }
-            """
+                  void test(List<Person> people) {
+                      for (Person person : people) {
+                          System.out.println(person.name + " is " + person.age + " years old");
+                      }
+                  }
+              }
+              """
           )
         );
     }

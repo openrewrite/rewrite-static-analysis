@@ -20,6 +20,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
@@ -137,8 +138,16 @@ public class UseForEachLoop extends Recipe {
                 }
 
                 String forEachVarName = determineForEachVariableName(forLoop.getBody(), indexVarName, collection);
+                String elementTypeName = getElementTypeName(collection);
 
-                JavaTemplate template = JavaTemplate.builder("for (String " + forEachVarName + " : #{any()}) #{any()}")
+                if (elementTypeName == null) {
+                    // If we can't determine the element type, don't make any changes
+                    return super.visitForLoop(forLoop, ctx);
+                }
+
+                JavaTemplate template = JavaTemplate.builder("for (" + elementTypeName + " " + forEachVarName + " : #{any()}) #{any()}")
+                        .contextSensitive()
+                        .javaParser(JavaParser.fromJavaVersion())
                         .build();
 
                 Statement transformedBody = (Statement) new BodyTransformer(indexVarName, collection, forEachVarName).visit(forLoop.getBody(), getCursor());
@@ -207,6 +216,54 @@ public class UseForEachLoop extends Recipe {
 
                 return type instanceof JavaType.Array ||
                        TypeUtils.isAssignableTo("java.lang.Iterable", type);
+            }
+
+            private JavaType getElementType(J collection) {
+                if (collection == null || !(collection instanceof TypedTree)) {
+                    return null;
+                }
+
+                JavaType type = ((TypedTree) collection).getType();
+                if (type == null) {
+                    return null;
+                }
+
+                if (type instanceof JavaType.Array) {
+                    JavaType.Array arrayType = (JavaType.Array) type;
+                    return arrayType.getElemType();
+                } else if (type instanceof JavaType.Parameterized) {
+                    JavaType.Parameterized parameterized = (JavaType.Parameterized) type;
+                    if (!parameterized.getTypeParameters().isEmpty()) {
+                        return parameterized.getTypeParameters().get(0);
+                    }
+                }
+
+                return null;
+            }
+
+            private String getElementTypeName(J collection) {
+                JavaType elementType = getElementType(collection);
+                if (elementType == null) {
+                    return null;
+                }
+                return getSimpleTypeName(elementType);
+            }
+
+            private String getSimpleTypeName(JavaType type) {
+                if (type instanceof JavaType.FullyQualified) {
+                    String className = ((JavaType.FullyQualified) type).getClassName();
+                    // Handle nested classes - extract just the simple name
+                    int lastDot = className.lastIndexOf('.');
+                    if (lastDot > 0) {
+                        return className.substring(lastDot + 1);
+                    }
+                    return className;
+                } else if (type instanceof JavaType.Primitive) {
+                    return type.toString();
+                } else if (type instanceof JavaType.GenericTypeVariable) {
+                    return ((JavaType.GenericTypeVariable) type).getName();
+                }
+                return type.toString();
             }
 
             private boolean isCollectionOrArrayAccess(J initializer, String indexVarName, J collection) {
