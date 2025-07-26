@@ -542,4 +542,51 @@ class UseDiamondOperatorTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/603")
+    @Test
+    void doNotRemoveTypeParameterWhenItCausesAmbiguity() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  static class Ambiguous<T> {
+                      Ambiguous(Supplier<? extends T> supplier, Runnable runnable) {}
+                      Ambiguous(T object, Runnable runnable) {}
+                  }
+
+                  <T extends AutoCloseable> Ambiguous<T> m(T t) {
+                      return new Ambiguous<T>(() -> { return t; }, () -> { System.out.println("A"); });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveTypeParameterWhenItCausesAmbiguityInVariableDeclaration() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  static class Ambiguous<T> {
+                      Ambiguous(Supplier<T> supplier, String s) {}
+                      Ambiguous(T object, String s) {}
+                  }
+
+                  void test() {
+                      Ambiguous<String> amb = new Ambiguous<String>(() -> "test", "arg");
+                  }
+              }
+              """
+          )
+        );
+    }
 }
