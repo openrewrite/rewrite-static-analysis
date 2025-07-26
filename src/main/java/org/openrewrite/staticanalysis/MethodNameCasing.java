@@ -31,11 +31,10 @@ import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.time.Duration;
 import java.util.*;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.MethodNameChange>> {
 
     @Option(displayName = "Apply recipe to test source set",
@@ -65,11 +64,6 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S100");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override

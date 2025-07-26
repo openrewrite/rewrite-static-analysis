@@ -33,8 +33,8 @@ import java.util.List;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     DefaultComesLastStyle style;
 
@@ -94,8 +94,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
         casesWithDefaultLast = addBreakToLastCase(casesWithDefaultLast, p);
         casesWithDefaultLast.addAll(maybeReorderFallthroughCases(defaultCases, p));
-        casesWithDefaultLast = ListUtils.mapLast(casesWithDefaultLast, this::removeBreak);
-        return casesWithDefaultLast;
+        return ListUtils.mapLast(casesWithDefaultLast, this::removeBreak);
     }
 
     private List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, P p) {
@@ -112,9 +111,8 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             } else if (defaultCase != null) {
                 if (!aCase.getStatements().isEmpty() && i != cases.size() - 1) {
                     return cases;
-                } else {
-                    postDefaultCases.add(aCase);
                 }
+                postDefaultCases.add(aCase);
             } else {
                 preDefaultCases.add(aCase);
             }

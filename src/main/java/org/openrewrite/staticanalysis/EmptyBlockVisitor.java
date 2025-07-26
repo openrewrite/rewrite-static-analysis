@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     EmptyBlockStyle emptyBlockStyle;
     JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();
@@ -214,7 +214,8 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             J.Block block = (J.Block) blockNode;
             if (EmptyBlockStyle.BlockPolicy.STATEMENT == emptyBlockStyle.getBlockPolicy()) {
                 return block.getStatements().isEmpty();
-            } else if (EmptyBlockStyle.BlockPolicy.TEXT == emptyBlockStyle.getBlockPolicy()) {
+            }
+            if (EmptyBlockStyle.BlockPolicy.TEXT == emptyBlockStyle.getBlockPolicy()) {
                 return block.getStatements().isEmpty() && block.getEnd().getComments().isEmpty();
             }
         }

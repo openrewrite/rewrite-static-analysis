@@ -96,8 +96,9 @@ public class SimplifyBooleanReturn extends Recipe {
                             if (singleFollowingStatement.map(this::isLiteralFalse).orElse(false) && i.getElsePart() == null) {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
                                 return maybeAutoFormat(return_, return_.withExpression(ifCondition), ctx, parent);
-                            } else if (!singleFollowingStatement.isPresent() &&
-                                       getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
+                            }
+                            if (!singleFollowingStatement.isPresent() &&
+                                    getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
                                 }

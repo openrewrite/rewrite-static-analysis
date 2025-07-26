@@ -32,7 +32,6 @@ import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.style.Style;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -55,11 +54,6 @@ public class ControlFlowIndentation extends Recipe {
     @Override
     public Set<String> getTags() {
         return singleton("RSPEC-S2681");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
@@ -99,7 +93,8 @@ public class ControlFlowIndentation extends Recipe {
             boolean shouldReformat(Statement s) {
                 if (s instanceof J.If) {
                     return shouldReformat((J.If) s);
-                } else if (s instanceof Loop) {
+                }
+                if (s instanceof Loop) {
                     Statement body = ((Loop) s).getBody();
                     return !(body instanceof J.Block);
                 }

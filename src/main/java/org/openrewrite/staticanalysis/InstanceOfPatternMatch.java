@@ -40,9 +40,9 @@ import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
+@EqualsAndHashCode(callSuper = false)
 @Incubating(since = "7.36.0")
 @Value
-@EqualsAndHashCode(callSuper = false)
 public class InstanceOfPatternMatch extends Recipe {
 
     @Override
@@ -399,51 +399,48 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         @Override
-        public J visitBinary(J.Binary original, Integer integer) {
-            Expression newLeft = (Expression) super.visitNonNull(original.getLeft(), integer);
-            if (newLeft != original.getLeft()) {
+        public J visitBinary(J.Binary binary, Integer p) {
+            J.Binary b = binary.withLeft((Expression) visitNonNull(binary.getLeft(), p));
+            if (b.getLeft() != binary.getLeft()) {
                 // The left side changed, so the right side should see any introduced variable names
-                J.Binary replacement = original.withLeft(newLeft);
-                Cursor widenedCursor = updateCursor(replacement);
+                Cursor widenedCursor = updateCursor(b);
 
                 Expression newRight;
-                if (original.getRight() instanceof J.InstanceOf) {
-                    newRight = replacements.processInstanceOf((J.InstanceOf) original.getRight(), widenedCursor);
-                } else if (original.getRight() instanceof J.Parentheses &&
-                           ((J.Parentheses<?>) original.getRight()).getTree() instanceof J.InstanceOf) {
-                    @SuppressWarnings("unchecked")
-                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) original.getRight();
+                if (binary.getRight() instanceof J.InstanceOf) {
+                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor);
+                } else if (binary.getRight() instanceof J.Parentheses &&
+                        ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
+                    @SuppressWarnings("unchecked") J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
                     newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
                 } else {
-                    newRight = (Expression) super.visitNonNull(original.getRight(), integer, widenedCursor);
+                    newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
-                return replacement.withRight(newRight);
+                return b.withRight(newRight);
             }
             // The left side didn't change, so the right side doesn't need to see any introduced variable names
-            return super.visitBinary(original, integer);
+            return b.withRight((Expression) visitNonNull(binary.getRight(), p));
         }
 
         @Override
-        public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer executionContext) {
-            instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, executionContext);
-            instanceOf = replacements.processInstanceOf(instanceOf, getCursor());
-            return instanceOf;
+        public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
+            instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
+            return replacements.processInstanceOf(instanceOf, getCursor());
         }
 
         @Override
-        public <T extends J> J visitParentheses(J.Parentheses<T> parens, Integer executionContext) {
+        public <T extends J> J visitParentheses(J.Parentheses<T> parens, Integer p) {
             if (parens.getTree() instanceof J.TypeCast) {
                 J replacement = replacements.processTypeCast((J.TypeCast) parens.getTree(), getCursor());
                 if (replacement != null) {
                     return replacement.withPrefix(parens.getPrefix());
                 }
             }
-            return super.visitParentheses(parens, executionContext);
+            return super.visitParentheses(parens, p);
         }
 
         @Override
-        public J visitTypeCast(J.TypeCast typeCast, Integer executionContext) {
-            typeCast = (J.TypeCast) super.visitTypeCast(typeCast, executionContext);
+        public J visitTypeCast(J.TypeCast typeCast, Integer p) {
+            typeCast = (J.TypeCast) super.visitTypeCast(typeCast, p);
             J replacement = replacements.processTypeCast(typeCast, getCursor());
             if (replacement != null) {
                 return replacement;
@@ -453,8 +450,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
         @Override
         @SuppressWarnings("NullableProblems")
-        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer integer) {
-            multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, integer);
+        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer p) {
+            multiVariable = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, p);
             return replacements.processVariableDeclarations(multiVariable);
         }
     }
@@ -495,7 +492,8 @@ public class InstanceOfPatternMatch extends Recipe {
             if (style == Style.EXACT) {
                 //noinspection DataFlowIssue
                 return name;
-            } else if (type instanceof JavaType.FullyQualified) {
+            }
+            if (type instanceof JavaType.FullyQualified) {
                 String className = ((JavaType.FullyQualified) type).getClassName();
                 className = className.substring(className.lastIndexOf('.') + 1);
                 String baseName = null;
@@ -547,10 +545,12 @@ public class InstanceOfPatternMatch extends Recipe {
                     break;
                 }
                 return candidate;
-            } else if (type instanceof JavaType.Primitive) {
+            }
+            if (type instanceof JavaType.Primitive) {
                 String keyword = ((JavaType.Primitive) type).getKeyword();
                 return style == Style.SHORT ? keyword.substring(0, 1) : keyword;
-            } else if (type instanceof JavaType.Array) {
+            }
+            if (type instanceof JavaType.Array) {
                 JavaType elemType = ((JavaType.Array) type).getElemType();
                 while (elemType instanceof JavaType.Array) {
                     elemType = ((JavaType.Array) elemType).getElemType();

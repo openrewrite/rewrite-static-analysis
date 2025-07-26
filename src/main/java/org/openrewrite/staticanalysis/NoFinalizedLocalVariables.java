@@ -25,9 +25,9 @@ import org.openrewrite.java.tree.J;
 
 import java.util.Iterator;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
 @Incubating(since = "7.0.0")
+@Value
 public class NoFinalizedLocalVariables extends Recipe {
 
     @Option(displayName = "Exclude method parameters",
@@ -76,7 +76,8 @@ public class NoFinalizedLocalVariables extends Recipe {
                             if (next instanceof J.ClassDeclaration || next instanceof J.NewClass) {
                                 // this variable is a field
                                 return mv;
-                            } else if (next instanceof J.MethodDeclaration || next instanceof J.Lambda) {
+                            }
+                            if (next instanceof J.MethodDeclaration || next instanceof J.Lambda) {
                                 return removeFinal(mv);
                             }
                         }

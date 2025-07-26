@@ -22,7 +22,6 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -44,11 +43,6 @@ public class WhileInsteadOfFor extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
             final JavaTemplate whileLoop = JavaTemplate.builder("while(#{any(boolean)}) {}")
@@ -61,8 +55,7 @@ public class WhileInsteadOfFor extends Recipe {
                     !(forLoop.getControl().getCondition() instanceof J.Empty)
                 ) {
                     J.WhileLoop w = whileLoop.apply(getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());
-                    w = w.withBody(forLoop.getBody());
-                    return w;
+                    return w.withBody(forLoop.getBody());
                 }
                 return super.visitForLoop(forLoop, ctx);
             }

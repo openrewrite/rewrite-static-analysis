@@ -528,4 +528,32 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void dontRemoveNecessaryDowncast() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              import java.util.Optional;
+
+              interface Bar {}
+              class BarImpl implements Bar {}
+              class Foo {
+                  private Bar getBar() {
+                      return new BarImpl();
+                  }
+
+                  private BarImpl getBarImpl() {
+                      return new BarImpl();
+                  }
+
+                  public Bar baz() {
+                   return Optional.of((Bar) getBarImpl()).orElse(getBar());
+                 }
+              }
+              """
+          )
+        );
+    }
 }

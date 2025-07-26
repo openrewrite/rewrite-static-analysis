@@ -59,7 +59,8 @@ public class NoFinalizer extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                cd = cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), stmt -> {
+
+                return cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), stmt -> {
                     if (stmt instanceof J.MethodDeclaration) {
                         if (FINALIZER.matches((J.MethodDeclaration) stmt, classDecl)) {
                             return null;
@@ -67,8 +68,6 @@ public class NoFinalizer extends Recipe {
                     }
                     return stmt;
                 })));
-
-                return cd;
             }
         });
     }

@@ -29,13 +29,12 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
+@Value
 public class RemoveUnusedLocalVariables extends Recipe {
     @Incubating(since = "7.17.2")
     @Option(displayName = "Ignore matching variable names",
@@ -89,11 +88,6 @@ public class RemoveUnusedLocalVariables extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S1481");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
@@ -242,29 +236,26 @@ public class RemoveUnusedLocalVariables extends Recipe {
      * Take an assignment in a context other than a variable declaration, such as the arguments of a function invocation or if condition,
      * and remove the assignment, leaving behind the value being assigned.
      */
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class PruneAssignmentExpression extends JavaIsoVisitor<ExecutionContext> {
         J.Assignment assignment;
 
         @Override
         public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext ctx) {
-            //noinspection unchecked
-            c = (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
+            return (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
                     .visitNonNull(c, ctx, getCursor().getParentOrThrow());
-            return c;
         }
 
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
-            return m;
+            return m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
         }
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class AssignmentToLiteral extends JavaVisitor<ExecutionContext> {
         J.Assignment assignment;
 

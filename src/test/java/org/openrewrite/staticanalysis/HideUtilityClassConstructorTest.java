@@ -25,7 +25,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static java.util.Collections.emptySet;
@@ -544,7 +544,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
           singletonList(
             new NamedStyles(
               randomId(), "test", "test", "test", emptySet(), singletonList(
-              new HideUtilityClassConstructorStyle(Arrays.asList(ignoreIfAnnotatedBy))
+              new HideUtilityClassConstructorStyle(List.of(ignoreIfAnnotatedBy))
             )
             )
           )

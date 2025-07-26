@@ -22,7 +22,6 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -44,11 +43,6 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         MethodMatcher enumEquals = new MethodMatcher("java.lang.Enum equals(java.lang.Object)");
         return Preconditions.check(new UsesMethod<>(enumEquals), new JavaVisitor<ExecutionContext>() {
@@ -58,14 +52,25 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
                 if (enumEquals.matches(m) && m.getSelect() != null) {
                     Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.Unary || is instanceof J.Block || is instanceof J.Binary || is instanceof J.Ternary || is instanceof J.Lambda);
                     boolean isNot = parent.getValue() instanceof J.Unary && ((J.Unary) parent.getValue()).getOperator() == J.Unary.Type.Not;
+                    boolean needsParentheses = false;
                     if (isNot) {
                         parent.putMessage("REMOVE_UNARY_NOT", parent.getValue());
+                    } else if (parent.getValue() instanceof J.Binary) {
+                        // Check if the method invocation is part of a binary expression with equality/inequality operators
+                        // In such cases, we need parentheses to avoid chained equality operators
+                        J.Binary binary = parent.getValue();
+                        J.Binary.Type op = binary.getOperator();
+                        // Only add parentheses when the parent binary uses equality/inequality operators
+                        needsParentheses = op == J.Binary.Type.Equal || op == J.Binary.Type.NotEqual;
                     }
+
                     String code = "#{any()} " + (isNot ? "!=" : "==") + " #{any()}";
-                    return autoFormat(JavaTemplate
-                            .builder(code)
-                            .build()
-                            .apply(updateCursor(m), m.getCoordinates().replace(), m.getSelect(), m.getArguments().get(0)), ctx);
+                    return JavaTemplate.apply(
+                            needsParentheses ? "(" + code + ")" : code,
+                            updateCursor(m),
+                            m.getCoordinates().replace(),
+                            m.getSelect(),
+                            m.getArguments().get(0));
                 }
                 return m;
             }

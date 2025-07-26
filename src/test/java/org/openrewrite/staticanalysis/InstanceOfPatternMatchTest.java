@@ -831,8 +831,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings({"CastCanBeRemovedNarrowingVariableType", "ClassInitializerMayBeStatic"})
     @Nested
+    @SuppressWarnings({"CastCanBeRemovedNarrowingVariableType", "ClassInitializerMayBeStatic"})
     class Ternary {
 
         @Test
@@ -1138,8 +1138,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Nested
+    @SuppressWarnings("unchecked")
     class Generics {
         @Test
         void wildcardInstanceOf() {
@@ -1376,8 +1376,8 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     @Nested
+    @SuppressWarnings({"unchecked", "rawtypes"})
     class Various {
         @Test
         void unaryWithoutSideEffects() {
@@ -1669,5 +1669,40 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+    }
+    @Test
+    void nestedVariables() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                public class A {
+                    Throwable wrap(Throwable cause) {
+                        if (cause instanceof Error) {
+                            if (cause instanceof OutOfMemoryError) {
+                                throw ((OutOfMemoryError) cause);
+                            }
+                            return (Error) cause;
+                        }
+                        return cause;
+                    }
+                }
+                """,
+              """
+                public class A {
+                    Throwable wrap(Throwable cause) {
+                        if (cause instanceof Error error1) {
+                            if (cause instanceof OutOfMemoryError error) {
+                                throw error;
+                            }
+                            return error1;
+                        }
+                        return cause;
+                    }
+                }
+                """
+            ), 17)
+        );
     }
 }

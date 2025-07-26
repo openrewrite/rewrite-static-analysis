@@ -30,8 +30,8 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Iterator;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
     private static final AnnotationMatcher LOMBOK_VALUE = new AnnotationMatcher("@lombok.Value");
     private static final AnnotationMatcher LOMBOK_BUILDER_DEFAULT = new AnnotationMatcher("@lombok.Builder.Default");
@@ -46,22 +46,21 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
         if (maybeBlockOrGType.getParent() == null || maybeBlockOrGType.getParent().getParent() == null) {
             // Groovy type.
             return v;
-        } else {
-            J maybeClassDecl = maybeBlockOrGType
-                    .getParentTreeCursor() // maybe J.ClassDecl or J.NewClass
-                    .getValue();
-            if (!(maybeClassDecl instanceof J.ClassDeclaration || maybeClassDecl instanceof J.NewClass)) {
-                return v;
-            }
+        }
+        J maybeClassDecl = maybeBlockOrGType
+                .getParentTreeCursor() // maybe J.ClassDecl or J.NewClass
+                .getValue();
+        if (!(maybeClassDecl instanceof J.ClassDeclaration || maybeClassDecl instanceof J.NewClass)) {
+            return v;
+        }
 
-            if (!(maybeClassDecl instanceof J.NewClass) &&
-                    J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration) maybeClassDecl).getKind()) {
-                return v;
-            }
+        if (!(maybeClassDecl instanceof J.NewClass) &&
+                J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration) maybeClassDecl).getKind()) {
+            return v;
+        }
 
-            if (!(variableDeclsCursor.getValue() instanceof J.VariableDeclarations)) {
-                return v;
-            }
+        if (!(variableDeclsCursor.getValue() instanceof J.VariableDeclarations)) {
+            return v;
         }
         Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
         if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_VALUE)) {
