@@ -77,8 +77,18 @@ public class TryWithResources extends Recipe {
                     return t;
                 }
 
+                // Skip transformation if any resource is closed in a catch block
+                for (String resourceName : resourcesThatAreClosed.keySet()) {
+                    if (isClosedInAnyCatchBlock(t, resourceName)) {
+                        return t;
+                    }
+                }
+
+                // Find resource initializers from inside the try block
+                Map<String, Expression> resourceInitializers = findResourceInitializers(t, resourcesThatAreClosed.keySet());
+
                 // Transform the try block to use try-with-resources
-                J.Try tryWith = transformToTryWithResources(t, resourcesThatAreClosed, findResourceInitializers(t, resourcesThatAreClosed.keySet()));
+                J.Try tryWith = transformToTryWithResources(t, resourcesThatAreClosed, resourceInitializers);
                 return autoFormat(tryWith, ctx);
             }
 
@@ -122,12 +132,30 @@ public class TryWithResources extends Recipe {
                         continue;
                     }
 
+                    // Skip transformation if any resource is closed in a catch block
+                    boolean skipDueToCatchBlock = false;
+                    for (String resourceName : resourcesThatAreClosed.keySet()) {
+                        if (isClosedInAnyCatchBlock(tryBlock, resourceName)) {
+                            skipDueToCatchBlock = true;
+                            break;
+                        }
+                    }
+                    if (skipDueToCatchBlock) {
+                        continue;
+                    }
+
+                    // Find resource initializers from both before the try block and inside it
+                    Map<String, Expression> allResourceInitializers = findResourceInitializersBeforeTry(newBody, tryBlock, resourcesThatAreClosed.keySet());
+                    allResourceInitializers.putAll(findResourceInitializers(tryBlock, resourcesThatAreClosed.keySet()));
+
                     // Transform the try block to use try-with-resources
-                    J.Try newTryBlock = transformToTryWithResources(tryBlock, resourcesThatAreClosed,
-                            findResourceInitializers(tryBlock, resourcesThatAreClosed.keySet()));
+                    J.Try newTryBlock = transformToTryWithResources(tryBlock, resourcesThatAreClosed, allResourceInitializers);
 
                     // Replace the old try block with the new one and remove the variable declarations
                     newBody = replaceTryBlockAndRemoveDeclarations(newBody, tryBlock, newTryBlock, resourcesThatAreClosed.values());
+
+                    // Also remove any assignments to resources that were moved into the try-with-resources
+                    newBody = removeResourceAssignments(newBody, tryBlock, allResourceInitializers.keySet());
                 }
 
                 return newBody;
@@ -151,6 +179,70 @@ public class TryWithResources extends Recipe {
                 }
 
                 return resourceInitializers;
+            }
+
+            private Map<String, Expression> findResourceInitializersBeforeTry(J.Block block, J.Try tryBlock, Set<String> resourceNames) {
+                Map<String, Expression> resourceInitializers = new HashMap<>();
+
+                // Find the index of the try block
+                int tryIndex = -1;
+                for (int i = 0; i < block.getStatements().size(); i++) {
+                    if (block.getStatements().get(i) == tryBlock) {
+                        tryIndex = i;
+                        break;
+                    }
+                }
+
+                if (tryIndex == -1) {
+                    return resourceInitializers;
+                }
+
+                // Check statements before the try block for assignments to resources
+                for (int i = 0; i < tryIndex; i++) {
+                    Statement stmt = block.getStatements().get(i);
+                    if (stmt instanceof J.Assignment) {
+                        J.Assignment assignment = (J.Assignment) stmt;
+                        if (assignment.getVariable() instanceof J.Identifier) {
+                            J.Identifier identifier = (J.Identifier) assignment.getVariable();
+                            String varName = identifier.getSimpleName();
+                            if (resourceNames.contains(varName)) {
+                                resourceInitializers.put(varName, assignment.getAssignment());
+                            }
+                        }
+                    }
+                }
+
+                return resourceInitializers;
+            }
+
+            private J.Block removeResourceAssignments(J.Block block, J.Try tryBlock, Set<String> resourceNames) {
+                // Find the index of the try block
+                int tryIndex = -1;
+                for (int i = 0; i < block.getStatements().size(); i++) {
+                    if (block.getStatements().get(i) == tryBlock) {
+                        tryIndex = i;
+                        break;
+                    }
+                }
+
+                if (tryIndex == -1) {
+                    return block;
+                }
+
+                // Remove assignments to resources before the try block
+                final int finalTryIndex = tryIndex;
+                return block.withStatements(ListUtils.map(block.getStatements(), (i, statement) -> {
+                    if (i < finalTryIndex && statement instanceof J.Assignment) {
+                        J.Assignment assignment = (J.Assignment) statement;
+                        if (assignment.getVariable() instanceof J.Identifier) {
+                            J.Identifier identifier = (J.Identifier) assignment.getVariable();
+                            if (resourceNames.contains(identifier.getSimpleName())) {
+                                return null; // Remove this assignment
+                            }
+                        }
+                    }
+                    return statement;
+                }));
             }
 
             private List<J.Try> findTryBlocks(J.Block block) {
@@ -216,6 +308,17 @@ public class TryWithResources extends Recipe {
                 for (Statement statement : finallyBlock.getStatements()) {
                     if (isCloseStatement(statement, varName)) {
                         return true;
+                    }
+                }
+                return false;
+            }
+
+            private boolean isClosedInAnyCatchBlock(J.Try tryStatement, String varName) {
+                for (J.Try.Catch catchBlock : tryStatement.getCatches()) {
+                    for (Statement statement : catchBlock.getBody().getStatements()) {
+                        if (isCloseStatement(statement, varName)) {
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -394,10 +497,8 @@ public class TryWithResources extends Recipe {
                     Expression initializer = resourceInitializers.get(varName);
                     // Create a new list of variables with the updated initializer
                     singleVarDecl = singleVarDecl.withVariables(ListUtils.map(singleVarDecl.getVariables(), var -> {
-                        J.VariableDeclarations.NamedVariable updated = isReferencedInBlock(tryable.getBody(), varName) ?
-                                var : var.withName(var.getName().withSimpleName("ignored"));
                         if (var.getSimpleName().equals(varName)) {
-                            return updated.withInitializer(initializer);
+                            return var.withInitializer(initializer);
                         }
                         return var;
                     }));

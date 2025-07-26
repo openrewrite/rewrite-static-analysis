@@ -202,7 +202,7 @@ class TryWithResourcesTest implements RewriteTest {
 
             class Test {
                 public void testConnection() throws IOException {
-                    try (InputStream ignored = new FileInputStream("file.txt")) {
+                    try (InputStream in = new FileInputStream("file.txt")) {
                     }
                 }
             }
@@ -551,14 +551,11 @@ class TryWithResourcesTest implements RewriteTest {
               }
               """,
             """
-              import java.io.FileInputStream;
-              import java.io.IOException;
-              import java.io.InputStream;
+              import java.io.*;
 
               class Test {
                   void method() throws IOException {
-                      InputStream in = new FileInputStream("file.txt");
-                      try (in) {
+                      try (InputStream in = new FileInputStream("file.txt")) {
                           int data = in.read();
                       }
                       // Resource is referenced after try - can still use try(in) syntax
