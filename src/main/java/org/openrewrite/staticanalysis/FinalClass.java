@@ -21,7 +21,6 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -39,11 +38,6 @@ public class FinalClass extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S2974");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override

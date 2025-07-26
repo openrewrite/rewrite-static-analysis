@@ -28,7 +28,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -50,11 +49,6 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S2111");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
@@ -107,7 +101,8 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
             private boolean isConvertibleBigDecimalConstant(J elem) {
                 if (elem instanceof J.Literal) {
                     return true;
-                } else if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
+                }
+                if (elem instanceof J.FieldAccess && ((J.FieldAccess) elem).getTarget().getType() instanceof JavaType.FullyQualified) {
                     J.FieldAccess fa = (J.FieldAccess) elem;
                     return fa.getTarget().getType() != null && TypeUtils.isOfClassType(fa.getTarget().getType(), "java.math.BigDecimal");
                 }

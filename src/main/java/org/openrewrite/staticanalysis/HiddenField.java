@@ -23,7 +23,6 @@ import org.openrewrite.java.style.HiddenFieldStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
@@ -44,11 +43,6 @@ public class HiddenField extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S1117");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
