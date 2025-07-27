@@ -183,7 +183,8 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             List<J.VariableDeclarations.NamedVariable> kept = keepUsedVariables(decl, usedParams);
             if (!kept.isEmpty()) {
                 return decl.withVariables(kept);
-            } else if (!decl.getLeadingAnnotations().isEmpty()) {
+            }
+            if (!decl.getLeadingAnnotations().isEmpty()) {
                 return decl;
             }
             return null;
