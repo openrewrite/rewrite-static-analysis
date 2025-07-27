@@ -241,6 +241,9 @@ public class UseDiamondOperator extends Recipe {
         }
 
         private static boolean hasAnnotations(J type) {
+            if (type instanceof J.AnnotatedType) {
+                return true;
+            }
             if (type instanceof J.ParameterizedType) {
                 J.ParameterizedType parameterizedType = (J.ParameterizedType) type;
                 if (hasAnnotations(parameterizedType.getClazz())) {
@@ -253,8 +256,6 @@ public class UseDiamondOperator extends Recipe {
                         }
                     }
                 }
-            } else {
-                return type instanceof J.AnnotatedType;
             }
             return false;
         }
