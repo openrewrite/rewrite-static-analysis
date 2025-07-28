@@ -896,4 +896,34 @@ class FinalizePrivateFieldsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepIndentation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.InputStream;
+
+              class A {
+                private InputStream in;
+
+                public A(InputStream aInputStream) {
+                  in = aInputStream;
+                }
+              }
+              """,
+            """
+              import java.io.InputStream;
+
+              class A {
+                private final InputStream in;
+
+                public A(InputStream aInputStream) {
+                  in = aInputStream;
+                }
+              }
+              """
+          ));
+    }
 }
