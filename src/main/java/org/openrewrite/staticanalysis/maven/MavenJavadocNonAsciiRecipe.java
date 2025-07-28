@@ -71,7 +71,6 @@ public class MavenJavadocNonAsciiRecipe extends Recipe {
             return processComments(super.visitMethodDeclaration(method, ctx), method.getComments());
         public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
             return processComments(super.visitVariable(variable, ctx), variable.getComments());
-            return processComments(super.visitMethodDeclaration(method, executionContext), method.getComments());
         }
 
         @Override
