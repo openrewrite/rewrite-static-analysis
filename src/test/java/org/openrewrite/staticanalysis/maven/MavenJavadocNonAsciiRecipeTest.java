@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2025 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,6 @@ class MavenJavadocNonAsciiRecipeTest implements RewriteTest {
                 * ₤€ contains non ascii characters
                 */
                 class A {
-                    /**
-                    * this is the main method
-                    */
                 }
                 """,
                 """
@@ -51,9 +48,6 @@ class MavenJavadocNonAsciiRecipeTest implements RewriteTest {
                 *  contains non ascii characters
                 */
                 class A {
-                    /**
-                    * this is the main method
-                    */
                 }
                 """
             )
@@ -70,12 +64,65 @@ class MavenJavadocNonAsciiRecipeTest implements RewriteTest {
                  * No changes should be made here.
                  */
                 public class Example {
-                    
                     /**
                      * Another regular method comment.
                      */
                     public void regularMethod() {
                     }
+                }
+                """
+            )
+        );
+    }
+
+    @Test
+    void removesNonAsciiWhitespaceAndPunctuation() {
+        rewriteRun(
+          java(
+            """
+            /**
+             * This line contains non-breaking space\u00A0and em dash\u2014and en dash\u2013.
+             * Also: “smart quotes”, ‘single quotes’, «guillemets», …ellipsis, •bullet, §section.
+             * Invisible:  🎉 🚀zero-width space\u200B, zero-width non-joiner\u200C, zero-width joiner\u200D.
+             */
+            class A {
+            }
+            """,
+            """
+            /**
+             * This line contains non-breaking space and em dashand en dash.
+             * Also: smart quotes, single quotes, guillemets, ...ellipsis, bullet, section.
+             * Invisible:  \szero-width space, zero-width non-joiner, zero-width joiner.
+             */
+            class A {
+            }
+            """
+          )
+        );
+    }
+
+     @Test
+    void removesLatinWithDiacritics() {
+        rewriteRun(
+            java(
+                """
+                /**
+                 * Français: café, résumé, naïve, piñata.
+                 * Español: niño, señor, corazón, José García.
+                 * Deutsch: Müller, Größe, weiß, Björn.
+                 * Português: São Paulo, coração, não.
+                 */
+                 class A {
+                }
+                """,
+                """
+                /**
+                 * Francais: cafe, resume, naive, pinata.
+                 * Espanol: nino, senor, corazon, Jose Garcia.
+                 * Deutsch: Muller, Groe, wei, Bjorn.
+                 * Portugues: Sao Paulo, coracao, nao.
+                 */
+                 class A {
                 }
                 """
             )
