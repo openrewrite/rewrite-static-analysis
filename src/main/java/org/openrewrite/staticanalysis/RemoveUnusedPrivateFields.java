@@ -24,10 +24,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.service.AnnotationService;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,7 +56,8 @@ public class RemoveUnusedPrivateFields extends Recipe {
             class CheckField {
                 J.VariableDeclarations declarations;
 
-                @Nullable Statement nextStatement;
+                @Nullable
+                Statement nextStatement;
             }
 
             @Override
@@ -75,7 +73,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                 List<CheckField> checkFields = new ArrayList<>();
                 // Do not remove fields with `serialVersionUID` name.
                 boolean skipSerialVersionUID = cd.getType() == null ||
-                                               cd.getType().isAssignableTo("java.io.Serializable");
+                        cd.getType().isAssignableTo("java.io.Serializable");
 
                 List<Statement> statements = cd.getBody().getStatements();
                 for (int i = 0; i < statements.size(); i++) {
@@ -84,8 +82,8 @@ public class RemoveUnusedPrivateFields extends Recipe {
                         J.VariableDeclarations vd = (J.VariableDeclarations) statement;
                         // RSPEC-S1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
-                            vd.getLeadingAnnotations().isEmpty() &&
-                            vd.hasModifier(J.Modifier.Type.Private)) {
+                                vd.getLeadingAnnotations().isEmpty() &&
+                                vd.hasModifier(J.Modifier.Type.Private)) {
                             Statement nextStatement = i < statements.size() - 1 ? statements.get(i + 1) : null;
                             checkFields.add(new CheckField(vd, nextStatement));
                         }
@@ -133,10 +131,10 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
             private boolean isSerialVersionUid(J.VariableDeclarations vd) {
                 return vd.hasModifier(J.Modifier.Type.Private) &&
-                       vd.hasModifier(J.Modifier.Type.Static) &&
-                       vd.hasModifier(J.Modifier.Type.Final) &&
-                       TypeUtils.isOfClassType(vd.getType(), "long") &&
-                       vd.getVariables().stream().anyMatch(it -> "serialVersionUID".equals(it.getSimpleName()));
+                        vd.hasModifier(J.Modifier.Type.Static) &&
+                        vd.hasModifier(J.Modifier.Type.Final) &&
+                        TypeUtils.isOfClassType(vd.getType(), "long") &&
+                        vd.getVariables().stream().anyMatch(it -> "serialVersionUID".equals(it.getSimpleName()));
             }
         };
         return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
@@ -146,12 +144,15 @@ public class RemoveUnusedPrivateFields extends Recipe {
         public static Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> find(J.VariableDeclarations declarations, J.ClassDeclaration parent) {
             Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> found = new IdentityHashMap<>(declarations.getVariables().size());
             Map<String, J.VariableDeclarations.NamedVariable> signatureMap = new HashMap<>();
+            Map<String, J.VariableDeclarations.NamedVariable> nameMap = new HashMap<>();
 
             for (J.VariableDeclarations.NamedVariable variable : declarations.getVariables()) {
                 if (variable.getVariableType() != null) {
                     found.computeIfAbsent(variable, k -> new ArrayList<>());
                     // Note: Using a variable type signature is only safe to find uses of class fields.
                     signatureMap.put(variable.getVariableType().toString(), variable);
+                    // Also map by name for fallback matching
+                    nameMap.put(variable.getSimpleName(), variable);
                 }
             }
 
@@ -161,17 +162,36 @@ public class RemoveUnusedPrivateFields extends Recipe {
                         @Override
                         public J.Identifier visitIdentifier(J.Identifier identifier,
                                                             Map<J.VariableDeclarations.NamedVariable, List<J.Identifier>> identifiers) {
-                            if (identifier.getFieldType() != null && signatureMap.containsKey(identifier.getFieldType().toString())) {
-                                Cursor parent = getCursor().dropParentUntil(is ->
-                                        is instanceof J.VariableDeclarations ||
-                                        is instanceof J.ClassDeclaration);
+                            if (identifier.getFieldType() != null) {
+                                J.VariableDeclarations.NamedVariable match = null;
 
-                                if (!(parent.getValue() instanceof J.VariableDeclarations && parent.getValue() == declarations)) {
-                                    J.VariableDeclarations.NamedVariable name = signatureMap.get(identifier.getFieldType().toString());
-                                    if (declarations.getVariables().contains(name)) {
-                                        J.VariableDeclarations.NamedVariable used = signatureMap.get(identifier.getFieldType().toString());
-                                        identifiers.computeIfAbsent(used, k -> new ArrayList<>())
-                                                .add(identifier);
+                                // First try exact type signature match
+                                String fieldTypeSignature = identifier.getFieldType().toString();
+                                if (signatureMap.containsKey(fieldTypeSignature)) {
+                                    match = signatureMap.get(fieldTypeSignature);
+                                } else if (identifier.getFieldType().getOwner() != null) {
+                                    // Fallback: match by name if it's a field reference from the same class
+                                    J.VariableDeclarations.NamedVariable nameMatch = nameMap.get(identifier.getSimpleName());
+                                    if (nameMatch != null && nameMatch.getVariableType() != null) {
+                                        // Check if the owner type matches the parent class type
+                                        JavaType.FullyQualified ownerType = TypeUtils.asFullyQualified(identifier.getFieldType().getOwner());
+                                        JavaType.FullyQualified parentType = parent.getType();
+                                        if (ownerType != null && parentType != null &&
+                                                TypeUtils.fullyQualifiedNamesAreEqual(ownerType.getFullyQualifiedName(), parentType.getFullyQualifiedName())) {
+                                            match = nameMatch;
+                                        }
+                                    }
+                                }
+
+                                if (match != null) {
+                                    Cursor parentCursor = getCursor().dropParentUntil(is ->
+                                            is instanceof J.VariableDeclarations || is instanceof J.ClassDeclaration);
+
+                                    if (!(parentCursor.getValue() instanceof J.VariableDeclarations && parentCursor.getValue() == declarations)) {
+                                        if (declarations.getVariables().contains(match)) {
+                                            identifiers.computeIfAbsent(match, k -> new ArrayList<>())
+                                                    .add(identifier);
+                                        }
                                     }
                                 }
                             }

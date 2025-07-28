@@ -106,13 +106,12 @@ public class FinalizePrivateFields extends Recipe {
                         .allMatch(privateFieldsToBeFinalized::contains);
 
                 if (canAllVariablesBeFinalized) {
-                    mv = autoFormat(mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
+                    return mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
                         JavaType.Variable type = v.getVariableType();
-                        return type != null ? v.withVariableType(type.withFlags(
-                                Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
+                        return type != null ? v.withVariableType(type.withFlags(Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
                     })).withModifiers(ListUtils.concat(mv.getModifiers(),
-                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, isInstanceOfCs(topLevel) ? "readonly" : "final",
-                                    isInstanceOfCs(topLevel) ? J.Modifier.Type.LanguageExtension : J.Modifier.Type.Final, emptyList()))), ctx);
+                            new J.Modifier(Tree.randomId(), mv.getModifiers().isEmpty() ? Space.EMPTY : Space.SINGLE_SPACE, Markers.EMPTY, isInstanceOfCs(topLevel) ? "readonly" : "final",
+                                    isInstanceOfCs(topLevel) ? J.Modifier.Type.LanguageExtension : J.Modifier.Type.Final, emptyList())));
                 }
 
                 return mv;
