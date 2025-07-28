@@ -33,7 +33,6 @@ class MinimumSwitchCasesTest implements RewriteTest {
     }
 
     @DocumentExample
-    @ExpectedToFail("Temporarily until we have investigated why the behavior has changed here")
     @Test
     void twoCases() {
         rewriteRun(
@@ -52,7 +51,7 @@ class MinimumSwitchCasesTest implements RewriteTest {
               """,
             """
               def s = "prod"
-              if (s == "prod") {
+              if ("prod".equals(s)) {
                   println("prod")
               } else {
                   println("default")
