@@ -81,7 +81,10 @@ public class UseDiamondOperator extends Recipe {
                 varDecls.getTypeExpression() instanceof J.ParameterizedType) {
                 varDecls = varDecls.withVariables(ListUtils.map(varDecls.getVariables(), nv -> {
                     if (nv.getInitializer() instanceof J.NewClass) {
-                        nv = nv.withInitializer(maybeRemoveParams(parameterizedTypes((J.ParameterizedType) varDeclsTypeExpression), (J.NewClass) nv.getInitializer()));
+                        J.NewClass nc = (J.NewClass) nv.getInitializer();
+                        if (!hasAmbiguousConstructors(nc)) {
+                            nv = nv.withInitializer(maybeRemoveParams(parameterizedTypes((J.ParameterizedType) varDeclsTypeExpression), nc));
+                        }
                     }
                     return nv;
                 }));
@@ -95,7 +98,7 @@ public class UseDiamondOperator extends Recipe {
             if (asgn.getAssignment() instanceof J.NewClass) {
                 JavaType.Parameterized assignmentType = TypeUtils.asParameterized(asgn.getType());
                 J.NewClass nc = (J.NewClass) asgn.getAssignment();
-                if (assignmentType != null && nc.getClazz() instanceof J.ParameterizedType) {
+                if (assignmentType != null && nc.getClazz() instanceof J.ParameterizedType && !hasAmbiguousConstructors(nc)) {
                     asgn = asgn.withAssignment(maybeRemoveParams(assignmentType.getTypeParameters(), nc));
                 }
             }
@@ -144,7 +147,7 @@ public class UseDiamondOperator extends Recipe {
                         J.NewClass nc = (J.NewClass) arg;
                         if ((java9 || nc.getBody() == null) && !methodType.getParameterTypes().isEmpty()) {
                             JavaType.Parameterized paramType = TypeUtils.asParameterized(getMethodParamType(methodType, i));
-                            if (paramType != null && nc.getClazz() instanceof J.ParameterizedType) {
+                            if (paramType != null && nc.getClazz() instanceof J.ParameterizedType && !hasAmbiguousConstructors(nc)) {
                                 return maybeRemoveParams(paramType.getTypeParameters(), nc);
                             }
                         }
@@ -188,6 +191,10 @@ public class UseDiamondOperator extends Recipe {
             J.Return return_ = super.visitReturn(_return, ctx);
             J.NewClass nc = return_.getExpression() instanceof J.NewClass ? (J.NewClass) return_.getExpression() : null;
             if (nc != null && (java9 || nc.getBody() == null) && nc.getClazz() instanceof J.ParameterizedType) {
+                // Check if there could be constructor ambiguity
+                if (hasAmbiguousConstructors(nc)) {
+                    return return_;
+                }
                 J parentBlock = getCursor().dropParentUntil(v -> v instanceof J.MethodDeclaration || v instanceof J.Lambda).getValue();
                 if (parentBlock instanceof J.MethodDeclaration) {
                     J.MethodDeclaration md = (J.MethodDeclaration) parentBlock;
@@ -234,6 +241,9 @@ public class UseDiamondOperator extends Recipe {
         }
 
         private static boolean hasAnnotations(J type) {
+            if (type instanceof J.AnnotatedType) {
+                return true;
+            }
             if (type instanceof J.ParameterizedType) {
                 J.ParameterizedType parameterizedType = (J.ParameterizedType) type;
                 if (hasAnnotations(parameterizedType.getClazz())) {
@@ -246,8 +256,6 @@ public class UseDiamondOperator extends Recipe {
                         }
                     }
                 }
-            } else {
-                return type instanceof J.AnnotatedType;
             }
             return false;
         }
@@ -258,6 +266,48 @@ public class UseDiamondOperator extends Recipe {
                                                     p instanceof J.CompilationUnit ||
                                                     p instanceof J.Block ||
                                                     p == Cursor.ROOT_VALUE).getValue() instanceof J.MethodInvocation;
+        }
+
+        private boolean hasAmbiguousConstructors(J.NewClass newClass) {
+            // If there are no arguments or no type info, no ambiguity
+            if (newClass.getArguments().isEmpty() || newClass.getConstructorType() == null) {
+                return false;
+            }
+            
+            JavaType.FullyQualified type = TypeUtils.asFullyQualified(newClass.getType());
+            if (type == null) {
+                return false;
+            }
+            
+            // Check if any argument contains a lambda or method reference
+            boolean hasLambdaOrMethodRef = false;
+            for (Expression arg : newClass.getArguments()) {
+                if (arg instanceof J.Lambda || arg instanceof J.MemberReference) {
+                    hasLambdaOrMethodRef = true;
+                    break;
+                }
+            }
+            
+            // If no lambdas/method references, no ambiguity
+            if (!hasLambdaOrMethodRef) {
+                return false;
+            }
+            
+            // Check if there are multiple constructors with the same number of parameters
+            int argCount = newClass.getArguments().size();
+            int constructorsWithSameArgCount = 0;
+            
+            for (JavaType.Method method : type.getMethods()) {
+                if (method.isConstructor() && method.getParameterTypes().size() == argCount) {
+                    constructorsWithSameArgCount++;
+                    if (constructorsWithSameArgCount > 1) {
+                        // Multiple constructors with same arg count + lambda/method ref = potential ambiguity
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
         }
     }
 }

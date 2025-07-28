@@ -23,7 +23,6 @@ import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -47,11 +46,6 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
     @Override
     public Set<String> getTags() {
         return Collections.singleton("RSPEC-S2147");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
