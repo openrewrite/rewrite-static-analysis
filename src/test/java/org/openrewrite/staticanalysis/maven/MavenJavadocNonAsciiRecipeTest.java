@@ -31,7 +31,7 @@ class MavenJavadocNonAsciiRecipeTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void originalTestCase() {
+    void commentContainingNonAscii() {
         rewriteRun(
             java(
                 """
