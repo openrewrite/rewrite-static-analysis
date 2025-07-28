@@ -81,4 +81,4 @@ class MavenJavadocNonAsciiRecipeTest implements RewriteTest {
             )
         );
     }
-} 
+}
