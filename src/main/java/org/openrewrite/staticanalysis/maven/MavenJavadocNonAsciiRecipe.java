@@ -33,11 +33,11 @@ import java.util.stream.Collectors;
 /**
  * Maven's javadoc-plugin configuration does not support non-ASCII characters in Javadoc comments.
  * This can cause build failures with ambiguous error messages that don't clearly indicate the root cause.
- * 
+ *
  * This recipe removes non-ASCII characters from Javadoc comments by:
  * 1. Normalizing text using Unicode NFKD form
  * 2. Removing any characters that are not in the ASCII character set
- * 
+ *
  * This is particularly useful when working with international codebases or when comments
  * contain accented characters, special symbols, or other non-ASCII content.
  */
@@ -74,8 +74,8 @@ public class MavenJavadocNonAsciiRecipe extends Recipe {
         }
 
         @Override
-        public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext executionContext) {
-            return processComments(super.visitVariable(variable, executionContext), variable.getComments());
+        public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+            return processComments(super.visitVariable(variable, ctx), variable.getComments());
         }
 
         private <T extends J> T processComments(T jElement, List<Comment> comments) {
