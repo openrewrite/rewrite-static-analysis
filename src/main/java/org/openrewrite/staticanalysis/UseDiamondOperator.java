@@ -273,12 +273,12 @@ public class UseDiamondOperator extends Recipe {
             if (newClass.getArguments().isEmpty() || newClass.getConstructorType() == null) {
                 return false;
             }
-            
+
             JavaType.FullyQualified type = TypeUtils.asFullyQualified(newClass.getType());
             if (type == null) {
                 return false;
             }
-            
+
             // Check if any argument contains a lambda or method reference
             boolean hasLambdaOrMethodRef = false;
             for (Expression arg : newClass.getArguments()) {
@@ -287,16 +287,16 @@ public class UseDiamondOperator extends Recipe {
                     break;
                 }
             }
-            
+
             // If no lambdas/method references, no ambiguity
             if (!hasLambdaOrMethodRef) {
                 return false;
             }
-            
+
             // Check if there are multiple constructors with the same number of parameters
             int argCount = newClass.getArguments().size();
             int constructorsWithSameArgCount = 0;
-            
+
             for (JavaType.Method method : type.getMethods()) {
                 if (method.isConstructor() && method.getParameterTypes().size() == argCount) {
                     constructorsWithSameArgCount++;
@@ -306,7 +306,7 @@ public class UseDiamondOperator extends Recipe {
                     }
                 }
             }
-            
+
             return false;
         }
     }
