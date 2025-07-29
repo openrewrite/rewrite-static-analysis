@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -30,6 +31,7 @@ class PreferIncrementOperatorTest implements RewriteTest {
         spec.recipe(new PreferIncrementOperator());
     }
 
+    @DocumentExample
     @Test
     void incrementByOne() {
         rewriteRun(
