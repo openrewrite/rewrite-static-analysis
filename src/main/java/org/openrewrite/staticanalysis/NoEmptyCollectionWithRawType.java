@@ -28,10 +28,11 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class NoEmptyCollectionWithRawType extends Recipe {
 
@@ -47,7 +48,7 @@ public class NoEmptyCollectionWithRawType extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1596");
+        return singleton("RSPEC-S1596");
     }
 
     @Override

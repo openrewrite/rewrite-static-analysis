@@ -542,4 +542,137 @@ class UseDiamondOperatorTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/603")
+    @Test
+    void doNotRemoveTypeParameterWhenItCausesAmbiguity() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  static class Ambiguous<T> {
+                      Ambiguous(Supplier<? extends T> supplier, Runnable runnable) {}
+                      Ambiguous(T object, Runnable runnable) {}
+                  }
+
+                  <T extends AutoCloseable> Ambiguous<T> m(T t) {
+                      return new Ambiguous<T>(() -> { return t; }, () -> { System.out.println("A"); });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveTypeParameterWhenItCausesAmbiguityInVariableDeclaration() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  static class Ambiguous<T> {
+                      Ambiguous(Supplier<T> supplier, String s) {}
+                      Ambiguous(T object, String s) {}
+                  }
+
+                  void test() {
+                      Ambiguous<String> amb = new Ambiguous<String>(() -> "test", "arg");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/214")
+    @Test
+    void preserveTypeAnnotations() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package org.jspecify.annotations;
+
+              import java.lang.annotation.*;
+
+              @Retention(RetentionPolicy.RUNTIME)
+              @Target({ElementType.TYPE_USE})
+              public @interface Nullable {}
+              """
+          )),
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+              import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
+              class QueryExecutorCloseAction {
+                  private volatile @Nullable PGStream pgStream;
+
+                  private static final AtomicReferenceFieldUpdater<QueryExecutorCloseAction, @Nullable PGStream> PG_STREAM_UPDATER =
+                      AtomicReferenceFieldUpdater.<QueryExecutorCloseAction, @Nullable PGStream>newUpdater(
+                          QueryExecutorCloseAction.class, PGStream.class, "pgStream");
+              }
+
+              class PGStream {}
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveVariousTypeAnnotations() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package org.jspecify.annotations;
+
+              import java.lang.annotation.*;
+
+              @Retention(RetentionPolicy.RUNTIME)
+              @Target({ElementType.TYPE_USE})
+              public @interface Nullable {}
+              """,
+            """
+              package javax.annotation;
+
+              import java.lang.annotation.*;
+
+              @Retention(RetentionPolicy.RUNTIME)
+              @Target({ElementType.TYPE_USE})
+              public @interface Nonnull {}
+              """
+          )),
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+              import javax.annotation.Nonnull;
+              import java.util.*;
+
+              class Test {
+                  List<@Nullable String> list1 = new ArrayList<@Nullable String>();
+                  Map<@Nonnull String, @Nullable Integer> map = new HashMap<@Nonnull String, @Nullable Integer>();
+                  List<String> list2 = new ArrayList<String>(); // This should use diamond operator
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+              import javax.annotation.Nonnull;
+              import java.util.*;
+
+              class Test {
+                  List<@Nullable String> list1 = new ArrayList<@Nullable String>();
+                  Map<@Nonnull String, @Nullable Integer> map = new HashMap<@Nonnull String, @Nullable Integer>();
+                  List<String> list2 = new ArrayList<>(); // This should use diamond operator
+              }
+              """
+          )
+        );
+    }
 }

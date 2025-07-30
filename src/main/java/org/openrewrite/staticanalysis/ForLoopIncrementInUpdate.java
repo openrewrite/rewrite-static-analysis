@@ -27,10 +27,11 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ForLoopIncrementInUpdate extends Recipe {
 
@@ -46,7 +47,7 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1994");
+        return singleton("RSPEC-S1994");
     }
 
     @Override
@@ -87,16 +88,13 @@ public class ForLoopIncrementInUpdate extends Recipe {
                                             Comparator.comparing(s -> s.printTrimmed(getCursor()), Comparator.naturalOrder())
                                     )));
 
-                                    //noinspection ConstantConditions
-                                    f = f.withBody((Statement) new JavaVisitor<ExecutionContext>() {
+                                    return f.withBody((Statement) new JavaVisitor<ExecutionContext>() {
 
                                         @Override
                                         public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                                             return tree == unary ? null : super.visit(tree, ctx);
                                         }
                                     }.visit(f.getBody(), ctx));
-
-                                    return f;
                                 }
                             }
                         }

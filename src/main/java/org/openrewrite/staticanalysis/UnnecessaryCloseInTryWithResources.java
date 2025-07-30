@@ -28,8 +28,9 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class UnnecessaryCloseInTryWithResources extends Recipe {
     @Override
@@ -49,7 +50,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S4087");
+        return singleton("RSPEC-S4087");
     }
 
     @Override

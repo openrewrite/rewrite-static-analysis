@@ -20,10 +20,10 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
 
 @Incubating(since = "7.23.0")
@@ -45,7 +45,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1905");
+        return singleton("RSPEC-S1905");
     }
 
     @Override
@@ -76,7 +76,8 @@ public class RemoveRedundantTypeCast extends Recipe {
                     JavaType.Method methodType = methodCall.getMethodType();
                     if (methodType == null || hasMethodOverloading(methodType)) {
                         return visited;
-                    } else if (!methodType.getParameterTypes().isEmpty()) {
+                    }
+                    if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
@@ -110,6 +111,21 @@ public class RemoveRedundantTypeCast extends Recipe {
                 if (typeCast.getExpression() instanceof J.Lambda || typeCast.getExpression() instanceof J.MemberReference) {
                     // Not currently supported, this will be more accurate with dataflow analysis.
                     return visitedTypeCast;
+                }
+
+                // Special case: if this cast is in a generic method call that's part of a method chain,
+                // the cast might be necessary to control generic type inference
+                if (parentValue instanceof J.MethodInvocation &&
+                        TypeUtils.isAssignableTo(castType, expressionType) &&
+                        !castType.equals(expressionType)) {
+                    // Check if the method returns a generic type
+                    JavaType.Method methodType = ((J.MethodInvocation) parentValue).getMethodType();
+                    if (methodType != null && methodType.getReturnType() instanceof JavaType.Parameterized) {
+                        // This cast is widening the type (e.g., BarImpl to Bar) in a generic context
+                        // which might affect how the generic type is inferred in method chains
+                        // Keep the cast to be safe
+                        return visitedTypeCast;
+                    }
                 }
 
                 if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||

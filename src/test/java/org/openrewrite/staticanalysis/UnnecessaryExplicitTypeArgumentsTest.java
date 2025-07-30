@@ -139,7 +139,6 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/164")
     @Test
     void doesNotRemoveNecessaryTypeArguments() {
@@ -150,8 +149,8 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
               import java.util.Optional;
               import java.util.stream.Stream;
               public class Test {
-                  void test() {
-                      Stream.of("hi")
+                  void test(String s) {
+                      Stream.of(s)
                               .map(it -> it == null ? Optional.<String>empty() : Optional.of(it))
                               .flatMap(Optional::stream)
                               .map(this::mapper); //this requires the type information

@@ -200,8 +200,7 @@ public class UseAsBuilder extends Recipe {
                                     );
                         })
                 );
-                cb = formatTabsAndIndents(cb, getCursor());
-                return cb;
+                return formatTabsAndIndents(cb, getCursor());
             }
         };
 

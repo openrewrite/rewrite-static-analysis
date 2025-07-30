@@ -34,13 +34,12 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void unwrapTry() {
         rewriteRun(
-          //language=java
           java(
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IOException e) {
@@ -50,8 +49,8 @@ class UnnecessaryCatchTest implements RewriteTest {
               }
               """,
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       java.util.Base64.getDecoder().decode("abc".getBytes());
                   }
               }
@@ -68,8 +67,8 @@ class UnnecessaryCatchTest implements RewriteTest {
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IOException e1) {
@@ -81,8 +80,8 @@ class UnnecessaryCatchTest implements RewriteTest {
               }
               """,
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IllegalStateException e2) {
@@ -96,13 +95,109 @@ class UnnecessaryCatchTest implements RewriteTest {
     }
 
     @Test
+    void removeFirstFromMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class AnExample {
+                  void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IOException | IllegalArgumentException | IllegalStateException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """,
+            """
+              class AnExample {
+                  void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IllegalArgumentException | IllegalStateException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeMiddleFromMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class AnExample {
+                  void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IllegalArgumentException | IllegalStateException | IOException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """,
+            """
+              class AnExample {
+                  void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IllegalArgumentException | IllegalStateException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeMultiCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.sql.SQLException;
+
+              class AnExample {
+                  void method() {
+                      try {
+                          java.util.Base64.getDecoder().decode("abc".getBytes());
+                      } catch (IOException | SQLException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """,
+            """
+              class AnExample {
+                  void method() {
+                      java.util.Base64.getDecoder().decode("abc".getBytes());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotRemoveRuntimeException() {
         rewriteRun(
           //language=java
           java(
             """
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           java.util.Base64.getDecoder().decode("abc".getBytes());
                       } catch (IllegalStateException e) {
@@ -123,8 +218,8 @@ class UnnecessaryCatchTest implements RewriteTest {
             """
               import java.io.IOException;
 
-              public class AnExample {
-                  public void method() {
+              class AnExample {
+                  void method() {
                       try {
                           fred();
                       } catch (IOException e) {
@@ -132,7 +227,7 @@ class UnnecessaryCatchTest implements RewriteTest {
                       }
                   }
 
-                  public void fred() throws IOException {
+                  void fred() throws IOException {
                   }
               }
               """
@@ -143,27 +238,27 @@ class UnnecessaryCatchTest implements RewriteTest {
     @Test
     void doNotRemoveThrownExceptionFromConstructor() {
         rewriteRun(
-            //language=java
-            java(
-                """
-                  import java.io.IOException;
+          //language=java
+          java(
+            """
+              import java.io.IOException;
 
-                  public class AnExample {
-                      public void method() {
-                          try {
-                              new Fred();
-                          } catch (IOException e) {
-                              System.out.println("an exception!");
-                          }
+              class AnExample {
+                  void method() {
+                      try {
+                          new Fred();
+                      } catch (IOException e) {
+                          System.out.println("an exception!");
                       }
-
-                      public static class Fred {
-                          public Fred() throws IOException {}
-                      }
-
                   }
-                  """
-            )
+
+                  static class Fred {
+                      Fred() throws IOException {}
+                  }
+
+              }
+              """
+          )
         );
     }
 
@@ -188,22 +283,192 @@ class UnnecessaryCatchTest implements RewriteTest {
     }
 
     @Test
-    void doNotRemoveJavaLangThrowable() {
+    void removeJavaLangException() {
         rewriteRun(
-            //language=java
-            java(
-                """
-                  class Scratch {
-                      void method() {
-                          try {
-                              throw new RuntimeException();
-                          } catch (Throwable e) {
-                              System.out.println("an exception!");
-                          }
+          spec -> spec.recipe(new UnnecessaryCatch(true, false)),
+          //language=java
+          java(
+            """
+              class Scratch {
+                  void method() {
+                      try {
+                          throw new RuntimeException();
+                      } catch (Exception e) {
+                          System.out.println("an exception!");
                       }
                   }
-                  """
-            )
+              }
+              """,
+            """
+              class Scratch {
+                  void method() {
+                      throw new RuntimeException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveJavaLangThrowable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Scratch {
+                  void method() {
+                      try {
+                          throw new RuntimeException();
+                      } catch (Throwable e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavaLangThrowable() {
+        rewriteRun(
+          spec -> spec.recipe(new UnnecessaryCatch(false, true)),
+          //language=java
+          java(
+            """
+              class Scratch {
+                  void method() {
+                      try {
+                          throw new RuntimeException();
+                      } catch (Throwable e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """,
+            """
+              class Scratch {
+                  void method() {
+                      throw new RuntimeException();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCatchOfThrownException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Scratch {
+                  void method() {
+                      try {
+                          throw new ClassNotFoundException();
+                      } catch (ClassNotFoundException e) {
+                          // Caught
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCatchForCloseOnTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.io.StringWriter;
+
+              class Scratch {
+                  void method() {
+                      try (StringWriter sw = new StringWriter()) {
+                      } catch (IOException e) {
+                          // Caught on .close()
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCatchForConstructorThatThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.jar.JarFile;
+              import java.util.zip.ZipException;
+
+              class Scratch {
+                  JarFile method(String name) {
+                      try {
+                          return new JarFile(name); // throws IOException
+                      } catch (ZipException e) { // extends IOException
+                          // Catches subset
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCatchForWiderCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.io.FileNotFoundException;
+
+              class Scratch {
+                  void foo() throws FileNotFoundException {} // extends IOException
+
+                  void method(String name) {
+                      try {
+                          foo();
+                      } catch (IOException e) {
+                          // Catches FileNotFoundException
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCatchOnMethodChain() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+              import java.net.InetAddress;
+
+              class Scratch {
+                  void method(String name) {
+                      String host;
+                      try {
+                          host = InetAddress.getLocalHost().getCanonicalHostName();
+                      } catch (IOException ignore) {
+                          host = "ignored";
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 }

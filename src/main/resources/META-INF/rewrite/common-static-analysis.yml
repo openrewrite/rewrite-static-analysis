@@ -29,6 +29,7 @@ recipeList:
   - org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
   - org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
   - org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+  - org.openrewrite.staticanalysis.CollectionToArrayShouldHaveProperType
   - org.openrewrite.staticanalysis.CovariantEquals
   - org.openrewrite.staticanalysis.DefaultComesLast
   - org.openrewrite.staticanalysis.EmptyBlock
@@ -89,6 +90,7 @@ recipeList:
   - org.openrewrite.staticanalysis.UnnecessaryParentheses
   - org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
   - org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
+#  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn
   - org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
 #  - org.openrewrite.staticanalysis.UnnecessaryThrows
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces

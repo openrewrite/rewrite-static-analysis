@@ -29,9 +29,13 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
-import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Collections.singleton;
 
 @EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
@@ -88,12 +92,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1481");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return singleton("RSPEC-S1481");
     }
 
     @Override
@@ -249,17 +248,14 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
         @Override
         public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext ctx) {
-            //noinspection unchecked
-            c = (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
+            return (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
                     .visitNonNull(c, ctx, getCursor().getParentOrThrow());
-            return c;
         }
 
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
-            return m;
+            return m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
         }
     }
 
