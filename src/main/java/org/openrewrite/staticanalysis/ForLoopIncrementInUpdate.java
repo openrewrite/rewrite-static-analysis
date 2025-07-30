@@ -27,10 +27,11 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ForLoopIncrementInUpdate extends Recipe {
 
@@ -46,7 +47,7 @@ public class ForLoopIncrementInUpdate extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1994");
+        return singleton("RSPEC-S1994");
     }
 
     @Override

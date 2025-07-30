@@ -28,10 +28,10 @@ import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
@@ -49,7 +49,7 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1125");
+        return singleton("RSPEC-1125");
     }
 
     @Override

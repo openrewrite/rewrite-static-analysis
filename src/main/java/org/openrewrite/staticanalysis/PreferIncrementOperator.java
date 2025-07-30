@@ -25,8 +25,9 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.emptySet;
 
 public class PreferIncrementOperator extends Recipe {
 
@@ -42,7 +43,7 @@ public class PreferIncrementOperator extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.emptySet();
+        return emptySet();
     }
 
     @Override

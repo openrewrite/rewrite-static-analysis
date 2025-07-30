@@ -25,9 +25,9 @@ import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class ExplicitInitialization extends Recipe {
@@ -48,7 +48,7 @@ public class ExplicitInitialization extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3052");
+        return singleton("RSPEC-S3052");
     }
 
     @Override

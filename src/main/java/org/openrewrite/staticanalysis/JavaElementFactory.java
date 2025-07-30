@@ -19,10 +19,10 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
 import java.util.Scanner;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
 final class JavaElementFactory {
@@ -126,7 +126,7 @@ final class JavaElementFactory {
             return null;
         }
 
-        JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, Collections.singletonList(type));
+        JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, singletonList(type));
         return new J.FieldAccess(
                 randomId(),
                 Space.EMPTY,

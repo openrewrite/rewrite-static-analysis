@@ -28,9 +28,9 @@ import org.openrewrite.marker.Markers;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.*;
 import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class FinalizePrivateFields extends Recipe {
@@ -81,7 +81,7 @@ public class FinalizePrivateFields extends Recipe {
                 List<J.VariableDeclarations.NamedVariable> privateFields = collectPrivateFields(getCursor());
                 Map<JavaType.Variable, Integer> privateFieldAssignCountMap = privateFields.stream()
                         .filter(v -> v.getVariableType() != null)
-                        .collect(Collectors.toMap(J.VariableDeclarations.NamedVariable::getVariableType,
+                        .collect(toMap(J.VariableDeclarations.NamedVariable::getVariableType,
                                 v -> v.getInitializer() != null ? 1 : 0));
 
                 CollectPrivateFieldsAssignmentCounts.collect(classDecl, privateFieldAssignCountMap);
@@ -90,7 +90,7 @@ public class FinalizePrivateFields extends Recipe {
                         .stream()
                         .filter(entry -> entry.getValue() == 1)
                         .map(Map.Entry::getKey)
-                        .collect(Collectors.toSet());
+                        .collect(toSet());
 
                 return super.visitClassDeclaration(classDecl, ctx);
             }
@@ -140,7 +140,7 @@ public class FinalizePrivateFields extends Recipe {
                         .filter(mv -> !anyAnnotationApplied(new Cursor(bodyCursor, mv)))
                         .map(J.VariableDeclarations::getVariables)
                         .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
+                        .collect(toList());
             }
         };
     }

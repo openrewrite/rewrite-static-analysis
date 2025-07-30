@@ -23,9 +23,9 @@ import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 @Incubating(since = "7.0.0")
@@ -43,7 +43,7 @@ public class HideUtilityClassConstructor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1118");
+        return singleton("RSPEC-S1118");
     }
 
     @Override

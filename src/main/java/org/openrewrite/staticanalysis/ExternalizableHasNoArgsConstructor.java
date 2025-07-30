@@ -28,9 +28,10 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ExternalizableHasNoArgsConstructor extends Recipe {
 
@@ -53,7 +54,7 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2060");
+        return singleton("RSPEC-S2060");
     }
 
     @Override

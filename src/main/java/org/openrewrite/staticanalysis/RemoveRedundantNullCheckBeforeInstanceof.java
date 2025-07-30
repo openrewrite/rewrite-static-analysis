@@ -28,8 +28,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -47,7 +48,7 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1697");
+        return singleton("RSPEC-S1697");
     }
 
     @Override

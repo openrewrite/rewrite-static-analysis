@@ -27,9 +27,9 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class CollectionToArrayShouldHaveProperType extends Recipe {
@@ -53,7 +53,7 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3020");
+        return singleton("RSPEC-S3020");
     }
 
     @Override

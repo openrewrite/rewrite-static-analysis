@@ -22,8 +22,9 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class WhileInsteadOfFor extends Recipe {
 
@@ -39,7 +40,7 @@ public class WhileInsteadOfFor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1264");
+        return singleton("RSPEC-S1264");
     }
 
     @Override

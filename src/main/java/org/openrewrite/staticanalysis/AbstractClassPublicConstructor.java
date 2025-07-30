@@ -22,9 +22,9 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class AbstractClassPublicConstructor extends Recipe {
@@ -41,7 +41,7 @@ public class AbstractClassPublicConstructor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S5993");
+        return singleton("RSPEC-S5993");
     }
 
     @Override

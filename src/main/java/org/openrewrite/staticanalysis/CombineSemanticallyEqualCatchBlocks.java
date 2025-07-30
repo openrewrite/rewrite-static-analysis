@@ -45,7 +45,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2147");
+        return singleton("RSPEC-S2147");
     }
 
     @Override

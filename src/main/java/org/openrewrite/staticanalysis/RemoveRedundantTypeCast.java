@@ -20,10 +20,10 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOverloading;
 
 @Incubating(since = "7.23.0")
@@ -45,7 +45,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1905");
+        return singleton("RSPEC-S1905");
     }
 
     @Override

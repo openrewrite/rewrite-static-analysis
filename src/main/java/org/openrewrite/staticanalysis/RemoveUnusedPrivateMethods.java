@@ -24,9 +24,10 @@ import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class RemoveUnusedPrivateMethods extends Recipe {
 
@@ -42,7 +43,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1144");
+        return singleton("RSPEC-S1144");
     }
 
     @Override

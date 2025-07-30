@@ -25,9 +25,9 @@ import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 public class RenameExceptionInEmptyCatch extends Recipe {
 
@@ -111,7 +111,7 @@ public class RenameExceptionInEmptyCatch extends Recipe {
                         namesInScope.addAll(
                                 multiVariable.getVariables().stream()
                                         .map(J.VariableDeclarations.NamedVariable::getSimpleName)
-                                        .collect(Collectors.toList()));
+                                        .collect(toList()));
 
                         // Update the names in each scope. There should be no name shadowing produced because the
                         // exception variable is scoped to the catch and the catch block is empty.
