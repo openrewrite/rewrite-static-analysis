@@ -30,9 +30,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public class UseLambdaForFunctionalInterface extends Recipe {
     @Override
@@ -109,7 +110,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         } else {
                             templateBuilder.append(methodDeclaration.getParameters().stream()
                                     .map(param -> ((J.VariableDeclarations) param).getVariables().get(0).getSimpleName())
-                                    .collect(Collectors.joining(",", "(", ") -> {")));
+                                    .collect(joining(",", "(", ") -> {")));
                         }
 
                         JavaType returnType = sam.getReturnType();
@@ -270,7 +271,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         return method.getParameters().stream()
                 .filter(J.VariableDeclarations.class::isInstance)
                 .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     // This does not recursive descend extended classes for inherited fields.
@@ -278,7 +279,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         return classDeclaration.getBody().getStatements().stream()
                 .filter(J.VariableDeclarations.class::isInstance)
                 .map(v -> ((J.VariableDeclarations) v).getVariables().get(0).getSimpleName())
-                .collect(Collectors.toList());
+                .collect(toList());
     }
 
     private static boolean usedAsStatement(Cursor cursor) {

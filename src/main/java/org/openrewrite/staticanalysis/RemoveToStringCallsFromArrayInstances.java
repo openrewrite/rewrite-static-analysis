@@ -25,10 +25,11 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypedTree;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toList;
 
 public class RemoveToStringCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher VALUEOF_MATCHER = new MethodMatcher("java.lang.String valueOf(java.lang.Object)");
@@ -44,11 +45,11 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             "java.io.PrintWriter print*(..)",
             "java.io.PrintWriter format(..)"
     );
-    private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(Collectors.toList());
+    private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(toList());
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2116");
+        return singleton("RSPEC-S2116");
     }
 
     @Override

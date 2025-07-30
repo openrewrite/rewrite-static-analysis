@@ -26,8 +26,9 @@ import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class NestedEnumsAreNotStatic extends Recipe {
     @Override
@@ -42,7 +43,7 @@ public class NestedEnumsAreNotStatic extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2786");
+        return singleton("RSPEC-S2786");
     }
 
     @Override

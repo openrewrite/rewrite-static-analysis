@@ -27,9 +27,10 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.*;
+import static java.util.stream.Collectors.toList;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 
@@ -48,7 +49,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     }
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3358");
+        return singleton("RSPEC-S3358");
     }
 
     @Override
@@ -171,13 +172,13 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 if (next.getTruePart() instanceof J.Ternary) {
                     //as long as we do not use pattern matching, an "and" nested ternary will never work for a switch:
                     // Example: a equals a and a equals b will never be true
-                    return Collections.emptyList();
+                    return emptyList();
                 }
                 J.Ternary nested = (J.Ternary) next.getFalsePart();
                 if (!findConditionIdentifier(nested)
                         .filter(found -> isEqualVariable(switchVar, found))
                         .isPresent()) {
-                    return Collections.emptyList();
+                    return emptyList();
                 }
                 nestList.add(next);
                 next = nested;
@@ -209,7 +210,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     blockOf(Stream.concat(
                             nestList.stream().map(ternary -> toCase(switchVar, ternary)),
                             Stream.of(toDefault(last))
-                    ).collect(Collectors.toList()))
+                    ).collect(toList()))
                             .withPrefix(Space.SINGLE_SPACE),
                     type
             );
@@ -244,10 +245,10 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     ternary.getMarkers(),
                     J.Case.Type.Rule,
                     JContainer.build(
-                            Collections.singletonList(JRightPadded.<J>build(compare.withPrefix(Space.SINGLE_SPACE))
+                            singletonList(JRightPadded.<J>build(compare.withPrefix(Space.SINGLE_SPACE))
                                     .withAfter(Space.SINGLE_SPACE))
                     ),
-                    JContainer.build(Collections.emptyList()),
+                    JContainer.build(emptyList()),
                     JRightPadded.build(ternary.getTruePart()),
                     null
             );
@@ -259,16 +260,16 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     Space.EMPTY,
                     ternary.getMarkers(),
                     J.Case.Type.Rule,
-                    JContainer.build(Collections.singletonList(JRightPadded.<J>build(new J.Identifier(
+                    JContainer.build(singletonList(JRightPadded.<J>build(new J.Identifier(
                             randomId(),
                             Space.EMPTY,
                             Markers.EMPTY,
-                            Collections.emptyList(),
+                            emptyList(),
                             "default",
                             null,
                             null
                     )).withAfter(Space.SINGLE_SPACE))),
-                    JContainer.build(Collections.emptyList()),
+                    JContainer.build(emptyList()),
                     JRightPadded.build(ternary.getFalsePart()),
                     null
             );

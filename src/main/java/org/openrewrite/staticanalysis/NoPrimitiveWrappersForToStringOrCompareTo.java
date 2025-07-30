@@ -28,11 +28,11 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 
 public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     private static final MethodMatcher NUMBER_TO_STRING_MATCHER = new MethodMatcher("java.lang.Number toString()", true);
@@ -53,7 +53,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1158");
+        return singleton("RSPEC-S1158");
     }
 
     @Override

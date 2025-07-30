@@ -32,9 +32,10 @@ import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
+
+import static java.util.Collections.singleton;
 
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
@@ -52,7 +53,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S6202");
+        return singleton("RSPEC-S6202");
     }
 
     @Override

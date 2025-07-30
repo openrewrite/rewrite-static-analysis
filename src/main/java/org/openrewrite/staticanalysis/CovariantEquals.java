@@ -26,9 +26,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @Incubating(since = "7.0.0")
 public class CovariantEquals extends Recipe {
@@ -50,7 +51,7 @@ public class CovariantEquals extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2162");
+        return singleton("RSPEC-S2162");
     }
 
     @Override

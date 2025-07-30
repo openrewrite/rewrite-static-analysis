@@ -22,10 +22,10 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
 /**
@@ -60,7 +60,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S117");
+        return singleton("RSPEC-S117");
     }
 
     @Override

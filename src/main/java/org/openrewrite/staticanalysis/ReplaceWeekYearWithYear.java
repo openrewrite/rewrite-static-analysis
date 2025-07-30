@@ -21,8 +21,9 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ReplaceWeekYearWithYear extends Recipe {
     private static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");
@@ -41,7 +42,7 @@ public class ReplaceWeekYearWithYear extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3986");
+        return singleton("RSPEC-S3986");
     }
 
     @Override

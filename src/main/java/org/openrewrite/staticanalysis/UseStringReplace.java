@@ -27,9 +27,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import static java.util.Collections.singleton;
 
 /**
  * Recipe to use {@link String#replace(CharSequence, CharSequence)} when the fist argument is not a regular expression.
@@ -56,7 +57,7 @@ public class UseStringReplace extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S5361");
+        return singleton("RSPEC-S5361");
     }
 
     @Override

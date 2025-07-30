@@ -28,8 +28,7 @@ import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
-
+import static java.util.Collections.emptyList;
 import static org.openrewrite.Tree.randomId;
 
 public class RemoveSystemOutPrintln extends Recipe {
@@ -54,7 +53,7 @@ public class RemoveSystemOutPrintln extends Recipe {
                 J.Lambda l = super.visitLambda(lambda, ctx);
                 //noinspection ConstantValue
                 if (l.getBody() == null) {
-                    l = l.withBody(new J.Block(randomId(), lambda.getPrefix(), Markers.EMPTY, JRightPadded.build(false), Collections.emptyList(), Space.EMPTY));
+                    l = l.withBody(new J.Block(randomId(), lambda.getPrefix(), Markers.EMPTY, JRightPadded.build(false), emptyList(), Space.EMPTY));
                 }
                 return l;
             }

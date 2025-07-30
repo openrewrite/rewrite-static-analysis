@@ -24,12 +24,12 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -48,7 +48,7 @@ public class UseCollectionInterfaces extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1319");
+        return singleton("RSPEC-S1319");
     }
 
     @Override

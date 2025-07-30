@@ -25,8 +25,12 @@ import org.openrewrite.kotlin.KotlinVisitor;
 import org.openrewrite.kotlin.tree.K;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
 public class ReplaceLambdaWithMethodReference extends Recipe {
@@ -43,7 +47,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1612");
+        return singleton("RSPEC-S1612");
     }
 
     @Override
