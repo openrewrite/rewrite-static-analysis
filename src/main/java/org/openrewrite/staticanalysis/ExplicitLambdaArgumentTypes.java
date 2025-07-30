@@ -189,7 +189,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             if (type instanceof JavaType.GenericTypeVariable) {
                 JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
 
-                if (!genericType.getName().equals("?")) {
+                if (!"?".equals(genericType.getName())) {
                     return new J.Identifier(Tree.randomId(),
                             space,
                             Markers.EMPTY,

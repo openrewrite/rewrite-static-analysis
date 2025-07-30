@@ -242,7 +242,7 @@ public class MinimumSwitchCases extends Recipe {
             }
 
             private boolean isDefault(J.Case case_) {
-                return case_.getPattern() instanceof J.Identifier && ((J.Identifier) case_.getPattern()).getSimpleName().equals("default");
+                return case_.getPattern() instanceof J.Identifier && "default".equals(((J.Identifier) case_.getPattern()).getSimpleName());
             }
 
             private boolean switchesOnEnum(J.Switch switch_) {

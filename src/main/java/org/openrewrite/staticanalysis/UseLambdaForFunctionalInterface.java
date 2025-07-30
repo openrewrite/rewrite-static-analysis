@@ -258,7 +258,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         new JavaVisitor<Integer>() {
             @Override
             public J visitIdentifier(J.Identifier ident, Integer integer) {
-                if (ident.getSimpleName().equals("this")) {
+                if ("this".equals(ident.getSimpleName())) {
                     hasThis.set(true);
                 }
                 return super.visitIdentifier(ident, integer);

@@ -95,7 +95,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
             private boolean isObjectClass(@Nullable Expression expression) {
                 if (expression instanceof J.FieldAccess) {
                     J.FieldAccess fieldAccess = (J.FieldAccess) expression;
-                    if (fieldAccess.getName().getSimpleName().equals("class") && fieldAccess.getTarget() instanceof Identifier) {
+                    if ("class".equals(fieldAccess.getName().getSimpleName()) && fieldAccess.getTarget() instanceof Identifier) {
                         Identifier identifier = (Identifier) fieldAccess.getTarget();
                         return identifier.getType() instanceof JavaType.Class;
                     }

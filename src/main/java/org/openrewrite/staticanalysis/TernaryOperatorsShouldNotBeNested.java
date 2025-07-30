@@ -279,7 +279,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             J.Identifier result = null;
             if (ternary.getCondition() instanceof J.MethodInvocation) {
                 J.MethodInvocation inv = (J.MethodInvocation) ternary.getCondition();
-                if (!inv.getSimpleName().equals("equals")) {
+                if (!"equals".equals(inv.getSimpleName())) {
                     return Optional.empty();
                 }
                 if (inv.getArguments().size() == 1) {

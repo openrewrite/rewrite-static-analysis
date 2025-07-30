@@ -144,12 +144,12 @@ final class JavaElementFactory {
     private static JavaType.@Nullable Class getClassType(@Nullable JavaType type) {
         if (type instanceof JavaType.Class) {
             JavaType.Class classType = (JavaType.Class) type;
-            if (classType.getFullyQualifiedName().equals("java.lang.Class")) {
+            if ("java.lang.Class".equals(classType.getFullyQualifiedName())) {
                 return classType;
             }
-            if (classType.getFullyQualifiedName().equals("java.lang.Object")) {
+            if ("java.lang.Object".equals(classType.getFullyQualifiedName())) {
                 for (JavaType.Method method : classType.getMethods()) {
-                    if (method.getName().equals("getClass")) {
+                    if ("getClass".equals(method.getName())) {
                         return getClassType(method.getReturnType());
                     }
                 }
