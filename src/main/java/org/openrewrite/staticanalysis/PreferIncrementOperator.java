@@ -33,12 +33,12 @@ public class PreferIncrementOperator extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Prefer increment and decrement operators";
+        return "Prefer increment/decrement and compound assignment operators";
     }
 
     @Override
     public String getDescription() {
-        return "Prefer the use of increment and decrement operators (`++` and `--`) over their more verbose equivalents.";
+        return "Prefer the use of increment and decrement operators (`++`, `--`, `+=`, `-=`) over their more verbose equivalents when incrementing or decrementing. ";
     }
 
     @Override
@@ -84,6 +84,20 @@ public class PreferIncrementOperator extends Recipe {
                                                         assignment.getMarkers(),
                                                         new JLeftPadded<>(Space.EMPTY, unaryType, Markers.EMPTY),
                                                         variable.withPrefix(Space.EMPTY),
+                                                        assignment.getType()
+                                                );
+                                            } else if (literal.getValue() instanceof Integer || literal.getValue() instanceof Long) {
+                                                // For values other than 1, convert to compound assignment
+                                                J.AssignmentOperation.Type opType = binary.getOperator() == J.Binary.Type.Addition ?
+                                                        J.AssignmentOperation.Type.Addition : J.AssignmentOperation.Type.Subtraction;
+
+                                                return new J.AssignmentOperation(
+                                                        Tree.randomId(),
+                                                        assignment.getPrefix(),
+                                                        assignment.getMarkers(),
+                                                        variable.withPrefix(Space.EMPTY),
+                                                        new JLeftPadded<>(Space.SINGLE_SPACE, opType, Markers.EMPTY),
+                                                        literal.withPrefix(Space.SINGLE_SPACE),
                                                         assignment.getType()
                                                 );
                                             }

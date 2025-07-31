@@ -105,37 +105,20 @@ class PreferIncrementOperatorTest implements RewriteTest {
     }
 
     @Test
-    void multipleIncrements() {
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  void test(int i, int j) {
-                      i = i + 1;
-                      j = j - 1;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void test(int i, int j) {
-                      i++;
-                      j--;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeNonLiteralOne() {
+    void incrementByTwo() {
         rewriteRun(
           java(
             """
               class Test {
                   void test(int i) {
                       i = i + 2;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int i) {
+                      i += 2;
                   }
               }
               """
@@ -174,20 +157,46 @@ class PreferIncrementOperatorTest implements RewriteTest {
     }
 
     @Test
-    void longType() {
+    void compoundAssignmentForVariousValues() {
         rewriteRun(
           java(
             """
               class Test {
-                  void test(long l) {
-                      l = l + 1;
+                  void test(int i, int j, long l, long n) {
+                      i = i + 1;
+                      j = j + 5;
+                      i = i + 100;
+                      l = l + 2L;
+                      n = n - 2;
                   }
               }
               """,
             """
               class Test {
-                  void test(long l) {
-                      l++;
+                  void test(int i, int j, long l, long n) {
+                      i++;
+                      j += 5;
+                      i += 100;
+                      l += 2L;
+                      n -= 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeAssignmentInIfCondition() {
+        // No strong feelings here, just documenting the current behavior of not applying the change here.
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(int i) {
+                      if ((i = i + 1) > 10) {
+                          System.out.println(i);
+                      }
                   }
               }
               """
