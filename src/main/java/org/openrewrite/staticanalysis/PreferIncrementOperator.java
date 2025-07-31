@@ -22,13 +22,13 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JLeftPadded;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Set;
-
-import static java.util.Collections.emptySet;
 
 public class PreferIncrementOperator extends Recipe {
 
@@ -40,11 +40,6 @@ public class PreferIncrementOperator extends Recipe {
     @Override
     public String getDescription() {
         return "Prefer the use of increment and decrement operators (`++`, `--`, `+=`, `-=`) over their more verbose equivalents.";
-    }
-
-    @Override
-    public Set<String> getTags() {
-        return emptySet();
     }
 
     @Override
