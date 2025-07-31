@@ -16,14 +16,13 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "UnusedAssignment"})
 class PreferIncrementOperatorTest implements RewriteTest {
 
     @Override
@@ -105,37 +104,20 @@ class PreferIncrementOperatorTest implements RewriteTest {
     }
 
     @Test
-    void multipleIncrements() {
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  void test(int i, int j) {
-                      i = i + 1;
-                      j = j - 1;
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void test(int i, int j) {
-                      i++;
-                      j--;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeNonLiteralOne() {
+    void incrementByTwo() {
         rewriteRun(
           java(
             """
               class Test {
                   void test(int i) {
                       i = i + 2;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int i) {
+                      i += 2;
                   }
               }
               """
@@ -149,7 +131,8 @@ class PreferIncrementOperatorTest implements RewriteTest {
           java(
             """
               class Test {
-                  void test(int i, int j) {
+                  int i, j = 0;
+                  Test() {
                       i = j + 1;
                   }
               }
@@ -160,6 +143,7 @@ class PreferIncrementOperatorTest implements RewriteTest {
 
     @Test
     void doNotChangeIfOrderIsReversed() {
+        // No strong feelings here, just documenting the current behavior of not applying the change here.
         rewriteRun(
           java(
             """
@@ -174,20 +158,28 @@ class PreferIncrementOperatorTest implements RewriteTest {
     }
 
     @Test
-    void longType() {
+    void compoundAssignmentForVariousValues() {
         rewriteRun(
           java(
             """
               class Test {
-                  void test(long l) {
-                      l = l + 1;
+                  void test(int i, int j, long l, long n) {
+                      i = i + 1;
+                      j = j + 5;
+                      i = i + 100;
+                      l = l + 2L;
+                      n = n - 2;
                   }
               }
               """,
             """
               class Test {
-                  void test(long l) {
-                      l++;
+                  void test(int i, int j, long l, long n) {
+                      i++;
+                      j += 5;
+                      i += 100;
+                      l += 2L;
+                      n -= 2;
                   }
               }
               """
@@ -195,26 +187,63 @@ class PreferIncrementOperatorTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Not implemented yet")
     @Test
-    void fieldIncrement() {
+    void doNotChangeAssignmentInIfCondition() {
+        // No strong feelings here, just documenting the current behavior of not applying the change here.
         rewriteRun(
           java(
             """
               class Test {
-                  int count;
+                  void test(int i) {
+                      if ((i = i + 1) > 10) {
+                          System.out.println(i);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 
-                  void test() {
-                      this.count = this.count + 1;
+    @Test
+    void compoundAssignmentWithNonLiterals() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int field = 4;
+                  int[] arr = new int[10];
+                  Test other;
+
+                  void test(int i, int j, int k, int size) {
+                      i = i + j;
+                      k = k - size;
+                      i = i + "alef".length();
+                      j = j - (k * 2);
+                      field = field + 4;
+                      this.field = this.field + 3;
+                      this.field = field + 6; // This is not changed as the logic to detect "this.field" is equivalent to "field" in this case is not implemented.
+                      arr/*comment*/[0] = arr/*other comment*/[0] + 1;
+                      other.field = other.field + 2;
                   }
               }
               """,
             """
               class Test {
-                  int count;
+                  int field = 4;
+                  int[] arr = new int[10];
+                  Test other;
 
-                  void test() {
-                      this.count++;
+                  void test(int i, int j, int k, int size) {
+                      i += j;
+                      k -= size;
+                      i += "alef".length();
+                      j -= (k * 2);
+                      field += 4;
+                      this.field += 3;
+                      this.field = field + 6; // This is not changed as the logic to detect "this.field" is equivalent to "field" in this case is not implemented.
+                      arr/*comment*/[0]++;
+                      other.field += 2;
                   }
               }
               """
