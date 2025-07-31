@@ -23,7 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "UnusedAssignment"})
 class PreferIncrementOperatorTest implements RewriteTest {
 
     @Override
@@ -132,7 +132,8 @@ class PreferIncrementOperatorTest implements RewriteTest {
           java(
             """
               class Test {
-                  void test(int i, int j) {
+                  int i, j = 0;
+                  Test() {
                       i = j + 1;
                   }
               }
@@ -143,6 +144,7 @@ class PreferIncrementOperatorTest implements RewriteTest {
 
     @Test
     void doNotChangeIfOrderIsReversed() {
+        // No strong feelings here, just documenting the current behavior of not applying the change here.
         rewriteRun(
           java(
             """
