@@ -39,7 +39,7 @@ public class PreferIncrementOperator extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Prefer the use of increment and decrement operators (`++`, `--`, `+=`, `-=`) over their more verbose equivalents when incrementing or decrementing.";
+        return "Prefer the use of increment and decrement operators (`++`, `--`, `+=`, `-=`) over their more verbose equivalents.";
     }
 
     @Override
