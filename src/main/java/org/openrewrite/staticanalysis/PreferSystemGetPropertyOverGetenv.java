@@ -42,9 +42,9 @@ public class PreferSystemGetPropertyOverGetenv extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                if (GETENV.matches(method)
-                        && method.getArguments().size() == 1
-                        && method.getArguments().get(0).printTrimmed().equals("\"HOME\"")) {
+                if (GETENV.matches(method) &&
+                        method.getArguments().size() == 1 &&
+                        method.getArguments().get(0).printTrimmed().equals("\"HOME\"")) {
 
                     maybeAddImport("java.lang.System");
 
