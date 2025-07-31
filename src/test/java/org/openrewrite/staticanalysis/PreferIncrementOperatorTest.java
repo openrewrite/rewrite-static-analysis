@@ -204,26 +204,45 @@ class PreferIncrementOperatorTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Not implemented yet")
     @Test
-    void fieldIncrement() {
+    void compoundAssignmentWithNonLiterals() {
         rewriteRun(
           java(
             """
               class Test {
-                  int count;
+                  int field = 4;
+                  int[] arr = new int[10];
+                  Test other;
 
-                  void test() {
-                      this.count = this.count + 1;
+                  void test(int i, int j, int k, int size) {
+                      i = i + j;
+                      k = k - size;
+                      i = i + "alef".length();
+                      j = j - (k * 2);
+                      field = field + 4;
+                      this.field = this.field + 3;
+                      this.field = field + 6; // This is not changed as the logic to detect "this.field" is equivalent to "field" in this case is not implemented.
+                      arr/*comment*/[0] = arr/*other comment*/[0] + 1;
+                      other.field = other.field + 2;
                   }
               }
               """,
             """
               class Test {
-                  int count;
+                  int field = 4;
+                  int[] arr = new int[10];
+                  Test other;
 
-                  void test() {
-                      this.count++;
+                  void test(int i, int j, int k, int size) {
+                      i += j;
+                      k -= size;
+                      i += "alef".length();
+                      j -= (k * 2);
+                      field += 4;
+                      this.field += 3;
+                      this.field = field + 6; // This is not changed as the logic to detect "this.field" is equivalent to "field" in this case is not implemented.
+                      arr/*comment*/[0]++;
+                      other.field += 2;
                   }
               }
               """
