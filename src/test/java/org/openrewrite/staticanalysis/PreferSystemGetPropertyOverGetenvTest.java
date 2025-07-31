@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import static org.openrewrite.java.Assertions.java;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -27,6 +28,7 @@ class PreferSystemGetPropertyOverGetenvTest implements RewriteTest {
         spec.recipe(new PreferSystemGetPropertyOverGetenv());
     }
 
+    @DocumentExample
     @Test
     void replacesEnvWithProperty() {
         rewriteRun(

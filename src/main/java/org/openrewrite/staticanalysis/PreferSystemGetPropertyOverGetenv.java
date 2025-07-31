@@ -15,15 +15,17 @@
  */
 package org.openrewrite.staticanalysis;
 
-
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.J;
 
 public class PreferSystemGetPropertyOverGetenv extends Recipe {
+
+    private static final MethodMatcher GETENV = new MethodMatcher("java.lang.System getenv(java.lang.String)");
 
     @Override
     public String getDisplayName() {
@@ -40,9 +42,9 @@ public class PreferSystemGetPropertyOverGetenv extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                if (method.getSimpleName().equals("getenv") &&
-                        method.getArguments().size() == 1 &&
-                        method.getArguments().get(0).printTrimmed().equals("\"HOME\"")) {
+                if (GETENV.matches(method)
+                        && method.getArguments().size() == 1
+                        && method.getArguments().get(0).printTrimmed().equals("\"HOME\"")) {
 
                     maybeAddImport("java.lang.System");
 
