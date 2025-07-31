@@ -215,7 +215,7 @@ class PreferIncrementOperatorTest implements RewriteTest {
                   int[] arr = new int[10];
                   Test other;
 
-                  void test(int i, int j, int k, int size) {
+                  void test(int i, int j, int k, int size, String s) {
                       i = i + j;
                       k = k - size;
                       i = i + "alef".length();
@@ -225,6 +225,7 @@ class PreferIncrementOperatorTest implements RewriteTest {
                       this.field = field + 6; // This is not changed as the logic to detect "this.field" is equivalent to "field" in this case is not implemented.
                       arr/*comment*/[0] = arr/*other comment*/[0] + 1;
                       other.field = other.field + 2;
+                      s = s + "Anwil";
                   }
               }
               """,
@@ -234,7 +235,7 @@ class PreferIncrementOperatorTest implements RewriteTest {
                   int[] arr = new int[10];
                   Test other;
 
-                  void test(int i, int j, int k, int size) {
+                  void test(int i, int j, int k, int size, String s) {
                       i += j;
                       k -= size;
                       i += "alef".length();
@@ -244,6 +245,7 @@ class PreferIncrementOperatorTest implements RewriteTest {
                       this.field = field + 6; // This is not changed as the logic to detect "this.field" is equivalent to "field" in this case is not implemented.
                       arr/*comment*/[0]++;
                       other.field += 2;
+                      s += "Anwil";
                   }
               }
               """
