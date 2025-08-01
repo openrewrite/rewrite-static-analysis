@@ -21,29 +21,25 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JLeftPadded;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Set;
-
-import static java.util.Collections.emptySet;
 
 public class PreferIncrementOperator extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Prefer increment and decrement operators";
+        return "Prefer increment/decrement and compound assignment operators";
     }
 
     @Override
     public String getDescription() {
-        return "Prefer the use of increment and decrement operators (`++` and `--`) over their more verbose equivalents.";
-    }
-
-    @Override
-    public Set<String> getTags() {
-        return emptySet();
+        return "Prefer the use of increment and decrement operators (`++`, `--`, `+=`, `-=`) over their more verbose equivalents.";
     }
 
     @Override
@@ -62,33 +58,45 @@ public class PreferIncrementOperator extends Recipe {
                     if (statement instanceof J.Assignment) {
                         J.Assignment assignment = (J.Assignment) statement;
 
-                        if (assignment.getVariable() instanceof J.Identifier && assignment.getAssignment() instanceof J.Binary) {
-                            J.Identifier variable = (J.Identifier) assignment.getVariable();
+                        if (assignment.getAssignment() instanceof J.Binary) {
+                            Expression variable = assignment.getVariable();
                             J.Binary binary = (J.Binary) assignment.getAssignment();
 
                             if (binary.getOperator() == J.Binary.Type.Addition || binary.getOperator() == J.Binary.Type.Subtraction) {
-                                if (binary.getLeft() instanceof J.Identifier) {
-                                    J.Identifier binaryLeft = (J.Identifier) binary.getLeft();
-                                    if (variable.getSimpleName().equals(binaryLeft.getSimpleName()) &&
-                                        TypeUtils.isOfType(variable.getType(), binaryLeft.getType())) {
+                                Expression binaryLeft = binary.getLeft();
 
-                                        if (binary.getRight() instanceof J.Literal) {
-                                            J.Literal literal = (J.Literal) binary.getRight();
-                                            if (literal.getValue() instanceof Integer && (Integer) literal.getValue() == 1) {
-                                                J.Unary.Type unaryType = binary.getOperator() == J.Binary.Type.Addition ?
-                                                        J.Unary.Type.PostIncrement : J.Unary.Type.PostDecrement;
+                                if (SemanticallyEqual.areEqual(variable, binaryLeft)) {
+                                    Expression right = binary.getRight();
 
-                                                return new J.Unary(
-                                                        Tree.randomId(),
-                                                        assignment.getPrefix(),
-                                                        assignment.getMarkers(),
-                                                        new JLeftPadded<>(Space.EMPTY, unaryType, Markers.EMPTY),
-                                                        variable.withPrefix(Space.EMPTY),
-                                                        assignment.getType()
-                                                );
-                                            }
+                                    if (right instanceof J.Literal) {
+                                        J.Literal literal = (J.Literal) right;
+                                        if (literal.getValue() instanceof Integer && (Integer) literal.getValue() == 1) {
+                                            J.Unary.Type unaryType = binary.getOperator() == J.Binary.Type.Addition ?
+                                                    J.Unary.Type.PostIncrement : J.Unary.Type.PostDecrement;
+
+                                            return new J.Unary(
+                                                    Tree.randomId(),
+                                                    assignment.getPrefix(),
+                                                    assignment.getMarkers(),
+                                                    new JLeftPadded<>(Space.EMPTY, unaryType, Markers.EMPTY),
+                                                    variable.withPrefix(Space.EMPTY),
+                                                    assignment.getType()
+                                            );
                                         }
                                     }
+
+                                    J.AssignmentOperation.Type opType = binary.getOperator() == J.Binary.Type.Addition ?
+                                            J.AssignmentOperation.Type.Addition : J.AssignmentOperation.Type.Subtraction;
+
+                                    return new J.AssignmentOperation(
+                                            Tree.randomId(),
+                                            assignment.getPrefix(),
+                                            assignment.getMarkers(),
+                                            variable.withPrefix(Space.EMPTY),
+                                            new JLeftPadded<>(Space.SINGLE_SPACE, opType, Markers.EMPTY),
+                                            right.withPrefix(Space.SINGLE_SPACE),
+                                            assignment.getType()
+                                    );
                                 }
                             }
                         }
