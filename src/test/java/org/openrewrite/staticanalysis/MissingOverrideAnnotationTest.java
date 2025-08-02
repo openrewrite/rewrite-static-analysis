@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.intellij.lang.annotations.Language;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -524,4 +526,202 @@ class MissingOverrideAnnotationTest implements RewriteTest {
             """
           ));
     }
-}
+
+    @Nested
+    class removeFalsyOverrideAnnotation {
+
+        @Test
+        void simple() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+
+                  class Test {
+                      @Override
+                      public void doesNotOverrideAnything() {
+                      }
+                  }
+                  """,
+                """
+                  package com.example;
+
+                  class Test {
+                     \s
+                      public void doesNotOverrideAnything() {
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        void multipleMethods() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+
+                  class Test {
+                      @Override
+                      public void method1() {
+                      }
+
+                      @Override
+                      public void method2() {
+                      }
+                  }
+                  """,
+                """
+                  package com.example;
+
+                  class Test {
+                     \s
+                      public void method1() {
+                      }
+
+                     \s
+                      public void method2() {
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        void withValidOverride() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+
+                  class Parent {
+                      public void validMethod() {}
+                  }
+
+                  class Test extends Parent {
+                      @Override
+                      public void validMethod() {}
+
+                      @Override
+                      public void invalidMethod() {}
+                  }
+                  """,
+                """
+                  package com.example;
+
+                  class Parent {
+                      public void validMethod() {}
+                  }
+
+                  class Test extends Parent {
+                      @Override
+                      public void validMethod() {}
+
+                     \s
+                      public void invalidMethod() {}
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        void withInterfaceImplementation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+
+                  interface MyInterface {
+                      void interfaceMethod();
+                  }
+
+                  class Test implements MyInterface {
+                      @Override
+                      public void interfaceMethod() {}
+
+                      @Override
+                      public void nonInterfaceMethod() {}
+                  }
+                  """,
+                """
+                  package com.example;
+
+                  interface MyInterface {
+                      void interfaceMethod();
+                  }
+
+                  class Test implements MyInterface {
+                      @Override
+                      public void interfaceMethod() {}
+
+                     \s
+                      public void nonInterfaceMethod() {}
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        @Disabled
+        void withComments() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+
+                  class Test {
+                      /**
+                       * Some documentation
+                       */
+                      @Override
+                      public void documentedMethod() {
+                      }
+                  }
+                  """,
+                """
+                  package com.example;
+
+                  class Test {
+                      /**
+                       * Some documentation
+                       */
+                      public void documentedMethod() {
+                      }
+                  }
+                  """)
+            );
+        }
+
+        @Test
+        void withAnnotations() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  package com.example;
+
+                  class Test {
+                      @Deprecated
+                      @Override
+                      public void annotatedMethod() {
+                      }
+                  }
+                  """,
+                """
+                  package com.example;
+
+                  class Test {
+                      @Deprecated
+                      public void annotatedMethod() {
+                      }
+                  }
+                  """)
+            );
+        }
+    }}
