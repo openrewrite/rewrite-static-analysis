@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.var;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.AnnotationMatcher;
@@ -24,11 +25,14 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.kotlin.tree.K;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.singleton;
 
@@ -49,6 +53,7 @@ public class MissingOverrideAnnotation extends Recipe {
     @Override
     public String getDescription() {
         return "Adds `@Override` to methods overriding superclass methods or implementing interface methods. " +
+                "Also removes incorrectly applied `@Override` annotations from methods that do not override anything. " +
                 "Annotating methods improves readability by showing the author's intent to override. " +
                 "Additionally, when annotated, the compiler will emit an error when a signature of the overridden method does not match the superclass method.";
     }
@@ -78,15 +83,33 @@ public class MissingOverrideAnnotation extends Recipe {
 
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-            if (!method.hasModifier(J.Modifier.Type.Static) &&
-                    !method.isConstructor() &&
-                    !service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION) &&
-                    TypeUtils.isOverride(method.getMethodType()) &&
-                    !(Boolean.TRUE.equals(ignoreAnonymousClassMethods) &&
-                    getCursorToParentScope(getCursor()).getValue() instanceof J.NewClass)) {
+            boolean hasOverride = service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION);
+            boolean isOverride = TypeUtils.isOverride(method.getMethodType());
 
-                method = JavaTemplate.apply("@Override", getCursor(), method.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+            if (!method.hasModifier(J.Modifier.Type.Static) && !method.isConstructor()) {
+
+                // Remove incorrect @Override
+                if (hasOverride && !isOverride) {
+                    // Filter out the @Override annotation
+                    method = method.withLeadingAnnotations(method.getLeadingAnnotations().stream()
+                            .filter(ann -> !OVERRIDE_ANNOTATION.matches(ann))
+                            .collect(Collectors.toList()));
+                    // Remove extra prefix whitespace caused by annotation removal (if any)
+                    method = method.withPrefix(Space.format(method.getPrefix().getWhitespace().replaceAll("[ \t]+(?=\\n)", "")));
+                }
+
+                // Add @Override if missing and appropriate
+                else if (!hasOverride && isOverride &&
+                        !(Boolean.TRUE.equals(ignoreAnonymousClassMethods) &&
+                                getCursorToParentScope(getCursor()).getValue() instanceof J.NewClass)) {
+                    method = JavaTemplate.apply(
+                            "@Override",
+                            getCursor(),
+                            method.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName))
+                    );
+                }
             }
+
             return super.visitMethodDeclaration(method, ctx);
         }
     }
