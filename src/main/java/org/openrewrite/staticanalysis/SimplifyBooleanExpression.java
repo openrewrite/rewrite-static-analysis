@@ -24,8 +24,9 @@ import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class SimplifyBooleanExpression extends Recipe {
 
@@ -41,7 +42,7 @@ public class SimplifyBooleanExpression extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-1125");
+        return singleton("RSPEC-1125");
     }
 
     @Override

@@ -30,10 +30,10 @@ import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 
 public class NeedBraces extends Recipe {
@@ -49,7 +49,7 @@ public class NeedBraces extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S121");
+        return singleton("RSPEC-S121");
     }
 
     @Override
@@ -114,7 +114,7 @@ public class NeedBraces extends Recipe {
                     Space.EMPTY,
                     Markers.EMPTY,
                     JRightPadded.build(false),
-                    element instanceof J.Empty ? Collections.emptyList() : Collections.singletonList(JRightPadded.build(element)),
+                    element instanceof J.Empty ? emptyList() : singletonList(JRightPadded.build(element)),
                     end
             );
         }
@@ -138,7 +138,7 @@ public class NeedBraces extends Recipe {
         public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
             J.Block bl = super.visitBlock(block, ctx);
             if (Boolean.TRUE.equals(getCursor().pollMessage("removeEndComments"))) {
-                bl = bl.withEnd(bl.getEnd().withComments(Collections.emptyList()));
+                bl = bl.withEnd(bl.getEnd().withComments(emptyList()));
                 bl = maybeAutoFormat(block, bl, ctx);
             }
             List<Integer> indexes = getCursor().pollMessage("replaced");
@@ -153,7 +153,7 @@ public class NeedBraces extends Recipe {
                             return stmt;
                         }));
                     } else {
-                        bl = bl.withEnd(bl.getEnd().withComments(Collections.emptyList()));
+                        bl = bl.withEnd(bl.getEnd().withComments(emptyList()));
                     }
                 }
                 bl = maybeAutoFormat(block, bl, ctx);

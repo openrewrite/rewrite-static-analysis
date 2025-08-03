@@ -24,12 +24,12 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.Modifier.Type;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.ToIntFunction;
 
+import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toList;
 
 public class ModifierOrder extends Recipe {
@@ -45,7 +45,7 @@ public class ModifierOrder extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1124");
+        return singleton("RSPEC-S1124");
     }
 
     @Override

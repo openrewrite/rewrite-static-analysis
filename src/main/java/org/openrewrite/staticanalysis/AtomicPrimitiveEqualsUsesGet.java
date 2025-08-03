@@ -29,9 +29,10 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class AtomicPrimitiveEqualsUsesGet extends Recipe {
 
@@ -55,7 +56,7 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2204");
+        return singleton("RSPEC-S2204");
     }
 
     @Override

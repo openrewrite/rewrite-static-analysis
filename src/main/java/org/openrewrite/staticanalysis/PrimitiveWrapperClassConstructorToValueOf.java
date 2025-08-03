@@ -27,8 +27,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
 
@@ -44,7 +45,7 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2129");
+        return singleton("RSPEC-S2129");
     }
 
     @Override

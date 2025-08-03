@@ -26,8 +26,9 @@ import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class NoFinalizer extends Recipe {
 
@@ -45,7 +46,7 @@ public class NoFinalizer extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1111");
+        return singleton("RSPEC-S1111");
     }
 
     @Override

@@ -94,7 +94,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                                 appendToString = true;
                             } else if ((exp instanceof J.Identifier || exp instanceof J.MethodInvocation) && exp.getType() != null) {
                                 JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(exp.getType());
-                                if (fullyQualified != null && fullyQualified.getFullyQualifiedName().equals("java.lang.String")) {
+                                if (fullyQualified != null && "java.lang.String".equals(fullyQualified.getFullyQualifiedName())) {
                                     addToGroups(group, groups);
                                     appendToString = true;
                                 }

@@ -25,8 +25,9 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class NoToStringOnStringType extends Recipe {
     private static final MethodMatcher TO_STRING = new MethodMatcher("java.lang.String toString()");
@@ -43,7 +44,7 @@ public class NoToStringOnStringType extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1858");
+        return singleton("RSPEC-S1858");
     }
 
     @Override

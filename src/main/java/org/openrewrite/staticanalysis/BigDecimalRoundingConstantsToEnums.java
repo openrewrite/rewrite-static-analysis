@@ -28,8 +28,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class BigDecimalRoundingConstantsToEnums extends Recipe {
     private static final MethodMatcher BIG_DECIMAL_DIVIDE = new MethodMatcher("java.math.BigDecimal divide(java.math.BigDecimal, int)");
@@ -48,7 +49,7 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2111");
+        return singleton("RSPEC-S2111");
     }
 
     @Override

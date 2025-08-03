@@ -24,8 +24,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class IndexOfChecksShouldUseAStartPosition extends Recipe {
     private static final MethodMatcher STRING_INDEX_MATCHER = new MethodMatcher("java.lang.String indexOf(String)");
@@ -42,7 +43,7 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2912");
+        return singleton("RSPEC-S2912");
     }
 
     @Override

@@ -21,9 +21,11 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 
 public class UseJavaStyleArrayDeclarations extends Recipe {
 
@@ -39,7 +41,7 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1197");
+        return singleton("RSPEC-S1197");
     }
 
     @Override
@@ -75,7 +77,7 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
                 J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
                 if (!nv.getDimensionsAfterName().isEmpty()) {
                     getCursor().dropParentUntil(J.VariableDeclarations.class::isInstance).putMessage("VAR_DIMENSIONS", nv.getDimensionsAfterName());
-                    nv = nv.withDimensionsAfterName(Collections.emptyList());
+                    nv = nv.withDimensionsAfterName(emptyList());
                 }
                 return nv;
             }

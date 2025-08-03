@@ -26,9 +26,10 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class SimplifyArraysAsList extends Recipe {
     private static final MethodMatcher ARRAYS_AS_LIST = new MethodMatcher("java.util.Arrays asList(..)");
@@ -46,7 +47,7 @@ public class SimplifyArraysAsList extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3878");
+        return singleton("RSPEC-S3878");
     }
 
     @Override

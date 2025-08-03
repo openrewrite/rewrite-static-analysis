@@ -26,11 +26,11 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 
 public class ExplicitLambdaArgumentTypes extends Recipe {
     @Override
@@ -47,7 +47,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2211");
+        return singleton("RSPEC-S2211");
     }
 
     @Override
@@ -189,7 +189,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             if (type instanceof JavaType.GenericTypeVariable) {
                 JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
 
-                if (!genericType.getName().equals("?")) {
+                if (!"?".equals(genericType.getName())) {
                     return new J.Identifier(Tree.randomId(),
                             space,
                             Markers.EMPTY,

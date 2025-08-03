@@ -33,6 +33,8 @@ import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.*;
 
+import static java.util.Collections.singleton;
+
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.MethodNameChange>> {
@@ -63,7 +65,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S100");
+        return singleton("RSPEC-S100");
     }
 
     @Override

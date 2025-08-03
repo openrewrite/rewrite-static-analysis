@@ -26,7 +26,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.Collections;
+import static java.util.Collections.singletonList;
 
 public class EqualsToContentEquals extends Recipe {
     private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
@@ -70,7 +70,7 @@ public class EqualsToContentEquals extends Recipe {
                 return m;
             }
             // Strip out the toString() on the argument and replace with contentEquals
-            return m.withArguments(Collections.singletonList(toStringSelect))
+            return m.withArguments(singletonList(toStringSelect))
                     .withName(m.getName().withSimpleName("contentEquals"));
         }
     }

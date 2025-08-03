@@ -27,9 +27,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class UnnecessaryPrimitiveAnnotations extends Recipe {
     private static final AnnotationMatcher CHECK_FOR_NULL_ANNOTATION_MATCHER = new AnnotationMatcher("@javax.annotation.CheckForNull");
@@ -47,7 +48,7 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S4682");
+        return singleton("RSPEC-S4682");
     }
 
     @Override

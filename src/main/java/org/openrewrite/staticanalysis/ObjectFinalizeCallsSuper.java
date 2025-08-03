@@ -25,9 +25,10 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Collections.singleton;
 
 public class ObjectFinalizeCallsSuper extends Recipe {
     private static final MethodMatcher FINALIZE_METHOD_MATCHER = new MethodMatcher("java.lang.Object finalize()", true);
@@ -44,7 +45,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1114");
+        return singleton("RSPEC-S1114");
     }
 
     @Override

@@ -26,10 +26,11 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.util.Collections.singleton;
 
 public class FixStringFormatExpressions extends Recipe {
 
@@ -53,7 +54,7 @@ public class FixStringFormatExpressions extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3457");
+        return singleton("RSPEC-S3457");
     }
 
     @Override

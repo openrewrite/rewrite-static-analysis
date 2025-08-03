@@ -26,9 +26,9 @@ import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import static java.util.Collections.reverse;
 import static org.openrewrite.Tree.randomId;
 
 public class ReplaceStringBuilderWithString extends Recipe {
@@ -66,7 +66,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                         return m;
                     }
 
-                    Collections.reverse(arguments);
+                    reverse(arguments);
                     arguments = adjustExpressions(method, arguments);
 
                     Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments);
