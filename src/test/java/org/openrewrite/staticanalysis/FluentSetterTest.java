@@ -22,11 +22,11 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-class FluentSetterRecipeTest implements RewriteTest {
+class FluentSetterTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new FluentSetterRecipe(false, null, null));
+        spec.recipe(new FluentSetter(false, null, null));
     }
 
     @DocumentExample
@@ -303,7 +303,7 @@ class FluentSetterRecipeTest implements RewriteTest {
     @Test
     void includeAllVoidMethods() {
         rewriteRun(
-          spec -> spec.recipe(new FluentSetterRecipe(true, null, null)),
+          spec -> spec.recipe(new FluentSetter(true, null, null)),
           java(
             """
               public class Example {
@@ -349,7 +349,7 @@ class FluentSetterRecipeTest implements RewriteTest {
     @Test
     void customMethodNamePattern() {
         rewriteRun(
-          spec -> spec.recipe(new FluentSetterRecipe(false, "add.*|remove.*", null)),
+          spec -> spec.recipe(new FluentSetter(false, "add.*|remove.*", null)),
           java(
             """
               public class Example {
@@ -400,7 +400,7 @@ class FluentSetterRecipeTest implements RewriteTest {
     @Test
     void excludeMethodPattern() {
         rewriteRun(
-          spec -> spec.recipe(new FluentSetterRecipe(true, null, "main|run|execute")),
+          spec -> spec.recipe(new FluentSetter(true, null, "main|run|execute")),
           java(
             """
               public class Example {

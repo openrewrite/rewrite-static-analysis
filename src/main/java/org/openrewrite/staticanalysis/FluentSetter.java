@@ -38,7 +38,7 @@ import static org.openrewrite.Tree.randomId;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
-public class FluentSetterRecipe extends Recipe {
+public class FluentSetter extends Recipe {
 
     @Option(displayName = "Include all void methods", description = "Whether to convert all void methods to return `this`, not just setters. When false, only methods matching setter patterns will be converted.", required = false)
     @Nullable
