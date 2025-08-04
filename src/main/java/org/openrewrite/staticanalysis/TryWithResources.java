@@ -440,7 +440,8 @@ public class TryWithResources extends Recipe {
                 return block.withStatements(ListUtils.map(block.getStatements(), statement -> {
                     if (statement == oldTry) {
                         return newTry;
-                    } else if (declarationsToRemove.contains(statement)) {
+                    }
+                    if (declarationsToRemove.contains(statement)) {
                         return null;
                     }
                     return statement;
