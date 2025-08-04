@@ -325,8 +325,8 @@ class TryWithResourcesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Disabled("This is rather tricky and quite uncommon")
+    @Test
     void multipleVariableDeclarations() {
         rewriteRun(
           java(
