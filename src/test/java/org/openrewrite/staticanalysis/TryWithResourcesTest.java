@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -22,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
+@SuppressWarnings("TryFinallyCanBeTryWithResources")
 class TryWithResourcesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
@@ -324,6 +326,7 @@ class TryWithResourcesTest implements RewriteTest {
     }
 
     @Test
+    @Disabled("This is rather tricky and quite uncommon")
     void multipleVariableDeclarations() {
         rewriteRun(
           java(

@@ -84,6 +84,13 @@ public class TryWithResources extends Recipe {
                     }
                 }
 
+                // Skip transformation if any resource is reassigned within the try block
+                for (String resourceName : resourcesThatAreClosed.keySet()) {
+                    if (isReassignedInTryBlock(t, resourceName, resourcesThatAreClosed.get(resourceName))) {
+                        return t;
+                    }
+                }
+
                 // Find resource initializers from inside the try block
                 Map<String, Expression> resourceInitializers = findResourceInitializers(t, resourcesThatAreClosed.keySet());
 
@@ -141,6 +148,18 @@ public class TryWithResources extends Recipe {
                         }
                     }
                     if (skipDueToCatchBlock) {
+                        continue;
+                    }
+
+                    // Skip transformation if any resource is reassigned within the try block
+                    boolean skipDueToReassignment = false;
+                    for (String resourceName : resourcesThatAreClosed.keySet()) {
+                        if (isReassignedInTryBlock(tryBlock, resourceName, resourcesThatAreClosed.get(resourceName))) {
+                            skipDueToReassignment = true;
+                            break;
+                        }
+                    }
+                    if (skipDueToReassignment) {
                         continue;
                     }
 
@@ -324,6 +343,95 @@ public class TryWithResources extends Recipe {
                 return false;
             }
 
+            private boolean isReassignedInTryBlock(J.Try tryStatement, String varName, J.VariableDeclarations varDecl) {
+                // Check if the variable was initially assigned to null or has no initializer
+                boolean initiallyNullOrEmpty = false;
+                for (J.VariableDeclarations.NamedVariable namedVar : varDecl.getVariables()) {
+                    if (namedVar.getSimpleName().equals(varName)) {
+                        if (namedVar.getInitializer() == null) {
+                            initiallyNullOrEmpty = true;
+                        } else if (namedVar.getInitializer() instanceof J.Literal) {
+                            J.Literal literal = (J.Literal) namedVar.getInitializer();
+                            initiallyNullOrEmpty = literal.getValue() == null;
+                        }
+                        break;
+                    }
+                }
+
+                int assignmentCount = 0;
+                boolean hasConditionalAssignment = false;
+
+                for (Statement statement : tryStatement.getBody().getStatements()) {
+                    if (statement instanceof J.Assignment) {
+                        J.Assignment assignment = (J.Assignment) statement;
+                        if (assignment.getVariable() instanceof J.Identifier) {
+                            J.Identifier identifier = (J.Identifier) assignment.getVariable();
+                            if (identifier.getSimpleName().equals(varName)) {
+                                assignmentCount++;
+                            }
+                        }
+                    }
+                    // Only check control flow statements for nested assignments
+                    else if (statement instanceof J.If || statement instanceof J.Switch ||
+                             statement instanceof J.ForLoop || statement instanceof J.ForEachLoop ||
+                             statement instanceof J.WhileLoop || statement instanceof J.DoWhileLoop ||
+                             statement instanceof J.Block) {
+                        if (containsReassignment(statement, varName)) {
+                            hasConditionalAssignment = true;
+                        }
+                    }
+                }
+
+                // If the variable was initially null/empty:
+                if (initiallyNullOrEmpty) {
+                    // Multiple assignments or conditional assignments are problematic
+                    return assignmentCount > 1 || hasConditionalAssignment;
+                }
+
+                // If the variable had an initial non-null value, any assignment in the try block is a reassignment
+                return assignmentCount > 0 || hasConditionalAssignment;
+            }
+
+            private boolean containsReassignment(Statement statement, String varName) {
+                AtomicBoolean found = new AtomicBoolean(false);
+
+                new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean ctx) {
+                        if (assignment.getVariable() instanceof J.Identifier) {
+                            J.Identifier identifier = (J.Identifier) assignment.getVariable();
+                            if (identifier.getSimpleName().equals(varName)) {
+                                found.set(true);
+                            }
+                        }
+                        return super.visitAssignment(assignment, ctx);
+                    }
+
+                    @Override
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, AtomicBoolean ctx) {
+                        // Skip nested classes as they have separate scopes
+                        return classDecl;
+                    }
+
+                    @Override
+                    public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean ctx) {
+                        // Skip lambdas as they have separate scopes
+                        return lambda;
+                    }
+
+                    @Override
+                    public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean ctx) {
+                        // Skip anonymous classes as they have separate scopes
+                        if (newClass.getBody() != null) {
+                            return newClass;
+                        }
+                        return super.visitNewClass(newClass, ctx);
+                    }
+                }.visit(statement, found);
+
+                return found.get();
+            }
+
             private J.Block replaceTryBlockAndRemoveDeclarations(J.Block block, J.Try oldTry, J.Try newTry, Collection<J.VariableDeclarations> declarations) {
                 Set<Statement> declarationsToRemove = new HashSet<>(declarations);
                 return block.withStatements(ListUtils.map(block.getStatements(), statement -> {
@@ -462,7 +570,7 @@ public class TryWithResources extends Recipe {
                     // Find the named variable
                     for (J.VariableDeclarations.NamedVariable namedVar : varDecl.getVariables()) {
                         if (namedVar.getSimpleName().equals(varName)) {
-                            resources.add(createResources(tryable, resourceInitializers, namedVar, varDecl, varName, i, entries));
+                            resources.add(createResources(resourceInitializers, namedVar, varDecl, varName, i, entries));
                             break;
                         }
                     }
@@ -484,7 +592,7 @@ public class TryWithResources extends Recipe {
                 return removeAssignments(resourcesThatAreClosed, tryWithResources);
             }
 
-            private J.Try.Resource createResources(J.Try tryable, Map<String, Expression> resourceInitializers, J.VariableDeclarations.NamedVariable namedVar, J.VariableDeclarations varDecl, String varName, int i, List<Map.Entry<String, J.VariableDeclarations>> entries) {
+            private J.Try.Resource createResources(Map<String, Expression> resourceInitializers, J.VariableDeclarations.NamedVariable namedVar, J.VariableDeclarations varDecl, String varName, int i, List<Map.Entry<String, J.VariableDeclarations>> entries) {
                 // Create a new variable declaration with just this variable
                 J.VariableDeclarations singleVarDecl = varDecl;
                 if (varDecl.getVariables().size() > 1) {
@@ -530,25 +638,6 @@ public class TryWithResources extends Recipe {
                                 }
                         )
                 ));
-            }
-
-            private boolean isReferencedInBlock(J.Block body, String varName) {
-                AtomicBoolean seen = new AtomicBoolean(false);
-                new JavaIsoVisitor<ExecutionContext>() {
-                    @Override
-                    public J.Identifier visitIdentifier(J.Identifier id, ExecutionContext ctx) {
-                        // only count it if it's not the variable in the LHS of an assignment
-                        if (id.getSimpleName().equals(varName)) {
-                            Cursor parent = getCursor().getParentOrThrow();
-                            if (!(parent.getValue() instanceof J.Assignment &&
-                                    ((J.Assignment) parent.getValue()).getVariable() == id)) {
-                                seen.set(true);
-                            }
-                        }
-                        return super.visitIdentifier(id, ctx);
-                    }
-                }.visit(body, null);
-                return seen.get();
             }
 
             private boolean isAssignmentToResource(Statement statement, Set<String> resourceNames) {
