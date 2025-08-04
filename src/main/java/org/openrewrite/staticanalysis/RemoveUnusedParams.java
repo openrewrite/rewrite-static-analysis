@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -29,6 +30,9 @@ import org.openrewrite.java.tree.Statement;
 
 import java.util.*;
 
+import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
+
 public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumulator> {
     public static class Accumulator {
         /**
@@ -40,7 +44,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
          */
         private final Set<String> overrideSignatures = new HashSet<>();
 
-        private final Map<String,Set<String>> originalSignatures = new HashMap<>();
+        private final Map<String, Set<String>> originalSignatures = new HashMap<>();
     }
 
     @Override
@@ -64,11 +68,11 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                JavaType.Method mt = m.getMethodType();
+                JavaType.Method mt = requireNonNull(m.getMethodType());
                 String className = mt.getDeclaringType().toString();
                 acc.originalSignatures.computeIfAbsent(className, k -> new HashSet<>())
                         .add(MethodMatcher.methodPattern(mt));
-                if (mt != null && mt.isOverride()) {
+                if (mt.isOverride()) {
                     while (mt != null) {
                         acc.overrideSignatures.add(MethodMatcher.methodPattern(mt));
                         mt = mt.getOverride();
@@ -158,7 +162,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             for (Statement p : m.getParameters()) {
                 if (p instanceof J.VariableDeclarations) {
                     for (J.VariableDeclarations.NamedVariable v : ((J.VariableDeclarations) p).getVariables()) {
-                        if (v.getSimpleName().equals(id.getSimpleName())) {
+                        if (SemanticallyEqual.areEqual(v.getName(), id)) {
                             return true;
                         }
                     }
@@ -179,7 +183,7 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             );
         }
 
-        private Statement processVariableDeclaration(J.VariableDeclarations decl, Set<String> usedParams) {
+        private @Nullable Statement processVariableDeclaration(J.VariableDeclarations decl, Set<String> usedParams) {
             List<J.VariableDeclarations.NamedVariable> kept = keepUsedVariables(decl, usedParams);
             if (!kept.isEmpty()) {
                 return decl.withVariables(kept);
@@ -221,13 +225,13 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             // Do override/original‐signature/superclass conflict checks
             String fullSignature = MethodMatcher.methodPattern(candidate);
             int split = fullSignature.indexOf(' ');
-            String qualifier    = fullSignature.substring(0, split);
+            String qualifier = fullSignature.substring(0, split);
             String signatureTail = fullSignature.substring(split + 1);
 
             if (acc.overrideSignatures.contains(fullSignature) ||
                     acc.originalSignatures
-                    .getOrDefault(qualifier, Collections.emptySet())
-                    .contains(fullSignature) ||
+                            .getOrDefault(qualifier, emptySet())
+                            .contains(fullSignature) ||
                     conflictsWithSuperClassMethods(original, candidate, signatureTail) != null) {
                 return original;
             }
@@ -271,17 +275,15 @@ public class RemoveUnusedParams extends ScanningRecipe<RemoveUnusedParams.Accumu
             return candidate;
         }
 
-        private J.MethodDeclaration conflictsWithSuperClassMethods(J.MethodDeclaration original,
-                                                                   J.MethodDeclaration candidate, String tail) {
+        private J.@Nullable MethodDeclaration conflictsWithSuperClassMethods(
+                J.MethodDeclaration original, J.MethodDeclaration candidate, String tail) {
             JavaType.Method mt = candidate.getMethodType();
             if (mt != null && mt.getDeclaringType() instanceof JavaType.Class) {
-                JavaType.Class cls       = (JavaType.Class) mt.getDeclaringType();
-                JavaType.Class superCls  = (JavaType.Class) cls.getSupertype();
+                JavaType.Class cls = (JavaType.Class) mt.getDeclaringType();
+                JavaType.Class superCls = (JavaType.Class) cls.getSupertype();
                 if (superCls != null) {
                     String superKey = superCls.getFullyQualifiedName() + " " + tail;
-                    Set<String> superSigs = acc.originalSignatures
-                            .getOrDefault(superCls.getFullyQualifiedName(),
-                                    Collections.emptySet());
+                    Set<String> superSigs = acc.originalSignatures.getOrDefault(superCls.getFullyQualifiedName(), emptySet());
                     if (superSigs.contains(superKey)) {
                         return original;
                     }
