@@ -28,9 +28,9 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 
 public class NoValueOfOnStringType extends Recipe {
@@ -50,7 +50,7 @@ public class NoValueOfOnStringType extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1153");
+        return singleton("RSPEC-S1153");
     }
 
     @Override

@@ -24,8 +24,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Collections.emptyList;
 
 @Incubating(since = "7.0.0")
 public class FinalizeLocalVariables extends Recipe {
@@ -82,7 +83,7 @@ public class FinalizeLocalVariables extends Recipe {
                         })) {
                     mv = autoFormat(
                             mv.withModifiers(
-                                    ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList()))
+                                    ListUtils.concat(mv.getModifiers(), new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList()))
                             ), ctx);
                 }
 
@@ -95,8 +96,8 @@ public class FinalizeLocalVariables extends Recipe {
         };
     }
 
-    @Value
     @EqualsAndHashCode(callSuper = false)
+    @Value
     private static class FindAssignmentReferencesToVariable extends JavaIsoVisitor<AtomicBoolean> {
 
         J.VariableDeclarations.NamedVariable variable;

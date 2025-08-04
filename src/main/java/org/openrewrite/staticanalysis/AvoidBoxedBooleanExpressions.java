@@ -23,7 +23,6 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -43,11 +42,6 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
     @Override
     public Set<String> getTags() {
         return singleton("RSPEC-S5411");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
     }
 
     @Override
@@ -78,9 +72,10 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
             private boolean isControlExpression(Expression expression) {
                 Cursor parentCursor = getCursor().getParentTreeCursor();
                 if (parentCursor.getValue() instanceof J.ControlParentheses &&
-                    parentCursor.getParentTreeCursor().getValue() instanceof J.If) {
+                        parentCursor.getParentTreeCursor().getValue() instanceof J.If) {
                     return true;
-                } else if (parentCursor.getValue() instanceof J.Ternary) {
+                }
+                if (parentCursor.getValue() instanceof J.Ternary) {
                     return ((J.Ternary) parentCursor.getValue()).getCondition() == expression;
                 }
                 return false;

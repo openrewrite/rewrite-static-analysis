@@ -27,8 +27,8 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class SortedSetStreamToLinkedHashSet extends Recipe {
 
     @Override

@@ -27,13 +27,13 @@ import org.openrewrite.marker.Markers;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Extends;
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Super;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class DeclarationSiteTypeVariance extends Recipe {
 
     @Option(displayName = "Variant types",
@@ -87,7 +87,7 @@ public class DeclarationSiteTypeVariance extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        List<VariantTypeSpec> variantTypeSpecs = variantTypes.stream().map(VariantTypeSpec::build).collect(Collectors.toList());
+        List<VariantTypeSpec> variantTypeSpecs = variantTypes.stream().map(VariantTypeSpec::build).collect(toList());
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
@@ -170,7 +170,7 @@ public class DeclarationSiteTypeVariance extends Recipe {
             return new VariantTypeSpec(fqn, Arrays.stream(variancesStr.split(","))
                     .map(String::trim)
                     .map(Variance::valueOf)
-                    .collect(Collectors.toList()));
+                    .collect(toList()));
         }
     }
 }

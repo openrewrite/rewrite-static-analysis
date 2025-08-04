@@ -29,13 +29,15 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@Value
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
+
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class AddSerialVersionUidToSerializable extends Recipe {
 
     @Option(displayName = "New serial version UID",
@@ -59,7 +61,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2057");
+        return singleton("RSPEC-S2057");
     }
 
     @Override
@@ -112,9 +114,9 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                         !J.Modifier.hasModifier(modifiers, J.Modifier.Type.Static) ||
                         !J.Modifier.hasModifier(modifiers, J.Modifier.Type.Final)) {
                     varDecls = varDecls.withModifiers(Arrays.asList(
-                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Private, Collections.emptyList()),
-                            new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Static, Collections.emptyList()),
-                            new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Final, Collections.emptyList())
+                            new J.Modifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, J.Modifier.Type.Private, emptyList()),
+                            new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Static, emptyList()),
+                            new J.Modifier(Tree.randomId(), Space.SINGLE_SPACE, Markers.EMPTY, null, J.Modifier.Type.Final, emptyList())
                     ));
                 }
                 if (TypeUtils.asPrimitive(varDecls.getType()) != JavaType.Primitive.Long) {
@@ -126,11 +128,14 @@ public class AddSerialVersionUidToSerializable extends Recipe {
             private boolean requiresSerialVersionField(@Nullable JavaType type) {
                 if (type == null) {
                     return false;
-                } else if (type instanceof JavaType.Primitive) {
+                }
+                if (type instanceof JavaType.Primitive) {
                     return true;
-                } else if (type instanceof JavaType.Array) {
+                }
+                if (type instanceof JavaType.Array) {
                     return requiresSerialVersionField(((JavaType.Array) type).getElemType());
-                } else if (type instanceof JavaType.Parameterized) {
+                }
+                if (type instanceof JavaType.Parameterized) {
                     JavaType.Parameterized parameterized = (JavaType.Parameterized) type;
                     if (parameterized.isAssignableTo("java.util.Collection") || parameterized.isAssignableTo("java.util.Map")) {
                         //If the type is either a collection or a map, make sure the type parameters are serializable. We

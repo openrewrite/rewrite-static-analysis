@@ -94,7 +94,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
                                 appendToString = true;
                             } else if ((exp instanceof J.Identifier || exp instanceof J.MethodInvocation) && exp.getType() != null) {
                                 JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(exp.getType());
-                                if (fullyQualified != null && fullyQualified.getFullyQualifiedName().equals("java.lang.String")) {
+                                if (fullyQualified != null && "java.lang.String".equals(fullyQualified.getFullyQualifiedName())) {
                                     addToGroups(group, groups);
                                     appendToString = true;
                                 }
@@ -185,11 +185,12 @@ public class ChainStringBuilderAppendCalls extends Recipe {
             }
 
             return flatAdditiveExpressions(b.getLeft(), expressionList) &&
-                   flatAdditiveExpressions(b.getRight(), expressionList);
-        } else if (expression instanceof J.Literal ||
-                   expression instanceof J.Identifier ||
-                   expression instanceof J.MethodInvocation ||
-                   expression instanceof J.Parentheses) {
+                    flatAdditiveExpressions(b.getRight(), expressionList);
+        }
+        if (expression instanceof J.Literal ||
+                expression instanceof J.Identifier ||
+                expression instanceof J.MethodInvocation ||
+                expression instanceof J.Parentheses) {
             expressionList.add(expression.withPrefix(Space.EMPTY));
             return true;
         }

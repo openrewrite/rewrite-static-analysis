@@ -48,6 +48,11 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 }
 
                 Object enclosing = getCursor().getParentTreeCursor().getValue();
+
+                if (enclosing instanceof J.Ternary) {
+                    return m; // may be necessary for type inference
+                }
+
                 JavaType inferredType = null;
                 if (enclosing instanceof J.MethodInvocation) {
                     if (shouldRetainOnStaticMethod(methodType)) {
@@ -81,7 +86,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     }
                     inferredType = ((NameTree) enclosing).getType();
                 } else if (enclosing instanceof J.Return) {
-                    Object e = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || p.equals(Cursor.ROOT_VALUE)).getValue();
+                    Object e = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || Cursor.ROOT_VALUE.equals(p)).getValue();
                     if (e instanceof J.MethodDeclaration) {
                         J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) e;
                         if (methodDeclaration.getReturnTypeExpression() != null) {

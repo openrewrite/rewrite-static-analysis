@@ -95,4 +95,22 @@ class SimplifyConsecutiveAssignmentsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void preservesCommentBetweenAssignments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void foo() {
+                      int bar = 1;
+                      // some comment
+                      bar += 2;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

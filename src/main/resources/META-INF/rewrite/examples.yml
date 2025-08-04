@@ -429,6 +429,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CollectionToArrayShouldHaveProperType
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          void test(List<String> list) {
+              String[] array = (String[]) list.toArray();
+          }
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          void test(List<String> list) {
+              String[] array = list.toArray(new String[0]);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ControlFlowIndentation
 examples:
 - description: ''
@@ -1846,6 +1869,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.OnlyCatchDeclaredExceptions
+examples:
+- description: ''
+  sources:
+  - before: |
+      class MyService {
+          void doSomething() {
+              try {
+                  new MockThrowingClass().throwsIOException();
+              } catch (Exception e) {
+                  System.out.println("Caught exception: " + e.getMessage());
+              }
+          }
+      }
+    after: |
+      import java.io.IOException;
+
+      class MyService {
+          void doSomething() {
+              try {
+                  new MockThrowingClass().throwsIOException();
+              } catch (IOException e) {
+                  System.out.println("Caught exception: " + e.getMessage());
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.OperatorWrap
 examples:
 - description: ''
@@ -2098,6 +2150,29 @@ examples:
        *
        */
       class Test {}
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void foo(String s) {
+              if (s != null && s instanceof String) {
+                  System.out.println("String value: " + s);
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo(String s) {
+              if (s instanceof String) {
+                  System.out.println("String value: " + s);
+              }
+          }
+      }
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
@@ -2817,6 +2892,31 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyArraysAsList
+examples:
+- description: ''
+  sources:
+  - before: |
+      import java.util.Arrays;
+      import java.util.List;
+
+      class Test {
+          void method() {
+              List<String> list = Arrays.asList(new String[]{"w", "k", "s"});
+          }
+      }
+    after: |
+      import java.util.Arrays;
+      import java.util.List;
+
+      class Test {
+          void method() {
+              List<String> list = Arrays.asList("w", "k", "s");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpression
 examples:
 - description: ''
@@ -3233,8 +3333,8 @@ examples:
   - before: |
       import java.io.IOException;
 
-      public class AnExample {
-          public void method() {
+      class AnExample {
+          void method() {
               try {
                   java.util.Base64.getDecoder().decode("abc".getBytes());
               } catch (IOException e) {
@@ -3243,8 +3343,8 @@ examples:
           }
       }
     after: |
-      public class AnExample {
-          public void method() {
+      class AnExample {
+          void method() {
               java.util.Base64.getDecoder().decode("abc".getBytes());
           }
       }
@@ -3431,6 +3531,32 @@ examples:
 
           void unchanged() throws IOException, UncheckedIOException {
               new FileInputStream("test");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnwrapElseAfterReturn
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          int foo(boolean condition) {
+              if (condition) {
+                  return 1;
+              } else {
+                  return 2;
+              }
+          }
+      }
+    after: |
+      class Test {
+          int foo(boolean condition) {
+              if (condition) {
+                  return 1;
+              }
+              return 2;
           }
       }
     language: java

@@ -8,3 +8,8 @@ out/
 .project
 .settings/
 bin/
+
+# Exclude files from being added to git index
+.gitmodules
+docs
+Sonar.MD

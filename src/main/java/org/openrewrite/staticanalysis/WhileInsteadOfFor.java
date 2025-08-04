@@ -22,9 +22,9 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class WhileInsteadOfFor extends Recipe {
 
@@ -40,12 +40,7 @@ public class WhileInsteadOfFor extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1264");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return singleton("RSPEC-S1264");
     }
 
     @Override
@@ -61,8 +56,7 @@ public class WhileInsteadOfFor extends Recipe {
                     !(forLoop.getControl().getCondition() instanceof J.Empty)
                 ) {
                     J.WhileLoop w = whileLoop.apply(getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());
-                    w = w.withBody(forLoop.getBody());
-                    return w;
+                    return w.withBody(forLoop.getBody());
                 }
                 return super.visitForLoop(forLoop, ctx);
             }

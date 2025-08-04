@@ -32,9 +32,10 @@ import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
+
+import static java.util.Collections.singleton;
 
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
@@ -52,7 +53,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S6202");
+        return singleton("RSPEC-S6202");
     }
 
     @Override
@@ -87,15 +88,14 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     J.Parentheses<J> par = (J.Parentheses<J>) tree;
                     J inner = mapInstanceOf(par.getTree(), fun);
                     return par.withTree(inner);
-                } else {
-                    throw new IllegalArgumentException("Expected J.InstanceOf or J.Parentheses, but got: " + tree.getClass());
                 }
+                throw new IllegalArgumentException("Expected J.InstanceOf or J.Parentheses, but got: " + tree.getClass());
             }
 
             private boolean isObjectClass(@Nullable Expression expression) {
                 if (expression instanceof J.FieldAccess) {
                     J.FieldAccess fieldAccess = (J.FieldAccess) expression;
-                    if (fieldAccess.getName().getSimpleName().equals("class") && fieldAccess.getTarget() instanceof Identifier) {
+                    if ("class".equals(fieldAccess.getName().getSimpleName()) && fieldAccess.getTarget() instanceof Identifier) {
                         Identifier identifier = (Identifier) fieldAccess.getTarget();
                         return identifier.getType() instanceof JavaType.Class;
                     }

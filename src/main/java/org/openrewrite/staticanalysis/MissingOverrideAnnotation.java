@@ -27,13 +27,13 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.kotlin.tree.K;
 
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
 
-@Value
+import static java.util.Collections.singleton;
+
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class MissingOverrideAnnotation extends Recipe {
     @Option(displayName = "Ignore methods in anonymous classes",
             description = "When enabled, ignore missing annotations on methods which override methods when the class definition is within an anonymous class.",
@@ -55,12 +55,7 @@ public class MissingOverrideAnnotation extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1161");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return singleton("RSPEC-S1161");
     }
 
     @Override

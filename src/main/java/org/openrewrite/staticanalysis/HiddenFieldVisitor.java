@@ -35,11 +35,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-@Value
+import static java.util.stream.Collectors.toList;
+
 @EqualsAndHashCode(callSuper = false)
 @Incubating(since = "7.6.0")
+@Value
 public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
     private static final Pattern NEXT_NAME_PATTERN = Pattern.compile("(.+)(\\d+)");
     HiddenFieldStyle style;
@@ -73,7 +74,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
                 .filter(J.VariableDeclarations.class::isInstance)
                 .map(J.VariableDeclarations.class::cast)
                 .flatMap(vd -> vd.getVariables().stream())
-                .collect(Collectors.toList());
+                .collect(toList());
 
         classFields.forEach(cf -> FindNameShadows.find(classDecl, cf, classDecl, style)
                 .forEach(shadow -> doAfterVisit(new RenameShadowedName<>(shadow, style))));

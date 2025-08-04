@@ -23,8 +23,9 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class StaticMethodNotFinal extends Recipe {
     @Override
@@ -39,7 +40,7 @@ public class StaticMethodNotFinal extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2333");
+        return singleton("RSPEC-S2333");
     }
 
     @Override

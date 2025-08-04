@@ -25,8 +25,8 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
-@SuppressWarnings("UnnecessaryModifier")
 @Issue("https://github.com/openrewrite/rewrite/issues/466")
+@SuppressWarnings("UnnecessaryModifier")
 class ModifierOrderTest implements RewriteTest {
 
     @Override

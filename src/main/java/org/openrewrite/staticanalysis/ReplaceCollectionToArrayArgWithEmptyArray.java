@@ -25,8 +25,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
-
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
@@ -76,7 +75,7 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
                             Markers.EMPTY,
                             0,
                             "0",
-                            Collections.emptyList(),
+                            emptyList(),
                             (JavaType.Primitive) requireNonNull(d.getIndex().getType())
                     ));
                 }));

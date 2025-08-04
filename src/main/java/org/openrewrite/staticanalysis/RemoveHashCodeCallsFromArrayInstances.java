@@ -27,8 +27,9 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher HASHCODE_MATCHER = new MethodMatcher("java.lang.Object hashCode()");
@@ -46,7 +47,7 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2116");
+        return singleton("RSPEC-S2116");
     }
 
     @Override

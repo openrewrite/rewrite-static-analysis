@@ -26,15 +26,18 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.util.Collections.singleton;
 
 public class FixStringFormatExpressions extends Recipe {
 
     // %[argument_index$][flags][width][.precision][t]conversion
     private static final Pattern FS_PATTERN = Pattern.compile("%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
+    private static final Pattern NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\n");
+    private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\\\n");
 
     private static final MethodMatcher FORMAT_MATCHER = new MethodMatcher("java.lang.String format(..)");
     private static final MethodMatcher FORMATTED_MATCHER = new MethodMatcher("java.lang.String formatted(..)");
@@ -51,7 +54,7 @@ public class FixStringFormatExpressions extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3457");
+        return singleton("RSPEC-S3457");
     }
 
     @Override
@@ -93,13 +96,12 @@ public class FixStringFormatExpressions extends Recipe {
                                 argIndex++;
                             }
                             int finalArgIndex = argIndex;
-                            mi = mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
+                            return mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
                                 if (i == 0 || i < finalArgIndex) {
                                     return arg;
                                 }
                                 return null;
                             }));
-                            return mi;
                         }
                         return mi;
                     }
@@ -108,10 +110,10 @@ public class FixStringFormatExpressions extends Recipe {
                         if (arg0 instanceof J.Literal) {
                             J.Literal fmt = (J.Literal) arg0;
                             if (fmt.getValue() != null) {
-                                fmt = fmt.withValue(fmt.getValue().toString().replaceAll("(?<!\\\\)\n", "%n"));
+                                fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().toString()).replaceAll("%n"));
                             }
                             if (fmt.getValueSource() != null) {
-                                fmt = fmt.withValueSource(fmt.getValueSource().replaceAll("(?<!\\\\)\\\\n", "%n"));
+                                fmt = fmt.withValueSource(ESCAPED_NEWLINE_PATTERN.matcher(fmt.getValueSource()).replaceAll("%n"));
                             }
                             return fmt;
                         }

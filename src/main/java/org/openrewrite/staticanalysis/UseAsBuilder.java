@@ -30,8 +30,8 @@ import java.util.*;
 import static org.openrewrite.Validated.notBlank;
 import static org.openrewrite.java.format.TabsAndIndents.formatTabsAndIndents;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class UseAsBuilder extends Recipe {
     @Option(
             displayName = "Builder Type",
@@ -200,8 +200,7 @@ public class UseAsBuilder extends Recipe {
                                     );
                         })
                 );
-                cb = formatTabsAndIndents(cb, getCursor());
-                return cb;
+                return formatTabsAndIndents(cb, getCursor());
             }
         };
 

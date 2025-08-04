@@ -25,10 +25,11 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypedTree;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toList;
 
 public class RemoveToStringCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher VALUEOF_MATCHER = new MethodMatcher("java.lang.String valueOf(java.lang.Object)");
@@ -44,11 +45,11 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             "java.io.PrintWriter print*(..)",
             "java.io.PrintWriter format(..)"
     );
-    private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(Collectors.toList());
+    private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(toList());
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2116");
+        return singleton("RSPEC-S2116");
     }
 
     @Override
@@ -77,7 +78,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                 }
 
                 return buildReplacement(select, mi);
-            } else if (METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(mi))) {
+            }
+            if (METHOD_MATCHERS.stream().anyMatch(matcher -> matcher.matches(mi))) {
                 // deals with edge cases where .toString() is called implicitly
                 JavaType.Method methodType = mi.getMethodType();
                 if (methodType == null) {
@@ -88,8 +90,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                 for (int i = 0; i < arguments.size(); i++) {
                     Expression arg = arguments.get(i);
                     if (arg.getType() instanceof JavaType.Array &&
-                        (i > parameterTypes.size() - 1 ||
-                         !(parameterTypes.get(i) instanceof JavaType.Array))) {
+                            (i > parameterTypes.size() - 1 ||
+                                    !(parameterTypes.get(i) instanceof JavaType.Array))) {
                         getCursor().putMessage("METHOD_KEY", mi);
                         break;
                     }

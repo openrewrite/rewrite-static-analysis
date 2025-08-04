@@ -22,10 +22,10 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
 public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -59,7 +59,7 @@ public class MultipleVariableDeclarationsVisitor extends JavaIsoVisitor<Executio
                         typeExpression,
                         mv.getVarargs(),
                         emptyList(),
-                        Collections.singletonList(JRightPadded.build(nv))
+                        singletonList(JRightPadded.build(nv))
                 );
                 if (i == 0) {
                     vd = vd.withComments(mv.getComments()).withPrefix(mv.getPrefix());

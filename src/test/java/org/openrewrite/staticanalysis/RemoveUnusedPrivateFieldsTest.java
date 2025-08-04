@@ -40,12 +40,12 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private String notUsed;
               }
               """,
             """
-              public class Test {
+              class Test {
               }
               """
           )
@@ -58,7 +58,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test implements java.io.Serializable {
+              class Test implements java.io.Serializable {
                   private static final long serialVersionUID = 42L;
               }
               """
@@ -72,7 +72,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   @Deprecated
                   public String annotated;
               }
@@ -87,7 +87,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   public String notUsed;
                   public native void method();
               }
@@ -102,7 +102,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   public String notUsed;
               }
               """
@@ -116,7 +116,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private String value;
                   void method() {
                       String useValue = value;
@@ -133,7 +133,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private String value = "";
                   private String useValue = method(value);
                   String method(String arg0) {
@@ -152,12 +152,12 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           java(
             """
               import java.util.List;
-              public class Test {
+              class Test {
                   private List notUsed;
               }
               """,
             """
-              public class Test {
+              class Test {
               }
               """
           )
@@ -171,7 +171,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private String value;
                   void method() {
                       String value = "name shadow";
@@ -180,7 +180,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               }
               """,
             """
-              public class Test {
+              class Test {
                   void method() {
                       String value = "name shadow";
                       String shadowedUse = value;
@@ -197,7 +197,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private String aOne, aTwo, aThree;
                   private String bOne, bTwo, bThree;
                   private String cOne, cTwo, cThree;
@@ -209,7 +209,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               }
               """,
             """
-              public class Test {
+              class Test {
                   private String aTwo, aThree;
                   private String bOne, bThree;
                   private String cOne, cTwo;
@@ -231,10 +231,10 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Vehicle {
+              class Vehicle {
                   private VehicleUsage vehicleUsage;
 
-                  public class VehicleUsage {
+                  class VehicleUsage {
                       private final String vehicleId;
                   }
 
@@ -254,13 +254,13 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                  // Some comment
                  private int a;
               }
               """,
                 """
-              public class Test {
+              class Test {
               }
               """
           )
@@ -273,12 +273,12 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private int a; // Some comment
               }
               """,
                 """
-              public class Test {
+              class Test {
               }
               """
           )
@@ -291,7 +291,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private int a;
                   private int b; // Some comment
 
@@ -301,7 +301,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               }
               """,
                 """
-              public class Test {
+              class Test {
                   private int a;
 
                   public void test() {
@@ -319,7 +319,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private int a;
                   private int b; /*
                     Some
@@ -333,7 +333,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               }
               """,
                 """
-              public class Test {
+              class Test {
                   private int a;
 
                   public void test() {
@@ -352,7 +352,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private int a;
                   private int b;
                   // Some comment
@@ -363,7 +363,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               }
               """,
                 """
-              public class Test {
+              class Test {
                   private int a;
                   // Some comment
 
@@ -382,7 +382,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private int a, b; // Some comment
 
                   public void test() {
@@ -391,7 +391,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
               }
               """,
                 """
-              public class Test {
+              class Test {
                   private int a; // Some comment
 
                   public void test() {
@@ -455,14 +455,14 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           //language=java
           java(
             """
-              public class Test {
+              class Test {
                   private String a = "a";
                   private String ab = a + "b";
                   private String abc = ab + "c";
               }
               """,
             """
-              public class Test {
+              class Test {
               }
               """
           )
@@ -478,8 +478,55 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
           java(
             """
               import can.not.be.Found;
-              public class Test {
+              class Test {
                   private Found notUsed;
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/321")
+    @Test
+    void doNotRemoveFieldAfterTypeChange() {
+        rewriteRun(
+          spec -> spec.recipes(
+            new UseCollectionInterfaces(),
+            new RemoveUnusedPrivateFields()
+          ),
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.HashSet;
+
+              class Main {
+                  private static final HashSet<String> allowedMethods = new HashSet<>(Arrays.asList(
+                      "GET", "HEAD", "TRACE", "OPTIONS"));
+
+                  public boolean matches(String method) {
+                      if (allowedMethods.contains(method)) {
+                          return false;
+                      }
+                      return true;
+                  }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class Main {
+                  private static final Set<String> allowedMethods = new HashSet<>(Arrays.asList(
+                      "GET", "HEAD", "TRACE", "OPTIONS"));
+
+                  public boolean matches(String method) {
+                      if (allowedMethods.contains(method)) {
+                          return false;
+                      }
+                      return true;
+                  }
               }
               """
           )
