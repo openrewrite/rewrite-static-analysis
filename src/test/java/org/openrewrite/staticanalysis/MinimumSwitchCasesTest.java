@@ -887,4 +887,108 @@ class MinimumSwitchCasesTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/687")
+    @Test
+    void variableRedeclarationInNewBlocks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int someInt;
+                  void test() {
+                      switch (someInt) {
+                          case 1:
+                              String data = getSomeString();
+                              doThingOneWith(data);
+                              break;
+                          case 2:
+                              data = getSomeOtherString();
+                              doThingTwoWith(data);
+                              break;
+                      }
+                  }
+                  String getSomeString() { return "one"; }
+                  String getSomeOtherString() { return "two"; }
+                  void doThingOneWith(String data) {}
+                  void doThingTwoWith(String data) {}
+              }
+              """,
+            """
+              class Test {
+                  int someInt;
+                  void test() {
+                      if (someInt == 1) {
+                          String data = getSomeString();
+                          doThingOneWith(data);
+                      } else if (someInt == 2) {
+                          String data = getSomeOtherString();
+                          doThingTwoWith(data);
+                      }
+                  }
+                  String getSomeString() { return "one"; }
+                  String getSomeOtherString() { return "two"; }
+                  void doThingOneWith(String data) {}
+                  void doThingTwoWith(String data) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/687")
+    @Test
+    void MultipleVariableRedeclarationInNewBlocks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int someInt;
+                  void test() {
+                      switch (someInt) {
+                          case 1:
+                              String data = getSomeString(), otherString = getSomeString();
+                              doThingOneWith(data);
+                              doThingOneWith(otherString);
+                              break;
+                          case 2:
+                              data = getSomeOtherString();
+                              otherString = getSomeOtherString();
+                              doThingTwoWith(data);
+                              doThingTwoWith(otherString);
+                              break;
+                      }
+                  }
+                  String getSomeString() { return "one"; }
+                  String getSomeOtherString() { return "two"; }
+                  void doThingOneWith(String data) {}
+                  void doThingTwoWith(String data) {}
+              }
+              """,
+            """
+              class Test {
+                  int someInt;
+                  void test() {
+                      if (someInt == 1) {
+                          String data = getSomeString(), otherString = getSomeString();
+                          doThingOneWith(data);
+                          doThingOneWith(otherString);
+                      } else if (someInt == 2) {
+                          String data = getSomeOtherString();
+                          String otherString = getSomeOtherString();
+                          doThingTwoWith(data);
+                          doThingTwoWith(otherString);
+                      }
+                  }
+                  String getSomeString() { return "one"; }
+                  String getSomeOtherString() { return "two"; }
+                  void doThingOneWith(String data) {}
+                  void doThingTwoWith(String data) {}
+              }
+              """
+          )
+        );
+    }
 }

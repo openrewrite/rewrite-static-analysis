@@ -31,10 +31,7 @@ import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
@@ -192,6 +189,31 @@ public class MinimumSwitchCases extends Recipe {
                             }
                         }
 
+                        Map<String, J.VariableDeclarations> firstCaseDeclarations = new JavaIsoVisitor<Map<String, J.VariableDeclarations>>() {
+                            @Override
+                            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, Map<String, J.VariableDeclarations> variableDeclarations) {
+                                for (J.VariableDeclarations.NamedVariable var : multiVariable.getVariables()) {
+                                    if (multiVariable.getVariables().size() == 1) {
+                                        variableDeclarations.put(var.getSimpleName(), multiVariable);
+                                    } else {
+                                        variableDeclarations.put(var.getSimpleName(), multiVariable.withVariables(singletonList(var)));
+                                    }
+                                }
+                                return multiVariable;
+                            }
+
+                            @Override
+                            public J.Block visitBlock(J.Block block, Map<String, J.VariableDeclarations> variableDeclarations) {
+                                for (Statement statement : block.getStatements()) {
+                                    if (statement instanceof J.VariableDeclarations) {
+                                        visitVariableDeclarations((J.VariableDeclarations) statement, variableDeclarations);
+                                    }
+                                }
+
+                                return block;
+                            }
+                        }.reduce(cases[0], new HashMap<>());
+
                         // move first case to "if"
                         List<Statement> thenStatements = getStatements(cases[0]);
 
@@ -201,13 +223,37 @@ public class MinimumSwitchCases extends Recipe {
                         // move second case to "else"
                         if (cases[1] != null) {
                             assert generatedIf.getElsePart() != null;
+                            JavaVisitor<Map<String, J.VariableDeclarations>> firstAssignmentAsDeclarationVisitor = new JavaVisitor<Map<String, J.VariableDeclarations>>() {
+
+                                @Override
+                                public J visitStatement(Statement statement, Map<String, J.VariableDeclarations> stringVariableDeclarationsMap) {
+                                    if (statement instanceof J.Assignment) {
+                                        return visitAssignment((J.Assignment) statement, stringVariableDeclarationsMap);
+                                    } else {
+                                        return super.visitStatement(statement, stringVariableDeclarationsMap);
+                                    }
+                                }
+
+                                @Override
+                                public J visitAssignment(J.Assignment assignment, Map<String, J.VariableDeclarations> firstCaseDeclarations) {
+                                    if (assignment.getVariable() instanceof J.Identifier) {
+                                        String varName = ((J.Identifier) assignment.getVariable()).getSimpleName();
+                                        if (firstCaseDeclarations.containsKey(varName)) {
+                                            J.VariableDeclarations originalDecl = firstCaseDeclarations.remove(varName);
+                                            return originalDecl.withVariables(ListUtils.map(originalDecl.getVariables(), v -> v == null ? null : v.withInitializer(assignment.getAssignment())));
+                                        }
+                                    }
+                                    return super.visitAssignment(assignment, firstCaseDeclarations);
+                                }
+                            };
+
                             if (isDefault(cases[1])) {
                                 generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(((J.Block) generatedIf.getElsePart().getBody()).withStatements(ListUtils.map(getStatements(cases[1]),
-                                        s -> s instanceof J.Break ? null : s))));
+                                        s -> s instanceof J.Break || s == null ? null : (Statement) firstAssignmentAsDeclarationVisitor.visitStatement(s, firstCaseDeclarations)))));
                             } else {
                                 J.If elseIf = (J.If) generatedIf.getElsePart().getBody();
                                 generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseIf.withThenPart(((J.Block) elseIf.getThenPart()).withStatements(ListUtils.map(getStatements(cases[1]),
-                                        s -> s instanceof J.Break ? null : s)))));
+                                        s -> s instanceof J.Break || s == null ? null : (Statement) firstAssignmentAsDeclarationVisitor.visitStatement(s, firstCaseDeclarations))))));
                             }
                         }
 
@@ -250,7 +296,6 @@ public class MinimumSwitchCases extends Recipe {
                 return selectorType instanceof JavaType.Class &&
                        ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
             }
-
         });
     }
 
