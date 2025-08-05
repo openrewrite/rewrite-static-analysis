@@ -229,8 +229,7 @@ public class MinimumSwitchCases extends Recipe {
                                 public J visitStatement(Statement statement, Map<String, J.VariableDeclarations> stringVariableDeclarationsMap) {
                                     if (statement instanceof J.Assignment) {
                                         return visitAssignment((J.Assignment) statement, stringVariableDeclarationsMap);
-                                    } else {
-                                        return super.visitStatement(statement, stringVariableDeclarationsMap);
+                                    return super.visitStatement(statement, stringVariableDeclarationsMap);
                                     }
                                 }
 
