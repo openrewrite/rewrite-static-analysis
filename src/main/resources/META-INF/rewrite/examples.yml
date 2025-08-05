@@ -1304,7 +1304,7 @@ examples:
       }
     after: |
       def s = "prod"
-      if (s == "prod") {
+      if ("prod".equals(s)) {
           println("prod")
       } else {
           println("default")
@@ -1921,6 +1921,25 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.PreferIncrementOperator
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test(int i) {
+              i = i + 1;
+          }
+      }
+    after: |
+      class Test {
+          void test(int i) {
+              i++;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
 examples:
 - description: ''
@@ -2320,11 +2339,11 @@ examples:
 - description: ''
   sources:
   - before: |
-      public class Test {
+      class Test {
           private String notUsed;
       }
     after: |
-      public class Test {
+      class Test {
       }
     language: java
 ---
@@ -2946,6 +2965,29 @@ examples:
           boolean a;
           {
               if(a) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test(boolean a, boolean b) {
+              if (!(a && !b)) {
+                  System.out.println("Not both");
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test(boolean a, boolean b) {
+              if (!a || b) {
+                  System.out.println("Not both");
               }
           }
       }
@@ -3910,5 +3952,26 @@ examples:
       import org.openrewrite.xml.tree.Xml;
       class Test {
           Xml.@Nullable Tag tag;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.maven.MavenJavadocNonAsciiRecipe
+examples:
+- description: ''
+  sources:
+  - before: |
+      /**
+      * this is a sample class
+      * ₤€ contains non ascii characters
+      */
+      class A {
+      }
+    after: |
+      /**
+      * this is a sample class
+      *  contains non ascii characters
+      */
+      class A {
       }
     language: java
