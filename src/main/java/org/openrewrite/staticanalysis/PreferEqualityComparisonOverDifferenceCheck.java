@@ -25,12 +25,13 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Prefer direct equality comparison";
+        return "Prefer direct comparison";
     }
 
     @Override
     public String getDescription() {
-        return "Replace `a - b == 0` with `a == b` for improved readability.";
+        return "Replace `a - b == 0` with `a == b`, `a - b != 0` with `a != b`, `a - b < 0` with `a < b`, " +
+                "and similar transformations for all comparison operators to improve readability and avoid overflow issues.";
     }
 
     @Override
@@ -41,7 +42,8 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
             public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
                 binary = super.visitBinary(binary, ctx);
 
-                if (binary.getOperator() == J.Binary.Type.Equal) {
+                J.Binary.Type operator = binary.getOperator();
+                if (isComparisonOperator(operator)) {
                     Expression left = binary.getLeft();
                     Expression right = binary.getRight();
 
@@ -54,6 +56,15 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
                     }
                 }
                 return binary;
+            }
+
+            private boolean isComparisonOperator(J.Binary.Type operator) {
+                return operator == J.Binary.Type.Equal ||
+                        operator == J.Binary.Type.NotEqual ||
+                        operator == J.Binary.Type.LessThan ||
+                        operator == J.Binary.Type.LessThanOrEqual ||
+                        operator == J.Binary.Type.GreaterThan ||
+                        operator == J.Binary.Type.GreaterThanOrEqual;
             }
 
             private Expression unwrapParentheses(Expression expr) {

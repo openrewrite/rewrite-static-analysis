@@ -261,6 +261,116 @@ class PreferEqualityComparisonOverDifferenceCheckTest implements RewriteTest {
     }
 
     @Test
+    void basicSubtractionInequalityComparison() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a - b != 0;
+                }
+            }
+            """,
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a != b;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void basicSubtractionLessThanComparison() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a - b < 0;
+                }
+            }
+            """,
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a < b;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void basicSubtractionLessThanOrEqualComparison() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a - b <= 0;
+                }
+            }
+            """,
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a <= b;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void basicSubtractionGreaterThanComparison() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a - b > 0;
+                }
+            }
+            """,
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a > b;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void basicSubtractionGreaterThanOrEqualComparison() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a - b >= 0;
+                }
+            }
+            """,
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a >= b;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
     void doesNotChangeNonZeroComparisons() {
         rewriteRun(
           java(
@@ -291,13 +401,13 @@ class PreferEqualityComparisonOverDifferenceCheckTest implements RewriteTest {
     }
 
     @Test
-    void doesNotChangeInequalityComparisons() {
+    void doesNotChangeFloatComparisonWhenPrecisionMatters() {
         rewriteRun(
           java(
             """
             class Test {
-                boolean test(int a, int b) {
-                    return a - b != 0;
+                boolean test(float a, float b) {
+                    return a - b == 0.00001f;
                 }
             }
             """
@@ -306,13 +416,28 @@ class PreferEqualityComparisonOverDifferenceCheckTest implements RewriteTest {
     }
 
     @Test
-    void doesNotChangeFloatComparisonWhenPrecisionMatters() {
+    void doesNotChangeLessThanNonZeroComparison() {
         rewriteRun(
           java(
             """
             class Test {
-                boolean test(float a, float b) {
-                    return a - b == 0.00001f;
+                boolean test(int a, int b) {
+                    return a - b < 1;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void doesNotChangeMoreThanNonZeroComparison() {
+        rewriteRun(
+          java(
+            """
+            class Test {
+                boolean test(int a, int b) {
+                    return a - b > 1;
                 }
             }
             """
