@@ -21,7 +21,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
