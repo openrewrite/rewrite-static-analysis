@@ -25,7 +25,7 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Prefer direct comparison";
+        return "Prefer direct comparison of numbers";
     }
 
     @Override
