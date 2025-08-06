@@ -192,12 +192,8 @@ public class MinimumSwitchCases extends Recipe {
                         Map<String, J.VariableDeclarations> firstCaseDeclarations = new JavaIsoVisitor<Map<String, J.VariableDeclarations>>() {
                             @Override
                             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, Map<String, J.VariableDeclarations> variableDeclarations) {
-                                for (J.VariableDeclarations.NamedVariable var : multiVariable.getVariables()) {
-                                    if (multiVariable.getVariables().size() == 1) {
-                                        variableDeclarations.put(var.getSimpleName(), multiVariable);
-                                    } else {
-                                        variableDeclarations.put(var.getSimpleName(), multiVariable.withVariables(singletonList(var)));
-                                    }
+                                for (J.VariableDeclarations.NamedVariable var_ : multiVariable.getVariables()) {
+                                    variableDeclarations.put(var_.getSimpleName(), multiVariable.withVariables(ListUtils.filter(multiVariable.getVariables(), v -> v == var_)));
                                 }
                                 return multiVariable;
                             }
@@ -209,7 +205,6 @@ public class MinimumSwitchCases extends Recipe {
                                         visitVariableDeclarations((J.VariableDeclarations) statement, variableDeclarations);
                                     }
                                 }
-
                                 return block;
                             }
                         }.reduce(cases[0], new HashMap<>());
@@ -239,7 +234,7 @@ public class MinimumSwitchCases extends Recipe {
                                         String varName = ((J.Identifier) assignment.getVariable()).getSimpleName();
                                         if (firstCaseDeclarations.containsKey(varName)) {
                                             J.VariableDeclarations originalDecl = firstCaseDeclarations.remove(varName);
-                                            return originalDecl.withVariables(ListUtils.map(originalDecl.getVariables(), v -> v == null ? null : v.withInitializer(assignment.getAssignment())));
+                                            return originalDecl.withVariables(ListUtils.map(originalDecl.getVariables(), v -> v.withInitializer(assignment.getAssignment())));
                                         }
                                     }
                                     return super.visitAssignment(assignment, firstCaseDeclarations);
