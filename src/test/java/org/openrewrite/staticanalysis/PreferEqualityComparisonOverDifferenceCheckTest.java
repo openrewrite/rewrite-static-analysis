@@ -75,50 +75,6 @@ class PreferEqualityComparisonOverDifferenceCheckTest implements RewriteTest {
     }
 
     @Test
-    void reverseOrderZeroComparison() {
-        rewriteRun(
-          java(
-            """
-            class Test {
-                boolean test(int a, int b) {
-                    return 0 == a - b;
-                }
-            }
-            """,
-            """
-            class Test {
-                boolean test(int a, int b) {
-                    return a == b;
-                }
-            }
-            """
-          )
-        );
-    }
-
-    @Test
-    void reverseOrderZeroComparisonWithParentheses() {
-        rewriteRun(
-          java(
-            """
-            class Test {
-                boolean test(int a, int b) {
-                    return 0 == (a - b);
-                }
-            }
-            """,
-            """
-            class Test {
-                boolean test(int a, int b) {
-                    return a == b;
-                }
-            }
-            """
-          )
-        );
-    }
-
-    @Test
     void worksWithLongType() {
         rewriteRun(
           java(

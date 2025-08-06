@@ -48,19 +48,11 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
                     Expression unwrappedLeft = unwrapParentheses(left);
                     Expression unwrappedRight = unwrapParentheses(right);
 
-                    // Case 1: (a - b) == 0
                     if (isSubtraction(unwrappedLeft) && isZero(unwrappedRight)) {
                         J.Binary subtraction = (J.Binary) unwrappedLeft;
                         return transformToEquality(binary, subtraction, ctx);
                     }
-
-                    // Case 2: 0 == (a - b)
-                    if (isZero(unwrappedLeft) && isSubtraction(unwrappedRight)) {
-                        J.Binary subtraction = (J.Binary) unwrappedRight;
-                        return transformToEquality(binary, subtraction, ctx);
-                    }
                 }
-
                 return binary;
             }
 
