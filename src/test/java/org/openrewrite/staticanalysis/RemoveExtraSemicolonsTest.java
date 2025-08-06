@@ -22,13 +22,14 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings("UnnecessarySemicolon")
+@SuppressWarnings({"UnnecessarySemicolon", "EmptyTryBlock", "UnusedAssignment", "ConstantValue"})
 class RemoveExtraSemicolonsTest implements RewriteTest {
 
     @Override
@@ -258,6 +259,28 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                  public static final String X = "receipt-id";
              }
              """
+          )
+        );
+    }
+
+    @Test
+    void afterImport() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.builder().allowNonWhitespaceInWhitespace(true).build()),
+          //language=java
+          java(
+            """
+            import java.util.List;;
+            interface A {
+                List<String> getList();
+            }
+            """,
+            """
+            import java.util.List;
+            interface A {
+                List<String> getList();
+            }
+            """
           )
         );
     }

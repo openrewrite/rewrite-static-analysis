@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -57,6 +58,17 @@ public class RemoveExtraSemicolons extends Recipe {
     @SuppressWarnings("ConstantConditions")
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+
+            // Typically it is not possible to get semicolons in the whitespace part of comments without parser bugs
+            // But since trailing semicolons on import statements is not valid java the LST format doesn't accommodate that
+            // except in whitespace
+            @Override
+            public Space visitSpace(@Nullable Space space, Space.Location loc, ExecutionContext executionContext) {
+                if(space.getWhitespace().contains(";")) {
+                    return space.withWhitespace(space.getWhitespace().replace(";", ""));
+                }
+                return space;
+            }
 
             @Override
             public J.Block visitBlock(final J.Block block, final ExecutionContext ctx) {
