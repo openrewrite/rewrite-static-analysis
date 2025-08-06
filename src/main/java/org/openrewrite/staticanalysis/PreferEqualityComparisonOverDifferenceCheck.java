@@ -44,11 +44,8 @@ public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
 
                 J.Binary.Type operator = binary.getOperator();
                 if (isComparisonOperator(operator)) {
-                    Expression left = binary.getLeft();
-                    Expression right = binary.getRight();
-
-                    Expression unwrappedLeft = unwrapParentheses(left);
-                    Expression unwrappedRight = unwrapParentheses(right);
+                    Expression unwrappedLeft = unwrapParentheses(binary.getLeft());
+                    Expression unwrappedRight = unwrapParentheses(binary.getRight());
 
                     if (isSubtraction(unwrappedLeft) && isZero(unwrappedRight)) {
                         J.Binary subtraction = (J.Binary) unwrappedLeft;
