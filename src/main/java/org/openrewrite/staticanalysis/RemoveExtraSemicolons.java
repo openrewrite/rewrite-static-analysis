@@ -21,6 +21,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
@@ -57,6 +58,15 @@ public class RemoveExtraSemicolons extends Recipe {
     @SuppressWarnings("ConstantConditions")
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public Space visitSpace(Space space, Space.Location loc, ExecutionContext ctx) {
+                Space s = super.visitSpace(space, loc, ctx);
+                String whitespace = s.getWhitespace();
+                if (whitespace.contains(";")) {
+                    return s.withWhitespace(whitespace.replace(";", ""));
+                }
+                return s;
+            }
 
             @Override
             public J.Block visitBlock(final J.Block block, final ExecutionContext ctx) {

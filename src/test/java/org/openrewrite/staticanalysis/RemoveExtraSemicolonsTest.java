@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import java.util.List;
 
@@ -258,6 +259,28 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                  public static final String X = "receipt-id";
              }
              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/669")
+    @Test
+    void afterImport() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(true)),
+          java(
+            """
+              import java.util.List;;
+              interface A {
+                  List<String> getList();
+              }
+              """,
+            """
+              import java.util.List;
+              interface A {
+                  List<String> getList();
+              }
+              """
           )
         );
     }
