@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2025 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -250,6 +250,27 @@ class MoveConditionsToWhileTest implements RewriteTest {
               class Test {
                   void foo(boolean done) {
                       while (!(done)) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenBreakHasLabel() {
+        rewriteRun(
+          spec -> spec.recipe(new MoveConditionsToWhile()),
+          java(
+            """
+              class Test {
+                  void foo(int counter) {
+                      outer: while (true) {
+                          if (counter >= 5) {
+                              break outer;
+                          }
+                          counter++;
                       }
                   }
               }

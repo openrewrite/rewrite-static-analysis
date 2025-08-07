@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2025 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,13 +81,19 @@ public class MoveConditionsToWhile extends Recipe {
                 }
 
                 Statement thenBody = ifStatement.getThenPart();
+                J.Break breakStatement = null;
                 if (thenBody instanceof J.Block) {
                     J.Block thenBlock = (J.Block) thenBody;
-                    if (thenBlock.getStatements().size() != 1 ||
-                        !(thenBlock.getStatements().get(0) instanceof J.Break)) {
+                    if (thenBlock.getStatements().size() != 1 || !(thenBlock.getStatements().get(0) instanceof J.Break)) {
                         return wl;
                     }
-                } else if (!(thenBody instanceof J.Break)) {
+                    breakStatement = (J.Break) thenBlock.getStatements().get(0);
+                } else if (thenBody instanceof J.Break) {
+                    breakStatement = (J.Break) thenBody;
+                }
+
+                // Check that the break has no label
+                if (breakStatement == null || breakStatement.getLabel() != null) {
                     return wl;
                 }
 
