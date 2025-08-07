@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -263,6 +264,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
+    @ExpectedToFail("Separate parser issue")
     @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
     @Test
     void importSemicolonAfterPackage() {
@@ -286,6 +288,7 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
+    @ExpectedToFail("Separate parser issue")
     @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
     @Test
     void importSemicolonBetweenImports() {
