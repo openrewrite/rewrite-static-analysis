@@ -263,24 +263,69 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
     @Test
-    void afterImport() {
+    void importSemicolonAfterPackage() {
+        //language=java
         rewriteRun(
-          spec -> spec.typeValidationOptions(TypeValidation.builder().allowNonWhitespaceInWhitespace(true).build()),
-          //language=java
+          spec -> spec
+            .typeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(true))
+            .afterTypeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(false)),
           java(
             """
-            import java.util.List;;
-            interface A {
-                List<String> getList();
-            }
-            """,
+              package p;;
+              import java.util.List;
+              class AfterPackage { }
+              """,
             """
-            import java.util.List;
-            interface A {
-                List<String> getList();
-            }
+              package p;
+              import java.util.List;
+              class AfterPackage { }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
+    @Test
+    void importSemicolonBetweenImports() {
+        //language=java
+        rewriteRun(
+          spec -> spec
+            .typeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(true))
+            .afterTypeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(false)),
+          java(
             """
+              import java.util.List;
+              ;import java.util.Set;
+              class BetweenImport { }
+              """,
+            """
+              import java.util.List;
+              import java.util.Set;
+              class BetweenImport { }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
+    @Test
+    void importSemicolonAfterImports() {
+        //language=java
+        rewriteRun(
+          spec -> spec
+            .typeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(true))
+            .afterTypeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(false)),
+          java(
+            """
+              import java.util.List;
+              ;class BetweenImport { }
+              """,
+            """
+              import java.util.List;
+              class BetweenImport { }
+              """
           )
         );
     }

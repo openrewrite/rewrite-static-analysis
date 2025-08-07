@@ -64,7 +64,7 @@ public class RemoveExtraSemicolons extends Recipe {
             // except in whitespace
             @Override
             public Space visitSpace(@Nullable Space space, Space.Location loc, ExecutionContext ctx) {
-                if(space.getWhitespace().contains(";")) {
+                if (space.getWhitespace().contains(";")) {
                     return space.withWhitespace(space.getWhitespace().replace(";", ""));
                 }
                 return space;
@@ -80,7 +80,7 @@ public class RemoveExtraSemicolons extends Recipe {
                         nextNonEmptyAggregatedWithComments(statement, iterator)
                                 .ifPresent(nextLine -> {
                                     String whitespace = statement.getPrefix().getWhitespace();
-                                    if (!whitespace.contains("\n") && nextLine.getComments().isEmpty())  {
+                                    if (!whitespace.contains("\n") && nextLine.getComments().isEmpty()) {
                                         result.add(nextLine);
                                     } else {
                                         Space updatedPrefix = nextLine.getPrefix().withWhitespace(whitespace);
