@@ -46,7 +46,7 @@ class MoveConditionsToWhileTest implements RewriteTest {
             """
               class Test {
                   void foo(int counter) {
-                      while (!(counter >= 5)) {
+                      while (counter < 5) {
                           System.out.println("Counter: " + counter);
                           counter++;
                       }
@@ -97,9 +97,9 @@ class MoveConditionsToWhileTest implements RewriteTest {
             """
               import java.util.concurrent.atomic.AtomicBoolean;
               class Test {
-                  void foo(AtomicBoolean done) {
+                  void foo(AtomicBoolean pending) {
                       while (true) {
-                          if (done.get()) {
+                          if (!pending.get()) {
                               break;
                           }
                           System.out.println("Working");
@@ -110,8 +110,8 @@ class MoveConditionsToWhileTest implements RewriteTest {
             """
               import java.util.concurrent.atomic.AtomicBoolean;
               class Test {
-                  void foo(AtomicBoolean done) {
-                      while (!(done.get())) {
+                  void foo(AtomicBoolean pending) {
+                      while (pending.get()) {
                           System.out.println("Working");
                       }
                   }
@@ -259,6 +259,38 @@ class MoveConditionsToWhileTest implements RewriteTest {
     }
 
     @Test
+    void avoidDoubleNegationWithNotEquals() {
+        rewriteRun(
+          spec -> spec.recipe(new MoveConditionsToWhile()),
+          java(
+            """
+              class Test {
+                  void foo(int counter) {
+                      while (true) {
+                          if (counter != 5) {
+                              break;
+                          }
+                          System.out.println("Counter: " + counter);
+                          counter++;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void foo(int counter) {
+                      while (counter == 5) {
+                          System.out.println("Counter: " + counter);
+                          counter++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeWhenBreakHasLabel() {
         rewriteRun(
           spec -> spec.recipe(new MoveConditionsToWhile()),
@@ -304,7 +336,7 @@ class MoveConditionsToWhileTest implements RewriteTest {
               class Test {
                   void foo(int counter) {
                       // Main loop
-                      while (!(counter >= 5)) {
+                      while (counter < 5) {
                           // Process item
                           System.out.println("Counter: " + counter);
                           counter++;

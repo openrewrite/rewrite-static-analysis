@@ -20,6 +20,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
@@ -84,19 +85,20 @@ public class MoveConditionsToWhile extends Recipe {
                     breakStatement = (J.Break) thenBody;
                 }
 
-                // Check that the break has no label
                 if (breakStatement == null || breakStatement.getLabel() != null) {
                     return wl;
                 }
 
-                JavaTemplate whileTemplate = JavaTemplate.builder("while (!(#{any()})) #{}")
-                        .build();
-
+                Expression ifCondition = ifStatement.getIfCondition().getTree();
                 List<Statement> remainingStatements = statements.subList(1, statements.size());
                 J.Block newBody = body.withStatements(remainingStatements);
 
-                return whileTemplate.apply(getCursor(), wl.getCoordinates().replace(),
-                        ifStatement.getIfCondition().getTree(), newBody);
+                JavaTemplate whileTemplate = JavaTemplate.builder("while (!(#{any()})) #{}").build();
+                J.WhileLoop newWhileLoop = whileTemplate.apply(getCursor(), wl.getCoordinates().replace(), ifCondition, newBody);
+
+                Expression simplifiedCondition = (Expression) new BooleanChecksNotInverted().getVisitor().visit(newWhileLoop.getCondition().getTree(), ctx);
+                assert simplifiedCondition != null;
+                return  newWhileLoop.withCondition(newWhileLoop.getCondition().withTree(simplifiedCondition));
             }
         };
     }
