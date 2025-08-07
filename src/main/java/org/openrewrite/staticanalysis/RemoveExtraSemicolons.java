@@ -63,7 +63,7 @@ public class RemoveExtraSemicolons extends Recipe {
             // But since trailing semicolons on import statements is not valid java the LST format doesn't accommodate that
             // except in whitespace
             @Override
-            public Space visitSpace(@Nullable Space space, Space.Location loc, ExecutionContext executionContext) {
+            public Space visitSpace(@Nullable Space space, Space.Location loc, ExecutionContext ctx) {
                 if(space.getWhitespace().contains(";")) {
                     return space.withWhitespace(space.getWhitespace().replace(";", ""));
                 }
