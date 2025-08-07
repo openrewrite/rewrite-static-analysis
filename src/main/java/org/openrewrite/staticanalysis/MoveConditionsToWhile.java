@@ -24,9 +24,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
-import java.util.Set;
-
-import static java.util.Collections.singleton;
 
 public class MoveConditionsToWhile extends Recipe {
 
@@ -39,11 +36,6 @@ public class MoveConditionsToWhile extends Recipe {
     public String getDescription() {
         return "Simplifies `while (true)` loops where the first statement is an `if` statement that only contains a `break`. " +
                "The condition is inverted and moved to the loop condition for better readability.";
-    }
-
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S7076");
     }
 
     @Override
