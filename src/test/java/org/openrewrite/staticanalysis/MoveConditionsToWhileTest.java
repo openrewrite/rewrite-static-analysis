@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
@@ -24,11 +25,15 @@ import static org.openrewrite.java.Assertions.java;
 @SuppressWarnings("ConstantConditions")
 class MoveConditionsToWhileTest implements RewriteTest {
 
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new MoveConditionsToWhile());
+    }
+
     @DocumentExample
     @Test
     void basicTransformation() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -46,7 +51,7 @@ class MoveConditionsToWhileTest implements RewriteTest {
             """
               class Test {
                   void foo(int counter) {
-                      while (!(counter >= 5)) {
+                      while (counter < 5) {
                           System.out.println("Counter: " + counter);
                           counter++;
                       }
@@ -60,7 +65,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void withComplexCondition() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -92,7 +96,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void withBlockInIf() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               import java.util.concurrent.atomic.AtomicBoolean;
@@ -124,7 +127,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void doNotChangeWhenElsePresent() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -147,7 +149,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void doNotChangeWhenNotFirstStatement() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -169,7 +170,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void doNotChangeWhenMultipleStatementsInIf() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -191,7 +191,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void doNotChangeWhenNotWhileTrue() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -212,7 +211,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void doNotChangeWhenIfHasNoBreak() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -233,7 +231,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void emptyBodyAfterTransformation() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -261,7 +258,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void doNotChangeWhenBreakHasLabel() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -282,7 +278,6 @@ class MoveConditionsToWhileTest implements RewriteTest {
     @Test
     void preserveComments() {
         rewriteRun(
-          spec -> spec.recipe(new MoveConditionsToWhile()),
           java(
             """
               class Test {
@@ -304,7 +299,7 @@ class MoveConditionsToWhileTest implements RewriteTest {
               class Test {
                   void foo(int counter) {
                       // Main loop
-                      while (!(counter >= 5)) {
+                      while (counter < 5) {
                           // Process item
                           System.out.println("Counter: " + counter);
                           counter++;
