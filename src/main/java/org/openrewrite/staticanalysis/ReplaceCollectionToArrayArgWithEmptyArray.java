@@ -64,7 +64,9 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
 
         @Override
         public J.NewArray visitNewArray(J.NewArray newArray, P p) {
-            if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && newArray.getDimensions().size() == 1) {
+            boolean isInitializerEmpty = newArray.getInitializer() == null
+                    || (newArray.getInitializer().size() == 1 && newArray.getInitializer().get(0) instanceof J.Empty);
+            if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && isInitializerEmpty) {
                 J.NewArray newArrayZero = newArray.withDimensions(ListUtils.mapFirst(newArray.getDimensions(), d -> {
                     if (d.getIndex() instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) d.getIndex()).getValue())) {
                         return d;
