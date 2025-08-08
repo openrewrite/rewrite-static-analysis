@@ -64,11 +64,20 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
 
         @Override
         public J.NewArray visitNewArray(J.NewArray newArray, P p) {
-            if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && newArray.getDimensions().size() == 1) {
+            boolean isInitializerEmpty = newArray.getInitializer() == null ||
+                    (newArray.getInitializer().size() == 1 && newArray.getInitializer().get(0) instanceof J.Empty);
+            if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && isInitializerEmpty) {
                 J.NewArray newArrayZero = newArray.withDimensions(ListUtils.mapFirst(newArray.getDimensions(), d -> {
                     if (d.getIndex() instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) d.getIndex()).getValue())) {
                         return d;
                     }
+                    JavaType.Primitive type;
+                    if (d.getIndex() instanceof J.Empty) {
+                        type = JavaType.Primitive.Int;
+                    } else {
+                        type = (JavaType.Primitive) requireNonNull(d.getIndex().getType());
+                    }
+
                     return d.withIndex(new J.Literal(
                             Tree.randomId(),
                             Space.EMPTY,
@@ -76,9 +85,10 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
                             0,
                             "0",
                             emptyList(),
-                            (JavaType.Primitive) requireNonNull(d.getIndex().getType())
+                            type
                     ));
                 }));
+                newArrayZero = newArrayZero.withInitializer(null);
                 return maybeAutoFormat(newArray, newArrayZero, p);
             }
             return super.visitNewArray(newArray, p);
