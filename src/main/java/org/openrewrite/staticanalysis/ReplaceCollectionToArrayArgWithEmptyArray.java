@@ -69,6 +69,13 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
                     if (d.getIndex() instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) d.getIndex()).getValue())) {
                         return d;
                     }
+                    JavaType.Primitive type;
+                    if (d.getIndex() instanceof J.Empty) {
+                        type = JavaType.Primitive.Int;
+                    } else {
+                        type = (JavaType.Primitive) requireNonNull(d.getIndex().getType());
+                    }
+
                     return d.withIndex(new J.Literal(
                             Tree.randomId(),
                             Space.EMPTY,
@@ -76,9 +83,10 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
                             0,
                             "0",
                             emptyList(),
-                            (JavaType.Primitive) requireNonNull(d.getIndex().getType())
+                            type
                     ));
                 }));
+                newArrayZero = newArrayZero.withInitializer(null);
                 return maybeAutoFormat(newArray, newArrayZero, p);
             }
             return super.visitNewArray(newArray, p);

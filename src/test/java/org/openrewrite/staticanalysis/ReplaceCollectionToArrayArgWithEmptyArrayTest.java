@@ -83,4 +83,31 @@ class ReplaceCollectionToArrayArgWithEmptyArrayTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void replaceEmptyArrayWithZero() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+
+              class A {
+                  void test(Collection<Integer> args){
+                      Integer[] array = args.toArray(new Integer[]{});
+                  }
+              }
+              """,
+            """
+              import java.util.Collection;
+
+              class A {
+                  void test(Collection<Integer> args){
+                      Integer[] array = args.toArray(new Integer[0]);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
