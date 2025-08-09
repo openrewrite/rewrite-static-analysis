@@ -1397,6 +1397,34 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MoveConditionsToWhile
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void foo(int counter) {
+              while (true) {
+                  if (counter >= 5) {
+                      break;
+                  }
+                  System.out.println("Counter: " + counter);
+                  counter++;
+              }
+          }
+      }
+    after: |
+      class Test {
+          void foo(int counter) {
+              while (counter < 5) {
+                  System.out.println("Counter: " + counter);
+                  counter++;
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MultipleVariableDeclarations
 examples:
 - description: ''
@@ -1916,6 +1944,25 @@ examples:
           static void method() {
               String s = "aaa"
                       + "b" + "c";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.PreferEqualityComparisonOverDifferenceCheck
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          boolean test(int a, int b) {
+              return a - b == 0;
+          }
+      }
+    after: |
+      class Test {
+          boolean test(int a, int b) {
+              return a == b;
           }
       }
     language: java
