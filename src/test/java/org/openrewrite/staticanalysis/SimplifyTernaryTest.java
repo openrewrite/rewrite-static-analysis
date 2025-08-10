@@ -17,16 +17,22 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
 class SimplifyTernaryTest implements RewriteTest {
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new SimplifyTernaryRecipes());
+    }
+
     @DocumentExample
     @Test
     void simplified() {
         rewriteRun(
-          spec -> spec.recipe(new SimplifyTernaryRecipes()),
           //language=java
           java(
             """
@@ -88,7 +94,6 @@ class SimplifyTernaryTest implements RewriteTest {
     @Test
     void unchanged() {
         rewriteRun(
-          spec -> spec.recipe(new SimplifyTernaryRecipes()),
           //language=java
           java(
             """
