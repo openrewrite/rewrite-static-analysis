@@ -25,12 +25,10 @@ import static org.openrewrite.java.Assertions.java;
 @SuppressWarnings("DoubleNegation")
 class BooleanChecksNotInvertedTest implements RewriteTest {
 
-
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new BooleanChecksNotInverted());
     }
-
 
     @DocumentExample
     @SuppressWarnings("StatementWithEmptyBody")
