@@ -22,11 +22,16 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 
 class SimplifyTernaryTest implements RewriteTest {
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new SimplifyTernaryRecipes());
+    }
+
     @DocumentExample
     @Test
     void simplified() {
         rewriteRun(
-          spec -> spec.recipe(new SimplifyTernaryRecipes()),
           //language=java
           java(
             """
@@ -88,7 +93,6 @@ class SimplifyTernaryTest implements RewriteTest {
     @Test
     void unchanged() {
         rewriteRun(
-          spec -> spec.recipe(new SimplifyTernaryRecipes()),
           //language=java
           java(
             """
