@@ -112,8 +112,10 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
             """
               class Test implements java.io.Serializable {
                   private void writeObject(java.io.ObjectOutputStream out) {}
+                  private Object writeReplace() {}
                   private void readObject(java.io.ObjectInputStream in) {}
                   private void readObjectNoData() {}
+                  private Object readResolve() {}
               }
               """
           )

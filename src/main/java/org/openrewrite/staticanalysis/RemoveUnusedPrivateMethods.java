@@ -90,6 +90,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                             case "readObjectNoData":
                             case "readResolve":
                             case "writeObject":
+                            case "writeReplace":
                                 return m;
                         }
                     }
@@ -125,5 +126,4 @@ public class RemoveUnusedPrivateMethods extends Recipe {
         };
         return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
     }
-
 }
