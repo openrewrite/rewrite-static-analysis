@@ -2242,6 +2242,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeLiteralEquals
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void foo(String s) {
+              if (s != null && "test".equals(s)) {
+                  System.out.println("String matches");
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo(String s) {
+              if ("test".equals(s)) {
+                  System.out.println("String matches");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveRedundantTypeCast
 examples:
 - description: ''
