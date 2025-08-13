@@ -25,10 +25,7 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.style.EmptyBlockStyle;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
@@ -48,9 +45,15 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
         J.WhileLoop w = super.visitWhileLoop(whileLoop, p);
 
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
-            J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
+        if (isEmptyBlock(w.getBody())) {
+            if (EmptyBlockStyle.BlockPolicy.STATEMENT == emptyBlockStyle.getBlockPolicy()) {
+                w = continueStatement.apply(updateCursor(w), ((J.Block) w.getBody()).getCoordinates().lastStatement());
+            }
+            if (EmptyBlockStyle.BlockPolicy.TEXT == emptyBlockStyle.getBlockPolicy()) {
+                J.Block body = (J.Block) w.getBody();
+                TextComment textComment = new TextComment(false, " do nothing", "\n" + body.getEnd().getIndent(), Markers.EMPTY);
+                w = autoFormat(w.withBody(body.withEnd(body.getEnd().withComments(ListUtils.concat(body.getEnd().getComments(), textComment)))), p);
+            }
         }
 
         return w;
@@ -60,9 +63,15 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, P p) {
         J.DoWhileLoop w = super.visitDoWhileLoop(doWhileLoop, p);
 
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
-            J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
+        if (isEmptyBlock(w.getBody())) {
+            if (EmptyBlockStyle.BlockPolicy.STATEMENT == emptyBlockStyle.getBlockPolicy()) {
+                w = continueStatement.apply(updateCursor(w), ((J.Block) w.getBody()).getCoordinates().lastStatement());
+            }
+            if (EmptyBlockStyle.BlockPolicy.TEXT == emptyBlockStyle.getBlockPolicy()) {
+                J.Block body = (J.Block) w.getBody();
+                TextComment textComment = new TextComment(false, " do nothing", "\n" + body.getEnd().getIndent(), Markers.EMPTY);
+                w = autoFormat(w.withBody(body.withEnd(body.getEnd().withComments(ListUtils.concat(body.getEnd().getComments(), textComment)))), p);
+            }
         }
 
         return w;
