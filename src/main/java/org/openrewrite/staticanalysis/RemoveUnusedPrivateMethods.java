@@ -84,15 +84,13 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                     if (classDeclaration == null) {
                         return m;
                     }
-                    if (TypeUtils.isAssignableTo("java.io.Serializable", classDeclaration.getType())) {
-                        switch (m.getSimpleName()) {
-                            case "readObject":
-                            case "readObjectNoData":
-                            case "readResolve":
-                            case "writeObject":
-                            case "writeReplace":
-                                return m;
-                        }
+                    switch (m.getSimpleName()) {
+                        case "readObject":
+                        case "readObjectNoData":
+                        case "readResolve":
+                        case "writeObject":
+                        case "writeReplace":
+                            return m;
                     }
 
                     JavaSourceFile cu = getCursor().firstEnclosingOrThrow(JavaSourceFile.class);

@@ -110,7 +110,7 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
           //language=java
           java(
             """
-              class Test implements java.io.Serializable {
+              class Test {
                   private void writeObject(java.io.ObjectOutputStream out) {}
                   private Object writeReplace() {}
                   private void readObject(java.io.ObjectInputStream in) {}
