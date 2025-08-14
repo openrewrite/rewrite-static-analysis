@@ -24,12 +24,10 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -43,7 +41,7 @@ public class UseCollectionInterfaces extends Recipe {
     @Override
     public String getDescription() {
         return "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
-               "Replaces the return type of public method declarations and the variable type public variable declarations.";
+                "Replaces the return type of public method declarations and the variable type public variable declarations.";
     }
 
     @Override
@@ -56,7 +54,7 @@ public class UseCollectionInterfaces extends Recipe {
         return Duration.ofMinutes(10);
     }
 
-    public static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
+    static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
 
     static {
         rspecRulesReplaceTypeMap.put("java.util.ArrayDeque", "java.util.Deque");
@@ -66,6 +64,7 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.AbstractSequentialList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.ArrayList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArrayList", "java.util.List");
+        rspecRulesReplaceTypeMap.put("java.util.Vector", "java.util.List");
         // Map
         rspecRulesReplaceTypeMap.put("java.util.AbstractMap", "java.util.Map");
         rspecRulesReplaceTypeMap.put("java.util.EnumMap", "java.util.Map");
@@ -100,6 +99,11 @@ public class UseCollectionInterfaces extends Recipe {
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+
+                    if (new InterfaceIncompatibleMethodDetector().reduce(tree, new AtomicBoolean(false)).get()) {
+                        return cu;
+                    }
+
                     for (JavaType type : cu.getTypesInUse().getTypesInUse()) {
                         JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
                         if (fq != null && rspecRulesReplaceTypeMap.containsKey(fq.getFullyQualifiedName())) {
@@ -114,7 +118,7 @@ public class UseCollectionInterfaces extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if ((m.hasModifier(J.Modifier.Type.Public) || m.hasModifier(J.Modifier.Type.Private) || m.getModifiers().isEmpty()) &&
-                    m.getReturnTypeExpression() != null) {
+                        m.getReturnTypeExpression() != null) {
                     JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(m.getReturnTypeExpression().getType());
                     if (originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
 
@@ -177,7 +181,7 @@ public class UseCollectionInterfaces extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());
                 if ((mv.hasModifier(J.Modifier.Type.Public) || mv.hasModifier(J.Modifier.Type.Private) || mv.getModifiers().isEmpty()) &&
-                    originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
+                        originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
                     if (mv.getTypeExpression() instanceof J.Identifier && "var".equals(((J.Identifier) mv.getTypeExpression()).getSimpleName())) {
                         return mv;
                     }
@@ -254,5 +258,34 @@ public class UseCollectionInterfaces extends Recipe {
                                 new JavaType.Parameterized(null, newType, null));
             }
         };
+    }
+
+    private static class InterfaceIncompatibleMethodDetector extends JavaIsoVisitor<AtomicBoolean> {
+        private static final Map<String, Set<String>> nonInterfaceMethods = new HashMap<>();
+
+        static {
+            nonInterfaceMethods.put("java.util.Hashtable", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "contains", "elements", "keys"))));
+            nonInterfaceMethods.put("java.util.Vector", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "addElement", "capacity", "copyInto", "elementAt", "elements", "ensureCapacity", "insertElementAt", "removeAllElements", "removeElement", "removeElementAt", "setElementAt", "setSize", "trimToSize"))));
+            nonInterfaceMethods.put("java.util.ArrayList", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "ensureCapacity", "trimToSize"))));
+        }
+
+        @Override
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean foundNonInterfaceMethod) {
+            if (foundNonInterfaceMethod.get()) {
+                return method;
+            }
+            if (method.getSelect() != null) {
+                JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(method.getSelect().getType());
+                if (fqType != null && nonInterfaceMethods.getOrDefault(fqType.getFullyQualifiedName(), emptySet())
+                        .contains(method.getSimpleName())) {
+                    foundNonInterfaceMethod.set(true);
+                    return method;
+                }
+            }
+            return super.visitMethodInvocation(method, foundNonInterfaceMethod);
+        }
     }
 }

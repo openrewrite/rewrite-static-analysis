@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
@@ -935,7 +934,6 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite/issues/2973")
     @Test
     void explicitImplementationClassInApi() {
@@ -948,7 +946,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
               class Test {
                   List<Integer> m() {
-                      List<Integer> result = new ArrayList<>();
+                      ArrayList<Integer> result = new ArrayList<>();
                       m2(result);
                       return result;
                   }
@@ -1106,6 +1104,107 @@ class UseCollectionInterfacesTest implements RewriteTest {
               class Test {
                   public int method(Set<Integer> input) {
                       return new HashSet<>(input).size();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hashtableWithOnlyMapMethods() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Hashtable;
+
+              class A {
+                  Hashtable<String, Integer> useOnlyMapMethods() {
+                      Hashtable<String, Integer> table = new Hashtable<>();
+                      table.put("key", 1);
+                      return table;
+                  }
+              }
+              """,
+            """
+              import java.util.Hashtable;
+              import java.util.Map;
+
+              class A {
+                  Map<String, Integer> useOnlyMapMethods() {
+                      Map<String, Integer> table = new Hashtable<>();
+                      table.put("key", 1);
+                      return table;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/688")
+    @Test
+    void hashtableMethodNotOnInterface() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Enumeration;
+              import java.util.Hashtable;
+
+              class A {
+                  Enumeration<Integer> usesMethodNotOnInterface() {
+                      Hashtable<Integer,Object> table = new Hashtable<>();
+                      return table.keys();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void vectorWithOnlyListMethods() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Vector;
+
+              class A {
+                  Vector getData() {
+                      Vector<String> vector = new Vector<>();
+                      vector.add("item");
+                      return vector;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Vector;
+
+              class A {
+                  List getData() {
+                      List<String> vector = new Vector<>();
+                      vector.add("item");
+                      return vector;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void usesVectorElementsMethod() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Enumeration;
+              import java.util.Vector;
+
+              class A {
+                  Enumeration<String> usesVectorElements() {
+                      Vector<String> vector = new Vector<>();
+                      return vector.elements();
                   }
               }
               """
