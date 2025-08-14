@@ -64,6 +64,7 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.AbstractSequentialList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.ArrayList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArrayList", "java.util.List");
+        rspecRulesReplaceTypeMap.put("java.util.Vector", "java.util.List");
         // Map
         rspecRulesReplaceTypeMap.put("java.util.AbstractMap", "java.util.Map");
         rspecRulesReplaceTypeMap.put("java.util.EnumMap", "java.util.Map");
@@ -85,6 +86,9 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArraySet", "java.util.Set");
 
         nonInterfaceMethods.put("java.util.Hashtable", unmodifiableSet(new HashSet<>(Arrays.asList("keys", "elements", "contains"))));
+        nonInterfaceMethods.put("java.util.Vector", unmodifiableSet(new HashSet<>(Arrays.asList("elements", "capacity", "ensureCapacity", "setSize",
+                "copyInto", "trimToSize", "elementAt", "setElementAt", "removeElementAt",
+                "insertElementAt", "addElement", "removeElement", "removeAllElements"))));
     }
 
     @Override

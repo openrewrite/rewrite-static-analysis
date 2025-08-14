@@ -1164,4 +1164,55 @@ class UseCollectionInterfacesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void vectorWithOnlyListMethods() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Vector;
+
+              public class A {
+                  public Vector getData() {
+                      Vector<String> vector = new Vector<>();
+                      vector.add("item");
+                      return vector;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Vector;
+
+              public class A {
+                  public List getData() {
+                      List<String> vector = new Vector<>();
+                      vector.add("item");
+                      return vector;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void usesVectorElementsMethod() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Enumeration;
+              import java.util.Vector;
+
+              public class A {
+                  public Enumeration<String> usesVectorElements() {
+                      Vector<String> vector = new Vector<>();
+                      return vector.elements();
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
