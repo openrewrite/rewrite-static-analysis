@@ -1119,16 +1119,16 @@ class UseCollectionInterfacesTest implements RewriteTest {
         rewriteRun(
           java(
             """
-                import java.util.Enumeration;
-                import java.util.Hashtable;
+              import java.util.Enumeration;
+              import java.util.Hashtable;
 
-                public class A {
-                    public Enumeration<Integer> usesMethodNotOnInterface() {
-                        Hashtable<Integer,Object> table = new Hashtable<>();
+              public class A {
+                  public Enumeration<Integer> usesMethodNotOnInterface() {
+                      Hashtable<Integer,Object> table = new Hashtable<>();
 
-                        return table.keys();
-                    }
-                }
+                      return table.keys();
+                  }
+              }
               """
           )
         );
