@@ -69,6 +69,7 @@ recipeList:
   - org.openrewrite.staticanalysis.RedundantFileCreation
   - org.openrewrite.staticanalysis.RemoveExtraSemicolons
   - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
+  - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeLiteralEquals
 #  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast
 #  - org.openrewrite.java.RemoveUnusedImports
 #  - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables

@@ -1397,6 +1397,34 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MoveConditionsToWhile
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void foo(int counter) {
+              while (true) {
+                  if (counter >= 5) {
+                      break;
+                  }
+                  System.out.println("Counter: " + counter);
+                  counter++;
+              }
+          }
+      }
+    after: |
+      class Test {
+          void foo(int counter) {
+              while (counter < 5) {
+                  System.out.println("Counter: " + counter);
+                  counter++;
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MultipleVariableDeclarations
 examples:
 - description: ''
@@ -1921,6 +1949,25 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.PreferEqualityComparisonOverDifferenceCheck
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          boolean test(int a, int b) {
+              return a - b == 0;
+          }
+      }
+    after: |
+      class Test {
+          boolean test(int a, int b) {
+              return a == b;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.PreferIncrementOperator
 examples:
 - description: ''
@@ -2189,6 +2236,29 @@ examples:
           void foo(String s) {
               if (s instanceof String) {
                   System.out.println("String value: " + s);
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeLiteralEquals
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void foo(String s) {
+              if (s != null && "test".equals(s)) {
+                  System.out.println("String matches");
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo(String s) {
+              if ("test".equals(s)) {
+                  System.out.println("String matches");
               }
           }
       }
