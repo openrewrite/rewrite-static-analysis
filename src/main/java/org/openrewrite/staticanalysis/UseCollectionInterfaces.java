@@ -24,12 +24,9 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -57,6 +54,7 @@ public class UseCollectionInterfaces extends Recipe {
     }
 
     public static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
+    public static final Map<String, Set<String>> nonInterfaceMethods = new HashMap<>();
 
     static {
         rspecRulesReplaceTypeMap.put("java.util.ArrayDeque", "java.util.Deque");
@@ -85,11 +83,15 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.HashSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.LinkedHashSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArraySet", "java.util.Set");
+
+        nonInterfaceMethods.put("java.util.Hashtable", unmodifiableSet(new HashSet<>(Arrays.asList("keys", "elements", "contains"))));
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            private boolean usesNonInterfaceMethods = false;
+
             @Override
             public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
                 // TODO: proper Groovy support requires some extra work
@@ -100,6 +102,13 @@ public class UseCollectionInterfaces extends Recipe {
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+
+                    InterfaceIncompatibleMethodDetector checker = new InterfaceIncompatibleMethodDetector();
+                    checker.visit(cu, ctx);
+                    usesNonInterfaceMethods = checker.foundNonInterfaceMethod;
+                    if (usesNonInterfaceMethods) {
+                        return cu;
+                    }
                     for (JavaType type : cu.getTypesInUse().getTypesInUse()) {
                         JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
                         if (fq != null && rspecRulesReplaceTypeMap.containsKey(fq.getFullyQualifiedName())) {
@@ -112,6 +121,9 @@ public class UseCollectionInterfaces extends Recipe {
 
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                if (usesNonInterfaceMethods) {
+                    return method;
+                }
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 if ((m.hasModifier(J.Modifier.Type.Public) || m.hasModifier(J.Modifier.Type.Private) || m.getModifiers().isEmpty()) &&
                     m.getReturnTypeExpression() != null) {
@@ -152,6 +164,9 @@ public class UseCollectionInterfaces extends Recipe {
 
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                if (usesNonInterfaceMethods) {
+                    return method;
+                }
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
                 if ((mi.getSelect() instanceof J.Identifier || mi.getSelect() instanceof J.FieldAccess) && mi.getSelect().getType() != null) {
                     JavaType originalType = mi.getSelect().getType();
@@ -174,6 +189,9 @@ public class UseCollectionInterfaces extends Recipe {
 
             @Override
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                if (usesNonInterfaceMethods) {
+                    return multiVariable;
+                }
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());
                 if ((mv.hasModifier(J.Modifier.Type.Public) || mv.hasModifier(J.Modifier.Type.Private) || mv.getModifiers().isEmpty()) &&
@@ -254,5 +272,31 @@ public class UseCollectionInterfaces extends Recipe {
                                 new JavaType.Parameterized(null, newType, null));
             }
         };
+    }
+
+    private static class InterfaceIncompatibleMethodDetector extends JavaIsoVisitor<ExecutionContext> {
+        boolean foundNonInterfaceMethod  = false;
+
+        @Override
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            if (foundNonInterfaceMethod) {
+                return method;
+            }
+            if (method.getSelect() != null) {
+                JavaType selectType = method.getSelect().getType();
+                JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(selectType);
+
+                if (fqType != null) {
+                    String className = fqType.getFullyQualifiedName();
+                    Set<String> concreteMethods = nonInterfaceMethods.get(className);
+
+                    if (concreteMethods != null && concreteMethods.contains(method.getSimpleName())) {
+                        foundNonInterfaceMethod = true;
+                        return method;
+                    }
+                }
+            }
+            return super.visitMethodInvocation(method, ctx);
+        }
     }
 }
