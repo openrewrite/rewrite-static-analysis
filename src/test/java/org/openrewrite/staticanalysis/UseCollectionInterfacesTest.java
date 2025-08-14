@@ -1113,27 +1113,6 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/688")
-    @Test
-    void usesMethodNotOnInterface() {
-        rewriteRun(
-          java(
-            """
-              import java.util.Enumeration;
-              import java.util.Hashtable;
-
-              public class A {
-                  public Enumeration<Integer> usesMethodNotOnInterface() {
-                      Hashtable<Integer,Object> table = new Hashtable<>();
-
-                      return table.keys();
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void hashtableWithOnlyMapMethods() {
         rewriteRun(
@@ -1141,7 +1120,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Hashtable;
 
-              public class A {
+              class A {
                   public Hashtable<String, Integer> useOnlyMapMethods() {
                       Hashtable<String, Integer> table = new Hashtable<>();
                       table.put("key", 1);
@@ -1153,11 +1132,31 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.Hashtable;
               import java.util.Map;
 
-              public class A {
+              class A {
                   public Map<String, Integer> useOnlyMapMethods() {
                       Map<String, Integer> table = new Hashtable<>();
                       table.put("key", 1);
                       return table;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/688")
+    @Test
+    void hashtableMethodNotOnInterface() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Enumeration;
+              import java.util.Hashtable;
+
+              class A {
+                  public Enumeration<Integer> usesMethodNotOnInterface() {
+                      Hashtable<Integer,Object> table = new Hashtable<>();
+                      return table.keys();
                   }
               }
               """
@@ -1172,7 +1171,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.Vector;
 
-              public class A {
+              class A {
                   public Vector getData() {
                       Vector<String> vector = new Vector<>();
                       vector.add("item");
@@ -1184,7 +1183,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.List;
               import java.util.Vector;
 
-              public class A {
+              class A {
                   public List getData() {
                       List<String> vector = new Vector<>();
                       vector.add("item");
@@ -1204,7 +1203,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.Enumeration;
               import java.util.Vector;
 
-              public class A {
+              class A {
                   public Enumeration<String> usesVectorElements() {
                       Vector<String> vector = new Vector<>();
                       return vector.elements();
@@ -1214,5 +1213,4 @@ class UseCollectionInterfacesTest implements RewriteTest {
           )
         );
     }
-
 }
