@@ -268,6 +268,8 @@ public class UseCollectionInterfaces extends Recipe {
                     "contains", "elements", "keys"))));
             nonInterfaceMethods.put("java.util.Vector", unmodifiableSet(new HashSet<>(Arrays.asList(
                     "addElement", "capacity", "copyInto", "elementAt", "elements", "ensureCapacity", "insertElementAt", "removeAllElements", "removeElement", "removeElementAt", "setElementAt", "setSize", "trimToSize"))));
+            nonInterfaceMethods.put("java.util.ArrayList", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "ensureCapacity", "trimToSize"))));
         }
 
         @Override
