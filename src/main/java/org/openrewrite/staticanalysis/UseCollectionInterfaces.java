@@ -24,9 +24,15 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -87,8 +93,7 @@ public class UseCollectionInterfaces extends Recipe {
 
         nonInterfaceMethods.put("java.util.Hashtable", unmodifiableSet(new HashSet<>(Arrays.asList("keys", "elements", "contains"))));
         nonInterfaceMethods.put("java.util.Vector", unmodifiableSet(new HashSet<>(Arrays.asList("elements", "capacity", "ensureCapacity", "setSize",
-                "copyInto", "trimToSize", "elementAt", "setElementAt", "removeElementAt",
-                "insertElementAt", "addElement", "removeElement", "removeAllElements"))));
+                "copyInto", "trimToSize", "elementAt", "setElementAt", "removeElementAt", "insertElementAt", "addElement", "removeElement", "removeAllElements"))));
     }
 
     @Override
