@@ -276,17 +276,11 @@ public class UseCollectionInterfaces extends Recipe {
                 return method;
             }
             if (method.getSelect() != null) {
-                JavaType selectType = method.getSelect().getType();
-                JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(selectType);
-
-                if (fqType != null) {
-                    String className = fqType.getFullyQualifiedName();
-                    Set<String> concreteMethods = nonInterfaceMethods.get(className);
-
-                    if (concreteMethods != null && concreteMethods.contains(method.getSimpleName())) {
-                        foundNonInterfaceMethod.set(true);
-                        return method;
-                    }
+                JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(method.getSelect().getType());
+                if (fqType != null && nonInterfaceMethods.getOrDefault(fqType.getFullyQualifiedName(), emptySet())
+                        .contains(method.getSimpleName())) {
+                    foundNonInterfaceMethod.set(true);
+                    return method;
                 }
             }
             return super.visitMethodInvocation(method, foundNonInterfaceMethod);
