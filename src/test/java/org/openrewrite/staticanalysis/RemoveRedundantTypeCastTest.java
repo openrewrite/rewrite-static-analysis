@@ -471,7 +471,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
 
               class Test {
                   List method(List list) {
-                      return (ArrayList) list;
+                      return ((ArrayList) list);
                   }
               }
               """,
