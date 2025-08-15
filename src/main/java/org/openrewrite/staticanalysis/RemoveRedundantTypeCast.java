@@ -75,7 +75,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType castType = visitedTypeCast.getType();
 
                 JavaType targetType = null;
-                // Null-check; because for Kotlin's Gradle files, we don't always have all type information available
+                // Necessary null-check; because for Kotlin's Gradle files, we don't have all type information available
                 if (castType != null && castType.equals(expressionType)) {
                     targetType = castType;
                 } else if (parentValue instanceof J.VariableDeclarations) {
