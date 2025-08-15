@@ -556,4 +556,48 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void chainedMethods() {
+        // language=java
+        rewriteRun(
+          java(
+            """
+              class Bar {
+                  String getName() {
+                      return "The bar";
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              class Foo {
+                  public void getBarName() {
+                      String.format(((Bar) getBar()).getName());
+                      ((Bar) getBar()).getName();
+                      (((Bar) getBar())).getName();
+                  }
+
+                  private Bar getBar() {
+                      return new Bar();
+                  }
+              }
+              """,
+            """
+              class Foo {
+                  public void getBarName() {
+                      String.format(getBar().getName());
+                      getBar().getName();
+                      (getBar()).getName();
+                  }
+
+                  private Bar getBar() {
+                      return new Bar();
+                  }
+              }
+              """
+          )
+        );
+    }
 }

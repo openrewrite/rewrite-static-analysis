@@ -28,6 +28,8 @@ import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOv
 
 @Incubating(since = "7.23.0")
 public class RemoveRedundantTypeCast extends Recipe {
+    private static final String REMOVE_UNNECESSARY_PARENTHESES = "removeUnnecessaryParentheses";
+
     @Override
     public String getDisplayName() {
         return "Remove redundant casts";
@@ -35,7 +37,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Removes unnecessary type casts. Does not currently check casts in lambdas, class constructors, and method invocations.";
+        return "Removes unnecessary type casts. Does not currently check casts in lambdas and class constructors.";
     }
 
     @Override
@@ -68,8 +70,14 @@ public class RemoveRedundantTypeCast extends Recipe {
 
                 J parentValue = parent.getValue();
 
+                J.TypeCast visitedTypeCast = (J.TypeCast) visited;
+                JavaType expressionType = visitedTypeCast.getExpression().getType();
+                JavaType castType = visitedTypeCast.getType();
+
                 JavaType targetType = null;
-                if (parentValue instanceof J.VariableDeclarations) {
+                if (castType.equals(expressionType)) {
+                    targetType = castType;
+                } else if (parentValue instanceof J.VariableDeclarations) {
                     targetType = ((J.VariableDeclarations) parentValue).getVariables().get(0).getType();
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
@@ -97,10 +105,6 @@ public class RemoveRedundantTypeCast extends Recipe {
                         targetType = methodType.getReturnType();
                     }
                 }
-
-                J.TypeCast visitedTypeCast = (J.TypeCast) visited;
-                JavaType expressionType = visitedTypeCast.getExpression().getType();
-                JavaType castType = visitedTypeCast.getType();
 
                 if (targetType == null) {
                     return visitedTypeCast;
@@ -135,9 +139,22 @@ public class RemoveRedundantTypeCast extends Recipe {
                     if (fullyQualified != null) {
                         maybeRemoveImport(fullyQualified.getFullyQualifiedName());
                     }
+                    Cursor directParent = getCursor().getParent();
+                    if (directParent != null && directParent.getParent() != null && directParent.getParent().getValue() instanceof J.Parentheses) {
+                        directParent.getParent().putMessage(REMOVE_UNNECESSARY_PARENTHESES, true);
+                    }
                     return visitedTypeCast.getExpression().withPrefix(visitedTypeCast.getPrefix());
                 }
                 return visitedTypeCast;
+            }
+
+            @Override
+            public <T extends J> J visitParentheses(J.Parentheses<T> parens, ExecutionContext executionContext) {
+                J.Parentheses<T> parentheses = (J.Parentheses<T>) super.visitParentheses(parens, executionContext);
+                if (getCursor().getMessage(REMOVE_UNNECESSARY_PARENTHESES, false)) {
+                    return parentheses.getTree();
+                }
+                return parentheses;
             }
 
             private JavaType getParameterType(JavaType.Method method, int arg) {
