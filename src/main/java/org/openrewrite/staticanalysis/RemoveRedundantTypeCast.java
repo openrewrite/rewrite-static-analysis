@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.List;
@@ -52,7 +53,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                 J visited = super.visitTypeCast(typeCast, ctx);
@@ -75,8 +76,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType castType = visitedTypeCast.getType();
 
                 JavaType targetType = null;
-                // Necessary null-check; because for Kotlin's Gradle files, we don't have all type information available
-                if (castType != null && castType.equals(expressionType)) {
+                if (castType.equals(expressionType)) {
                     targetType = castType;
                 } else if (parentValue instanceof J.VariableDeclarations) {
                     targetType = ((J.VariableDeclarations) parentValue).getVariables().get(0).getType();
@@ -184,6 +184,6 @@ public class RemoveRedundantTypeCast extends Recipe {
                 }
                return parentheses.getTree() == typeCast;
             }
-        };
+        });
     }
 }

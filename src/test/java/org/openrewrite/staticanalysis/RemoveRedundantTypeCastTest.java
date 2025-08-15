@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -607,27 +608,6 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   private ChildBar getChildBar() {
                       return new ChildBar();
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void kotlinDsl() {
-        rewriteRun(
-          //language=kotlin
-          kotlin(
-            """
-              class Test {
-                  val s2 = method() as String
-                  fun method() = "example"
-              }
-              """,
-            """
-              class Test {
-                  val s2 = method()
-                  fun method() = "example"
               }
               """
           )
