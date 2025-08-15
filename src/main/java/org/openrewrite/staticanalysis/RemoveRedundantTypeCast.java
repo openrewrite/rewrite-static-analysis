@@ -149,8 +149,8 @@ public class RemoveRedundantTypeCast extends Recipe {
             }
 
             @Override
-            public <T extends J> J visitParentheses(J.Parentheses<T> parens, ExecutionContext executionContext) {
-                J.Parentheses<T> parentheses = (J.Parentheses<T>) super.visitParentheses(parens, executionContext);
+            public <T extends J> J visitParentheses(J.Parentheses<T> parens, ExecutionContext ctx) {
+                J.Parentheses<T> parentheses = (J.Parentheses<T>) super.visitParentheses(parens, ctx);
                 if (getCursor().getMessage(REMOVE_UNNECESSARY_PARENTHESES, false)) {
                     return parentheses.getTree();
                 }
