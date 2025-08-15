@@ -22,7 +22,8 @@ import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.*;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("ALL")
 class RemoveRedundantTypeCastTest implements RewriteTest {
@@ -606,6 +607,27 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   private ChildBar getChildBar() {
                       return new ChildBar();
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinDsl() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class Test {
+                  val s2 = method() as String
+                  fun method() = "example"
+              }
+              """,
+            """
+              class Test {
+                  val s2 = method()
+                  fun method() = "example"
               }
               """
           )
