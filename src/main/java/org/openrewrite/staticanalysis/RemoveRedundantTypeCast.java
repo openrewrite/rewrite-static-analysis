@@ -95,6 +95,9 @@ public class RemoveRedundantTypeCast extends Recipe {
                             }
                         }
                     }
+                    if (TypeUtils.isAssignableTo(castType, expressionType)) {
+                        targetType = castType;
+                    }
                 } else if (parentValue instanceof J.Return && ((J.Return) parentValue).getExpression() == typeCast) {
                     parent = parent.dropParentUntil(is -> is instanceof J.Lambda ||
                                                           is instanceof J.MethodDeclaration ||

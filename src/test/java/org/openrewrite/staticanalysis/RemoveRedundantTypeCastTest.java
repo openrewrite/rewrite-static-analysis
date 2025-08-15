@@ -568,6 +568,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                       return "The bar";
                   }
               }
+              class ChildBar extends Bar {}
               """
           ),
           java(
@@ -576,11 +577,16 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   public void getBarName() {
                       String.format(((Bar) getBar()).getName());
                       ((Bar) getBar()).getName();
-                      (((Bar) getBar())).getName();
+                      ((Bar) getChildBar()).getName();
+                      ((((Bar) getBar()))).getName();
                   }
 
                   private Bar getBar() {
                       return new Bar();
+                  }
+
+                  private ChildBar getChildBar() {
+                      return new ChildBar();
                   }
               }
               """,
@@ -589,11 +595,16 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   public void getBarName() {
                       String.format(getBar().getName());
                       getBar().getName();
-                      (getBar()).getName();
+                      getChildBar().getName();
+                      ((getBar())).getName();
                   }
 
                   private Bar getBar() {
                       return new Bar();
+                  }
+
+                  private ChildBar getChildBar() {
+                      return new ChildBar();
                   }
               }
               """
