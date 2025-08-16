@@ -146,8 +146,7 @@ public class MoveFieldAnnotationToType extends Recipe {
 
             private boolean isQualifiedClass(@Nullable TypeTree tree) {
                 return tree instanceof J.FieldAccess ||
-                       (tree instanceof J.ParameterizedType && ((J.ParameterizedType) tree).getClazz() instanceof J.FieldAccess) ||
-                       tree instanceof J.ArrayType;
+                       (tree instanceof J.ParameterizedType && ((J.ParameterizedType) tree).getClazz() instanceof J.FieldAccess);
             }
 
             private TypeTree annotateInnerClass(TypeTree qualifiedClassRef, J.Annotation annotation) {
@@ -181,10 +180,6 @@ public class MoveFieldAnnotationToType extends Recipe {
                         ((J.ParameterizedType) qualifiedClassRef).getClazz() instanceof TypeTree) {
                     J.ParameterizedType pt = (J.ParameterizedType) qualifiedClassRef;
                     return pt.withClazz(annotateInnerClass((TypeTree) pt.getClazz(), usedAnnotation));
-                }
-                if (qualifiedClassRef instanceof J.ArrayType) {
-                    J.ArrayType at = (J.ArrayType) qualifiedClassRef;
-                    return at.withAnnotations(ListUtils.concat(annotation.withPrefix(Space.SINGLE_SPACE), at.getAnnotations()));
                 }
                 return qualifiedClassRef;
             }

@@ -93,20 +93,31 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
     }
 
     @Test
-    void arrayFieldAnnotation() {
+    void arrayFieldAnnotationUnchanged() {
+        // As per: https://jspecify.dev/docs/user-guide/#type-use-annotation-syntax
         rewriteRun(
           //language=java
           java(
             """
               import org.openrewrite.internal.lang.Nullable;
-              class Test {
+              class ArrayOfNullableElements {
                   @Nullable String[] l;
               }
-              """,
+              """
+          ),
+          java(
             """
               import org.openrewrite.internal.lang.Nullable;
-              class Test {
+              class ArrayItselfNullable {
                   String @Nullable[] l;
+              }
+              """
+          ),
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class NullableArrayOfNullableElements {
+                  @Nullable String @Nullable[] l;
               }
               """
           )
