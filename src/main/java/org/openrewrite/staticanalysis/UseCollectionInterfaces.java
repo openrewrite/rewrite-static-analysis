@@ -205,8 +205,7 @@ public class UseCollectionInterfaces extends Recipe {
             private @Nullable TypeTree getTypeTree(@Nullable TypeTree inputTypeExpression, JavaType.FullyQualified newType) {
                 if (inputTypeExpression == null) {
                     return null;
-                }
-                if (inputTypeExpression instanceof J.Identifier) {
+                } else if (inputTypeExpression instanceof J.Identifier) {
                     return new J.Identifier(
                             randomId(),
                             inputTypeExpression.getPrefix(),
@@ -216,8 +215,7 @@ public class UseCollectionInterfaces extends Recipe {
                             newType,
                             null
                     );
-                }
-                if (inputTypeExpression instanceof J.FieldAccess) {
+                } else if (inputTypeExpression instanceof J.FieldAccess) {
                     // Fully-qualified type name like java.util.HashSet
                     return new J.Identifier(
                             randomId(),
@@ -228,8 +226,7 @@ public class UseCollectionInterfaces extends Recipe {
                             newType,
                             null
                     );
-                }
-                if (inputTypeExpression instanceof J.AnnotatedType) {
+                } else if (inputTypeExpression instanceof J.AnnotatedType) {
                     J.AnnotatedType annotatedType = (J.AnnotatedType) inputTypeExpression;
                     TypeTree annotatedTypeExpression = annotatedType.getTypeExpression();
                     if (annotatedTypeExpression instanceof J.Identifier || annotatedTypeExpression instanceof J.FieldAccess) {
@@ -242,8 +239,9 @@ public class UseCollectionInterfaces extends Recipe {
                                 newType,
                                 null
                         ));
-                    J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedTypeExpression;
-                    return annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
+                    } else {
+                        J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedTypeExpression;
+                        return annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
                     }
                 } else {
                     J.ParameterizedType parameterizedType = (J.ParameterizedType) inputTypeExpression;
