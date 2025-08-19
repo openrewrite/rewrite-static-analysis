@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -454,8 +455,8 @@ class OnlyCatchDeclaredExceptionsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/715")
     @Test
-    @org.openrewrite.Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/715")
     void doNotChangeWhenThrownExceptionIsGeneric() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion()),
@@ -465,7 +466,7 @@ class OnlyCatchDeclaredExceptionsTest implements RewriteTest {
               interface ThrowsGenerics<TE extends Throwable> {
                   void get() throws TE;
               }
-              
+
               class MyService {
                   void doSomething(ThrowsGenerics<Exception> t) {
                       try {
