@@ -453,4 +453,30 @@ class OnlyCatchDeclaredExceptionsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @org.openrewrite.Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/715")
+    void doNotChangeWhenThrownExceptionIsGeneric() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()),
+          //language=java
+          java(
+            """
+              interface ThrowsGenerics<TE extends Throwable> {
+                  void get() throws TE;
+              }
+              
+              class MyService {
+                  void doSomething(ThrowsGenerics<Exception> t) {
+                      try {
+                          t.get();
+                      } catch (Exception e) {
+                          // Should not be changed - thrown exception is generic
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

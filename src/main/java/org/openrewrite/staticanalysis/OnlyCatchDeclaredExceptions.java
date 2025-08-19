@@ -64,7 +64,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                         // Find declared thrown exceptions that are not already specifically caught
                         Set<JavaType> declaredThrown = getDeclaredThrownExceptions(t);
                         declaredThrown.removeAll(getCaughtExceptions(t));
-                        if (!declaredThrown.isEmpty()) {
+                        if (!declaredThrown.isEmpty() && !containsGenericTypeVariable(declaredThrown)) {
                             return multiCatchWithDeclaredExceptions(c, declaredThrown);
                         }
                     }
@@ -77,6 +77,15 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 if (fq != null) {
                     String fqn = fq.getFullyQualifiedName();
                     return TypeUtils.fullyQualifiedNamesAreEqual(JAVA_LANG_EXCEPTION, fqn);
+                }
+                return false;
+            }
+
+            private boolean containsGenericTypeVariable(Set<JavaType> types) {
+                for (JavaType type : types) {
+                    if (type instanceof JavaType.GenericTypeVariable) {
+                        return true;
+                    }
                 }
                 return false;
             }
