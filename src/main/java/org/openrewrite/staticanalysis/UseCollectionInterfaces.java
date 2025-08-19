@@ -139,10 +139,34 @@ public class UseCollectionInterfaces extends Recipe {
                                         newType,
                                         null
                                 );
+                            } else if (m.getReturnTypeExpression() instanceof J.FieldAccess) {
+                                // Fully-qualified type name like java.util.HashSet
+                                typeExpression = new J.Identifier(
+                                        randomId(),
+                                        m.getReturnTypeExpression().getPrefix(),
+                                        Markers.EMPTY,
+                                        emptyList(),
+                                        newType.getClassName(),
+                                        newType,
+                                        null
+                                );
                             } else if (m.getReturnTypeExpression() instanceof J.AnnotatedType) {
                                 J.AnnotatedType annotatedType = (J.AnnotatedType) m.getReturnTypeExpression();
-                                J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedType.getTypeExpression();
-                                typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
+                                TypeTree annotatedTypeExpression = annotatedType.getTypeExpression();
+                                if (annotatedTypeExpression instanceof J.Identifier || annotatedTypeExpression instanceof J.FieldAccess) {
+                                    typeExpression = annotatedType.withTypeExpression(new J.Identifier(
+                                            randomId(),
+                                            annotatedTypeExpression.getPrefix(),
+                                            Markers.EMPTY,
+                                            emptyList(),
+                                            newType.getClassName(),
+                                            newType,
+                                            null
+                                    ));
+                                } else {
+                                    J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedTypeExpression;
+                                    typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
+                                }
                             } else {
                                 J.ParameterizedType parameterizedType = (J.ParameterizedType) m.getReturnTypeExpression();
                                 typeExpression = removeFromParameterizedType(newType, parameterizedType);
@@ -205,10 +229,34 @@ public class UseCollectionInterfaces extends Recipe {
                                     newType,
                                     null
                             );
+                        } else if (mv.getTypeExpression() instanceof J.FieldAccess) {
+                            // Fully-qualified type name like java.util.HashSet
+                            typeExpression = new J.Identifier(
+                                    randomId(),
+                                    mv.getTypeExpression().getPrefix(),
+                                    Markers.EMPTY,
+                                    emptyList(),
+                                    newType.getClassName(),
+                                    newType,
+                                    null
+                            );
                         } else if (mv.getTypeExpression() instanceof J.AnnotatedType) {
                             J.AnnotatedType annotatedType = (J.AnnotatedType) mv.getTypeExpression();
-                            J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedType.getTypeExpression();
-                            typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
+                            TypeTree annotatedTypeExpression = annotatedType.getTypeExpression();
+                            if (annotatedTypeExpression instanceof J.Identifier || annotatedTypeExpression instanceof J.FieldAccess) {
+                                typeExpression = annotatedType.withTypeExpression(new J.Identifier(
+                                        randomId(),
+                                        annotatedTypeExpression.getPrefix(),
+                                        Markers.EMPTY,
+                                        emptyList(),
+                                        newType.getClassName(),
+                                        newType,
+                                        null
+                                ));
+                            } else {
+                                J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedTypeExpression;
+                                typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
+                            }
                         } else {
                             J.ParameterizedType parameterizedType = (J.ParameterizedType) mv.getTypeExpression();
                             typeExpression = removeFromParameterizedType(newType, parameterizedType);

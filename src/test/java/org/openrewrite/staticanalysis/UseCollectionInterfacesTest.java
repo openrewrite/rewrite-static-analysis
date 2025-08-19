@@ -1211,4 +1211,142 @@ class UseCollectionInterfacesTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/713")
+    @Test
+    void annotatedReturnTypeRawArrayList() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("jspecify")),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable ArrayList transform() {
+                      ArrayList res = new ArrayList();
+                      return res;
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable List transform() {
+                      List res = new ArrayList();
+                      return res;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/713")
+    @Test
+    void annotatedFieldTypeRawArrayList() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("jspecify")),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable ArrayList values = new ArrayList();
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable List values = new ArrayList();
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/716")
+    @Test
+    void fullyQualifiedRawType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public java.util.HashSet method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """,
+            """
+              import java.util.Set;
+
+              class Test {
+                  public Set method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/716")
+    @Test
+    void fullyQualifiedParameterizedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public java.util.HashSet<String> method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """,
+            """
+              import java.util.Set;
+
+              class Test {
+                  public Set<String> method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/716")
+    @Test
+    void fullyQualifiedFieldType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public java.util.HashSet values = new java.util.HashSet();
+              }
+              """,
+            """
+              import java.util.Set;
+
+              class Test {
+                  public Set values = new java.util.HashSet();
+              }
+              """
+          )
+        );
+    }
 }
