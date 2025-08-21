@@ -17,10 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import static org.openrewrite.java.Assertions.java;
-
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+
+import static org.openrewrite.java.Assertions.java;
 
 class PreferSystemGetPropertyOverGetenvTest implements RewriteTest {
 
@@ -31,37 +31,36 @@ class PreferSystemGetPropertyOverGetenvTest implements RewriteTest {
 
     @DocumentExample
     @Test
-void replacesMultipleEnvVariables() {
-    rewriteRun(
-      java(
-        """
-        class A {
-            void test() {
-                String user = System.getenv("USER");
-                String username = System.getenv("USERNAME");
-                String home = System.getenv("HOME");
-                String profile = System.getenv("USERPROFILE");
-                String temp = System.getenv("TEMP");
-                String tmpdir = System.getenv("TMPDIR");
-                String tmp = System.getenv("TMP");
-            }
-        }
-        """,
-        """
-        class A {
-            void test() {
-                String user = System.getProperty("user.name");
-                String username = System.getProperty("user.name");
-                String home = System.getProperty("user.home");
-                String profile = System.getProperty("user.home");
-                String temp = System.getProperty("java.io.tmpdir");
-                String tmpdir = System.getProperty("java.io.tmpdir");
-                String tmp = System.getProperty("java.io.tmpdir");
-            }
-        }
-        """
-      )
-    );
-}
-
+    void replacesMultipleEnvVariables() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void test() {
+                      String user = System.getenv("USER");
+                      String username = System.getenv("USERNAME");
+                      String home = System.getenv("HOME");
+                      String profile = System.getenv("USERPROFILE");
+                      String temp = System.getenv("TEMP");
+                      String tmpdir = System.getenv("TMPDIR");
+                      String tmp = System.getenv("TMP");
+                  }
+              }
+              """,
+            """
+              class A {
+                  void test() {
+                      String user = System.getProperty("user.name");
+                      String username = System.getProperty("user.name");
+                      String home = System.getProperty("user.home");
+                      String profile = System.getProperty("user.home");
+                      String temp = System.getProperty("java.io.tmpdir");
+                      String tmpdir = System.getProperty("java.io.tmpdir");
+                      String tmp = System.getProperty("java.io.tmpdir");
+                  }
+              }
+              """
+          )
+        );
+    }
 }
