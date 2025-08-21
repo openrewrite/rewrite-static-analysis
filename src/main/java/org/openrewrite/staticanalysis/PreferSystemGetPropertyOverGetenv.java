@@ -45,12 +45,12 @@ public class PreferSystemGetPropertyOverGetenv extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Prefer System.getProperty(\"user.home\") over System.getenv(\"HOME\")";
+        return "Prefer `System.getProperty(\"user.home\")` over `System.getenv(\"HOME\")`";
     }
 
     @Override
     public String getDescription() {
-        return "Replaces System.getenv(\"HOME\") with System.getProperty(\"user.home\") for better portability.";
+        return "Replaces `System.getenv(\"HOME\")` with `System.getProperty(\"user.home\")` for better portability.";
     }
 
     @Override
