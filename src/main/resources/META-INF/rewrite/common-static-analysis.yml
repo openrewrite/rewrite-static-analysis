@@ -65,6 +65,7 @@ recipeList:
   - org.openrewrite.staticanalysis.NoToStringOnStringType
   - org.openrewrite.staticanalysis.NoValueOfOnStringType
   - org.openrewrite.staticanalysis.ObjectFinalizeCallsSuper
+  - org.openrewrite.staticanalysis.PreferSystemGetPropertyOverGetenv
   - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
   - org.openrewrite.staticanalysis.RedundantFileCreation
   - org.openrewrite.staticanalysis.RemoveExtraSemicolons
