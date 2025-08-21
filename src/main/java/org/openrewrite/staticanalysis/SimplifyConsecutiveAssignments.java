@@ -113,6 +113,9 @@ public class SimplifyConsecutiveAssignments extends Recipe {
             }
 
             private @Nullable Expression numericVariableAccumulation(Statement s, String name) {
+                if (!s.getPrefix().getComments().isEmpty()) {
+                    return null;
+                }
                 if (s instanceof J.Unary) {
                     if (name.equals(singleVariableName(((J.Unary) s).getExpression()))) {
                         return new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, 1, "1", null,

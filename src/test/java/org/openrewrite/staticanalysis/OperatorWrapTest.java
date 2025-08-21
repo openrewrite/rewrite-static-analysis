@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Tree;
@@ -35,6 +34,7 @@ import java.util.function.UnaryOperator;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"StringConcatenationMissingWhitespace", "ConstantConditions", "CStyleArrayDeclaration"})
@@ -639,7 +639,7 @@ class OperatorWrapTest implements RewriteTest {
 
     private static Consumer<SourceSpec<J.CompilationUnit>> autoFormatIsIdempotent() {
         return spec -> spec.afterRecipe(cu ->
-          Assertions.assertThat(new AutoFormatVisitor<>().visit(cu, 0)).isEqualTo(cu));
+          assertThat(new AutoFormatVisitor<>().visit(cu, 0)).isEqualTo(cu));
     }
 
     @Test

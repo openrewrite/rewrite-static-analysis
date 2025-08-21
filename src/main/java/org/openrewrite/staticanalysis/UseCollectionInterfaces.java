@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.groovy.tree.G;
@@ -24,12 +25,10 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -43,7 +42,7 @@ public class UseCollectionInterfaces extends Recipe {
     @Override
     public String getDescription() {
         return "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
-               "Replaces the return type of public method declarations and the variable type public variable declarations.";
+                "Replaces the return type of public method declarations and the variable type public variable declarations.";
     }
 
     @Override
@@ -56,7 +55,7 @@ public class UseCollectionInterfaces extends Recipe {
         return Duration.ofMinutes(10);
     }
 
-    public static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
+    static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
 
     static {
         rspecRulesReplaceTypeMap.put("java.util.ArrayDeque", "java.util.Deque");
@@ -66,6 +65,7 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.AbstractSequentialList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.ArrayList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArrayList", "java.util.List");
+        rspecRulesReplaceTypeMap.put("java.util.Vector", "java.util.List");
         // Map
         rspecRulesReplaceTypeMap.put("java.util.AbstractMap", "java.util.Map");
         rspecRulesReplaceTypeMap.put("java.util.EnumMap", "java.util.Map");
@@ -100,6 +100,11 @@ public class UseCollectionInterfaces extends Recipe {
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
+
+                    if (new InterfaceIncompatibleMethodDetector().reduce(tree, new AtomicBoolean(false)).get()) {
+                        return cu;
+                    }
+
                     for (JavaType type : cu.getTypesInUse().getTypesInUse()) {
                         JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
                         if (fq != null && rspecRulesReplaceTypeMap.containsKey(fq.getFullyQualifiedName())) {
@@ -108,46 +113,6 @@ public class UseCollectionInterfaces extends Recipe {
                     }
                 }
                 return super.visit(tree, ctx);
-            }
-
-            @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                if ((m.hasModifier(J.Modifier.Type.Public) || m.hasModifier(J.Modifier.Type.Private) || m.getModifiers().isEmpty()) &&
-                    m.getReturnTypeExpression() != null) {
-                    JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(m.getReturnTypeExpression().getType());
-                    if (originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
-
-                        JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
-                                JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
-                        if (newType != null) {
-                            maybeRemoveImport(originalType);
-                            maybeAddImport(newType);
-
-                            TypeTree typeExpression;
-                            if (m.getReturnTypeExpression() instanceof J.Identifier) {
-                                typeExpression = new J.Identifier(
-                                        randomId(),
-                                        m.getReturnTypeExpression().getPrefix(),
-                                        Markers.EMPTY,
-                                        emptyList(),
-                                        newType.getClassName(),
-                                        newType,
-                                        null
-                                );
-                            } else if (m.getReturnTypeExpression() instanceof J.AnnotatedType) {
-                                J.AnnotatedType annotatedType = (J.AnnotatedType) m.getReturnTypeExpression();
-                                J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedType.getTypeExpression();
-                                typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
-                            } else {
-                                J.ParameterizedType parameterizedType = (J.ParameterizedType) m.getReturnTypeExpression();
-                                typeExpression = removeFromParameterizedType(newType, parameterizedType);
-                            }
-                            m = m.withReturnTypeExpression(typeExpression);
-                        }
-                    }
-                }
-                return m;
             }
 
             @Override
@@ -172,57 +137,6 @@ public class UseCollectionInterfaces extends Recipe {
                 return mi;
             }
 
-            @Override
-            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
-                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
-                JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());
-                if ((mv.hasModifier(J.Modifier.Type.Public) || mv.hasModifier(J.Modifier.Type.Private) || mv.getModifiers().isEmpty()) &&
-                    originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
-                    if (mv.getTypeExpression() instanceof J.Identifier && "var".equals(((J.Identifier) mv.getTypeExpression()).getSimpleName())) {
-                        return mv;
-                    }
-
-                    JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
-                            JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
-                    if (newType != null) {
-                        maybeRemoveImport(originalType);
-                        maybeAddImport(newType);
-
-                        TypeTree typeExpression;
-                        if (mv.getTypeExpression() == null) {
-                            typeExpression = null;
-                        } else if (mv.getTypeExpression() instanceof J.Identifier) {
-                            typeExpression = new J.Identifier(
-                                    randomId(),
-                                    mv.getTypeExpression().getPrefix(),
-                                    Markers.EMPTY,
-                                    emptyList(),
-                                    newType.getClassName(),
-                                    newType,
-                                    null
-                            );
-                        } else if (mv.getTypeExpression() instanceof J.AnnotatedType) {
-                            J.AnnotatedType annotatedType = (J.AnnotatedType) mv.getTypeExpression();
-                            J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedType.getTypeExpression();
-                            typeExpression = annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
-                        } else {
-                            J.ParameterizedType parameterizedType = (J.ParameterizedType) mv.getTypeExpression();
-                            typeExpression = removeFromParameterizedType(newType, parameterizedType);
-                        }
-
-                        mv = mv.withTypeExpression(typeExpression);
-                        mv = mv.withVariables(ListUtils.map(mv.getVariables(), var -> {
-                            JavaType.FullyQualified varType = TypeUtils.asFullyQualified(var.getType());
-                            if (varType != null && !varType.equals(newType)) {
-                                return var.withType(newType).withName(var.getName().withType(newType));
-                            }
-                            return var;
-                        }));
-                    }
-                }
-                return mv;
-            }
-
             private J.MethodInvocation updateMethodInvocation(J.MethodInvocation mi, JavaType.FullyQualified newType) {
                 if (mi.getSelect() != null) {
                     mi = mi.withSelect(mi.getSelect().withType(newType));
@@ -235,6 +149,105 @@ public class UseCollectionInterfaces extends Recipe {
                     mi = mi.withMethodType(mi.getMethodType().withDeclaringType(newType));
                 }
                 return mi;
+            }
+
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
+                if ((m.hasModifier(J.Modifier.Type.Public) || m.hasModifier(J.Modifier.Type.Private) || m.getModifiers().isEmpty()) &&
+                        m.getReturnTypeExpression() != null) {
+                    JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(m.getReturnTypeExpression().getType());
+                    if (originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
+
+                        JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
+                                JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
+                        if (newType != null) {
+                            maybeRemoveImport(originalType);
+                            maybeAddImport(newType);
+
+                            m = m.withReturnTypeExpression(getTypeTree(m.getReturnTypeExpression(), newType));
+                        }
+                    }
+                }
+                return m;
+            }
+
+            @Override
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
+                JavaType.FullyQualified originalType = TypeUtils.asFullyQualified(mv.getType());
+                if ((mv.hasModifier(J.Modifier.Type.Public) || mv.hasModifier(J.Modifier.Type.Private) || mv.getModifiers().isEmpty()) &&
+                        originalType != null && rspecRulesReplaceTypeMap.containsKey(originalType.getFullyQualifiedName())) {
+                    if (mv.getTypeExpression() instanceof J.Identifier && "var".equals(((J.Identifier) mv.getTypeExpression()).getSimpleName())) {
+                        return mv;
+                    }
+
+                    JavaType.FullyQualified newType = TypeUtils.asFullyQualified(
+                            JavaType.buildType(rspecRulesReplaceTypeMap.get(originalType.getFullyQualifiedName())));
+                    if (newType != null) {
+                        maybeRemoveImport(originalType);
+                        maybeAddImport(newType);
+
+                        mv = mv.withTypeExpression(getTypeTree(mv.getTypeExpression(), newType));
+                        mv = mv.withVariables(ListUtils.map(mv.getVariables(), var -> {
+                            JavaType.FullyQualified varType = TypeUtils.asFullyQualified(var.getType());
+                            if (varType != null && !varType.equals(newType)) {
+                                return var.withType(newType).withName(var.getName().withType(newType));
+                            }
+                            return var;
+                        }));
+                    }
+                }
+                return mv;
+            }
+
+            @Contract("null, _ -> null")
+            private @Nullable TypeTree getTypeTree(@Nullable TypeTree inputTypeExpression, JavaType.FullyQualified newType) {
+                if (inputTypeExpression == null) {
+                    return null;
+                }
+                if (inputTypeExpression instanceof J.Identifier) {
+                    return new J.Identifier(
+                            randomId(),
+                            inputTypeExpression.getPrefix(),
+                            Markers.EMPTY,
+                            emptyList(),
+                            newType.getClassName(),
+                            newType,
+                            null
+                    );
+                }
+                if (inputTypeExpression instanceof J.FieldAccess) {
+                    // Fully-qualified type name like java.util.HashSet
+                    return new J.Identifier(
+                            randomId(),
+                            inputTypeExpression.getPrefix(),
+                            Markers.EMPTY,
+                            emptyList(),
+                            newType.getClassName(),
+                            newType,
+                            null
+                    );
+                }
+                if (inputTypeExpression instanceof J.AnnotatedType) {
+                    J.AnnotatedType annotatedType = (J.AnnotatedType) inputTypeExpression;
+                    TypeTree annotatedTypeExpression = annotatedType.getTypeExpression();
+                    if (annotatedTypeExpression instanceof J.Identifier || annotatedTypeExpression instanceof J.FieldAccess) {
+                        return annotatedType.withTypeExpression(new J.Identifier(
+                                randomId(),
+                                annotatedTypeExpression.getPrefix(),
+                                Markers.EMPTY,
+                                emptyList(),
+                                newType.getClassName(),
+                                newType,
+                                null
+                        ));
+                    }
+                    J.ParameterizedType parameterizedType = (J.ParameterizedType) annotatedTypeExpression;
+                    return annotatedType.withTypeExpression(removeFromParameterizedType(newType, parameterizedType));
+                }
+                J.ParameterizedType parameterizedType = (J.ParameterizedType) inputTypeExpression;
+                return removeFromParameterizedType(newType, parameterizedType);
             }
 
             private TypeTree removeFromParameterizedType(JavaType.FullyQualified newType,
@@ -254,5 +267,34 @@ public class UseCollectionInterfaces extends Recipe {
                                 new JavaType.Parameterized(null, newType, null));
             }
         };
+    }
+
+    private static class InterfaceIncompatibleMethodDetector extends JavaIsoVisitor<AtomicBoolean> {
+        private static final Map<String, Set<String>> nonInterfaceMethods = new HashMap<>();
+
+        static {
+            nonInterfaceMethods.put("java.util.Hashtable", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "contains", "elements", "keys"))));
+            nonInterfaceMethods.put("java.util.Vector", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "addElement", "capacity", "copyInto", "elementAt", "elements", "ensureCapacity", "insertElementAt", "removeAllElements", "removeElement", "removeElementAt", "setElementAt", "setSize", "trimToSize"))));
+            nonInterfaceMethods.put("java.util.ArrayList", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "ensureCapacity", "trimToSize"))));
+        }
+
+        @Override
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean foundNonInterfaceMethod) {
+            if (foundNonInterfaceMethod.get()) {
+                return method;
+            }
+            if (method.getSelect() != null) {
+                JavaType.FullyQualified fqType = TypeUtils.asFullyQualified(method.getSelect().getType());
+                if (fqType != null && nonInterfaceMethods.getOrDefault(fqType.getFullyQualifiedName(), emptySet())
+                        .contains(method.getSimpleName())) {
+                    foundNonInterfaceMethod.set(true);
+                    return method;
+                }
+            }
+            return super.visitMethodInvocation(method, foundNonInterfaceMethod);
+        }
     }
 }

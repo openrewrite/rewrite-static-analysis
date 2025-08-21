@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
@@ -935,7 +934,6 @@ class UseCollectionInterfacesTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail
     @Issue("https://github.com/openrewrite/rewrite/issues/2973")
     @Test
     void explicitImplementationClassInApi() {
@@ -948,7 +946,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
               class Test {
                   List<Integer> m() {
-                      List<Integer> result = new ArrayList<>();
+                      ArrayList<Integer> result = new ArrayList<>();
                       m2(result);
                       return result;
                   }
@@ -1107,6 +1105,245 @@ class UseCollectionInterfacesTest implements RewriteTest {
                   public int method(Set<Integer> input) {
                       return new HashSet<>(input).size();
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hashtableWithOnlyMapMethods() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Hashtable;
+
+              class A {
+                  Hashtable<String, Integer> useOnlyMapMethods() {
+                      Hashtable<String, Integer> table = new Hashtable<>();
+                      table.put("key", 1);
+                      return table;
+                  }
+              }
+              """,
+            """
+              import java.util.Hashtable;
+              import java.util.Map;
+
+              class A {
+                  Map<String, Integer> useOnlyMapMethods() {
+                      Map<String, Integer> table = new Hashtable<>();
+                      table.put("key", 1);
+                      return table;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/688")
+    @Test
+    void hashtableMethodNotOnInterface() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Enumeration;
+              import java.util.Hashtable;
+
+              class A {
+                  Enumeration<Integer> usesMethodNotOnInterface() {
+                      Hashtable<Integer,Object> table = new Hashtable<>();
+                      return table.keys();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void vectorWithOnlyListMethods() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Vector;
+
+              class A {
+                  Vector getData() {
+                      Vector<String> vector = new Vector<>();
+                      vector.add("item");
+                      return vector;
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Vector;
+
+              class A {
+                  List getData() {
+                      List<String> vector = new Vector<>();
+                      vector.add("item");
+                      return vector;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void usesVectorElementsMethod() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Enumeration;
+              import java.util.Vector;
+
+              class A {
+                  Enumeration<String> usesVectorElements() {
+                      Vector<String> vector = new Vector<>();
+                      return vector.elements();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/713")
+    @Test
+    void annotatedReturnTypeRawArrayList() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("jspecify")),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable ArrayList transform() {
+                      ArrayList res = new ArrayList();
+                      return res;
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable List transform() {
+                      List res = new ArrayList();
+                      return res;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/713")
+    @Test
+    void annotatedFieldTypeRawArrayList() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("jspecify")),
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable ArrayList values = new ArrayList();
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              import org.jspecify.annotations.Nullable;
+              
+              class Test {
+                  public @Nullable List values = new ArrayList();
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/716")
+    @Test
+    void fullyQualifiedRawType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public java.util.HashSet method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """,
+            """
+              import java.util.Set;
+
+              class Test {
+                  public Set method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/716")
+    @Test
+    void fullyQualifiedParameterizedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public java.util.HashSet<String> method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """,
+            """
+              import java.util.Set;
+
+              class Test {
+                  public Set<String> method() {
+                      return new java.util.HashSet<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/716")
+    @Test
+    void fullyQualifiedFieldType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public java.util.HashSet values = new java.util.HashSet();
+              }
+              """,
+            """
+              import java.util.Set;
+
+              class Test {
+                  public Set values = new java.util.HashSet();
               }
               """
           )
