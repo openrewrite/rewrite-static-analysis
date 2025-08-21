@@ -31,24 +31,37 @@ class PreferSystemGetPropertyOverGetenvTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void replacesEnvWithProperty() {
-        rewriteRun(
-          java(
-            """
-            class A {
-                void test() {
-                    String home = System.getenv("HOME");
-                }
+void replacesMultipleEnvVariables() {
+    rewriteRun(
+      java(
+        """
+        class A {
+            void test() {
+                String user = System.getenv("USER");
+                String username = System.getenv("USERNAME");
+                String home = System.getenv("HOME");
+                String profile = System.getenv("USERPROFILE");
+                String temp = System.getenv("TEMP");
+                String tmpdir = System.getenv("TMPDIR");
+                String tmp = System.getenv("TMP");
             }
-            """,
-            """
-            class A {
-                void test() {
-                    String home = System.getProperty("user.home");
-                }
+        }
+        """,
+        """
+        class A {
+            void test() {
+                String user = System.getProperty("user.name");
+                String username = System.getProperty("user.name");
+                String home = System.getProperty("user.home");
+                String profile = System.getProperty("user.home");
+                String temp = System.getProperty("java.io.tmpdir");
+                String tmpdir = System.getProperty("java.io.tmpdir");
+                String tmp = System.getProperty("java.io.tmpdir");
             }
-            """
-          )
-        );
-    }
+        }
+        """
+      )
+    );
+}
+
 }

@@ -15,6 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -26,6 +29,18 @@ import org.openrewrite.java.tree.J;
 public class PreferSystemGetPropertyOverGetenv extends Recipe {
 
     private static final MethodMatcher GETENV = new MethodMatcher("java.lang.System getenv(java.lang.String)");
+
+    private static final Map<String, String> ENV_TO_PROPERTY = new HashMap<>();
+
+    static {
+        ENV_TO_PROPERTY.put("USER", "user.name");
+        ENV_TO_PROPERTY.put("USERNAME", "user.name");
+        ENV_TO_PROPERTY.put("HOME", "user.home");
+        ENV_TO_PROPERTY.put("USERPROFILE", "user.home");
+        ENV_TO_PROPERTY.put("TMPDIR", "java.io.tmpdir");
+        ENV_TO_PROPERTY.put("TEMP", "java.io.tmpdir");
+        ENV_TO_PROPERTY.put("TMP", "java.io.tmpdir");
+    }
 
     @Override
     public String getDisplayName() {
@@ -42,16 +57,24 @@ public class PreferSystemGetPropertyOverGetenv extends Recipe {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                if (GETENV.matches(method) &&
-                        method.getArguments().size() == 1 &&
-                        method.getArguments().get(0).printTrimmed().equals("\"HOME\"")) {
+                if (GETENV.matches(method)
+                        && method.getArguments().size() == 1
+                        && method.getArguments().get(0) instanceof J.Literal) {
 
-                    maybeAddImport("java.lang.System");
+                    J.Literal arg = (J.Literal) method.getArguments().get(0);
 
-                    return JavaTemplate.builder("System.getProperty(\"user.home\")")
-                            .imports("java.lang.System")
-                            .build()
-                            .apply(updateCursor(method), method.getCoordinates().replace());
+                    if (arg.getValue() instanceof String) {
+                        String envVar = (String) arg.getValue();
+                        String replacementProperty = ENV_TO_PROPERTY.get(envVar);
+
+                        if (replacementProperty != null) {
+                            maybeAddImport("java.lang.System");
+                            return JavaTemplate.builder("System.getProperty(\"" + replacementProperty + "\")")
+                                    .imports("java.lang.System")
+                                    .build()
+                                    .apply(updateCursor(method), method.getCoordinates().replace());
+                        }
+                    }
                 }
                 return super.visitMethodInvocation(method, ctx);
             }
