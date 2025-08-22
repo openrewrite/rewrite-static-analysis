@@ -16,8 +16,12 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.*;
-import org.openrewrite.java.*;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.RenameVariable;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JLeftPadded;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.emptyList;
