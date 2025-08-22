@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -446,6 +447,32 @@ class OnlyCatchDeclaredExceptionsTest implements RewriteTest {
                       } catch (Exception e) {
                           // This is a generic catch block that should be replaced
                           System.out.println("Caught exception: " + e.getMessage());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/715")
+    @Test
+    void doNotChangeWhenThrownExceptionIsGeneric() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()),
+          //language=java
+          java(
+            """
+              interface ThrowsGenerics<TE extends Throwable> {
+                  void get() throws TE;
+              }
+
+              class MyService {
+                  void doSomething(ThrowsGenerics<Exception> t) {
+                      try {
+                          t.get();
+                      } catch (Exception e) {
+                          // Should not be changed - thrown exception is generic
                       }
                   }
               }

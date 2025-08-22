@@ -25,8 +25,12 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.tree.TypeUtils.findDeclaredMethod;
@@ -48,7 +52,7 @@ public class UseDiamondOperator extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2293");
+        return singleton("RSPEC-S2293");
     }
 
     @Override
@@ -241,6 +245,9 @@ public class UseDiamondOperator extends Recipe {
         }
 
         private static boolean hasAnnotations(J type) {
+            if (type instanceof J.AnnotatedType) {
+                return true;
+            }
             if (type instanceof J.ParameterizedType) {
                 J.ParameterizedType parameterizedType = (J.ParameterizedType) type;
                 if (hasAnnotations(parameterizedType.getClazz())) {
@@ -253,8 +260,6 @@ public class UseDiamondOperator extends Recipe {
                         }
                     }
                 }
-            } else {
-                return type instanceof J.AnnotatedType;
             }
             return false;
         }
@@ -272,12 +277,12 @@ public class UseDiamondOperator extends Recipe {
             if (newClass.getArguments().isEmpty() || newClass.getConstructorType() == null) {
                 return false;
             }
-            
+
             JavaType.FullyQualified type = TypeUtils.asFullyQualified(newClass.getType());
             if (type == null) {
                 return false;
             }
-            
+
             // Check if any argument contains a lambda or method reference
             boolean hasLambdaOrMethodRef = false;
             for (Expression arg : newClass.getArguments()) {
@@ -286,16 +291,16 @@ public class UseDiamondOperator extends Recipe {
                     break;
                 }
             }
-            
+
             // If no lambdas/method references, no ambiguity
             if (!hasLambdaOrMethodRef) {
                 return false;
             }
-            
+
             // Check if there are multiple constructors with the same number of parameters
             int argCount = newClass.getArguments().size();
             int constructorsWithSameArgCount = 0;
-            
+
             for (JavaType.Method method : type.getMethods()) {
                 if (method.isConstructor() && method.getParameterTypes().size() == argCount) {
                     constructorsWithSameArgCount++;
@@ -305,7 +310,7 @@ public class UseDiamondOperator extends Recipe {
                     }
                 }
             }
-            
+
             return false;
         }
     }

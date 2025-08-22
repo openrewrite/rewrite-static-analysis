@@ -26,6 +26,8 @@ import org.openrewrite.marker.Markers;
 import java.time.Duration;
 import java.util.*;
 
+import static java.util.Collections.singletonList;
+
 /**
  * The recipe that replaces `instanceof` pattern matching by a simple variable
  * declarations.
@@ -119,7 +121,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                 // Replace a single statement by a block
                 if (!(result.getThenPart() instanceof J.Block)) {
                     result = autoFormat(result.withThenPart(J.Block.createEmptyBlock()
-                            .withStatements(Collections.singletonList(result.getThenPart()))), ctx);
+                            .withStatements(singletonList(result.getThenPart()))), ctx);
                     updateCursor(result);
                 }
                 // Add variable declarations in the order of "instanceof" expressions
@@ -144,7 +146,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                 if (!(elsePart.getBody() instanceof J.Block)) {
                     result = autoFormat(result.withElsePart(elsePart.withBody(
                                     J.Block.createEmptyBlock().withStatements(
-                                            Collections.singletonList(elsePart.getBody())))),
+                                            singletonList(elsePart.getBody())))),
                             ctx);
                     updateCursor(result);
                     elsePart = result.getElsePart();

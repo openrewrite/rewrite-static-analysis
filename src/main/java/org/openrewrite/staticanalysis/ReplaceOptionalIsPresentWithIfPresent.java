@@ -29,7 +29,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -202,7 +203,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                     if (multiVariable.hasModifier(J.Modifier.Type.Final)) {
                         identifiers.addAll(multiVariable.getVariables().stream()
                                 .map(J.VariableDeclarations.NamedVariable::getName)
-                                .collect(Collectors.toList()));
+                                .collect(toList()));
                     }
                     return super.visitVariableDeclarations(multiVariable, identifiers);
                 }
@@ -227,7 +228,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
                     .map(J.VariableDeclarations::getVariables)
                     .flatMap(Collection::stream)
                     .map(J.VariableDeclarations.NamedVariable::getName)
-                    .collect(Collectors.toList());
+                    .collect(toList());
         }
     }
 

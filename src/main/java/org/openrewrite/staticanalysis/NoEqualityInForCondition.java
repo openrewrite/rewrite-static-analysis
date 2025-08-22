@@ -28,8 +28,9 @@ import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class NoEqualityInForCondition extends Recipe {
     @Override
@@ -44,7 +45,7 @@ public class NoEqualityInForCondition extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S888");
+        return singleton("RSPEC-S888");
     }
 
     @Override

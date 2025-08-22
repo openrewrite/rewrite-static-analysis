@@ -23,9 +23,9 @@ import org.openrewrite.java.style.HiddenFieldStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 @Incubating(since = "7.6.0")
@@ -42,7 +42,7 @@ public class HiddenField extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1117");
+        return singleton("RSPEC-S1117");
     }
 
     @Override

@@ -26,7 +26,8 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Collections;
+
+import static java.util.Collections.emptyList;
 
 public class ReplaceTextBlockWithString extends Recipe {
 
@@ -75,7 +76,7 @@ public class ReplaceTextBlockWithString extends Recipe {
                 literals[0] = toLiteral(lines[0]).withPrefix(literal.getPrefix());
                 // Add newlines before rest string literals
                 for (int i = 1; i < linesNumber; i++) {
-                    literals[i] = toLiteral(lines[i]).withPrefix(Space.build("\n", Collections.emptyList()));
+                    literals[i] = toLiteral(lines[i]).withPrefix(Space.build("\n", emptyList()));
                 }
                 // Format the resulting expression
                 Expression j = ChainStringBuilderAppendCalls.additiveExpression(literals);
@@ -92,7 +93,7 @@ public class ReplaceTextBlockWithString extends Recipe {
                     Markers.EMPTY,
                     str,
                     quote(str),
-                    Collections.emptyList(),
+                    emptyList(),
                     Primitive.String);
         }
 

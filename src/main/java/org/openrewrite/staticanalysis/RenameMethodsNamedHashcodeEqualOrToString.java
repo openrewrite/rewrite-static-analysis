@@ -29,8 +29,9 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
     private static final MethodMatcher NO_ARGS = new MethodMatcher("*..* *()", true);
@@ -49,7 +50,7 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1221");
+        return singleton("RSPEC-S1221");
     }
 
     @Override
