@@ -65,6 +65,8 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.AbstractSequentialList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.ArrayList", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArrayList", "java.util.List");
+        rspecRulesReplaceTypeMap.put("java.util.LinkedList", "java.util.List");
+        rspecRulesReplaceTypeMap.put("java.util.Stack", "java.util.List");
         rspecRulesReplaceTypeMap.put("java.util.Vector", "java.util.List");
         // Map
         rspecRulesReplaceTypeMap.put("java.util.AbstractMap", "java.util.Map");
@@ -73,6 +75,7 @@ public class UseCollectionInterfaces extends Recipe {
         rspecRulesReplaceTypeMap.put("java.util.Hashtable", "java.util.Map");
         rspecRulesReplaceTypeMap.put("java.util.IdentityHashMap", "java.util.Map");
         rspecRulesReplaceTypeMap.put("java.util.LinkedHashMap", "java.util.Map");
+        rspecRulesReplaceTypeMap.put("java.util.TreeMap", "java.util.Map");
         rspecRulesReplaceTypeMap.put("java.util.WeakHashMap", "java.util.Map");
         // ConcurrentMap
         rspecRulesReplaceTypeMap.put("java.util.concurrent.ConcurrentHashMap", "java.util.concurrent.ConcurrentMap");
@@ -80,10 +83,12 @@ public class UseCollectionInterfaces extends Recipe {
         // Queue
         rspecRulesReplaceTypeMap.put("java.util.AbstractQueue", "java.util.Queue");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.ConcurrentLinkedQueue", "java.util.Queue");
+        rspecRulesReplaceTypeMap.put("java.util.PriorityQueue", "java.util.Queue");
         // Set
         rspecRulesReplaceTypeMap.put("java.util.AbstractSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.HashSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.LinkedHashSet", "java.util.Set");
+        rspecRulesReplaceTypeMap.put("java.util.TreeSet", "java.util.Set");
         rspecRulesReplaceTypeMap.put("java.util.concurrent.CopyOnWriteArraySet", "java.util.Set");
     }
 
@@ -279,6 +284,16 @@ public class UseCollectionInterfaces extends Recipe {
                     "addElement", "capacity", "copyInto", "elementAt", "elements", "ensureCapacity", "insertElementAt", "removeAllElements", "removeElement", "removeElementAt", "setElementAt", "setSize", "trimToSize"))));
             nonInterfaceMethods.put("java.util.ArrayList", unmodifiableSet(new HashSet<>(Arrays.asList(
                     "ensureCapacity", "trimToSize"))));
+            nonInterfaceMethods.put("java.util.LinkedList", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    // These have been promoted to Java 21 SequencedCollection interface, but we don't check that here
+                    "addFirst", "addLast",  "getFirst", "getLast", "removeFirst", "removeLast",
+                    "descendingIterator", "offerFirst", "offerLast", "peekFirst", "peekLast", "pollFirst", "pollLast", "pop", "push", "removeFirstOccurrence", "removeLastOccurrence"))));
+            nonInterfaceMethods.put("java.util.Stack", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "empty", "peek", "pop", "push", "search"))));
+            nonInterfaceMethods.put("java.util.TreeMap", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "ceilingEntry", "ceilingKey", "descendingKeySet", "descendingMap", "firstEntry", "firstKey", "floorEntry", "floorKey", "headMap", "higherEntry", "higherKey", "lastEntry", "lastKey", "lowerEntry", "lowerKey", "navigableKeySet", "pollFirstEntry", "pollLastEntry", "subMap", "tailMap"))));
+            nonInterfaceMethods.put("java.util.TreeSet", unmodifiableSet(new HashSet<>(Arrays.asList(
+                    "ceiling", "descendingIterator", "descendingSet", "first", "floor", "headSet", "higher", "last", "lower", "pollFirst", "pollLast", "subSet", "tailSet"))));
         }
 
         @Override

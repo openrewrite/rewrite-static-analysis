@@ -1222,7 +1222,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import org.jspecify.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable ArrayList transform() {
                       ArrayList res = new ArrayList();
@@ -1235,7 +1235,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.List;
 
               import org.jspecify.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable List transform() {
                       List res = new ArrayList();
@@ -1257,7 +1257,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
             """
               import java.util.ArrayList;
               import org.jspecify.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable ArrayList values = new ArrayList();
               }
@@ -1267,7 +1267,7 @@ class UseCollectionInterfacesTest implements RewriteTest {
               import java.util.List;
 
               import org.jspecify.annotations.Nullable;
-              
+
               class Test {
                   public @Nullable List values = new ArrayList();
               }
@@ -1344,6 +1344,325 @@ class UseCollectionInterfacesTest implements RewriteTest {
 
               class Test {
                   public Set values = new java.util.HashSet();
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void linkedListToList() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.LinkedList;
+
+              class Test {
+                  public LinkedList<String> method() {
+                      return new LinkedList<>();
+                  }
+              }
+              """,
+            """
+              import java.util.LinkedList;
+              import java.util.List;
+
+              class Test {
+                  public List<String> method() {
+                      return new LinkedList<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void stackToList() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Stack;
+
+              class Test {
+                  public Stack<Integer> values = new Stack<>();
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Stack;
+
+              class Test {
+                  public List<Integer> values = new Stack<>();
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void treeMapToMap() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.TreeMap;
+
+              class Test {
+                  private TreeMap<String, Integer> createMap() {
+                      return new TreeMap<>();
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+              import java.util.TreeMap;
+
+              class Test {
+                  private Map<String, Integer> createMap() {
+                      return new TreeMap<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void treeSetToSet() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.TreeSet;
+
+              class Test {
+                  TreeSet<String> items = new TreeSet<>();
+              }
+              """,
+            """
+              import java.util.Set;
+              import java.util.TreeSet;
+
+              class Test {
+                  Set<String> items = new TreeSet<>();
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void priorityQueueToQueue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.PriorityQueue;
+
+              class Test {
+                  public PriorityQueue<String> getQueue() {
+                      return new PriorityQueue<>();
+                  }
+              }
+              """,
+            """
+              import java.util.PriorityQueue;
+              import java.util.Queue;
+
+              class Test {
+                  public Queue<String> getQueue() {
+                      return new PriorityQueue<>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void doNotChangeLinkedListWhenUsingDequeMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.LinkedList;
+
+              class Test {
+                  public LinkedList<String> list = new LinkedList<>();
+
+                  void useDequeMethod() {
+                      list.addFirst("first");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void doNotChangeStackWhenUsingStackMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Stack;
+
+              class Test {
+                  Stack<String> createStack() {
+                      Stack<String> stack = new Stack<>();
+                      stack.push("item");
+                      return stack;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void doNotChangeTreeMapWhenUsingNavigableMapMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.TreeMap;
+
+              class Test {
+                  TreeMap<String, Integer> map = new TreeMap<>();
+
+                  String getFirstKey() {
+                      return map.firstKey();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void doNotChangeTreeSetWhenUsingNavigableSetMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.TreeSet;
+
+              class Test {
+                  public TreeSet<String> set = new TreeSet<>();
+
+                  public String first() {
+                      return set.first();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void linkedListMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.LinkedList;
+
+              class Test {
+                  public LinkedList<String> list = new LinkedList<>();
+
+                  public void useListMethod() {
+                      list.add("item");
+                  }
+              }
+              """,
+            """
+              import java.util.LinkedList;
+              import java.util.List;
+
+              class Test {
+                  public List<String> list = new LinkedList<>();
+
+                  public void useListMethod() {
+                      list.add("item");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void stackEmptyMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Stack;
+
+              class Test {
+                  public Stack<String> stack = new Stack<>();
+
+                  boolean isEmpty() {
+                      return stack.empty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void treeMapCeilingEntry() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.TreeMap;
+              import java.util.Map;
+
+              class Test {
+                  TreeMap<Integer, String> map = new TreeMap<>();
+
+                  Map.Entry<Integer, String> getCeiling(Integer key) {
+                      return map.ceilingEntry(key);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/710")
+    @Test
+    void treeSetDescendingIterator() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.TreeSet;
+              import java.util.Iterator;
+
+              class Test {
+                  public TreeSet<String> set = new TreeSet<>();
+
+                  Iterator<String> getDescending() {
+                      return set.descendingIterator();
+                  }
               }
               """
           )
