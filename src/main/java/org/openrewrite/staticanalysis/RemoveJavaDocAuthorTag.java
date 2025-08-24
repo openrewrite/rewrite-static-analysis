@@ -23,8 +23,9 @@ import org.openrewrite.java.tree.Javadoc;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import static java.util.Collections.reverse;
 
 public class RemoveJavaDocAuthorTag extends Recipe {
 
@@ -73,7 +74,7 @@ public class RemoveJavaDocAuthorTag extends Recipe {
                             if (isBlank(getCursor(), newBody)) {
                                 return null;
                             }
-                            Collections.reverse(newBody);
+                            reverse(newBody);
                             dc = dc.withBody(newBody);
                         }
                         return dc;

@@ -29,6 +29,8 @@ import org.openrewrite.java.tree.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Collections.singleton;
+
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class RemoveUnusedPrivateFields extends Recipe {
@@ -46,7 +48,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1068");
+        return singleton("RSPEC-S1068");
     }
 
     @Override

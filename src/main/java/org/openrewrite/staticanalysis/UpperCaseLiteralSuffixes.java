@@ -27,8 +27,9 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class UpperCaseLiteralSuffixes extends Recipe {
     @Override
@@ -43,7 +44,7 @@ public class UpperCaseLiteralSuffixes extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S818");
+        return singleton("RSPEC-S818");
     }
 
     @Override

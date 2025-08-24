@@ -27,9 +27,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class FallThrough extends Recipe {
@@ -45,7 +45,7 @@ public class FallThrough extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S128");
+        return singleton("RSPEC-S128");
     }
 
     @Override

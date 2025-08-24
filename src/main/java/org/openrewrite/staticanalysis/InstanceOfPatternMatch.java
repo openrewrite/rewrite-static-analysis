@@ -32,11 +32,13 @@ import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
@@ -476,7 +478,7 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         static VariableNameStrategy short_() {
-            return new VariableNameStrategy(Style.SHORT, null, Collections.emptySet());
+            return new VariableNameStrategy(Style.SHORT, null, emptySet());
         }
 
         static VariableNameStrategy normal(Set<Cursor> contextScopes) {
@@ -484,7 +486,7 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         static VariableNameStrategy exact(String name) {
-            return new VariableNameStrategy(Style.EXACT, name, Collections.emptySet());
+            return new VariableNameStrategy(Style.EXACT, name, emptySet());
         }
 
         public String variableName(@Nullable JavaType type) {
@@ -511,9 +513,9 @@ public class InstanceOfPatternMatch extends Recipe {
                     case NORMAL:
                         Set<String> namesInScope = contextScopes.stream()
                                 .flatMap(c -> VariableNameUtils.findNamesInScope(c).stream())
-                                .collect(Collectors.toSet());
+                                .collect(toSet());
                         List<String> nameSegments = Stream.of(NAME_SPLIT_PATTERN.split(className))
-                                .filter(s -> !s.isEmpty()).collect(Collectors.toList());
+                                .filter(s -> !s.isEmpty()).collect(toList());
                         for (int i = nameSegments.size() - 1; i >= 0; i--) {
                             String name = String.join("", nameSegments.subList(i, nameSegments.size()));
                             if (name.length() < 2) {

@@ -22,11 +22,11 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
@@ -44,7 +44,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S120");
+        return singleton("RSPEC-S120");
     }
 
     @Override

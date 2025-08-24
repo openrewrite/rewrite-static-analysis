@@ -214,7 +214,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private boolean isDefaultCase(J.Case case_) {
         J elem = case_.getCaseLabels().get(0);
-        return elem instanceof J.Identifier && ((J.Identifier) elem).getSimpleName().equals("default");
+        return elem instanceof J.Identifier && "default".equals(((J.Identifier) elem).getSimpleName());
     }
 
 }

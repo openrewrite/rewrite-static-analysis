@@ -25,8 +25,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
-
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
@@ -65,21 +64,31 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
 
         @Override
         public J.NewArray visitNewArray(J.NewArray newArray, P p) {
-            if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && newArray.getDimensions().size() == 1) {
+            boolean isInitializerEmpty = newArray.getInitializer() == null ||
+                    (newArray.getInitializer().size() == 1 && newArray.getInitializer().get(0) instanceof J.Empty);
+            if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && isInitializerEmpty) {
                 J.NewArray newArrayZero = newArray.withDimensions(ListUtils.mapFirst(newArray.getDimensions(), d -> {
                     if (d.getIndex() instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) d.getIndex()).getValue())) {
                         return d;
                     }
+                    JavaType.Primitive type;
+                    if (d.getIndex() instanceof J.Empty) {
+                        type = JavaType.Primitive.Int;
+                    } else {
+                        type = (JavaType.Primitive) requireNonNull(d.getIndex().getType());
+                    }
+
                     return d.withIndex(new J.Literal(
                             Tree.randomId(),
                             Space.EMPTY,
                             Markers.EMPTY,
                             0,
                             "0",
-                            Collections.emptyList(),
-                            (JavaType.Primitive) requireNonNull(d.getIndex().getType())
+                            emptyList(),
+                            type
                     ));
                 }));
+                newArrayZero = newArrayZero.withInitializer(null);
                 return maybeAutoFormat(newArray, newArrayZero, p);
             }
             return super.visitNewArray(newArray, p);

@@ -23,8 +23,9 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class WriteOctalValuesAsDecimal extends Recipe {
     @Override
@@ -39,7 +40,7 @@ public class WriteOctalValuesAsDecimal extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1314");
+        return singleton("RSPEC-S1314");
     }
 
     @Override

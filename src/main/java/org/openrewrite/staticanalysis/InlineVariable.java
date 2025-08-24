@@ -25,10 +25,10 @@ import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.*;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class InlineVariable extends Recipe {
@@ -46,7 +46,7 @@ public class InlineVariable extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1488");
+        return singleton("RSPEC-S1488");
     }
 
     @Override

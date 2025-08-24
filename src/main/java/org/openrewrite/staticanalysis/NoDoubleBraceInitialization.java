@@ -26,7 +26,9 @@ import org.openrewrite.marker.SearchResult;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 
 public class NoDoubleBraceInitialization extends Recipe {
     private static final JavaType MAP_TYPE = JavaType.buildType("java.util.Map");
@@ -192,11 +194,11 @@ public class NoDoubleBraceInitialization extends Recipe {
                                 Space.EMPTY,
                                 Markers.EMPTY,
                                 isStatic,
-                                objectListEntry.getValue().stream().map(JRightPadded::build).collect(Collectors.toList()),
+                                objectListEntry.getValue().stream().map(JRightPadded::build).collect(toList()),
                                 Space.EMPTY
                         );
                         //noinspection ConstantConditions
-                        bl = maybeAutoFormat(bl, bl.withStatements(ListUtils.insertAll(bl.getStatements(), statementIndex + 1, Collections.singletonList(initBlock))),
+                        bl = maybeAutoFormat(bl, bl.withStatements(ListUtils.insertAll(bl.getStatements(), statementIndex + 1, singletonList(initBlock))),
                                 initBlock, ctx, getCursor().getParent(2));
                     }
                 }

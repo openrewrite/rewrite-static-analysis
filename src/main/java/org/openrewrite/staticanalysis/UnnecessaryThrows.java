@@ -26,8 +26,13 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.*;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class UnnecessaryThrows extends Recipe {
@@ -49,7 +54,7 @@ public class UnnecessaryThrows extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1130");
+        return singleton("RSPEC-S1130");
     }
 
     @Override
@@ -136,14 +141,14 @@ public class UnnecessaryThrows extends Recipe {
             private Set<JavaType.FullyQualified> findExceptionCandidates(J.@Nullable MethodDeclaration method) {
 
                 if (method == null || method.getMethodType() == null || method.isAbstract() || method.isConstructor()) {
-                    return Collections.emptySet();
+                    return emptySet();
                 }
 
                 // Do not change the API of methods that may be overridden
                 if (method.hasModifier(Protected) && !method.hasModifier(Final)) {
                     J.ClassDeclaration cd = getCursor().firstEnclosing(J.ClassDeclaration.class);
                     if (cd != null && !cd.hasModifier(Final)) {
-                        return Collections.emptySet();
+                        return emptySet();
                     }
                 }
 
@@ -153,7 +158,7 @@ public class UnnecessaryThrows extends Recipe {
                 if (method.getThrows() != null) {
                     for (NameTree exception : method.getThrows()) {
                         if (exception.getType() == null || exception.getType() instanceof JavaType.Unknown) {
-                            return Collections.emptySet();
+                            return emptySet();
                         }
                         if (exception.getType() instanceof JavaType.FullyQualified && !TypeUtils.isAssignableTo("java.lang.RuntimeException", exception.getType())) {
                             candidates.add(TypeUtils.asFullyQualified(exception.getType()));
@@ -162,7 +167,7 @@ public class UnnecessaryThrows extends Recipe {
                 }
 
                 if (candidates.isEmpty()) {
-                    return Collections.emptySet();
+                    return emptySet();
                 }
 
                 //noinspection ConstantConditions

@@ -26,8 +26,9 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Loop;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class NoRedundantJumpStatements extends Recipe {
 
@@ -43,7 +44,7 @@ public class NoRedundantJumpStatements extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3626");
+        return singleton("RSPEC-S3626");
     }
 
     @Override
