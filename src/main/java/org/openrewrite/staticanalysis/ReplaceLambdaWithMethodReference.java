@@ -81,6 +81,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             J.Lambda l = (J.Lambda) super.visitLambda(lambda, ctx);
             updateCursor(l);
 
+            if (insideAnonymousInnerClass()) {
+                return l;
+            }
+
             J body = l.getBody();
             if (body instanceof J.Block && ((J.Block) body).getStatements().size() == 1) {
                 Statement statement = ((J.Block) body).getStatements().get(0);
@@ -198,6 +202,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (select != null) {
                         return newInstanceMethodReference(select, methodType, lambda.getType()).withPrefix(lambda.getPrefix());
                     }
+
                     Cursor owner = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
                             (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) ||
                             is instanceof J.Lambda);
@@ -210,6 +215,25 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             }
 
             return l;
+        }
+
+        private boolean insideAnonymousInnerClass() {
+            // Check if we're inside an anonymous inner class
+            Cursor current = getCursor();
+            while (current != null) {
+                if (current.getValue() instanceof J.ClassDeclaration) {
+                    // We've reached a regular class declaration, stop looking
+                    return false;
+                }
+                if (current.getValue() instanceof J.NewClass &&
+                        current.<J.NewClass>getValue().getBody() != null) {
+                    // Don't replace lambdas inside anonymous inner classes that call unqualified methods
+                    // as the "this" reference semantics might change
+                    return true;
+                }
+                current = current.getParent();
+            }
+            return false;
         }
 
         private boolean hasSelectWithPotentialSideEffects(MethodCall method) {

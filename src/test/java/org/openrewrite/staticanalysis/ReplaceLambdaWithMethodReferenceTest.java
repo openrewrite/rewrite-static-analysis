@@ -1399,4 +1399,92 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+    @Test
+    void doNotReplaceInAnonymousInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void foo() {
+                      B b = new B() {
+                          @Override
+                          public void run() {
+                              new Thread(() -> run()).start();
+                          }
+                      };
+                  }
+                  
+                  interface B {
+                      void run();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+    @Test
+    void doNotReplaceInAnonymousInnerClassWithOtherMethods() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void foo() {
+                      B b = new B() {
+                          @Override
+                          public void run() {
+                              execute(() -> doSomething());
+                          }
+                          
+                          private void doSomething() {
+                              System.out.println("doing something");
+                          }
+                          
+                          private void execute(Runnable r) {
+                              r.run();
+                          }
+                      };
+                  }
+                  
+                  interface B {
+                      void run();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+    @Test
+    void stillReplaceInRegularInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  class Inner {
+                      public void run() {
+                          new Thread(() -> run()).start();
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  class Inner {
+                      public void run() {
+                          new Thread(this::run).start();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
