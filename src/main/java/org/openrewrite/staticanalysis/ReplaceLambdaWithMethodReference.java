@@ -81,6 +81,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             J.Lambda l = (J.Lambda) super.visitLambda(lambda, ctx);
             updateCursor(l);
 
+            if (insideAnonymousInnerClass()) {
+                return l;
+            }
+
             J body = l.getBody();
             if (body instanceof J.Block && ((J.Block) body).getStatements().size() == 1) {
                 Statement statement = ((J.Block) body).getStatements().get(0);
@@ -198,25 +202,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (select != null) {
                         return newInstanceMethodReference(select, methodType, lambda.getType()).withPrefix(lambda.getPrefix());
                     }
-                    
-                    // Check if we're inside an anonymous inner class
-                    Cursor current = getCursor();
-                    while (current != null && current.getValue() != null) {
-                        if (current.getValue() instanceof J.NewClass) {
-                            J.NewClass nc = (J.NewClass) current.getValue();
-                            if (nc.getBody() != null) {
-                                // Don't replace lambdas inside anonymous inner classes that call unqualified methods
-                                // as the "this" reference semantics might change
-                                return l;
-                            }
-                        }
-                        if (current.getValue() instanceof J.ClassDeclaration) {
-                            // We've reached a regular class declaration, stop looking
-                            break;
-                        }
-                        current = current.getParent();
-                    }
-                    
+
                     Cursor owner = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
                             (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) ||
                             is instanceof J.Lambda);
@@ -229,6 +215,27 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             }
 
             return l;
+        }
+
+        private boolean insideAnonymousInnerClass() {
+            // Check if we're inside an anonymous inner class
+            Cursor current = getCursor();
+            while (current != null) {
+                if (current.getValue() instanceof J.NewClass) {
+                    J.NewClass nc = (J.NewClass) current.getValue();
+                    if (nc.getBody() != null) {
+                        // Don't replace lambdas inside anonymous inner classes that call unqualified methods
+                        // as the "this" reference semantics might change
+                        return true;
+                    }
+                }
+                if (current.getValue() instanceof J.ClassDeclaration) {
+                    // We've reached a regular class declaration, stop looking
+                    return false;
+                }
+                current = current.getParent();
+            }
+            return false;
         }
 
         private boolean hasSelectWithPotentialSideEffects(MethodCall method) {
