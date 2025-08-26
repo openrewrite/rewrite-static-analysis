@@ -60,8 +60,15 @@ public class UnwrapElseAfterReturn extends Recipe {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
                         if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
-                            J.If newIf = ifStatement.withElsePart(null);
                             Statement elsePart = ifStatement.getElsePart().getBody();
+                            if (elsePart instanceof J.If) {
+                                J.If elseIf = (J.If) elsePart;
+                                if (isSimpleThenBlock(elseIf.getThenPart())) {
+                                   return statement;
+                                }
+                            }
+
+                            J.If newIf = ifStatement.withElsePart(null);
                             if (elsePart instanceof J.Block) {
                                 J.Block elseBlock = (J.Block) elsePart;
                                 endWhitespace.set(elseBlock.getEnd());
@@ -88,6 +95,18 @@ public class UnwrapElseAfterReturn extends Recipe {
                 }
 
                 return maybeAutoFormat(b, alteredBlock, ctx);
+            }
+
+            private boolean isSimpleThenBlock(Statement thenPart) {
+                if (thenPart instanceof J.Return) {
+                    return true;
+                }
+                if (thenPart instanceof J.Block) {
+                    J.Block block = (J.Block) thenPart;
+                    return block.getStatements().size() == 1 &&
+                           block.getStatements().get(0) instanceof J.Return;
+                }
+                return false;
             }
 
             private boolean endsWithReturnOrThrow(Statement statement) {
