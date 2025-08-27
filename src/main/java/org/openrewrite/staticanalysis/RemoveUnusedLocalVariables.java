@@ -21,10 +21,7 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.DeleteStatement;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.*;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
