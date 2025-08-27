@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.google.errorprone.annotations.InlineMe;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
@@ -129,7 +128,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
-            public  J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+            public J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 // skip matching ignored variable names right away
                 if (ignoreVariableNames != null && ignoreVariableNames.contains(variable.getSimpleName())) {
                     return variable;
