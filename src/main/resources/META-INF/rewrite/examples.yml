@@ -1987,6 +1987,37 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.PreferSystemGetPropertyOverGetenv
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void test() {
+              String user = System.getenv("USER");
+              String username = System.getenv("USERNAME");
+              String home = System.getenv("HOME");
+              String profile = System.getenv("USERPROFILE");
+              String temp = System.getenv("TEMP");
+              String tmpdir = System.getenv("TMPDIR");
+              String tmp = System.getenv("TMP");
+          }
+      }
+    after: |
+      class A {
+          void test() {
+              String user = System.getProperty("user.name");
+              String username = System.getProperty("user.name");
+              String home = System.getProperty("user.home");
+              String profile = System.getProperty("user.home");
+              String temp = System.getProperty("java.io.tmpdir");
+              String tmpdir = System.getProperty("java.io.tmpdir");
+              String tmp = System.getProperty("java.io.tmpdir");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
 examples:
 - description: ''
