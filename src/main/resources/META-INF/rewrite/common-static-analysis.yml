@@ -84,6 +84,7 @@ recipeList:
   - org.openrewrite.staticanalysis.SimplifyArraysAsList
   - org.openrewrite.staticanalysis.SimplifyBooleanExpression
   - org.openrewrite.staticanalysis.SimplifyBooleanReturn
+#  - org.openrewrite.staticanalysis.SimplifyElseBranch # TODO Add once we've tried this out at scale
 #  - org.openrewrite.staticanalysis.SimplifyTernaryRecipes
   - org.openrewrite.staticanalysis.StaticMethodNotFinal
   - org.openrewrite.staticanalysis.StringLiteralEquality
