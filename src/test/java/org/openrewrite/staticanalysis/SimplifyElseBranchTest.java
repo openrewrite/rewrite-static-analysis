@@ -305,4 +305,43 @@ class SimplifyElseBranchTest implements RewriteTest {
           )
         );
     }
-}
+
+    @Test
+    void simplifyElseBranchWithElseBlockOnNewLine() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6)
+                      {
+                          System.out.println("Password is too short.");
+                      }
+                      else
+                      {
+                          if (password.length() > 12)
+                          {
+                              System.out.println("Password is too long.");
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6)
+                      {
+                          System.out.println("Password is too short.");
+                      }
+                      else if (password.length() > 12)
+                      {
+                          System.out.println("Password is too long.");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }}
