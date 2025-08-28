@@ -19,14 +19,11 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
-import java.util.List;
-
 import static org.openrewrite.java.format.ShiftFormat.indent;
-import static org.openrewrite.java.tree.Space.format;
 
 public class SimplifyElseBranch extends Recipe {
 
@@ -48,21 +45,17 @@ public class SimplifyElseBranch extends Recipe {
             @Override
             public J.If.Else visitElse(J.If.Else else_, ExecutionContext ctx) {
                 J.If.Else elseStatement = super.visitElse(else_, ctx);
-                final Statement body = elseStatement.getBody();
+                Statement body = elseStatement.getBody();
                 if (body instanceof J.Block) {
-                    final J.Block block = (J.Block) body;
+                    J.Block block = (J.Block) body;
                     if (block.getStatements().size() == 1) {
-                        final Statement firstStatement = block.getStatements().get(0);
+                        Statement firstStatement = block.getStatements().get(0);
                         if (firstStatement instanceof J.If) {
-                            J.If ifStatement = (J.If) firstStatement;
                             // Combine comments from the block and the if statement
-                            final List<Comment> blockComments = block.getComments();
-                            final List<Comment> ifComments = ifStatement.getComments();
-                            ifStatement = ifStatement.withPrefix(format(" "));
-                            if (!ifComments.isEmpty() || !blockComments.isEmpty()) {
-                                ifStatement = ifStatement.withComments(ListUtils.concatAll(blockComments, ifComments));
-                            }
-                            elseStatement = elseStatement.withBody(indent(ifStatement, getCursor(), -1));
+                            J.If ifStatement = firstStatement
+                                    .withPrefix(Space.SINGLE_SPACE)
+                                    .withComments(ListUtils.concatAll(block.getComments(), firstStatement.getComments()));
+                            return elseStatement.withBody(indent(ifStatement, getCursor(), -1));
                         }
                     }
                 }

@@ -38,29 +38,29 @@ class SimplifyElseBranchTest implements RewriteTest {
           // language=java
           java(
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else {
-                                if (password.length() > 12) {
-                                    System.out.println("Password is too long.");
-                                }
-                            }
-                        }
-                    }
-                    """,
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else {
+                          if (password.length() > 12) {
+                              System.out.println("Password is too long.");
+                          }
+                      }
+                  }
+              }
+              """,
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else if (password.length() > 12) {
-                                System.out.println("Password is too long.");
-                            }
-                        }
-                    }
-                    """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else if (password.length() > 12) {
+                          System.out.println("Password is too long.");
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -71,19 +71,19 @@ class SimplifyElseBranchTest implements RewriteTest {
           // language=java
           java(
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else {
-                                if (password.length() > 12) {
-                                    System.out.println("Password is too long.");
-                                }
-                                System.out.println("Password is six or more characters long.");
-                            }
-                        }
-                    }
-                    """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else {
+                          if (password.length() > 12) {
+                              System.out.println("Password is too long.");
+                          }
+                          System.out.println("Password is six or more characters long.");
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -94,33 +94,33 @@ class SimplifyElseBranchTest implements RewriteTest {
           // language=java
           java(
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else {
-                                if (password.length() <= 12) {
-                                    System.out.println("Password is ok.");
-                                } else {
-                                    System.out.println("Password is too long.");
-                                }
-                            }
-                        }
-                    }
-                    """,
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else {
+                          if (password.length() <= 12) {
+                              System.out.println("Password is ok.");
+                          } else {
+                              System.out.println("Password is too long.");
+                          }
+                      }
+                  }
+              }
+              """,
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else if (password.length() <= 12) {
-                                System.out.println("Password is ok.");
-                            } else {
-                                System.out.println("Password is too long.");
-                            }
-                        }
-                    }
-                    """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else if (password.length() <= 12) {
+                          System.out.println("Password is ok.");
+                      } else {
+                          System.out.println("Password is too long.");
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -131,45 +131,45 @@ class SimplifyElseBranchTest implements RewriteTest {
           // language=java
           java(
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else {
-                                if (password.length() == 6) {
-                                    System.out.println("Password is six characters long.");
-                                } else if (password.length() == 7) {
-                                    System.out.println("Password is seven characters long.");
-                                } else if (password.length() == 8) {
-                                    System.out.println("Password is eight characters long.");
-                                } else if (password.length() <= 12) {
-                                    System.out.println("Password is ok.");
-                                } else {
-                                    System.out.println("Password is too long.");
-                                }
-                            }
-                        }
-                    }
-                    """,
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else {
+                          if (password.length() == 6) {
+                              System.out.println("Password is six characters long.");
+                          } else if (password.length() == 7) {
+                              System.out.println("Password is seven characters long.");
+                          } else if (password.length() == 8) {
+                              System.out.println("Password is eight characters long.");
+                          } else if (password.length() <= 12) {
+                              System.out.println("Password is ok.");
+                          } else {
+                              System.out.println("Password is too long.");
+                          }
+                      }
+                  }
+              }
+              """,
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else if (password.length() == 6) {
-                                System.out.println("Password is six characters long.");
-                            } else if (password.length() == 7) {
-                                System.out.println("Password is seven characters long.");
-                            } else if (password.length() == 8) {
-                                System.out.println("Password is eight characters long.");
-                            } else if (password.length() <= 12) {
-                                System.out.println("Password is ok.");
-                            } else {
-                                System.out.println("Password is too long.");
-                            }
-                        }
-                    }
-                    """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else if (password.length() == 6) {
+                          System.out.println("Password is six characters long.");
+                      } else if (password.length() == 7) {
+                          System.out.println("Password is seven characters long.");
+                      } else if (password.length() == 8) {
+                          System.out.println("Password is eight characters long.");
+                      } else if (password.length() <= 12) {
+                          System.out.println("Password is ok.");
+                      } else {
+                          System.out.println("Password is too long.");
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -180,38 +180,38 @@ class SimplifyElseBranchTest implements RewriteTest {
           // language=java
           java(
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else /* Comment 0 */ { // Comment 1
-                                // Comment 2
-                                if (password.length() <= 12) { // Comment 3
-                                    // Comment 4
-                                    System.out.println("Password is ok.");
-                                } else {
-                                    System.out.println("Password is too long.");
-                                }
-                            }
-                        }
-                    }
-                    """,
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else /* Comment 0 */ { // Comment 1
+                          // Comment 2
+                          if (password.length() <= 12) { // Comment 3
+                              // Comment 4
+                              System.out.println("Password is ok.");
+                          } else {
+                              System.out.println("Password is too long.");
+                          }
+                      }
+                  }
+              }
+              """,
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else /* Comment 0 */ // Comment 1
-                            // Comment 2
-                            if (password.length() <= 12) { // Comment 3
-                                // Comment 4
-                                System.out.println("Password is ok.");
-                            } else {
-                                System.out.println("Password is too long.");
-                            }
-                        }
-                    }
-                    """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else /* Comment 0 */ // Comment 1
+                      // Comment 2
+                      if (password.length() <= 12) { // Comment 3
+                          // Comment 4
+                          System.out.println("Password is ok.");
+                      } else {
+                          System.out.println("Password is too long.");
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -222,45 +222,45 @@ class SimplifyElseBranchTest implements RewriteTest {
           // language=java
           java(
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else {
-                                if (password.length() == 6) {
-                                    System.out.println("Password is six characters long.");
-                                } else {
-                                    if (password.length() == 7) {
-                                        System.out.println("Password is seven characters long.");
-                                    } else {
-                                        if (password.length() <= 12) {
-                                            System.out.println("Password is ok.");
-                                        } else {
-                                            System.out.println("Password is too long.");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    """,
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else {
+                          if (password.length() == 6) {
+                              System.out.println("Password is six characters long.");
+                          } else {
+                              if (password.length() == 7) {
+                                  System.out.println("Password is seven characters long.");
+                              } else {
+                                  if (password.length() <= 12) {
+                                      System.out.println("Password is ok.");
+                                  } else {
+                                      System.out.println("Password is too long.");
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+              """,
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else if (password.length() == 6) {
-                                System.out.println("Password is six characters long.");
-                            } else if (password.length() == 7) {
-                                System.out.println("Password is seven characters long.");
-                            } else if (password.length() <= 12) {
-                                System.out.println("Password is ok.");
-                            } else {
-                                System.out.println("Password is too long.");
-                            }
-                        }
-                    }
-                    """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else if (password.length() == 6) {
+                          System.out.println("Password is six characters long.");
+                      } else if (password.length() == 7) {
+                          System.out.println("Password is seven characters long.");
+                      } else if (password.length() <= 12) {
+                          System.out.println("Password is ok.");
+                      } else {
+                          System.out.println("Password is too long.");
+                      }
+                  }
+              }
+              """
           )
         );
     }
@@ -271,37 +271,37 @@ class SimplifyElseBranchTest implements RewriteTest {
           // language=java
           java(
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else if (password.length() == 6) {
-                                System.out.println("Password is six characters long.");
-                            } else {
-                                if (password.length() <= 12) {
-                                    System.out.println("Password is ok.");
-                                } else {
-                                    System.out.println("Password is too long.");
-                                }
-                            }
-                        }
-                    }
-                    """,
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else if (password.length() == 6) {
+                          System.out.println("Password is six characters long.");
+                      } else {
+                          if (password.length() <= 12) {
+                              System.out.println("Password is ok.");
+                          } else {
+                              System.out.println("Password is too long.");
+                          }
+                      }
+                  }
+              }
+              """,
             """
-                    class A {
-                        void a(String password) {
-                            if (password.length() < 6) {
-                                System.out.println("Password is too short.");
-                            } else if (password.length() == 6) {
-                                System.out.println("Password is six characters long.");
-                            } else if (password.length() <= 12) {
-                                System.out.println("Password is ok.");
-                            } else {
-                                System.out.println("Password is too long.");
-                            }
-                        }
-                    }
-                    """
+              class A {
+                  void a(String password) {
+                      if (password.length() < 6) {
+                          System.out.println("Password is too short.");
+                      } else if (password.length() == 6) {
+                          System.out.println("Password is six characters long.");
+                      } else if (password.length() <= 12) {
+                          System.out.println("Password is ok.");
+                      } else {
+                          System.out.println("Password is too long.");
+                      }
+                  }
+              }
+              """
           )
         );
     }
