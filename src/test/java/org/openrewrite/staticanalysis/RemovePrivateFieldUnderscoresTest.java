@@ -206,4 +206,19 @@ class RemovePrivateFieldUnderscoresTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doesNotChangeReservedKeyword() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class MyClass {
+                  private String class_;
+                  private String _class;
+              }
+              """
+          )
+        );
+    }
 }
