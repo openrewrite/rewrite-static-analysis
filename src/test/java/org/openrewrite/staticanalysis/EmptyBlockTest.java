@@ -17,9 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.style.Checkstyle;
+import org.openrewrite.java.style.EmptyBlockStyle;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static java.util.Collections.singleton;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({
@@ -215,29 +219,109 @@ class EmptyBlockTest implements RewriteTest {
     }
 
     @Test
-    void emptyLoops() {
+    void emptyWhileDefault() { // Checkstyle.emptyBlock() uses `BlockPolicy` `TEXT`
         rewriteRun(
           //language=java
           java(
             """
               public class A {
                   public void foo() {
-                      while(true) {
+                      while (true) {
                       }
                       do {
-                      } while(true);
+                      } while (true);
                   }
               }
               """,
             """
               public class A {
                   public void foo() {
-                      while(true) {
+                      while (true) {
+                          // do nothing
+                      }
+                      do {
+                          // do nothing
+                      } while (true);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void whileWithContinueDefault() {
+        rewriteRun(
+          //language=java
+          java( // No change expected
+            """
+              public class A {
+                  public void foo() {
+                      while (true) {
                           continue;
                       }
                       do {
                           continue;
-                      } while(true);
+                      } while (true);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void whileWithCommentDefault() {
+        rewriteRun(
+          //language=java
+          java( // No change expected
+            """
+              public class A {
+                  public void foo() {
+                      while (true) {
+                          // do nothing
+                      }
+                      do {
+                          // do nothing
+                      } while (true);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyWhileStyleStatement() {
+        rewriteRun(
+          spec -> {
+              spec.parser(JavaParser.fromJavaVersion().styles(
+                singleton(Checkstyle.defaults()
+                  .withStyles(singleton(Checkstyle.emptyBlock()
+                    .withBlockPolicy(EmptyBlockStyle.BlockPolicy.STATEMENT))))
+              ));
+          },
+          //language=java
+          java(
+            """
+              public class A {
+                  public void foo() {
+                      while (true) {
+                      }
+                      do {
+                      } while (true);
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void foo() {
+                      while (true) {
+                          continue;
+                      }
+                      do {
+                          continue;
+                      } while (true);
                   }
               }
               """
