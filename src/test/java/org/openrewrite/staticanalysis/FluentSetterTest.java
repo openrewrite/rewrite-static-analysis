@@ -31,11 +31,11 @@ class FluentSetterTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void convertSimpleSetter() {
+    void convertSimpleSetterInFinalClass() {
         rewriteRun(
           java(
             """
-              public class Person {
+              public final class Person {
                   private String name;
 
                   public void setName(String name) {
@@ -44,7 +44,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Person {
+              public final class Person {
                   private String name;
 
                   public Person setName(String name) {
@@ -58,11 +58,28 @@ class FluentSetterTest implements RewriteTest {
     }
 
     @Test
-    void convertSetterWithExtraIdent() {
+    void skipSetterInNonFinalClass() {
         rewriteRun(
           java(
             """
               public class Person {
+                  private String name;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void convertSetterWithExtraIdent() {
+        rewriteRun(
+          java(
+            """
+              public final class Person {
                   private String name;
 
                   public void setName(String name) {
@@ -71,7 +88,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Person {
+              public final class Person {
                   private String name;
 
                   public Person setName(String name) {
@@ -85,11 +102,11 @@ class FluentSetterTest implements RewriteTest {
     }
 
     @Test
-    void convertMultipleSetters() {
+    void convertMultipleSettersInFinalClass() {
         rewriteRun(
           java(
             """
-              public class Person {
+              public final class Person {
                   private String name;
                   private int age;
                   private String email;
@@ -109,7 +126,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Person {
+              public final class Person {
                   private String name;
                   private int age;
                   private String email;
@@ -136,11 +153,11 @@ class FluentSetterTest implements RewriteTest {
     }
 
     @Test
-    void skipNonSetterVoidMethods() {
+    void skipNonSetterVoidMethodsInFinalClass() {
         rewriteRun(
           java(
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public void setName(String name) {
@@ -157,7 +174,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public Example setName(String name) {
@@ -183,7 +200,7 @@ class FluentSetterTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              public class Example {
+              public final class Example {
                   private static String globalName;
                   private String name;
 
@@ -197,7 +214,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Example {
+              public final class Example {
                   private static String globalName;
                   private String name;
 
@@ -220,7 +237,7 @@ class FluentSetterTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public void setName(String name) {
@@ -240,7 +257,7 @@ class FluentSetterTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public String setName(String name) {
@@ -277,20 +294,17 @@ class FluentSetterTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
-                  // Not a setter - doesn't start with 'set'
                   public void updateName(String name) {
                       this.name = name;
                   }
 
-                  // Not a setter - 'set' but lowercase next char
                   public void setup() {
                       // setup logic
                   }
 
-                  // Not a setter - too many parameters
                   public void setNameAndAge(String name, int age) {
                       this.name = name;
                   }
@@ -301,19 +315,19 @@ class FluentSetterTest implements RewriteTest {
     }
 
     @Test
-    void includeAllVoidMethods() {
+    void includeAllVoidMethodsInFinalClass() {
         rewriteRun(
           spec -> spec.recipe(new FluentSetter(true, null, null)),
           java(
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public void setName(String name) {
                       this.name = name;
                   }
 
-                  public void doSomething() {
+                  void doSomething() {
                       System.out.println("doing something");
                   }
 
@@ -323,7 +337,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public Example setName(String name) {
@@ -331,7 +345,7 @@ class FluentSetterTest implements RewriteTest {
                       return this;
                   }
 
-                  public Example doSomething() {
+                  Example doSomething() {
                       System.out.println("doing something");
                       return this;
                   }
@@ -403,7 +417,7 @@ class FluentSetterTest implements RewriteTest {
           spec -> spec.recipe(new FluentSetter(true, null, "main|run|execute")),
           java(
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public void setName(String name) {
@@ -428,7 +442,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   public Example setName(String name) {
@@ -463,14 +477,14 @@ class FluentSetterTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              public class Outer {
+              public final class Outer {
                   private String outerName;
 
                   public void setOuterName(String name) {
                       this.outerName = name;
                   }
 
-                  public static class Inner {
+                  public static final class Inner {
                       private String innerName;
 
                       public void setInnerName(String name) {
@@ -480,7 +494,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Outer {
+              public final class Outer {
                   private String outerName;
 
                   public Outer setOuterName(String name) {
@@ -488,7 +502,7 @@ class FluentSetterTest implements RewriteTest {
                       return this;
                   }
 
-                  public static class Inner {
+                  public static final class Inner {
                       private String innerName;
 
                       public Inner setInnerName(String name) {
@@ -507,7 +521,7 @@ class FluentSetterTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   protected void setName(String name) {
@@ -520,7 +534,7 @@ class FluentSetterTest implements RewriteTest {
               }
               """,
             """
-              public class Example {
+              public final class Example {
                   private String name;
 
                   protected Example setName(String name) {
@@ -531,6 +545,191 @@ class FluentSetterTest implements RewriteTest {
                   private Example setPrivateName(String name) {
                       this.name = name;
                       return this;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void withPatternConvertsNonFinalClasses() {
+        rewriteRun(
+          spec -> spec.recipe(new FluentSetter(false, "set.*", null)),
+          java(
+            """
+              public class Person {
+                  private String name;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+              }
+              """,
+            """
+              public class Person {
+                  private String name;
+
+                  public Person setName(String name) {
+                      this.name = name;
+                      return this;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void excludePatternWorksWithFinalClasses() {
+        rewriteRun(
+          spec -> spec.recipe(new FluentSetter(false, null, "setName")),
+          java(
+            """
+              public final class Example {
+                  private String name;
+                  private int age;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+
+                  public void setAge(int age) {
+                      this.age = age;
+                  }
+              }
+              """,
+            """
+              public final class Example {
+                  private String name;
+                  private int age;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+
+                  public Example setAge(int age) {
+                      this.age = age;
+                      return this;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void includeAllVoidMethodsInFinalClassOnly() {
+        rewriteRun(
+          spec -> spec.recipe(new FluentSetter(true, null, null)),
+          java(
+            """
+              public final class FinalExample {
+                  private String name;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+
+                  public void doSomething() {
+                      System.out.println("doing something");
+                  }
+              }
+
+              public class NonFinalExample {
+                  private String name;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+
+                  public void doSomething() {
+                      System.out.println("doing something");
+                  }
+              }
+              """,
+            """
+              public final class FinalExample {
+                  private String name;
+
+                  public FinalExample setName(String name) {
+                      this.name = name;
+                      return this;
+                  }
+
+                  public FinalExample doSomething() {
+                      System.out.println("doing something");
+                      return this;
+                  }
+              }
+
+              public class NonFinalExample {
+                  private String name;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+
+                  public void doSomething() {
+                      System.out.println("doing something");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void combinedPatternAndExcludePattern() {
+        rewriteRun(
+          spec -> spec.recipe(new FluentSetter(false, "set.*", "setName")),
+          java(
+            """
+              public class Example {
+                  private String name;
+                  private int age;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+
+                  public void setAge(int age) {
+                      this.age = age;
+                  }
+              }
+              """,
+            """
+              public class Example {
+                  private String name;
+                  private int age;
+
+                  public void setName(String name) {
+                      this.name = name;
+                  }
+
+                  public Example setAge(int age) {
+                      this.age = age;
+                      return this;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void skipMethodsThatOnlyThrowExceptions() {
+        rewriteRun(
+          java(
+            """
+              public final class Example {
+
+                  public void setRawOffset(final int offsetMillis) {
+                      throw new UnsupportedOperationException();
+                  }
+
+                  public void setImmutableValue(String value) {
+                      throw new IllegalStateException("Cannot modify immutable value");
                   }
               }
               """

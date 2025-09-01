@@ -59,7 +59,8 @@ public class FluentSetter extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Converts void setter methods (and optionally other void methods) to return `this` to enable method chaining and fluent interfaces.";
+        return "Converts void setter methods (and optionally other void methods) to return `this` to enable method chaining and fluent interfaces. " +
+                "For safety, only converts methods in final classes by default to avoid breaking inheritance. Use methodNamePattern to opt-in for non-final classes.";
     }
 
     @Override
@@ -78,6 +79,7 @@ public class FluentSetter extends Recipe {
                     return method;
                 }
 
+                // Extract simple class name from fully qualified name or inner class name
                 JavaType.FullyQualified classType = containingClass.getType();
                 String className = classType.getClassName();
                 if (className.contains(".")) {
@@ -108,7 +110,6 @@ public class FluentSetter extends Recipe {
                 return updatedMethod;
             }
 
-
             private boolean shouldConvertMethod(J.MethodDeclaration method) {
                 if (method.getReturnTypeExpression() == null || method.getReturnTypeExpression().getType() != JavaType.Primitive.Void) {
                     return false;
@@ -126,7 +127,7 @@ public class FluentSetter extends Recipe {
                     return false;
                 }
 
-                if (method.getBody() != null && hasReturnStatement(method.getBody())) {
+                if (method.getBody() != null && (hasReturnStatement(method.getBody()) || onlyThrowsException(method.getBody()))) {
                     return false;
                 }
 
@@ -144,11 +145,15 @@ public class FluentSetter extends Recipe {
                     return namePattern.matcher(methodName).matches();
                 }
 
+                J.ClassDeclaration containingClass = getCursor().firstEnclosing(J.ClassDeclaration.class);
+                if (containingClass == null || !containingClass.hasModifier(J.Modifier.Type.Final)) {
+                    return false;
+                }
+
                 if (includeAllVoidMethods != null && includeAllVoidMethods) {
                     return true;
                 }
 
-                // Default behavior: only setter methods
                 return isSetterMethod(method);
             }
 
@@ -180,6 +185,21 @@ public class FluentSetter extends Recipe {
                 }.visit(body, hasReturn);
 
                 return hasReturn.get();
+            }
+
+            private boolean onlyThrowsException(J.Block body) {
+                List<Statement> statements = body.getStatements();
+                if (statements.isEmpty()) {
+                    return false;
+                }
+
+                for (Statement statement : statements) {
+                    if (!(statement instanceof J.Throw)) {
+                        return false;
+                    }
+                }
+
+                return true;
             }
         };
     }
