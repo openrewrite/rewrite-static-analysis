@@ -3215,6 +3215,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyElseBranch
+examples:
+- description: ''
+  sources:
+  - before: |
+      class A {
+          void a(String password) {
+              if (password.length() < 6) {
+                  System.out.println("Password is too short.");
+              } else {
+                  if (password.length() > 12) {
+                      System.out.println("Password is too long.");
+                  }
+              }
+          }
+      }
+    after: |
+      class A {
+          void a(String password) {
+              if (password.length() < 6) {
+                  System.out.println("Password is too short.");
+              } else if (password.length() > 12) {
+                  System.out.println("Password is too long.");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyTernaryRecipes
 examples:
 - description: ''
