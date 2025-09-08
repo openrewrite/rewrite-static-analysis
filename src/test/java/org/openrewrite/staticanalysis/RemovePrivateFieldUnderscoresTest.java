@@ -53,7 +53,7 @@ class RemovePrivateFieldUnderscoresTest implements RewriteTest {
                   private String ruleName;
 
                   public String getRuleName() {
-                      return this.ruleName;
+                      return ruleName;
                   }
 
                   public void setRuleName(String ruleName) {
@@ -88,7 +88,7 @@ class RemovePrivateFieldUnderscoresTest implements RewriteTest {
                   private String ruleName;
 
                   public String getRuleName() {
-                      return this.ruleName;
+                      return ruleName;
                   }
 
                   public void setRuleName(String ruleName) {
@@ -101,7 +101,7 @@ class RemovePrivateFieldUnderscoresTest implements RewriteTest {
     }
 
     @Test
-    void handlesFieldAccessInOtherMethods() {
+    void doesNotAddThisWhenNoAmbiguity() {
         rewriteRun(
           //language=java
           java(
@@ -126,12 +126,59 @@ class RemovePrivateFieldUnderscoresTest implements RewriteTest {
                   private int operand2;
 
                   public Calculator(int a, int b) {
-                      this.operand1 = a;
-                      this.operand2 = b;
+                      operand1 = a;
+                      operand2 = b;
                   }
 
                   public int sum() {
-                      return this.operand1 + this.operand2;
+                      return operand1 + operand2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsThisWhenFieldIsShadowedByLocalVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Calculator {
+                  private int _operand1;
+                  private int operand2_;
+
+                  public Calculator(int a, int b) {
+                      int operand1 = 10;
+                      // ... do something else with operand1 ...
+                      _operand1 = a;
+                      operand2_ = b;
+                  }
+
+                  public int sum() {
+                      int operand2 = 10;
+                      // ... do something else with operand2 ...
+                      return _operand1 + operand2_;
+                  }
+              }
+              """,
+            """
+              public class Calculator {
+                  private int operand1;
+                  private int operand2;
+
+                  public Calculator(int a, int b) {
+                      int operand1 = 10;
+                      // ... do something else with operand1 ...
+                      this.operand1 = a;
+                      operand2 = b;
+                  }
+
+                  public int sum() {
+                      int operand2 = 10;
+                      // ... do something else with operand2 ...
+                      return operand1 + this.operand2;
                   }
               }
               """
@@ -197,9 +244,14 @@ class RemovePrivateFieldUnderscoresTest implements RewriteTest {
           java(
             """
               public class MyClass {
-                  public void myMethod() {
-                      String _localVar = "prefixUnderscore";
-                      String localVar_ = "suffixUnderscore";
+                  public String myMethod(String str) {
+                      String _str = bang(str);
+                      String str_ = "str_";
+                      return _str;
+                  }
+
+                  private String bang(String s) {
+                      return s;
                   }
               }
               """

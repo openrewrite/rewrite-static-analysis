@@ -22,7 +22,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
+
+import java.util.Iterator;
 
 import static java.util.Collections.emptyList;
 
@@ -35,7 +38,7 @@ public class RemovePrivateFieldUnderscores extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Removes prefix or suffix underscores from private class field names and adds `this.` to all field accesses for clarity and consistency.";
+        return "Removes prefix or suffix underscores from private class field names, adding `this.` only where necessary to resolve ambiguity.";
     }
 
     @Override
@@ -57,7 +60,7 @@ public class RemovePrivateFieldUnderscores extends Recipe {
                     String oldName = variable.getSimpleName();
                     if (oldName.startsWith("_") || oldName.endsWith("_")) {
                         String newName = oldName.startsWith("_") ? oldName.substring(1) : oldName.substring(0, oldName.length() - 1);
-                        doAfterVisit(new AddThisToFieldUses(variable));
+                        doAfterVisit(new QualifyAmbiguousFieldAccess(variable, newName));
                         doAfterVisit(new RenameVariable(variable, newName));
                     }
                 }
@@ -66,11 +69,13 @@ public class RemovePrivateFieldUnderscores extends Recipe {
         };
     }
 
-    private static class AddThisToFieldUses extends JavaVisitor<ExecutionContext> {
+    private static class QualifyAmbiguousFieldAccess extends JavaVisitor<ExecutionContext> {
         private final JavaType.Variable fieldType;
+        private final String newFieldName;
 
-        public AddThisToFieldUses(J.VariableDeclarations.NamedVariable field) {
+        public QualifyAmbiguousFieldAccess(J.VariableDeclarations.NamedVariable field, String newFieldName) {
             this.fieldType = field.getVariableType();
+            this.newFieldName = newFieldName;
         }
 
         @Override
@@ -82,6 +87,10 @@ public class RemovePrivateFieldUnderscores extends Recipe {
                 }
 
                 if (getCursor().getParentTreeCursor().getValue() instanceof J.FieldAccess) {
+                    return id;
+                }
+
+                if (!isAmbiguous()) {
                     return id;
                 }
 
@@ -103,6 +112,38 @@ public class RemovePrivateFieldUnderscores extends Recipe {
                  );
             }
             return id;
+        }
+
+        private boolean isAmbiguous() {
+            for (Iterator<Object> it = getCursor().getPath(); it.hasNext(); ) {
+                Object scope = it.next();
+
+                if (scope instanceof J.MethodDeclaration) {
+                    for (Statement param : ((J.MethodDeclaration) scope).getParameters()) {
+                        if (param instanceof J.VariableDeclarations) {
+                            J.VariableDeclarations.NamedVariable namedVar = ((J.VariableDeclarations) param).getVariables().get(0);
+                            if (namedVar.getSimpleName().equals(newFieldName)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                else if (scope instanceof J.Block) {
+                    for (Statement statement : ((J.Block) scope).getStatements()) {
+                        if (statement.getId().equals(getCursor().getValue())) {
+                            break;
+                        }
+                        if (statement instanceof J.VariableDeclarations) {
+                            for (J.VariableDeclarations.NamedVariable namedVar : ((J.VariableDeclarations) statement).getVariables()) {
+                                if (namedVar.getSimpleName().equals(newFieldName)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
         }
     }
 }
