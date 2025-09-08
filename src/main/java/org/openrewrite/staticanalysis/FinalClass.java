@@ -21,10 +21,10 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 
 @EqualsAndHashCode(callSuper = false)
@@ -70,8 +70,8 @@ public class FinalClass extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         boolean includeNeverExtendedFlag = Boolean.TRUE.equals(includeNeverExtended);
-        List<String> excludePackagesList = excludePackages != null ? excludePackages : Collections.emptyList();
-        List<String> excludeAnnotationsList = excludeAnnotations != null ? excludeAnnotations : Collections.emptyList();
+        List<String> excludePackagesList = excludePackages != null ? excludePackages : emptyList();
+        List<String> excludeAnnotationsList = excludeAnnotations != null ? excludeAnnotations : emptyList();
         FinalClassVisitor visitor = new FinalClassVisitor(includeNeverExtendedFlag, excludePackagesList, excludeAnnotationsList);
         return Preconditions.check(new JavaFileChecker<>(), visitor);
     }

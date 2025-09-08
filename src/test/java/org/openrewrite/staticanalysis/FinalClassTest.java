@@ -677,8 +677,8 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/729")
+    @Test
     void excludeAnnotationWithFullyQualifiedName() {
         rewriteRun(
           spec -> spec.recipe(new FinalClass(false, null, List.of("@java.lang.Deprecated"))),
