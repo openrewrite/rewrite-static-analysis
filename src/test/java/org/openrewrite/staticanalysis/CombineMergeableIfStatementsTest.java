@@ -417,4 +417,33 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void combineBinaryConditions() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              class A {
+                  void a(boolean condition1, boolean condition2, boolean condition3) {
+                      if (condition1) {
+                          if (condition2 || condition3) {
+                              System.out.println("OK");
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void a(boolean condition1, boolean condition2, boolean condition3) {
+                      if (condition1 && (condition2 || condition3)) {
+                          System.out.println("OK");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

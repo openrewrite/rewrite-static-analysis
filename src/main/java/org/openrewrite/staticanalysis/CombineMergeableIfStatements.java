@@ -73,8 +73,8 @@ public class CombineMergeableIfStatements extends Recipe {
                     if (innerIf != null && innerIf.getElsePart() == null) {
                         // thenPart of outer if is replaced with thenPart of innerIf
                         // combine conditions with logical AND : correct parenthesizing is handled by JavaTemplate
-                        final Expression outerCondition = outerIf.getIfCondition().getTree();
-                        final Expression innerCondition = innerIf.getIfCondition().getTree();
+                        Expression outerCondition = outerIf.getIfCondition().getTree();
+                        Expression innerCondition = innerIf.getIfCondition().getTree();
 
                         innerIf = indent(innerIf, getCursor(), -1);
                         outerIf = outerIf.withThenPart(innerIf.getThenPart());
