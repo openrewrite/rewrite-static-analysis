@@ -19,11 +19,13 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
@@ -64,7 +66,16 @@ public class UsePortableNewlines extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(
+                Preconditions.or(
+                        new UsesMethod<>(STRING_FORMAT),
+                        new UsesMethod<>(STRING_FORMATTED),
+                        new UsesMethod<>(PRINT_STREAM_PRINTF),
+                        new UsesMethod<>(PRINT_WRITER_PRINTF),
+                        new UsesMethod<>(FORMATTER_FORMAT),
+                        new UsesMethod<>(CONSOLE_PRINTF)
+                ),
+                new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
             public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
@@ -82,7 +93,7 @@ public class UsePortableNewlines extends Recipe {
                             // Direct use in method invocation
                             if (value instanceof J.MethodInvocation) {
                                 J.MethodInvocation mi = (J.MethodInvocation) value;
-                                if (isFormatMethod(mi) && mi.getArguments().size() > 0 && mi.getArguments().get(0) == literal) {
+                                if (isFormatMethod(mi) && !mi.getArguments().isEmpty() && mi.getArguments().get(0) == literal) {
                                     return replaceNewlineInLiteral(l);
                                 }
                             }
@@ -176,6 +187,6 @@ public class UsePortableNewlines extends Recipe {
 
                 return mi;
             }
-        };
+        });
     }
 }
