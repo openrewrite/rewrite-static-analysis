@@ -25,6 +25,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
@@ -35,8 +36,9 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = false)
 public class UsePortableNewlines extends Recipe {
 
-    private static final MethodMatcher STRING_FORMAT = new MethodMatcher("java.lang.String format(java.lang.String, ..)");
     private static final MethodMatcher STRING_FORMATTED = new MethodMatcher("java.lang.String formatted(..)");
+
+    private static final MethodMatcher STRING_FORMAT = new MethodMatcher("java.lang.String format(java.lang.String, ..)");
     private static final MethodMatcher PRINT_STREAM_PRINTF = new MethodMatcher("java.io.PrintStream printf(java.lang.String, ..)");
     private static final MethodMatcher PRINT_WRITER_PRINTF = new MethodMatcher("java.io.PrintWriter printf(java.lang.String, ..)");
     private static final MethodMatcher FORMATTER_FORMAT = new MethodMatcher("java.util.Formatter format(java.lang.String, ..)");
@@ -66,72 +68,47 @@ public class UsePortableNewlines extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.or(
-                        new UsesMethod<>(STRING_FORMAT),
                         new UsesMethod<>(STRING_FORMATTED),
+                        new UsesMethod<>(STRING_FORMAT),
                         new UsesMethod<>(PRINT_STREAM_PRINTF),
                         new UsesMethod<>(PRINT_WRITER_PRINTF),
                         new UsesMethod<>(FORMATTER_FORMAT),
                         new UsesMethod<>(CONSOLE_PRINTF)
                 ),
                 new JavaIsoVisitor<ExecutionContext>() {
-
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         // Handle String.formatted() - format string is the select
-                        if (STRING_FORMATTED.matches(method)) {
-                            if (method.getSelect() instanceof J.Literal) {
-                                J.Literal literal = (J.Literal) method.getSelect();
-                                J.Literal updated = replaceNewlineInLiteral(literal);
-                                if (updated != literal) {
-                                    return method.withSelect(updated);
-                                }
-                            }
-                            return method;
+                        if (STRING_FORMATTED.matches(method) && method.getSelect() != null) {
+                            return method.withSelect(replaceNewlineInLiteral(method.getSelect()));
                         }
                         if (STRING_FORMAT.matches(method) ||
                                 PRINT_STREAM_PRINTF.matches(method) ||
                                 PRINT_WRITER_PRINTF.matches(method) ||
                                 FORMATTER_FORMAT.matches(method) ||
                                 CONSOLE_PRINTF.matches(method)) {
-                            return replaceNewlineInFormatString(method);
+                            return method.withArguments(ListUtils.mapFirst(
+                                    method.getArguments(), UsePortableNewlines::replaceNewlineInLiteral));
                         }
-
                         return super.visitMethodInvocation(method, ctx);
                     }
-
-                    private J.Literal replaceNewlineInLiteral(J.Literal literal) {
-                        if (literal.getValue() instanceof String && literal.getValueSource() != null) {
-                            String source = literal.getValueSource();
-                            // Check if the source contains the escape sequence \n
-                            if (source.contains("\\n")) {
-                                String updatedSource = source.replace("\\n", "%n");
-                                String value = (String) literal.getValue();
-                                String updatedValue = value.replace("\n", "%n");
-                                return literal
-                                        .withValue(updatedValue)
-                                        .withValueSource(updatedSource);
-                            }
-                        }
-                        return literal;
-                    }
-
-                    private J.MethodInvocation replaceNewlineInFormatString(J.MethodInvocation mi) {
-                        // Get the format string argument (first argument)
-                        if (mi.getArguments().isEmpty()) {
-                            return mi;
-                        }
-
-                        J firstArg = mi.getArguments().get(0);
-                        if (firstArg instanceof J.Literal) {
-                            J.Literal literal = (J.Literal) firstArg;
-                            J.Literal updated = replaceNewlineInLiteral(literal);
-                            if (updated != literal) {
-                                return mi.withArguments(ListUtils.mapFirst(mi.getArguments(), arg -> updated));
-                            }
-                        }
-
-                        return mi;
-                    }
                 });
+    }
+
+    private static Expression replaceNewlineInLiteral(Expression maybeLiteral) {
+        if (maybeLiteral instanceof J.Literal) {
+            J.Literal literal = (J.Literal) maybeLiteral;
+            if (literal.getValue() instanceof String && literal.getValueSource() != null) {
+                String source = literal.getValueSource();
+                String value = (String) literal.getValue();
+                // Check if the source contains the escape sequence \n
+                if (source.contains("\\n")) {
+                    return literal
+                            .withValue(value.replace("\n", "%n"))
+                            .withValueSource(source.replace("\\n", "%n"));
+                }
+            }
+        }
+        return maybeLiteral;
     }
 }
