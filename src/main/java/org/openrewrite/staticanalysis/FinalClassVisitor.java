@@ -106,7 +106,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
                 }
             }
 
-            if (constructorCount > 0) {
+            if (constructorCount > 0 && passesExclusionFilters(cd)) {
                 typesToFinalize.add(cd.getType().getFullyQualifiedName());
             }
         } else {

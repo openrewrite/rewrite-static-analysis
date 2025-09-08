@@ -671,7 +671,7 @@ class FinalClassTest implements RewriteTest {
 
               @java.lang.Deprecated
               public class AnotherDeprecatedClass {
-                  public AnotherDeprecatedClass() {}
+                  private AnotherDeprecatedClass() {}
               }
               """
           )
