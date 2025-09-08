@@ -30,31 +30,7 @@ class UsePortableNewlinesTest implements RewriteTest {
         spec.recipe(new UsePortableNewlines());
     }
 
-    @Test
     @DocumentExample
-    void replaceNewlineInStringFormat() {
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  void test(String arg) {
-                      String formatString = "hello %s\\n";
-                      System.out.print(String.format(formatString, arg));
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void test(String arg) {
-                      String formatString = "hello %s%n";
-                      System.out.print(String.format(formatString, arg));
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void replaceNewlineInPrintfWithPrintStream() {
         rewriteRun(
@@ -263,6 +239,52 @@ class UsePortableNewlinesTest implements RewriteTest {
               class Test {
                   void test() {
                       String message = String.format("Say \\"Hello\\"%n");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotReplaceWhenNotLiteral() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(String arg) {
+                      String formatString = "hello %s\\n";
+                      System.out.print(String.format(formatString, arg));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotReplaceOtherNewlinesInTextBlocks() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(String name) {
+                      String message = String.format(\"""
+                          Hello %s,\\n
+                          Welcome to our application
+                          Have a nice day!
+                          \""", name);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(String name) {
+                      String message = String.format(\"""
+                          Hello %s,%n
+                          Welcome to our application
+                          Have a nice day!
+                          \""", name);
                   }
               }
               """

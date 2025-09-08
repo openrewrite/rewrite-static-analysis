@@ -17,26 +17,29 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class UsePortableNewlines extends Recipe {
 
-    private static final MethodMatcher STRING_FORMAT = new MethodMatcher("java.lang.String format(java.lang.String, ..)");
     private static final MethodMatcher STRING_FORMATTED = new MethodMatcher("java.lang.String formatted(..)");
+
+    private static final MethodMatcher STRING_FORMAT = new MethodMatcher("java.lang.String format(java.lang.String, ..)");
     private static final MethodMatcher PRINT_STREAM_PRINTF = new MethodMatcher("java.io.PrintStream printf(java.lang.String, ..)");
     private static final MethodMatcher PRINT_WRITER_PRINTF = new MethodMatcher("java.io.PrintWriter printf(java.lang.String, ..)");
     private static final MethodMatcher FORMATTER_FORMAT = new MethodMatcher("java.util.Formatter format(java.lang.String, ..)");
@@ -54,7 +57,7 @@ public class UsePortableNewlines extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S3457");
+        return singleton("RSPEC-S3457");
     }
 
     @Override
@@ -64,118 +67,49 @@ public class UsePortableNewlines extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-
-            @Override
-            public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
-                J.Literal l = super.visitLiteral(literal, ctx);
-
-                // Check if this literal contains \n and could be a format string
-                if (l.getValue() instanceof String && l.getValueSource() != null) {
-                    String source = l.getValueSource();
-                    if (source.contains("\\n")) {
-                        // Walk up the cursor path to find the context
-                        Cursor cursor = getCursor();
-                        while (cursor != null && cursor.getValue() != cursor.getRoot()) {
-                            Object value = cursor.getValue();
-
-                            // Direct use in method invocation
-                            if (value instanceof J.MethodInvocation) {
-                                J.MethodInvocation mi = (J.MethodInvocation) value;
-                                if (isFormatMethod(mi) && mi.getArguments().size() > 0 && mi.getArguments().get(0) == literal) {
-                                    return replaceNewlineInLiteral(l);
-                                }
-                            }
-                            // Used in variable declaration with format-related name
-                            else if (value instanceof J.VariableDeclarations.NamedVariable) {
-                                J.VariableDeclarations.NamedVariable var = (J.VariableDeclarations.NamedVariable) value;
-                                // Check if this literal is used as the initializer (either directly or within the expression)
-                                if (var.getInitializer() != null && isExpressionContainsLiteral(var.getInitializer(), literal)) {
-                                    String varName = var.getSimpleName().toLowerCase();
-                                    // Only consider it a format string if the variable name strongly suggests it
-                                    if (varName.contains("format") || varName.contains("fmt")) {
-                                        return replaceNewlineInLiteral(l);
-                                    }
-                                }
-                            }
-
-                            cursor = cursor.getParent();
+        return Preconditions.check(
+                Preconditions.or(
+                        new UsesMethod<>(STRING_FORMATTED),
+                        new UsesMethod<>(STRING_FORMAT),
+                        new UsesMethod<>(PRINT_STREAM_PRINTF),
+                        new UsesMethod<>(PRINT_WRITER_PRINTF),
+                        new UsesMethod<>(FORMATTER_FORMAT),
+                        new UsesMethod<>(CONSOLE_PRINTF)
+                ),
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                        // Handle String.formatted() - format string is the select
+                        if (STRING_FORMATTED.matches(method) && method.getSelect() != null) {
+                            return method.withSelect(replaceNewlineInLiteral(method.getSelect()));
                         }
-                    }
-                }
-
-                return l;
-            }
-
-            @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-
-                // Handle String.formatted() - format string is the select
-                if (STRING_FORMATTED.matches(mi)) {
-                    if (mi.getSelect() instanceof J.Literal) {
-                        J.Literal literal = (J.Literal) mi.getSelect();
-                        J.Literal updated = replaceNewlineInLiteral(literal);
-                        if (updated != literal) {
-                            return mi.withSelect(updated);
+                        if (STRING_FORMAT.matches(method) ||
+                                PRINT_STREAM_PRINTF.matches(method) ||
+                                PRINT_WRITER_PRINTF.matches(method) ||
+                                FORMATTER_FORMAT.matches(method) ||
+                                CONSOLE_PRINTF.matches(method)) {
+                            return method.withArguments(ListUtils.mapFirst(
+                                    method.getArguments(), UsePortableNewlines::replaceNewlineInLiteral));
                         }
+                        return super.visitMethodInvocation(method, ctx);
                     }
-                    return mi;
+                });
+    }
+
+    private static Expression replaceNewlineInLiteral(Expression maybeLiteral) {
+        if (maybeLiteral instanceof J.Literal) {
+            J.Literal literal = (J.Literal) maybeLiteral;
+            if (literal.getValue() instanceof String && literal.getValueSource() != null) {
+                String source = literal.getValueSource();
+                String value = (String) literal.getValue();
+                // Check if the source contains the escape sequence \n
+                if (source.contains("\\n")) {
+                    return literal
+                            .withValue(value.replace("\n", "%n"))
+                            .withValueSource(source.replace("\\n", "%n"));
                 }
-
-                // Handle other format methods - format string is the first argument
-                if (isFormatMethod(mi)) {
-                    return replaceNewlineInFormatString(mi);
-                }
-
-                return mi;
             }
-
-            private boolean isFormatMethod(J.MethodInvocation mi) {
-                return STRING_FORMAT.matches(mi) ||
-                        PRINT_STREAM_PRINTF.matches(mi) ||
-                        PRINT_WRITER_PRINTF.matches(mi) ||
-                        FORMATTER_FORMAT.matches(mi) ||
-                        CONSOLE_PRINTF.matches(mi);
-            }
-
-            private boolean isExpressionContainsLiteral(Expression expr, J.Literal literal) {
-                return expr == literal;
-            }
-
-            private J.Literal replaceNewlineInLiteral(J.Literal literal) {
-                if (literal.getValue() instanceof String && literal.getValueSource() != null) {
-                    String source = literal.getValueSource();
-                    // Check if the source contains the escape sequence \n
-                    if (source.contains("\\n")) {
-                        String updatedSource = source.replace("\\n", "%n");
-                        String value = (String) literal.getValue();
-                        String updatedValue = value.replace("\n", "%n");
-                        return literal
-                                .withValue(updatedValue)
-                                .withValueSource(updatedSource);
-                    }
-                }
-                return literal;
-            }
-
-            private J.MethodInvocation replaceNewlineInFormatString(J.MethodInvocation mi) {
-                // Get the format string argument (first argument)
-                if (mi.getArguments().isEmpty()) {
-                    return mi;
-                }
-
-                J firstArg = mi.getArguments().get(0);
-                if (firstArg instanceof J.Literal) {
-                    J.Literal literal = (J.Literal) firstArg;
-                    J.Literal updated = replaceNewlineInLiteral(literal);
-                    if (updated != literal) {
-                        return mi.withArguments(ListUtils.mapFirst(mi.getArguments(), arg -> updated));
-                    }
-                }
-
-                return mi;
-            }
-        };
+        }
+        return maybeLiteral;
     }
 }
