@@ -261,4 +261,23 @@ class UsePortableNewlinesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotReplaceNewlinesInTextBlocks() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(String name) {
+                      String message = String.format(\"""
+                          Hello %s,%n
+                          Welcome to our application
+                          Have a nice day!
+                          \""", name);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
