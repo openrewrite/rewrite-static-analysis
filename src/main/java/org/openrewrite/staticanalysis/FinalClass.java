@@ -15,17 +15,42 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class FinalClass extends Recipe {
+
+    @Option(displayName = "Include never-extended classes",
+            description = "Finalize classes that are never extended anywhere in the codebase",
+            required = false)
+    @Nullable
+    Boolean includeNeverExtended;
+
+    @Option(displayName = "Exclude packages",
+            description = "Package patterns to exclude from never-extended finalization (e.g., com.example.api.*)",
+            example = "com.example.api.*",
+            required = false)
+    @Nullable
+    List<String> excludePackages;
+
+    @Option(displayName = "Exclude annotations",
+            description = "Classes with these annotations won't be finalized when using never-extended mode",
+            example = "@ExtensionPoint",
+            required = false)
+    @Nullable
+    List<String> excludeAnnotations;
+
     @Override
     public String getDisplayName() {
         return "Finalize classes with private constructors";
@@ -33,7 +58,8 @@ public class FinalClass extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Adds the `final` modifier to classes that expose no public or package-private constructors.";
+        return "Adds the `final` modifier to classes that expose no public or package-private constructors." +
+                "Optionally, can also finalize classes that are never extended anywhere in the codebase.";
     }
 
     @Override
@@ -43,6 +69,10 @@ public class FinalClass extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new JavaFileChecker<>(), new FinalClassVisitor());
+        boolean includeNeverExtendedFlag = Boolean.TRUE.equals(includeNeverExtended);
+        List<String> excludePackagesList = excludePackages != null ? excludePackages : Collections.emptyList();
+        List<String> excludeAnnotationsList = excludeAnnotations != null ? excludeAnnotations : Collections.emptyList();
+        FinalClassVisitor visitor = new FinalClassVisitor(includeNeverExtendedFlag, excludePackagesList, excludeAnnotationsList);
+        return Preconditions.check(new JavaFileChecker<>(), visitor);
     }
 }
