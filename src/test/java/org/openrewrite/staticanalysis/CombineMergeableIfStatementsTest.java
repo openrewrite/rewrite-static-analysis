@@ -394,6 +394,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean condition1, boolean condition2) {
+                      // Comment -1
                       if (condition1) /* Comment 0 */ { // Comment 1
                           // Comment 2
                           if (condition2) /* Comment 3 */ { // Comment 4
@@ -406,6 +407,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean condition1, boolean condition2) {
+                      // Comment -1
                       /* Comment 0 */ // Comment 1
                       // Comment 2
                       if (condition1 && condition2) /* Comment 3 */ { // Comment 4
