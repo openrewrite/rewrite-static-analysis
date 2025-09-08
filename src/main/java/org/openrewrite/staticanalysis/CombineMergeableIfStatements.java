@@ -77,16 +77,16 @@ public class CombineMergeableIfStatements extends Recipe {
                         Expression innerCondition = innerIf.getIfCondition().getTree();
 
                         innerIf = indent(innerIf, getCursor(), -1);
-                        outerIf = outerIf.withThenPart(innerIf.getThenPart());
-                        outerIf = JavaTemplate.apply(
-                                "#{any()} && #{any()}",
-                                updateCursor(outerIf),
-                                outerCondition.getCoordinates().replace(),
-                                outerCondition,
-                                innerCondition);
-                        outerIf = outerIf.withComments(outerBlock != null ?
-                                ListUtils.concatAll(outerBlock.getComments(), innerIf.getComments()) :
-                                innerIf.getComments());
+                        return JavaTemplate.<J.If>apply(
+                                        "#{any()} && #{any()}",
+                                        updateCursor(outerIf),
+                                        outerCondition.getCoordinates().replace(),
+                                        outerCondition,
+                                        innerCondition)
+                                .withThenPart(innerIf.getThenPart())
+                                .withComments(outerBlock != null ?
+                                        ListUtils.concatAll(outerBlock.getComments(), innerIf.getComments()) :
+                                        innerIf.getComments());
                     }
                 }
 
