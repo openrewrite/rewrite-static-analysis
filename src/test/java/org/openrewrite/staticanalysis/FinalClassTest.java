@@ -361,6 +361,23 @@ class FinalClassTest implements RewriteTest {
     }
 
     @Test
+    void excludePackagePatternsWithIncludeNeverExtendedFalse() {
+        rewriteRun(
+          spec -> spec.recipe(new FinalClass(false, Arrays.asList("com.example.api.*"), null)),
+          java(
+            """
+              package com.example.api;
+
+              class PublicApi {
+                  private PublicApi() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void excludeAnnotatedClasses() {
         rewriteRun(
           spec -> spec.recipe(new FinalClass(true, null, Arrays.asList("@ExtensionPoint"))),
