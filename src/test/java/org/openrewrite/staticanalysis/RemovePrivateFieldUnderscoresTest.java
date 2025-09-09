@@ -273,4 +273,19 @@ class RemovePrivateFieldUnderscoresTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doesNotRenameToUnnamedVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class MyClass {
+                  private String __;
+                  private int ___;
+              }
+              """
+          )
+        );
+    }
 }

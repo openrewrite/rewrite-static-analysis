@@ -60,6 +60,10 @@ public class RemovePrivateFieldUnderscores extends Recipe {
                     String oldName = variable.getSimpleName();
                     if (oldName.startsWith("_") || oldName.endsWith("_")) {
                         String newName = oldName.startsWith("_") ? oldName.substring(1) : oldName.substring(0, oldName.length() - 1);
+                        if (newName.startsWith("_") || newName.endsWith("_") || newName.isEmpty()) {
+                            continue;
+                        }
+
                         doAfterVisit(new QualifyAmbiguousFieldAccess(variable, newName));
                         doAfterVisit(new RenameVariable(variable, newName));
                     }
