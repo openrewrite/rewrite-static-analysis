@@ -3956,6 +3956,25 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UsePortableNewlines
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void test(String name) {
+              System.out.printf("Hello %s\n", name);
+          }
+      }
+    after: |
+      class Test {
+          void test(String name) {
+              System.out.printf("Hello %s%n", name);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseStandardCharset
 examples:
 - description: ''
