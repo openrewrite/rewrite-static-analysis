@@ -44,9 +44,9 @@ public class RemoveTrailingWhitespaceVisitor<P> extends PlainTextVisitor<P> {
 
     @Override
     public boolean isAcceptable(SourceFile sourceFile, P p) {
-        return !(sourceFile instanceof Binary
-                || sourceFile instanceof Quark
-                || sourceFile instanceof Remote);
+        return !(sourceFile instanceof Binary ||
+                sourceFile instanceof Quark ||
+                sourceFile instanceof Remote);
     }
 
     @Override

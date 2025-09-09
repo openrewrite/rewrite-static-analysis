@@ -37,12 +37,12 @@ class RemoveTrailingWhitespaceTest implements RewriteTest {
         rewriteRun(
           text(
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,\s\s
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,\s\s
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               """,
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               """,
             SourceSpec::noTrim
           )
@@ -55,12 +55,12 @@ class RemoveTrailingWhitespaceTest implements RewriteTest {
         rewriteRun(
           text(
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\s\s
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\s\s
               """,
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               """,
             SourceSpec::noTrim
           )
@@ -73,12 +73,12 @@ class RemoveTrailingWhitespaceTest implements RewriteTest {
         rewriteRun(
           text(
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,\s\s
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\s\s
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,\s\s
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\s\s
               """,
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               """,
             SourceSpec::noTrim
           )
@@ -91,17 +91,17 @@ class RemoveTrailingWhitespaceTest implements RewriteTest {
         rewriteRun(
           text(
             """
-               \s\s
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-               \s\s
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-               \s\s
+                \s\s
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                \s\s
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                \s\s
               """,
             """
 
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,
 
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 
               """,
             SourceSpec::noTrim
@@ -116,14 +116,14 @@ class RemoveTrailingWhitespaceTest implements RewriteTest {
         rewriteRun(
           text(
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,\s\s
-               \s\s
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,\s\s
+                \s\s
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               """,
             """
-               Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit,
 
-               sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               """,
             SourceSpec::noTrim
           )
