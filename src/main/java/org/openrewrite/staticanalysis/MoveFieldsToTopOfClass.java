@@ -20,7 +20,6 @@ import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
@@ -92,7 +91,6 @@ public class MoveFieldsToTopOfClass extends Recipe {
                         // but preserve its original comments
                         Space originalPrefix = field.getPrefix();
                         Space firstStatementPrefix = statements.get(0).getPrefix();
-                        
                         // Combine: use first statement's whitespace but preserve field's comments
                         Space newPrefix = firstStatementPrefix.withComments(originalPrefix.getComments());
                         field = field.withPrefix(newPrefix);
