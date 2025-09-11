@@ -31,25 +31,13 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class AnnotateNullableParameters extends Recipe {
 
     private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
-    private static final List<MethodMatcher> NULL_SAFETY_METHOD_MATCHERS = Arrays.asList(
-            new MethodMatcher("com.google.common.base.Strings isNullOrEmpty(..)"), // Guava
-            new MethodMatcher("java.util.Objects isNull(..)"),
-            new MethodMatcher("java.util.Objects nonNull(..)"),
-            new MethodMatcher("org.apache.commons.lang3.StringUtils isBlank(..)"),
-            new MethodMatcher("org.apache.commons.lang3.StringUtils isEmpty(..)"),
-            new MethodMatcher("org.apache.commons.lang3.StringUtils isNotBlank(..)"),
-            new MethodMatcher("org.apache.commons.lang3.StringUtils isNotEmpty(..)"),
-            new MethodMatcher("org.springframework.util.ObjectUtils hasText(..)"),
-            new MethodMatcher("org.springframework.util.StringUtils isEmpty(..)"), // Deprecated
-            new MethodMatcher("org.springframework.util.StringUtils hasLength(..)"),
-            new MethodMatcher("org.springframework.util.StringUtils hasText(..)")
-    );
 
     @Option(displayName = "`@Nullable` annotation class",
             description = "The fully qualified name of the @Nullable annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.Nullable`",
@@ -58,6 +46,18 @@ public class AnnotateNullableParameters extends Recipe {
     @Nullable
     String nullableAnnotationClass;
 
+    @Option(
+            displayName = "Additional null-checking methods",
+            description =
+                    "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. "
+                            + "These will be added to the built-in list of known null-checking methods. "
+                            + "Use '..' for any parameters, e.g., 'com.mycompany.utils.StringUtil isEmpty(..)' or 'com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)'",
+            example =
+                    "com.mycompany.utils.StringUtil isEmpty(..), com.mycompany.utils.CollectionUtil isNullOrEmpty(..)",
+            required = false)
+    @Nullable
+    List<String> additionalNullCheckingMethods;
+
     @Override
     public String getDisplayName() {
         return "Annotate null-checked method parameters with `@Nullable`";
@@ -65,12 +65,11 @@ public class AnnotateNullableParameters extends Recipe {
 
     @Override
     public String getDescription() {
-
-        return "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. " +
-                "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
-                "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
-                "This recipe scans for methods that do not already have parameters annotated with `@Nullable` annotation and checks their usages " +
-                "for potential null checks.";
+        return "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. "
+                + "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. "
+                + "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. "
+                + "This recipe scans for methods that do not already have parameters annotated with `@Nullable` annotation and checks their usages "
+                + "for potential null checks. Additional null-checking methods can be specified via the `additionalNullCheckingMethods` option.";
     }
 
     @Override
@@ -100,7 +99,7 @@ public class AnnotateNullableParameters extends Recipe {
                 }
 
                 Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md, fullyQualifiedName));
-                Set<J.Identifier> nullCheckedIdentifiers = new NullCheckVisitor(candidateIdentifiers.values())
+                Set<J.Identifier> nullCheckedIdentifiers = new NullCheckVisitor(candidateIdentifiers.values(), additionalNullCheckingMethods)
                         .reduce(md.getBody(), new HashSet<>());
 
                 maybeAddImport(fullyQualifiedName);
@@ -175,8 +174,32 @@ public class AnnotateNullableParameters extends Recipe {
      */
     @RequiredArgsConstructor
     private static class NullCheckVisitor extends JavaIsoVisitor<Set<J.Identifier>> {
+        private static final List<MethodMatcher> NULL_SAFETY_METHOD_MATCHERS = Arrays.asList(
+                new MethodMatcher("com.google.common.base.Strings isNullOrEmpty(..)"), // Guava
+                new MethodMatcher("java.util.Objects isNull(..)"),
+                new MethodMatcher("java.util.Objects nonNull(..)"),
+                new MethodMatcher("org.apache.commons.lang3.StringUtils isBlank(..)"),
+                new MethodMatcher("org.apache.commons.lang3.StringUtils isEmpty(..)"),
+                new MethodMatcher("org.apache.commons.lang3.StringUtils isNotBlank(..)"),
+                new MethodMatcher("org.apache.commons.lang3.StringUtils isNotEmpty(..)"),
+                new MethodMatcher("org.springframework.util.ObjectUtils hasText(..)"),
+                new MethodMatcher("org.springframework.util.StringUtils isEmpty(..)"), // Deprecated
+                new MethodMatcher("org.springframework.util.StringUtils hasLength(..)"),
+                new MethodMatcher("org.springframework.util.StringUtils hasText(..)")
+        );
 
         private final Collection<J.Identifier> identifiers;
+        private final Collection<MethodMatcher> nullCheckingMethodMatchers = new ArrayList<>(NULL_SAFETY_METHOD_MATCHERS);
+
+        public NullCheckVisitor(Collection<J.Identifier> identifiers, @Nullable Collection<String> additionalNullCheckingMethods) {
+            this.identifiers = identifiers;
+            if(additionalNullCheckingMethods != null) {
+                nullCheckingMethodMatchers.addAll(
+                        additionalNullCheckingMethods.stream()
+                                .map(MethodMatcher::new)
+                                .collect(Collectors.toList()));
+            }
+        }
 
         @Override
         public J.If visitIf(J.If iff, Set<J.Identifier> nullCheckedParams) {
@@ -236,7 +259,7 @@ public class AnnotateNullableParameters extends Recipe {
         }
 
         private boolean isKnownNullMethodChecker(J.MethodInvocation methodInvocation) {
-            for (MethodMatcher m : NULL_SAFETY_METHOD_MATCHERS) {
+            for (MethodMatcher m : nullCheckingMethodMatchers) {
                 if (m.matches(methodInvocation)) {
                     return true;
                 }
