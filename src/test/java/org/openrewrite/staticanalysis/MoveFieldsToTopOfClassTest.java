@@ -87,11 +87,11 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class Example {
-                  private String field1 = "value1";
+                  public static final String CONSTANT = "constant";
 
                   protected int field2 = 42;
 
-                  public static final String CONSTANT = "constant";
+                  private String field1 = "value1";
 
                   public void method1() {
                       System.out.println("method1");
@@ -117,9 +117,9 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
           java(
             """
               class AlreadyOrdered {
-                  private String field1 = "value1";
-                  protected int field2 = 42;
                   public static final String CONSTANT = "constant";
+                  protected int field2 = 42;
+                  private String field1 = "value1";
 
                   public void method() {
                       System.out.println("method");
@@ -141,9 +141,9 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
           java(
             """
               class OnlyFields {
-                  private String field1 = "value1";
-                  protected int field2 = 42;
                   public static final String CONSTANT = "constant";
+                  protected int field2 = 42;
+                  private String field1 = "value1";
               }
               """
           )
@@ -256,9 +256,10 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class StaticAndInstance {
+                  public final int publicField = 100;
+
                   private static final String STATIC_FIELD = "static";
                   private String instanceField = "instance";
-                  public final int publicField = 100;
 
                   public void method() {
                       System.out.println("method");
@@ -299,9 +300,9 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class OuterClass {
-                  private String outerField = "outer";
-
                   protected int anotherOuterField = 42;
+
+                  private String outerField = "outer";
 
                   public void outerMethod() {
                       System.out.println("outer method");

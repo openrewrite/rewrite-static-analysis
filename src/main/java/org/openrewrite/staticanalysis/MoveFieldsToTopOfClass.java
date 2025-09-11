@@ -24,10 +24,15 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.style.GeneralFormatStyle;
+import org.openrewrite.style.Style;
 
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.IntStream;
+
+import static org.openrewrite.java.format.AutodetectGeneralFormatStyle.autodetectGeneralFormatStyle;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -35,15 +40,15 @@ public class MoveFieldsToTopOfClass extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "Move fields to the top of class definition";
+        return "Move fields to the top of class declaration";
     }
 
     @Override
     public String getDescription() {
         return "Reorders class members so that all field declarations appear before any method declarations, " +
-               "constructors, or other class members. This improves code organization and readability by " +
-               "grouping field declarations together at the top of the class. Comments associated with fields " +
-               "are preserved during the reordering.";
+                "constructors, or other class members. This improves code organization and readability by " +
+                "grouping field declarations together at the top of the class. Comments associated with fields " +
+                "are preserved during the reordering.";
     }
 
     @Override
@@ -63,74 +68,107 @@ public class MoveFieldsToTopOfClass extends Recipe {
                     return cd;
                 }
 
-                List<Statement> fieldDeclarations = new ArrayList<>();
-                List<Statement> otherStatements = new ArrayList<>();
+                // The spacing of the original first statement is preserved so that
+                // it can be applied to the new first statement.
+                Statement originalFirstStatement = statements.get(0);
 
-                // Separate field declarations from other statements
-                for (Statement statement : statements) {
-                    if (statement instanceof J.VariableDeclarations) {
-                        fieldDeclarations.add(statement);
-                    } else {
-                        otherStatements.add(statement);
-                    }
+                // Sort statements: fields first (public static, protected, private), then non-fields
+                statements.sort(createStatementComparator());
+
+                // Adjust prefix of the first statement if it's not the original first statement
+                if (statements.get(0) != originalFirstStatement) {
+                    Statement firstStatement = adjustPrefix(statements.get(0), originalFirstStatement.getPrefix());
+                    statements.set(0, firstStatement);
                 }
 
-                // If all fields are already at the top, no changes needed
-                if (fieldDeclarations.isEmpty() || isAlreadyOrdered(statements, fieldDeclarations)) {
-                    return cd;
-                }
+                // ensure proper spacing before the first non-field statement
+                IntStream.range(1, statements.size())
+                    .filter(i -> !(statements.get(i) instanceof J.VariableDeclarations))
+                    .findFirst()
+                    .ifPresent(i -> statements.set(i, ensurePrecedingNewline(statements.get(i))));
 
-                // Reorder: fields first, then other statements
-                List<Statement> reorderedStatements = new ArrayList<>();
-
-                // Add field declarations with preserved comments and proper spacing
-                for (int i = 0; i < fieldDeclarations.size(); i++) {
-                    Statement field = fieldDeclarations.get(i);
-                    if (i == 0) {
-                        // First field should have the same prefix as the first statement originally had,
-                        // but preserve its original comments
-                        Space originalPrefix = field.getPrefix();
-                        Space firstStatementPrefix = statements.get(0).getPrefix();
-                        // Combine: use first statement's whitespace but preserve field's comments
-                        Space newPrefix = firstStatementPrefix.withComments(originalPrefix.getComments());
-                        field = field.withPrefix(newPrefix);
-                    }
-                    reorderedStatements.add(field);
-                }
-
-                // Add other statements
-                reorderedStatements.addAll(otherStatements);
-
-                return autoFormat(cd.withBody(cd.getBody().withStatements(reorderedStatements)), ctx);
+                return cd.withBody(cd.getBody().withStatements(statements));
             }
 
-            private boolean isAlreadyOrdered(List<Statement> allStatements, List<Statement> fieldDeclarations) {
-                if (fieldDeclarations.isEmpty()) {
-                    return true;
-                }
-
-                int firstNonFieldIndex = -1;
-                for (int i = 0; i < allStatements.size(); i++) {
-                    if (!(allStatements.get(i) instanceof J.VariableDeclarations)) {
-                        firstNonFieldIndex = i;
-                        break;
-                    }
-                }
-
-                // If there are no non-field statements, or all fields come before first non-field
-                if (firstNonFieldIndex == -1) {
-                    return true;
-                }
-
-                // Check if any field declarations come after the first non-field statement
-                for (int i = firstNonFieldIndex; i < allStatements.size(); i++) {
-                    if (allStatements.get(i) instanceof J.VariableDeclarations) {
-                        return false;
-                    }
-                }
-
-                return true;
+            private Statement adjustPrefix(Statement field, Space originalPrefix) {
+                Space fieldPrefix = field.getPrefix();
+                Space newPrefix = originalPrefix.withComments(fieldPrefix.getComments());
+                return field.withPrefix(newPrefix);
             }
+
+            private Statement ensurePrecedingNewline(Statement firstNonField) {
+                J.CompilationUnit cu = getCursor().firstEnclosing(J.CompilationUnit.class);
+                if (cu == null) {
+                    return firstNonField;
+                }
+                GeneralFormatStyle generalFormatStyle = Style.from(GeneralFormatStyle.class, cu, () -> autodetectGeneralFormatStyle(cu));
+                String newLine = generalFormatStyle.newLine();
+
+                Space prefix = firstNonField.getPrefix();
+                // if there is not an empty line before the first non-field, add one,
+                // preserving any comments and ensuring proper indentation
+                if (!prefix.getLastWhitespace().endsWith(String.format("%s\\s*%s", newLine, newLine))) {
+                    String indent = prefix.getIndent();
+                    Space newPrefix = Space.format(newLine + newLine + indent).withComments(prefix.getComments());
+                    return firstNonField.withPrefix(newPrefix);
+                }
+                return firstNonField;
+            }
+
+
+            private Comparator<Statement> createStatementComparator() {
+                return (s1, s2) -> {
+                    boolean s1IsField = s1 instanceof J.VariableDeclarations;
+                    boolean s2IsField = s2 instanceof J.VariableDeclarations;
+
+                    // Fields come before non-fields
+                    if (s1IsField && !s2IsField) return -1;
+                    if (!s1IsField && s2IsField) return 1;
+                    if (!s1IsField) return 0; // Both are non-fields, preserve order
+
+                    // Both are fields - sort by visibility: public static first, then protected, then private
+                    J.VariableDeclarations field1 = (J.VariableDeclarations) s1;
+                    J.VariableDeclarations field2 = (J.VariableDeclarations) s2;
+
+                    int priority1 = getFieldPriority(field1);
+                    int priority2 = getFieldPriority(field2);
+
+                    return Integer.compare(priority1, priority2);
+                };
+            }
+
+            private int getFieldPriority(J.VariableDeclarations field) {
+                // Use bitmask where lower values have higher priority
+                // Bit 3-2: visibility (00=public, 01=protected, 10=private)
+                // Bit 1: static/final (0=static final, 1=final or instance)
+                // Bit 0: final (0=final, 1=instance)
+
+                int priority = 0b000; // Start from 0
+
+                // Visibility bits (bits 3-2)
+                if (field.hasModifier(J.Modifier.Type.Private)) {
+                    priority |= 0b1000; // private
+                } else if (field.hasModifier(J.Modifier.Type.Protected)) {
+                    priority |= 0b0100; // protected
+                }
+                // public gets 0b0000
+
+                // Static/final precedence (bit 1)
+                boolean isStatic = field.hasModifier(J.Modifier.Type.Static);
+                boolean isFinal = field.hasModifier(J.Modifier.Type.Final);
+
+                if (!isStatic || !isFinal) {
+                    priority |= 0b010; // not (static final)
+                }
+
+                // Final bit (bit 0)
+                if (!isFinal) {
+                    priority |= 0b001; // not final
+                }
+
+                return priority;
+            }
+
         };
     }
 }
