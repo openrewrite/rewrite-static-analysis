@@ -21,9 +21,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
+
+import java.util.List;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -31,7 +34,51 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new AnnotateNullableParameters(null));
+        spec.recipe(new AnnotateNullableParameters(null, null))
+          .parser(
+            JavaParser.fromJavaVersion()
+              .dependsOn(
+                // language=java
+                """
+                  package org.jspecify.annotations;
+                  public @interface Nullable {}
+                  """,
+                // language=java
+                """
+                  package org.openrewrite.jgit.annotations;
+                  public @interface Nullable {}
+                  """,
+                // language=java
+                """
+                  package org.apache.commons.lang3;
+
+                  public interface StringUtils {
+                      boolean isBlank(String s);
+                      boolean isEmpty(String s);
+                      boolean isNotBlank(String s);
+                      boolean isNotEmpty(String s);
+                  }
+                  """,
+                // language=java
+                """
+                  package org.springframework.util;
+
+                  public interface ObjectUtils {
+                      boolean hasText(String s);
+                      boolean isEmpty(String s);
+                      boolean hasLength(String s);
+                      boolean hasText(String s);
+                  }
+                  """,
+                // language=java
+                """
+                  package org.my.util;
+
+                  public interface Text {
+                      boolean hasText(String s);
+                      boolean isEmptyOrNull(String s);
+                  }
+                  """));
     }
 
 
@@ -479,7 +526,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
     @Test
     void provideCustomNullableAnnotation() {
         rewriteRun(
-          spec -> spec.recipe(new AnnotateNullableParameters("org.openrewrite.jgit.annotations.Nullable")),
+          spec -> spec.recipe(new AnnotateNullableParameters("org.openrewrite.jgit.annotations.Nullable", null)),
           //language=java
           java(
             """
@@ -506,6 +553,54 @@ class AnnotateNullableParametersTest implements RewriteTest {
                           return this;
                       }
                       this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+                      return this;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void provideAdditionalNullCheckingMethods() {
+        List<String> additionalNullCheckingMethods = List.of("org.my.util.Text hasText(java.lang.String)", "org.my.util.Text isEmptyOrNull(java.lang.String)");
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableParameters(null, additionalNullCheckingMethods)),
+          //language=java
+          java(
+            """
+              import org.my.util.Text;
+
+              public class PersonBuilder {
+                  private String name = "Unknown";
+                  private String lastName = "Unknown";
+
+                  public PersonBuilder setInfo(String name, String lastName) {
+                      if (Text.hasText(name)) {
+                          this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+                      }
+                      if (!Text.isEmptyOrNull(lastName)) {
+                          this.lastName = lastName.substring(0, 1).toUpperCase() + lastName.substring(1);
+                      }
+                      return this;
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+              import org.my.util.Text;
+
+              public class PersonBuilder {
+                  private String name = "Unknown";
+                  private String lastName = "Unknown";
+
+                  public PersonBuilder setInfo(@Nullable String name, @Nullable String lastName) {
+                      if (Text.hasText(name)) {
+                          this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+                      }
+                      if (!Text.isEmptyOrNull(lastName)) {
+                          this.lastName = lastName.substring(0, 1).toUpperCase() + lastName.substring(1);
+                      }
                       return this;
                   }
               }
