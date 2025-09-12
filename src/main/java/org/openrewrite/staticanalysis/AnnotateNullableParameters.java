@@ -31,7 +31,8 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -49,9 +50,9 @@ public class AnnotateNullableParameters extends Recipe {
     @Option(
             displayName = "Additional null-checking methods",
             description =
-                    "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. "
-                            + "These will be added to the built-in list of known null-checking methods. "
-                            + "Use '..' for any parameters, e.g., 'com.mycompany.utils.StringUtil isEmpty(..)' or 'com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)'",
+                    "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. " +
+                            "These will be added to the built-in list of known null-checking methods. " +
+                            "Use '..' for any parameters, e.g., 'com.mycompany.utils.StringUtil isEmpty(..)' or 'com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)'",
             example =
                     "com.mycompany.utils.StringUtil isEmpty(..), com.mycompany.utils.CollectionUtil isNullOrEmpty(..)",
             required = false)
