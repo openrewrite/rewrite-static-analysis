@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -49,12 +48,10 @@ public class AnnotateNullableParameters extends Recipe {
 
     @Option(
             displayName = "Additional null-checking methods",
-            description =
-                    "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. " +
-                            "These will be added to the built-in list of known null-checking methods. " +
-                            "Use '..' for any parameters, e.g., 'com.mycompany.utils.StringUtil isEmpty(..)' or 'com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)'",
-            example =
-                    "com.mycompany.utils.StringUtil isEmpty(..), com.mycompany.utils.CollectionUtil isNullOrEmpty(..)",
+            description = "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. " +
+                    "These will be added to the built-in list of known null-checking methods. " +
+                    "Use `..` for any parameters, e.g., `com.mycompany.utils.StringUtil isEmpty(..)` or `com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)`",
+            example = "com.mycompany.utils.StringUtil isEmpty(..), com.mycompany.utils.CollectionUtil isNullOrEmpty(..)",
             required = false)
     @Nullable
     List<String> additionalNullCheckingMethods;
@@ -173,7 +170,6 @@ public class AnnotateNullableParameters extends Recipe {
      *   <li>Negated null-checking method calls (!Objects.isNull, !StringUtils.isBlank, etc.)</li>
      * </ul>
      */
-    @RequiredArgsConstructor
     private static class NullCheckVisitor extends JavaIsoVisitor<Set<J.Identifier>> {
         private static final List<MethodMatcher> NULL_SAFETY_METHOD_MATCHERS = Arrays.asList(
                 new MethodMatcher("com.google.common.base.Strings isNullOrEmpty(..)"), // Guava
@@ -190,15 +186,18 @@ public class AnnotateNullableParameters extends Recipe {
         );
 
         private final Collection<J.Identifier> identifiers;
-        private final Collection<MethodMatcher> nullCheckingMethodMatchers = new ArrayList<>(NULL_SAFETY_METHOD_MATCHERS);
+        private final Collection<MethodMatcher> nullCheckingMethodMatchers;
 
         public NullCheckVisitor(Collection<J.Identifier> identifiers, @Nullable Collection<String> additionalNullCheckingMethods) {
             this.identifiers = identifiers;
-            if(additionalNullCheckingMethods != null) {
+            if (additionalNullCheckingMethods == null) {
+                nullCheckingMethodMatchers = NULL_SAFETY_METHOD_MATCHERS;
+            } else {
+                nullCheckingMethodMatchers = new ArrayList<>(NULL_SAFETY_METHOD_MATCHERS);
                 nullCheckingMethodMatchers.addAll(
                         additionalNullCheckingMethods.stream()
                                 .map(MethodMatcher::new)
-                                .collect(Collectors.toList()));
+                                .collect(toList()));
             }
         }
 
