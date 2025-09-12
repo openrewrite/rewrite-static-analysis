@@ -83,9 +83,9 @@ public class MoveFieldsToTopOfClass extends Recipe {
 
                 // ensure proper spacing before the first non-field statement
                 IntStream.range(1, statements.size())
-                    .filter(i -> !(statements.get(i) instanceof J.VariableDeclarations))
-                    .findFirst()
-                    .ifPresent(i -> statements.set(i, ensurePrecedingNewline(statements.get(i))));
+                        .filter(i -> !(statements.get(i) instanceof J.VariableDeclarations))
+                        .findFirst()
+                        .ifPresent(i -> statements.set(i, ensurePrecedingNewline(statements.get(i))));
 
                 return cd.withBody(cd.getBody().withStatements(statements));
             }
@@ -107,10 +107,9 @@ public class MoveFieldsToTopOfClass extends Recipe {
                 Space prefix = firstNonField.getPrefix();
                 // if there is not an empty line before the first non-field, add one,
                 // preserving any comments and ensuring proper indentation
-                if (!prefix.getLastWhitespace().endsWith(String.format("%s\\s*%s", newLine, newLine))) {
+                if (!prefix.getWhitespace().matches(String.format("\\s*%1s\\s*%1s\\s*", newLine, newLine))) {
                     String indent = prefix.getIndent();
-                    Space newPrefix = Space.format(newLine + newLine + indent).withComments(prefix.getComments());
-                    return firstNonField.withPrefix(newPrefix);
+                    return firstNonField.withPrefix(prefix.withWhitespace(newLine + newLine + indent).withComments(prefix.getComments()));
                 }
                 return firstNonField;
             }
@@ -126,47 +125,46 @@ public class MoveFieldsToTopOfClass extends Recipe {
                     if (!s1IsField && s2IsField) return 1;
                     if (!s1IsField) return 0; // Both are non-fields, preserve order
 
-                    // Both are fields - sort by visibility: public static first, then protected, then private
+                    // Both are fields - sort by visibility and modifiers
                     J.VariableDeclarations field1 = (J.VariableDeclarations) s1;
                     J.VariableDeclarations field2 = (J.VariableDeclarations) s2;
 
-                    int priority1 = getFieldPriority(field1);
-                    int priority2 = getFieldPriority(field2);
+                    int priority1 = getFieldSortOrder(field1);
+                    int priority2 = getFieldSortOrder(field2);
 
                     return Integer.compare(priority1, priority2);
                 };
             }
 
-            private int getFieldPriority(J.VariableDeclarations field) {
-                // Use bitmask where lower values have higher priority
-                // Bit 3-2: visibility (00=public, 01=protected, 10=private)
-                // Bit 1: static/final (0=static final, 1=final or instance)
-                // Bit 0: final (0=final, 1=instance)
+            // bitmasks for field sorting
+            // order: public static final < static final < protected static final < private static final <
+            //        public static < static < protected static < private static <
+            //        public final < final < protected final < private final <
+            //        public < package-private < protected < private
+            private static final int PACKAGE_PRIVATE = 1;
+            private static final int PROTECTED = PACKAGE_PRIVATE << 1;
+            private static final int PRIVATE = PROTECTED << 1;
+            private static final int NON_FINAL = PRIVATE << 1;
+            private static final int NON_STATIC = NON_FINAL << 1;
 
-                int priority = 0b000; // Start from 0
-
-                // Visibility bits (bits 3-2)
-                if (field.hasModifier(J.Modifier.Type.Private)) {
-                    priority |= 0b1000; // private
-                } else if (field.hasModifier(J.Modifier.Type.Protected)) {
-                    priority |= 0b0100; // protected
-                }
-                // public gets 0b0000
-
-                // Static/final precedence (bit 1)
-                boolean isStatic = field.hasModifier(J.Modifier.Type.Static);
-                boolean isFinal = field.hasModifier(J.Modifier.Type.Final);
-
-                if (!isStatic || !isFinal) {
-                    priority |= 0b010; // not (static final)
+            private int getFieldSortOrder(J.VariableDeclarations field) {
+                int order = 0;
+                if (field.hasModifier(J.Modifier.Type.Protected)) {
+                    order |= PROTECTED;
+                } else if (field.hasModifier(J.Modifier.Type.Private)) {
+                    order |= PRIVATE;
+                } else {
+                    order |= PACKAGE_PRIVATE;
                 }
 
-                // Final bit (bit 0)
-                if (!isFinal) {
-                    priority |= 0b001; // not final
+                if (!field.hasModifier(J.Modifier.Type.Static)) {
+                    order |= NON_STATIC;
                 }
 
-                return priority;
+                if (!field.hasModifier(J.Modifier.Type.Final)) {
+                    order |= NON_FINAL;
+                }
+                return order;
             }
 
         };

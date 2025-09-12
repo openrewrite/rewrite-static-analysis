@@ -256,9 +256,8 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class StaticAndInstance {
-                  public final int publicField = 100;
-
                   private static final String STATIC_FIELD = "static";
+                  public final int publicField = 100;
                   private String instanceField = "instance";
 
                   public void method() {
@@ -331,7 +330,7 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
                   void foo(String bar) {
                       int i = Integer.parseInt(bar);
                   }
-              
+
                   // this is my field, not yours
                   String myField = "important";
               }
@@ -340,7 +339,7 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               class A {
                   // this is my field, not yours
                   String myField = "important";
-              
+
                   void foo(String bar) {
                       int i = Integer.parseInt(bar);
                   }
@@ -360,13 +359,13 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
                   public void method() {
                       System.out.println("method");
                   }
-              
+
                   /*
                    * This is a multiline comment
                    * for my field
                    */
                   private String field1 = "value1";
-              
+
                   /**
                    * Javadoc comment for field2
                    * @deprecated this field is old
@@ -382,14 +381,14 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
                    * for my field
                    */
                   private String field1 = "value1";
-              
+
                   /**
                    * Javadoc comment for field2
                    * @deprecated this field is old
                    */
                   @Deprecated
                   private int field2 = 42;
-              
+
                   public void method() {
                       System.out.println("method");
                   }
@@ -410,15 +409,15 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
                   public void firstMethod() {
                       System.out.println("first");
                   }
-              
+
                   // Field comment 1
                   private String field1 = "value1";
-              
+
                   /* Another method comment */
                   public void secondMethod() {
                       System.out.println("second");
                   }
-              
+
                   // Field comment 2
                   private int field2 = 10;
               }
@@ -427,15 +426,15 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               class Mixed {
                   // Field comment 1
                   private String field1 = "value1";
-              
+
                   // Field comment 2
                   private int field2 = 10;
-              
+
                   // Method comment
                   public void firstMethod() {
                       System.out.println("first");
                   }
-              
+
                   /* Another method comment */
                   public void secondMethod() {
                       System.out.println("second");
@@ -474,6 +473,53 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
 
                   public MultipleVars() {
                       // constructor
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void variableDeclarationsAnnotations() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+
+                  public void method() {
+                      System.out.println("method");
+                  }
+
+                  @Deprecated
+                  private final int annotationNewLine;
+
+                  @Deprecated
+                  private final int annotationNewLineWithNewLines;
+
+                  @Deprecated private final int annotationSameLine;
+                  @Deprecated private final int annotationSameLineNoNewline;
+
+                  @Deprecated private final int annotationSameLineWithNewLines;
+              }
+              """,
+            """
+              class A {
+
+                  @Deprecated
+                  private final int annotationNewLine;
+
+                  @Deprecated
+                  private final int annotationNewLineWithNewLines;
+
+                  @Deprecated private final int annotationSameLine;
+                  @Deprecated private final int annotationSameLineNoNewline;
+
+                  @Deprecated private final int annotationSameLineWithNewLines;
+
+                  public void method() {
+                      System.out.println("method");
                   }
               }
               """
