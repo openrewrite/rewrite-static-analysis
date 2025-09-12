@@ -183,13 +183,8 @@ class RemoveTrailingWhitespaceTest implements RewriteTest {
 
         // Create lines with varying amounts of trailing whitespace
         for (int i = 1; i <= 10; i++) {
-            input.append("Line ").append(i);
+            input.append("Line ").append(i).repeat(" ", i);
             expected.append("Line ").append(i);
-
-            // Add i spaces as trailing whitespace
-            for (int j = 0; j < i; j++) {
-                input.append(" ");
-            }
 
             if (i < 10) {
                 input.append("\n");
