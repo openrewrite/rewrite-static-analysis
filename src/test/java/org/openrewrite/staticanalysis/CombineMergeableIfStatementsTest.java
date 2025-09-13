@@ -50,7 +50,8 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean condition1, boolean condition2) {
-                      if (condition1 && condition2) {
+                      if (condition1 &&
+                              condition2) {
                           System.out.println("OK");
                       }
                   }
@@ -83,7 +84,8 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(Object o) {
-                      if (o instanceof String s && s.isEmpty()) {
+                      if (o instanceof String s &&
+                              s.isEmpty()) {
                           System.out.println("OK");
                       }
                   }
@@ -128,9 +130,11 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
 
               class A {
                   void a(Object o1) {
-                      if (o1 instanceof List<?> list && !list.isEmpty()) {
+                      if (o1 instanceof List<?> list &&
+                              !list.isEmpty()) {
                           Object o2 = list.get(0);
-                          if (o2 instanceof String s && s.isEmpty()) {
+                          if (o2 instanceof String s &&
+                                  s.isEmpty()) {
                               System.out.println("OK");
                           }
                       }
@@ -158,7 +162,8 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean condition1, boolean condition2) {
-                      if (condition1 && condition2)
+                      if (condition1 &&
+                              condition2)
                           System.out.println("OK");
                   }
               }
@@ -194,7 +199,12 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean b1, boolean b2, boolean b3, boolean b4, boolean b5, boolean b6) {
-                      if (b1 && b2 && b3 && b4 && b5 && b6) {
+                      if (b1 &&
+                              b2 &&
+                              b3 &&
+                              b4 &&
+                              b5 &&
+                              b6) {
                           System.out.println("OK");
                       }
                   }
@@ -410,7 +420,8 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
                       // Comment -1
                       /* Comment 0 */ // Comment 1
                       // Comment 2
-                      if (condition1 && condition2) /* Comment 3 */ { // Comment 4
+                      if (condition1 &&
+                              condition2) /* Comment 3 */ { // Comment 4
                           System.out.println("OK");
                       }
                   }
@@ -439,7 +450,43 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean condition1, boolean condition2, boolean condition3) {
-                      if (condition1 && (condition2 || condition3)) {
+                      if (condition1 &&
+                              (condition2 || condition3)) {
+                          System.out.println("OK");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void combineLogicalAndConditions() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              class A {
+                  void a(boolean b1, boolean b2, boolean b3, boolean b4, boolean b5, boolean b6) {
+                      if (b1 && b2) {
+                          if (b3 &&
+                                  b4) {
+                              if (b5 && b6) {
+                                  System.out.println("OK");
+                              }
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void a(boolean b1, boolean b2, boolean b3, boolean b4, boolean b5, boolean b6) {
+                      if (b1 && b2 &&
+                              b3 &&
+                              b4 &&
+                              b5 && b6) {
                           System.out.println("OK");
                       }
                   }
