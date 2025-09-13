@@ -18,7 +18,6 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.tree.Expression;
@@ -28,7 +27,9 @@ import org.openrewrite.java.tree.Statement;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
+import static org.openrewrite.internal.ListUtils.concatAll;
 import static org.openrewrite.java.format.ShiftFormat.indent;
 
 public class CombineMergeableIfStatements extends Recipe {
@@ -79,14 +80,14 @@ public class CombineMergeableIfStatements extends Recipe {
                         innerIf = indent(innerIf, getCursor(), -1);
                         return JavaTemplate.<J.If>apply(
                                         "#{any()} && #{any()}",
-                                        updateCursor(outerIf),
+                                        getCursor(),
                                         outerCondition.getCoordinates().replace(),
                                         outerCondition,
                                         innerCondition)
                                 .withThenPart(innerIf.getThenPart())
-                                .withComments(outerBlock != null ?
-                                        ListUtils.concatAll(outerBlock.getComments(), innerIf.getComments()) :
-                                        innerIf.getComments());
+                                .withComments(concatAll(
+                                        concatAll(outerIf.getComments(), outerBlock != null ? outerBlock.getComments() : emptyList()),
+                                        innerIf.getComments()));
                     }
                 }
 
