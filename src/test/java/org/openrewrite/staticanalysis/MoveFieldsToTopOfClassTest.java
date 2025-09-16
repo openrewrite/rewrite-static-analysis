@@ -40,7 +40,6 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
                   void foo(String bar) {
                       int i = Integer.parseInt(bar);
                   }
-
                   // Important field
                   String myField = "important";
               }
@@ -49,7 +48,6 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               class A {
                   // Important field
                   String myField = "important";
-
                   void foo(String bar) {
                       int i = Integer.parseInt(bar);
                   }
@@ -87,12 +85,12 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class Example {
+
                   public static final String CONSTANT = "constant";
 
                   protected int field2 = 42;
 
                   private String field1 = "value1";
-
                   public void method1() {
                       System.out.println("method1");
                   }
@@ -213,10 +211,10 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class Mixed {
+
                   private String field1 = "value1";
 
                   private int field2 = 10;
-
                   public void firstMethod() {
                       System.out.println("first");
                   }
@@ -256,10 +254,10 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class StaticAndInstance {
+
                   private static final String STATIC_FIELD = "static";
                   public final int publicField = 100;
                   private String instanceField = "instance";
-
                   public void method() {
                       System.out.println("method");
                   }
@@ -299,17 +297,17 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class OuterClass {
+
                   protected int anotherOuterField = 42;
 
                   private String outerField = "outer";
-
                   public void outerMethod() {
                       System.out.println("outer method");
                   }
 
                   class InnerClass {
-                      private String innerField = "inner";
 
+                      private String innerField = "inner";
                       public void innerMethod() {
                           System.out.println("inner method");
                       }
@@ -337,9 +335,9 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class A {
+
                   // this is my field, not yours
                   String myField = "important";
-
                   void foo(String bar) {
                       int i = Integer.parseInt(bar);
                   }
@@ -376,6 +374,7 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class A {
+
                   /*
                    * This is a multiline comment
                    * for my field
@@ -388,7 +387,6 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
                    */
                   @Deprecated
                   private int field2 = 42;
-
                   public void method() {
                       System.out.println("method");
                   }
@@ -424,12 +422,12 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class Mixed {
+
                   // Field comment 1
                   private String field1 = "value1";
 
                   // Field comment 2
                   private int field2 = 10;
-
                   // Method comment
                   public void firstMethod() {
                       System.out.println("first");
@@ -465,8 +463,8 @@ class MoveFieldsToTopOfClassTest implements RewriteTest {
               """,
             """
               class MultipleVars {
-                  private int x = 1, y = 2, z = 3;
 
+                  private int x = 1, y = 2, z = 3;
                   public void method() {
                       System.out.println("method");
                   }
