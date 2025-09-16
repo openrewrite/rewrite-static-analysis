@@ -28,6 +28,8 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
+
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class MoveFieldsToTopOfClass extends Recipe {
@@ -62,7 +64,7 @@ public class MoveFieldsToTopOfClass extends Recipe {
                         cd.getBody().getStatements()
                                 .stream()
                                 .sorted(statementComparator)
-                                .collect(java.util.stream.Collectors.toList());
+                                .collect(toList());
 
                 return cd.withBody(cd.getBody().withStatements(statements));
             }
@@ -73,12 +75,17 @@ public class MoveFieldsToTopOfClass extends Recipe {
                         boolean s2IsField = s2 instanceof J.VariableDeclarations;
 
                         // Fields come before non-fields
-                        if (s1IsField && !s2IsField) return -1;
-                        if (!s1IsField && s2IsField) return 1;
-                        if (!s1IsField) return 0; // Both are non-fields, preserve order
+                        if (s1IsField && !s2IsField) {
+                            return -1;
+                        }
+                        if (!s1IsField && s2IsField) {
+                            return 1;
+                        }
+                        if (!s1IsField) {
+                            return 0; // Both are non-fields, preserve order
 
-                        // Both are fields - sort by visibility and modifiers
-                        J.VariableDeclarations field1 = (J.VariableDeclarations) s1;
+                            // Both are fields - sort by visibility and modifiers
+                        }
                         J.VariableDeclarations field2 = (J.VariableDeclarations) s2;
 
                         int priority1 = getFieldSortOrder(field1);
