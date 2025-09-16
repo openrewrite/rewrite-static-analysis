@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.style.Style;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -127,9 +128,7 @@ public class NeedBraces extends Recipe {
                 if (cu.getSourcePath().toString().endsWith(".py")) {
                     return (J) tree;
                 }
-                needBracesStyle = cu.getStyle(NeedBracesStyle.class) == null ?
-                        Checkstyle.needBracesStyle() :
-                        cu.getStyle(NeedBracesStyle.class, new NeedBracesStyle(false, false));
+                needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);
             }
             return super.visit(tree, ctx);
         }

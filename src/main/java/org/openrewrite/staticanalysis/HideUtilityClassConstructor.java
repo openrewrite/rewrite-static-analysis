@@ -15,18 +15,11 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.style.Checkstyle;
-import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
 
 import java.util.Set;
 
 import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
 
 @Incubating(since = "7.0.0")
 public class HideUtilityClassConstructor extends Recipe {
@@ -48,21 +41,6 @@ public class HideUtilityClassConstructor extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new HideUtilityClassConstructorFromCompilationUnitStyle();
-    }
-
-    private static class HideUtilityClassConstructorFromCompilationUnitStyle extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                HideUtilityClassConstructorStyle style = cu.getStyle(HideUtilityClassConstructorStyle.class);
-                if (style == null) {
-                    style = Checkstyle.hideUtilityClassConstructorStyle();
-                }
-                return new HideUtilityClassConstructorVisitor<>(style).visit(cu, ctx);
-            }
-            return (J) tree;
-        }
+        return new HideUtilityClassConstructorVisitor<>();
     }
 }

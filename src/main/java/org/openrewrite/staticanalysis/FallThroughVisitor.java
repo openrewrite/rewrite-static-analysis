@@ -15,16 +15,19 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
+import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.FallThroughStyle;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.style.Style;
 
 import java.util.HashSet;
 import java.util.List;
@@ -33,10 +36,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import static java.util.Objects.*;
 import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
 
-@EqualsAndHashCode(callSuper = false)
-@Value
+@NoArgsConstructor
+@AllArgsConstructor
 public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     /**
      * Ignores any fall-through commented with a text matching the regex pattern.
@@ -44,8 +48,16 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
      */
     private static final Pattern RELIEF_PATTERN = Pattern.compile("falls?[ -]?thr(u|ough)");
 
+    private FallThroughStyle style;
 
-    FallThroughStyle style;
+    @Override
+    public @Nullable J visit(@Nullable Tree tree, P p) {
+        //noinspection ConstantValue
+        if (style == null && tree instanceof SourceFile) {
+            style = Style.from(FallThroughStyle.class, (SourceFile)tree, Checkstyle::fallThrough);
+        }
+        return super.visit(tree, p);
+    }
 
     private static boolean isLastCase(J.Case case_, J.Switch switch_) {
         J.Block switchBlock = switch_.getCases();
@@ -56,7 +68,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
     public J.Case visitCase(J.Case case_, P p) {
         J.Case c = super.visitCase(case_, p);
         if (getCursor().firstEnclosing(J.Switch.class) != null) {
-            J.Switch switch_ = getCursor().firstEnclosing(J.Switch.class);
+            J.Switch switch_ = requireNonNull(getCursor().firstEnclosing(J.Switch.class));
             if (Boolean.TRUE.equals(style.getCheckLastCaseGroup()) || !isLastCase(case_, switch_)) {
                 if (FindLastLineBreaksOrFallsThroughComments.find(switch_, c).isEmpty() && !FindInfiniteLoops.find(getCursor(), c)) {
                     c = (J.Case) new AddBreak<>(c).visitNonNull(c, p, getCursor().getParentOrThrow());
@@ -260,6 +272,9 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         private static boolean declaresFinalTrue(J.@Nullable ClassDeclaration classDeclaration, J.Identifier identifier) {
+            if (classDeclaration == null) {
+                return false;
+            }
             return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations vd, AtomicBoolean declaresFinalTrue) {

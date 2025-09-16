@@ -15,21 +15,13 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.style.Checkstyle;
-import org.openrewrite.java.style.EmptyBlockStyle;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
 
 import java.util.Set;
 
 import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
 
 public class EmptyBlock extends Recipe {
 
@@ -50,21 +42,6 @@ public class EmptyBlock extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new EmptyBlockFromCompilationUnitStyle();
-    }
-
-    private static class EmptyBlockFromCompilationUnitStyle extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                EmptyBlockStyle style = cu.getStyle(EmptyBlockStyle.class);
-                if (style == null) {
-                    style = Checkstyle.emptyBlock();
-                }
-                return new EmptyBlockVisitor<>(style).visit(cu, ctx);
-            }
-            return (J) tree;
-        }
+        return new EmptyBlockVisitor<>();
     }
 }
