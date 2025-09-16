@@ -86,6 +86,8 @@ public class MoveFieldsToTopOfClass extends Recipe {
 
                             // Both are fields - sort by visibility and modifiers
                         }
+                        
+                        J.VariableDeclarations field1 = (J.VariableDeclarations) s1;
                         J.VariableDeclarations field2 = (J.VariableDeclarations) s2;
 
                         int priority1 = getFieldSortOrder(field1);
