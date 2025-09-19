@@ -24,6 +24,7 @@ import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.Arrays;
@@ -86,7 +87,7 @@ public class AnnotateNullableMethods extends Recipe {
 
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
                 updateCursor(md);
-                if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor())) {
+                if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor(), nullableAnnotationClass)) {
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@" + fullyQualifiedName)
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                     String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
@@ -145,8 +146,19 @@ public class AnnotateNullableMethods extends Recipe {
                 new MethodMatcher("java.util.Spliterator trySplit(..)")
         );
 
-        static boolean find(@Nullable J subtree, Cursor parentTreeCursor) {
-            return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean(), parentTreeCursor).get();
+        private final String nullableAnnotationClass;
+
+        private FindNullableReturnStatements(@Nullable String nullableAnnotationClass) {
+            if (nullableAnnotationClass != null) {
+                this.nullableAnnotationClass = nullableAnnotationClass;
+            } else  {
+                this.nullableAnnotationClass = DEFAULT_NULLABLE_ANN_CLASS;
+            }
+        }
+
+
+        static boolean find(@Nullable J subtree, Cursor parentTreeCursor, String nullableAnnotationClass) {
+            return new FindNullableReturnStatements(nullableAnnotationClass).reduce(subtree, new AtomicBoolean(), parentTreeCursor).get();
         }
 
         @Override
@@ -176,7 +188,7 @@ public class AnnotateNullableMethods extends Recipe {
                 return ((J.Literal) returnExpression).getValue() == null;
             }
             if (returnExpression instanceof J.MethodInvocation) {
-                return isKnowNullableMethod((J.MethodInvocation) returnExpression);
+                return isNullable((J.MethodInvocation) returnExpression) || isKnowNullableMethod((J.MethodInvocation) returnExpression);
             }
             if (returnExpression instanceof J.Ternary) {
                 J.Ternary ternary = (J.Ternary) returnExpression;
@@ -192,6 +204,36 @@ public class AnnotateNullableMethods extends Recipe {
                 }
             }
             return false;
+        }
+
+        private boolean isNullable(J.MethodInvocation methodInvocation) {
+            JavaType.Method targetMethod = methodInvocation.getMethodType();
+            if (targetMethod == null) return false;
+
+            // Visit the entire compilation unit to find the method declaration
+            J.CompilationUnit cu = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class);
+            AtomicBoolean hasNullable = new AtomicBoolean(false);
+
+            cu.accept(new JavaIsoVisitor<AtomicBoolean>() {
+                @Override
+                public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, AtomicBoolean p) {
+                    if(targetMethod.equals(method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
+                        J.AnnotatedType annotatedType = (J.AnnotatedType) method.getReturnTypeExpression();
+                        AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + nullableAnnotationClass);
+                        for(J.Annotation annotation : annotatedType.getAnnotations()) {
+                            if(annotationMatcher.matches(annotation)){
+                                p.set(true);
+                                break;
+                            }
+                        }
+                        return method;
+                    }
+
+                    return super.visitMethodDeclaration(method, p);
+                }
+            }, hasNullable);
+
+            return hasNullable.get();
         }
     }
 }
