@@ -208,7 +208,9 @@ public class AnnotateNullableMethods extends Recipe {
 
         private boolean isNullable(J.MethodInvocation methodInvocation) {
             JavaType.Method targetMethod = methodInvocation.getMethodType();
-            if (targetMethod == null) return false;
+            if (targetMethod == null) {
+                return false;
+            }
 
             // Visit the entire compilation unit to find the method declaration
             J.CompilationUnit cu = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class);
