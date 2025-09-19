@@ -373,4 +373,83 @@ class AnnotateNullableMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void nullableMethodsInvocationsWithDefaultNullableClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public @Nullable String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nullableMethodsInvocationsWithCustomNullableClass() {
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableMethods("org.openrewrite.jgit.annotations.Nullable")),
+          //language=java
+          java(
+            """
+              import org.openrewrite.jgit.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.jgit.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public @Nullable String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """
+          )
+        );
+    }
 }
