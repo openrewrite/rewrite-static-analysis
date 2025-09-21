@@ -15,23 +15,22 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
 import org.openrewrite.java.*;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.style.Style;
 
-import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-
-import org.openrewrite.java.style.Checkstyle;
 
 /**
  * HideUtilityClassConstructorVisitor will perform the following operations on a Utility Class:
