@@ -15,7 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Incubating;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 
 import java.util.Set;
 

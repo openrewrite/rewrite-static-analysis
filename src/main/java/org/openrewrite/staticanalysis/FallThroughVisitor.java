@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import static java.util.Objects.*;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
 
 @NoArgsConstructor

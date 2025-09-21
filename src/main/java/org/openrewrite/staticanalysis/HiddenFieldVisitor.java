@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
@@ -31,7 +32,6 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.style.Style;
 
-import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
