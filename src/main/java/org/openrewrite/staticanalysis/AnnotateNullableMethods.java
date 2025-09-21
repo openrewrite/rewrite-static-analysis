@@ -183,7 +183,7 @@ public class AnnotateNullableMethods extends Recipe {
                 return ((J.Literal) returnExpression).getValue() == null;
             }
             if (returnExpression instanceof J.MethodInvocation) {
-                return isNullable((J.MethodInvocation) returnExpression) || isKnownNullableMethod((J.MethodInvocation) returnExpression);
+                return isLocalNullableMethod((J.MethodInvocation) returnExpression) || isKnownNullableMethod((J.MethodInvocation) returnExpression);
             }
             if (returnExpression instanceof J.Ternary) {
                 J.Ternary ternary = (J.Ternary) returnExpression;
@@ -201,23 +201,23 @@ public class AnnotateNullableMethods extends Recipe {
             return false;
         }
 
-        private boolean isNullable(J.MethodInvocation methodInvocation) {
+        private boolean isLocalNullableMethod(J.MethodInvocation methodInvocation) {
             JavaType.Method targetMethod = methodInvocation.getMethodType();
             if (targetMethod == null) {
                 return false;
             }
 
             // Visit the entire compilation unit to find the method declaration
+            AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + nullableAnnotationClass);
             J.CompilationUnit cu = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class);
-            AtomicBoolean hasNullable = new AtomicBoolean(false);
-
-            cu.accept(new JavaIsoVisitor<AtomicBoolean>() {
+            return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, AtomicBoolean p) {
+                    if (p.get()) {
+                        return method;
+                    }
                     if (targetMethod.equals(method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
-                        J.AnnotatedType annotatedType = (J.AnnotatedType) method.getReturnTypeExpression();
-                        AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + nullableAnnotationClass);
-                        for (J.Annotation annotation : annotatedType.getAnnotations()) {
+                        for (J.Annotation annotation : ((J.AnnotatedType) method.getReturnTypeExpression()).getAnnotations()) {
                             if (annotationMatcher.matches(annotation)) {
                                 p.set(true);
                                 break;
@@ -225,12 +225,9 @@ public class AnnotateNullableMethods extends Recipe {
                         }
                         return method;
                     }
-
                     return super.visitMethodDeclaration(method, p);
                 }
-            }, hasNullable);
-
-            return hasNullable.get();
+            }.reduce(cu, new AtomicBoolean(false)).get();
         }
     }
 }
