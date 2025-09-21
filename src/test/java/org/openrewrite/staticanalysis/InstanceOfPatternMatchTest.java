@@ -78,13 +78,13 @@ class InstanceOfPatternMatchTest implements RewriteTest {
 
               class Foo {
                   void bar(Object o1, Object o2) {
-                      if (o1 instanceof LeftNode node1 && o2 instanceof RightNode node2) {
-                        node1.bar();
+                      if (o1 instanceof LeftNode node2 && o2 instanceof RightNode node3) {
                         node2.bar();
+                        node3.bar();
                       }
-                      else if (o1 instanceof RightNode node1 && o2 instanceof LeftNode node2) {
+                      else if (o1 instanceof RightNode node && o2 instanceof LeftNode node1) {
+                        node.bar();
                         node1.bar();
-                        node2.bar();
                       }
                   }
               }

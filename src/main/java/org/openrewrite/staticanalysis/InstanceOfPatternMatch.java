@@ -289,11 +289,11 @@ public class InstanceOfPatternMatch extends Recipe {
             return replacements.isEmpty() && variablesToDelete.isEmpty();
         }
 
-        public J.InstanceOf processInstanceOf(J.InstanceOf instanceOf, Cursor cursor) {
+        public J.InstanceOf processInstanceOf(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
             }
-            String name = patternVariableName(instanceOf, cursor);
+            String name = patternVariableName(instanceOf, cursor, usedNames);
             TypedTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
             TypedTree currentTypeTree = (TypedTree) instanceOf.getClazz();
 
@@ -341,7 +341,7 @@ public class InstanceOfPatternMatch extends Recipe {
             return typeCastTypeTree;
         }
 
-        private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor) {
+        private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             VariableNameStrategy strategy;
             JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
             if (root instanceof J.If) {
@@ -358,6 +358,20 @@ public class InstanceOfPatternMatch extends Recipe {
             if (root instanceof J.If) {
                 J.If enclosingIf = cursor.firstEnclosing(J.If.class);
                 String nameInIfScope = VariableNameUtils.generateVariableName(baseName, new Cursor(cursor, enclosingIf), INCREMENT_NUMBER);
+
+                // Also check against other pattern variables being introduced in the same expression
+                while (usedNames.contains(nameInIfScope)) {
+                    // Extract the base name and current number
+                    int i = nameInIfScope.length() - 1;
+                    while (i >= 0 && Character.isDigit(nameInIfScope.charAt(i))) {
+                        i--;
+                    }
+                    String base = nameInIfScope.substring(0, i + 1);
+                    String numStr = nameInIfScope.substring(i + 1);
+                    int num = numStr.isEmpty() ? 0 : Integer.parseInt(numStr);
+                    nameInIfScope = base + (num + 1);
+                }
+
                 String nameInCursorScope = VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
                 return nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
             }
@@ -407,13 +421,22 @@ public class InstanceOfPatternMatch extends Recipe {
                 // The left side changed, so the right side should see any introduced variable names
                 Cursor widenedCursor = updateCursor(b);
 
+                // Collect names from the left side if it's an instanceof with a pattern
+                Set<String> usedNames = new HashSet<>();
+                if (b.getLeft() instanceof J.InstanceOf) {
+                    J.InstanceOf leftInstanceOf = (J.InstanceOf) b.getLeft();
+                    if (leftInstanceOf.getPattern() != null) {
+                        usedNames.add(((J.Identifier) leftInstanceOf.getPattern()).getSimpleName());
+                    }
+                }
+
                 Expression newRight;
                 if (binary.getRight() instanceof J.InstanceOf) {
-                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor);
+                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor, usedNames);
                 } else if (binary.getRight() instanceof J.Parentheses &&
                         ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
                     @SuppressWarnings("unchecked") J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
-                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
+                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor, usedNames));
                 } else {
                     newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
@@ -426,7 +449,7 @@ public class InstanceOfPatternMatch extends Recipe {
         @Override
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
-            return replacements.processInstanceOf(instanceOf, getCursor());
+            return replacements.processInstanceOf(instanceOf, getCursor(), new HashSet<>());
         }
 
         @Override
