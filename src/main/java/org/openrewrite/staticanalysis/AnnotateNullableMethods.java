@@ -24,12 +24,12 @@ import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = false)
@@ -149,15 +149,10 @@ public class AnnotateNullableMethods extends Recipe {
         private final String nullableAnnotationClass;
 
         private FindNullableReturnStatements(@Nullable String nullableAnnotationClass) {
-            if (nullableAnnotationClass != null) {
-                this.nullableAnnotationClass = nullableAnnotationClass;
-            } else  {
-                this.nullableAnnotationClass = DEFAULT_NULLABLE_ANN_CLASS;
-            }
+            this.nullableAnnotationClass = Optional.ofNullable(nullableAnnotationClass).orElse(DEFAULT_NULLABLE_ANN_CLASS);
         }
 
-
-        static boolean find(@Nullable J subtree, Cursor parentTreeCursor, String nullableAnnotationClass) {
+        static boolean find(@Nullable J subtree, Cursor parentTreeCursor, @Nullable String nullableAnnotationClass) {
             return new FindNullableReturnStatements(nullableAnnotationClass).reduce(subtree, new AtomicBoolean(), parentTreeCursor).get();
         }
 
@@ -188,7 +183,7 @@ public class AnnotateNullableMethods extends Recipe {
                 return ((J.Literal) returnExpression).getValue() == null;
             }
             if (returnExpression instanceof J.MethodInvocation) {
-                return isNullable((J.MethodInvocation) returnExpression) || isKnowNullableMethod((J.MethodInvocation) returnExpression);
+                return isNullable((J.MethodInvocation) returnExpression) || isKnownNullableMethod((J.MethodInvocation) returnExpression);
             }
             if (returnExpression instanceof J.Ternary) {
                 J.Ternary ternary = (J.Ternary) returnExpression;
@@ -197,7 +192,7 @@ public class AnnotateNullableMethods extends Recipe {
             return false;
         }
 
-        private boolean isKnowNullableMethod(J.MethodInvocation methodInvocation) {
+        private boolean isKnownNullableMethod(J.MethodInvocation methodInvocation) {
             for (MethodMatcher m : KNOWN_NULLABLE_METHODS) {
                 if (m.matches(methodInvocation)) {
                     return true;
@@ -219,11 +214,11 @@ public class AnnotateNullableMethods extends Recipe {
             cu.accept(new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, AtomicBoolean p) {
-                    if(targetMethod.equals(method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
+                    if (targetMethod.equals(method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
                         J.AnnotatedType annotatedType = (J.AnnotatedType) method.getReturnTypeExpression();
                         AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + nullableAnnotationClass);
-                        for(J.Annotation annotation : annotatedType.getAnnotations()) {
-                            if(annotationMatcher.matches(annotation)){
+                        for (J.Annotation annotation : annotatedType.getAnnotations()) {
+                            if (annotationMatcher.matches(annotation)) {
                                 p.set(true);
                                 break;
                             }
