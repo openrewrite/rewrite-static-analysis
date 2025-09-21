@@ -29,6 +29,7 @@ import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = false)
@@ -86,7 +87,7 @@ public class AnnotateNullableMethods extends Recipe {
 
                 J.MethodDeclaration md = super.visitMethodDeclaration(methodDeclaration, ctx);
                 updateCursor(md);
-                if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor())) {
+                if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor(), nullableAnnotationClass)) {
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@" + fullyQualifiedName)
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                     String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
@@ -145,8 +146,14 @@ public class AnnotateNullableMethods extends Recipe {
                 new MethodMatcher("java.util.Spliterator trySplit(..)")
         );
 
-        static boolean find(@Nullable J subtree, Cursor parentTreeCursor) {
-            return new FindNullableReturnStatements().reduce(subtree, new AtomicBoolean(), parentTreeCursor).get();
+        private final String nullableAnnotationClass;
+
+        private FindNullableReturnStatements(@Nullable String nullableAnnotationClass) {
+            this.nullableAnnotationClass = Optional.ofNullable(nullableAnnotationClass).orElse(DEFAULT_NULLABLE_ANN_CLASS);
+        }
+
+        static boolean find(@Nullable J subtree, Cursor parentTreeCursor, @Nullable String nullableAnnotationClass) {
+            return new FindNullableReturnStatements(nullableAnnotationClass).reduce(subtree, new AtomicBoolean(), parentTreeCursor).get();
         }
 
         @Override
@@ -176,7 +183,7 @@ public class AnnotateNullableMethods extends Recipe {
                 return ((J.Literal) returnExpression).getValue() == null;
             }
             if (returnExpression instanceof J.MethodInvocation) {
-                return isKnowNullableMethod((J.MethodInvocation) returnExpression);
+                return isLocalNullableMethod((J.MethodInvocation) returnExpression) || isKnownNullableMethod((J.MethodInvocation) returnExpression);
             }
             if (returnExpression instanceof J.Ternary) {
                 J.Ternary ternary = (J.Ternary) returnExpression;
@@ -185,13 +192,42 @@ public class AnnotateNullableMethods extends Recipe {
             return false;
         }
 
-        private boolean isKnowNullableMethod(J.MethodInvocation methodInvocation) {
+        private boolean isKnownNullableMethod(J.MethodInvocation methodInvocation) {
             for (MethodMatcher m : KNOWN_NULLABLE_METHODS) {
                 if (m.matches(methodInvocation)) {
                     return true;
                 }
             }
             return false;
+        }
+
+        private boolean isLocalNullableMethod(J.MethodInvocation methodInvocation) {
+            JavaType.Method targetMethod = methodInvocation.getMethodType();
+            if (targetMethod == null) {
+                return false;
+            }
+
+            // Visit the entire compilation unit to find the method declaration
+            AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + nullableAnnotationClass);
+            J.CompilationUnit cu = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class);
+            return new JavaIsoVisitor<AtomicBoolean>() {
+                @Override
+                public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, AtomicBoolean p) {
+                    if (p.get()) {
+                        return method;
+                    }
+                    if (targetMethod.equals(method.getMethodType()) && method.getReturnTypeExpression() instanceof J.AnnotatedType) {
+                        for (J.Annotation annotation : ((J.AnnotatedType) method.getReturnTypeExpression()).getAnnotations()) {
+                            if (annotationMatcher.matches(annotation)) {
+                                p.set(true);
+                                break;
+                            }
+                        }
+                        return method;
+                    }
+                    return super.visitMethodDeclaration(method, p);
+                }
+            }.reduce(cu, new AtomicBoolean(false)).get();
         }
     }
 }
