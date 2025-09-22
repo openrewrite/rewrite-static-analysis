@@ -73,7 +73,7 @@ public class AnnotateNullableMethods extends Recipe {
         String fullyQualifiedName = nullableAnnotationClass != null ? nullableAnnotationClass : DEFAULT_NULLABLE_ANN_CLASS;
         String fullyQualifiedPackage = fullyQualifiedName.substring(0, fullyQualifiedName.lastIndexOf('.'));
         String simpleName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.') + 1);
-        return new JavaIsoVisitor<ExecutionContext>() {
+        JavaIsoVisitor<ExecutionContext> javaIsoVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
                 if (!methodDeclaration.hasModifier(J.Modifier.Type.Public) ||
@@ -101,6 +101,7 @@ public class AnnotateNullableMethods extends Recipe {
                 return md;
             }
         };
+        return Repeat.repeatUntilStable(javaIsoVisitor, 5);
     }
 
     private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
