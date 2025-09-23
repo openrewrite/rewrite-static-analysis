@@ -361,15 +361,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
                 // Also check against other pattern variables being introduced in the same expression
                 while (usedNames.contains(nameInIfScope)) {
-                    // Extract the base name and current number
-                    int i = nameInIfScope.length() - 1;
-                    while (i >= 0 && Character.isDigit(nameInIfScope.charAt(i))) {
-                        i--;
-                    }
-                    String base = nameInIfScope.substring(0, i + 1);
-                    String numStr = nameInIfScope.substring(i + 1);
-                    int num = numStr.isEmpty() ? 0 : Integer.parseInt(numStr);
-                    nameInIfScope = base + (num + 1);
+                    String numStr = nameInIfScope.substring(baseName.length());
+                    nameInIfScope = baseName + (numStr.isEmpty() ? 1 : Integer.parseInt(numStr) + 1);
                 }
 
                 String nameInCursorScope = VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
