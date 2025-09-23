@@ -1213,6 +1213,61 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.InstanceOfPatternMatch
+examples:
+- description: ''
+  sources:
+  - before: |
+      class LeftNode {
+          int bar() {
+              return 0;
+          }
+      }
+      class RightNode {
+          int bar() {
+              return 1;
+          }
+      }
+
+      class Foo {
+          void bar(Object o1, Object o2) {
+              if (o1 instanceof LeftNode && o2 instanceof RightNode) {
+                ((LeftNode)o1).bar();
+                ((RightNode)o2).bar();
+              }
+              else if (o1 instanceof RightNode && o2 instanceof LeftNode) {
+                ((RightNode)o1).bar();
+                ((LeftNode)o2).bar();
+              }
+          }
+      }
+    after: |
+      class LeftNode {
+          int bar() {
+              return 0;
+          }
+      }
+      class RightNode {
+          int bar() {
+              return 1;
+          }
+      }
+
+      class Foo {
+          void bar(Object o1, Object o2) {
+              if (o1 instanceof LeftNode node2 && o2 instanceof RightNode node3) {
+                node2.bar();
+                node3.bar();
+              }
+              else if (o1 instanceof RightNode node && o2 instanceof LeftNode node1) {
+                node.bar();
+                node1.bar();
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.IsEmptyCallOnCollections
 examples:
 - description: ''
