@@ -234,6 +234,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
             private boolean isAssignmentInTryBlock(Statement statement) {
                 // Find if this statement is contained within a try block
+                J parent = getCursorToParentScope(getCursor()).getValue();
                 return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.Try.Resource visitTryResource(J.Try.Resource tryResource, AtomicBoolean result) {
@@ -256,7 +257,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         }.visit(tryStatement.getBody(), result);
                         return tryStatement;
                     }
-                }.reduce((J) getCursorToParentScope(getCursor()).getValue(), new AtomicBoolean(false)).get();
+                }.reduce(parent, new AtomicBoolean(false)).get();
             }
 
             private boolean expressionMightThrowException(Expression expression) {
@@ -268,7 +269,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                        if (withSideEffects == null || !withSideEffects) {
                             result.set(true);
                         }
                         return methodInvocation;
@@ -284,14 +285,13 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             private boolean expressionMightSideEffect(Expression expression) {
-                AtomicBoolean mightSideEffect = new AtomicBoolean(false);
-                new JavaIsoVisitor<AtomicBoolean>() {
+                return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, AtomicBoolean result) {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                        if (withSideEffects == null || !withSideEffects) {
                             result.set(true);
                         }
                         return methodInvocation;
@@ -308,8 +308,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         result.set(true);
                         return assignment;
                     }
-                }.visit(expression, mightSideEffect);
-                return mightSideEffect.get();
+                }.reduce(expression, new AtomicBoolean(false)).get();
             }
         };
     }
