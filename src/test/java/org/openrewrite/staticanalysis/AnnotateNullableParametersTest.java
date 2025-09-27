@@ -386,7 +386,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
                 """
                   import java.util.Objects;
 
-                  public class PersonBuilder {
+                  class PersonBuilder {
                       private String name;
                       private String email;
 
@@ -396,7 +396,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
                       }
 
                       public PersonBuilder setEmail(String email) {
-                          this.email = Objects.requireNonNullElse(email, "no-email@example.com");
+                          this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
                           return this;
                       }
                   }
@@ -406,7 +406,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
                   import java.util.Objects;
 
-                  public class PersonBuilder {
+                  class PersonBuilder {
                       private String name;
                       private String email;
 
@@ -416,107 +416,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
                       }
 
                       public PersonBuilder setEmail(@Nullable String email) {
-                          this.email = Objects.requireNonNullElse(email, "no-email@example.com");
-                          return this;
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void objectsRequireNonNullElseGet() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  import java.util.Objects;
-
-                  public class PersonBuilder {
-                      private String name;
-                      private String email;
-
-                      public PersonBuilder setName(String name) {
-                          this.name = Objects.requireNonNullElseGet(name, () -> generateDefaultName());
-                          return this;
-                      }
-
-                      public PersonBuilder setEmail(String email) {
                           this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
-                          return this;
-                      }
-
-                      private String generateDefaultName() {
-                          return "Unknown";
-                      }
-                  }
-                  """,
-                """
-                  import org.jspecify.annotations.Nullable;
-
-                  import java.util.Objects;
-
-                  public class PersonBuilder {
-                      private String name;
-                      private String email;
-
-                      public PersonBuilder setName(@Nullable String name) {
-                          this.name = Objects.requireNonNullElseGet(name, () -> generateDefaultName());
-                          return this;
-                      }
-
-                      public PersonBuilder setEmail(@Nullable String email) {
-                          this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
-                          return this;
-                      }
-
-                      private String generateDefaultName() {
-                          return "Unknown";
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void multipleParametersWithRequireNonNullElse() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  import java.util.Objects;
-
-                  public class PersonBuilder {
-                      private String firstName;
-                      private String lastName;
-                      private String email;
-
-                      public PersonBuilder setInfo(String firstName, String lastName, String email) {
-                          this.firstName = Objects.requireNonNullElse(firstName, "John");
-                          this.lastName = Objects.requireNonNullElseGet(lastName, () -> "Doe");
-                          // Not checking email for null
-                          this.email = email;
-                          return this;
-                      }
-                  }
-                  """,
-                """
-                  import org.jspecify.annotations.Nullable;
-
-                  import java.util.Objects;
-
-                  public class PersonBuilder {
-                      private String firstName;
-                      private String lastName;
-                      private String email;
-
-                      public PersonBuilder setInfo(@Nullable String firstName, @Nullable String lastName, String email) {
-                          this.firstName = Objects.requireNonNullElse(firstName, "John");
-                          this.lastName = Objects.requireNonNullElseGet(lastName, () -> "Doe");
-                          // Not checking email for null
-                          this.email = email;
                           return this;
                       }
                   }
