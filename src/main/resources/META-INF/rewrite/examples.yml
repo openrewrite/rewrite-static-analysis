@@ -2823,6 +2823,31 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceIfElseWithTernary
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          void method(int age) {
+              String category;
+              if (age >= 18) {
+                  category = "Adult";
+              } else {
+                  category = "Minor";
+              }
+          }
+      }
+    after: |
+      class Test {
+          void method(int age) {
+              String category;
+              category = age >= 18 ? "Adult" : "Minor";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 examples:
 - description: ''
