@@ -379,7 +379,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
     class KnownNullCheckers {
 
         @Test
-        void objectsRequireNonNull() {
+        void objectsRequireNonNullElse() {
             rewriteRun(
               //language=java
               java(
@@ -391,13 +391,12 @@ class AnnotateNullableParametersTest implements RewriteTest {
                       private String email;
 
                       public PersonBuilder setName(String name) {
-                          this.name = Objects.requireNonNull(name, "Name cannot be null");
+                          this.name = Objects.requireNonNullElse(name, "Unknown");
                           return this;
                       }
 
                       public PersonBuilder setEmail(String email) {
-                          Objects.requireNonNull(email);
-                          this.email = email;
+                          this.email = Objects.requireNonNullElse(email, "no-email@example.com");
                           return this;
                       }
                   }
@@ -412,13 +411,12 @@ class AnnotateNullableParametersTest implements RewriteTest {
                       private String email;
 
                       public PersonBuilder setName(@Nullable String name) {
-                          this.name = Objects.requireNonNull(name, "Name cannot be null");
+                          this.name = Objects.requireNonNullElse(name, "Unknown");
                           return this;
                       }
 
                       public PersonBuilder setEmail(@Nullable String email) {
-                          Objects.requireNonNull(email);
-                          this.email = email;
+                          this.email = Objects.requireNonNullElse(email, "no-email@example.com");
                           return this;
                       }
                   }
@@ -428,7 +426,62 @@ class AnnotateNullableParametersTest implements RewriteTest {
         }
 
         @Test
-        void multipleParametersWithRequireNonNull() {
+        void objectsRequireNonNullElseGet() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Objects;
+
+                  public class PersonBuilder {
+                      private String name;
+                      private String email;
+
+                      public PersonBuilder setName(String name) {
+                          this.name = Objects.requireNonNullElseGet(name, () -> generateDefaultName());
+                          return this;
+                      }
+
+                      public PersonBuilder setEmail(String email) {
+                          this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
+                          return this;
+                      }
+
+                      private String generateDefaultName() {
+                          return "Unknown";
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  import java.util.Objects;
+
+                  public class PersonBuilder {
+                      private String name;
+                      private String email;
+
+                      public PersonBuilder setName(@Nullable String name) {
+                          this.name = Objects.requireNonNullElseGet(name, () -> generateDefaultName());
+                          return this;
+                      }
+
+                      public PersonBuilder setEmail(@Nullable String email) {
+                          this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
+                          return this;
+                      }
+
+                      private String generateDefaultName() {
+                          return "Unknown";
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void multipleParametersWithRequireNonNullElse() {
             rewriteRun(
               //language=java
               java(
@@ -441,8 +494,8 @@ class AnnotateNullableParametersTest implements RewriteTest {
                       private String email;
 
                       public PersonBuilder setInfo(String firstName, String lastName, String email) {
-                          this.firstName = Objects.requireNonNull(firstName, "First name cannot be null");
-                          this.lastName = Objects.requireNonNull(lastName, "Last name cannot be null");
+                          this.firstName = Objects.requireNonNullElse(firstName, "John");
+                          this.lastName = Objects.requireNonNullElseGet(lastName, () -> "Doe");
                           // Not checking email for null
                           this.email = email;
                           return this;
@@ -460,8 +513,8 @@ class AnnotateNullableParametersTest implements RewriteTest {
                       private String email;
 
                       public PersonBuilder setInfo(@Nullable String firstName, @Nullable String lastName, String email) {
-                          this.firstName = Objects.requireNonNull(firstName, "First name cannot be null");
-                          this.lastName = Objects.requireNonNull(lastName, "Last name cannot be null");
+                          this.firstName = Objects.requireNonNullElse(firstName, "John");
+                          this.lastName = Objects.requireNonNullElseGet(lastName, () -> "Doe");
                           // Not checking email for null
                           this.email = email;
                           return this;

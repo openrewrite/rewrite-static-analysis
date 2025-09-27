@@ -167,7 +167,7 @@ public class AnnotateNullableParameters extends Recipe {
      * <ul>
      *   <li>Direct null comparisons (param == null, param != null)</li>
      *   <li>Known null-checking method calls (Objects.isNull, StringUtils.isBlank, etc.)</li>
-     *   <li>Objects.requireNonNull calls that throw on null parameters</li>
+     *   <li>Methods that provide default values for null parameters (Objects.requireNonNullElse, Objects.requireNonNullElseGet)</li>
      *   <li>Negated null-checking method calls (!Objects.isNull, !StringUtils.isBlank, etc.)</li>
      * </ul>
      */
@@ -176,7 +176,8 @@ public class AnnotateNullableParameters extends Recipe {
                 new MethodMatcher("com.google.common.base.Strings isNullOrEmpty(..)"), // Guava
                 new MethodMatcher("java.util.Objects isNull(..)"),
                 new MethodMatcher("java.util.Objects nonNull(..)"),
-                new MethodMatcher("java.util.Objects requireNonNull(..)"), // Throws if null
+                new MethodMatcher("java.util.Objects requireNonNullElse(..)"), // Provides default for null
+                new MethodMatcher("java.util.Objects requireNonNullElseGet(..)"), // Provides default for null
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isBlank(..)"),
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isEmpty(..)"),
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isNotBlank(..)"),
