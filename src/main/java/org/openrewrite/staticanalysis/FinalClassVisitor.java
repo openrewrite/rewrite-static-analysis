@@ -90,7 +90,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
     }
 
     private void excludeSupertypes(JavaType.FullyQualified type) {
-        if (type.getSupertype() != null && type.getOwningClass() != null &&
+        if (type.getSupertype() != null &&
                 typesToNotFinalize.add(type.getSupertype().getFullyQualifiedName())) {
             excludeSupertypes(type.getSupertype());
         }
