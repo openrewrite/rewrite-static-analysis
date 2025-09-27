@@ -456,11 +456,8 @@ class AnnotateNullableParametersTest implements RewriteTest {
                           return Optional.ofNullable(input);
                       }
 
-                      public Optional<String> conditionalWrap(String data) {
-                          if (data != null && data.length() > 5) {
-                              return Optional.of(data);
-                          }
-                          return Optional.ofNullable(data);
+                      public void conditionalWrap(String data) {
+                          Optional.ofNullable(data).ifPresent(d -> System.out.println(d));
                       }
                   }
                   """,
@@ -482,11 +479,8 @@ class AnnotateNullableParametersTest implements RewriteTest {
                           return Optional.ofNullable(input);
                       }
 
-                      public Optional<String> conditionalWrap(@Nullable String data) {
-                          if (data != null && data.length() > 5) {
-                              return Optional.of(data);
-                          }
-                          return Optional.ofNullable(data);
+                      public void conditionalWrap(@Nullable String data) {
+                          Optional.ofNullable(data).ifPresent(d -> System.out.println(d));
                       }
                   }
                   """
