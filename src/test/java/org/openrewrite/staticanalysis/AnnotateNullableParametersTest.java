@@ -435,6 +435,65 @@ class AnnotateNullableParametersTest implements RewriteTest {
             );
         }
 
+        @Test
+        void optionalOfNullable() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+
+                  public class PersonService {
+
+                      public Optional<String> processValue(String value) {
+                          return Optional.ofNullable(value)
+                                  .filter(v -> !v.isEmpty())
+                                  .map(String::toUpperCase);
+                      }
+
+                      public Optional<String> wrapValue(String input) {
+                          // Direct usage of parameter in Optional.ofNullable
+                          return Optional.ofNullable(input);
+                      }
+
+                      public Optional<String> conditionalWrap(String data) {
+                          if (data != null && data.length() > 5) {
+                              return Optional.of(data);
+                          }
+                          return Optional.ofNullable(data);
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  import java.util.Optional;
+
+                  public class PersonService {
+
+                      public Optional<String> processValue(@Nullable String value) {
+                          return Optional.ofNullable(value)
+                                  .filter(v -> !v.isEmpty())
+                                  .map(String::toUpperCase);
+                      }
+
+                      public Optional<String> wrapValue(@Nullable String input) {
+                          // Direct usage of parameter in Optional.ofNullable
+                          return Optional.ofNullable(input);
+                      }
+
+                      public Optional<String> conditionalWrap(@Nullable String data) {
+                          if (data != null && data.length() > 5) {
+                              return Optional.of(data);
+                          }
+                          return Optional.ofNullable(data);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @CsvSource({
           "java.util.Objects, Objects.nonNull",
           "org.apache.commons.lang3.StringUtils, StringUtils.isNotBlank",
