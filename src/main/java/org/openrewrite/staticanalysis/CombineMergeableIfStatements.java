@@ -21,10 +21,12 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.style.IntelliJ;
 import org.openrewrite.java.style.TabsAndIndentsStyle;
+import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
@@ -34,12 +36,13 @@ import org.openrewrite.java.tree.TextComment;
 import org.openrewrite.style.Style;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
-import static org.openrewrite.internal.ListUtils.concatAll;
 import static org.openrewrite.java.format.ShiftFormat.indent;
 
 public class CombineMergeableIfStatements extends Recipe {
@@ -90,18 +93,20 @@ public class CombineMergeableIfStatements extends Recipe {
                         Expression outerCondition = outerIf.getIfCondition().getTree();
                         Expression innerCondition = innerIf.getIfCondition().getTree();
 
-                        innerIf = indent(innerIf, getCursor(), -1);
+                        UUID innerIfId = Tree.randomId();
+                        getCursor().getRoot().putMessage(innerIfId.toString(), innerIf.getComments());
+                        UUID outerBlockId = Tree.randomId();
+                        getCursor().getRoot().putMessage(outerBlockId.toString(),
+                                Optional.ofNullable(outerBlock).map(J::getComments).orElse(emptyList()));
+
                         doAfterVisit(new MergedConditionalVisitor<>());
                         return JavaTemplate.<J.If>apply(
-                                String.format("#{any()} /*%s*/&& #{any()}", CONTINUATION_KEY),
+                                String.format("#{any()} /*%s,%s,%s*/&& #{any()}", CONTINUATION_KEY, innerIfId, outerBlockId),
                                 getCursor(),
                                 outerCondition.getCoordinates().replace(),
                                 outerCondition,
                                 innerCondition)
-                                .withThenPart(innerIf.getThenPart())
-                                .withComments(concatAll(
-                                        concatAll(outerIf.getComments(), outerBlock != null ? outerBlock.getComments() : emptyList()),
-                                        innerIf.getComments()));
+                                .withThenPart(indent(innerIf.getThenPart(), getCursor(), -1));
                     }
                 }
 
@@ -112,6 +117,7 @@ public class CombineMergeableIfStatements extends Recipe {
 
     @RequiredArgsConstructor
     private static class MergedConditionalVisitor<P> extends JavaIsoVisitor<P> {
+
         @Nullable
         private TabsAndIndentsStyle tabsAndIndentsStyle;
 
@@ -131,10 +137,16 @@ public class CombineMergeableIfStatements extends Recipe {
                     s.getComments().get(0) instanceof TextComment) {
                 TextComment onlyComment = (TextComment) s.getComments().get(0);
                 if (onlyComment.isMultiline() &&
-                        CONTINUATION_KEY.equals(onlyComment.getText()) &&
+                        onlyComment.getText().startsWith(CONTINUATION_KEY) &&
                         getCursor().firstEnclosingOrThrow(J.Binary.class).getOperator() == J.Binary.Type.And) {
-                    getCursor().putMessageOnFirstEnclosing(J.Binary.class, CONTINUATION_KEY, true);
-                    s = s.withComments(emptyList());
+                    final String[] arr = onlyComment.getText().split(",");
+                    final String innerIfId = arr[1];
+                    final String outerBlockId = arr[2];
+                    List<Comment> innerIfComments = Optional.ofNullable(getCursor().getRoot().<List<Comment>>pollMessage(innerIfId)).orElse(emptyList());
+                    List<Comment> outerBlockComments = Optional.ofNullable(getCursor().getRoot().<List<Comment>>pollMessage(outerBlockId)).orElse(emptyList());
+
+                    getCursor().putMessageOnFirstEnclosing(J.Binary.class, CONTINUATION_KEY, innerIfComments);
+                    s = s.withComments(outerBlockComments);
                 }
             }
 
@@ -145,14 +157,75 @@ public class CombineMergeableIfStatements extends Recipe {
         public J.Binary visitBinary(J.Binary binary, P p) {
             J.Binary b = super.visitBinary(binary, p);
 
-            if (Boolean.TRUE.equals(getCursor().getMessage(CONTINUATION_KEY))) {
-                J.If outerIf = getCursor().firstEnclosingOrThrow(J.If.class);
-                final String outerIfIndent = outerIf.getPrefix().getIndent();
-                b = b.withRight(b.getRight().withPrefix(
-                        Space.format("\n" + continuationIndent(requireNonNull(tabsAndIndentsStyle), outerIfIndent))));
+            List<Comment> comments = getCursor().pollMessage(CONTINUATION_KEY);
+            if (comments != null) {
+                final String outerIfIndent = getCursor().firstEnclosingOrThrow(J.If.class).getPrefix().getIndent();
+                final String continuationIndent = continuationIndent(requireNonNull(tabsAndIndentsStyle), outerIfIndent);
+
+                if (comments.isEmpty()) {
+                    b = b.withRight(b.getRight()
+                            .withPrefix(Space.format("\n" + continuationIndent)));
+                } else {
+                    b = b.withRight(b.getRight()
+                            .withComments(ListUtils.map(comments, c -> replaceIndent(c, continuationIndent))));
+                }
             }
 
             return b;
+        }
+
+        private Comment replaceIndent(Comment comment, String newIndent) {
+            Comment c = comment.withSuffix(replaceLastLineWithIndent(comment.getSuffix(), newIndent));
+            if (c.isMultiline() && c instanceof TextComment) {
+                TextComment tc = (TextComment) c;
+                c = tc.withText(replaceTextIndent(tc.getText(), newIndent));
+            }
+            return c;
+        }
+
+        private String replaceTextIndent(final String text, final String newIndent) {
+            final StringBuilder sb = new StringBuilder();
+            boolean found = false;
+            for (final char ch : text.toCharArray()) {
+                if (ch == ' ' || ch == '\t') {
+                    if (!found) {
+                        sb.append(ch);
+                    }
+                } else if (ch == '\r' || ch == '\n') {
+                    sb.append(ch);
+                    found = true;
+                } else {
+                    if (found) {
+                        sb.append(newIndent);
+                        if (ch == '*') {
+                            sb.append(' ');
+                        }
+                    }
+                    sb.append(ch);
+                    found = false;
+                }
+            }
+            if (found) {
+                sb.append(newIndent);
+                sb.append(' ');
+            }
+            return sb.toString();
+        }
+
+        private String replaceLastLineWithIndent(String whitespace, String indent) {
+            int idx = whitespace.length() - 1;
+            while (idx >= 0) {
+                char c = whitespace.charAt(idx);
+                if (c == '\r' || c == '\n') {
+                    break;
+                }
+                idx--;
+            }
+            if (idx >= 0) {
+                return whitespace.substring(0, idx + 1) + indent;
+            } else {
+                return whitespace;
+            }
         }
 
         private String continuationIndent(TabsAndIndentsStyle tabsAndIndents, String currentIndent) {

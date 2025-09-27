@@ -215,6 +215,132 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
+    void combineSeveralNestedIfsWithLineComments() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              class A {
+                  void a(boolean b1, boolean b2, boolean b3, boolean b4, boolean b5, boolean b6) {
+                      // Comment 1.0
+                      if (b1) { // Comment 1
+                          if (b2) { // Comment 2
+                              // Comment 3.0
+                              if (b3) { // Comment 3
+                                  // Comment 4.0
+                                  if (b4) { // Comment 4
+                                      // Comment 5.0
+                                      if (b5) { // Comment 5
+                                          // Comment 6.0
+                                          // Comment 6.1
+                                          // Comment 6.2
+                                          if (b6) { // Comment 6
+                                              System.out.println("OK");
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void a(boolean b1, boolean b2, boolean b3, boolean b4, boolean b5, boolean b6) {
+                      // Comment 1.0
+                      if (b1 && // Comment 1
+                              b2 && // Comment 2
+                              // Comment 3.0
+                              b3 && // Comment 3
+                              // Comment 4.0
+                              b4 && // Comment 4
+                              // Comment 5.0
+                              b5 && // Comment 5
+                              // Comment 6.0
+                              // Comment 6.1
+                              // Comment 6.2
+                              b6) { // Comment 6
+                          System.out.println("OK");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void combineSeveralNestedIfsWithMultilineComments() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              class A {
+                  void a(boolean b1, boolean b2, boolean b3, boolean b4, boolean b5, boolean b6) {
+                      /* Comment 1.0 */
+                      if (b1) { /* Comment 1 */
+                          if (b2) { /* Comment 2 */
+                              /* Comment 3.0 */
+                              if (b3) { /* Comment 3 */
+                                  /* Comment 4.0 */
+                                  if (b4) { /*
+                                             * Comment 4
+                                             */
+                                      /*
+                                       * Comment 5.0
+                                         Comment 5.1
+                                       */
+                                      if (b5) { /* Comment 5 */
+                                          /** Comment 6.0 */
+                                          /**
+                                           * Comment 6.1
+                                             Comment 6.2
+                                           */
+                                          if (b6) { /* Comment 6 */
+                                              System.out.println("OK");
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void a(boolean b1, boolean b2, boolean b3, boolean b4, boolean b5, boolean b6) {
+                      /* Comment 1.0 */
+                      if (b1 && /* Comment 1 */
+                              b2 && /* Comment 2 */
+                              /* Comment 3.0 */
+                              b3 && /* Comment 3 */
+                              /* Comment 4.0 */
+                              b4 && /*
+                               * Comment 4
+                               */
+                              /*
+                               * Comment 5.0
+                              Comment 5.1
+                               */
+                              b5 && /* Comment 5 */
+                              /** Comment 6.0 */
+                              /**
+                               * Comment 6.1
+                              Comment 6.2
+                               */
+                              b6) { /* Comment 6 */
+                          System.out.println("OK");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void noSimplificationWhenOuterIfHasElsePart() {
         rewriteRun(
           // language=java
@@ -404,9 +530,14 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean condition1, boolean condition2) {
-                      // Comment -1
-                      if (condition1) /* Comment 0 */ { // Comment 1
-                          // Comment 2
+                      // Comment 1.0
+                      if (condition1) /* Comment 1.1 */
+                          /* Comment 1.2 */ // Comment 1.3
+                          /* Comment 1.4 */ { // Comment 2.0
+                          // Comment 2.1
+                          /*
+                           * Comment 2.2
+                           */ // Comment 2.3
                           if (condition2) /* Comment 3 */ { // Comment 4
                               System.out.println("OK");
                           }
@@ -417,10 +548,14 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
             """
               class A {
                   void a(boolean condition1, boolean condition2) {
-                      // Comment -1
-                      /* Comment 0 */ // Comment 1
-                      // Comment 2
-                      if (condition1 &&
+                      // Comment 1.0
+                      if (condition1 /* Comment 1.1 */
+                          /* Comment 1.2 */ // Comment 1.3
+                          /* Comment 1.4 */ && // Comment 2.0
+                              // Comment 2.1
+                              /*
+                               * Comment 2.2
+                               */ // Comment 2.3
                               condition2) /* Comment 3 */ { // Comment 4
                           System.out.println("OK");
                       }
