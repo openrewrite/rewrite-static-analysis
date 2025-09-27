@@ -167,6 +167,7 @@ public class AnnotateNullableParameters extends Recipe {
      * <ul>
      *   <li>Direct null comparisons (param == null, param != null)</li>
      *   <li>Known null-checking method calls (Objects.isNull, StringUtils.isBlank, etc.)</li>
+     *   <li>Objects.requireNonNull calls that throw on null parameters</li>
      *   <li>Negated null-checking method calls (!Objects.isNull, !StringUtils.isBlank, etc.)</li>
      * </ul>
      */
@@ -175,6 +176,7 @@ public class AnnotateNullableParameters extends Recipe {
                 new MethodMatcher("com.google.common.base.Strings isNullOrEmpty(..)"), // Guava
                 new MethodMatcher("java.util.Objects isNull(..)"),
                 new MethodMatcher("java.util.Objects nonNull(..)"),
+                new MethodMatcher("java.util.Objects requireNonNull(..)"), // Throws if null
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isBlank(..)"),
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isEmpty(..)"),
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isNotBlank(..)"),
@@ -206,6 +208,23 @@ public class AnnotateNullableParameters extends Recipe {
             iff = super.visitIf(iff, nullCheckedParams);
             handleCondition(iff.getIfCondition().getTree(), nullCheckedParams);
             return iff;
+        }
+
+        @Override
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Set<J.Identifier> nullCheckedParams) {
+            // Handle standalone Objects.requireNonNull calls (not just in if conditions)
+            if (isKnownNullMethodChecker(method)) {
+                new JavaIsoVisitor<Set<J.Identifier>>() {
+                    @Override
+                    public J.Identifier visitIdentifier(J.Identifier identifier, Set<J.Identifier> set) {
+                        if (containsIdentifierByName(identifiers, identifier)) {
+                            set.add(identifier);
+                        }
+                        return identifier;
+                    }
+                }.visit(method.getArguments(), nullCheckedParams);
+            }
+            return super.visitMethodInvocation(method, nullCheckedParams);
         }
 
         private void handleCondition(Expression condition, Set<J.Identifier> nullCheckedParams) {

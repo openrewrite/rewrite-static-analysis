@@ -378,6 +378,100 @@ class AnnotateNullableParametersTest implements RewriteTest {
     @Nested
     class KnownNullCheckers {
 
+        @Test
+        void objectsRequireNonNull() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Objects;
+
+                  public class PersonBuilder {
+                      private String name;
+                      private String email;
+
+                      public PersonBuilder setName(String name) {
+                          this.name = Objects.requireNonNull(name, "Name cannot be null");
+                          return this;
+                      }
+
+                      public PersonBuilder setEmail(String email) {
+                          Objects.requireNonNull(email);
+                          this.email = email;
+                          return this;
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  import java.util.Objects;
+
+                  public class PersonBuilder {
+                      private String name;
+                      private String email;
+
+                      public PersonBuilder setName(@Nullable String name) {
+                          this.name = Objects.requireNonNull(name, "Name cannot be null");
+                          return this;
+                      }
+
+                      public PersonBuilder setEmail(@Nullable String email) {
+                          Objects.requireNonNull(email);
+                          this.email = email;
+                          return this;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void multipleParametersWithRequireNonNull() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Objects;
+
+                  public class PersonBuilder {
+                      private String firstName;
+                      private String lastName;
+                      private String email;
+
+                      public PersonBuilder setInfo(String firstName, String lastName, String email) {
+                          this.firstName = Objects.requireNonNull(firstName, "First name cannot be null");
+                          this.lastName = Objects.requireNonNull(lastName, "Last name cannot be null");
+                          // Not checking email for null
+                          this.email = email;
+                          return this;
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  import java.util.Objects;
+
+                  public class PersonBuilder {
+                      private String firstName;
+                      private String lastName;
+                      private String email;
+
+                      public PersonBuilder setInfo(@Nullable String firstName, @Nullable String lastName, String email) {
+                          this.firstName = Objects.requireNonNull(firstName, "First name cannot be null");
+                          this.lastName = Objects.requireNonNull(lastName, "Last name cannot be null");
+                          // Not checking email for null
+                          this.email = email;
+                          return this;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @CsvSource({
           "java.util.Objects, Objects.nonNull",
           "org.apache.commons.lang3.StringUtils, StringUtils.isNotBlank",
