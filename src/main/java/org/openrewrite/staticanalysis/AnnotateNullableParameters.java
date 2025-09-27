@@ -214,16 +214,11 @@ public class AnnotateNullableParameters extends Recipe {
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Set<J.Identifier> nullCheckedParams) {
             // Handle standalone Objects.requireNonNull calls (not just in if conditions)
-            if (isKnownNullMethodChecker(method)) {
-                new JavaIsoVisitor<Set<J.Identifier>>() {
-                    @Override
-                    public J.Identifier visitIdentifier(J.Identifier identifier, Set<J.Identifier> set) {
-                        if (containsIdentifierByName(identifiers, identifier)) {
-                            set.add(identifier);
-                        }
-                        return identifier;
-                    }
-                }.visit(method.getArguments(), nullCheckedParams);
+            if (isKnownNullMethodChecker(method) && method.getArguments().get(0) instanceof J.Identifier) {
+                J.Identifier firstArgument = (J.Identifier) method.getArguments().get(0);
+                if (containsIdentifierByName(identifiers, firstArgument)) {
+                    nullCheckedParams.add(firstArgument);
+                }
             }
             return super.visitMethodInvocation(method, nullCheckedParams);
         }

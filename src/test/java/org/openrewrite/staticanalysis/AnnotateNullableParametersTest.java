@@ -395,6 +395,11 @@ class AnnotateNullableParametersTest implements RewriteTest {
                           return this;
                       }
 
+                      public PersonBuilder setNameWithFallback(String name, String fallback) {
+                          this.name = Objects.requireNonNullElse(name, fallback);
+                          return this;
+                      }
+
                       public PersonBuilder setEmail(String email) {
                           this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
                           return this;
@@ -412,6 +417,11 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
                       public PersonBuilder setName(@Nullable String name) {
                           this.name = Objects.requireNonNullElse(name, "Unknown");
+                          return this;
+                      }
+
+                      public PersonBuilder setNameWithFallback(@Nullable String name, String fallback) {
+                          this.name = Objects.requireNonNullElse(name, fallback);
                           return this;
                       }
 
