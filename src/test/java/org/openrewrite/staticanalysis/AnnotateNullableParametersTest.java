@@ -378,6 +378,116 @@ class AnnotateNullableParametersTest implements RewriteTest {
     @Nested
     class KnownNullCheckers {
 
+        @Test
+        void objectsRequireNonNullElse() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Objects;
+
+                  class PersonBuilder {
+                      private String name;
+                      private String email;
+
+                      public PersonBuilder setName(String name) {
+                          this.name = Objects.requireNonNullElse(name, "Unknown");
+                          return this;
+                      }
+
+                      public PersonBuilder setNameWithFallback(String name, String fallback) {
+                          this.name = Objects.requireNonNullElse(name, fallback);
+                          return this;
+                      }
+
+                      public PersonBuilder setEmail(String email) {
+                          this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
+                          return this;
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  import java.util.Objects;
+
+                  class PersonBuilder {
+                      private String name;
+                      private String email;
+
+                      public PersonBuilder setName(@Nullable String name) {
+                          this.name = Objects.requireNonNullElse(name, "Unknown");
+                          return this;
+                      }
+
+                      public PersonBuilder setNameWithFallback(@Nullable String name, String fallback) {
+                          this.name = Objects.requireNonNullElse(name, fallback);
+                          return this;
+                      }
+
+                      public PersonBuilder setEmail(@Nullable String email) {
+                          this.email = Objects.requireNonNullElseGet(email, () -> "default@example.com");
+                          return this;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void optionalOfNullable() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.Optional;
+
+                  public class PersonService {
+
+                      public Optional<String> processValue(String value) {
+                          return Optional.ofNullable(value)
+                                  .filter(v -> !v.isEmpty())
+                                  .map(String::toUpperCase);
+                      }
+
+                      public Optional<String> wrapValue(String input) {
+                          // Direct usage of parameter in Optional.ofNullable
+                          return Optional.ofNullable(input);
+                      }
+
+                      public void conditionalWrap(String data) {
+                          Optional.ofNullable(data).ifPresent(d -> System.out.println(d));
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  import java.util.Optional;
+
+                  public class PersonService {
+
+                      public Optional<String> processValue(@Nullable String value) {
+                          return Optional.ofNullable(value)
+                                  .filter(v -> !v.isEmpty())
+                                  .map(String::toUpperCase);
+                      }
+
+                      public Optional<String> wrapValue(@Nullable String input) {
+                          // Direct usage of parameter in Optional.ofNullable
+                          return Optional.ofNullable(input);
+                      }
+
+                      public void conditionalWrap(@Nullable String data) {
+                          Optional.ofNullable(data).ifPresent(d -> System.out.println(d));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @CsvSource({
           "java.util.Objects, Objects.nonNull",
           "org.apache.commons.lang3.StringUtils, StringUtils.isNotBlank",
