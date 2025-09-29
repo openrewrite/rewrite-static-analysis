@@ -1487,4 +1487,93 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/744")
+    @Test
+    void methodReferenceNestedClassImportInvalid() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(i -> i instanceof Entry);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(Entry.class::isInstance);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/744")
+    @Test
+    void methodReferenceNestedClassFullyQualified() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(i -> i instanceof java.util.Map.Entry);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(Map.Entry.class::isInstance);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/744")
+    @Test
+    void methodReferenceNestedClassCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().map(i -> (Entry) i);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().map(Entry.class::cast);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
