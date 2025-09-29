@@ -23,6 +23,7 @@ import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.kotlin.KotlinVisitor;
 import org.openrewrite.kotlin.tree.K;
+import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,7 +31,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
 public class ReplaceLambdaWithMethodReference extends Recipe {
@@ -100,8 +104,22 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 J j = instanceOf.getClazz();
                 if ((j instanceof J.Identifier || j instanceof J.FieldAccess) &&
                         instanceOf.getExpression() instanceof J.Identifier) {
-                    J.FieldAccess classLiteral = newClassLiteral(((TypeTree) j).getType(), j instanceof J.FieldAccess);
-                    if (classLiteral != null) {
+                    // Create the class literal directly from the original expression
+                    JavaType.Class classType = getClassType(((TypeTree) j).getType());
+                    if (classType != null) {
+                        JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, singletonList(((TypeTree) j).getType()));
+                        J.FieldAccess classLiteral = new J.FieldAccess(
+                                randomId(),
+                                Space.EMPTY,
+                                Markers.EMPTY,
+                                j.withPrefix(Space.EMPTY), // Use the original expression directly
+                                new JLeftPadded<>(
+                                        Space.EMPTY,
+                                        new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "class", parameterized, null),
+                                        Markers.EMPTY
+                                ),
+                                parameterized
+                        );
                         //noinspection DataFlowIssue
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                         Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> "isInstance".equals(m.getName())).findFirst();
@@ -123,11 +141,25 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     J tree = j.getTree();
                     if ((tree instanceof J.Identifier || tree instanceof J.FieldAccess) &&
                             !(j.getType() instanceof JavaType.GenericTypeVariable)) {
-                        J.FieldAccess classLiteral = newClassLiteral(((Expression) tree).getType(), tree instanceof J.FieldAccess);
-                        if (classLiteral != null) {
+                        // Create the class literal directly from the original expression
+                        JavaType.Class classType = getClassType(((Expression) tree).getType());
+                        if (classType != null) {
+                            JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, singletonList(((Expression) tree).getType()));
+                            J.FieldAccess classLiteral = new J.FieldAccess(
+                                    randomId(),
+                                    Space.EMPTY,
+                                    Markers.EMPTY,
+                                    tree.withPrefix(Space.EMPTY), // Use the original expression directly
+                                    new JLeftPadded<>(
+                                            Space.EMPTY,
+                                            new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "class", parameterized, null),
+                                            Markers.EMPTY
+                                    ),
+                                    parameterized
+                            );
                             //noinspection DataFlowIssue
-                            JavaType.FullyQualified classType = ((JavaType.Parameterized) classLiteral.getType()).getType();
-                            Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
+                            JavaType.FullyQualified fullClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
+                            Optional<JavaType.Method> castMethod = fullClassType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
                             if (castMethod.isPresent()) {
                                 J.MemberReference updated = newInstanceMethodReference(classLiteral, castMethod.get(), lambda.getType()).withPrefix(lambda.getPrefix());
                                 doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
@@ -354,6 +386,40 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 }
             }
             return false;
+        }
+
+        private static JavaType.@Nullable Class getClassType(@Nullable JavaType type) {
+            if (type instanceof JavaType.Class) {
+                JavaType.Class classType = (JavaType.Class) type;
+                if ("java.lang.Class".equals(classType.getFullyQualifiedName())) {
+                    return classType;
+                }
+                if ("java.lang.Object".equals(classType.getFullyQualifiedName())) {
+                    for (JavaType.Method method : classType.getMethods()) {
+                        if ("getClass".equals(method.getName())) {
+                            return getClassType(method.getReturnType());
+                        }
+                    }
+                    return null;
+                }
+                return getClassType(classType.getSupertype());
+            }
+            if (type instanceof JavaType.Parameterized) {
+                return getClassType(((JavaType.Parameterized) type).getType());
+            }
+            if (type instanceof JavaType.GenericTypeVariable) {
+                return getClassType(((JavaType.GenericTypeVariable) type).getBounds().get(0));
+            }
+            if (type instanceof JavaType.Array) {
+                return getClassType(((JavaType.Array) type).getElemType());
+            }
+            if (type instanceof JavaType.Variable) {
+                return getClassType(((JavaType.Variable) type).getOwner());
+            }
+            if (type instanceof JavaType.Method) {
+                return getClassType(((JavaType.Method) type).getDeclaringType());
+            }
+            return null;
         }
     }
 
