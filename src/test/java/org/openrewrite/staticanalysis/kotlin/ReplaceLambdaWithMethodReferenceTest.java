@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis.kotlin;
 
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -29,6 +30,7 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         spec.recipe(new ReplaceLambdaWithMethodReference());
     }
 
+    @DocumentExample
     @ExpectedToFail("Kotlin visitor to be implemented")
     @Test
     void toQualifiedMethodReference() {
