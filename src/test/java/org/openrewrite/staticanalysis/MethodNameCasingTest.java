@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -33,6 +34,30 @@ class MethodNameCasingTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new MethodNameCasing(false, false));
+    }
+
+    @DocumentExample
+    @Test
+    void changeMethodDeclaration() {
+        rewriteRun(
+          srcMainJava(
+            //language=java
+            java(
+              """
+                class Test {
+                    void MyMethod_with_über() {
+                    }
+                }
+                """,
+              """
+                class Test {
+                    void myMethodWithUber() {
+                    }
+                }
+                """
+            )
+          )
+        );
     }
 
     @Issue("https://github.com/openrewrite/rewrite/issues/2571")
@@ -185,29 +210,6 @@ class MethodNameCasingTest implements RewriteTest {
         rewriteRun(
           spec -> spec.recipe(new MethodNameCasing(true, false)),
           srcTestJava(
-            //language=java
-            java(
-              """
-                class Test {
-                    void MyMethod_with_über() {
-                    }
-                }
-                """,
-              """
-                class Test {
-                    void myMethodWithUber() {
-                    }
-                }
-                """
-            )
-          )
-        );
-    }
-
-    @Test
-    void changeMethodDeclaration() {
-        rewriteRun(
-          srcMainJava(
             //language=java
             java(
               """
