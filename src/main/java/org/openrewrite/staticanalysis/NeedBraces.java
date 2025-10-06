@@ -252,5 +252,21 @@ public class NeedBraces extends Recipe {
             }
             return elem;
         }
+
+        @Override
+        public J.ForEachLoop visitForEachLoop(J.ForEachLoop forEachLoop, ExecutionContext ctx) {
+            J.ForEachLoop elem = super.visitForEachLoop(forEachLoop, ctx);
+            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                    elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                    elem.getBody() instanceof J.Block;
+            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            }
+            return elem;
+        }
     }
 }
