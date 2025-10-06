@@ -453,6 +453,64 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks
+examples:
+- description: '`CombineSemanticallyEqualCatchBlocksTest#blocksContainSameComments`'
+  sources:
+  - before: class A extends RuntimeException {}
+    language: java
+  - before: class B extends RuntimeException {}
+    language: java
+  - before: |
+      class Test {
+          void method() {
+              try {
+              } catch (A ex) {
+                  // Same
+              } catch (B ex) {
+                  // Same
+              }
+          }
+      }
+    after: |
+      class Test {
+          void method() {
+              try {
+              } catch (A | B ex) {
+                  // Same
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CompareEnumsWithEqualityOperator
+examples:
+- description: '`CompareEnumsWithEqualityOperatorTest#changeEnumEquals`'
+  sources:
+  - before: |
+      import a.A;
+      class Test {
+          void method(A arg0) {
+              if (A.FOO.equals(arg0)) {
+              }
+              if (arg0.equals(A.FOO)) {
+              }
+          }
+      }
+    after: |
+      import a.A;
+      class Test {
+          void method(A arg0) {
+              if (A.FOO == arg0) {
+              }
+              if (arg0 == A.FOO) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ControlFlowIndentation
 examples:
 - description: '`ControlFlowIndentationTest#removesIndentationFromStatementAfterIfElse`'
@@ -1340,6 +1398,26 @@ examples:
     after: |
       class A {
           String cc = "12345678XXXXXXXX";
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MethodNameCasing
+examples:
+- description: '`MethodNameCasingTest#changeMethodDeclaration`'
+  parameters:
+  - 'false'
+  - 'false'
+  sources:
+  - before: |
+      class Test {
+          void MyMethod_with_über() {
+          }
+      }
+    after: |
+      class Test {
+          void myMethodWithUber() {
+          }
       }
     language: java
 ---
@@ -2286,6 +2364,34 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveInstanceOfPatternMatch
+examples:
+- description: '`RemoveInstanceOfPatternMatchTest#blockOfStatements`'
+  sources:
+  - before: |
+      package com.example;
+
+      class Example {
+          public void test(Object obj) {
+              if (obj instanceof String str) {
+                  System.out.println(str);
+              }
+          }
+      }
+    after: |
+      package com.example;
+
+      class Example {
+          public void test(Object obj) {
+              if (obj instanceof String) {
+                  String str = (String) obj;
+                  System.out.println(str);
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveJavaDocAuthorTag
 examples:
 - description: '`RemoveJavaDocAuthorTagTest#preserveDocsBeforeTag`'
@@ -2799,6 +2905,43 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceDeprecatedRuntimeExecMethods
+examples:
+- description: '`ReplaceDeprecatedRuntimeExecMethodsTest#rawString`'
+  sources:
+  - before: |
+      import java.io.File;
+      import java.io.IOException;
+
+      class A {
+          void method() throws IOException {
+              Runtime runtime = Runtime.getRuntime();
+              String[] envp = { "E1=1", "E2=2"};
+              File dir = new File("/tmp");
+
+              Process process1 = runtime.exec("ls -a -l");
+              Process process2 = runtime.exec("ls -a -l", envp);
+              Process process3 = runtime.exec("ls -a -l", envp, dir);
+          }
+      }
+    after: |
+      import java.io.File;
+      import java.io.IOException;
+
+      class A {
+          void method() throws IOException {
+              Runtime runtime = Runtime.getRuntime();
+              String[] envp = { "E1=1", "E2=2"};
+              File dir = new File("/tmp");
+
+              Process process1 = runtime.exec(new String[]{"ls", "-a", "-l"});
+              Process process2 = runtime.exec(new String[]{"ls", "-a", "-l"}, envp);
+              Process process3 = runtime.exec(new String[]{"ls", "-a", "-l"}, envp, dir);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceDuplicateStringLiterals
 examples:
 - description: '`ReplaceDuplicateStringLiteralsTest#replaceRedundantFinalStrings`'
@@ -2868,6 +3011,37 @@ examples:
           }
       }
     language: java
+- description: '`ReplaceLambdaWithMethodReferenceTest#toQualifiedMethodReference`'
+  sources:
+  - before: |
+      fun main() {
+          val pets = listOf(Cat(), Dog())
+          pets.forEach { it.move() }
+      }
+    after: |
+      fun main() {
+          val pets = listOf(Cat(), Dog())
+          pets.forEach ( Pet::move )
+      }
+    language: kotlin
+  - before: |
+      interface Pet {
+          fun move() {
+          }
+      }
+
+      class Cat : Pet {
+          override fun move() {
+              println("Cat is moving")
+          }
+      }
+
+      class Dog : Pet {
+          override fun move() {
+              println("Dog is moving")
+          }
+      }
+    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceOptionalIsPresentWithIfPresent
@@ -3833,6 +4007,52 @@ examples:
           Integer i = 0;
           Long l2 = 0x100000000L;
           String s = "hello";
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseAsBuilder
+examples:
+- description: '`UseAsBuilderTest#useAsBuilder`'
+  parameters:
+  - Buildable.Builder
+  - 'true'
+  - Buildable builder()
+  sources:
+  - before: |
+      class Buildable {
+          public static Builder builder() {
+              return new Builder();
+          }
+
+          public static class Builder {
+              public Builder option(String option) {
+                  return this;
+              }
+          }
+      }
+    language: java
+  - before: |
+      class Test {
+          void test() {
+              int a = 0;
+              Buildable.Builder builder = Buildable.builder();
+              String b = "rewrite-java";
+              int c = 0;
+              builder = builder.option(b);
+              int d = 0;
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              int a = 0;
+              String b = "rewrite-java";
+              int c = 0;
+              Buildable.Builder builder = Buildable.builder()
+                      .option(b);
+              int d = 0;
+          }
       }
     language: java
 ---
