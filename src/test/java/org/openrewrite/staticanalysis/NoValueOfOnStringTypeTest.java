@@ -296,4 +296,21 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotRemoveValueOfForNullableStrings() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+
+                  String method(Object some) {
+                      return String.valueOf(some.toString());
+                  }
+              }
+              """
+          )
+        );
+    }
 }
