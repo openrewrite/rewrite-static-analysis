@@ -410,7 +410,7 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
               class A {
                   String name;
                   boolean notOne(A a) {
-                      return a == null ? a.name != null : !name.equals(a.name);
+                      return a != null ? name.equals(a.name) : a.name == null;
                   }
               }
               """
