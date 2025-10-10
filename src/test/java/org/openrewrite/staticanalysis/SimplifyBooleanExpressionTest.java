@@ -417,4 +417,28 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
             )
         );
     }
+
+    @Test
+    void correctlySimplifyNegatedTernaryEqualsNull() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void doSome(String o1, String o2) {
+                      if (!(o1 == null ? o2 == null : o1.equals(o2))) {
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void doSome(String o1, String o2) {
+                      if (o1 == null ? o2 != null : !o1.equals(o2)) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
