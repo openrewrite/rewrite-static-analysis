@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -999,28 +998,6 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     }
 
     @Test
-    void removeKotlinUnusedLocalVariable() {
-        rewriteRun(
-          //language=kotlin
-          kotlin(
-            """
-              class A (val b: String) {
-                  fun foo() {
-                      val bar = b;
-                  }
-              }
-              """,
-            """
-              class A (val b: String) {
-                  fun foo() {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void retainJavaUnusedLocalVariableWithNewClass() {
         rewriteRun(
           //language=java
@@ -1234,7 +1211,6 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
             );
         }
 
-        @ExpectedToFail("Not yet implemented")
         @Test
         void retainUnusedLocalVariableConst() {
             rewriteRun(
@@ -1259,5 +1235,34 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
             );
         }
 
+        @Test
+        void removeKotlinUnusedLocalVariable() {
+            rewriteRun(
+              //language=kotlin
+              kotlin(
+                """
+                  class A (val b: String) {
+                      fun foo() {
+                          val foo = b
+                      }
+                      fun underscoreRemoved() : String {
+                          val (_, tail) = Regex("(.)(.*)").find("abc").destructured
+                          return tail
+                      }
+                      fun initializerRemoved() : String {
+                          val matchResult = Regex("(.)(.*)").find("abc")
+                          return if (matchResult != null) {
+                              val (tip, tail) = matchResult.destructured
+                              val first = if (tip == "a") "A" else "V"
+                              "$first$tail"
+                          } else {
+                              throw IllegalStateException("Regex should match")
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
