@@ -223,8 +223,7 @@ public class CombineMergeableIfStatements extends Recipe {
             }
             if (idx >= 0) {
                 return whitespace.substring(0, idx + 1) + indent;
-            } else {
-                return whitespace;
+            return whitespace;
             }
         }
 
