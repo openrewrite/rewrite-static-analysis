@@ -223,8 +223,8 @@ public class CombineMergeableIfStatements extends Recipe {
             }
             if (idx >= 0) {
                 return whitespace.substring(0, idx + 1) + indent;
-            return whitespace;
             }
+            return whitespace;
         }
 
         private String continuationIndent(TabsAndIndentsStyle tabsAndIndents, String currentIndent) {
