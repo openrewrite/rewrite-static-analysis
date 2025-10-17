@@ -192,7 +192,7 @@ class FinalClassTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/372")
     @Test
-    void doNotFinalizeClassWithNestedStaticSubclass() {
+    void doNotFinalizeClassWithNestedStaticFinalSubclass() {
         rewriteRun(
           //language=java
           java(
@@ -201,6 +201,24 @@ class FinalClassTest implements RewriteTest {
                   private Reproducer() {}
 
                   public static final class Sub extends Reproducer {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/372")
+    @Test
+    void doNotFinalizeClassWithNestedStaticSubclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Reproducer {
+                  private Reproducer() {}
+
+                  public static class Sub extends Reproducer {
                   }
               }
               """
