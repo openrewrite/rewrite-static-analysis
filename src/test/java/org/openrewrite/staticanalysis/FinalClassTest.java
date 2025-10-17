@@ -200,7 +200,7 @@ class FinalClassTest implements RewriteTest {
               public class Reproducer {
                   private Reproducer() {}
 
-                  public static class Sub extends Reproducer {
+                  public static final class Sub extends Reproducer {
                   }
               }
               """

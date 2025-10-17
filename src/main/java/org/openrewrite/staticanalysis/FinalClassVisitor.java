@@ -60,12 +60,16 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDeclaration, ExecutionContext ctx) {
         J.ClassDeclaration cd = super.visitClassDeclaration(classDeclaration, ctx);
 
-        if (cd.getKind() != J.ClassDeclaration.Kind.Type.Class || cd.hasModifier(J.Modifier.Type.Abstract) ||
-                cd.hasModifier(J.Modifier.Type.Final) || cd.getType() == null) {
+        if (cd.getKind() != J.ClassDeclaration.Kind.Type.Class || cd.getType() == null) {
             return cd;
         }
 
+        // Always exclude supertypes from finalization, even for abstract or final classes
         excludeSupertypes(cd.getType());
+
+        if (cd.hasModifier(J.Modifier.Type.Abstract) || cd.hasModifier(J.Modifier.Type.Final)) {
+            return cd;
+        }
 
         boolean allPrivate = true;
         int constructorCount = 0;
