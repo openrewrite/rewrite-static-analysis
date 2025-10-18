@@ -163,6 +163,12 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 List<J> readReferences = VariableReferences.findRhsReferences(parentScope.getValue(), variable.getName());
                 if (readReferences.isEmpty()) {
                     List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
+
+                    // Check if any assignment might have side effects
+                    if (assignmentsMightSideEffect(assignmentReferences)) {
+                        return variable;
+                    }
+
                     for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment) {
                             doAfterVisit(new PruneAssignmentExpression((J.Assignment) ref));
@@ -204,14 +210,89 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 if (variable.getInitializer() == null) {
                     return false;
                 }
-                AtomicBoolean mightSideEffect = new AtomicBoolean(false);
-                new JavaIsoVisitor<AtomicBoolean>() {
+                return expressionMightSideEffect(variable.getInitializer());
+            }
+
+            private boolean assignmentsMightSideEffect(List<Statement> assignmentReferences) {
+                for (Statement ref : assignmentReferences) {
+                    // Check if the assignment is within a try block and might throw an exception
+                    if (isAssignmentInTryBlock(ref)) {
+                        if (ref instanceof J.Assignment) {
+                            J.Assignment assignment = (J.Assignment) ref;
+                            if (expressionMightThrowException(assignment.getAssignment())) {
+                                return true;
+                            }
+                        } else if (ref instanceof J.AssignmentOperation) {
+                            J.AssignmentOperation assignOp = (J.AssignmentOperation) ref;
+                            if (expressionMightThrowException(assignOp.getAssignment())) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+            private boolean isAssignmentInTryBlock(Statement statement) {
+                // Find if this statement is contained within a try block
+                J parent = getCursorToParentScope(getCursor()).getValue();
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Try.Resource visitTryResource(J.Try.Resource tryResource, AtomicBoolean result) {
+                        // Skip try-with-resources
+                        return tryResource;
+                    }
+
+                    @Override
+                    public J.Try visitTry(J.Try tryStatement, AtomicBoolean result) {
+                        // Check if the statement is in the try body
+                        new JavaIsoVisitor<AtomicBoolean>() {
+                            @Override
+                            public Statement visitStatement(Statement s, AtomicBoolean found) {
+                                if (s == statement) {
+                                    found.set(true);
+                                    return s;
+                                }
+                                return super.visitStatement(s, found);
+                            }
+                        }.visit(tryStatement.getBody(), result);
+                        return tryStatement;
+                    }
+                }.reduce(parent, new AtomicBoolean(false)).get();
+            }
+
+            private boolean expressionMightThrowException(Expression expression) {
+                // Only check for method invocations that might throw exceptions
+                // Constructors like "new Object()" typically don't throw checked exceptions
+                return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, AtomicBoolean result) {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                        if (withSideEffects == null || !withSideEffects) {
+                            result.set(true);
+                        }
+                        return methodInvocation;
+                    }
+
+                    @Override
+                    public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean result) {
+                        // Nested assignments might throw
+                        result.set(true);
+                        return assignment;
+                    }
+                }.reduce(expression, new AtomicBoolean(false)).get();
+            }
+
+            private boolean expressionMightSideEffect(Expression expression) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, AtomicBoolean result) {
+                        if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
+                            return methodInvocation;
+                        }
+                        if (withSideEffects == null || !withSideEffects) {
                             result.set(true);
                         }
                         return methodInvocation;
@@ -228,8 +309,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         result.set(true);
                         return assignment;
                     }
-                }.visit(variable.getInitializer(), mightSideEffect);
-                return mightSideEffect.get();
+                }.reduce(expression, new AtomicBoolean(false)).get();
             }
         });
     }
