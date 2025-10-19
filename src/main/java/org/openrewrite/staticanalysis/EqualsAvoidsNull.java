@@ -52,7 +52,9 @@ public class EqualsAvoidsNull extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Checks that any combination of String literals is on the left side of an `equals()` comparison. Also checks for String literals assigned to some field (such as `someString.equals(anotherString = \"text\"))`.";
+        return "Checks that any combination of String literals is on the left side of an `equals()` comparison. " +
+                "Also checks for String literals assigned to some field (such as `someString.equals(anotherString = \"text\"))`. " +
+                "And removes redundant null checks in conjunction with equals comparisons.";
     }
 
     @Override
