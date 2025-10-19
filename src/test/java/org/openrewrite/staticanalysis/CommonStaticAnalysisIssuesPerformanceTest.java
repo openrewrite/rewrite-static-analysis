@@ -26,7 +26,7 @@ class CommonStaticAnalysisIssuesPerformanceTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(RewriteTest.fromRuntimeClasspath("org.openrewrite.staticanalysis.CommonStaticAnalysis"));
+        spec.recipeFromResources("org.openrewrite.staticanalysis.CommonStaticAnalysis");
 //          .afterRecipe(run -> {
 //              System.out.println(run.getStats().printAsMermaidGantt(1e6));
 //              System.out.println("\n");
