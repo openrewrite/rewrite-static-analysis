@@ -132,15 +132,11 @@ public class EqualsAvoidsNull extends Recipe {
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
                                 boolean nullCheckMatchesSelect =
-                                        isLiteralValue(potentialNullCheck.getLeft(), null) &&
-                                                areEqual(potentialNullCheck.getRight(), m.getSelect()) ||
-                                                isLiteralValue(potentialNullCheck.getRight(), null) &&
-                                                        areEqual(potentialNullCheck.getLeft(), m.getSelect());
+                                        (isLiteralValue(potentialNullCheck.getLeft(), null) && areEqual(potentialNullCheck.getRight(), m.getSelect())) ||
+                                        (isLiteralValue(potentialNullCheck.getRight(), null) && areEqual(potentialNullCheck.getLeft(), m.getSelect()));
                                 boolean nullCheckMatchesArgument =
-                                        isLiteralValue(potentialNullCheck.getLeft(), null) &&
-                                                areEqual(potentialNullCheck.getRight(), m.getArguments().get(0)) ||
-                                                isLiteralValue(potentialNullCheck.getRight(), null) &&
-                                                        areEqual(potentialNullCheck.getLeft(), m.getArguments().get(0));
+                                        (isLiteralValue(potentialNullCheck.getLeft(), null) && areEqual(potentialNullCheck.getRight(), m.getArguments().get(0))) ||
+                                        (isLiteralValue(potentialNullCheck.getRight(), null) && areEqual(potentialNullCheck.getLeft(), m.getArguments().get(0)));
                                 if (nullCheckMatchesSelect || nullCheckMatchesArgument) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
