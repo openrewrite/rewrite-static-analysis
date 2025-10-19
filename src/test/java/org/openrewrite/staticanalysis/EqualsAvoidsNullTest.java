@@ -89,18 +89,22 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
               public class A {
                   {
-                      String s = null;
+                      String s = null, t = null;
                       if(s != null && s.equals("test")) {}
                       if(null != s && s.equals("test")) {}
+                      if(t != null && "test".equals(t)) {}
+                      if(null != t && "test".equals(t)) {}
                   }
               }
               """,
             """
               public class A {
                   {
-                      String s = null;
+                      String s = null, t = null;
                       if("test".equals(s)) {}
                       if("test".equals(s)) {}
+                      if("test".equals(t)) {}
+                      if("test".equals(t)) {}
                   }
               }
               """
