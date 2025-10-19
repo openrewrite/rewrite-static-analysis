@@ -32,6 +32,8 @@ import static java.time.Duration.ofMinutes;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static org.openrewrite.java.search.SemanticallyEqual.areEqual;
+import static org.openrewrite.java.tree.J.Literal.isLiteralValue;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -119,7 +121,7 @@ public class EqualsAvoidsNull extends Recipe {
 
                     private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
                         return EQUALS_STRING.matches(methodInvocation) ||
-                                (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType()))||
+                                (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType())) ||
                                 EQUALS_IGNORE_CASE.matches(methodInvocation) ||
                                 CONTENT_EQUALS.matches(methodInvocation);
                     }
@@ -129,17 +131,16 @@ public class EqualsAvoidsNull extends Recipe {
                             if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                Expression firstArgument = m.getArguments().get(0);
-                                boolean nullCheckMatchesSelect = m.getSelect() != null && (
-                                    isNullLiteral(potentialNullCheck.getLeft()) &&
-                                        matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
-                                    isNullLiteral(potentialNullCheck.getRight()) &&
-                                        matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect())));
+                                boolean nullCheckMatchesSelect =
+                                        isLiteralValue(potentialNullCheck.getLeft(), null) &&
+                                                areEqual(potentialNullCheck.getRight(), m.getSelect()) ||
+                                                isLiteralValue(potentialNullCheck.getRight(), null) &&
+                                                        areEqual(potentialNullCheck.getLeft(), m.getSelect());
                                 boolean nullCheckMatchesArgument =
-                                    isNullLiteral(potentialNullCheck.getLeft()) &&
-                                        matchesSelect(potentialNullCheck.getRight(), firstArgument) ||
-                                    isNullLiteral(potentialNullCheck.getRight()) &&
-                                        matchesSelect(potentialNullCheck.getLeft(), firstArgument);
+                                        isLiteralValue(potentialNullCheck.getLeft(), null) &&
+                                                areEqual(potentialNullCheck.getRight(), m.getArguments().get(0)) ||
+                                                isLiteralValue(potentialNullCheck.getRight(), null) &&
+                                                        areEqual(potentialNullCheck.getLeft(), m.getArguments().get(0));
                                 if (nullCheckMatchesSelect || nullCheckMatchesArgument) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
@@ -165,17 +166,7 @@ public class EqualsAvoidsNull extends Recipe {
                         }
                     }
 
-                    private boolean isNullLiteral(Expression expression) {
-                        return expression instanceof J.Literal && ((J.Literal) expression).getType() == JavaType.Primitive.Null;
-                    }
-
-                    private boolean matchesSelect(Expression expression, Expression select) {
-                        return expression.printTrimmed(getCursor()).replaceAll("\\s", "")
-                                .equals(select.printTrimmed(getCursor()).replaceAll("\\s", ""));
-                    }
-
-                    private J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m,
-                                                                    Expression firstArgument) {
+                    private J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {
                         return new J.Binary(Tree.randomId(),
                                 m.getPrefix(),
                                 Markers.EMPTY,
