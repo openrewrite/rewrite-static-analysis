@@ -78,11 +78,17 @@ public class EqualsAvoidsNull extends Recipe {
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
+                        if (!isStringComparisonMethod(m)) {
                             return m;
                         }
 
+                        // Always check for redundant null checks, even if we won't swap arguments
                         maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
+
+                        if (!hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
+                            return m;
+                        }
+
                         Expression firstArgument = m.getArguments().get(0);
 
                         return firstArgument.getType() == JavaType.Primitive.Null ?
@@ -121,10 +127,18 @@ public class EqualsAvoidsNull extends Recipe {
                             if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                if (isNullLiteral(potentialNullCheck.getLeft()) &&
+                                Expression firstArgument = m.getArguments().get(0);
+                                boolean nullCheckMatchesSelect = m.getSelect() != null && (
+                                    isNullLiteral(potentialNullCheck.getLeft()) &&
                                         matchesSelect(potentialNullCheck.getRight(), requireNonNull(m.getSelect())) ||
                                     isNullLiteral(potentialNullCheck.getRight()) &&
-                                            matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect()))) {
+                                        matchesSelect(potentialNullCheck.getLeft(), requireNonNull(m.getSelect())));
+                                boolean nullCheckMatchesArgument =
+                                    isNullLiteral(potentialNullCheck.getLeft()) &&
+                                        matchesSelect(potentialNullCheck.getRight(), firstArgument) ||
+                                    isNullLiteral(potentialNullCheck.getRight()) &&
+                                        matchesSelect(potentialNullCheck.getLeft(), firstArgument);
+                                if (nullCheckMatchesSelect || nullCheckMatchesArgument) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
                                         private final J.Binary scope = (J.Binary) parent;
