@@ -457,7 +457,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               import lombok.Getter;
 
-              class OnField {
+              class OnModifier {
                   @Getter private String foo;
               }
               """
@@ -466,7 +466,7 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
             """
               import lombok.Getter;
 
-              class OnField2 {
+              class OnType {
                   private @Getter String foo;
               }
               """
