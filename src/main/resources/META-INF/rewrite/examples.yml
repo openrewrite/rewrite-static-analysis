@@ -484,6 +484,32 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CommonStaticAnalysis
+examples:
+- description: '`CommonStaticAnalysisIssuesPerformanceTest#indexOfOnList`'
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          static boolean hasIndex(List<String> strList, String str) {
+              if (strList.indexOf(str) > 0) {
+              }
+              return strList.indexOf(str) > 0;
+          }
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          static boolean hasIndex(List<String> strList, String str) {
+              strList.indexOf(str);
+              return strList.indexOf(str) >= 1;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CompareEnumsWithEqualityOperator
 examples:
 - description: '`CompareEnumsWithEqualityOperatorTest#changeEnumEquals`'
