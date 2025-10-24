@@ -86,16 +86,10 @@ public class EqualsAvoidsNull extends Recipe {
                             return m;
                         }
 
-                        // Check if we have a constant on either side (before or after potential swap)
-                        boolean selectIsConstant = m.getSelect() instanceof J.Literal || isStaticFinalField(m.getSelect());
-                        boolean argumentIsConstant = hasCompatibleArgument(m);
+                        // Always check for redundant null checks, even if we won't swap arguments
+                        maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
 
-                        // Remove null check if we have a constant on either side
-                        if (selectIsConstant || argumentIsConstant) {
-                            maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
-                        }
-
-                        if (!argumentIsConstant || m.getSelect() instanceof J.Literal) {
+                        if (!hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
                             return m;
                         }
 
@@ -137,14 +131,10 @@ public class EqualsAvoidsNull extends Recipe {
                             if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
                                     ((J.Binary) parent).getLeft() instanceof J.Binary) {
                                 J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                boolean nullCheckMatchesSelect =
-                                        (isLiteralValue(potentialNullCheck.getLeft(), null) && areEqual(potentialNullCheck.getRight(), m.getSelect())) ||
-                                        (isLiteralValue(potentialNullCheck.getRight(), null) && areEqual(potentialNullCheck.getLeft(), m.getSelect()));
                                 boolean nullCheckMatchesArgument =
                                         (isLiteralValue(potentialNullCheck.getLeft(), null) && areEqual(potentialNullCheck.getRight(), m.getArguments().get(0))) ||
                                         (isLiteralValue(potentialNullCheck.getRight(), null) && areEqual(potentialNullCheck.getLeft(), m.getArguments().get(0)));
-
-                                if (nullCheckMatchesSelect || nullCheckMatchesArgument) {
+                                if (nullCheckMatchesArgument) {
                                     doAfterVisit(new JavaVisitor<ExecutionContext>() {
 
                                         private final J.Binary scope = (J.Binary) parent;
@@ -167,18 +157,6 @@ public class EqualsAvoidsNull extends Recipe {
                                 }
                             }
                         }
-                    }
-
-                    private boolean isStaticFinalField(Expression expr) {
-                        Expression checkExpr = expr;
-                        if (checkExpr instanceof J.FieldAccess) {
-                            checkExpr = ((J.FieldAccess) checkExpr).getName();
-                        }
-                        if (checkExpr instanceof J.Identifier) {
-                            JavaType.Variable fieldType = ((J.Identifier) checkExpr).getFieldType();
-                            return fieldType != null && fieldType.hasFlags(Flag.Static, Flag.Final);
-                        }
-                        return false;
                     }
 
                     private J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {

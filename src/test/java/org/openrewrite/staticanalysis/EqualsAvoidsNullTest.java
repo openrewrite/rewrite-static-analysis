@@ -87,23 +87,21 @@ class EqualsAvoidsNullTest implements RewriteTest {
           java(
             """
               public class A {
-                  {
-                      String s = null, t = null;
-                      if(s != null && s.equals("test")) {}
-                      if(null != s && s.equals("test")) {}
-                      if(t != null && "test".equals(t)) {}
-                      if(null != t && "test".equals(t)) {}
+                  void check(String s, String t) {
+                      if (s != null && s.equals("test")) {}
+                      if (null != s && s.equals("test")) {}
+                      if (t != null && "test".equals(t)) {}
+                      if (null != t && "test".equals(t)) {}
                   }
               }
               """,
             """
               public class A {
-                  {
-                      String s = null, t = null;
-                      if("test".equals(s)) {}
-                      if("test".equals(s)) {}
-                      if("test".equals(t)) {}
-                      if("test".equals(t)) {}
+                  void check(String s, String t) {
+                      if (s != null && s.equals("test")) {}
+                      if (null != s && s.equals("test")) {}
+                      if ("test".equals(t)) {}
+                      if ("test".equals(t)) {}
                   }
               }
               """
@@ -120,7 +118,7 @@ class EqualsAvoidsNullTest implements RewriteTest {
               import org.jspecify.annotations.Nullable;
 
               class A {
-                  boolean equal(String expected, @Nullable String actual){
+                  boolean equal(final String expected, @Nullable final String actual){
                       return actual != null && actual.equals(expected);
                   }
               }
