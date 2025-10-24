@@ -112,6 +112,24 @@ class EqualsAvoidsNullTest implements RewriteTest {
     }
 
     @Test
+    void retainNecessaryNullCheck() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+
+              class A {
+                  boolean equal(String expected, @Nullable String actual){
+                      return actual != null && actual.equals(expected);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void nullLiteral() {
         rewriteRun(
           //language=java
