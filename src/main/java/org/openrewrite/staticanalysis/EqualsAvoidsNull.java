@@ -82,23 +82,40 @@ public class EqualsAvoidsNull extends Recipe {
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (!isStringComparisonMethod(m)) {
-                            return m;
-                        }
-
-                        // Always check for redundant null checks, even if we won't swap arguments
-                        maybeHandleParentBinary(m, getCursor().getParentTreeCursor().getValue());
-
-                        if (!hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
+                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
                             return m;
                         }
 
                         Expression firstArgument = m.getArguments().get(0);
-
                         return firstArgument.getType() == JavaType.Primitive.Null ?
                                 literalsFirstInComparisonsNull(m, firstArgument) :
                                 literalsFirstInComparisons(m, firstArgument);
+                    }
 
+                    @Override
+                    public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                        // First swap order of method invocation select and argument
+                        J.Binary b = (J.Binary) super.visitBinary(binary, ctx);
+
+                        if (b.getLeft() instanceof J.Binary && isStringComparisonMethod(b.getRight())) {
+                            Expression nullCheckedLeft = nullCheckedArgument((J.Binary) b.getLeft());
+                            if (nullCheckedLeft != null && areEqual(nullCheckedLeft, ((J.MethodInvocation) b.getRight()).getArguments().get(0))) {
+                                return b.getRight().withPrefix(b.getPrefix());
+                            }
+                        }
+                        return b;
+                    }
+
+                    private @Nullable Expression nullCheckedArgument(J.Binary binary) {
+                        if (binary.getOperator() == J.Binary.Type.NotEqual) {
+                            if (isLiteralValue(binary.getLeft(), null)) {
+                                return binary.getRight();
+                            }
+                            if (isLiteralValue(binary.getRight(), null)) {
+                                return binary.getLeft();
+                            }
+                        }
+                        return null;
                     }
 
                     private boolean hasCompatibleArgument(J.MethodInvocation m) {
@@ -119,44 +136,15 @@ public class EqualsAvoidsNull extends Recipe {
                         return false;
                     }
 
-                    private boolean isStringComparisonMethod(J.MethodInvocation methodInvocation) {
-                        return EQUALS_STRING.matches(methodInvocation) ||
-                                (EQUALS_OBJECT.matches(methodInvocation) && TypeUtils.isString(methodInvocation.getArguments().get(0).getType())) ||
-                                EQUALS_IGNORE_CASE.matches(methodInvocation) ||
-                                CONTENT_EQUALS.matches(methodInvocation);
-                    }
-
-                    private void maybeHandleParentBinary(J.MethodInvocation m, final Tree parent) {
-                        if (parent instanceof J.Binary) {
-                            if (((J.Binary) parent).getOperator() == J.Binary.Type.And &&
-                                    ((J.Binary) parent).getLeft() instanceof J.Binary) {
-                                J.Binary potentialNullCheck = (J.Binary) ((J.Binary) parent).getLeft();
-                                boolean nullCheckMatchesArgument =
-                                        (isLiteralValue(potentialNullCheck.getLeft(), null) && areEqual(potentialNullCheck.getRight(), m.getArguments().get(0))) ||
-                                        (isLiteralValue(potentialNullCheck.getRight(), null) && areEqual(potentialNullCheck.getLeft(), m.getArguments().get(0)));
-                                if (nullCheckMatchesArgument) {
-                                    doAfterVisit(new JavaVisitor<ExecutionContext>() {
-
-                                        private final J.Binary scope = (J.Binary) parent;
-                                        private boolean done;
-
-                                        @Override
-                                        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                                            return done ? (J) tree : super.visit(tree, ctx);
-                                        }
-
-                                        @Override
-                                        public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-                                            if (scope.isScope(binary)) {
-                                                done = true;
-                                                return binary.getRight().withPrefix(binary.getPrefix());
-                                            }
-                                            return super.visitBinary(binary, ctx);
-                                        }
-                                    });
-                                }
-                            }
+                    private boolean isStringComparisonMethod(J j) {
+                        if (j instanceof J.MethodInvocation) {
+                            J.MethodInvocation mi = (J.MethodInvocation) j;
+                            return EQUALS_STRING.matches(mi) ||
+                                    (EQUALS_OBJECT.matches(mi) && TypeUtils.isString(mi.getArguments().get(0).getType())) ||
+                                    EQUALS_IGNORE_CASE.matches(mi) ||
+                                    CONTENT_EQUALS.matches(mi);
                         }
+                        return false;
                     }
 
                     private J.Binary literalsFirstInComparisonsNull(J.MethodInvocation m, Expression firstArgument) {

@@ -98,8 +98,8 @@ class EqualsAvoidsNullTest implements RewriteTest {
             """
               public class A {
                   void check(String s, String t) {
-                      if (s != null && s.equals("test")) {}
-                      if (null != s && s.equals("test")) {}
+                      if ("test".equals(s)) {}
+                      if ("test".equals(s)) {}
                       if ("test".equals(t)) {}
                       if ("test".equals(t)) {}
                   }
