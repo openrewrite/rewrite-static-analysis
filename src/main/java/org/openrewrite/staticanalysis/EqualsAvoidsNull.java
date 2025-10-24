@@ -80,16 +80,16 @@ public class EqualsAvoidsNull extends Recipe {
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+                        J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-                        if (!isStringComparisonMethod(m) || !hasCompatibleArgument(m) || m.getSelect() instanceof J.Literal) {
-                            return m;
+                        if (mi.getSelect() instanceof J.Literal || !isStringComparisonMethod(mi) || !hasCompatibleArgument(mi)) {
+                            return mi;
                         }
 
-                        Expression firstArgument = m.getArguments().get(0);
+                        Expression firstArgument = mi.getArguments().get(0);
                         return firstArgument.getType() == JavaType.Primitive.Null ?
-                                literalsFirstInComparisonsNull(m, firstArgument) :
-                                literalsFirstInComparisons(m, firstArgument);
+                                literalsFirstInComparisonsNull(mi, firstArgument) :
+                                literalsFirstInComparisons(mi, firstArgument);
                     }
 
                     @Override
@@ -97,6 +97,7 @@ public class EqualsAvoidsNull extends Recipe {
                         // First swap order of method invocation select and argument
                         J.Binary b = (J.Binary) super.visitBinary(binary, ctx);
 
+                        // Independent of changes above, clear out unnecessary null comparisons
                         if (b.getLeft() instanceof J.Binary && isStringComparisonMethod(b.getRight())) {
                             Expression nullCheckedLeft = nullCheckedArgument((J.Binary) b.getLeft());
                             if (nullCheckedLeft != null && areEqual(nullCheckedLeft, ((J.MethodInvocation) b.getRight()).getArguments().get(0))) {

@@ -115,11 +115,22 @@ class EqualsAvoidsNullTest implements RewriteTest {
           //language=java
           java(
             """
-              import org.jspecify.annotations.Nullable;
-
               class A {
-                  boolean equal(final String expected, @Nullable final String actual){
-                      return actual != null && actual.equals(expected);
+                  void check(String expected, String actual){
+                      if (expected != null && expected.equals(actual)) {}
+                      if (actual != null && actual.equals(expected)) {}
+                      if (expected != null && actual.equals(expected)) {}
+                      if (actual != null && expected.equals(actual)) {}
+                  }
+              }
+              """,
+            """
+              class A {
+                  void check(String expected, String actual){
+                      if (expected != null && expected.equals(actual)) {}
+                      if (actual != null && actual.equals(expected)) {}
+                      if (actual.equals(expected)) {}
+                      if (expected.equals(actual)) {}
                   }
               }
               """
