@@ -126,6 +126,16 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
+            public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
+                return instanceOf;
+            }
+
+            @Override
+            public J.DeconstructionPattern visitDeconstructionPattern(J.DeconstructionPattern deconstructionPattern, ExecutionContext ctx) {
+                return deconstructionPattern;
+            }
+
+            @Override
             public J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 // skip matching ignored variable names right away
                 if (ignoreVariableNames != null && ignoreVariableNames.contains(variable.getSimpleName())) {
