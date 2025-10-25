@@ -1399,4 +1399,181 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+    @Test
+    void doNotReplaceInAnonymousInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void foo() {
+                      B b = new B() {
+                          @Override
+                          public void run() {
+                              new Thread(() -> run()).start();
+                          }
+                      };
+                  }
+                  
+                  interface B {
+                      void run();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+    @Test
+    void doNotReplaceInAnonymousInnerClassWithOtherMethods() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void foo() {
+                      B b = new B() {
+                          @Override
+                          public void run() {
+                              execute(() -> doSomething());
+                          }
+                          
+                          private void doSomething() {
+                              System.out.println("doing something");
+                          }
+                          
+                          private void execute(Runnable r) {
+                              r.run();
+                          }
+                      };
+                  }
+                  
+                  interface B {
+                      void run();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/722")
+    @Test
+    void stillReplaceInRegularInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  class Inner {
+                      public void run() {
+                          new Thread(() -> run()).start();
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  class Inner {
+                      public void run() {
+                          new Thread(this::run).start();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/744")
+    @Test
+    void methodReferenceNestedClassImportInvalid() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(i -> i instanceof Entry);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(Entry.class::isInstance);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/744")
+    @Test
+    void methodReferenceNestedClassFullyQualified() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(i -> i instanceof java.util.Map.Entry);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().filter(Map.Entry.class::isInstance);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/744")
+    @Test
+    void methodReferenceNestedClassCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().map(i -> (Entry) i);
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.Map.Entry;
+
+              public class Foo {
+                  private void foo() {
+                      List.of().stream().map(Entry.class::cast);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

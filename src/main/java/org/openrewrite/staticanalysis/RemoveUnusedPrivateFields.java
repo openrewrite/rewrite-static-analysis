@@ -85,6 +85,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                         // RSPEC-S1068 does not apply serialVersionUID of Serializable classes, or fields with annotations.
                         if (!(skipSerialVersionUID && isSerialVersionUid(vd)) &&
                                 vd.getLeadingAnnotations().isEmpty() &&
+                                !(vd.getTypeExpression() instanceof J.AnnotatedType) &&
                                 vd.hasModifier(J.Modifier.Type.Private)) {
                             Statement nextStatement = i < statements.size() - 1 ? statements.get(i + 1) : null;
                             checkFields.add(new CheckField(vd, nextStatement));
@@ -138,6 +139,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                         TypeUtils.isOfClassType(vd.getType(), "long") &&
                         vd.getVariables().stream().anyMatch(it -> "serialVersionUID".equals(it.getSimpleName()));
             }
+
         };
         return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
     }

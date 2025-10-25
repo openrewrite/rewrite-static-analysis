@@ -16,18 +16,15 @@
 package org.openrewrite.staticanalysis;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.google.errorprone.annotations.InlineMe;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.DeleteStatement;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.*;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -108,7 +105,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             ignoreVariableNames.addAll(Arrays.asList(ignoreVariablesNamed));
         }
 
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||
@@ -129,7 +126,17 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
-            public  J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+            public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
+                return instanceOf;
+            }
+
+            @Override
+            public J.DeconstructionPattern visitDeconstructionPattern(J.DeconstructionPattern deconstructionPattern, ExecutionContext ctx) {
+                return deconstructionPattern;
+            }
+
+            @Override
+            public J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 // skip matching ignored variable names right away
                 if (ignoreVariableNames != null && ignoreVariableNames.contains(variable.getSimpleName())) {
                     return variable;
@@ -234,7 +241,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 }.visit(variable.getInitializer(), mightSideEffect);
                 return mightSideEffect.get();
             }
-        };
+        });
     }
 
     /**

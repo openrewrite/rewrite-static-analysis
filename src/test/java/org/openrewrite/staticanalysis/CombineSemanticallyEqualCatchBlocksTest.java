@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.ExpectedToFail;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -29,6 +30,42 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new CombineSemanticallyEqualCatchBlocks());
+    }
+
+    @DocumentExample
+    @Test
+    void blocksContainSameComments() {
+        rewriteRun(
+          //language=java
+          java("class A extends RuntimeException {}"),
+          //language=java
+          java("class B extends RuntimeException {}"),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (A ex) {
+                          // Same
+                      } catch (B ex) {
+                          // Same
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (A | B ex) {
+                          // Same
+                      }
+                  }
+              }
+              """
+          )
+        );
     }
 
     @Test
@@ -100,41 +137,6 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
                           // Comment 1
                       } catch (B ex) {
                           // Comment 2
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void blocksContainSameComments() {
-        rewriteRun(
-          //language=java
-          java("class A extends RuntimeException {}"),
-          //language=java
-          java("class B extends RuntimeException {}"),
-          //language=java
-          java(
-            """
-              class Test {
-                  void method() {
-                      try {
-                      } catch (A ex) {
-                          // Same
-                      } catch (B ex) {
-                          // Same
-                      }
-                  }
-              }
-              """,
-            """
-              class Test {
-                  void method() {
-                      try {
-                      } catch (A | B ex) {
-                          // Same
                       }
                   }
               }

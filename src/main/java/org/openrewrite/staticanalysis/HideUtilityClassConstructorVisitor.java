@@ -15,14 +15,18 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
-import org.openrewrite.Incubating;
+import org.openrewrite.SourceFile;
+import org.openrewrite.Tree;
 import org.openrewrite.java.*;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.HideUtilityClassConstructorStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.style.Style;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,16 +56,24 @@ import java.util.EnumSet;
  *     </li>
  * </ul>
  */
-@Incubating(since = "7.0.0")
 public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
 
     private static final EnumSet<J.ClassDeclaration.Kind.Type> EXCLUDE_CLASS_TYPES =
             EnumSet.of(J.ClassDeclaration.Kind.Type.Interface, J.ClassDeclaration.Kind.Type.Record);
 
-    private final UtilityClassMatcher utilityClassMatcher;
+    @SuppressWarnings("NotNullFieldNotInitialized")
+    private UtilityClassMatcher utilityClassMatcher;
+    @SuppressWarnings("NotNullFieldNotInitialized")
+    private HideUtilityClassConstructorStyle style;
 
-    public HideUtilityClassConstructorVisitor(HideUtilityClassConstructorStyle style) {
-        this.utilityClassMatcher = new UtilityClassMatcher(style.getIgnoreIfAnnotatedBy());
+    @Override
+    public @Nullable J visit(@Nullable Tree tree, P p) {
+        //noinspection ConstantValue
+        if (style == null && tree instanceof SourceFile) {
+            style = Style.from(HideUtilityClassConstructorStyle.class, (SourceFile)tree, Checkstyle::hideUtilityClassConstructorStyle);
+            utilityClassMatcher = new UtilityClassMatcher(style.getIgnoreIfAnnotatedBy());
+        }
+        return super.visit(tree, p);
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.kotlin.tree.K;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.style.Style;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -127,9 +128,7 @@ public class NeedBraces extends Recipe {
                 if (cu.getSourcePath().toString().endsWith(".py")) {
                     return (J) tree;
                 }
-                needBracesStyle = cu.getStyle(NeedBracesStyle.class) == null ?
-                        Checkstyle.needBracesStyle() :
-                        cu.getStyle(NeedBracesStyle.class, new NeedBracesStyle(false, false));
+                needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);
             }
             return super.visit(tree, ctx);
         }
@@ -241,6 +240,22 @@ public class NeedBraces extends Recipe {
         @Override
         public J.ForLoop visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
             J.ForLoop elem = super.visitForLoop(forLoop, ctx);
+            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                    elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                    elem.getBody() instanceof J.Block;
+            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                J.Block b = buildBlock(elem.getBody());
+                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+            }
+            return elem;
+        }
+
+        @Override
+        public J.ForEachLoop visitForEachLoop(J.ForEachLoop forEachLoop, ExecutionContext ctx) {
+            J.ForEachLoop elem = super.visitForEachLoop(forEachLoop, ctx);
             boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
                     elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
                     elem.getBody() instanceof J.Block;

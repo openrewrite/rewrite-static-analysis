@@ -111,7 +111,7 @@ public class MinimumSwitchCases extends Recipe {
             @Override
             public J visitSwitch(J.Switch switch_, ExecutionContext ctx) {
                 if (doRewrite(switch_)) {
-                    J.Switch sortedSwitch = (J.Switch) new DefaultComesLast().getVisitor().visit(switch_, ctx);
+                    J.Switch sortedSwitch = (J.Switch) new DefaultComesLast().getVisitor().visit(switch_, ctx, getCursor().getParentTreeCursor());
                     assert sortedSwitch != null;
 
                     J.Case[] cases = new J.Case[2];

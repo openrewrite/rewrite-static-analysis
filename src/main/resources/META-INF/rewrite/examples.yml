@@ -15,7 +15,7 @@
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AbstractClassPublicConstructor
 examples:
-- description: ''
+- description: '`AbstractClassPublicConstructorTest#replacePublicByProtected`'
   sources:
   - before: |
       abstract class Test {
@@ -32,7 +32,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AddSerialAnnotationToSerialVersionUID
 examples:
-- description: ''
+- description: '`AddSerialAnnotationToSerialVersionUIDTest#addSerialAnnotation`'
   sources:
   - before: |
       import java.io.Serializable;
@@ -53,7 +53,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
 examples:
-- description: ''
+- description: '`AddSerialVersionUidToSerializableTest#addSerialVersionUID`'
   parameters:
   - 'null'
   sources:
@@ -77,7 +77,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AnnotateNullableMethods
 examples:
-- description: ''
+- description: '`AnnotateNullableMethodsTest#methodReturnsNullLiteral`'
   parameters:
   - 'null'
   sources:
@@ -116,8 +116,9 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AnnotateNullableParameters
 examples:
-- description: ''
+- description: '`SimpleNullComparison#singleEqualsNullCase`'
   parameters:
+  - 'null'
   - 'null'
   sources:
   - before: |
@@ -151,7 +152,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
 examples:
-- description: ''
+- description: '`AtomicPrimitiveEqualsUsesGetTest#usesEquals`'
   sources:
   - before: |
       import java.util.concurrent.atomic.AtomicInteger;
@@ -190,7 +191,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AvoidBoxedBooleanExpressions
 examples:
-- description: ''
+- description: '`AvoidBoxedBooleanExpressionsTest#guardAgainstNpe`'
   sources:
   - before: |
       class Test {
@@ -219,7 +220,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.BigDecimalDoubleConstructorRecipe
 examples:
-- description: ''
+- description: '`BigDecimalDoubleConstructorTest#bigDecimalDoubleConstructor`'
   sources:
   - before: |
       import java.math.BigDecimal;
@@ -242,7 +243,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.BigDecimalRoundingConstantsToEnums
 examples:
-- description: ''
+- description: '`BigDecimalRoundingConstantsToEnumsTest#bigDecimalRoundingChangeRoundingMode`'
   sources:
   - before: |
       import java.math.BigDecimal;
@@ -278,7 +279,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.BooleanChecksNotInverted
 examples:
-- description: ''
+- description: '`BooleanChecksNotInvertedTest#rspec1940`'
   sources:
   - before: |
       public class Test {
@@ -305,7 +306,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.BufferedWriterCreationRecipes
 examples:
-- description: ''
+- description: '`BufferedWriterCreationTest#bufferedReaderCreation`'
   sources:
   - before: |
       import java.io.BufferedWriter;
@@ -338,7 +339,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CaseInsensitiveComparisonsDoNotChangeCase
 examples:
-- description: ''
+- description: '`CaseInsensitiveComparisonsDoNotChangeCaseTest#argIsToLowerCase`'
   sources:
   - before: |
       class A {
@@ -357,26 +358,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
 examples:
-- description: ''
-  sources:
-  - before: |
-      class A {
-          void foo() throws IllegalAccessException {
-              try {
-                  throw new IllegalAccessException();
-              } catch (Exception e) {
-                  throw e; // `e` is removed below
-              }
-          }
-      }
-    after: |
-      class A {
-          void foo() throws IllegalAccessException {
-              throw new IllegalAccessException();
-          }
-      }
-    language: java
-- description: ''
+- description: '`CatchClauseOnlyRethrowsTest#tryCanBeRemoved`'
   sources:
   - before: |
       import java.io.FileReader;
@@ -398,6 +380,25 @@ examples:
       class A {
           void foo() throws IOException {
               new FileReader("").read();
+          }
+      }
+    language: java
+- description: '`CatchClauseOnlyRethrowsCsharpTest#verifyCsharpImplicitThrow`'
+  sources:
+  - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
           }
       }
     language: java
@@ -431,7 +432,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CollectionToArrayShouldHaveProperType
 examples:
-- description: ''
+- description: '`CollectionToArrayShouldHaveProperTypeTest#basicCase`'
   sources:
   - before: |
       import java.util.List;
@@ -452,9 +453,93 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks
+examples:
+- description: '`CombineSemanticallyEqualCatchBlocksTest#blocksContainSameComments`'
+  sources:
+  - before: class A extends RuntimeException {}
+    language: java
+  - before: class B extends RuntimeException {}
+    language: java
+  - before: |
+      class Test {
+          void method() {
+              try {
+              } catch (A ex) {
+                  // Same
+              } catch (B ex) {
+                  // Same
+              }
+          }
+      }
+    after: |
+      class Test {
+          void method() {
+              try {
+              } catch (A | B ex) {
+                  // Same
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CommonStaticAnalysis
+examples:
+- description: '`CommonStaticAnalysisIssuesPerformanceTest#indexOfOnList`'
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          static boolean hasIndex(List<String> strList, String str) {
+              if (strList.indexOf(str) > 0) {
+              }
+              return strList.indexOf(str) > 0;
+          }
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          static boolean hasIndex(List<String> strList, String str) {
+              strList.indexOf(str);
+              return strList.indexOf(str) >= 1;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CompareEnumsWithEqualityOperator
+examples:
+- description: '`CompareEnumsWithEqualityOperatorTest#changeEnumEquals`'
+  sources:
+  - before: |
+      import a.A;
+      class Test {
+          void method(A arg0) {
+              if (A.FOO.equals(arg0)) {
+              }
+              if (arg0.equals(A.FOO)) {
+              }
+          }
+      }
+    after: |
+      import a.A;
+      class Test {
+          void method(A arg0) {
+              if (A.FOO == arg0) {
+              }
+              if (arg0 == A.FOO) {
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ControlFlowIndentation
 examples:
-- description: ''
+- description: '`ControlFlowIndentationTest#removesIndentationFromStatementAfterIfElse`'
   sources:
   - before: |
       class A {
@@ -485,7 +570,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CovariantEquals
 examples:
-- description: ''
+- description: '`CovariantEqualsTest#replaceWithNonCovariantEquals`'
   sources:
   - before: |
       class Test {
@@ -512,7 +597,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CustomImportOrder
 examples:
-- description: ''
+- description: '`CustomImportOrderRecipeTest#ordersStaticThenStandardThenThirdPartyWithNoGroupBlankLine`'
   sources:
   - before: |
       package com.example;
@@ -536,7 +621,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.DeclarationSiteTypeVariance
 examples:
-- description: ''
+- description: '`DeclarationSiteTypeVarianceTest#inOutVariance`'
   parameters:
   - List.of("java.util.function.Function<IN, OUT>")
   - List.of("java.lang.*")
@@ -563,7 +648,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.DefaultComesLast
 examples:
-- description: ''
+- description: '`DefaultComesLastTest#moveDefaultToLastAlongWithItsStatementsAndAddBreakIfNecessary`'
   sources:
   - before: |
       class Test {
@@ -604,7 +689,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.EmptyBlock
 examples:
-- description: ''
+- description: '`EmptyBlockTest#emptySwitch`'
   sources:
   - before: |
       public class A {
@@ -625,7 +710,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.EqualsAvoidsNull
 examples:
-- description: ''
+- description: '`EqualsAvoidsNullTest#invertConditional`'
   sources:
   - before: |
       public class A {
@@ -650,7 +735,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.EqualsToContentEquals
 examples:
-- description: ''
+- description: '`EqualsToContentEqualsTest#replaceStringBuilder`'
   sources:
   - before: |
       class SomeClass {
@@ -671,7 +756,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ExplicitCharsetOnStringGetBytes
 examples:
-- description: ''
+- description: '`ExplicitCharsetOnStringGetBytesTest#addUtf8`'
   parameters:
   - 'null'
   sources:
@@ -696,7 +781,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ExplicitInitialization
 examples:
-- description: ''
+- description: '`ExplicitInitializationTest#removeExplicitInitialization`'
   sources:
   - before: |
       class Test {
@@ -741,7 +826,7 @@ examples:
           private final Long n = null;
       }
     language: java
-- description: ''
+- description: '`ExplicitInitializationVisitorCsharpTest#removeExplicitInitialization`'
   sources:
   - before: |
       class A {
@@ -762,7 +847,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ExplicitLambdaArgumentTypes
 examples:
-- description: ''
+- description: '`ExplicitLambdaArgumentTypesTest#twoArgumentsWithBlock`'
   sources:
   - before: |
       import java.util.function.BiPredicate;
@@ -795,7 +880,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ExternalizableHasNoArgsConstructor
 examples:
-- description: ''
+- description: '`ExternalizableHasNoArgConstructorTest#needsNoArgsConstructor`'
   sources:
   - before: |
       import java.io.Externalizable;
@@ -847,7 +932,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FallThrough
 examples:
-- description: ''
+- description: '`FallThroughTest#addBreakWhenPreviousCaseHasCodeButLacksBreak`'
   sources:
   - before: |
       public class A {
@@ -879,7 +964,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FinalClass
 examples:
-- description: ''
+- description: '`FinalClassTest#finalizeClass`'
   sources:
   - before: |
       public class A {
@@ -902,7 +987,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FinalizeLocalVariables
 examples:
-- description: ''
+- description: '`FinalizeLocalVariablesTest#localVariablesAreMadeFinal`'
   sources:
   - before: |
       class A {
@@ -925,7 +1010,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FinalizeMethodArguments
 examples:
-- description: ''
+- description: '`FinalizeMethodArgumentsTest#replaceWithFinalModifier`'
   sources:
   - before: |
       class TestClass {
@@ -965,7 +1050,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FixStringFormatExpressions
 examples:
-- description: ''
+- description: '`FixStringFormatExpressionsTest#newLineFormat`'
   sources:
   - before: |
       class T {
@@ -986,7 +1071,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ForLoopControlVariablePostfixOperators
 examples:
-- description: ''
+- description: '`ForLoopControlVariablePostfixOperatorsTest#forLoopPostfixInductionVariableCounter`'
   sources:
   - before: |
       class Test {
@@ -1009,7 +1094,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ForLoopIncrementInUpdate
 examples:
-- description: ''
+- description: '`ForLoopIncrementInUpdateTest#moveIncrementToUpdate`'
   sources:
   - before: |
       class Test {
@@ -1033,7 +1118,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.HiddenField
 examples:
-- description: ''
+- description: '`HiddenFieldTest#constructorParameter`'
   sources:
   - before: |
       public class A {
@@ -1054,7 +1139,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.HideUtilityClassConstructor
 examples:
-- description: ''
+- description: '`HideUtilityClassConstructorTest#changePublicConstructorToPrivate`'
   sources:
   - before: |
       public class A {
@@ -1077,7 +1162,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.IndexOfChecksShouldUseAStartPosition
 examples:
-- description: ''
+- description: '`IndexOfChecksShouldUseAStartPositionTest#changeLhsWithLiteral`'
   sources:
   - before: |
       class Test {
@@ -1096,7 +1181,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.IndexOfReplaceableByContains
 examples:
-- description: ''
+- description: '`IndexOfReplaceableByContainsTest#stringIndexOfReplaceableByContains`'
   sources:
   - before: |
       class Test {
@@ -1119,7 +1204,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero
 examples:
-- description: ''
+- description: '`IndexOfShouldNotCompareGreaterThanZeroTest#indexOfOnList`'
   sources:
   - before: |
       import java.util.List;
@@ -1146,7 +1231,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.InlineVariable
 examples:
-- description: ''
+- description: '`InlineVariableTest#inlineVariable`'
   sources:
   - before: |
       import java.util.List;
@@ -1212,9 +1297,64 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.InstanceOfPatternMatch
+examples:
+- description: '`InstanceOfPatternMatchTest#variableNamingConflictWithMultipleInstanceOf`'
+  sources:
+  - before: |
+      class LeftNode {
+          int bar() {
+              return 0;
+          }
+      }
+      class RightNode {
+          int bar() {
+              return 1;
+          }
+      }
+
+      class Foo {
+          void bar(Object o1, Object o2) {
+              if (o1 instanceof LeftNode && o2 instanceof RightNode) {
+                ((LeftNode)o1).bar();
+                ((RightNode)o2).bar();
+              }
+              else if (o1 instanceof RightNode && o2 instanceof LeftNode) {
+                ((RightNode)o1).bar();
+                ((LeftNode)o2).bar();
+              }
+          }
+      }
+    after: |
+      class LeftNode {
+          int bar() {
+              return 0;
+          }
+      }
+      class RightNode {
+          int bar() {
+              return 1;
+          }
+      }
+
+      class Foo {
+          void bar(Object o1, Object o2) {
+              if (o1 instanceof LeftNode node2 && o2 instanceof RightNode node3) {
+                node2.bar();
+                node3.bar();
+              }
+              else if (o1 instanceof RightNode node && o2 instanceof LeftNode node1) {
+                node.bar();
+                node1.bar();
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.IsEmptyCallOnCollections
 examples:
-- description: ''
+- description: '`IsEmptyCallOnCollectionsTest#sizeOnClassImplementationCollection`'
   sources:
   - before: |
       import java.util.ArrayList;
@@ -1243,7 +1383,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.LambdaBlockToExpression
 examples:
-- description: ''
+- description: '`LambdaBlockToExpressionTest#simplifyLambdaBlockToExpression`'
   sources:
   - before: |
       import java.util.function.Function;
@@ -1262,7 +1402,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.LowercasePackage
 examples:
-- description: ''
+- description: '`LowercasePackageTest#lowerCasePackage`'
   sources:
   - before: |
       package com.UPPERCASE.CamelCase;
@@ -1275,7 +1415,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MaskCreditCardNumbers
 examples:
-- description: ''
+- description: '`MaskCreditCardNumbersTest#noSpaces`'
   sources:
   - before: |
       class A {
@@ -1288,29 +1428,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
-recipeName: org.openrewrite.staticanalysis.MinimumSwitchCases
+recipeName: org.openrewrite.staticanalysis.MethodNameCasing
 examples:
-- description: ''
+- description: '`MethodNameCasingTest#changeMethodDeclaration`'
+  parameters:
+  - 'false'
+  - 'false'
   sources:
   - before: |
-      def s = "prod"
-      switch(s) {
-          case "prod":
-              println("prod")
-              break
-          default:
-              println("default")
-              break
+      class Test {
+          void MyMethod_with_über() {
+          }
       }
     after: |
-      def s = "prod"
-      if ("prod".equals(s)) {
-          println("prod")
-      } else {
-          println("default")
+      class Test {
+          void myMethodWithUber() {
+          }
       }
-    language: groovy
-- description: ''
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MinimumSwitchCases
+examples:
+- description: '`MinimumSwitchCasesTest#caseWithReturnInsteadOfBreak`'
   sources:
   - before: |
       class Test {
@@ -1342,11 +1482,31 @@ examples:
           void doSomethingElse() {}
       }
     language: java
+- description: '`MinimumSwitchCasesTest#twoCases`'
+  sources:
+  - before: |
+      def s = "prod"
+      switch(s) {
+          case "prod":
+              println("prod")
+              break
+          default:
+              println("default")
+              break
+      }
+    after: |
+      def s = "prod"
+      if ("prod".equals(s)) {
+          println("prod")
+      } else {
+          println("default")
+      }
+    language: groovy
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MissingOverrideAnnotation
 examples:
-- description: ''
+- description: '`MissingOverrideAnnotationTest#whenIgnoreAnonymousClassMethodsIsFalseAndAMethodOverridesWithinAnAnonymousClass`'
   parameters:
   - 'false'
   sources:
@@ -1380,7 +1540,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ModifierOrder
 examples:
-- description: ''
+- description: '`ModifierOrderTest#changeModifierOrder`'
   sources:
   - before: |
       import org.openrewrite.internal.lang.Nullable;
@@ -1399,7 +1559,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MoveConditionsToWhile
 examples:
-- description: ''
+- description: '`MoveConditionsToWhileTest#basicTransformation`'
   sources:
   - before: |
       class Test {
@@ -1427,7 +1587,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MultipleVariableDeclarations
 examples:
-- description: ''
+- description: '`MultipleVariableDeclarationsTest#replaceWithIndividualVariableDeclarations`'
   sources:
   - before: |
       class Test {
@@ -1457,7 +1617,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NeedBraces
 examples:
-- description: ''
+- description: '`NeedBracesTest#addBraces`'
   sources:
   - before: |
       class Test {
@@ -1491,6 +1651,10 @@ examples:
 
           static void addToIterativeFor(Object obj) {
               for (int i = 0; ; ) obj.notify();
+          }
+
+          static void addToForEach(int[] arr) {
+              for (int i : arr) System.out.println(i);
           }
       }
     after: |
@@ -1542,13 +1706,19 @@ examples:
                   obj.notify();
               }
           }
+
+          static void addToForEach(int[] arr) {
+              for (int i : arr) {
+                  System.out.println(i);
+              }
+          }
       }
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NestedEnumsAreNotStatic
 examples:
-- description: ''
+- description: '`NestedEnumsAreNotStaticTest#nestedEnumIsStatic`'
   sources:
   - before: |
       class A {
@@ -1577,7 +1747,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NewStringBuilderBufferWithCharArgument
 examples:
-- description: ''
+- description: '`NewStringBuilderBufferWithCharArgumentTest#charIsConstructorArg`'
   sources:
   - before: |
       class A {
@@ -1598,7 +1768,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoDoubleBraceInitialization
 examples:
-- description: ''
+- description: '`NoDoubleBraceInitializationTest#addStatementInForLoop`'
   sources:
   - before: |
       import java.util.Set;
@@ -1630,7 +1800,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoEmptyCollectionWithRawType
 examples:
-- description: ''
+- description: '`NoEmptyCollectionWithRawTypeTest#emptyListFullyQualified`'
   sources:
   - before: |
       import java.util.List;
@@ -1649,7 +1819,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoEqualityInForCondition
 examples:
-- description: ''
+- description: '`NoEqualityInForConditionTest#replaceWithRelationalOperator`'
   sources:
   - before: |
       class Test {
@@ -1674,7 +1844,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoFinalizedLocalVariables
 examples:
-- description: ''
+- description: '`NoFinalizedLocalVariablesTest#removeFinal`'
   parameters:
   - 'null'
   sources:
@@ -1711,7 +1881,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoFinalizer
 examples:
-- description: ''
+- description: '`NoFinalizerTest#noFinalizer`'
   sources:
   - before: |
       class Test {
@@ -1741,7 +1911,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoPrimitiveWrappersForToStringOrCompareTo
 examples:
-- description: ''
+- description: '`NoPrimitiveWrappersForToStringOrCompareToTest#noPrimitiveWrapperForToString`'
   sources:
   - before: |
       class T {
@@ -1768,7 +1938,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoRedundantJumpStatements
 examples:
-- description: ''
+- description: '`NoRedundantJumpStatementsTest#noRedundantJumpStatements`'
   sources:
   - before: |
       class Test {
@@ -1802,7 +1972,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoToStringOnStringType
 examples:
-- description: ''
+- description: '`NoToStringOnStringTypeTest#toStringOnString`'
   sources:
   - before: |
       class Test {
@@ -1821,7 +1991,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NoValueOfOnStringType
 examples:
-- description: ''
+- description: '`NoValueOfOnStringTypeTest#valueOfOnLiterals`'
   sources:
   - before: |
       class Test {
@@ -1852,7 +2022,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.NullableOnMethodReturnType
 examples:
-- description: ''
+- description: '`NullableOnMethodReturnTypeTest#nullableOnMethodReturnType`'
   sources:
   - before: |
       import org.openrewrite.internal.lang.Nullable;
@@ -1873,7 +2043,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ObjectFinalizeCallsSuper
 examples:
-- description: ''
+- description: '`ObjectFinalizeCallsSuperTest#addsSuperFinalizeInvocation`'
   sources:
   - before: |
       class F {
@@ -1899,7 +2069,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.OnlyCatchDeclaredExceptions
 examples:
-- description: ''
+- description: '`OnlyCatchDeclaredExceptionsTest#shouldReplaceExceptionWithSingleCheckedException`'
   sources:
   - before: |
       class MyService {
@@ -1928,7 +2098,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.OperatorWrap
 examples:
-- description: ''
+- description: '`OperatorWrapTest#binaryOnNewline`'
   parameters:
   - 'null'
   sources:
@@ -1951,7 +2121,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.PreferEqualityComparisonOverDifferenceCheck
 examples:
-- description: ''
+- description: '`PreferEqualityComparisonOverDifferenceCheckTest#basicSubtractionEqualityComparison`'
   sources:
   - before: |
       class Test {
@@ -1970,7 +2140,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.PreferIncrementOperator
 examples:
-- description: ''
+- description: '`PreferIncrementOperatorTest#incrementByOne`'
   sources:
   - before: |
       class Test {
@@ -1987,9 +2157,40 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.PreferSystemGetPropertyOverGetenv
+examples:
+- description: '`PreferSystemGetPropertyOverGetenvTest#replacesMultipleEnvVariables`'
+  sources:
+  - before: |
+      class A {
+          void test() {
+              String user = System.getenv("USER");
+              String username = System.getenv("USERNAME");
+              String home = System.getenv("HOME");
+              String profile = System.getenv("USERPROFILE");
+              String temp = System.getenv("TEMP");
+              String tmpdir = System.getenv("TMPDIR");
+              String tmp = System.getenv("TMP");
+          }
+      }
+    after: |
+      class A {
+          void test() {
+              String user = System.getProperty("user.name");
+              String username = System.getProperty("user.name");
+              String home = System.getProperty("user.home");
+              String profile = System.getProperty("user.home");
+              String temp = System.getProperty("java.io.tmpdir");
+              String tmpdir = System.getProperty("java.io.tmpdir");
+              String tmp = System.getProperty("java.io.tmpdir");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
 examples:
-- description: ''
+- description: '`PrimitiveWrapperClassConstructorToValueOfTest#newClassToValueOf`'
   sources:
   - before: |
       class A {
@@ -2022,7 +2223,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RedundantFileCreation
 examples:
-- description: ''
+- description: '`RedundantFileCreationTest#redundantFileCreation`'
   sources:
   - before: |
       import java.io.*;
@@ -2044,7 +2245,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReferentialEqualityToObjectEquals
 examples:
-- description: ''
+- description: '`ReferentialEqualityToObjectEqualsTest#bothSidesOverrideEquals`'
   sources:
   - before: |
       class T {
@@ -2075,7 +2276,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveCallsToObjectFinalize
 examples:
-- description: ''
+- description: '`RemoveCallsToObjectFinalizeTest#removeCallToFinalize`'
   sources:
   - before: |
       public class A {
@@ -2111,7 +2312,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveCallsToSystemGc
 examples:
-- description: ''
+- description: '`RemoveCallsToSystemGcTest#noGc`'
   sources:
   - before: |
       public class A {
@@ -2142,7 +2343,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveEmptyJavaDocParameters
 examples:
-- description: ''
+- description: '`RemoveEmptyJavaDocParametersTest#emptyParam`'
   sources:
   - before: |
       class Test {
@@ -2162,7 +2363,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveExtraSemicolons
 examples:
-- description: ''
+- description: '`RemoveExtraSemicolonsTest#emptyBlockStatements`'
   sources:
   - before: |
       class Test {
@@ -2180,7 +2381,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveHashCodeCallsFromArrayInstances
 examples:
-- description: ''
+- description: '`RemoveHashCodeCallsFromArrayInstancesTest#replaceHashCodeCalls`'
   sources:
   - before: |
       class SomeClass {
@@ -2199,9 +2400,37 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveInstanceOfPatternMatch
+examples:
+- description: '`RemoveInstanceOfPatternMatchTest#blockOfStatements`'
+  sources:
+  - before: |
+      package com.example;
+
+      class Example {
+          public void test(Object obj) {
+              if (obj instanceof String str) {
+                  System.out.println(str);
+              }
+          }
+      }
+    after: |
+      package com.example;
+
+      class Example {
+          public void test(Object obj) {
+              if (obj instanceof String) {
+                  String str = (String) obj;
+                  System.out.println(str);
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveJavaDocAuthorTag
 examples:
-- description: ''
+- description: '`RemoveJavaDocAuthorTagTest#preserveDocsBeforeTag`'
   sources:
   - before: |
       /**
@@ -2221,7 +2450,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
 examples:
-- description: ''
+- description: '`RemoveRedundantNullCheckBeforeInstanceofTest#removeRedundantNullCheck`'
   sources:
   - before: |
       class A {
@@ -2244,7 +2473,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeLiteralEquals
 examples:
-- description: ''
+- description: '`RemoveRedundantNullCheckBeforeLiteralEqualsTest#removeRedundantNullCheck`'
   sources:
   - before: |
       class A {
@@ -2267,7 +2496,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveRedundantTypeCast
 examples:
-- description: ''
+- description: '`RemoveRedundantTypeCastTest#downCastParameterizedTypes`'
   sources:
   - before: |
       import java.util.List;
@@ -2298,7 +2527,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveSystemOutPrintln
 examples:
-- description: ''
+- description: '`RemoveSystemOutPrintlnTest#removePrintln`'
   sources:
   - before: |
       class Test {
@@ -2316,7 +2545,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveToStringCallsFromArrayInstances
 examples:
-- description: ''
+- description: '`RemoveToStringCallsFromArrayInstancesTest#fixNonCompliantToString`'
   sources:
   - before: |
       class SomeClass {
@@ -2337,7 +2566,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnneededAssertion
 examples:
-- description: ''
+- description: '`RemoveUnneededAssertionTest#assertTrue`'
   sources:
   - before: |
       public class A {
@@ -2359,7 +2588,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnneededBlock
 examples:
-- description: ''
+- description: '`RemoveUnneededBlockTest#simplifyNestedBlock`'
   sources:
   - before: |
       public class A {
@@ -2380,7 +2609,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
 examples:
-- description: ''
+- description: '`RemoveUnusedLocalVariablesTest#removeUnusedLocalVariables`'
   parameters:
   - 'null'
   - 'null'
@@ -2406,7 +2635,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnusedPrivateFields
 examples:
-- description: ''
+- description: '`RemoveUnusedPrivateFieldsTest#removeUnusedPrivateField`'
   sources:
   - before: |
       class Test {
@@ -2420,7 +2649,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
 examples:
-- description: ''
+- description: '`RemoveUnusedPrivateMethodsTest#removeUnusedPrivateMethods`'
   sources:
   - before: |
       class Test {
@@ -2449,7 +2678,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenameExceptionInEmptyCatch
 examples:
-- description: ''
+- description: '`RenameExceptionInEmptyCatchTest#nameScopeTest`'
   sources:
   - before: |
       class Test {
@@ -2490,7 +2719,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
 examples:
-- description: ''
+- description: '`RenameLocalVariablesToCamelCaseTest#renameAllCapsAcronyms`'
   sources:
   - before: |
       class Test {
@@ -2505,7 +2734,7 @@ examples:
           }
       }
     language: java
-- description: ''
+- description: '`RenameLocalVariablesToCamelCaseTest#regular`'
   sources:
   - before: |
       fun foo() {
@@ -2522,7 +2751,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
 examples:
-- description: ''
+- description: '`RenameMethodsNamedHashcodeEqualOrToStringTest#noncompliantMethodNames`'
   sources:
   - before: |
       interface ITest {
@@ -2573,7 +2802,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenamePrivateFieldsToCamelCase
 examples:
-- description: ''
+- description: '`RenamePrivateFieldsToCamelCaseTest#renamePrivateMembers`'
   sources:
   - before: |
       class Test {
@@ -2616,7 +2845,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReorderAnnotations
 examples:
-- description: ''
+- description: '`ReorderAnnotationsTest#reordersMethodAnnotations`'
   sources:
   - before: |
       import org.junit.jupiter.api.Test;
@@ -2645,7 +2874,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull
 examples:
-- description: ''
+- description: '`ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest#replaceWithOneArgument`'
   sources:
   - before: |
       import org.apache.commons.lang3.Validate;
@@ -2668,7 +2897,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceClassIsInstanceWithInstanceof
 examples:
-- description: ''
+- description: '`ReplaceClassIsInstanceWithInstanceofTest#changeInstanceOf`'
   sources:
   - before: |
       class A {
@@ -2691,7 +2920,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceCollectionToArrayArgWithEmptyArray
 examples:
-- description: ''
+- description: '`ReplaceCollectionToArrayArgWithEmptyArrayTest#replaceSizeArgumentWithZero`'
   sources:
   - before: |
       import java.util.Collection;
@@ -2712,9 +2941,46 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceDeprecatedRuntimeExecMethods
+examples:
+- description: '`ReplaceDeprecatedRuntimeExecMethodsTest#rawString`'
+  sources:
+  - before: |
+      import java.io.File;
+      import java.io.IOException;
+
+      class A {
+          void method() throws IOException {
+              Runtime runtime = Runtime.getRuntime();
+              String[] envp = { "E1=1", "E2=2"};
+              File dir = new File("/tmp");
+
+              Process process1 = runtime.exec("ls -a -l");
+              Process process2 = runtime.exec("ls -a -l", envp);
+              Process process3 = runtime.exec("ls -a -l", envp, dir);
+          }
+      }
+    after: |
+      import java.io.File;
+      import java.io.IOException;
+
+      class A {
+          void method() throws IOException {
+              Runtime runtime = Runtime.getRuntime();
+              String[] envp = { "E1=1", "E2=2"};
+              File dir = new File("/tmp");
+
+              Process process1 = runtime.exec(new String[]{"ls", "-a", "-l"});
+              Process process2 = runtime.exec(new String[]{"ls", "-a", "-l"}, envp);
+              Process process3 = runtime.exec(new String[]{"ls", "-a", "-l"}, envp, dir);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceDuplicateStringLiterals
 examples:
-- description: ''
+- description: '`ReplaceDuplicateStringLiteralsTest#replaceRedundantFinalStrings`'
   parameters:
   - 'true'
   sources:
@@ -2738,7 +3004,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 examples:
-- description: ''
+- description: '`ReplaceLambdaWithMethodReferenceTest#functionMultiParamReference`'
   sources:
   - before: |
       import java.util.function.Function;
@@ -2781,11 +3047,42 @@ examples:
           }
       }
     language: java
+- description: '`ReplaceLambdaWithMethodReferenceTest#toQualifiedMethodReference`'
+  sources:
+  - before: |
+      fun main() {
+          val pets = listOf(Cat(), Dog())
+          pets.forEach { it.move() }
+      }
+    after: |
+      fun main() {
+          val pets = listOf(Cat(), Dog())
+          pets.forEach ( Pet::move )
+      }
+    language: kotlin
+  - before: |
+      interface Pet {
+          fun move() {
+          }
+      }
+
+      class Cat : Pet {
+          override fun move() {
+              println("Cat is moving")
+          }
+      }
+
+      class Dog : Pet {
+          override fun move() {
+              println("Dog is moving")
+          }
+      }
+    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceOptionalIsPresentWithIfPresent
 examples:
-- description: ''
+- description: '`ReplaceOptionalIsPresentWithIfPresentTest#ignoreReturnInsideLambda`'
   sources:
   - before: |
       import java.util.Optional;
@@ -2820,7 +3117,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceRedundantFormatWithPrintf
 examples:
-- description: ''
+- description: '`ReplaceRedundantFormatWithPrintfTest#transformsNonLiteralFormatStringForPrint`'
   sources:
   - before: |
       class Test {
@@ -2841,7 +3138,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceStackWithDeque
 examples:
-- description: ''
+- description: '`ReplaceStackWithDequeTest#replaceStack`'
   sources:
   - before: |
       import java.util.Stack;
@@ -2870,7 +3167,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
 examples:
-- description: ''
+- description: '`ReplaceStringBuilderWithStringTest#replaceLiteralConcatenation`'
   sources:
   - before: |
       class A {
@@ -2889,7 +3186,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceTextBlockWithString
 examples:
-- description: ''
+- description: '`ReplaceTextBlockWithStringTest#newLine`'
   sources:
   - before: |
       package com.example;
@@ -2911,7 +3208,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
 examples:
-- description: ''
+- description: '`ReplaceThreadRunWithThreadStartTest#replaceThreadRun`'
   sources:
   - before: |
       public class A {
@@ -2934,7 +3231,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull
 examples:
-- description: ''
+- description: '`ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNullTest#replaceMethodsWithTwoArg`'
   sources:
   - before: |
       import org.apache.commons.lang3.Validate;
@@ -2956,7 +3253,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceWeekYearWithYear
 examples:
-- description: ''
+- description: '`ReplaceWeekYearWithYearTest#changeSimpleDateFormat`'
   sources:
   - before: |
       import java.text.SimpleDateFormat;
@@ -2983,7 +3280,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyArraysAsList
 examples:
-- description: ''
+- description: '`SimplifyArraysAsListTest#simplifyStringArrayCreation`'
   sources:
   - before: |
       import java.util.Arrays;
@@ -3008,19 +3305,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpression
 examples:
-- description: ''
-  sources:
-  - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
-- description: ''
+- description: '`SimplifyBooleanExpressionTest#simplifyEqualsLiteralTrueIf`'
   sources:
   - before: |
       public class A {
@@ -3039,11 +3324,23 @@ examples:
           }
       }
     language: java
+- description: '`SimplifyBooleanExpressionTest#regular`'
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan
 examples:
-- description: ''
+- description: '`SimplifyBooleanExpressionWithDeMorganTest#transformNegatedAndToOr`'
   sources:
   - before: |
       class Test {
@@ -3066,7 +3363,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanReturn
 examples:
-- description: ''
+- description: '`SimplifyBooleanReturnTest#simplifyBooleanReturn`'
   sources:
   - before: |
       public class A {
@@ -3103,7 +3400,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyCompoundStatement
 examples:
-- description: ''
+- description: '`SimplifyCompoundStatementTest#removeCompoundAnd`'
   sources:
   - before: |
       class Test {
@@ -3123,7 +3420,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyConsecutiveAssignments
 examples:
-- description: ''
+- description: '`SimplifyConsecutiveAssignmentsTest#assignmentAndIncrement`'
   sources:
   - before: |
       class Test {
@@ -3146,7 +3443,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyConstantIfBranchExecution
 examples:
-- description: ''
+- description: '`SimplifyConstantIfBranchExecutionTest#simplifyConstantIfTrue`'
   sources:
   - before: |
       public class A {
@@ -3167,7 +3464,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyDurationCreationUnits
 examples:
-- description: ''
+- description: '`SimplifyDurationCreationUnitsTest#simplifyLiteralMillisToSeconds`'
   sources:
   - before: |
       import java.time.Duration;
@@ -3184,9 +3481,38 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyElseBranch
+examples:
+- description: '`SimplifyElseBranchTest#simplifyElseBranch`'
+  sources:
+  - before: |
+      class A {
+          void a(String password) {
+              if (password.length() < 6) {
+                  System.out.println("Password is too short.");
+              } else {
+                  if (password.length() > 12) {
+                      System.out.println("Password is too long.");
+                  }
+              }
+          }
+      }
+    after: |
+      class A {
+          void a(String password) {
+              if (password.length() < 6) {
+                  System.out.println("Password is too short.");
+              } else if (password.length() > 12) {
+                  System.out.println("Password is too long.");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyTernaryRecipes
 examples:
-- description: ''
+- description: '`SimplifyTernaryTest#simplified`'
   sources:
   - before: |
       class Test {
@@ -3243,7 +3569,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SortedSetStreamToLinkedHashSet
 examples:
-- description: ''
+- description: '`SortedSetStreamToLinkedHashSetTest#changeSortedSetStreamToLinkedHashSet`'
   sources:
   - before: |
       import java.util.Set;
@@ -3269,7 +3595,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.StaticMethodNotFinal
 examples:
-- description: ''
+- description: '`StaticMethodNotFinalTest#removeFinalFromStaticMethods`'
   sources:
   - before: |
       class Test {
@@ -3286,7 +3612,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.StringLiteralEquality
 examples:
-- description: ''
+- description: '`StringLiteralEqualityTest#stringLiteralEqualityReplacedWithEquals`'
   sources:
   - before: |
       import java.util.List;
@@ -3345,7 +3671,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.TernaryOperatorsShouldNotBeNested
 examples:
-- description: ''
+- description: '`SwitchExpressionNotSupported#doReplaceNestedOrTernaryWithIfFollowedByTernary`'
   sources:
   - before: |
       class Test {
@@ -3363,7 +3689,7 @@ examples:
         }
       }
     language: java
-- description: ''
+- description: '`ReplaceWithSwitchExpression#doReplaceNestedOrTernaryWithSwitchExpression`'
   sources:
   - before: |
       class Test {
@@ -3386,7 +3712,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.TypecastParenPad
 examples:
-- description: ''
+- description: '`TypecastParenPadTest#typecastParenPad`'
   sources:
   - before: |
       class A {
@@ -3411,7 +3737,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.URLEqualsHashCodeRecipes
 examples:
-- description: ''
+- description: '`URLEqualsHashCodeTest#urlHashCode`'
   sources:
   - before: |
       import java.net.URL;
@@ -3437,7 +3763,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryCatch
 examples:
-- description: ''
+- description: '`UnnecessaryCatchTest#unwrapTry`'
   parameters:
   - 'false'
   - 'false'
@@ -3465,7 +3791,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
 examples:
-- description: ''
+- description: '`UnnecessaryCloseInTryWithResourcesTest#hasUnnecessaryClose`'
   sources:
   - before: |
       import java.io.FileWriter;
@@ -3495,7 +3821,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryExplicitTypeArguments
 examples:
-- description: ''
+- description: '`UnnecessaryExplicitTypeArgumentsTest#unnecessaryExplicitTypeArguments`'
   sources:
   - before: |
       class Test {
@@ -3526,7 +3852,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryParentheses
 examples:
-- description: ''
+- description: '`UnnecessaryParenthesesTest#fullUnwrappingDefault`'
   sources:
   - before: |
       import java.util.*;
@@ -3575,7 +3901,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryPrimitiveAnnotations
 examples:
-- description: ''
+- description: '`UnnecessaryPrimitiveAnnotationsTest#unnecessaryNullable`'
   sources:
   - before: |
       import javax.annotation.CheckForNull;
@@ -3598,7 +3924,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryReturnAsLastStatement
 examples:
-- description: ''
+- description: '`UnnecessaryReturnAsLastStatementTest#simpleReturn`'
   sources:
   - before: |
       class Hello {
@@ -3618,7 +3944,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryThrows
 examples:
-- description: ''
+- description: '`UnnecessaryThrowsTest#unnecessaryThrows`'
   sources:
   - before: |
       import java.io.FileInputStream;
@@ -3650,7 +3976,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnwrapElseAfterReturn
 examples:
-- description: ''
+- description: '`UnwrapElseAfterReturnTest#simpleIfElseWithReturn`'
   sources:
   - before: |
       class Test {
@@ -3676,7 +4002,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnwrapRepeatableAnnotations
 examples:
-- description: ''
+- description: '`UnwrapRepeatableAnnotationsTest#unwrapRepeatable`'
   sources:
   - before: |
       import com.example.*;
@@ -3696,7 +4022,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UpperCaseLiteralSuffixes
 examples:
-- description: ''
+- description: '`UpperCaseLiteralSuffixesTest#useUppercaseLiteralSuffix`'
   sources:
   - before: |
       class Test {
@@ -3721,9 +4047,55 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseAsBuilder
+examples:
+- description: '`UseAsBuilderTest#useAsBuilder`'
+  parameters:
+  - Buildable.Builder
+  - 'true'
+  - Buildable builder()
+  sources:
+  - before: |
+      class Buildable {
+          public static Builder builder() {
+              return new Builder();
+          }
+
+          public static class Builder {
+              public Builder option(String option) {
+                  return this;
+              }
+          }
+      }
+    language: java
+  - before: |
+      class Test {
+          void test() {
+              int a = 0;
+              Buildable.Builder builder = Buildable.builder();
+              String b = "rewrite-java";
+              int c = 0;
+              builder = builder.option(b);
+              int d = 0;
+          }
+      }
+    after: |
+      class Test {
+          void test() {
+              int a = 0;
+              String b = "rewrite-java";
+              int c = 0;
+              Buildable.Builder builder = Buildable.builder()
+                      .option(b);
+              int d = 0;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseCollectionInterfaces
 examples:
-- description: ''
+- description: '`UseCollectionInterfacesTest#rawReturnType`'
   sources:
   - before: |
       import java.util.HashSet;
@@ -3747,7 +4119,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseDiamondOperator
 examples:
-- description: ''
+- description: '`UseDiamondOperatorTest#useDiamondOperator`'
   sources:
   - before: |
       import java.util.*;
@@ -3776,7 +4148,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseForEachRemoveInsteadOfSetRemoveAll
 examples:
-- description: ''
+- description: '`UseForEachRemoveInsteadOfSetRemoveAllTest#returnExpressionIgnored`'
   sources:
   - before: |
       import java.util.Collection;
@@ -3821,7 +4193,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
 examples:
-- description: ''
+- description: '`UseJavaStyleArrayDeclarationsTest#javaStyleArrayForVariableDeclarations`'
   sources:
   - before: |
       class A {
@@ -3846,7 +4218,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface
 examples:
-- description: ''
+- description: '`UseLambdaForFunctionalInterfaceTest#useLambda`'
   sources:
   - before: |
       import java.util.function.Function;
@@ -3868,7 +4240,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseListSort
 examples:
-- description: ''
+- description: '`UseListSortTest#hasSelect`'
   sources:
   - before: |
       import java.util.ArrayList;
@@ -3896,9 +4268,28 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UsePortableNewlines
+examples:
+- description: '`UsePortableNewlinesTest#replaceNewlineInPrintfWithPrintStream`'
+  sources:
+  - before: |
+      class Test {
+          void test(String name) {
+              System.out.printf("Hello %s\n", name);
+          }
+      }
+    after: |
+      class Test {
+          void test(String name) {
+              System.out.printf("Hello %s%n", name);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseStandardCharset
 examples:
-- description: ''
+- description: '`UseStandardCharsetTest#changeCharsetForName`'
   sources:
   - before: |
       import java.nio.charset.Charset;
@@ -3928,7 +4319,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UseStringReplace
 examples:
-- description: ''
+- description: '`UseStringReplaceTest#replaceAllReplacedByReplace`'
   sources:
   - before: |
       class Test {
@@ -3949,7 +4340,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.WhileInsteadOfFor
 examples:
-- description: ''
+- description: '`WhileInsteadOfForTest#replaceWithWhile`'
   sources:
   - before: |
       class Test {
@@ -3972,7 +4363,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.WriteOctalValuesAsDecimal
 examples:
-- description: ''
+- description: '`WriteOctalValuesAsDecimalTest#writeAsDecimal`'
   sources:
   - before: |
       class Test {
@@ -4007,7 +4398,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType
 examples:
-- description: ''
+- description: '`MoveFieldAnnotationToTypeTest#fieldAnnotation`'
   parameters:
   - org.openrewrite..*
   sources:
@@ -4028,7 +4419,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.maven.MavenJavadocNonAsciiRecipe
 examples:
-- description: ''
+- description: '`MavenJavadocNonAsciiRecipeTest#commentContainingNonAscii`'
   sources:
   - before: |
       /**

@@ -17,7 +17,6 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -999,28 +998,6 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     }
 
     @Test
-    void removeKotlinUnusedLocalVariable() {
-        rewriteRun(
-          //language=kotlin
-          kotlin(
-            """
-              class A (val b: String) {
-                  fun foo() {
-                      val bar = b;
-                  }
-              }
-              """,
-            """
-              class A (val b: String) {
-                  fun foo() {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void retainJavaUnusedLocalVariableWithNewClass() {
         rewriteRun(
           //language=java
@@ -1214,6 +1191,47 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/760")
+    @Test
+    void doNotRemoveUnusedPatternMatchingVariables() {
+        rewriteRun(
+          version(
+            java(
+              """
+              public sealed interface ArtifactStage permits ArtifactStage.Generated {
+
+                sealed interface Generated extends ArtifactStage permits Generated.Baz {
+                  record Baz(String a, String b) implements Generated {}
+                }
+              }
+              """
+            ), 21
+          ),
+          version(
+            java(
+              """
+              class Foo {
+                record MyRecord(String a, String b) {}
+
+                private void bar(String s) {}
+
+                void foo(MyRecord r) {
+                  if (r instanceof MyRecord(String a, String b)) {bar(b);}
+                  if (r instanceof MyRecord(String __, String b)) {bar(b);}
+                }
+
+                void bar(final Object generatedArtifact) {
+                  if (generatedArtifact instanceof ArtifactStage.Generated.Baz(String aaa, String b)) {
+                    bar(b);
+                  }
+                }
+              }
+              """
+            ), 21
+          )
+        );
+    }
+
     @Nested
     class Kotlin {
 
@@ -1234,7 +1252,6 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
             );
         }
 
-        @ExpectedToFail("Not yet implemented")
         @Test
         void retainUnusedLocalVariableConst() {
             rewriteRun(
@@ -1259,5 +1276,34 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
             );
         }
 
+        @Test
+        void removeKotlinUnusedLocalVariable() {
+            rewriteRun(
+              //language=kotlin
+              kotlin(
+                """
+                  class A (val b: String) {
+                      fun foo() {
+                          val foo = b
+                      }
+                      fun underscoreRemoved() : String {
+                          val (_, tail) = Regex("(.)(.*)").find("abc").destructured
+                          return tail
+                      }
+                      fun initializerRemoved() : String {
+                          val matchResult = Regex("(.)(.*)").find("abc")
+                          return if (matchResult != null) {
+                              val (tip, tail) = matchResult.destructured
+                              val first = if (tip == "a") "A" else "V"
+                              "$first$tail"
+                          } else {
+                              throw IllegalStateException("Regex should match")
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }

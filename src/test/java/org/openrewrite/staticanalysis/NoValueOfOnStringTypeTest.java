@@ -249,23 +249,21 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
           java(
             """
               class Test {
-                  static void method1() {
+                  static void unnecessary() {
                       String a = String.valueOf(method2());
                   }
 
-                  static String method2() {
-                      return "";
-                  }
-              }
-              """,
-            """
-              class Test {
-                  static void method1() {
-                      String a = method2();
+                  static void necessary() {
+                      // `"null"` with `String.valueOf` vs `null` without
+                      String b = String.valueOf(method3());
                   }
 
                   static String method2() {
                       return "";
+                  }
+
+                  static String method3() {
+                      return null;
                   }
               }
               """
@@ -290,6 +288,23 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
               class Test {
                   static void method(int i) {
                       String parens = "prefix" + (i - 1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveValueOfForNullableStrings() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+
+                  String method(Object some) {
+                      return String.valueOf(some.toString());
                   }
               }
               """

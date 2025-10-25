@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.style.Style;
 
 import java.util.Optional;
 
@@ -56,11 +57,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             if (bl != block) {
                 bl = (J.Block) new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor()
                         .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
-                EmptyBlockStyle style = getCursor().firstEnclosingOrThrow(JavaSourceFile.class)
-                        .getStyle(EmptyBlockStyle.class);
-                if (style == null) {
-                    style = Checkstyle.emptyBlock();
-                }
+                EmptyBlockStyle style = Style.from(EmptyBlockStyle.class, getCursor().firstEnclosingOrThrow(JavaSourceFile.class), Checkstyle::emptyBlock);
                 bl = (J.Block) new EmptyBlockVisitor<>(style)
                         .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
             }

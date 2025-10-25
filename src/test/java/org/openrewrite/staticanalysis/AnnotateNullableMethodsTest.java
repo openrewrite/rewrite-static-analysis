@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
@@ -368,6 +369,147 @@ class AnnotateNullableMethodsTest implements RewriteTest {
                   public  B.@Nullable C bar() {
                       return null;
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nullableMethodsInvocationsWithDefaultNullableClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public @Nullable String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nullableMethodsInvocationsWithCustomNullableClass() {
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableMethods("org.openrewrite.jgit.annotations.Nullable")),
+          //language=java
+          java(
+            """
+              import org.openrewrite.jgit.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.jgit.annotations.Nullable;
+
+              import java.util.Random;
+
+              public class Test {
+                  public @Nullable String maybeNullString() {
+                      return new Random().nextBoolean() ? "Not null" : null;
+                  }
+
+                  public @Nullable String getString() {
+                      return maybeNullString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/738")
+    @Test
+    void repeatUntilStable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Test {
+
+                  public String getString() {
+                      return null;
+                  }
+
+                  public String getString2() {
+                      return getString();
+                  }
+
+                  public String getString3() {
+                      return getString2();
+                  }
+
+                  public String getString4() {
+                      return getString3();
+                  }
+
+                  public String getString5() {
+                      return getString4();
+                  }
+
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+
+              public class Test {
+
+                  public @Nullable String getString() {
+                      return null;
+                  }
+
+                  public @Nullable String getString2() {
+                      return getString();
+                  }
+
+                  public @Nullable String getString3() {
+                      return getString2();
+                  }
+
+                  public @Nullable String getString4() {
+                      return getString3();
+                  }
+
+                  public @Nullable String getString5() {
+                      return getString4();
+                  }
+
               }
               """
           )
