@@ -26,7 +26,7 @@ import static org.openrewrite.java.Assertions.java;
 class ReorderAnnotationAttributesTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new ReorderAnnotationAttributes3());
+        spec.recipe(new ReorderAnnotationAttributes());
     }
 
     @DocumentExample
@@ -54,6 +54,43 @@ class ReorderAnnotationAttributesTest implements RewriteTest {
               }
 
               @MyAnnotation(enabled = true, name = "test", value = 123)
+              class A {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void argumentsOnNewLine() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              @interface MyAnnotation {
+                  String name();
+                  int value();
+                  boolean enabled();
+              }
+
+              @MyAnnotation(
+                  value = 123,
+                  name = "test",
+                  enabled = true)
+              class A {
+              }
+              """,
+            """
+              @interface MyAnnotation {
+                  String name();
+                  int value();
+                  boolean enabled();
+              }
+
+              @MyAnnotation(
+                  enabled = true,
+                  name = "test",
+                  value = 123)
               class A {
               }
               """
@@ -128,26 +165,6 @@ class ReorderAnnotationAttributesTest implements RewriteTest {
     }
 
     @Test
-    void preservesPositionalArgumentsAtBeginning() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              @interface MyAnnotation {
-                  String value();
-                  String name();
-                  boolean enabled();
-              }
-
-              @MyAnnotation("default")
-              class A {
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void reordersWithArrayValues() {
         rewriteRun(
           //language=java
@@ -169,6 +186,49 @@ class ReorderAnnotationAttributesTest implements RewriteTest {
               }
 
               @MyAnnotation(name = "test", values = {"a", "b", "c"})
+              class A {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void commentsAssociatedWithValues() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              @interface MyAnnotation {
+                  String name();
+                  int value();
+                  boolean enabled();
+              }
+
+              @MyAnnotation(
+                  // Value
+                  value = 123,
+                  // Name
+                  name = "test",
+                  // Enabled
+                  enabled = true)
+              class A {
+              }
+              """,
+            """
+              @interface MyAnnotation {
+                  String name();
+                  int value();
+                  boolean enabled();
+              }
+
+              @MyAnnotation(
+                  // Enabled
+                  enabled = true,
+                  // Name
+                  name = "test",
+                  // Value
+                  value = 123)
               class A {
               }
               """
@@ -223,6 +283,26 @@ class ReorderAnnotationAttributesTest implements RewriteTest {
               java(
                 """
                   @SuppressWarnings("unchecked")
+                  class A {
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void preservesPositionalArgumentsAtBeginning() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  @interface MyAnnotation {
+                      String value();
+                      String name();
+                      boolean enabled();
+                  }
+
+                  @MyAnnotation("default")
                   class A {
                   }
                   """

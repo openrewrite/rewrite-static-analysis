@@ -19,8 +19,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
@@ -57,54 +58,26 @@ public class ReorderAnnotationAttributes extends Recipe {
     };
 
     @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public J.Annotation visitAnnotation(J.Annotation annotation, ExecutionContext ctx) {
-                J.Annotation a = super.visitAnnotation(annotation, ctx);
-                List<Expression> arguments = a.getArguments();
+    public TreeVisitor<?, ExecutionContext> getVisitor() {
+        return new Annotated.Matcher("*..*").asVisitor(annotated -> {
+            J.Annotation a = annotated.getTree();
 
-                if (arguments == null || arguments.size() <= 1) {
-                    return a;
-                }
-
-                // Separate positional arguments from named arguments
-                List<Expression> positional = new ArrayList<>();
-                List<Expression> named = new ArrayList<>();
-
-                for (Expression arg : arguments) {
-                    if (arg instanceof J.Assignment) {
-                        named.add(arg);
-                    } else {
-                        positional.add(arg);
-                    }
-                }
-
-                // If there are no named arguments or only one, no need to sort
-                if (named.size() <= 1) {
-                    return a;
-                }
-
-                // Sort named arguments alphabetically
-                List<Expression> sortedNamed = new ArrayList<>(named);
-                sortedNamed.sort(attributeComparator);
-
-                // Check if the order actually changed
-                if (sortedNamed.equals(named)) {
-                    return a;
-                }
-
-                // Combine: positional arguments first, then sorted named arguments
-                List<Expression> reordered = new ArrayList<>(positional);
-                reordered.addAll(sortedNamed);
-
-                // Preserve the original prefixes (spacing/formatting)
-                List<Expression> finalArguments = ListUtils.map(reordered, (i, arg) ->
-                    arg.withPrefix(arguments.get(i).getPrefix())
-                );
-
-                return a.withArguments(finalArguments);
+            List<Expression> arguments = a.getArguments();
+            if (arguments == null || arguments.size() <= 1 ||
+                    !arguments.stream().allMatch(e -> e instanceof J.Assignment)) {
+                return a;
             }
-        };
+
+            // Sort named arguments alphabetically
+            List<Expression> sortedNamed = new ArrayList<>(arguments);
+            sortedNamed.sort(attributeComparator);
+            if (!sortedNamed.equals(arguments)) {
+                // Preserve the original prefixes (spacing/formatting)
+                return a.withArguments(ListUtils.map(sortedNamed, (i, arg) ->
+                        arg.withPrefix(arg.getPrefix().withWhitespace(arguments.get(i).getPrefix().getWhitespace()))
+                ));
+            }
+            return a;
+        });
     }
 }
