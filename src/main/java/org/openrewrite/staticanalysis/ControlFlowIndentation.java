@@ -26,6 +26,7 @@ import org.openrewrite.java.format.TabsAndIndentsVisitor;
 import org.openrewrite.java.style.IntelliJ;
 import org.openrewrite.java.style.SpacesStyle;
 import org.openrewrite.java.style.TabsAndIndentsStyle;
+import org.openrewrite.java.style.WrappingAndBracesStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Loop;
@@ -63,6 +64,8 @@ public class ControlFlowIndentation extends Recipe {
             TabsAndIndentsStyle tabsAndIndentsStyle;
             @Nullable
             SpacesStyle spacesStyle;
+            @Nullable
+            WrappingAndBracesStyle wrappingStyle;
 
             @Override
             public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
@@ -70,6 +73,7 @@ public class ControlFlowIndentation extends Recipe {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     tabsAndIndentsStyle = Style.from(TabsAndIndentsStyle.class, cu, IntelliJ::tabsAndIndents);
                     spacesStyle = Style.from(SpacesStyle.class, cu, IntelliJ::spaces);
+                    wrappingStyle = Style.from(WrappingAndBracesStyle.class, cu, IntelliJ::wrappingAndBraces);
                 }
                 return super.visit(tree, ctx);
             }
@@ -83,7 +87,8 @@ public class ControlFlowIndentation extends Recipe {
                         foundControlFlowRequiringReformatting.set(true);
                         return (Statement) new TabsAndIndentsVisitor<>(
                                 requireNonNull(tabsAndIndentsStyle),
-                                requireNonNull(spacesStyle))
+                                requireNonNull(spacesStyle),
+                                requireNonNull(wrappingStyle))
                                 .visit(statement, ctx, getCursor());
                     }
                     return statement;
