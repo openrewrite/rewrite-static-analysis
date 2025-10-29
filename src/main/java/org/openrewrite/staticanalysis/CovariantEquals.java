@@ -65,7 +65,16 @@ public class CovariantEquals extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                J.ClassDeclaration enclosingClass = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration).getValue();
+
+                // Find the enclosing type declaration - could be class, interface, enum, etc.
+                // For Kotlin, methods might be top-level (no class parent at all)
+                Object parent = getCursor().getParent(J.ClassDeclaration.class);
+                if (parent == null) {
+                    // Not in a J.ClassDeclaration - could be interface, enum, or Kotlin structure
+                    return m;
+                }
+
+                J.ClassDeclaration enclosingClass = (J.ClassDeclaration) parent;
 
                 /*
                  * Looking for "public boolean equals(EnclosingClassType)" as the method signature match.
