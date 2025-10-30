@@ -357,11 +357,9 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                   int foo(String str) {
                       if ("one".equals(str)) {
                           return 1;
-                      }
-                      if ("two".equals(str)) {
+                      } else if ("two".equals(str)) {
                           return 2;
-                      }
-                      if ("three".equals(str)) {
+                      } else if ("three".equals(str)) {
                           return 3;
                       }
                       return Integer.MAX_VALUE;
@@ -519,8 +517,7 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                   String process(int value) {
                       if (value < 0) {
                           throw new IllegalArgumentException("Negative value");
-                      }
-                      if (value == 0) {
+                      } else if (value == 0) {
                           return "zero";
                       }
                       return "positive";
