@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis.kotlin;
 
 import org.junit.jupiter.api.Test;
-import org.openrewrite.Issue;
 import org.openrewrite.staticanalysis.CovariantEquals;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
