@@ -65,7 +65,15 @@ public class CovariantEquals extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                J.ClassDeclaration enclosingClass = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration).getValue();
+
+                Cursor parent;
+                try {
+                    parent = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration);
+                } catch (IllegalStateException __) {
+                    return m;
+                }
+
+                J.ClassDeclaration enclosingClass = parent.getValue();
 
                 /*
                  * Looking for "public boolean equals(EnclosingClassType)" as the method signature match.
