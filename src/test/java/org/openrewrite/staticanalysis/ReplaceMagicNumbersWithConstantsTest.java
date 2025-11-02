@@ -102,4 +102,48 @@ public class OrderProcessor {
           )
         );
     }
+    @DocumentExample
+    @Test
+    void assignMagicNumbersToConstantsM1_0_1_AreIgnoredTest() {
+        rewriteRun(
+          spec -> spec
+            .typeValidationOptions(TypeValidation.none()),
+          java(
+            """
+            public class OrderProcessor {
+                private static final double myVariable = 99.99;
+                public double calculateShippingCost(double orderTotal) {
+                    int localVar0 = 0;
+                    orderTotal = localVar0 - 1;
+                    orderTotal = localVar0 + 0;
+                    orderTotal = localVar0 + 1;
+                    if (orderTotal < 51.0) {
+                        return 7.99;
+                    } else {
+                        return 0.0;
+                    }
+                }
+            }
+            """,
+            """
+public class OrderProcessor {
+    private static final double DOUBLE_51_0 = 51.0;
+    private static final double DOUBLE_7_99 = 7.99;
+    private static final double myVariable = 99.99;
+    public double calculateShippingCost(double orderTotal) {
+        int localVar0 = 0;
+        orderTotal = localVar0 - 1;
+        orderTotal = localVar0 + 0;
+        orderTotal = localVar0 + 1;
+        if (orderTotal < DOUBLE_51_0) {
+            return DOUBLE_7_99;
+        } else {
+            return 0.0;
+        }
+    }
+}
+          """
+          )
+        );
+    }
 }
