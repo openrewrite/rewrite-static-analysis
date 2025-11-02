@@ -1,3 +1,18 @@
+/*
+ * Copyright 2025 the original author or authors.
+ * <p>
+ * Licensed under the Moderne Source Available License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * https://docs.moderne.io/licensing/moderne-source-available-license
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.openrewrite.staticanalysis;
 /*
  * Copyright 2024 the original author or authors.
@@ -55,7 +70,6 @@ public class OrderProcessor {
     private static final int INT_10 = 10;
     private static final double DOUBLE_51_0 = 51.0;
     private static final double DOUBLE_7_99 = 7.99;
-    private static final double DOUBLE_0_0 = 0.0;
     private static final double myVariable = 99.99;
     public double calculateShippingCost(double orderTotal) {
         int localVar = 5;
@@ -63,7 +77,7 @@ public class OrderProcessor {
         if (orderTotal < DOUBLE_51_0) {
             return DOUBLE_7_99;
         } else {
-            return DOUBLE_0_0;
+            return 0.0;
         }
     }
 }
