@@ -31,8 +31,7 @@ package org.openrewrite.staticanalysis;
  */
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.java.JavaParser;
-import org.openrewrite.test.RecipeSpec;
+class ReplaceMagicNumbersWithConstantsTest implements RewriteTest {
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
@@ -86,7 +85,6 @@ public class OrderProcessor {
         );
     }
 
-    @DocumentExample
     @Test
     void assignMagicNumbersToConstantsBasicTest() {
         rewriteRun(
@@ -116,7 +114,6 @@ public class OrderProcessor {
           )
         );
     }
-    @DocumentExample
     @Test
     void assignMagicNumbersToConstantsM1_0_1_AreIgnoredTest() {
         rewriteRun(

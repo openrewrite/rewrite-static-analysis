@@ -15,7 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.*;
+import org.openrewrite.Cursor;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
@@ -23,7 +26,8 @@ import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
+import static java.util.Collections.singleton;
+
 import java.util.List;
 import java.util.Set;
 
@@ -37,13 +41,13 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
     private static final String CUSTOM_MODIFIERS = "private static final";
 
     @Override
-    public @NlsRewrite.DisplayName String getDisplayName() {
-        return "Replace magic numbers with constants";
-    }
-
-    @Override
-    public @NlsRewrite.Description String getDescription() {
-        return "Replaces magic number literals in method bodies with named constants to improve code readability and maintainability. "
+    public String getDisplayName() {
+    public String getDescription() {
+        return "Replaces magic number literals in method bodies with named constants to improve code readability and maintainability. " +
+                "Magic numbers are replaced by private static final constants declared at the top of the class, following Sonar's java:S109 rule. " +
+                "The recipe does not create constants for literals that are already assigned to fields or variables, nor for typical non-magic numbers (such as 0, 1, or -1). " +
+                "Currently, only numeric primitive literals are handled; string and character literals are unaffected. " +
+                "If a constant for a value already exists, or the constant name would conflict with an existing symbol, the recipe will skip that value.";
                 + "Magic numbers are replaced by private static final constants declared at the top of the class, following Sonar's java:S109 rule. "
                 + "The recipe does not create constants for literals that are already assigned to fields or variables, nor for typical non-magic numbers (such as 0, 1, or -1). "
                 + "Currently, only numeric primitive literals are handled; string and character literals are unaffected. "
@@ -63,8 +67,8 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
                     @Override
                     public J visitLiteral(J.Literal literal, ExecutionContext ctx2) {
                         Cursor cursor = getCursor();
-                        if (!(cursor.getParent().getParent().getValue() instanceof J.VariableDeclarations.NamedVariable)
-                                && !isIgnoredMagicNumber(literal)) {
+                        if (!(cursor.getParent().getParent().getValue() instanceof J.VariableDeclarations.NamedVariable) &&
+                                !isIgnoredMagicNumber(literal)) {
                             literals.add(literal);
                         }
                         return literal;
@@ -104,8 +108,8 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
             public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 Cursor cursor = getCursor();
                 // Do NOT replace in variable/field initializers or for ignored numbers
-                if (cursor.getParent().getParent().getValue() instanceof J.VariableDeclarations.NamedVariable
-                        || isIgnoredMagicNumber(literal)) {
+                if (cursor.getParent().getParent().getValue() instanceof J.VariableDeclarations.NamedVariable ||
+                        isIgnoredMagicNumber(literal)) {
                     return super.visitLiteral(literal, ctx);
                 }
                 String constantName = getStrValFromLiteral(literal);
@@ -120,7 +124,7 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-109");
+        return singleton("RSPEC-109");
     }
 
     @Override
@@ -131,7 +135,9 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
     private String getStrValFromLiteral(J.Literal literal) {
         String type = getTypeName(literal).toUpperCase();
         String valueSource = literal.getValueSource();
-        if (valueSource == null) return null;
+        if (valueSource == null) {
+            return null;
+        }
         if (valueSource.startsWith("-")) {
             valueSource = "NEGATIVE_" + valueSource.substring(1);
         }
@@ -139,7 +145,9 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
     }
 
     private String getTypeName(J.Literal literal) {
-        if (literal.getType() == null) return "Object";
+        if (literal.getType() == null) {
+            return "Object";
+        }
         JavaType type = literal.getType();
         if (type instanceof JavaType.Primitive) {
             return ((JavaType.Primitive) type).getKeyword();
