@@ -29,7 +29,7 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
         spec.recipe(new ChainStringBuilderAppendCalls());
     }
 
-    @DocumentExample(value = "Chain `StringBuilder.append()` calls instead of the '+' operator to efficiently concatenate strings and numbers.")
+    @DocumentExample("Chain `StringBuilder.append()` calls instead of the '+' operator to efficiently concatenate strings and numbers.")
     @Test
     void objectsConcatenation() {
         rewriteRun(

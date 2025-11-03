@@ -32,11 +32,13 @@ import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
@@ -287,11 +289,11 @@ public class InstanceOfPatternMatch extends Recipe {
             return replacements.isEmpty() && variablesToDelete.isEmpty();
         }
 
-        public J.InstanceOf processInstanceOf(J.InstanceOf instanceOf, Cursor cursor) {
+        public J.InstanceOf processInstanceOf(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
             }
-            String name = patternVariableName(instanceOf, cursor);
+            String name = patternVariableName(instanceOf, cursor, usedNames);
             TypedTree typeCastTypeTree = computeTypeTreeFromTypeCasts(instanceOf);
             TypedTree currentTypeTree = (TypedTree) instanceOf.getClazz();
 
@@ -339,7 +341,7 @@ public class InstanceOfPatternMatch extends Recipe {
             return typeCastTypeTree;
         }
 
-        private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor) {
+        private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             VariableNameStrategy strategy;
             JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
             if (root instanceof J.If) {
@@ -356,6 +358,13 @@ public class InstanceOfPatternMatch extends Recipe {
             if (root instanceof J.If) {
                 J.If enclosingIf = cursor.firstEnclosing(J.If.class);
                 String nameInIfScope = VariableNameUtils.generateVariableName(baseName, new Cursor(cursor, enclosingIf), INCREMENT_NUMBER);
+
+                // Also check against other pattern variables being introduced in the same expression
+                while (usedNames.contains(nameInIfScope)) {
+                    String numStr = nameInIfScope.substring(baseName.length());
+                    nameInIfScope = baseName + (numStr.isEmpty() ? 1 : Integer.parseInt(numStr) + 1);
+                }
+
                 String nameInCursorScope = VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
                 return nameInIfScope.compareTo(nameInCursorScope) >= 0 ? nameInIfScope : nameInCursorScope;
             }
@@ -405,29 +414,35 @@ public class InstanceOfPatternMatch extends Recipe {
                 // The left side changed, so the right side should see any introduced variable names
                 Cursor widenedCursor = updateCursor(b);
 
+                // Collect names from the left side if it's an instanceof with a pattern
+                Set<String> usedNames = new HashSet<>();
+                if (b.getLeft() instanceof J.InstanceOf) {
+                    J.InstanceOf leftInstanceOf = (J.InstanceOf) b.getLeft();
+                    if (leftInstanceOf.getPattern() != null) {
+                        usedNames.add(((J.Identifier) leftInstanceOf.getPattern()).getSimpleName());
+                    }
+                }
+
                 Expression newRight;
                 if (binary.getRight() instanceof J.InstanceOf) {
-                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor);
+                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor, usedNames);
                 } else if (binary.getRight() instanceof J.Parentheses &&
-                           ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
-                    @SuppressWarnings("unchecked")
-                    J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
-                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor));
+                        ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
+                    @SuppressWarnings("unchecked") J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
+                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor, usedNames));
                 } else {
                     newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
                 return b.withRight(newRight);
-            } else {
-                // The left side didn't change, so the right side doesn't need to see any introduced variable names
-                return b.withRight((Expression) visitNonNull(binary.getRight(), p));
             }
+            // The left side didn't change, so the right side doesn't need to see any introduced variable names
+            return b.withRight((Expression) visitNonNull(binary.getRight(), p));
         }
 
         @Override
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
-            instanceOf = replacements.processInstanceOf(instanceOf, getCursor());
-            return instanceOf;
+            return replacements.processInstanceOf(instanceOf, getCursor(), new HashSet<>());
         }
 
         @Override
@@ -479,7 +494,7 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         static VariableNameStrategy short_() {
-            return new VariableNameStrategy(Style.SHORT, null, Collections.emptySet());
+            return new VariableNameStrategy(Style.SHORT, null, emptySet());
         }
 
         static VariableNameStrategy normal(Set<Cursor> contextScopes) {
@@ -487,7 +502,7 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         static VariableNameStrategy exact(String name) {
-            return new VariableNameStrategy(Style.EXACT, name, Collections.emptySet());
+            return new VariableNameStrategy(Style.EXACT, name, emptySet());
         }
 
         public String variableName(@Nullable JavaType type) {
@@ -495,7 +510,8 @@ public class InstanceOfPatternMatch extends Recipe {
             if (style == Style.EXACT) {
                 //noinspection DataFlowIssue
                 return name;
-            } else if (type instanceof JavaType.FullyQualified) {
+            }
+            if (type instanceof JavaType.FullyQualified) {
                 String className = ((JavaType.FullyQualified) type).getClassName();
                 className = className.substring(className.lastIndexOf('.') + 1);
                 String baseName = null;
@@ -513,9 +529,9 @@ public class InstanceOfPatternMatch extends Recipe {
                     case NORMAL:
                         Set<String> namesInScope = contextScopes.stream()
                                 .flatMap(c -> VariableNameUtils.findNamesInScope(c).stream())
-                                .collect(Collectors.toSet());
+                                .collect(toSet());
                         List<String> nameSegments = Stream.of(NAME_SPLIT_PATTERN.split(className))
-                                .filter(s -> !s.isEmpty()).collect(Collectors.toList());
+                                .filter(s -> !s.isEmpty()).collect(toList());
                         for (int i = nameSegments.size() - 1; i >= 0; i--) {
                             String name = String.join("", nameSegments.subList(i, nameSegments.size()));
                             if (name.length() < 2) {
@@ -547,10 +563,12 @@ public class InstanceOfPatternMatch extends Recipe {
                     break;
                 }
                 return candidate;
-            } else if (type instanceof JavaType.Primitive) {
+            }
+            if (type instanceof JavaType.Primitive) {
                 String keyword = ((JavaType.Primitive) type).getKeyword();
                 return style == Style.SHORT ? keyword.substring(0, 1) : keyword;
-            } else if (type instanceof JavaType.Array) {
+            }
+            if (type instanceof JavaType.Array) {
                 JavaType elemType = ((JavaType.Array) type).getElemType();
                 while (elemType instanceof JavaType.Array) {
                     elemType = ((JavaType.Array) elemType).getElemType();

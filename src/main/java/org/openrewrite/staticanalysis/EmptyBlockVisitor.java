@@ -15,21 +15,25 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.SourceFile;
+import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.format.ShiftFormat;
+import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.EmptyBlockStyle;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.style.Style;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +42,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
-@EqualsAndHashCode(callSuper = false)
-@Value
+@NoArgsConstructor
+@AllArgsConstructor
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
-    EmptyBlockStyle emptyBlockStyle;
-    JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();
+    private EmptyBlockStyle emptyBlockStyle;
+    private final JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();
+
+    @Override
+    public @Nullable J visit(@Nullable Tree tree, P p) {
+        //noinspection ConstantValue
+        if (emptyBlockStyle == null && tree instanceof SourceFile) {
+            emptyBlockStyle = Style.from(EmptyBlockStyle.class, (SourceFile)tree, Checkstyle::emptyBlock);
+        }
+        return super.visit(tree, p);
+    }
 
     @Override
     public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
@@ -82,6 +95,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             if (isEmptyBlock(nestedBlock) && ((Boolean.TRUE.equals(emptyBlockStyle.getStaticInit()) && nestedBlock.isStatic()) ||
                     (Boolean.TRUE.equals(emptyBlockStyle.getInstanceInit()) && !nestedBlock.isStatic()))) {
                 filtered.set(true);
+                //noinspection DataFlowIssue
                 return null;
             }
 
@@ -214,7 +228,8 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             J.Block block = (J.Block) blockNode;
             if (EmptyBlockStyle.BlockPolicy.STATEMENT == emptyBlockStyle.getBlockPolicy()) {
                 return block.getStatements().isEmpty();
-            } else if (EmptyBlockStyle.BlockPolicy.TEXT == emptyBlockStyle.getBlockPolicy()) {
+            }
+            if (EmptyBlockStyle.BlockPolicy.TEXT == emptyBlockStyle.getBlockPolicy()) {
                 return block.getStatements().isEmpty() && block.getEnd().getComments().isEmpty();
             }
         }

@@ -26,9 +26,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @Incubating(since = "7.0.0")
 public class CovariantEquals extends Recipe {
@@ -50,7 +51,7 @@ public class CovariantEquals extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S2162");
+        return singleton("RSPEC-S2162");
     }
 
     @Override
@@ -64,7 +65,15 @@ public class CovariantEquals extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                J.ClassDeclaration enclosingClass = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration).getValue();
+
+                Cursor parent;
+                try {
+                    parent = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration);
+                } catch (IllegalStateException __) {
+                    return m;
+                }
+
+                J.ClassDeclaration enclosingClass = parent.getValue();
 
                 /*
                  * Looking for "public boolean equals(EnclosingClassType)" as the method signature match.

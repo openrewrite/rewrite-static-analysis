@@ -22,11 +22,9 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.Collections;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 
 public class StringLiteralEquality extends Recipe {
     @Override
@@ -44,7 +42,7 @@ public class StringLiteralEquality extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S4973");
+        return singleton("RSPEC-S4973");
     }
 
     @Override

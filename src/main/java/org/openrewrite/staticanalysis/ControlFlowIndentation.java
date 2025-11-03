@@ -26,13 +26,13 @@ import org.openrewrite.java.format.TabsAndIndentsVisitor;
 import org.openrewrite.java.style.IntelliJ;
 import org.openrewrite.java.style.SpacesStyle;
 import org.openrewrite.java.style.TabsAndIndentsStyle;
+import org.openrewrite.java.style.WrappingAndBracesStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.style.Style;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -58,17 +58,14 @@ public class ControlFlowIndentation extends Recipe {
     }
 
     @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
-    }
-
-    @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
             @Nullable
             TabsAndIndentsStyle tabsAndIndentsStyle;
             @Nullable
             SpacesStyle spacesStyle;
+            @Nullable
+            WrappingAndBracesStyle wrappingStyle;
 
             @Override
             public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
@@ -76,6 +73,7 @@ public class ControlFlowIndentation extends Recipe {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     tabsAndIndentsStyle = Style.from(TabsAndIndentsStyle.class, cu, IntelliJ::tabsAndIndents);
                     spacesStyle = Style.from(SpacesStyle.class, cu, IntelliJ::spaces);
+                    wrappingStyle = Style.from(WrappingAndBracesStyle.class, cu, IntelliJ::wrappingAndBraces);
                 }
                 return super.visit(tree, ctx);
             }
@@ -89,7 +87,8 @@ public class ControlFlowIndentation extends Recipe {
                         foundControlFlowRequiringReformatting.set(true);
                         return (Statement) new TabsAndIndentsVisitor<>(
                                 requireNonNull(tabsAndIndentsStyle),
-                                requireNonNull(spacesStyle))
+                                requireNonNull(spacesStyle),
+                                requireNonNull(wrappingStyle))
                                 .visit(statement, ctx, getCursor());
                     }
                     return statement;
@@ -99,7 +98,8 @@ public class ControlFlowIndentation extends Recipe {
             boolean shouldReformat(Statement s) {
                 if (s instanceof J.If) {
                     return shouldReformat((J.If) s);
-                } else if (s instanceof Loop) {
+                }
+                if (s instanceof Loop) {
                     Statement body = ((Loop) s).getBody();
                     return !(body instanceof J.Block);
                 }

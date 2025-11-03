@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.google.errorprone.annotations.InlineMe;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
@@ -28,10 +27,15 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
-import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Collections.singleton;
 
 @EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
@@ -69,7 +73,6 @@ public class RemoveUnusedLocalVariables extends Recipe {
     }
 
     @Deprecated
-    @InlineMe(replacement = "new RemoveUnusedLocalVariables(ignoreVariablesNamed, null, withSideEffects)")
     public RemoveUnusedLocalVariables(
             String @Nullable [] ignoreVariablesNamed,
             @Nullable Boolean withSideEffects) {
@@ -88,12 +91,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1481");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return singleton("RSPEC-S1481");
     }
 
     @Override
@@ -109,7 +107,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             ignoreVariableNames.addAll(Arrays.asList(ignoreVariablesNamed));
         }
 
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||
@@ -130,7 +128,17 @@ public class RemoveUnusedLocalVariables extends Recipe {
             }
 
             @Override
-            public  J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
+            public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
+                return instanceOf;
+            }
+
+            @Override
+            public J.DeconstructionPattern visitDeconstructionPattern(J.DeconstructionPattern deconstructionPattern, ExecutionContext ctx) {
+                return deconstructionPattern;
+            }
+
+            @Override
+            public J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 // skip matching ignored variable names right away
                 if (ignoreVariableNames != null && ignoreVariableNames.contains(variable.getSimpleName())) {
                     return variable;
@@ -235,7 +243,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 }.visit(variable.getInitializer(), mightSideEffect);
                 return mightSideEffect.get();
             }
-        };
+        });
     }
 
     /**
@@ -249,17 +257,14 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
         @Override
         public <T extends J> J.ControlParentheses<T> visitControlParentheses(J.ControlParentheses<T> c, ExecutionContext ctx) {
-            //noinspection unchecked
-            c = (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
+            return (J.ControlParentheses<T>) new AssignmentToLiteral(assignment)
                     .visitNonNull(c, ctx, getCursor().getParentOrThrow());
-            return c;
         }
 
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            m = m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
-            return m;
+            return m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
         }
     }
 

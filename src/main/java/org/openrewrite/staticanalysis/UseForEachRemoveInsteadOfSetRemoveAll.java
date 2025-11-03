@@ -58,7 +58,8 @@ public class UseForEachRemoveInsteadOfSetRemoveAll extends Recipe {
                             p.getValue() instanceof J.Block ||
                             p.getValue() instanceof J.Lambda) {
                         return false;
-                    } else if (p.getValue() instanceof J.ControlParentheses ||
+                    }
+                    if (p.getValue() instanceof J.ControlParentheses ||
                             p.getValue() instanceof J.Return ||
                             p.getValue() instanceof J.VariableDeclarations ||
                             p.getValue() instanceof J.Assignment) {

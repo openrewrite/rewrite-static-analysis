@@ -15,19 +15,22 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
-import org.openrewrite.Incubating;
+import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
 import org.openrewrite.java.cleanup.RenameJavaDocParamNameVisitor;
+import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.HiddenFieldStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.style.Style;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,14 +38,23 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-@EqualsAndHashCode(callSuper = false)
-@Incubating(since = "7.6.0")
-@Value
+import static java.util.stream.Collectors.toList;
+
+@NoArgsConstructor
+@AllArgsConstructor
 public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
     private static final Pattern NEXT_NAME_PATTERN = Pattern.compile("(.+)(\\d+)");
-    HiddenFieldStyle style;
+    private HiddenFieldStyle style;
+
+    @Override
+    public @Nullable J visit(@Nullable Tree tree, P p) {
+        //noinspection ConstantValue
+        if (style == null && tree instanceof SourceFile) {
+            style = Style.from(HiddenFieldStyle.class, (SourceFile)tree, Checkstyle::hiddenFieldStyle);
+        }
+        return super.visit(tree, p);
+    }
 
     /**
      * Returns either the current block or a J.Type that may create a reference to a variable.
@@ -73,7 +85,7 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
                 .filter(J.VariableDeclarations.class::isInstance)
                 .map(J.VariableDeclarations.class::cast)
                 .flatMap(vd -> vd.getVariables().stream())
-                .collect(Collectors.toList());
+                .collect(toList());
 
         classFields.forEach(cf -> FindNameShadows.find(classDecl, cf, classDecl, style)
                 .forEach(shadow -> doAfterVisit(new RenameShadowedName<>(shadow, style))));

@@ -24,8 +24,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class NewStringBuilderBufferWithCharArgument extends Recipe {
 
@@ -44,7 +45,7 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1317");
+        return singleton("RSPEC-S1317");
     }
 
     @Override
@@ -66,10 +67,9 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                                     l = l.withValueSource(l.getValueSource().replace("'", "\""));
                                 }
                                 return l;
-                            } else {
-                                return JavaTemplate.builder("String.valueOf(#{any()})").build()
-                                        .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace(), arg);
                             }
+                            return JavaTemplate.builder("String.valueOf(#{any()})").build()
+                                    .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace(), arg);
                         }));
                     }
                 }

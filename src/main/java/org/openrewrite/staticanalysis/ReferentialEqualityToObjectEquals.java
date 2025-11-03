@@ -25,12 +25,10 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 
 public class ReferentialEqualityToObjectEquals extends Recipe {
     @Override
@@ -48,7 +46,7 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1698");
+        return singleton("RSPEC-S1698");
     }
 
     @Override

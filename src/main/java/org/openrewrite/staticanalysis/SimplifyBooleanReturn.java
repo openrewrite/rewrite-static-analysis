@@ -28,12 +28,13 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+
+import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toList;
 
 public class SimplifyBooleanReturn extends Recipe {
 
@@ -49,7 +50,7 @@ public class SimplifyBooleanReturn extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1126");
+        return singleton("RSPEC-S1126");
     }
 
     @Override
@@ -96,8 +97,9 @@ public class SimplifyBooleanReturn extends Recipe {
                             if (singleFollowingStatement.map(this::isLiteralFalse).orElse(false) && i.getElsePart() == null) {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
                                 return maybeAutoFormat(return_, return_.withExpression(ifCondition), ctx, parent);
-                            } else if (!singleFollowingStatement.isPresent() &&
-                                       getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
+                            }
+                            if (!singleFollowingStatement.isPresent() &&
+                                    getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
                                 }
@@ -155,7 +157,7 @@ public class SimplifyBooleanReturn extends Recipe {
                             return dropWhile.get();
                         })
                         .skip(1)
-                        .collect(Collectors.toList());
+                        .collect(toList());
             }
 
             private boolean isLiteralTrue(@Nullable J tree) {

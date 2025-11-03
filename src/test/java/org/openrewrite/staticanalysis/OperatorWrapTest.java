@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Tree;
@@ -29,13 +28,13 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"StringConcatenationMissingWhitespace", "ConstantConditions", "CStyleArrayDeclaration"})
@@ -78,7 +77,7 @@ class OperatorWrapTest implements RewriteTest {
     }
 
     private static List<NamedStyles> operatorWrapStyle(UnaryOperator<OperatorWrapStyle> with) {
-        return Collections.singletonList(
+        return singletonList(
           new NamedStyles(
             Tree.randomId(), "test", "test", "test", emptySet(),
             singletonList(with.apply(Checkstyle.operatorWrapStyle()))
@@ -640,7 +639,7 @@ class OperatorWrapTest implements RewriteTest {
 
     private static Consumer<SourceSpec<J.CompilationUnit>> autoFormatIsIdempotent() {
         return spec -> spec.afterRecipe(cu ->
-          Assertions.assertThat(new AutoFormatVisitor<>().visit(cu, 0)).isEqualTo(cu));
+          assertThat(new AutoFormatVisitor<>().visit(cu, 0)).isEqualTo(cu));
     }
 
     @Test
@@ -670,6 +669,37 @@ class OperatorWrapTest implements RewriteTest {
               }
               """,
             autoFormatIsIdempotent()
+          )
+        );
+    }
+
+    @Test
+    void recordPatternInstanceOf() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().styles(operatorWrapStyle())),
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.Objects;
+
+              record SomeRecord(int field, byte[] value) {
+                  @Override
+                  public boolean equals(Object o) {
+                      if (this == o) return true;
+                      if (!(o instanceof SomeRecord f)) {
+                          return false;
+                      }
+                      return field == f.field
+                             && Arrays.equals(value, f.value);
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return 31 * Objects.hash(field) + Arrays.hashCode(value);
+                  }
+              }
+              """
           )
         );
     }

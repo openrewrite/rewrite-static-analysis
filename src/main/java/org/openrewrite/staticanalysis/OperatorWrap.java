@@ -27,8 +27,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.TypeTree;
-
-import static java.util.Objects.requireNonNull;
+import org.openrewrite.style.Style;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -53,20 +52,22 @@ public class OperatorWrap extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+        //noinspection NotNullFieldNotInitialized
         return new JavaIsoVisitor<ExecutionContext>() {
             OperatorWrapStyle operatorWrapStyle;
 
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
-                    SourceFile cu = (SourceFile) requireNonNull(tree);
-                    operatorWrapStyle = cu.getStyle(OperatorWrapStyle.class) == null ? Checkstyle.operatorWrapStyle() : cu.getStyle(OperatorWrapStyle.class);
+                    SourceFile cu = (SourceFile) tree;
+                    operatorWrapStyle = Style.from(OperatorWrapStyle.class, cu, Checkstyle::operatorWrapStyle);
 
                     if (wrapOption != null) {
                         // Convenience override, to bypass having to configure a style once to change detected style
                         operatorWrapStyle = operatorWrapStyle.withWrapOption(wrapOption);
                     }
                 }
+                //noinspection DataFlowIssue
                 return super.visit(tree, ctx);
             }
 
@@ -178,7 +179,7 @@ public class OperatorWrap extends Recipe {
             @Override
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 J.InstanceOf i = super.visitInstanceOf(instanceOf, ctx);
-                if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof())) {
+                if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof()) && i.getClazz() != null) {
                     if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (i.getClazz().getPrefix().getWhitespace().contains("\n")) {
                             i = i.getPadding().withExpression(
@@ -401,7 +402,7 @@ public class OperatorWrap extends Recipe {
                                             v.getPadding().getInitializer().getElement().getPrefix()
                                     )
                             );
-                            if (v.getPadding().getInitializer() != null && v.getPadding().getInitializer().getElement() != null) {
+                            if (v.getPadding().getInitializer() != null) {
                                 v = v.getPadding().withInitializer(
                                         v.getPadding().getInitializer().withElement(
                                                 v.getPadding().getInitializer().getElement().withPrefix(
@@ -419,7 +420,7 @@ public class OperatorWrap extends Recipe {
                                         )
                                 )
                         );
-                        if (v.getPadding().getInitializer() != null && v.getPadding().getInitializer().getBefore() != null) {
+                        if (v.getPadding().getInitializer() != null) {
                             v = v.getPadding().withInitializer(
                                     v.getPadding().getInitializer().withBefore(
                                             v.getPadding().getInitializer().getElement().getPrefix().withWhitespace(" ")

@@ -46,7 +46,8 @@ public class ForLoopControlVariablePostfixOperators extends Recipe {
                                         J.Unary u = (J.Unary) update;
                                         if (u.getOperator() == J.Unary.Type.PreIncrement) {
                                             return ((J.Unary) update).withOperator(J.Unary.Type.PostIncrement);
-                                        } else if (u.getOperator() == J.Unary.Type.PreDecrement) {
+                                        }
+                                        if (u.getOperator() == J.Unary.Type.PreDecrement) {
                                             return ((J.Unary) update).withOperator(J.Unary.Type.PostDecrement);
                                         }
                                     }

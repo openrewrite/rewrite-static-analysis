@@ -26,10 +26,7 @@ import org.openrewrite.java.style.TypecastParenPadStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
-
-import java.util.Optional;
-
-import static java.util.Objects.requireNonNull;
+import org.openrewrite.style.Style;
 
 public class TypecastParenPad extends Recipe {
     @Override
@@ -45,6 +42,7 @@ public class TypecastParenPad extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+        //noinspection NotNullFieldNotInitialized
         return Preconditions.check(
                 Preconditions.not(new GroovyFileChecker<>()),
                 new JavaIsoVisitor<ExecutionContext>() {
@@ -52,11 +50,11 @@ public class TypecastParenPad extends Recipe {
                     TypecastParenPadStyle typecastParenPadStyle;
 
                     @Override
-                    public J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                    public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
                         if (tree instanceof JavaSourceFile) {
-                            SourceFile cu = (SourceFile) requireNonNull(tree);
-                            spacesStyle = Optional.ofNullable(cu.getStyle(SpacesStyle.class)).orElse(IntelliJ.spaces());
-                            typecastParenPadStyle = Optional.ofNullable(cu.getStyle(TypecastParenPadStyle.class)).orElse(Checkstyle.typecastParenPadStyle());
+                            SourceFile cu = (SourceFile) tree;
+                            spacesStyle = Style.from(SpacesStyle.class, cu, IntelliJ::spaces);
+                            typecastParenPadStyle = Style.from(TypecastParenPadStyle.class, cu, Checkstyle::typecastParenPadStyle);
 
                             spacesStyle = spacesStyle.withWithin(spacesStyle.getWithin().withTypeCastParentheses(typecastParenPadStyle.getSpace()));
                         }
@@ -66,9 +64,8 @@ public class TypecastParenPad extends Recipe {
                     @Override
                     public J.TypeCast visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                         J.TypeCast tc = super.visitTypeCast(typeCast, ctx);
-                        tc = (J.TypeCast) new SpacesVisitor<>(spacesStyle, null, null, tc)
+                        return (J.TypeCast) new SpacesVisitor<>(spacesStyle, null, null, tc)
                                 .visitNonNull(tc, ctx, getCursor().getParentTreeCursor().fork());
-                        return tc;
                     }
                 }
         );

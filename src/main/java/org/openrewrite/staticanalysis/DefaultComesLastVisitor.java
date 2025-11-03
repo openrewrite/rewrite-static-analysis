@@ -15,17 +15,20 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.DefaultComesLastStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.style.Style;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,10 +36,25 @@ import java.util.List;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
-@EqualsAndHashCode(callSuper = false)
-@Value
+@AllArgsConstructor
+@NoArgsConstructor
 public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     DefaultComesLastStyle style;
+
+    @Override
+    public @Nullable J visit(@Nullable Tree tree, P p) {
+        //noinspection ConstantValue
+        if (style == null) {
+            SourceFile s;
+            if (tree instanceof SourceFile) {
+                s = (SourceFile) tree;
+            } else {
+                s = getCursor().firstEnclosing(SourceFile.class);
+            }
+            style = Style.from(DefaultComesLastStyle.class, s, Checkstyle::defaultComesLast);
+        }
+        return super.visit(tree, p);
+    }
 
     @Override
     public J.Switch visitSwitch(J.Switch switch_, P p) {
@@ -94,11 +112,10 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
         casesWithDefaultLast = addBreakToLastCase(casesWithDefaultLast, p);
         casesWithDefaultLast.addAll(maybeReorderFallthroughCases(defaultCases, p));
-        casesWithDefaultLast = ListUtils.mapLast(casesWithDefaultLast, this::removeBreak);
-        return casesWithDefaultLast;
+        return ListUtils.mapLast(casesWithDefaultLast, this::removeBreak);
     }
 
-    private List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, P p) {
+    private List<J.Case> maybeReorderFallthroughCases(List<J.Case> cases, @SuppressWarnings("unused") P p) {
         List<J.Case> preDefaultCases = new ArrayList<>();
         List<J.Case> postDefaultCases = new ArrayList<>();
         J.Case defaultCase = null;
@@ -112,9 +129,8 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
             } else if (defaultCase != null) {
                 if (!aCase.getStatements().isEmpty() && i != cases.size() - 1) {
                     return cases;
-                } else {
-                    postDefaultCases.add(aCase);
                 }
+                postDefaultCases.add(aCase);
             } else {
                 preDefaultCases.add(aCase);
             }
@@ -124,6 +140,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         if (!postDefaultCases.isEmpty()) {
             List<Statement> statements = postDefaultCases.get(postDefaultCases.size() - 1).getStatements();
             defaultCase = defaultCase.withStatements(statements);
+            //noinspection DataFlowIssue
             fixedCases.addAll(ListUtils.mapLast(postDefaultCases, e -> e.withStatements(emptyList())));
         }
         assert defaultCase != null;
@@ -133,6 +150,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private List<J.Case> addBreakToLastCase(List<J.Case> cases, P p) {
         return ListUtils.mapLast(cases, e -> {
+            //noinspection DataFlowIssue
             if (isFallthroughCase(e.getStatements())) {
                 return addBreak(e, p);
             }
@@ -155,7 +173,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
                 lastStatement instanceof J.Yield);
     }
 
-    private J.Case addBreak(J.Case e, P p) {
+    private J.Case addBreak(J.Case e, @SuppressWarnings("unused") P p) {
         List<Statement> statements = e.getStatements();
         J.Switch switchStatement = getCursor().getValue();
         int switchIndent = switchStatement.getPrefix().getIndent().length();
@@ -166,6 +184,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         if (!statements.isEmpty() && statements.get(statements.size() - 1) instanceof J.Block) {
             statements = ListUtils.mapLast(statements, s -> {
                 J.Block block = (J.Block) s;
+                //noinspection DataFlowIssue
                 List<Statement> blockStatements = block.getStatements();
                 blockStatements.add(breakStatement);
                 return block.withStatements(blockStatements);
@@ -216,7 +235,7 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
 
     private boolean isDefaultCase(J.Case case_) {
         J elem = case_.getCaseLabels().get(0);
-        return elem instanceof J.Identifier && ((J.Identifier) elem).getSimpleName().equals("default");
+        return elem instanceof J.Identifier && "default".equals(((J.Identifier) elem).getSimpleName());
     }
 
 }

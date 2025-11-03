@@ -410,11 +410,35 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
               class A {
                   String name;
                   boolean notOne(A a) {
-                      return a == null ? a.name != null : !name.equals(a.name);
+                      return a != null ? name.equals(a.name) : a.name == null;
                   }
               }
               """
             )
+        );
+    }
+
+    @Test
+    void correctlySimplifyNegatedTernaryEqualsNull() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void doSome(String o1, String o2) {
+                      if (!(o1 == null ? o2 == null : o1.equals(o2))) {
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void doSome(String o1, String o2) {
+                      if (o1 == null ? o2 != null : !o1.equals(o2)) {
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 }

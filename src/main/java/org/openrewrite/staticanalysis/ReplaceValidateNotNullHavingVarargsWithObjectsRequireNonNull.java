@@ -27,10 +27,11 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.Collections.nCopies;
+import static java.util.stream.Collectors.toList;
 
 public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extends Recipe {
     private static final MethodMatcher VALIDATE_NOTNULL = new MethodMatcher("org.apache.commons.lang3.Validate notNull(Object, String, Object[])");
@@ -59,7 +60,7 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 String template = arguments.size() == 2 ?
                         "Objects.requireNonNull(#{any()}, #{any(java.lang.String)})" :
                         String.format("Objects.requireNonNull(#{any()}, () -> String.format(#{any(java.lang.String)}, %s))",
-                        String.join(", ", Collections.nCopies(arguments.size() - 2, "#{any()}")));
+                        String.join(", ", nCopies(arguments.size() - 2, "#{any()}")));
 
 
                 maybeRemoveImport("org.apache.commons.lang3.Validate");
@@ -85,7 +86,7 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                         ListUtils.map(stringFormatMi.getArguments(), (a, b) -> b.withPrefix(arguments.get(a).getPrefix())));
 
                 lambda = maybeAutoFormat(lambda, lambda.withBody(stringFormatMi), ctx);
-                return maybeAutoFormat(mi, mi.withArguments(Stream.of(arg0, lambda).collect(Collectors.toList())), ctx);
+                return maybeAutoFormat(mi, mi.withArguments(Stream.of(arg0, lambda).collect(toList())), ctx);
             }
         });
     }

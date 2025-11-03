@@ -24,10 +24,10 @@ import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
-import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class RemoveUnusedPrivateMethods extends Recipe {
 
@@ -43,12 +43,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1144");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return singleton("RSPEC-S1144");
     }
 
     @Override
@@ -89,14 +84,13 @@ public class RemoveUnusedPrivateMethods extends Recipe {
                     if (classDeclaration == null) {
                         return m;
                     }
-                    if (TypeUtils.isAssignableTo("java.io.Serializable", classDeclaration.getType())) {
-                        switch (m.getSimpleName()) {
-                            case "readObject":
-                            case "readObjectNoData":
-                            case "readResolve":
-                            case "writeObject":
-                                return m;
-                        }
+                    switch (m.getSimpleName()) {
+                        case "readObject":
+                        case "readObjectNoData":
+                        case "readResolve":
+                        case "writeObject":
+                        case "writeReplace":
+                            return m;
                     }
 
                     JavaSourceFile cu = getCursor().firstEnclosingOrThrow(JavaSourceFile.class);
@@ -130,5 +124,4 @@ public class RemoveUnusedPrivateMethods extends Recipe {
         };
         return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
     }
-
 }

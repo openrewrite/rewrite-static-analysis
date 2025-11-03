@@ -24,8 +24,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
-import java.util.Collections;
-
+import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
 
 public class NullableOnMethodReturnType extends Recipe {
@@ -65,7 +64,7 @@ public class NullableOnMethodReturnType extends Recipe {
                                         Tree.randomId(),
                                         Space.SINGLE_SPACE,
                                         Markers.EMPTY,
-                                        Collections.singletonList(nullable.getTree().withPrefix(Space.EMPTY)),
+                                        singletonList(nullable.getTree().withPrefix(Space.EMPTY)),
                                         m2.getReturnTypeExpression()
                                 ));
                                 m2 = autoFormat(m2, m2.getReturnTypeExpression(), ctx, getCursor().getParentOrThrow());

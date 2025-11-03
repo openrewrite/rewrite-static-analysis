@@ -15,28 +15,42 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
+import org.openrewrite.SourceFile;
+import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.AnnotationService;
+import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.ExplicitInitializationStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.style.Style;
 
 import java.util.Iterator;
 
-@EqualsAndHashCode(callSuper = false)
-@Value
+@NoArgsConstructor
+@AllArgsConstructor
 public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
     private static final AnnotationMatcher LOMBOK_VALUE = new AnnotationMatcher("@lombok.Value");
     private static final AnnotationMatcher LOMBOK_BUILDER_DEFAULT = new AnnotationMatcher("@lombok.Builder.Default");
 
-    ExplicitInitializationStyle style;
+    private ExplicitInitializationStyle style;
+
+    @Override
+    public @Nullable J visit(@Nullable Tree tree, P p) {
+        //noinspection ConstantValue
+        if (style == null && tree instanceof SourceFile) {
+            style = Style.from(ExplicitInitializationStyle.class, (SourceFile)tree, Checkstyle::explicitInitialization);
+        }
+        return super.visit(tree, p);
+    }
 
     @Override
     public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, P p) {
@@ -46,22 +60,21 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
         if (maybeBlockOrGType.getParent() == null || maybeBlockOrGType.getParent().getParent() == null) {
             // Groovy type.
             return v;
-        } else {
-            J maybeClassDecl = maybeBlockOrGType
-                    .getParentTreeCursor() // maybe J.ClassDecl or J.NewClass
-                    .getValue();
-            if (!(maybeClassDecl instanceof J.ClassDeclaration || maybeClassDecl instanceof J.NewClass)) {
-                return v;
-            }
+        }
+        J maybeClassDecl = maybeBlockOrGType
+                .getParentTreeCursor() // maybe J.ClassDecl or J.NewClass
+                .getValue();
+        if (!(maybeClassDecl instanceof J.ClassDeclaration || maybeClassDecl instanceof J.NewClass)) {
+            return v;
+        }
 
-            if (!(maybeClassDecl instanceof J.NewClass) &&
-                    J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration) maybeClassDecl).getKind()) {
-                return v;
-            }
+        if (!(maybeClassDecl instanceof J.NewClass) &&
+                J.ClassDeclaration.Kind.Type.Class != ((J.ClassDeclaration) maybeClassDecl).getKind()) {
+            return v;
+        }
 
-            if (!(variableDeclsCursor.getValue() instanceof J.VariableDeclarations)) {
-                return v;
-            }
+        if (!(variableDeclsCursor.getValue() instanceof J.VariableDeclarations)) {
+            return v;
         }
         Iterator<Cursor> clz = getCursor().getPathAsCursors(c -> c.getValue() instanceof J.ClassDeclaration);
         if (clz.hasNext() && service(AnnotationService.class).matches(clz.next(), LOMBOK_VALUE)) {

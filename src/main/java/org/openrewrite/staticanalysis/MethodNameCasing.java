@@ -31,8 +31,9 @@ import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.time.Duration;
 import java.util.*;
+
+import static java.util.Collections.singleton;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -64,12 +65,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S100");
-    }
-
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(5);
+        return singleton("RSPEC-S100");
     }
 
     @Override

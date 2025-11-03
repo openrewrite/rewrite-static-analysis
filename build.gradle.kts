@@ -20,9 +20,8 @@ dependencies {
     implementation("org.apache.commons:commons-text:latest.release")
 
     // Limit transitive dependencies for downstream projects like rewrite-spring
-    provided(platform("org.openrewrite:rewrite-bom:${rewriteVersion}"))
     provided("org.openrewrite:rewrite-groovy:${rewriteVersion}")
-    provided("org.openrewrite:rewrite-kotlin")
+    provided("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
@@ -42,4 +41,12 @@ dependencies {
 
     testRuntimeOnly("org.openrewrite:rewrite-java-21")
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
+}
+
+tasks.withType<Test> {
+    jvmArgs("-Xmx1g", "-Xms512m")
+}
+
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
 }

@@ -15,22 +15,14 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.style.Checkstyle;
-import org.openrewrite.java.style.FallThroughStyle;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
+import static java.util.Collections.singleton;
 
 public class FallThrough extends Recipe {
     @Override
@@ -45,7 +37,7 @@ public class FallThrough extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S128");
+        return singleton("RSPEC-S128");
     }
 
     @Override
@@ -55,21 +47,6 @@ public class FallThrough extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new FallThroughFromCompilationUnitStyle();
-    }
-
-    private static class FallThroughFromCompilationUnitStyle extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
-                FallThroughStyle style = cu.getStyle(FallThroughStyle.class);
-                if (style == null) {
-                    style = Checkstyle.fallThrough();
-                }
-                return new FallThroughVisitor<>(style).visit(cu, ctx);
-            }
-            return (J) tree;
-        }
+        return new FallThroughVisitor<>();
     }
 }

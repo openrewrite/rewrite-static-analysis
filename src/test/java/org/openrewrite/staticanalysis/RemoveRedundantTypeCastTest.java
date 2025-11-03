@@ -471,7 +471,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
 
               class Test {
                   List method(List list) {
-                      return (ArrayList) list;
+                      return ((ArrayList) list);
                   }
               }
               """,
@@ -523,6 +523,89 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   marshaller.setProperty("org.glassfish.jaxb.characterEscapeHandler", (CharacterEscapeHandler) (ch, start, length, isAttVal, out) -> {
                   });
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontRemoveNecessaryDowncast() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              import java.util.Optional;
+
+              interface Bar {}
+              class BarImpl implements Bar {}
+              class Foo {
+                  private Bar getBar() {
+                      return new BarImpl();
+                  }
+
+                  private BarImpl getBarImpl() {
+                      return new BarImpl();
+                  }
+
+                  public Bar baz() {
+                   return Optional.of((Bar) getBarImpl()).orElse(getBar());
+                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void chainedMethods() {
+        // language=java
+        rewriteRun(
+          java(
+            """
+              class Bar {
+                  String getName() {
+                      return "The bar";
+                  }
+              }
+              class ChildBar extends Bar {}
+              """
+          ),
+          java(
+            """
+              class Foo {
+                  public void getBarName() {
+                      String.format(((Bar) getBar()).getName());
+                      ((Bar) getBar()).getName();
+                      ((Bar) getChildBar()).getName();
+                      ((((Bar) getBar()))).getName();
+                  }
+
+                  private Bar getBar() {
+                      return new Bar();
+                  }
+
+                  private ChildBar getChildBar() {
+                      return new ChildBar();
+                  }
+              }
+              """,
+            """
+              class Foo {
+                  public void getBarName() {
+                      String.format(getBar().getName());
+                      getBar().getName();
+                      getChildBar().getName();
+                      ((getBar())).getName();
+                  }
+
+                  private Bar getBar() {
+                      return new Bar();
+                  }
+
+                  private ChildBar getChildBar() {
+                      return new ChildBar();
+                  }
               }
               """
           )

@@ -20,14 +20,13 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.TypeMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -59,14 +58,14 @@ public class MoveFieldAnnotationToType extends Recipe {
         String annotationTypeInput = annotationType == null ? "org.openrewrite..*" : annotationType;
 
         return Preconditions.check(new UsesType<>(annotationTypeInput, null), new JavaIsoVisitor<ExecutionContext>() {
-            final Pattern typePattern = Pattern.compile(StringUtils.aspectjNameToPattern(annotationTypeInput));
+            final TypeMatcher typePattern = new TypeMatcher(annotationTypeInput);
 
             @Override
             public J.AnnotatedType visitAnnotatedType(J.AnnotatedType annotatedType, ExecutionContext ctx) {
                 J.AnnotatedType at = super.visitAnnotatedType(annotatedType, ctx);
 
                 if (isQualifiedClass(at.getTypeExpression())) {
-                    AtomicReference<J.Annotation> matchingAnnotation = new AtomicReference<>();
+                    AtomicReference<J.@Nullable Annotation> matchingAnnotation = new AtomicReference<>();
                     at = at.withAnnotations(ListUtils.map(at.getAnnotations(), a -> {
                         if (matchesType(a)) {
                             matchingAnnotation.set(a);
@@ -74,7 +73,8 @@ public class MoveFieldAnnotationToType extends Recipe {
                         }
                         return a;
                     }));
-                    if (at.getTypeExpression() != null && matchingAnnotation.get() != null) {
+                    if (matchingAnnotation.get() != null) {
+                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(at.getTypeExpression(), matchingAnnotation.get());
                         at = at.withTypeExpression(te);
                         // auto format should handle this, but evidently doesn't
@@ -92,7 +92,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
                 if (isQualifiedClass(mv.getTypeExpression())) {
-                    AtomicReference<J.Annotation> matchingAnnotation = new AtomicReference<>();
+                    AtomicReference<J.@Nullable Annotation> matchingAnnotation = new AtomicReference<>();
                     mv = mv.withLeadingAnnotations(ListUtils.map(mv.getLeadingAnnotations(), a -> {
                         if (matchesType(a)) {
                             matchingAnnotation.set(a);
@@ -101,6 +101,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (mv.getTypeExpression() != null && matchingAnnotation.get() != null) {
+                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(mv.getTypeExpression(), matchingAnnotation.get());
                         mv = mv.withTypeExpression(te);
                         // auto format should handle this, but evidently doesn't
@@ -118,7 +119,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
 
                 if (isQualifiedClass(md.getReturnTypeExpression())) {
-                    AtomicReference<J.Annotation> matchingAnnotation = new AtomicReference<>();
+                    AtomicReference<J.@Nullable Annotation> matchingAnnotation = new AtomicReference<>();
                     md = md.withLeadingAnnotations(ListUtils.map(md.getLeadingAnnotations(), a -> {
                         if (matchesType(a)) {
                             matchingAnnotation.set(a);
@@ -127,6 +128,7 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (md.getReturnTypeExpression() != null && matchingAnnotation.get() != null) {
+                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(md.getReturnTypeExpression(), matchingAnnotation.get());
                         md = md.withReturnTypeExpression(te);
                         // auto format should handle this, but evidently doesn't
@@ -141,13 +143,12 @@ public class MoveFieldAnnotationToType extends Recipe {
 
             private boolean matchesType(J.Annotation ann) {
                 JavaType.FullyQualified fq = TypeUtils.asFullyQualified(ann.getType());
-                return fq != null && typePattern.matcher(fq.getFullyQualifiedName()).matches();
+                return fq != null && typePattern.matches(fq);
             }
 
             private boolean isQualifiedClass(@Nullable TypeTree tree) {
                 return tree instanceof J.FieldAccess ||
-                       (tree instanceof J.ParameterizedType && ((J.ParameterizedType) tree).getClazz() instanceof J.FieldAccess) ||
-                       tree instanceof J.ArrayType;
+                       (tree instanceof J.ParameterizedType && ((J.ParameterizedType) tree).getClazz() instanceof J.FieldAccess);
             }
 
             private TypeTree annotateInnerClass(TypeTree qualifiedClassRef, J.Annotation annotation) {
@@ -176,14 +177,11 @@ public class MoveFieldAnnotationToType extends Recipe {
                         q = q.withName(q.getName().withPrefix(q.getName().getPrefix().withWhitespace(" ")));
                     }
                     return q;
-                } else if (qualifiedClassRef instanceof J.ParameterizedType &&
-                           ((J.ParameterizedType) qualifiedClassRef).getClazz() instanceof TypeTree) {
+                }
+                if (qualifiedClassRef instanceof J.ParameterizedType &&
+                        ((J.ParameterizedType) qualifiedClassRef).getClazz() instanceof TypeTree) {
                     J.ParameterizedType pt = (J.ParameterizedType) qualifiedClassRef;
                     return pt.withClazz(annotateInnerClass((TypeTree) pt.getClazz(), usedAnnotation));
-                } else if (qualifiedClassRef instanceof J.ArrayType) {
-                    J.ArrayType at = (J.ArrayType) qualifiedClassRef;
-                    at = at.withAnnotations(ListUtils.concat(annotation.withPrefix(Space.SINGLE_SPACE), at.getAnnotations()));
-                    return at;
                 }
                 return qualifiedClassRef;
             }

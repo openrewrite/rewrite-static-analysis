@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Statement;
+import org.openrewrite.style.Style;
 
 import java.util.Optional;
 
@@ -56,11 +57,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             if (bl != block) {
                 bl = (J.Block) new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor()
                         .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
-                EmptyBlockStyle style = getCursor().firstEnclosingOrThrow(JavaSourceFile.class)
-                        .getStyle(EmptyBlockStyle.class);
-                if (style == null) {
-                    style = Checkstyle.emptyBlock();
-                }
+                EmptyBlockStyle style = Style.from(EmptyBlockStyle.class, getCursor().firstEnclosingOrThrow(JavaSourceFile.class), Checkstyle::emptyBlock);
                 bl = (J.Block) new EmptyBlockVisitor<>(style)
                         .visitNonNull(bl, ctx, getCursor().getParentOrThrow());
             }
@@ -102,7 +99,8 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             // The simplification process did not result in resolving to a single 'true' or 'false' value
             if (!compileTimeConstantBoolean.isPresent()) {
                 return ifBeforeCleanup; // Return the visited `if`
-            } else if (compileTimeConstantBoolean.get()) {
+            }
+            if (compileTimeConstantBoolean.get()) {
                 // True branch
                 // Only keep the `then` branch, and remove the `else` branch.
                 Statement s = if__.getThenPart().withPrefix(if__.getPrefix());
@@ -112,36 +110,35 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
                         s,
                         ctx
                 );
-            } else {
-                // False branch
-                // Only keep the `else` branch, and remove the `then` branch.
-                if (if__.getElsePart() != null) {
-                    // The `else` part needs to be kept
-                    Statement s = if__.getElsePart().getBody().withPrefix(if__.getPrefix());
-                    doAfterVisit(new RemoveUnreachableCodeVisitor());
-                    return maybeAutoFormat(
-                            if__,
-                            s,
-                            ctx
-                    );
-                }
-                /*
-                 * The `else` branch is not present, therefore, the `if` can be removed.
-                 * Temporarily return an empty block that will (most likely) later be removed.
-                 * We need to return an empty block, in the following cases:
-                 * ```
-                 * if (a) a();
-                 * else if (false) { }
-                 * ```
-                 * Failing to return an empty block here would result in the following code being emitted:
-                 * ```
-                 * if (a) a();
-                 * else
-                 * ```
-                 * The above is not valid java and will cause later processing errors.
-                 */
-                return J.Block.createEmptyBlock();
             }
+            // False branch
+            // Only keep the `else` branch, and remove the `then` branch.
+            if (if__.getElsePart() != null) {
+                // The `else` part needs to be kept
+                Statement s = if__.getElsePart().getBody().withPrefix(if__.getPrefix());
+                doAfterVisit(new RemoveUnreachableCodeVisitor());
+                return maybeAutoFormat(
+                        if__,
+                        s,
+                        ctx
+                );
+            }
+            /*
+             * The `else` branch is not present, therefore, the `if` can be removed.
+             * Temporarily return an empty block that will (most likely) later be removed.
+             * We need to return an empty block, in the following cases:
+             * ```
+             * if (a) a();
+             * else if (false) { }
+             * ```
+             * Failing to return an empty block here would result in the following code being emitted:
+             * ```
+             * if (a) a();
+             * else
+             * ```
+             * The above is not valid java and will cause later processing errors.
+             */
+            return J.Block.createEmptyBlock();
         }
 
         @Override

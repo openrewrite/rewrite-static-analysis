@@ -26,9 +26,9 @@ import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import static java.util.Collections.reverse;
 import static org.openrewrite.Tree.randomId;
 
 public class ReplaceStringBuilderWithString extends Recipe {
@@ -66,7 +66,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                         return m;
                     }
 
-                    Collections.reverse(arguments);
+                    reverse(arguments);
                     arguments = adjustExpressions(method, arguments);
 
                     Expression additive = ChainStringBuilderAppendCalls.additiveExpression(arguments);
@@ -112,11 +112,10 @@ public class ReplaceStringBuilderWithString extends Recipe {
                         if (!TypeUtils.isString(arg.getType())) {
                             if (arg instanceof J.Literal) {
                                 return toStringLiteral((J.Literal) arg);
-                            } else {
-                                return JavaTemplate.builder("String.valueOf(#{any()})").build()
-                                        .apply(getCursor(), method.getCoordinates().replace(), arg)
-                                        .withPrefix(arg.getPrefix());
                             }
+                            return JavaTemplate.builder("String.valueOf(#{any()})").build()
+                                    .apply(getCursor(), method.getCoordinates().replace(), arg)
+                                    .withPrefix(arg.getPrefix());
                         }
                     } else if (!(arg instanceof J.Identifier || arg instanceof J.Literal || arg instanceof J.MethodInvocation)) {
                         return new J.Parentheses<>(randomId(), arg.getPrefix(), Markers.EMPTY, JRightPadded.build(arg.withPrefix(Space.EMPTY)));
@@ -148,13 +147,12 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     List<Expression> args = selectMethod.getArguments();
                     if (args.size() != 1) {
                         return false;
+                    }
+                    JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
+                    if (jrp == null) {
+                        arguments.add(args.get(0));
                     } else {
-                        JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
-                        if (jrp == null) {
-                            arguments.add(args.get(0));
-                        } else {
-                            arguments.add(args.get(0).withPrefix(jrp.getAfter()));
-                        }
+                        arguments.add(args.get(0).withPrefix(jrp.getAfter()));
                     }
                 }
 

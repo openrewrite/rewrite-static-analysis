@@ -16,19 +16,21 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings("UnnecessarySemicolon")
+@SuppressWarnings({"UnnecessarySemicolon", "EmptyTryBlock", "UnusedAssignment", "ConstantValue"})
 class RemoveExtraSemicolonsTest implements RewriteTest {
 
     @Override
@@ -258,6 +260,75 @@ class RemoveExtraSemicolonsTest implements RewriteTest {
                  public static final String X = "receipt-id";
              }
              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Separate parser issue")
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
+    @Test
+    void importSemicolonAfterPackage() {
+        //language=java
+        rewriteRun(
+          spec -> spec
+            .typeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(true))
+            .afterTypeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(false)),
+          java(
+            """
+              package p;;
+              import java.util.List;
+              class AfterPackage { }
+              """,
+            """
+              package p;
+              import java.util.List;
+              class AfterPackage { }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Separate parser issue")
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
+    @Test
+    void importSemicolonBetweenImports() {
+        //language=java
+        rewriteRun(
+          spec -> spec
+            .typeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(true))
+            .afterTypeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(false)),
+          java(
+            """
+              import java.util.List;
+              ;import java.util.Set;
+              class BetweenImport { }
+              """,
+            """
+              import java.util.List;
+              import java.util.Set;
+              class BetweenImport { }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/396")
+    @Test
+    void importSemicolonAfterImports() {
+        //language=java
+        rewriteRun(
+          spec -> spec
+            .typeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(true))
+            .afterTypeValidationOptions(TypeValidation.all().allowNonWhitespaceInWhitespace(false)),
+          java(
+            """
+              import java.util.List;
+              ;class BetweenImport { }
+              """,
+            """
+              import java.util.List;
+              class BetweenImport { }
+              """
           )
         );
     }
