@@ -2843,6 +2843,33 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReorderAnnotationAttributes
+examples:
+- description: '`ReorderAnnotationAttributesTest#reordersAnnotationAttributes`'
+  sources:
+  - before: |
+      @interface MyAnnotation {
+          String name();
+          int value();
+          boolean enabled();
+      }
+
+      @MyAnnotation(value = 123, name = "test", enabled = true)
+      class A {
+      }
+    after: |
+      @interface MyAnnotation {
+          String name();
+          int value();
+          boolean enabled();
+      }
+
+      @MyAnnotation(enabled = true, name = "test", value = 123)
+      class A {
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReorderAnnotations
 examples:
 - description: '`ReorderAnnotationsTest#reordersMethodAnnotations`'
