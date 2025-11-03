@@ -179,7 +179,7 @@ public class OperatorWrap extends Recipe {
             @Override
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 J.InstanceOf i = super.visitInstanceOf(instanceOf, ctx);
-                if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof())) {
+                if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof()) && i.getClazz() != null) {
                     if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (i.getClazz().getPrefix().getWhitespace().contains("\n")) {
                             i = i.getPadding().withExpression(
