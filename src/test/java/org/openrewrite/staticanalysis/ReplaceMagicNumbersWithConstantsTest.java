@@ -31,7 +31,8 @@ package org.openrewrite.staticanalysis;
  */
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-class ReplaceMagicNumbersWithConstantsTest implements RewriteTest {
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
@@ -57,6 +58,15 @@ public class OrderProcessor {
         int localVar = 5;
         orderTotal = localVar + 10;
         if (orderTotal < 51.0) {
+            System.out.println("Order total is less than 51.0");
+        }
+        if (orderTotal < 51.0) {
+            System.out.println("Order total is less than 51.0");
+        }
+        if (orderTotal < 51.0) {
+            System.out.println("Order total is less than 51.0");
+        }
+        if (orderTotal < 51.0) {
             return 7.99;
         } else {
             return 0.0;
@@ -74,6 +84,15 @@ public class OrderProcessor {
         int localVar = 5;
         orderTotal = localVar + INT_10;
         if (orderTotal < DOUBLE_51_0) {
+            System.out.println("Order total is less than 51.0");
+        }
+        if (orderTotal < DOUBLE_51_0) {
+            System.out.println("Order total is less than 51.0");
+        }
+        if (orderTotal < DOUBLE_51_0) {
+            System.out.println("Order total is less than 51.0");
+        }
+        if (orderTotal < DOUBLE_51_0) {
             return DOUBLE_7_99;
         } else {
             return 0.0;
@@ -85,6 +104,7 @@ public class OrderProcessor {
         );
     }
 
+    @DocumentExample
     @Test
     void assignMagicNumbersToConstantsBasicTest() {
         rewriteRun(
@@ -114,6 +134,7 @@ public class OrderProcessor {
           )
         );
     }
+    @DocumentExample
     @Test
     void assignMagicNumbersToConstantsM1_0_1_AreIgnoredTest() {
         rewriteRun(
