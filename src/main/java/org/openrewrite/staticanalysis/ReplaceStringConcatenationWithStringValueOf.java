@@ -26,8 +26,9 @@ import org.openrewrite.java.tree.MethodCall;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
@@ -46,7 +47,7 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
     @Override
     public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1153");
+        return singleton("RSPEC-S1153");
     }
 
     @Override
@@ -74,7 +75,10 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
                 if (J.Literal.isLiteralValue(binary.getLeft(), "") &&
                         binary.getOperator() == J.Binary.Type.Addition &&
                         !TypeUtils.isString(binary.getRight().getType()) &&
-                        !J.Literal.isLiteralValue(binary.getRight(), null)) {
+                        !J.Literal.isLiteralValue(binary.getRight(), null) &&
+                        // Avoid breaking symmetry in chained String concatenations
+                        !(binary.getRight() instanceof J.Binary) &&
+                        !(getCursor().getParentTreeCursor().getValue() instanceof J.Binary)) {
                     return JavaTemplate.builder("String.valueOf(#{any()})")
                             .build()
                             .apply(getCursor(),

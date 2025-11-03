@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -195,70 +196,6 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeStringConcatenation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void method() {
-                      String s = "" + "hello";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeNullConcatenation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void method() {
-                      String s = "" + null;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeNonEmptyStringConcatenation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void method() {
-                      String s = "prefix: " + 123;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeWhenEmptyStringIsOnRight() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  void method() {
-                      String s = 123 + "";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void replaceInComplexExpression() {
         rewriteRun(
           //language=java
@@ -302,5 +239,89 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class NoChange {
+
+        @Test
+        void doNotChangeStringConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void method() {
+                          String s = "" + "hello";
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeChainedConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void method(Object a, Object b) {
+                          String s = "" + a + b;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeNullConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void method() {
+                          String s = "" + null;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeNonEmptyStringConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void method() {
+                          String s = "prefix: " + 123;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeWhenEmptyStringIsOnRight() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void method() {
+                          String s = 123 + "";
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
