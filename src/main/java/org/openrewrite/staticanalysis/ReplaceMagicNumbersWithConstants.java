@@ -137,13 +137,6 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
                     }
                     return super.visitLiteral(literal, ctx);
                 } catch (Exception e) {
-                    System.err.println("Exception in visitLiteral 3:");
-                    System.err.println("  Exception Type: " + e.getClass().getName());
-                    System.err.println("  Message: " + e.getMessage());
-                    System.err.println("  Literal: " + literal);
-                    System.err.println("  Literal value: " + literal.getValueSource());
-                    System.err.println("  Cursor path: " + printCursorPath(getCursor()));
-                    e.printStackTrace(System.err);
                     return literal;
                 }
             }
