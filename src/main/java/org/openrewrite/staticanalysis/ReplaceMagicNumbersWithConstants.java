@@ -15,21 +15,14 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import static java.util.Collections.singleton;
-
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This recipe replaces magic number literals in method bodies with named constants following the Sonar java:S109 rule.
@@ -41,13 +34,13 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
     private static final String CUSTOM_MODIFIERS = "private static final";
 
     @Override
-    public String getDisplayName() {
-    public String getDescription() {
-        return "Replaces magic number literals in method bodies with named constants to improve code readability and maintainability. " +
-                "Magic numbers are replaced by private static final constants declared at the top of the class, following Sonar's java:S109 rule. " +
-                "The recipe does not create constants for literals that are already assigned to fields or variables, nor for typical non-magic numbers (such as 0, 1, or -1). " +
-                "Currently, only numeric primitive literals are handled; string and character literals are unaffected. " +
-                "If a constant for a value already exists, or the constant name would conflict with an existing symbol, the recipe will skip that value.";
+    public @NlsRewrite.DisplayName String getDisplayName() {
+        return "Replace magic numbers with constants";
+    }
+
+    @Override
+    public @NlsRewrite.Description String getDescription() {
+        return "Replaces magic number literals in method bodies with named constants to improve code readability and maintainability. "
                 + "Magic numbers are replaced by private static final constants declared at the top of the class, following Sonar's java:S109 rule. "
                 + "The recipe does not create constants for literals that are already assigned to fields or variables, nor for typical non-magic numbers (such as 0, 1, or -1). "
                 + "Currently, only numeric primitive literals are handled; string and character literals are unaffected. "
@@ -62,32 +55,48 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
                 J.ClassDeclaration cd = (J.ClassDeclaration) super.visitClassDeclaration(classDecl, ctx);
 
                 List<J.Literal> literals = new ArrayList<>();
-                // COLLECT magic numbers not in variable initializers and not -1/0/1
+                // COLLECT magic numbers not in variable initializers and not -1/0/1, ONLY numbers
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitLiteral(J.Literal literal, ExecutionContext ctx2) {
-                        Cursor cursor = getCursor();
-                        if (!(cursor.getParent().getParent().getValue() instanceof J.VariableDeclarations.NamedVariable) &&
-                                !isIgnoredMagicNumber(literal)) {
-                            literals.add(literal);
+                        try {
+                            Object value = literal.getValue();
+                            if (!(value instanceof Number)) {
+                                return literal;
+                            }
+                            Cursor cursor = getCursor();
+                            if (!(cursor.getParent().getParent().getValue() instanceof J.VariableDeclarations.NamedVariable)
+                                    && !isIgnoredMagicNumber(literal)) {
+                                literals.add(literal);
+                            }
+                            return literal;
+                        } catch (Exception e) {
+                            System.out.println("Exception in visitLiteral 1: " + e.getMessage() + e.getStackTrace() + e);
+                            return literal;
                         }
-                        return literal;
                     }
                 }.visit(classDecl, ctx);
 
+                // Deduplicate by constant name!
                 List<String> newFieldSources = new ArrayList<>();
+                Set<String> alreadyCreated = new HashSet<>();
                 for (J.Literal literal : literals) {
                     String constantName = getStrValFromLiteral(literal);
-                    boolean alreadyExists = cd.getBody().getStatements().stream()
+
+                    if (alreadyCreated.contains(constantName)) {
+                        continue;
+                    }
+                    boolean existsInCode = cd.getBody().getStatements().stream()
                             .filter(J.VariableDeclarations.class::isInstance)
                             .map(J.VariableDeclarations.class::cast)
                             .flatMap(vars -> vars.getVariables().stream())
                             .anyMatch(var -> var.getSimpleName().equals(constantName));
-                    if (!alreadyExists) {
+                    if (!existsInCode) {
                         String modifiers = CUSTOM_MODIFIERS;
                         String typeName = getTypeName(literal);
                         String fieldSource = modifiers + " " + typeName + " " + constantName + " = " + literal.getValueSource() + ";";
                         newFieldSources.add(fieldSource);
+                        alreadyCreated.add(constantName);
                     }
                 }
                 if (newFieldSources.isEmpty()) {
@@ -106,25 +115,54 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
 
             @Override
             public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
-                Cursor cursor = getCursor();
-                // Do NOT replace in variable/field initializers or for ignored numbers
-                if (cursor.getParent().getParent().getValue() instanceof J.VariableDeclarations.NamedVariable ||
-                        isIgnoredMagicNumber(literal)) {
+                try {
+                    Object value = literal.getValue();
+                    if (!(value instanceof Number)) {
+                        return literal;
+                    }
+                    Cursor cursor = getCursor();
+                    Cursor parent = cursor != null ? cursor.getParent() : null;
+                    Cursor grandparent = parent != null ? parent.getParent() : null;
+
+                    // Do NOT replace in variable/field initializers or for ignored numbers
+                    if ((grandparent != null &&
+                            grandparent.getValue() instanceof J.VariableDeclarations.NamedVariable)
+                            || isIgnoredMagicNumber(literal)) {
+                        return super.visitLiteral(literal, ctx);
+                    }
+                    String constantName = getStrValFromLiteral(literal);
+                    if (constantName != null) {
+                        JavaTemplate template = JavaTemplate.builder(constantName).build();
+                        return template.apply(getCursor(), literal.getCoordinates().replace());
+                    }
                     return super.visitLiteral(literal, ctx);
+                } catch (Exception e) {
+                    System.err.println("Exception in visitLiteral 3:");
+                    System.err.println("  Exception Type: " + e.getClass().getName());
+                    System.err.println("  Message: " + e.getMessage());
+                    System.err.println("  Literal: " + literal);
+                    System.err.println("  Literal value: " + literal.getValueSource());
+                    System.err.println("  Cursor path: " + printCursorPath(getCursor()));
+                    e.printStackTrace(System.err);
+                    return literal;
                 }
-                String constantName = getStrValFromLiteral(literal);
-                if (constantName != null) {
-                    JavaTemplate template = JavaTemplate.builder(constantName).build();
-                    return template.apply(getCursor(), literal.getCoordinates().replace());
-                }
-                return super.visitLiteral(literal, ctx);
             }
         };
     }
-
+    private String printCursorPath(Cursor cursor) {
+        StringBuilder sb = new StringBuilder();
+        while (cursor != null) {
+            Object val = cursor.getValue();
+            sb.append(val == null ? "null" : val.getClass().getSimpleName());
+            sb.append(" > ");
+            cursor = cursor.getParent();
+        }
+        sb.append("ROOT");
+        return sb.toString();
+    }
     @Override
     public Set<String> getTags() {
-        return singleton("RSPEC-109");
+        return Collections.singleton("RSPEC-109");
     }
 
     @Override
@@ -135,9 +173,7 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
     private String getStrValFromLiteral(J.Literal literal) {
         String type = getTypeName(literal).toUpperCase();
         String valueSource = literal.getValueSource();
-        if (valueSource == null) {
-            return null;
-        }
+        if (valueSource == null) return null;
         if (valueSource.startsWith("-")) {
             valueSource = "NEGATIVE_" + valueSource.substring(1);
         }
@@ -145,9 +181,7 @@ public class ReplaceMagicNumbersWithConstants extends Recipe {
     }
 
     private String getTypeName(J.Literal literal) {
-        if (literal.getType() == null) {
-            return "Object";
-        }
+        if (literal.getType() == null) return "Object";
         JavaType type = literal.getType();
         if (type instanceof JavaType.Primitive) {
             return ((JavaType.Primitive) type).getKeyword();
