@@ -26,6 +26,7 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
 import static java.util.Collections.emptyList;
@@ -41,7 +42,8 @@ public class RemoveSystemOutPrintln extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Print statements are often left accidentally after debugging an issue.";
+        return "Print statements are often left accidentally after debugging an issue. " +
+                "This recipe removes all `System.out#println` and `System.err#println` statements from the code.";
     }
 
     @Override
@@ -60,8 +62,11 @@ public class RemoveSystemOutPrintln extends Recipe {
 
             @Override
             @SuppressWarnings("NullableProblems")
-            public  J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                if (SYSTEM_OUT_PRINTLN.matches(method)) {
+            public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                if (SYSTEM_OUT_PRINTLN.matches(method) &&
+                        method.getSelect() instanceof J.FieldAccess &&
+                        (((J.FieldAccess) method.getSelect()).getTarget() instanceof J.Identifier &&
+                                TypeUtils.isAssignableTo("java.lang.System", ((J.FieldAccess) method.getSelect()).getTarget().getType()))) {
                     return null;
                 }
                 return super.visitMethodInvocation(method, ctx);
