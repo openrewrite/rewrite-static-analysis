@@ -528,4 +528,41 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/771")
+    @Test
+    void removeRedundantInnerExceptionWhenParentIsCaught() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Outer {
+                  public static class InnerException extends Exception {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (Outer.InnerException e) {
+                      } catch (Exception e) {
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (Exception e) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
