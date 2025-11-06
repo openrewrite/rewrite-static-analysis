@@ -210,7 +210,7 @@ public class AnnotateNullableMethods extends Recipe {
 
             // Visit the entire compilation unit to find the method declaration
             AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + nullableAnnotationClass);
-            J.CompilationUnit cu = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class);
+            SourceFile sf = getCursor().firstEnclosingOrThrow(SourceFile.class);
             return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, AtomicBoolean p) {
@@ -228,7 +228,7 @@ public class AnnotateNullableMethods extends Recipe {
                     }
                     return super.visitMethodDeclaration(method, p);
                 }
-            }.reduce(cu, new AtomicBoolean(false)).get();
+            }.reduce(sf, new AtomicBoolean(false)).get();
         }
     }
 }

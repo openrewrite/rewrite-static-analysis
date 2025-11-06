@@ -36,6 +36,7 @@ dependencies {
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.testng:testng:7.+")
+    testImplementation("org.openrewrite:rewrite-javascript:${rewriteVersion}")
 
     testImplementation("com.google.code.gson:gson:latest.release")
 

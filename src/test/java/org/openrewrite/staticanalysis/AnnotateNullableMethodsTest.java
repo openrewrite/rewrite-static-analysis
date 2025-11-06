@@ -24,6 +24,8 @@ import org.openrewrite.test.SourceSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+
 
 class AnnotateNullableMethodsTest implements RewriteTest {
 
@@ -512,6 +514,23 @@ class AnnotateNullableMethodsTest implements RewriteTest {
 
               }
               """
+          )
+        );
+    }
+
+    @Test
+    void typescriptCode() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+            class A {
+              public f(n: number) {
+                  if (n <= 1) return undefined;
+                  return this.f(n - 1);
+              }
+            }
+            """
           )
         );
     }
