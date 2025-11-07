@@ -2530,14 +2530,29 @@ examples:
 - description: '`RemoveSystemOutPrintlnTest#removePrintln`'
   sources:
   - before: |
+      import java.io.PrintStream;
+
       class Test {
-          void test() {
+          void printOut() {
               System.out.println("Hello, world!");
+          }
+          void printErr() {
+              System.err.println("Hello, world!");
+          }
+          void printStream(PrintStream printStream) {
+              printStream.println("Hello, world!");
           }
       }
     after: |
+      import java.io.PrintStream;
+
       class Test {
-          void test() {
+          void printOut() {
+          }
+          void printErr() {
+          }
+          void printStream(PrintStream printStream) {
+              printStream.println("Hello, world!");
           }
       }
     language: java
@@ -3206,6 +3221,25 @@ examples:
       class A {
           void foo() {
               String s = "A" + "B";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceStringConcatenationWithStringValueOf
+examples:
+- description: '`ReplaceStringConcatenationWithStringValueOfTest#replaceIntegerConcatenation`'
+  sources:
+  - before: |
+      class Test {
+          void method() {
+              String s = "" + 1;
+          }
+      }
+    after: |
+      class Test {
+          void method() {
+              String s = String.valueOf(1);
           }
       }
     language: java
