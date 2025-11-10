@@ -101,6 +101,21 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     return input;
                 }
 
+                // Handle character literals by stripping single quotes and wrapping in double quotes
+                if (input.getType() == JavaType.Primitive.Char) {
+                    String charSource = input.getValueSource();
+                    if (charSource != null && charSource.length() >= 2 &&
+                        charSource.startsWith("'") && charSource.endsWith("'")) {
+                        String charContent = charSource.substring(1, charSource.length() - 1);
+                        String stringValue = input.getValue() != null ? String.valueOf(input.getValue()) : charContent;
+                        String valueSource = "\"" + charContent + "\"";
+                        return input
+                                .withType(JavaType.Primitive.String)
+                                .withValue(stringValue)
+                                .withValueSource(valueSource);
+                    }
+                }
+
                 String value = input.getValueSource();
                 return new J.Literal(randomId(), Space.EMPTY, Markers.EMPTY, value,
                         "\"" + value + "\"", null, JavaType.Primitive.String);
