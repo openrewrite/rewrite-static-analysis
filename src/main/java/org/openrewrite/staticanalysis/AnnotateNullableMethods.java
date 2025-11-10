@@ -24,6 +24,7 @@ import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.Arrays;
@@ -80,8 +81,7 @@ public class AnnotateNullableMethods extends Recipe {
                         methodDeclaration.getMethodType() == null ||
                         methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
                         service(AnnotationService.class).matches(getCursor(), new AnnotationMatcher("@" + fullyQualifiedName)) ||
-                        (methodDeclaration.getReturnTypeExpression() != null &&
-                                service(AnnotationService.class).matches(new Cursor(null, methodDeclaration.getReturnTypeExpression()), new AnnotationMatcher("@" + fullyQualifiedName)))) {
+                        hasNullableAnnotation(methodDeclaration.getReturnTypeExpression(), fullyQualifiedName)) {
                     return methodDeclaration;
                 }
 
@@ -99,6 +99,27 @@ public class AnnotateNullableMethods extends Recipe {
                             .visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
                 }
                 return md;
+            }
+
+            private boolean hasNullableAnnotation(@Nullable TypeTree returnType, String annotationFqn) {
+                if (returnType == null) {
+                    return false;
+                }
+
+                // Check if the return type itself is annotated
+                if (service(AnnotationService.class).matches(new Cursor(null, returnType), new AnnotationMatcher("@" + annotationFqn))) {
+                    return true;
+                }
+
+                // For array types, check if the element type is annotated
+                if (returnType instanceof J.ArrayType) {
+                    J.ArrayType arrayType = (J.ArrayType) returnType;
+                    if (arrayType.getElementType() instanceof J.AnnotatedType) {
+                        return service(AnnotationService.class).matches(new Cursor(null, arrayType.getElementType()), new AnnotationMatcher("@" + annotationFqn));
+                    }
+                }
+
+                return false;
             }
         };
         return Repeat.repeatUntilStable(javaIsoVisitor, 5);

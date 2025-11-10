@@ -131,4 +131,102 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void moveNullableToArrayType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class Test {
+                  @Nullable
+                  public String[] test() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class Test {
+
+                  public String @Nullable[] test() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveNullableToPrimitiveArrayType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class Test {
+                  @Nullable
+                  public int[] test() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class Test {
+
+                  public int @Nullable[] test() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveNullableToMultiDimensionalArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class Test {
+                  @Nullable
+                  public String[][] test() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class Test {
+
+                  public String @Nullable[][] test() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForNullableElements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.lang.Nullable;
+              class Test {
+                  public @Nullable String[] test() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
