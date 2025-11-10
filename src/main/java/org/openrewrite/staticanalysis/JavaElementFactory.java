@@ -80,6 +80,20 @@ final class JavaElementFactory {
             qualifiedName = type.toString();
         }
 
+        // Check if this is a local class (contains $<digit>)
+        // Local classes have names like "Outer$1LocalName" where the digit indicates the scope
+        // For method references, we should use only the simple name without the numeric prefix
+        if (qualifiedName.matches(".*\\$\\d+.*")) {
+            // Extract the simple name after the last $<digit> sequence
+            String simpleName = qualifiedName.replaceAll(".*\\$\\d+", "");
+            // Remove any remaining $ characters and get just the class name
+            simpleName = simpleName.replace('$', '.');
+            if (simpleName.indexOf('.') > 0) {
+                simpleName = simpleName.substring(simpleName.lastIndexOf('.') + 1);
+            }
+            return new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), simpleName, type, null);
+        }
+
         Scanner scanner = new Scanner(qualifiedName.replace('$', '.')).useDelimiter("\\.");
         for (int i = 0; scanner.hasNext(); i++) {
             String part = scanner.next();
