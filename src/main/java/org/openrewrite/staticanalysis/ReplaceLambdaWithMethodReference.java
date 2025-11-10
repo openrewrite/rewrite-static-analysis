@@ -72,7 +72,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     }
 
     private static class ReplaceLambdaWithMethodReferenceKotlinVisitor extends KotlinVisitor<ExecutionContext> {
-        // Implement Me
+        // XXX Implement Me
     }
 
     private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
@@ -368,7 +368,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
          * would break type inference. This occurs when a lambda's return type depends on
          * generic type inference, and the lambda is passed through method calls where
          * one of the enclosing methods is overloaded.
-         *
+         * <p>
          * Example: foo(fold(() -> Optional.empty()))
          * where fold is generic and foo is overloaded.
          */
@@ -377,7 +377,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             Cursor cursor = getCursor();
 
             // Find the first method invocation that the lambda is an argument to
-            Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof J.CompilationUnit);
+            Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
             if (!(parent.getValue() instanceof J.MethodInvocation)) {
                 return false;
             }
@@ -391,7 +391,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 return false;
             }
 
-            grandparent = grandparent.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof J.CompilationUnit);
+            grandparent = grandparent.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
             if (!(grandparent.getValue() instanceof J.MethodInvocation)) {
                 return false;
             }
@@ -407,7 +407,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             }
 
             JavaType.Method outerType = outerMethod.getMethodType();
-            if (outerType == null || outerType.getDeclaringType() == null) {
+            if (outerType == null) {
                 return false;
             }
 
@@ -423,7 +423,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     }
 
     private static boolean isAMethodInvocationArgument(J.Lambda lambda, Cursor cursor) {
-        Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof J.CompilationUnit);
+        Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
         if (parent.getValue() instanceof J.MethodInvocation) {
             J.MethodInvocation m = parent.getValue();
             return m.getArguments().stream().anyMatch(arg -> arg == lambda);
