@@ -59,14 +59,23 @@ public class NullableOnMethodReturnType extends Recipe {
                             J.MethodDeclaration m2 = m;
                             m2 = m2.withLeadingAnnotations(ListUtils.map(m2.getLeadingAnnotations(),
                                     a -> a == nullable.getTree() ? null : a));
-                            if (m2 != m) {
-                                m2 = m2.withReturnTypeExpression(new J.AnnotatedType(
-                                        Tree.randomId(),
-                                        Space.SINGLE_SPACE,
-                                        Markers.EMPTY,
-                                        singletonList(nullable.getTree().withPrefix(Space.EMPTY)),
-                                        m2.getReturnTypeExpression()
-                                ));
+                            if (m2 != m && m2.getReturnTypeExpression() != null) {
+                                // For array types, annotate the array brackets, not the element type
+                                if (m2.getReturnTypeExpression() instanceof J.ArrayType) {
+                                    // For type-use annotations on arrays (JSpecify style), the annotation should be on the outermost array dimension
+                                    // This creates: elementType @Nullable []
+                                    // We do this by wrapping the ENTIRE array type in an AnnotatedType, but with proper spacing
+                                    m2 = m2.withReturnTypeExpression(((J.ArrayType) m2.getReturnTypeExpression())
+                                            .withAnnotations(singletonList(nullable.getTree().withPrefix(Space.SINGLE_SPACE))));
+                                } else {
+                                    m2 = m2.withReturnTypeExpression(new J.AnnotatedType(
+                                            Tree.randomId(),
+                                            Space.SINGLE_SPACE,
+                                            Markers.EMPTY,
+                                            singletonList(nullable.getTree().withPrefix(Space.EMPTY)),
+                                            m2.getReturnTypeExpression()
+                                    ));
+                                }
                                 m2 = autoFormat(m2, m2.getReturnTypeExpression(), ctx, getCursor().getParentOrThrow());
                                 m2 = m2.withPrefix(m2.getPrefix().withWhitespace(m2.getPrefix().getWhitespace().replace("\n\n\n", "\n\n")));
                             }
@@ -75,6 +84,6 @@ public class NullableOnMethodReturnType extends Recipe {
                         .orElse(m));
             }
         };
-        return Preconditions.check(new UsesType<>("*..Nullable", false),visitor);
+        return Preconditions.check(new UsesType<>("*..Nullable", false), visitor);
     }
 }
