@@ -1576,4 +1576,64 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/774")
+    @Test
+    void methodRefWithGenerics() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+
+              class Foo {
+                  <R> R fold(final Supplier<R> supplier) {return null;}
+
+                  void foo(String l) {}
+                  void foo(Optional<String> l) {}
+
+                  void bar() {
+                      foo(fold(() -> Optional.empty()));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simpleGenericMethodTest() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Foo {
+                  <R> R fold(final Supplier<R> supplier) {return null;}
+
+                  String getString() { return "test"; }
+
+                  void bar() {
+                      String result = fold(() -> getString());
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Foo {
+                  <R> R fold(final Supplier<R> supplier) {return null;}
+
+                  String getString() { return "test"; }
+
+                  void bar() {
+                      String result = fold(this::getString);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
