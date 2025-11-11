@@ -31,6 +31,8 @@ import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
 
+import static java.util.Collections.singletonList;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
 @EqualsAndHashCode(callSuper = false)
@@ -110,7 +112,31 @@ public class AnnotateNullableParameters extends Recipe {
                                             String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
                                     .build()
                                     .apply(new Cursor(getCursor(), vd),
-                                            vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                                            vd.getCoordinates().addAnnotation(comparing(J.Annotation::getSimpleName)));
+
+                            // For array types, move annotation from leading annotations to array brackets
+                            if (annotated.getTypeExpression() instanceof J.ArrayType) {
+                                // Find the annotation we just added
+                                J.Annotation nullableAnnotation = null;
+                                for (J.Annotation ann : annotated.getLeadingAnnotations()) {
+                                    if (ann.getSimpleName().equals(simpleName)) {
+                                        nullableAnnotation = ann;
+                                        break;
+                                    }
+                                }
+                                if (nullableAnnotation != null) {
+                                    J.Annotation finalAnnotation = nullableAnnotation;
+                                    J.ArrayType arrayType = (J.ArrayType) annotated.getTypeExpression();
+                                    annotated = annotated.withLeadingAnnotations(ListUtils.map(annotated.getLeadingAnnotations(),
+                                            a -> a == finalAnnotation ? null : a));
+                                    arrayType = arrayType.withAnnotations(singletonList(finalAnnotation.withPrefix(Space.SINGLE_SPACE)));
+                                    if (annotated.getLeadingAnnotations().isEmpty()) {
+                                        arrayType = arrayType.withPrefix(Space.EMPTY);
+                                    }
+                                    annotated = annotated.withTypeExpression(arrayType);
+                                }
+                            }
+
                             doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
                             doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
                             return annotated.withModifiers(ListUtils.mapFirst(annotated.getModifiers(), first -> first.withPrefix(Space.SINGLE_SPACE)));
