@@ -130,7 +130,7 @@ public class AnnotateRequiredParameters extends Recipe {
                 }));
 
                 // Remove unreachable null checks
-                md = md.withBody((J.Block) new JavaIsoVisitor<ExecutionContext>() {
+                return md.withBody((J.Block) new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public Statement visitStatement(Statement statement, ExecutionContext executionContext) {
                         for (Statement toRemove : analysis.statementsToRemove) {
@@ -141,8 +141,6 @@ public class AnnotateRequiredParameters extends Recipe {
                         return super.visitStatement(statement, executionContext);
                     }
                 }.visit(md.getBody(), ctx));
-
-                return md;
             }
         };
     }
