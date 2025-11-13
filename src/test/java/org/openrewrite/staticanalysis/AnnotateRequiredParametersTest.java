@@ -438,7 +438,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
     }
 
     @Test
-    void annotateMultipleParametersInSameConditionWithAnd() {
+    void doNotAnnotateWhenAndConditionAllowsOneNull() {
         rewriteRun(
           //language=java
           java(
@@ -448,15 +448,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
                       if (first == null && second == null) {
                           throw new IllegalArgumentException();
                       }
-                      System.out.println(first + second);
-                  }
-              }
-              """,
-            """
-              import org.jspecify.annotations.NonNull;
-
-              class Test {
-                  public void process(@NonNull String first, @NonNull String second) {
                       System.out.println(first + second);
                   }
               }

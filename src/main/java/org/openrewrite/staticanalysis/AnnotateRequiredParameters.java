@@ -280,8 +280,10 @@ public class AnnotateRequiredParameters extends Recipe {
          * Handles patterns like:
          * - param == null
          * - null == param
-         * - param1 == null || param2 == null
-         * - param1 == null && param2 == null
+         * - param1 == null || param2 == null (both required)
+         *
+         * Does NOT handle:
+         * - param1 == null && param2 == null (at most one may be null, not both required)
          */
         private List<J.Identifier> extractNullCheckedParameters(Expression condition) {
             List<J.Identifier> params = new ArrayList<>();
@@ -294,8 +296,9 @@ public class AnnotateRequiredParameters extends Recipe {
                 J.Binary binary = (J.Binary) condition;
                 J.Binary.Type operator = binary.getOperator();
 
-                // Check for logical operators (|| or &&)
-                if (operator == J.Binary.Type.Or || operator == J.Binary.Type.And) {
+                // Only handle OR operator - means any parameter being null throws exception
+                // Do NOT handle AND - "if (a == null && b == null)" means only when BOTH are null is there a problem
+                if (operator == J.Binary.Type.Or) {
                     extractNullCheckedParametersRecursive(binary.getLeft(), params);
                     extractNullCheckedParametersRecursive(binary.getRight(), params);
                 }
