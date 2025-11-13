@@ -455,4 +455,32 @@ class AnnotateRequiredParametersTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void annotateThreeParametersInSameCondition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public void process(String first, String second, String third) {
+                      if (first == null || second == null || third == null) {
+                          throw new IllegalArgumentException("All parameters are required");
+                      }
+                      System.out.println(first + second + third);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  public void process(@NonNull String first, @NonNull String second, @NonNull String third) {
+                      System.out.println(first + second + third);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
