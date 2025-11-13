@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -205,13 +206,8 @@ public class AnnotateRequiredParameters extends Recipe {
      * Result of analyzing a method body for required parameters.
      */
     private static class RequiredParameterAnalysis {
-        final Set<J.Identifier> requiredIdentifiers;
-        final Set<Statement> statementsToRemove;
-
-        RequiredParameterAnalysis() {
-            this.requiredIdentifiers = new HashSet<>();
-            this.statementsToRemove = new HashSet<>();
-        }
+        final Set<J.Identifier> requiredIdentifiers = new HashSet<>();
+        final Set<Statement> statementsToRemove = new HashSet<>();
     }
 
     /**
@@ -222,14 +218,11 @@ public class AnnotateRequiredParameters extends Recipe {
      *   <li>Objects.requireNonNull calls which implicitly throw NullPointerException</li>
      * </ul>
      */
+    @RequiredArgsConstructor
     private static class RequiredParameterVisitor extends JavaIsoVisitor<RequiredParameterAnalysis> {
         private static final MethodMatcher REQUIRE_NON_NULL = new MethodMatcher("java.util.Objects requireNonNull(..)");
 
         private final Collection<J.Identifier> identifiers;
-
-        public RequiredParameterVisitor(Collection<J.Identifier> identifiers) {
-            this.identifiers = identifiers;
-        }
 
         @Override
         public J.If visitIf(J.If iff, RequiredParameterAnalysis analysis) {
@@ -248,8 +241,9 @@ public class AnnotateRequiredParameters extends Recipe {
                             analysis.requiredIdentifiers.add(param);
                         }
                     }
-                    // Only remove the if statement if at least one parameter was found
-                    if (nullCheckedParams.stream().anyMatch(param -> containsIdentifierByName(identifiers, param))) {
+                    // Only remove the if statement if it doesn't contain mixed conditions
+                    if (nullCheckedParams.stream().anyMatch(param -> containsIdentifierByName(identifiers, param)) &&
+                            onlyContainsOrOperator(condition)) {
                         analysis.statementsToRemove.add(iff);
                     }
                 }
@@ -276,12 +270,26 @@ public class AnnotateRequiredParameters extends Recipe {
         }
 
         /**
+         * Anything other than OR or EQUAL operators returns false, to avoid removing if-statements with mixed conditions.
+         */
+        private boolean onlyContainsOrOperator(Expression condition) {
+            if (condition instanceof J.Binary) {
+                J.Binary binary = (J.Binary) condition;
+                return (binary.getOperator() == J.Binary.Type.Or ||
+                        binary.getOperator() == J.Binary.Type.Equal) &&
+                        onlyContainsOrOperator(binary.getLeft()) &&
+                        onlyContainsOrOperator(binary.getRight());
+            }
+            return true;
+        }
+
+        /**
          * Extracts all parameter identifiers from a null check condition.
          * Handles patterns like:
          * - param == null
          * - null == param
          * - param1 == null || param2 == null (both required)
-         *
+         * <p>
          * Does NOT handle:
          * - param1 == null && param2 == null (at most one may be null, not both required)
          */

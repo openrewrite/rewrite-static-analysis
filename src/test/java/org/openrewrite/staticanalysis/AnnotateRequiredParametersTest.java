@@ -483,4 +483,74 @@ class AnnotateRequiredParametersTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void annotateMixedOrAndConditionButKeepCheck() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public void process(String first, String second, String third) {
+                      if (first == null || second == null && third == null) {
+                          throw new IllegalArgumentException();
+                      }
+                      System.out.println(first + second + third);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  public void process(@NonNull String first, String second, String third) {
+                      if (first == null || second == null && third == null) {
+                          throw new IllegalArgumentException();
+                      }
+                      System.out.println(first + second + third);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveOtherCondition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public void process(String value) {
+                      if (value == null || otherCondition()) {
+                          throw new IllegalArgumentException("value cannot be null");
+                      }
+                      System.out.println(value);
+                  }
+
+                  boolean otherCondition() {
+                      return false;
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  public void process(@NonNull String value) {
+                      if (value == null || otherCondition()) {
+                          throw new IllegalArgumentException("value cannot be null");
+                      }
+                      System.out.println(value);
+                  }
+
+                  boolean otherCondition() {
+                      return false;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
