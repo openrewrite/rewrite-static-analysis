@@ -270,17 +270,40 @@ public class AnnotateRequiredParameters extends Recipe {
         }
 
         /**
-         * Anything other than OR or EQUAL operators returns false, to avoid removing if-statements with mixed conditions.
+         * Checks if the condition contains ONLY null checks on parameters (connected by OR).
+         * Returns false if there are any other conditions (method calls, other comparisons, etc.).
          */
         private boolean onlyContainsOrOperator(Expression condition) {
             if (condition instanceof J.Binary) {
                 J.Binary binary = (J.Binary) condition;
-                return (binary.getOperator() == J.Binary.Type.Or ||
-                        binary.getOperator() == J.Binary.Type.Equal) &&
-                        onlyContainsOrOperator(binary.getLeft()) &&
-                        onlyContainsOrOperator(binary.getRight());
+                J.Binary.Type operator = binary.getOperator();
+
+                // If it's an OR operator, check both sides recursively
+                if (operator == J.Binary.Type.Or) {
+                    return onlyContainsOrOperator(binary.getLeft()) &&
+                           onlyContainsOrOperator(binary.getRight());
+                }
+
+                // If it's an == operator, check if it's a null check
+                if (operator == J.Binary.Type.Equal) {
+                    return isNullCheck(binary);
+                }
+
+                // Any other operator means this is not a pure null check condition
+                return false;
             }
-            return true;
+
+            // If it's not a binary expression (e.g., method call, literal, etc.),
+            // it's not a null check we can handle
+            return false;
+        }
+
+        /**
+         * Checks if a binary expression is a null check (param == null or null == param).
+         */
+        private boolean isNullCheck(J.Binary binary) {
+            return (J.Literal.isLiteralValue(binary.getLeft(), null) && binary.getRight() instanceof J.Identifier) ||
+                   (J.Literal.isLiteralValue(binary.getRight(), null) && binary.getLeft() instanceof J.Identifier);
         }
 
         /**
