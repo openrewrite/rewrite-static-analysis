@@ -504,7 +504,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
 
               class Test {
                   public void process(@NonNull String first, String second, String third) {
-                      if (first == null || second == null && third == null) {
+                      if (second == null && third == null) {
                           throw new IllegalArgumentException();
                       }
                       System.out.println(first + second + third);
@@ -539,7 +539,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
 
               class Test {
                   public void process(@NonNull String value) {
-                      if (value == null || otherCondition()) {
+                      if (otherCondition()) {
                           throw new IllegalArgumentException("value cannot be null");
                       }
                       System.out.println(value);

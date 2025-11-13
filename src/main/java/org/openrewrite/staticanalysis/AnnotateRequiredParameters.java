@@ -24,13 +24,12 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.SemanticallyEqual;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
+
+import static java.util.Comparator.comparing;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -86,7 +85,8 @@ public class AnnotateRequiredParameters extends Recipe {
                 }
 
                 // Build identifier map for ALL parameters
-                Map<J.VariableDeclarations, J.Identifier> allIdentifiers = buildIdentifierMap(getAllParameters(md));
+                List<J.VariableDeclarations> allParameters = getAllParameters(md);
+                Map<J.VariableDeclarations, J.Identifier> allIdentifiers = buildIdentifierMap(allParameters);
                 // Analyze all parameters to find required ones and statements to remove
                 RequiredParameterAnalysis analysis = new RequiredParameterVisitor(allIdentifiers.values())
                         .reduce(md.getBody(), new RequiredParameterAnalysis());
@@ -96,21 +96,11 @@ public class AnnotateRequiredParameters extends Recipe {
                 }
 
                 // Find candidates that need annotation (not already annotated)
-                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md, fullyQualifiedName));
-
-                boolean needsAnnotation = false;
-                for (J.Identifier requiredId : analysis.requiredIdentifiers) {
-                    if (containsIdentifierByName(candidateIdentifiers.values(), requiredId)) {
-                        needsAnnotation = true;
-                        break;
-                    }
-                }
-
-                if (needsAnnotation) {
-                    maybeAddImport(fullyQualifiedName);
-                }
+                List<J.VariableDeclarations> candidateParameters = findCandidateParameters(md, fullyQualifiedName);
+                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(candidateParameters);
 
                 // Annotate parameters that need annotation
+                maybeAddImport(fullyQualifiedName);
                 md = md.withParameters(ListUtils.map(md.getParameters(), stm -> {
                     if (stm instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) stm;
@@ -120,7 +110,7 @@ public class AnnotateRequiredParameters extends Recipe {
                                             String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
                                     .build()
                                     .apply(new Cursor(getCursor(), vd),
-                                            vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                                            vd.getCoordinates().addAnnotation(comparing(J.Annotation::getSimpleName)));
                             doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
                             doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
                             return annotated.withModifiers(ListUtils.mapFirst(annotated.getModifiers(), first -> first.withPrefix(Space.SINGLE_SPACE)));
@@ -129,18 +119,15 @@ public class AnnotateRequiredParameters extends Recipe {
                     return stm;
                 }));
 
-                // Remove unreachable null checks
-                return md.withBody((J.Block) new JavaIsoVisitor<ExecutionContext>() {
-                    @Override
-                    public Statement visitStatement(Statement statement, ExecutionContext executionContext) {
-                        for (Statement toRemove : analysis.statementsToRemove) {
-                            if (SemanticallyEqual.areEqual(statement, toRemove)) {
-                                return null;
-                            }
-                        }
-                        return super.visitStatement(statement, executionContext);
-                    }
-                }.visit(md.getBody(), ctx));
+                // Replace null checks on required parameters with false
+                md = md.withBody((J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visit(md.getBody(), ctx));
+
+                // Simplify boolean expressions (e.g., "false || x" becomes "x")
+                doAfterVisit(new SimplifyBooleanExpression().getVisitor());
+                // Simplify constant if branches (e.g., "if (false) throw ..." will be removed)
+                doAfterVisit(new SimplifyConstantIfBranchExecution().getVisitor());
+
+                return md;
             }
         };
     }
@@ -205,7 +192,64 @@ public class AnnotateRequiredParameters extends Recipe {
      */
     private static class RequiredParameterAnalysis {
         final Set<J.Identifier> requiredIdentifiers = new HashSet<>();
-        final Set<Statement> statementsToRemove = new HashSet<>();
+    }
+
+    /**
+     * Visitor that replaces null checks on required parameters with false.
+     * This allows SimplifyConstantIfBranchExecution to clean up the dead code.
+     */
+    @RequiredArgsConstructor
+    private static class ReplaceNullChecksWithFalse extends JavaVisitor<ExecutionContext> {
+        private static final MethodMatcher REQUIRE_NON_NULL = new MethodMatcher("java.util.Objects requireNonNull(..)");
+        private final Set<J.Identifier> requiredIdentifiers;
+
+        @Override
+        public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+            J.Binary b = (J.Binary) super.visitBinary(binary, ctx);
+
+            // Replace "param == null" or "null == param" with false for required parameters
+            if (b.getOperator() == J.Binary.Type.Equal) {
+                J.Identifier paramIdentifier = null;
+
+                if (J.Literal.isLiteralValue(b.getLeft(), null) && b.getRight() instanceof J.Identifier) {
+                    paramIdentifier = (J.Identifier) b.getRight();
+                } else if (J.Literal.isLiteralValue(b.getRight(), null) && b.getLeft() instanceof J.Identifier) {
+                    paramIdentifier = (J.Identifier) b.getLeft();
+                }
+
+                if (containsIdentifierByName(requiredIdentifiers, paramIdentifier)) {
+                    // Replace with false literal
+                    return new J.Literal(
+                            Tree.randomId(),
+                            b.getPrefix(),
+                            b.getMarkers(),
+                            false,
+                            "false",
+                            null,
+                            JavaType.Primitive.Boolean
+                    );
+                }
+            }
+
+            return b;
+        }
+
+        @Override
+        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+
+            // Remove Objects.requireNonNull calls on required parameters
+            if (REQUIRE_NON_NULL.matches(m) && !m.getArguments().isEmpty() &&
+                    m.getArguments().get(0) instanceof J.Identifier) {
+                J.Identifier firstArgument = (J.Identifier) m.getArguments().get(0);
+                if (containsIdentifierByName(requiredIdentifiers, firstArgument)) {
+                    //noinspection DataFlowIssue
+                    return null;
+                }
+            }
+
+            return m;
+        }
     }
 
     /**
@@ -239,11 +283,6 @@ public class AnnotateRequiredParameters extends Recipe {
                             analysis.requiredIdentifiers.add(param);
                         }
                     }
-                    // Only remove the if statement if it doesn't contain mixed conditions
-                    if (nullCheckedParams.stream().anyMatch(param -> containsIdentifierByName(identifiers, param)) &&
-                            onlyContainsOrOperator(condition)) {
-                        analysis.statementsToRemove.add(iff);
-                    }
                 }
             }
 
@@ -260,48 +299,10 @@ public class AnnotateRequiredParameters extends Recipe {
                     J.Identifier firstArgument = (J.Identifier) method.getArguments().get(0);
                     if (containsIdentifierByName(identifiers, firstArgument)) {
                         analysis.requiredIdentifiers.add(firstArgument);
-                        analysis.statementsToRemove.add(statement);
                     }
                 }
             }
             return super.visitStatement(statement, analysis);
-        }
-
-        /**
-         * Checks if the condition contains ONLY null checks on parameters (connected by OR).
-         * Returns false if there are any other conditions (method calls, other comparisons, etc.).
-         */
-        private boolean onlyContainsOrOperator(Expression condition) {
-            if (condition instanceof J.Binary) {
-                J.Binary binary = (J.Binary) condition;
-                J.Binary.Type operator = binary.getOperator();
-
-                // If it's an OR operator, check both sides recursively
-                if (operator == J.Binary.Type.Or) {
-                    return onlyContainsOrOperator(binary.getLeft()) &&
-                           onlyContainsOrOperator(binary.getRight());
-                }
-
-                // If it's an == operator, check if it's a null check
-                if (operator == J.Binary.Type.Equal) {
-                    return isNullCheck(binary);
-                }
-
-                // Any other operator means this is not a pure null check condition
-                return false;
-            }
-
-            // If it's not a binary expression (e.g., method call, literal, etc.),
-            // it's not a null check we can handle
-            return false;
-        }
-
-        /**
-         * Checks if a binary expression is a null check (param == null or null == param).
-         */
-        private boolean isNullCheck(J.Binary binary) {
-            return (J.Literal.isLiteralValue(binary.getLeft(), null) && binary.getRight() instanceof J.Identifier) ||
-                   (J.Literal.isLiteralValue(binary.getRight(), null) && binary.getLeft() instanceof J.Identifier);
         }
 
         /**
