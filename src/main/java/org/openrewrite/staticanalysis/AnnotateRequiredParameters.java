@@ -192,63 +192,6 @@ public class AnnotateRequiredParameters extends Recipe {
     }
 
     /**
-     * Visitor that replaces null checks on required parameters with false.
-     * This allows SimplifyConstantIfBranchExecution to clean up the dead code.
-     */
-    @RequiredArgsConstructor
-    private static class ReplaceNullChecksWithFalse extends JavaVisitor<ExecutionContext> {
-        private static final MethodMatcher REQUIRE_NON_NULL = new MethodMatcher("java.util.Objects requireNonNull(..)");
-        private final Set<J.Identifier> requiredIdentifiers;
-
-        @Override
-        public J visitBinary(J.Binary binary, ExecutionContext ctx) {
-            J.Binary b = (J.Binary) super.visitBinary(binary, ctx);
-
-            // Replace "param == null" or "null == param" with false for required parameters
-            if (b.getOperator() == J.Binary.Type.Equal) {
-                J.Identifier paramIdentifier = null;
-
-                if (J.Literal.isLiteralValue(b.getLeft(), null) && b.getRight() instanceof J.Identifier) {
-                    paramIdentifier = (J.Identifier) b.getRight();
-                } else if (J.Literal.isLiteralValue(b.getRight(), null) && b.getLeft() instanceof J.Identifier) {
-                    paramIdentifier = (J.Identifier) b.getLeft();
-                }
-
-                if (containsIdentifierByName(requiredIdentifiers, paramIdentifier)) {
-                    // Replace with false literal
-                    return new J.Literal(
-                            Tree.randomId(),
-                            b.getPrefix(),
-                            b.getMarkers(),
-                            false,
-                            "false",
-                            null,
-                            JavaType.Primitive.Boolean
-                    );
-                }
-            }
-
-            return b;
-        }
-
-        @Override
-        public @Nullable J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-            J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-
-            // Remove Objects.requireNonNull calls on required parameters
-            if (REQUIRE_NON_NULL.matches(m) && !m.getArguments().isEmpty() &&
-                    m.getArguments().get(0) instanceof J.Identifier) {
-                J.Identifier firstArgument = (J.Identifier) m.getArguments().get(0);
-                if (containsIdentifierByName(requiredIdentifiers, firstArgument)) {
-                    return null;
-                }
-            }
-
-            return m;
-        }
-    }
-
-    /**
      * Visitor that traverses method bodies to identify parameters that are required (non-null).
      * This visitor looks for:
      * <ul>
@@ -356,6 +299,63 @@ public class AnnotateRequiredParameters extends Recipe {
                 }
             }
             return false;
+        }
+    }
+
+    /**
+     * Visitor that replaces null checks on required parameters with false.
+     * This allows SimplifyConstantIfBranchExecution to clean up the dead code.
+     */
+    @RequiredArgsConstructor
+    private static class ReplaceNullChecksWithFalse extends JavaVisitor<ExecutionContext> {
+        private static final MethodMatcher REQUIRE_NON_NULL = new MethodMatcher("java.util.Objects requireNonNull(..)");
+        private final Set<J.Identifier> requiredIdentifiers;
+
+        @Override
+        public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+            J.Binary b = (J.Binary) super.visitBinary(binary, ctx);
+
+            // Replace "param == null" or "null == param" with false for required parameters
+            if (b.getOperator() == J.Binary.Type.Equal) {
+                J.Identifier paramIdentifier = null;
+
+                if (J.Literal.isLiteralValue(b.getLeft(), null) && b.getRight() instanceof J.Identifier) {
+                    paramIdentifier = (J.Identifier) b.getRight();
+                } else if (J.Literal.isLiteralValue(b.getRight(), null) && b.getLeft() instanceof J.Identifier) {
+                    paramIdentifier = (J.Identifier) b.getLeft();
+                }
+
+                if (containsIdentifierByName(requiredIdentifiers, paramIdentifier)) {
+                    // Replace with false literal
+                    return new J.Literal(
+                            Tree.randomId(),
+                            b.getPrefix(),
+                            b.getMarkers(),
+                            false,
+                            "false",
+                            null,
+                            JavaType.Primitive.Boolean
+                    );
+                }
+            }
+
+            return b;
+        }
+
+        @Override
+        public @Nullable J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+
+            // Remove Objects.requireNonNull calls on required parameters
+            if (REQUIRE_NON_NULL.matches(m) && !m.getArguments().isEmpty() &&
+                    m.getArguments().get(0) instanceof J.Identifier) {
+                J.Identifier firstArgument = (J.Identifier) m.getArguments().get(0);
+                if (containsIdentifierByName(requiredIdentifiers, firstArgument)) {
+                    return null;
+                }
+            }
+
+            return m;
         }
     }
 }
