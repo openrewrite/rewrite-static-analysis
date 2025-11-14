@@ -177,7 +177,7 @@ public class AnnotateRequiredParameters extends Recipe {
     private static class RequiredParameterVisitor extends JavaIsoVisitor<RequiredParameterAnalysis> {
         private static final MethodMatcher REQUIRE_NON_NULL = new MethodMatcher("java.util.Objects requireNonNull(..)");
 
-        private final Collection<J.Identifier> identifiers;
+        private final Collection<J.Identifier> parameterIdentifiers;
 
         @Override
         public J.If visitIf(J.If iff, RequiredParameterAnalysis analysis) {
@@ -192,7 +192,7 @@ public class AnnotateRequiredParameters extends Recipe {
                 if (bodyThrowsException(iff.getThenPart())) {
                     // Add all null-checked parameters as required
                     for (J.Identifier param : nullCheckedParams) {
-                        if (containsIdentifierByName(identifiers, param)) {
+                        if (containsIdentifierByName(parameterIdentifiers, param)) {
                             analysis.requiredIdentifiers.add(param);
                         }
                     }
@@ -210,7 +210,7 @@ public class AnnotateRequiredParameters extends Recipe {
                 if (REQUIRE_NON_NULL.matches(method) && !method.getArguments().isEmpty() &&
                         method.getArguments().get(0) instanceof J.Identifier) {
                     J.Identifier firstArgument = (J.Identifier) method.getArguments().get(0);
-                    if (containsIdentifierByName(identifiers, firstArgument)) {
+                    if (containsIdentifierByName(parameterIdentifiers, firstArgument)) {
                         analysis.requiredIdentifiers.add(firstArgument);
                     }
                 }
@@ -321,12 +321,10 @@ public class AnnotateRequiredParameters extends Recipe {
             J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
             // Remove Objects.requireNonNull calls on required parameters
-            if (REQUIRE_NON_NULL.matches(m) && !m.getArguments().isEmpty() &&
-                    m.getArguments().get(0) instanceof J.Identifier) {
-                J.Identifier firstArgument = (J.Identifier) m.getArguments().get(0);
-                if (containsIdentifierByName(requiredIdentifiers, firstArgument)) {
-                    return null;
-                }
+            if (REQUIRE_NON_NULL.matches(m) &&
+                    m.getArguments().get(0) instanceof J.Identifier &&
+                    containsIdentifierByName(requiredIdentifiers, (J.Identifier) m.getArguments().get(0))) {
+                return null;
             }
 
             return m;
