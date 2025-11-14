@@ -92,16 +92,27 @@ public class AnnotateRequiredParameters extends Recipe {
                     return md;
                 }
 
-                // Find candidates that need annotation (not already annotated)
-                List<J.VariableDeclarations> candidateParameters = findCandidateParameters(md, fullyQualifiedName);
-                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(candidateParameters);
+                md = addAnnotationsToParameters(md, analysis);
 
-                // Annotate parameters that need annotation
+                // Replace null checks on required parameters with false
+                md = md.withBody((J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visit(md.getBody(), ctx));
+
+                // Simplify boolean expressions (e.g., "false || x" becomes "x")
+                doAfterVisit(new SimplifyBooleanExpression().getVisitor());
+                // Simplify constant if branches (e.g., "if (false) throw ..." will be removed)
+                doAfterVisit(new SimplifyConstantIfBranchExecution().getVisitor());
+
+                return md;
+            }
+
+            private J.MethodDeclaration addAnnotationsToParameters(J.MethodDeclaration md, RequiredParameterAnalysis analysis) {
                 maybeAddImport(fullyQualifiedName);
-                md = md.withParameters(ListUtils.map(md.getParameters(), stm -> {
+                return md.withParameters(ListUtils.map(md.getParameters(), stm -> {
                     if (stm instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) stm;
-                        if (containsIdentifierByName(analysis.requiredIdentifiers, candidateIdentifiers.get(vd))) {
+                        J.Identifier identifier = vd.getVariables().get(0).getName();
+                        if (containsIdentifierByName(analysis.requiredIdentifiers, identifier) &&
+                                FindAnnotations.find(vd, "@" + fullyQualifiedName).isEmpty()) {
                             J.VariableDeclarations annotated = JavaTemplate.builder("@" + fullyQualifiedName)
                                     .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                             String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
@@ -115,16 +126,6 @@ public class AnnotateRequiredParameters extends Recipe {
                     }
                     return stm;
                 }));
-
-                // Replace null checks on required parameters with false
-                md = md.withBody((J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visit(md.getBody(), ctx));
-
-                // Simplify boolean expressions (e.g., "false || x" becomes "x")
-                doAfterVisit(new SimplifyBooleanExpression().getVisitor());
-                // Simplify constant if branches (e.g., "if (false) throw ..." will be removed)
-                doAfterVisit(new SimplifyConstantIfBranchExecution().getVisitor());
-
-                return md;
             }
         };
     }
@@ -133,7 +134,12 @@ public class AnnotateRequiredParameters extends Recipe {
         if (target == null) {
             return false;
         }
-        return identifiers.stream().anyMatch(identifier -> SemanticallyEqual.areEqual(identifier, target));
+        for (J.Identifier identifier : identifiers) {
+            if (SemanticallyEqual.areEqual(identifier, target)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -150,38 +156,6 @@ public class AnnotateRequiredParameters extends Recipe {
             }
         }
         return allParams;
-    }
-
-    /**
-     * Finds method parameters that are candidates for @NonNull annotation.
-     * A parameter is a candidate if it doesn't already have the target non-null annotation.
-     *
-     * @param md  the method declaration to analyze
-     * @param fqn the fully qualified name of the non-null annotation
-     * @return list of parameter declarations that could receive the annotation
-     */
-    private List<J.VariableDeclarations> findCandidateParameters(J.MethodDeclaration md, String fqn) {
-        List<J.VariableDeclarations> candidates = new ArrayList<>();
-        for (Statement parameter : md.getParameters()) {
-            if (parameter instanceof J.VariableDeclarations) {
-                J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
-                if (FindAnnotations.find(vd, "@" + fqn).isEmpty()) {
-                    candidates.add(vd);
-                }
-            }
-        }
-        return candidates;
-    }
-
-    private Map<J.VariableDeclarations, J.Identifier> buildIdentifierMap(List<J.VariableDeclarations> parameters) {
-        Map<J.VariableDeclarations, J.Identifier> identifierMap = new HashMap<>();
-        for (J.VariableDeclarations vd : parameters) {
-            vd.getVariables().stream()
-                    .map(J.VariableDeclarations.NamedVariable::getName)
-                    .findFirst()
-                    .ifPresent(identifier -> identifierMap.put(vd, identifier));
-        }
-        return identifierMap;
     }
 
     /**
