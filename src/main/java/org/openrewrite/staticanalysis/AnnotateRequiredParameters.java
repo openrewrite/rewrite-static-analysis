@@ -84,11 +84,8 @@ public class AnnotateRequiredParameters extends Recipe {
                     return md;
                 }
 
-                // Build identifier map for ALL parameters
-                List<J.VariableDeclarations> allParameters = getAllParameters(md);
-                Map<J.VariableDeclarations, J.Identifier> allIdentifiers = buildIdentifierMap(allParameters);
                 // Analyze all parameters to find required ones and statements to remove
-                RequiredParameterAnalysis analysis = new RequiredParameterVisitor(allIdentifiers.values())
+                RequiredParameterAnalysis analysis = new RequiredParameterVisitor(getAllParameters(md))
                         .reduce(md.getBody(), new RequiredParameterAnalysis());
 
                 if (analysis.requiredIdentifiers.isEmpty()) {
@@ -143,13 +140,13 @@ public class AnnotateRequiredParameters extends Recipe {
      * Gets all method parameters.
      *
      * @param md the method declaration to analyze
-     * @return list of all parameter declarations
+     * @return set of all parameter declarations
      */
-    private List<J.VariableDeclarations> getAllParameters(J.MethodDeclaration md) {
-        List<J.VariableDeclarations> allParams = new ArrayList<>();
+    private Set<J.Identifier> getAllParameters(J.MethodDeclaration md) {
+        Set<J.Identifier> allParams = new LinkedHashSet<>();
         for (Statement parameter : md.getParameters()) {
             if (parameter instanceof J.VariableDeclarations) {
-                allParams.add((J.VariableDeclarations) parameter);
+                allParams.add(((J.VariableDeclarations) parameter).getVariables().get(0).getName());
             }
         }
         return allParams;
@@ -235,7 +232,7 @@ public class AnnotateRequiredParameters extends Recipe {
         }
 
         @Override
-        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+        public @Nullable J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
             // Remove Objects.requireNonNull calls on required parameters
@@ -243,7 +240,6 @@ public class AnnotateRequiredParameters extends Recipe {
                     m.getArguments().get(0) instanceof J.Identifier) {
                 J.Identifier firstArgument = (J.Identifier) m.getArguments().get(0);
                 if (containsIdentifierByName(requiredIdentifiers, firstArgument)) {
-                    //noinspection DataFlowIssue
                     return null;
                 }
             }
