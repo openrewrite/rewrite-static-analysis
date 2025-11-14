@@ -92,7 +92,7 @@ public class AnnotateRequiredParameters extends Recipe {
                     return md;
                 }
 
-                md = addAnnotationsToParameters(md, analysis);
+                md = addAnnotationsToParameters(md, analysis, ctx);
 
                 // Replace null checks on required parameters with false
                 md = md.withBody((J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visit(md.getBody(), ctx));
@@ -105,14 +105,22 @@ public class AnnotateRequiredParameters extends Recipe {
                 return md;
             }
 
-            private J.MethodDeclaration addAnnotationsToParameters(J.MethodDeclaration md, RequiredParameterAnalysis analysis) {
+            private J.MethodDeclaration addAnnotationsToParameters(J.MethodDeclaration md, RequiredParameterAnalysis analysis, ExecutionContext ctx) {
                 maybeAddImport(fullyQualifiedName);
+                String nullableFqn = fullyQualifiedPackage + ".Nullable";
+
                 return md.withParameters(ListUtils.map(md.getParameters(), stm -> {
                     if (stm instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) stm;
                         J.Identifier identifier = vd.getVariables().get(0).getName();
                         if (containsIdentifierByName(analysis.requiredIdentifiers, identifier) &&
                                 FindAnnotations.find(vd, "@" + fullyQualifiedName).isEmpty()) {
+
+                            // Remove any @Nullable annotation from the same package before adding @NonNull
+                            maybeRemoveImport(nullableFqn);
+                            vd = (J.VariableDeclarations) new RemoveAnnotationVisitor(new AnnotationMatcher(nullableFqn)).visit(vd, ctx, getCursor());
+
+                            // Add @NonNull annotation
                             J.VariableDeclarations annotated = JavaTemplate.builder("@" + fullyQualifiedName)
                                     .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                             String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))

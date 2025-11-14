@@ -553,4 +553,34 @@ class AnnotateRequiredParametersTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void removeNullableAnnotationWhenAddingNonNull() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+
+              class Test {
+                  public void process(@Nullable String value) {
+                      if (value == null) {
+                          throw new IllegalArgumentException();
+                      }
+                      System.out.println(value);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  public void process(@NonNull String value) {
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
