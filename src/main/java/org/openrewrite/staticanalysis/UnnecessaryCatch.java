@@ -17,17 +17,14 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Option;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.NewClass;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -61,8 +58,7 @@ public class UnnecessaryCatch extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-
+        return Preconditions.check(new NoMissingTypes(), new JavaIsoVisitor<ExecutionContext>() {
             private static final String JAVA_LANG_EXCEPTION = "java.lang.Exception";
             private static final String JAVA_LANG_ERROR = "java.lang.Error";
             private static final String JAVA_LANG_RUNTIME_EXCEPTION = "java.lang.RuntimeException";
@@ -93,16 +89,12 @@ public class UnnecessaryCatch extends Recipe {
                 }
 
                 List<JavaType> thrownExceptions = new ArrayList<>();
-                AtomicBoolean missingTypeInformation = new AtomicBoolean(false);
                 //Collect any checked exceptions thrown from the try block.
                 new JavaIsoVisitor<Integer>() {
                     @Override
                     public NewClass visitNewClass(NewClass newClass, Integer integer) {
                         JavaType.Method methodType = newClass.getMethodType();
-                        if (methodType == null) {
-                            //Do not make any changes if there is missing type information.
-                            missingTypeInformation.set(true);
-                        } else {
+                        if (methodType != null) {
                             thrownExceptions.addAll(methodType.getThrownExceptions());
                         }
                         return super.visitNewClass(newClass, integer);
@@ -111,10 +103,7 @@ public class UnnecessaryCatch extends Recipe {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer integer) {
                         JavaType.Method methodType = method.getMethodType();
-                        if (methodType == null) {
-                            //Do not make any changes if there is missing type information.
-                            missingTypeInformation.set(true);
-                        } else {
+                        if (methodType != null) {
                             thrownExceptions.addAll(methodType.getThrownExceptions());
                         }
                         return super.visitMethodInvocation(method, integer);
@@ -123,20 +112,12 @@ public class UnnecessaryCatch extends Recipe {
                     @Override
                     public J.Throw visitThrow(J.Throw thrown, Integer integer) {
                         JavaType type = thrown.getException().getType();
-                        if (type == null) {
-                            //Do not make any changes if there is missing type information.
-                            missingTypeInformation.set(true);
-                        } else {
+                        if (type != null) {
                             thrownExceptions.add(type);
                         }
                         return super.visitThrow(thrown, integer);
                     }
                 }.visit(t.getBody(), 0);
-
-                //If there is any missing type information, it is not safe to make any transformations.
-                if (missingTypeInformation.get()) {
-                    return t;
-                }
 
                 Set<JavaType> unnecessaryTypes = getUnnecessaryTypes(t, thrownExceptions);
                 if (unnecessaryTypes.isEmpty()) {
@@ -254,6 +235,6 @@ public class UnnecessaryCatch extends Recipe {
                         !TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_EXCEPTION) &&
                         !TypeUtils.isOfClassType(exceptionClass, JAVA_LANG_THROWABLE);
             }
-        };
+        });
     }
 }
