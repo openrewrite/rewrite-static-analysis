@@ -460,15 +460,15 @@ class UnnecessaryThrowsTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/605")
     @Test
-    void preventTransformationIfThrownExceptionIsCaught() {
+    void removeUnnecessaryCatchAfterRemovingThrows() {
         rewriteRun(
           java(
             """
-              public class UnnecessaryThrowsTest {
+              class UnnecessaryThrowsTest {
 
-                  private void methodThrowing() throws NoSuchMethodException { }
+                  void methodThrowing() throws NoSuchMethodException { }
 
-                  public void methodCatching() {
+                  void methodCatching() {
                       try {
                           methodThrowing();
                       }
@@ -477,11 +477,11 @@ class UnnecessaryThrowsTest implements RewriteTest {
               }
               """,
             """
-              public class UnnecessaryThrowsTest {
+              class UnnecessaryThrowsTest {
 
-                  private void methodThrowing() { }
+                  void methodThrowing() { }
 
-                  public void methodCatching() {
+                  void methodCatching() {
                       methodThrowing();
                   }
               }
