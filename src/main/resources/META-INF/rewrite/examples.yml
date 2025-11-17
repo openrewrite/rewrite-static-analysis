@@ -1476,26 +1476,6 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MinimumSwitchCases
 examples:
-- description: '`MinimumSwitchCasesTest#twoCases`'
-  sources:
-  - before: |
-      def s = "prod"
-      switch(s) {
-          case "prod":
-              println("prod")
-              break
-          default:
-              println("default")
-              break
-      }
-    after: |
-      def s = "prod"
-      if ("prod".equals(s)) {
-          println("prod")
-      } else {
-          println("default")
-      }
-    language: groovy
 - description: '`MinimumSwitchCasesTest#caseWithReturnInsteadOfBreak`'
   sources:
   - before: |
@@ -1528,6 +1508,26 @@ examples:
           void doSomethingElse() {}
       }
     language: java
+- description: '`MinimumSwitchCasesTest#twoCases`'
+  sources:
+  - before: |
+      def s = "prod"
+      switch(s) {
+          case "prod":
+              println("prod")
+              break
+          default:
+              println("default")
+              break
+      }
+    after: |
+      def s = "prod"
+      if ("prod".equals(s)) {
+          println("prod")
+      } else {
+          println("default")
+      }
+    language: groovy
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MissingOverrideAnnotation
