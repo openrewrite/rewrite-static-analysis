@@ -704,7 +704,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                       try {
                           used = new Object();
                           assertEquals(used, null);
-                          unused = new Object();
+                          unused = used;
                       } catch (Exception e) {
                           // do nothing
                       }
