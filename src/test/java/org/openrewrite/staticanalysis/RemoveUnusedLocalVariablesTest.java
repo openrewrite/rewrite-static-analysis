@@ -24,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
@@ -1300,6 +1301,22 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                               throw IllegalStateException("Regex should match")
                           }
                       }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class Typescript {
+        @Test
+        void noChange() {
+            rewriteRun(
+              typescript(
+                """
+                  class Foo {
+                    bar: string;
                   }
                   """
               )
