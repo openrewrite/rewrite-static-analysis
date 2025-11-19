@@ -704,7 +704,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                       try {
                           used = new Object();
                           assertEquals(used, null);
-                          unused = new Object();
+                          unused = used;
                       } catch (Exception e) {
                           // do nothing
                       }
@@ -1185,6 +1185,29 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                   void method() {
                       String unusedString = "abc";
                       Integer unusedInteger = 123;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/740")
+    @Test
+    void doNotRemoveVariableAssignmentWithPotentialSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private String baz() {
+                      String foo;
+                      try {
+                          foo = String.valueOf(1);
+                      } catch (RuntimeException e) {
+                          return "error";
+                      }
+                      return "ok";
                   }
               }
               """

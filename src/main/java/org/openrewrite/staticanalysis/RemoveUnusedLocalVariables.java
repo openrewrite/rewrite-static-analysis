@@ -171,7 +171,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     // skip if defined as a parameter to a lambda expression
                     parent instanceof J.Lambda ||
                     // skip if the initializer may have a side effect
-                    initializerMightSideEffect(variable)
+                    mightSideEffect(variable.getInitializer())
                 ) {
                     return variable;
                 }
@@ -181,6 +181,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
                     for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment) {
+                            if (mightSideEffect(((J.Assignment) ref).getAssignment())) {
+                                return variable;
+                            }
                             doAfterVisit(new PruneAssignmentExpression((J.Assignment) ref));
                         }
                         doAfterVisit(new DeleteStatement<>(ref));
@@ -216,18 +219,14 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 return mv;
             }
 
-            private boolean initializerMightSideEffect(J.VariableDeclarations.NamedVariable variable) {
-                if (variable.getInitializer() == null) {
-                    return false;
-                }
-                AtomicBoolean mightSideEffect = new AtomicBoolean(false);
-                new JavaIsoVisitor<AtomicBoolean>() {
+            private boolean mightSideEffect(Expression initializer) {
+                return initializer != null && new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, AtomicBoolean result) {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                        if (withSideEffects == null || !withSideEffects) {
                             result.set(true);
                         }
                         return methodInvocation;
@@ -244,8 +243,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         result.set(true);
                         return assignment;
                     }
-                }.visit(variable.getInitializer(), mightSideEffect);
-                return mightSideEffect.get();
+                }.reduce(initializer, new AtomicBoolean(false)).get();
             }
         });
     }
