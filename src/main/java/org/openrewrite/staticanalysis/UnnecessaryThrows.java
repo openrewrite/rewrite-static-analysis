@@ -24,6 +24,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
 
 import java.util.Comparator;
@@ -121,17 +122,38 @@ public class UnnecessaryThrows extends Recipe {
                                 }
                             }
                         }
-                    }.visit(m, ctx);
+                    }.visit(m, ctx, getCursor().getParent());
 
                     if (!unusedThrows.isEmpty()) {
-                        m = m.withThrows(ListUtils.map(m.getThrows(), t -> {
-                            JavaType.FullyQualified type = TypeUtils.asFullyQualified(t.getType());
-                            if (type != null && unusedThrows.contains(type)) {
-                                maybeRemoveImport(type);
-                                return null;
-                            }
-                            return t;
+                        MethodMatcher originalMethodMatcher = new MethodMatcher(m);
+
+                        JavaType.Method replacementMethodType = m.getMethodType().withThrownExceptions(ListUtils.map(m.getMethodType().getThrownExceptions(), t -> {
+                            JavaType.FullyQualified type = TypeUtils.asFullyQualified(t);
+                            return type != null && unusedThrows.contains(type) ? null : t;
                         }));
+                        m = m.withThrows(ListUtils.map(m.getThrows(), t -> {
+                                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(t.getType());
+                                    if (type != null && unusedThrows.contains(type)) {
+                                        maybeRemoveImport(type);
+                                        return null;
+                                    }
+                                    return t;
+                                }))
+                                .withMethodType(replacementMethodType)
+                                .withName(m.getName().withType(replacementMethodType));
+
+                        // Remove the thrown exceptions from the method type, such that UnnecessaryCatch can continue
+                        doAfterVisit(new JavaIsoVisitor<ExecutionContext>() {
+                            @Override
+                            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation invocation, ExecutionContext ctx) {
+                                if (originalMethodMatcher.matches(invocation)) {
+                                    invocation =  invocation.withMethodType(replacementMethodType)
+                                            .withName(invocation.getName().withType(replacementMethodType));
+                                }
+                                return super.visitMethodInvocation(invocation, ctx);
+                            }
+                        });
+                        doAfterVisit(new UnnecessaryCatch(true, false).getVisitor());
                     }
                 }
 
