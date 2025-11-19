@@ -72,7 +72,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     }
 
     private static class ReplaceLambdaWithMethodReferenceKotlinVisitor extends KotlinVisitor<ExecutionContext> {
-        // Implement Me
+        // XXX Implement Me
     }
 
     private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
@@ -100,8 +100,11 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 J j = instanceOf.getClazz();
                 if ((j instanceof J.Identifier || j instanceof J.FieldAccess) &&
                         instanceOf.getExpression() instanceof J.Identifier) {
-                    J.FieldAccess classLiteral = newClassLiteral(((TypeTree) j).getType(), j instanceof J.FieldAccess);
-                    if (classLiteral != null) {
+                    // Create the class literal directly from the original expression
+                    JavaType originalType = ((TypeTree) j).getType();
+                    JavaType.Class classType = getClassType(originalType);
+                    if (classType != null) {
+                        J.FieldAccess classLiteral = newClassLiteral(classType, originalType, j);
                         //noinspection DataFlowIssue
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                         Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> "isInstance".equals(m.getName())).findFirst();
@@ -123,11 +126,13 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     J tree = j.getTree();
                     if ((tree instanceof J.Identifier || tree instanceof J.FieldAccess) &&
                             !(j.getType() instanceof JavaType.GenericTypeVariable)) {
-                        J.FieldAccess classLiteral = newClassLiteral(((Expression) tree).getType(), tree instanceof J.FieldAccess);
-                        if (classLiteral != null) {
+                        // Create the class literal directly from the original expression
+                        JavaType.Class classType = getClassType(((Expression) tree).getType());
+                        if (classType != null) {
+                            J.FieldAccess classLiteral = newClassLiteral(classType, ((Expression) tree).getType(), tree);
                             //noinspection DataFlowIssue
-                            JavaType.FullyQualified classType = ((JavaType.Parameterized) classLiteral.getType()).getType();
-                            Optional<JavaType.Method> castMethod = classType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
+                            JavaType.FullyQualified fullClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
+                            Optional<JavaType.Method> castMethod = fullClassType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
                             if (castMethod.isPresent()) {
                                 J.MemberReference updated = newInstanceMethodReference(classLiteral, castMethod.get(), lambda.getType()).withPrefix(lambda.getPrefix());
                                 doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
@@ -188,6 +193,10 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         if (method.getType() instanceof JavaType.Parameterized &&
                                 ((JavaType.Parameterized) method.getType()).getTypeParameters().stream()
                                         .anyMatch(JavaType.GenericTypeVariable.class::isInstance)) {
+                            return l;
+                        }
+                        // Check if transforming would break type inference in nested generic/overloaded context
+                        if (isLambdaInGenericAndOverloadedContext()) {
                             return l;
                         }
                         J.MemberReference updated = newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
@@ -252,9 +261,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     JavaType.Variable fieldType = ((J.FieldAccess) select).getName().getFieldType();
                     return fieldType != null && fieldType.getOwner() instanceof JavaType.Class && !fieldType.hasFlags(Flag.Final);
                 }
-                if (select instanceof J.NewClass || select instanceof J.Parentheses) {
-                    return true;
-                }
+                return select instanceof J.NewClass || select instanceof J.Parentheses;
             }
             return false;
         }
@@ -355,10 +362,68 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             }
             return false;
         }
+
+        /**
+         * Check if the lambda is in a context where converting it to a method reference
+         * would break type inference. This occurs when a lambda's return type depends on
+         * generic type inference, and the lambda is passed through method calls where
+         * one of the enclosing methods is overloaded.
+         * <p>
+         * Example: foo(fold(() -> Optional.empty()))
+         * where fold is generic and foo is overloaded.
+         */
+        private boolean isLambdaInGenericAndOverloadedContext() {
+            // Walk up the cursor tree to find enclosing method invocations
+            Cursor cursor = getCursor();
+
+            // Find the first method invocation that the lambda is an argument to
+            Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
+            if (!(parent.getValue() instanceof J.MethodInvocation)) {
+                return false;
+            }
+
+            J.MethodInvocation innerMethod = parent.getValue();
+
+            // Now check if there's an enclosing overloaded method where innerMethod is an argument
+            // Start from the parent of the first method invocation
+            Cursor grandparent = parent.getParent();
+            if (grandparent == null) {
+                return false;
+            }
+
+            grandparent = grandparent.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
+            if (!(grandparent.getValue() instanceof J.MethodInvocation)) {
+                return false;
+            }
+
+            J.MethodInvocation outerMethod = grandparent.getValue();
+
+            // Check that innerMethod is actually an ARGUMENT to outerMethod, not just chained
+            boolean isInnerMethodAnArgument = outerMethod.getArguments().stream()
+                    .anyMatch(arg -> arg == innerMethod);
+
+            if (!isInnerMethodAnArgument) {
+                return false;
+            }
+
+            JavaType.Method outerType = outerMethod.getMethodType();
+            if (outerType == null) {
+                return false;
+            }
+
+            // Check if the outer method is overloaded
+            long overloadCount = outerType.getDeclaringType().getMethods().stream()
+                    .filter(m -> m.getName().equals(outerType.getName()) && !m.isConstructor())
+                    .count();
+
+            // If we have nested method calls where the outer one is overloaded,
+            // be conservative and don't transform to avoid breaking type inference
+            return overloadCount > 1;
+        }
     }
 
     private static boolean isAMethodInvocationArgument(J.Lambda lambda, Cursor cursor) {
-        Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof J.CompilationUnit);
+        Cursor parent = cursor.dropParentUntil(p -> p instanceof J.MethodInvocation || p instanceof SourceFile);
         if (parent.getValue() instanceof J.MethodInvocation) {
             J.MethodInvocation m = parent.getValue();
             return m.getArguments().stream().anyMatch(arg -> arg == lambda);

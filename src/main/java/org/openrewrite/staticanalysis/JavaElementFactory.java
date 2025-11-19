@@ -80,6 +80,20 @@ final class JavaElementFactory {
             qualifiedName = type.toString();
         }
 
+        // Check if this is a local class (contains $<digit>)
+        // Local classes have names like "Outer$1LocalName" where the digit indicates the scope
+        // For method references, we should use only the simple name without the numeric prefix
+        if (qualifiedName.matches(".*\\$\\d+.*")) {
+            // Extract the simple name after the last $<digit> sequence
+            String simpleName = qualifiedName.replaceAll(".*\\$\\d+", "");
+            // Remove any remaining $ characters and get just the class name
+            simpleName = simpleName.replace('$', '.');
+            if (simpleName.indexOf('.') > 0) {
+                simpleName = simpleName.substring(simpleName.lastIndexOf('.') + 1);
+            }
+            return new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), simpleName, type, null);
+        }
+
         Scanner scanner = new Scanner(qualifiedName.replace('$', '.')).useDelimiter("\\.");
         for (int i = 0; scanner.hasNext(); i++) {
             String part = scanner.next();
@@ -120,18 +134,13 @@ final class JavaElementFactory {
         );
     }
 
-    static J.@Nullable FieldAccess newClassLiteral(@Nullable JavaType type, boolean qualified) {
-        JavaType.Class classType = getClassType(type);
-        if (classType == null) {
-            return null;
-        }
-
-        JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, singletonList(type));
+    static J.FieldAccess newClassLiteral(JavaType.Class classType, JavaType originalType, J instanceOfClass) {
+        JavaType.Parameterized parameterized = new JavaType.Parameterized(null, classType, singletonList(originalType));
         return new J.FieldAccess(
                 randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
-                className(type, qualified),
+                instanceOfClass.withPrefix(Space.EMPTY), // Use the original expression directly
                 new JLeftPadded<>(
                         Space.EMPTY,
                         new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "class", parameterized, null),
@@ -141,7 +150,7 @@ final class JavaElementFactory {
         );
     }
 
-    private static JavaType.@Nullable Class getClassType(@Nullable JavaType type) {
+    static JavaType.@Nullable Class getClassType(@Nullable JavaType type) {
         if (type instanceof JavaType.Class) {
             JavaType.Class classType = (JavaType.Class) type;
             if ("java.lang.Class".equals(classType.getFullyQualifiedName())) {

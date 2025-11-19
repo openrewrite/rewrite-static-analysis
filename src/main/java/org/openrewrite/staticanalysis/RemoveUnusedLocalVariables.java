@@ -21,9 +21,14 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.*;
+import org.openrewrite.java.DeleteStatement;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,6 +37,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.Preconditions.and;
+import static org.openrewrite.Preconditions.not;
 
 @EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
@@ -69,7 +76,6 @@ public class RemoveUnusedLocalVariables extends Recipe {
     }
 
     @Deprecated
-    @InlineMe(replacement = "new RemoveUnusedLocalVariables(ignoreVariablesNamed, null, withSideEffects)")
     public RemoveUnusedLocalVariables(
             String @Nullable [] ignoreVariablesNamed,
             @Nullable Boolean withSideEffects) {
@@ -104,7 +110,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
             ignoreVariableNames.addAll(Arrays.asList(ignoreVariablesNamed));
         }
 
-        return new JavaIsoVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> notJsNorKt = and(not(new JavascriptFileChecker<>()), not(new KotlinFileChecker<>()));
+        return Preconditions.check(notJsNorKt, new JavaIsoVisitor<ExecutionContext>() {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||
@@ -122,6 +129,16 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         is instanceof J.Lambda ||
                         is instanceof JavaSourceFile
                 );
+            }
+
+            @Override
+            public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
+                return instanceOf;
+            }
+
+            @Override
+            public J.DeconstructionPattern visitDeconstructionPattern(J.DeconstructionPattern deconstructionPattern, ExecutionContext ctx) {
+                return deconstructionPattern;
             }
 
             @Override
@@ -310,7 +327,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     }
                 }.reduce(expression, new AtomicBoolean(false)).get();
             }
-        };
+        });
     }
 
     /**

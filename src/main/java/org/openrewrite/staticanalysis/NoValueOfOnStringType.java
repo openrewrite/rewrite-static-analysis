@@ -70,7 +70,7 @@ public class NoValueOfOnStringType extends Recipe {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
                     Expression argument = mi.getArguments().get(0);
-                    if (TypeUtils.isString(argument.getType()) || removeValueOfForStringConcatenation(argument)) {
+                    if ((TypeUtils.isString(argument.getType()) && !(argument instanceof J.MethodInvocation)) || removeValueOfForStringConcatenation(argument)) {
                         return maybeParenthesize(argument.withPrefix(mi.getPrefix()), updateCursor(mi));
                     }
                 }

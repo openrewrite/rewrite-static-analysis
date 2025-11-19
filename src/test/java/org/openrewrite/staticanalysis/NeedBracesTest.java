@@ -88,6 +88,10 @@ class NeedBracesTest implements RewriteTest {
                   static void addToIterativeFor(Object obj) {
                       for (int i = 0; ; ) obj.notify();
                   }
+
+                  static void addToForEach(int[] arr) {
+                      for (int i : arr) System.out.println(i);
+                  }
               }
               """,
             """
@@ -139,6 +143,12 @@ class NeedBracesTest implements RewriteTest {
                           obj.notify();
                       }
                   }
+
+                  static void addToForEach(int[] arr) {
+                      for (int i : arr) {
+                          System.out.println(i);
+                      }
+                  }
               }
               """
           )
@@ -168,6 +178,10 @@ class NeedBracesTest implements RewriteTest {
 
                   static void emptyForIterative() {
                       for (int i = 0; i < 10; i++) ;
+                  }
+
+                  static void emptyForEach(int[] arr) {
+                      for (int i : arr) ;
                   }
               }
               """
@@ -209,6 +223,10 @@ class NeedBracesTest implements RewriteTest {
                   static void allowForIterativeWithBody(Object obj) {
                       for (int i = 0; ; ) obj.notify();
                   }
+
+                  static void allowForEachWithBody(int[] arr) {
+                      for (int i : arr) System.out.println(i);
+                  }
               }
               """
           )
@@ -234,6 +252,10 @@ class NeedBracesTest implements RewriteTest {
                   static void doNotAllowForIterativeWithEmptyBody(Object obj) {
                       for (int i = 0; ; ) ;
                   }
+
+                  static void doNotAllowForEachWithEmptyBody(int[] arr) {
+                      for (int i : arr) ;
+                  }
               }
               """,
             """
@@ -250,6 +272,11 @@ class NeedBracesTest implements RewriteTest {
 
                   static void doNotAllowForIterativeWithEmptyBody(Object obj) {
                       for (int i = 0; ; ) {
+                      }
+                  }
+
+                  static void doNotAllowForEachWithEmptyBody(int[] arr) {
+                      for (int i : arr) {
                       }
                   }
               }
@@ -320,6 +347,10 @@ class NeedBracesTest implements RewriteTest {
                       for (int i = 0; ; ); // iterative comment
                       for (int i = 0; ; ) obj.notify(); // iterative with body comment
                   }
+                  static void commentForEach(int[] arr) {
+                      for (int i : arr); // foreach comment
+                      for (int i : arr) System.out.println(i); // foreach with body comment
+                  }
               }
               """,
             """
@@ -348,6 +379,57 @@ class NeedBracesTest implements RewriteTest {
                       }
                       for (int i = 0; ; ) {
                           obj.notify(); // iterative with body comment
+                      }
+                  }
+                  static void commentForEach(int[] arr) {
+                      for (int i : arr) { // foreach comment
+                      }
+                      for (int i : arr) {
+                          System.out.println(i); // foreach with body comment
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/748")
+    @Test
+    void forEachLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Foo {
+                  void foo() {
+                      List<String> strings = Arrays.asList("a", "b", "c");
+
+                      for (int i = 0; i < strings.size(); i++)
+                          System.out.println(strings.get(i));
+
+                      for (String s : strings)
+                          System.out.println(s);
+                  }
+              }
+              """,
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Foo {
+                  void foo() {
+                      List<String> strings = Arrays.asList("a", "b", "c");
+
+                      for (int i = 0; i < strings.size(); i++) {
+                          System.out.println(strings.get(i));
+                      }
+
+                      for (String s : strings) {
+                          System.out.println(s);
                       }
                   }
               }

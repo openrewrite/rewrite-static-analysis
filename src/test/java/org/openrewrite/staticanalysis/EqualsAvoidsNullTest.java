@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
@@ -88,19 +87,50 @@ class EqualsAvoidsNullTest implements RewriteTest {
           java(
             """
               public class A {
-                  {
-                      String s = null;
-                      if(s != null && s.equals("test")) {}
-                      if(null != s && s.equals("test")) {}
+                  void check(String s, String t) {
+                      if (s != null && s.equals("test")) {}
+                      if (null != s && s.equals("test")) {}
+                      if (t != null && "test".equals(t)) {}
+                      if (null != t && "test".equals(t)) {}
                   }
               }
               """,
             """
               public class A {
-                  {
-                      String s = null;
-                      if("test".equals(s)) {}
-                      if("test".equals(s)) {}
+                  void check(String s, String t) {
+                      if ("test".equals(s)) {}
+                      if ("test".equals(s)) {}
+                      if ("test".equals(t)) {}
+                      if ("test".equals(t)) {}
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainNecessaryNullCheck() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void check(String expected, String actual){
+                      if (expected != null && expected.equals(actual)) {}
+                      if (actual != null && actual.equals(expected)) {}
+                      if (expected != null && actual.equals(expected)) {}
+                      if (actual != null && expected.equals(actual)) {}
+                  }
+              }
+              """,
+            """
+              class A {
+                  void check(String expected, String actual){
+                      if (expected != null && expected.equals(actual)) {}
+                      if (actual != null && actual.equals(expected)) {}
+                      if (actual.equals(expected)) {}
+                      if (expected.equals(actual)) {}
                   }
               }
               """
@@ -364,7 +394,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
             );
         }
 
-        @Disabled("Not yet supported")
         @Test
         void lambdaGenerics() {
             rewriteRun(

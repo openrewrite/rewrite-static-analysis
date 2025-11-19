@@ -448,6 +448,32 @@ class RemoveUnusedPrivateFieldsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/757")
+    @Test
+    void doNotRemoveLombokAnnotatedFieldWhenAnnotationIsAfterModifier() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("lombok")),
+          java(
+            """
+              import lombok.Getter;
+
+              class OnModifier {
+                  @Getter private String foo;
+              }
+              """
+          ),
+          java(
+            """
+              import lombok.Getter;
+
+              class OnType {
+                  private @Getter String foo;
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/524")
     @Test
     void removeUntilStable() {

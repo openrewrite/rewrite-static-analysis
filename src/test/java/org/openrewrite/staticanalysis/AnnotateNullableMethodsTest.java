@@ -24,6 +24,8 @@ import org.openrewrite.test.SourceSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+
 
 class AnnotateNullableMethodsTest implements RewriteTest {
 
@@ -512,6 +514,64 @@ class AnnotateNullableMethodsTest implements RewriteTest {
 
               }
               """
+          )
+        );
+    }
+
+    @Test
+    void methodReturnsNullableArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Test {
+
+                  public String[] getArray() {
+                      return null;
+                  }
+
+                  public int[] getIntArray() {
+                      if (System.currentTimeMillis() % 2 == 0) {
+                          return new int[]{1, 2, 3};
+                      }
+                      return null;
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.Nullable;
+
+              public class Test {
+
+                  public String @Nullable[] getArray() {
+                      return null;
+                  }
+
+                  public int @Nullable[] getIntArray() {
+                      if (System.currentTimeMillis() % 2 == 0) {
+                          return new int[]{1, 2, 3};
+                      }
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typescriptCode() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+            class A {
+              public f(n: number) {
+                  if (n <= 1) return undefined;
+                  return this.f(n - 1);
+              }
+            }
+            """
           )
         );
     }
