@@ -88,8 +88,8 @@ public class ControlFlowIndentation extends Recipe {
                         return (Statement) new TabsAndIndentsVisitor<>(
                                 requireNonNull(tabsAndIndentsStyle),
                                 requireNonNull(spacesStyle),
-                                requireNonNull(wrappingStyle))
-                                .visit(statement, ctx, getCursor());
+                                requireNonNull(wrappingStyle),
+                                null).visit(statement, ctx, getCursor());
                     }
                     return statement;
                 }));
