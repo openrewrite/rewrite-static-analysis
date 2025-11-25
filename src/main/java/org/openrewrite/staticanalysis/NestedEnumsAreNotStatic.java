@@ -60,14 +60,12 @@ public class NestedEnumsAreNotStatic extends Recipe {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
                     if (J.Modifier.hasModifier(cd.getModifiers(), J.Modifier.Type.Static)) {
-                        J.Block enumBody = cd.getBody();
-                        //noinspection DataFlowIssue
-                        cd = cd.withBody(null);
                         cd = maybeAutoFormat(cd,
                                 cd.withModifiers(ListUtils.map(cd.getModifiers(), mod ->
                                         mod.getType() == J.Modifier.Type.Static ? null : mod)),
-                                ctx);
-                        cd = cd.withBody(enumBody);
+                                cd.getName(),
+                                ctx,
+                                getCursor().getParent());
                     }
                 }
                 return cd;

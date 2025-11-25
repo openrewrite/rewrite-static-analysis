@@ -197,6 +197,7 @@ public class NeedBraces extends Recipe {
 
                 if (!prefix.getComments().isEmpty() && prefix.getWhitespace().contains("\n")) {
                     body = body.withPrefix(prefix);
+                    elem = elem.withPrefix(Space.EMPTY);
                 }
 
                 J.Block b = buildBlock(body);
