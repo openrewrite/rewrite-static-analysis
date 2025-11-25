@@ -535,12 +535,12 @@ class NeedBracesTest implements RewriteTest {
                       else if (true) return; // second else if comment 2
                       else return; // else comment 2
                   }
-                  static void methodTwo(){
+                  static void methodTwo() {
                       if (true) return; // if comment
                       else return; // else comment
                       return; // return comment
                   }
-                  static void methodThreeNested(){
+                  static void methodThreeNested() {
                       if (true){
                           if (true) return; // nested if comment
                           else return; // nested else comment
@@ -567,7 +567,7 @@ class NeedBracesTest implements RewriteTest {
                           return; // else comment 2
                       }
                   }
-                  static void methodTwo(){
+                  static void methodTwo() {
                       if (true) {
                           return; // if comment
                       } else {
@@ -575,7 +575,7 @@ class NeedBracesTest implements RewriteTest {
                       }
                       return; // return comment
                   }
-                  static void methodThreeNested(){
+                  static void methodThreeNested() {
                       if (true) {
                           if (true) {
                               return; // nested if comment
