@@ -332,7 +332,15 @@ public class AnnotateRequiredParameters extends Recipe {
             if (REQUIRE_NON_NULL.matches(m) &&
                     m.getArguments().get(0) instanceof J.Identifier &&
                     containsIdentifierByName(requiredIdentifiers, (J.Identifier) m.getArguments().get(0))) {
-                return null;
+                // Check if this is a standalone statement (can be removed entirely)
+                // vs part of a larger expression (should be replaced with the argument)
+                Cursor parent = getCursor().getParentTreeCursor();
+                if (parent.getValue() instanceof J.Block) {
+                    // Standalone statement - safe to remove entirely
+                    return null;
+                }
+                // Part of a larger expression (e.g., assignment) - replace with the first argument
+                return m.getArguments().get(0).withPrefix(m.getPrefix());
             }
 
             return m;
