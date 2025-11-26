@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -577,6 +578,42 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(@NonNull String value) {
                       System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/792")
+    @Test
+    void requireNonNullInAssignmentIsReplacedWithArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Objects;
+
+              class Test {
+                  private String field;
+
+                  public void process(String bar) {
+                      this.field = Objects.requireNonNull(bar, "bar may not be null");
+                      System.out.println(field);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              import java.util.Objects;
+
+              class Test {
+                  private String field;
+
+                  public void process(@NonNull String bar) {
+                      this.field = bar;
+                      System.out.println(field);
                   }
               }
               """
