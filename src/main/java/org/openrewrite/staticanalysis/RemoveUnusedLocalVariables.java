@@ -266,7 +266,12 @@ public class RemoveUnusedLocalVariables extends Recipe {
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            return m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
+            return m.withArguments(ListUtils.map(m.getArguments(), it -> {
+                if (it instanceof J.Assignment) {
+                    return (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow());
+                }
+                return it;
+            }));
         }
     }
 
