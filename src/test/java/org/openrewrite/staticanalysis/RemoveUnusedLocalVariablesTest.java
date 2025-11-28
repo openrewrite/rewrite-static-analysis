@@ -975,6 +975,47 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void assignmentWithinExpressionSubBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class A {
+                  void foo() {
+                      consumer(() -> {
+                          String removeMeLiteral;
+                          String removeMeIdentifier;
+                          String bar = "abc";
+                          removeMeLiteral = "123";
+                          removeMeIdentifier = bar;
+                          return bar;
+                      });
+                  }
+
+                  void consumer(Supplier<String> supplier) {}
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class A {
+                  void foo() {
+                      consumer(() -> {
+                          String bar = "abc";
+                          return bar;
+                      });
+                  }
+
+                  void consumer(Supplier<String> supplier) {}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2509")
     @Test
     void recordCompactConstructor() {
