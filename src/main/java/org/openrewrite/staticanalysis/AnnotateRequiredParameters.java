@@ -189,8 +189,6 @@ public class AnnotateRequiredParameters extends Recipe {
 
         @Override
         public J.If visitIf(J.If iff, RequiredParameterAnalysis analysis) {
-            iff = super.visitIf(iff, analysis);
-
             // Check if the condition contains null checks
             Expression condition = iff.getIfCondition().getTree();
             List<J.Identifier> nullCheckedParams = extractNullCheckedParameters(condition);
@@ -207,7 +205,7 @@ public class AnnotateRequiredParameters extends Recipe {
                 }
             }
 
-            return iff;
+            return iff; // Do not call super.visitIf as nested ifs are tough to account for
         }
 
         @Override
