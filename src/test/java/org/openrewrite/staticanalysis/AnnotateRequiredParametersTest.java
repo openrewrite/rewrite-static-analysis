@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -212,25 +213,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
     }
 
     @Test
-    void doNotAnnotateWhenNullCheckDoesNotThrow() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public void process(String value) {
-                      if (value == null) {
-                          value = "default";
-                      }
-                      System.out.println(value);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void doNotAnnotateWhenAlreadyAnnotated() {
         rewriteRun(
           //language=java
@@ -252,49 +234,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
 
               class Test {
                   public void process(@NonNull String value) {
-                      System.out.println(value);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotAnnotatePrivateMethods() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  private void process(String value) {
-                      if (value == null) {
-                          throw new IllegalArgumentException();
-                      }
-                      System.out.println(value);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotAnnotateOverriddenMethods() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              abstract class Base {
-                  public abstract void process(String value);
-              }
-
-              class Test extends Base {
-                  @Override
-                  public void process(String value) {
-                      if (value == null) {
-                          throw new IllegalArgumentException();
-                      }
                       System.out.println(value);
                   }
               }
@@ -361,27 +300,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
     }
 
     @Test
-    void doNotAnnotateWhenThrowIsNotFirstStatement() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public void process(String value) {
-                      if (value == null) {
-                          System.err.println("Error");
-                          // More code that could potentially handle null
-                          value = "default";
-                      }
-                      System.out.println(value);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void annotateWithCustomAnnotationClass() {
         rewriteRun(
           spec -> spec.recipe(new AnnotateRequiredParameters("jakarta.annotation.Nonnull")),
@@ -430,25 +348,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
 
               class Test {
                   public void process(@NonNull String first, @NonNull String second) {
-                      System.out.println(first + second);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotAnnotateWhenAndConditionAllowsOneNull() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  public void process(String first, String second) {
-                      if (first == null && second == null) {
-                          throw new IllegalArgumentException();
-                      }
                       System.out.println(first + second);
                   }
               }
@@ -619,5 +518,132 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class NoChange {
+
+        @Test
+        void doNotAnnotatePrivateMethods() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private void process(String value) {
+                          if (value == null) {
+                              throw new IllegalArgumentException();
+                          }
+                          System.out.println(value);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotAnnotateOverriddenMethods() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  abstract class Base {
+                      public abstract void process(String value);
+                  }
+
+                  class Test extends Base {
+                      @Override
+                      public void process(String value) {
+                          if (value == null) {
+                              throw new IllegalArgumentException();
+                          }
+                          System.out.println(value);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotAnnotateWhenAndConditionAllowsOneNull() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void process(String first, String second) {
+                          if (first == null && second == null) {
+                              throw new IllegalArgumentException();
+                          }
+                          System.out.println(first + second);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotAnnotateWhenNullCheckDoesNotThrow() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void process(String value) {
+                          if (value == null) {
+                              value = "default";
+                          }
+                          System.out.println(value);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotAnnotateWhenThrowIsNotFirstStatement() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void process(String value) {
+                          if (value == null) {
+                              System.err.println("Error");
+                              // More code that could potentially handle null
+                              value = "default";
+                          }
+                          System.out.println(value);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void annotateParameterWithNullCheckThrowingException() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void process(boolean secondRequired, String second) {
+                          if (secondRequired) {
+                              if (second == null) {
+                                  throw new IllegalArgumentException("value cannot be null");
+                              }
+                          }
+                          System.out.println(second);
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
