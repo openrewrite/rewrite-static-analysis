@@ -26,7 +26,6 @@ import org.openrewrite.java.tree.Statement;
 import java.time.Duration;
 import java.util.*;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 public class RenameExceptionInEmptyCatch extends Recipe {
@@ -53,7 +52,6 @@ public class RenameExceptionInEmptyCatch extends Recipe {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     Map<Cursor, Set<String>> variableScopes = new LinkedHashMap<>();
                     getCursor().putMessage("VARIABLES_KEY", variableScopes);
                 }
