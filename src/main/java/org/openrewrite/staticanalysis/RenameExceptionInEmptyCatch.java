@@ -15,8 +15,12 @@
  */
 package org.openrewrite.staticanalysis;
 
+import com.sun.source.tree.Tree;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.*;
+import org.openrewrite.Cursor;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
 import org.openrewrite.java.tree.J;
@@ -26,7 +30,6 @@ import org.openrewrite.java.tree.Statement;
 import java.time.Duration;
 import java.util.*;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 public class RenameExceptionInEmptyCatch extends Recipe {
@@ -53,7 +56,6 @@ public class RenameExceptionInEmptyCatch extends Recipe {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     Map<Cursor, Set<String>> variableScopes = new LinkedHashMap<>();
                     getCursor().putMessage("VARIABLES_KEY", variableScopes);
                 }

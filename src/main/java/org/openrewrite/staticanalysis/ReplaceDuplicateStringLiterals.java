@@ -145,8 +145,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     variableNames.add(variableName);
                     entry.getValue().forEach(v -> replacements.put(v, variableName));
                 }
-                duplicateLiteralInfo = null;
-                duplicateLiteralsMap = null;
                 return replacements.isEmpty() ? classDecl :
                         new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, requireNonNull(getCursor().getParent()));
             }
