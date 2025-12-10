@@ -15,12 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import com.sun.source.tree.Tree;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
 import org.openrewrite.java.tree.J;
