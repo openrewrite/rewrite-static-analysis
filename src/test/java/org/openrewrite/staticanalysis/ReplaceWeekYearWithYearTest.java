@@ -258,4 +258,22 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doesNotChangeWhyWhenUsedWithWeekOfYear() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.time.format.DateTimeFormatter;
+
+              class Test {
+                public void formatDate() {
+                  DateTimeFormatter result = DateTimeFormatter.ofPattern("YYYY-ww");
+                }
+              }
+              """
+          )
+        );
+    }
 }
