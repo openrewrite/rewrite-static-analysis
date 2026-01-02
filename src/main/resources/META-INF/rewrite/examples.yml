@@ -384,6 +384,25 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
 examples:
+- description: '`CatchClauseOnlyRethrowsCsharpTest#verifyCsharpImplicitThrow`'
+  sources:
+  - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
+          }
+      }
+    language: java
 - description: '`CatchClauseOnlyRethrowsTest#tryCanBeRemoved`'
   sources:
   - before: |
@@ -406,25 +425,6 @@ examples:
       class A {
           void foo() throws IOException {
               new FileReader("").read();
-          }
-      }
-    language: java
-- description: '`CatchClauseOnlyRethrowsCsharpTest#verifyCsharpImplicitThrow`'
-  sources:
-  - before: |
-      class A {
-          void foo() throws IllegalAccessException {
-              try {
-                  throw new IllegalAccessException();
-              } catch (Exception e) {
-                  throw e; // `e` is removed below
-              }
-          }
-      }
-    after: |
-      class A {
-          void foo() throws IllegalAccessException {
-              throw new IllegalAccessException();
           }
       }
     language: java
@@ -1476,6 +1476,26 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MinimumSwitchCases
 examples:
+- description: '`MinimumSwitchCasesTest#twoCases`'
+  sources:
+  - before: |
+      def s = "prod"
+      switch(s) {
+          case "prod":
+              println("prod")
+              break
+          default:
+              println("default")
+              break
+      }
+    after: |
+      def s = "prod"
+      if ("prod".equals(s)) {
+          println("prod")
+      } else {
+          println("default")
+      }
+    language: groovy
 - description: '`MinimumSwitchCasesTest#caseWithReturnInsteadOfBreak`'
   sources:
   - before: |
@@ -1508,26 +1528,6 @@ examples:
           void doSomethingElse() {}
       }
     language: java
-- description: '`MinimumSwitchCasesTest#twoCases`'
-  sources:
-  - before: |
-      def s = "prod"
-      switch(s) {
-          case "prod":
-              println("prod")
-              break
-          default:
-              println("default")
-              break
-      }
-    after: |
-      def s = "prod"
-      if ("prod".equals(s)) {
-          println("prod")
-      } else {
-          println("default")
-      }
-    language: groovy
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MissingOverrideAnnotation
@@ -3392,6 +3392,18 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpression
 examples:
+- description: '`SimplifyBooleanExpressionTest#regular`'
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
 - description: '`SimplifyBooleanExpressionTest#simplifyEqualsLiteralTrueIf`'
   sources:
   - before: |
@@ -3411,18 +3423,6 @@ examples:
           }
       }
     language: java
-- description: '`SimplifyBooleanExpressionTest#regular`'
-  sources:
-  - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan
