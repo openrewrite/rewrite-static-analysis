@@ -177,6 +177,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
           )
         );
     }
+
     @Test
     void patternUsesSingleQuotes() {
         //language=java
@@ -240,7 +241,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
     }
 
     @Test
-    void doesNotChangeWhyInSingleQuotes() {
+    void doesNotChangeYInSingleQuotes() {
         //language=java
         rewriteRun(
           java(
@@ -260,7 +261,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
     }
 
     @Test
-    void doesNotChangeWhyWhenUsedWithWeekOfYear() {
+    void doesNotChangeYWhenUsedWithWeekOfYear() {
         //language=java
         rewriteRun(
           java(
