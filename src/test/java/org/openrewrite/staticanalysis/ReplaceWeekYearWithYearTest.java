@@ -177,6 +177,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
           )
         );
     }
+
     @Test
     void patternUsesSingleQuotes() {
         //language=java
@@ -240,7 +241,7 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
     }
 
     @Test
-    void doesNotChangeWhyInSingleQuotes() {
+    void doesNotChangeYInSingleQuotes() {
         //language=java
         rewriteRun(
           java(
@@ -252,6 +253,24 @@ class ReplaceWeekYearWithYearTest implements RewriteTest {
                 public void formatDate() {
                   SimpleDateFormat format = new SimpleDateFormat("'Y' dd-MM");
                   Date date = format.parse("2015/12/31");
+                }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotChangeYWhenUsedWithWeekOfYear() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.time.format.DateTimeFormatter;
+
+              class Test {
+                public void formatDate() {
+                  DateTimeFormatter result = DateTimeFormatter.ofPattern("YYYY-ww");
                 }
               }
               """

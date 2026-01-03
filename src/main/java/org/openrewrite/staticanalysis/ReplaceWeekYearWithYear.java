@@ -18,7 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
 import java.util.Set;
@@ -49,78 +49,63 @@ public class ReplaceWeekYearWithYear extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.or(
-                        new UsesType<>("java.util.Date", false),
-                        new UsesType<>("java.time.format.DateTimeFormatter", false),
-                        new UsesType<>("java.text.SimpleDateFormat", false)
+                        new UsesMethod<>(SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER),
+                        new UsesMethod<>(OF_PATTERN_MATCHER)
                 ),
-                new ReplaceWeekYearVisitor()
+                new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                        if (OF_PATTERN_MATCHER.matches(mi)) {
+                            getCursor().putMessage("KEY", mi);
+                        }
+                        return super.visitMethodInvocation(mi, ctx);
+                    }
+
+                    @Override
+                    public J.NewClass visitNewClass(J.NewClass nc, ExecutionContext ctx) {
+                        if (SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER.matches(nc)) {
+                            getCursor().putMessage("KEY", nc);
+                        }
+                        return super.visitNewClass(nc, ctx);
+                    }
+
+                    @Override
+                    public J.Literal visitLiteral(J.Literal li, ExecutionContext ctx) {
+                        if (li.getValue() instanceof String) {
+                            Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
+                            if (c.getMessage("KEY") != null) {
+                                Object value = li.getValue();
+                                String newValue = replaceY(value.toString());
+                                if (!newValue.equals(value.toString())) {
+                                    return li.withValueSource("\"" + newValue + "\"").withValue(newValue);
+                                }
+                            }
+                        }
+                        return li;
+                    }
+
+                    private String replaceY(String input) {
+                        StringBuilder output = new StringBuilder();
+                        boolean insideQuotes = false;
+
+                        for (int i = 0; i < input.length(); i++) {
+                            char currentChar = input.charAt(i);
+                            if (currentChar == '\'') {
+                                insideQuotes = !insideQuotes;
+                                output.append(currentChar);
+                            } else if (currentChar == 'Y' && !insideQuotes) {
+                                output.append('y');
+                            } else if (currentChar == 'w' && !insideQuotes) {
+                                return input;
+                            } else {
+                                output.append(currentChar);
+                            }
+                        }
+
+                        return output.toString();
+                    }
+                }
         );
     }
 
-    private static class ReplaceWeekYearVisitor extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
-            if (OF_PATTERN_MATCHER.matches(mi)) {
-                getCursor().putMessage("KEY", mi);
-            }
-
-            return super.visitMethodInvocation(mi, ctx);
-        }
-
-        @Override
-        public J.NewClass visitNewClass(J.NewClass nc, ExecutionContext ctx) {
-            if (SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER.matches(nc)) {
-                getCursor().putMessage("KEY", nc);
-            }
-
-            return super.visitNewClass(nc, ctx);
-        }
-
-        @Override
-        public J.Literal visitLiteral(J.Literal li, ExecutionContext ctx) {
-            if (li.getValue() instanceof String) {
-                Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
-                if (c.getMessage("KEY") != null) {
-                    Object value = li.getValue();
-
-                    if (value == null) {
-                        return li;
-                    }
-
-                    String newValue = replaceY(value.toString());
-
-                    if (newValue.equals(value.toString())) {
-                        return li;
-                    }
-
-                    return li.withValueSource("\"" + newValue + "\"").withValue(newValue);
-                }
-            }
-
-            return li;
-        }
-
-        public static String replaceY(String input) {
-            StringBuilder output = new StringBuilder();
-            boolean insideQuotes = false;
-
-            for (int i = 0; i < input.length(); i++) {
-                char currentChar = input.charAt(i);
-                char nextChar = (i < input.length() - 1) ? input.charAt(i + 1) : '\0';
-
-                if (currentChar == '\'') {
-                    insideQuotes = !insideQuotes;
-                    output.append(currentChar);
-                } else if (currentChar == 'Y' && !insideQuotes) {
-                    output.append('y');
-                } else if (currentChar == 'Y' && nextChar == '\'') {
-                    output.append(currentChar);
-                } else {
-                    output.append(currentChar);
-                }
-            }
-
-            return output.toString();
-        }
-    }
 }
