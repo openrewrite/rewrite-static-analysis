@@ -31,6 +31,7 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class NestedEnumsAreNotStatic extends Recipe {
+
     @Override
     public String getDisplayName() {
         return "Nested enums are not static";
@@ -53,31 +54,61 @@ public class NestedEnumsAreNotStatic extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(new HasNestedEnum(), Preconditions.not(new CSharpFileChecker<>()));
+        TreeVisitor<?, ExecutionContext> preconditions =
+                Preconditions.and(new HasNestedEnum(), Preconditions.not(new CSharpFileChecker<>()));
+
         return Preconditions.check(preconditions, new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl,
+                                                            ExecutionContext ctx) {
+
+                // Critical NPE guard (fixes issue #796)
+                if (classDecl.getBody() == null) {
+                    return classDecl;
+                }
+
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
-                    if (J.Modifier.hasModifier(cd.getModifiers(), J.Modifier.Type.Static)) {
-                        cd = maybeAutoFormat(cd,
-                                cd.withModifiers(ListUtils.map(cd.getModifiers(), mod ->
-                                        mod.getType() == J.Modifier.Type.Static ? null : mod)),
-                                cd.getName(),
-                                ctx,
-                                getCursor().getParent());
-                    }
+
+                if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
+                        cd.getType() != null &&
+                        cd.getType().getOwningClass() != null &&
+                        J.Modifier.hasModifier(cd.getModifiers(), J.Modifier.Type.Static)) {
+
+                    cd = maybeAutoFormat(
+                            cd,
+                            cd.withModifiers(ListUtils.map(cd.getModifiers(), mod ->
+                                    mod.getType() == J.Modifier.Type.Static ? null : mod)),
+                            cd.getName(),
+                            ctx,
+                            getCursor().getParent()
+                    );
                 }
                 return cd;
             }
         });
     }
 
+
+     // Preconditions visitor: detects presence of nested enums.
+     // Must not mutate AST.
+
     private static class HasNestedEnum extends JavaIsoVisitor<ExecutionContext> {
+
         @Override
-        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl,
+                                                        ExecutionContext ctx) {
+
+            // 🔒 Defensive guard for malformed / body-less declarations
+            if (classDecl.getBody() == null) {
+                return classDecl;
+            }
+
             J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-            if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
+
+            if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
+                    cd.getType() != null &&
+                    cd.getType().getOwningClass() != null) {
+
                 cd = SearchResult.found(cd);
             }
             return cd;

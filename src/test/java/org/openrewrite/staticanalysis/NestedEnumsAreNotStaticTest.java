@@ -79,6 +79,21 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
     }
 
     @Test
+    void issue796_nullClassBodyDoesNotThrow() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Outer {
+                enum Inner {}
+            }
+            """
+          )
+        );
+    }
+
+
+    @Test
     void nestedEnumIsNotStatic() {
         rewriteRun(
           //language=java
