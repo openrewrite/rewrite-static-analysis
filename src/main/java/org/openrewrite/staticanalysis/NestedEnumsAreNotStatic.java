@@ -54,22 +54,13 @@ public class NestedEnumsAreNotStatic extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        TreeVisitor<?, ExecutionContext> preconditions =
-                Preconditions.and(new HasNestedEnum(), Preconditions.not(new CSharpFileChecker<>()));
-
+        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(new HasNestedEnum(), Preconditions.not(new CSharpFileChecker<>()));
         return Preconditions.check(preconditions, new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl,
-                                                            ExecutionContext ctx) {
-
-                // Critical NPE guard (fixes issue #796)
-                if (classDecl.getBody() == null) {
-                    return classDecl;
-                }
-
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-
-                if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
+                if (cd.getBody() != null &&
+                        cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
                         cd.getType() != null &&
                         cd.getType().getOwningClass() != null &&
                         J.Modifier.hasModifier(cd.getModifiers(), J.Modifier.Type.Static)) {
@@ -89,27 +80,19 @@ public class NestedEnumsAreNotStatic extends Recipe {
     }
 
 
-     // Preconditions visitor: detects presence of nested enums.
-     // Must not mutate AST.
+    // Preconditions visitor: detects presence of nested enums.
+    // Must not mutate AST.
 
     private static class HasNestedEnum extends JavaIsoVisitor<ExecutionContext> {
 
         @Override
-        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl,
-                                                        ExecutionContext ctx) {
-
-            // 🔒 Defensive guard for malformed / body-less declarations
-            if (classDecl.getBody() == null) {
-                return classDecl;
-            }
-
+        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
             J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-
-            if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
+            if (cd.getBody() != null &&
+                    cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
                     cd.getType() != null &&
                     cd.getType().getOwningClass() != null) {
-
-                cd = SearchResult.found(cd);
+                return SearchResult.found(cd);
             }
             return cd;
         }
