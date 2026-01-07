@@ -384,6 +384,25 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
 examples:
+- description: '`CatchClauseOnlyRethrowsCsharpTest#verifyCsharpImplicitThrow`'
+  sources:
+  - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
+          }
+      }
+    language: java
 - description: '`CatchClauseOnlyRethrowsTest#tryCanBeRemoved`'
   sources:
   - before: |
@@ -406,25 +425,6 @@ examples:
       class A {
           void foo() throws IOException {
               new FileReader("").read();
-          }
-      }
-    language: java
-- description: '`CatchClauseOnlyRethrowsCsharpTest#verifyCsharpImplicitThrow`'
-  sources:
-  - before: |
-      class A {
-          void foo() throws IllegalAccessException {
-              try {
-                  throw new IllegalAccessException();
-              } catch (Exception e) {
-                  throw e; // `e` is removed below
-              }
-          }
-      }
-    after: |
-      class A {
-          void foo() throws IllegalAccessException {
-              throw new IllegalAccessException();
           }
       }
     language: java
@@ -2760,6 +2760,19 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
 examples:
+- description: '`RenameLocalVariablesToCamelCaseTest#regular`'
+  sources:
+  - before: |
+      fun foo() {
+          var EMPTY_METAS = HashMap<String, Any>()
+          EMPTY_METAS.isEmpty()
+      }
+    after: |
+      fun foo() {
+          var emptyMetas = HashMap<String, Any>()
+          emptyMetas.isEmpty()
+      }
+    language: kotlin
 - description: '`RenameLocalVariablesToCamelCaseTest#renameAllCapsAcronyms`'
   sources:
   - before: |
@@ -2775,19 +2788,6 @@ examples:
           }
       }
     language: java
-- description: '`RenameLocalVariablesToCamelCaseTest#regular`'
-  sources:
-  - before: |
-      fun foo() {
-          var EMPTY_METAS = HashMap<String, Any>()
-          EMPTY_METAS.isEmpty()
-      }
-    after: |
-      fun foo() {
-          var emptyMetas = HashMap<String, Any>()
-          emptyMetas.isEmpty()
-      }
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
@@ -3392,6 +3392,18 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpression
 examples:
+- description: '`SimplifyBooleanExpressionTest#regular`'
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
 - description: '`SimplifyBooleanExpressionTest#simplifyEqualsLiteralTrueIf`'
   sources:
   - before: |
@@ -3411,18 +3423,6 @@ examples:
           }
       }
     language: java
-- description: '`SimplifyBooleanExpressionTest#regular`'
-  sources:
-  - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan
@@ -3758,24 +3758,6 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.TernaryOperatorsShouldNotBeNested
 examples:
-- description: '`SwitchExpressionNotSupported#doReplaceNestedOrTernaryWithIfFollowedByTernary`'
-  sources:
-  - before: |
-      class Test {
-        public String determineSomething(String a, String b) {
-          return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
-        }
-      }
-    after: |
-      class Test {
-        public String determineSomething(String a, String b) {
-            if ("a".equals(a)) {
-                return "a";
-            }
-            return "b".equals(b) ? "b" : "nope";
-        }
-      }
-    language: java
 - description: '`ReplaceWithSwitchExpression#doReplaceNestedOrTernaryWithSwitchExpression`'
   sources:
   - before: |
@@ -3792,6 +3774,24 @@ examples:
               case "b" -> "b";
               default -> "nope";
           };
+        }
+      }
+    language: java
+- description: '`SwitchExpressionNotSupported#doReplaceNestedOrTernaryWithIfFollowedByTernary`'
+  sources:
+  - before: |
+      class Test {
+        public String determineSomething(String a, String b) {
+          return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+        }
+      }
+    after: |
+      class Test {
+        public String determineSomething(String a, String b) {
+            if ("a".equals(a)) {
+                return "a";
+            }
+            return "b".equals(b) ? "b" : "nope";
         }
       }
     language: java
