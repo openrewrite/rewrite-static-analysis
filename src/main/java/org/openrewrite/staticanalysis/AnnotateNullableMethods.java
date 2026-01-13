@@ -46,21 +46,15 @@ public class AnnotateNullableMethods extends Recipe {
 
     private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
 
-    @Override
-    public String getDisplayName() {
-        return "Annotate methods which may return `null` with `@Nullable`";
-    }
+    String displayName = "Annotate methods which may return `null` with `@Nullable`";
 
-    @Override
-    public String getDescription() {
-        return "Add `@Nullable` to non-private methods that may return `null`. " +
+    String description = "Add `@Nullable` to non-private methods that may return `null`. " +
                 "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
                 "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
                 "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
                 "statements for potential null values. It also identifies known methods from standard libraries that may " +
                 "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
                 "The return of streams, or lambdas are not taken into account.";
-    }
 
     @Override
     public Validated<Object> validate() {

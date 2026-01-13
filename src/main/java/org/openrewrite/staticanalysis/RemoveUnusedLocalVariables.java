@@ -82,15 +82,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
         this(ignoreVariablesNamed, null, withSideEffects);
     }
 
-    @Override
-    public String getDisplayName() {
-        return "Remove unused local variables";
-    }
+    String displayName = "Remove unused local variables";
 
-    @Override
-    public String getDescription() {
-        return "If a local variable is declared but not used, it is dead code and should be removed.";
-    }
+    String description = "If a local variable is declared but not used, it is dead code and should be removed.";
 
     @Override
     public Set<String> getTags() {

@@ -47,16 +47,10 @@ import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMEN
 @Value
 public class InstanceOfPatternMatch extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Changes code to use Java 17's `instanceof` pattern matching";
-    }
+    String displayName = "Changes code to use Java 17's `instanceof` pattern matching";
 
-    @Override
-    public String getDescription() {
-        return "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`. " +
+    String description = "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`. " +
                "Currently, this recipe supports `if` statements and ternary operator expressions.";
-    }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

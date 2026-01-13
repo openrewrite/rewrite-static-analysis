@@ -34,16 +34,10 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
 
     private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("java.lang.String equals(java.lang.Object)");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove redundant null checks before literal equals";
-    }
+    String displayName = "Remove redundant null checks before literal equals";
 
-    @Override
-    public String getDescription() {
-        return "Removes redundant null checks before `equals()` comparisons when the receiver is a literal string, " +
+    String description = "Removes redundant null checks before `equals()` comparisons when the receiver is a literal string, " +
                "since literals can never be null and `equals()` returns false for null arguments.";
-    }
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

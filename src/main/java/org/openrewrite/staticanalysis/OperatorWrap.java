@@ -40,15 +40,9 @@ public class OperatorWrap extends Recipe {
             required = false)
     OperatorWrapStyle.@Nullable WrapOption wrapOption;
 
-    @Override
-    public String getDisplayName() {
-        return "Operator wrapping";
-    }
+    String displayName = "Operator wrapping";
 
-    @Override
-    public String getDescription() {
-        return "Fixes line wrapping policies on operators.";
-    }
+    String description = "Fixes line wrapping policies on operators.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

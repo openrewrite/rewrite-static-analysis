@@ -36,15 +36,9 @@ import static java.util.Collections.singleton;
 @Value
 public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove redundant null checks before instanceof";
-    }
+    String displayName = "Remove redundant null checks before instanceof";
 
-    @Override
-    public String getDescription() {
-        return "Removes redundant null checks before instanceof operations since instanceof returns false for null.";
-    }
+    String description = "Removes redundant null checks before instanceof operations since instanceof returns false for null.";
 
     @Override
     public Set<String> getTags() {

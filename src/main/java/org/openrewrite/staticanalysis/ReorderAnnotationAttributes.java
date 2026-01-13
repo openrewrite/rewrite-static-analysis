@@ -33,16 +33,10 @@ import java.util.List;
 @Value
 public class ReorderAnnotationAttributes extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Reorder annotation attributes alphabetically";
-    }
+    String displayName = "Reorder annotation attributes alphabetically";
 
-    @Override
-    public String getDescription() {
-        return "Reorder annotation attributes to be alphabetical. " +
+    String description = "Reorder annotation attributes to be alphabetical. " +
                "Positional arguments (those without explicit attribute names) are left in their original position.";
-    }
 
     private static final Comparator<Expression> attributeComparator = (e1, e2) -> {
         if (e1 instanceof J.Assignment && e2 instanceof J.Assignment) {

@@ -38,15 +38,9 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
     private static final MethodMatcher OPTIONAL_IS_PRESENT = new MethodMatcher("java.util.Optional isPresent()");
     private static final MethodMatcher OPTIONAL_GET = new MethodMatcher("java.util.Optional get()");
 
-    @Override
-    public String getDisplayName() {
-        return "Replace `Optional#isPresent()` with `Optional#ifPresent()`";
-    }
+    String displayName = "Replace `Optional#isPresent()` with `Optional#ifPresent()`";
 
-    @Override
-    public String getDescription() {
-        return "Replace `Optional#isPresent()` with `Optional#ifPresent()`. Please note that this recipe is only suitable for if-blocks that lack an Else-block and have a single condition applied.";
-    }
+    String description = "Replace `Optional#isPresent()` with `Optional#ifPresent()`. Please note that this recipe is only suitable for if-blocks that lack an Else-block and have a single condition applied.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

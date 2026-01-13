@@ -36,15 +36,9 @@ import static java.util.Collections.singleton;
 public class RemoveUnusedPrivateFields extends Recipe {
     private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove unused private fields";
-    }
+    String displayName = "Remove unused private fields";
 
-    @Override
-    public String getDescription() {
-        return "If a private field is declared but not used in the program, it can be considered dead code and should therefore be removed.";
-    }
+    String description = "If a private field is declared but not used in the program, it can be considered dead code and should therefore be removed.";
 
     @Override
     public Set<String> getTags() {

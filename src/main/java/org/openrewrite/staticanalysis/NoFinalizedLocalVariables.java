@@ -36,15 +36,9 @@ public class NoFinalizedLocalVariables extends Recipe {
     @Nullable
     Boolean excludeMethodParameters;
 
-    @Override
-    public String getDisplayName() {
-        return "Don't use final on local variables";
-    }
+    String displayName = "Don't use final on local variables";
 
-    @Override
-    public String getDescription() {
-        return "Remove the `final` modifier keyword from local variables regardless of whether they are used within a local class or an anonymous class.";
-    }
+    String description = "Remove the `final` modifier keyword from local variables regardless of whether they are used within a local class or an anonymous class.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

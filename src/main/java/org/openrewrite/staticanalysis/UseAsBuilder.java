@@ -55,15 +55,9 @@ public class UseAsBuilder extends Recipe {
     @Nullable
     String builderCreator;
 
-    @Override
-    public String getDisplayName() {
-        return "Chain calls to builder methods";
-    }
+    String displayName = "Chain calls to builder methods";
 
-    @Override
-    public String getDescription() {
-        return "Chain calls to builder methods that are on separate lines into one chain of builder calls.";
-    }
+    String description = "Chain calls to builder methods that are on separate lines into one chain of builder calls.";
 
     @Override
     public Validated<Object> validate() {

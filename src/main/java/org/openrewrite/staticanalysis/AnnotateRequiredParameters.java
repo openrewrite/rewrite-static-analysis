@@ -44,19 +44,13 @@ public class AnnotateRequiredParameters extends Recipe {
     @Nullable
     String nonNullAnnotationClass;
 
-    @Override
-    public String getDisplayName() {
-        return "Annotate required method parameters with `@NonNull`";
-    }
+    String displayName = "Annotate required method parameters with `@NonNull`";
 
-    @Override
-    public String getDescription() {
-        return "Add `@NonNull` to parameters of public methods that are explicitly checked for `null` and throw an exception if null. " +
+    String description = "Add `@NonNull` to parameters of public methods that are explicitly checked for `null` and throw an exception if null. " +
                 "By default `org.jspecify.annotations.NonNull` is used, but through the `nonNullAnnotationClass` option a custom annotation can be provided. " +
                 "When providing a custom `nonNullAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
                 "This recipe scans for methods that do not already have parameters annotated with `@NonNull` annotation and checks for " +
                 "null validation patterns that throw exceptions, such as `if (param == null) throw new IllegalArgumentException()`.";
-    }
 
     @Override
     public Validated<Object> validate() {

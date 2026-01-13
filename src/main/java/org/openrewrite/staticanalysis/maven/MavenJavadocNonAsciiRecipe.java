@@ -43,17 +43,11 @@ import java.text.Normalizer;
 @EqualsAndHashCode(callSuper = false)
 public class MavenJavadocNonAsciiRecipe extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove non-ASCII characters from Javadoc";
-    }
+    String displayName = "Remove non-ASCII characters from Javadoc";
 
-    @Override
-    public String getDescription() {
-        return "Maven's javadoc-plugin configuration does not support non-ASCII characters. " +
+    String description = "Maven's javadoc-plugin configuration does not support non-ASCII characters. " +
                 "What makes it tricky is the error is very ambiguous and doesn't help in any way. " +
                 "This recipe removes those non-ASCII characters.";
-    }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -47,17 +47,11 @@ public class AddSerialVersionUidToSerializable extends Recipe {
     @Nullable
     String uid;
 
-    @Override
-    public String getDisplayName() {
-        return "Add `serialVersionUID` to a `Serializable` class when missing";
-    }
+    String displayName = "Add `serialVersionUID` to a `Serializable` class when missing";
 
-    @Override
-    public String getDescription() {
-        return "A `serialVersionUID` field is strongly recommended in all `Serializable` classes. If this is not " +
+    String description = "A `serialVersionUID` field is strongly recommended in all `Serializable` classes. If this is not " +
                 "defined on a `Serializable` class, the compiler will generate this value. If a change is later made " +
                 "to the class, the generated value will change and attempts to deserialize the class will fail.";
-    }
 
     @Override
     public Set<String> getTags() {

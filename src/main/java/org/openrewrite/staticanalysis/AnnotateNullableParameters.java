@@ -58,19 +58,13 @@ public class AnnotateNullableParameters extends Recipe {
     @Nullable
     List<String> additionalNullCheckingMethods;
 
-    @Override
-    public String getDisplayName() {
-        return "Annotate null-checked method parameters with `@Nullable`";
-    }
+    String displayName = "Annotate null-checked method parameters with `@Nullable`";
 
-    @Override
-    public String getDescription() {
-        return "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. " +
+    String description = "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. " +
                 "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
                 "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
                 "This recipe scans for methods that do not already have parameters annotated with `@Nullable` annotation and checks their usages " +
                 "for potential null checks. Additional null-checking methods can be specified via the `additionalNullCheckingMethods` option.";
-    }
 
     @Override
     public Validated<Object> validate() {

@@ -47,17 +47,11 @@ public class EqualsAvoidsNull extends Recipe {
     private static final MethodMatcher EQUALS_IGNORE_CASE = new MethodMatcher(JAVA_LANG_STRING + " equalsIgnoreCase(" + JAVA_LANG_STRING + ")");
     private static final MethodMatcher CONTENT_EQUALS = new MethodMatcher(JAVA_LANG_STRING + " contentEquals(java.lang.CharSequence)");
 
-    @Override
-    public String getDisplayName() {
-        return "Equals avoids null";
-    }
+    String displayName = "Equals avoids null";
 
-    @Override
-    public String getDescription() {
-        return "Checks that any combination of String literals is on the left side of an `equals()` comparison. " +
+    String description = "Checks that any combination of String literals is on the left side of an `equals()` comparison. " +
                 "Also checks for String literals assigned to some field (such as `someString.equals(anotherString = \"text\"))`. " +
                 "And removes redundant null checks in conjunction with equals comparisons.";
-    }
 
     @Override
     public Set<String> getTags() {

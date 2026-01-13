@@ -45,19 +45,13 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
     @Nullable
     Boolean includeTestSources;
 
-    @Override
-    public String getDisplayName() {
-        return "Replace duplicate `String` literals";
-    }
+    String displayName = "Replace duplicate `String` literals";
 
-    @Override
-    public String getDescription() {
-        return "Replaces `String` literals with a length of 5 or greater repeated a minimum of 3 times. " +
+    String description = "Replaces `String` literals with a length of 5 or greater repeated a minimum of 3 times. " +
                "Qualified `String` literals include final Strings, method invocations, and new class invocations. " +
                "Adds a new `private static final String` or uses an existing equivalent class field. " +
                "A new variable name will be generated based on the literal value if an existing field does not exist. " +
                "The generated name will append a numeric value to the variable name if a name already exists in the compilation unit.";
-    }
 
     @Override
     public Set<String> getTags() {
