@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
@@ -35,15 +36,11 @@ import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
 public class ReplaceLambdaWithMethodReference extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use method references in lambda";
-    }
+    @Getter
+    final String displayName = "Use method references in lambda";
 
-    @Override
-    public String getDescription() {
-        return "Replaces the single statement lambdas `o -> o instanceOf X`, `o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, `o -> o == null` with the equivalent method reference.";
-    }
+    @Getter
+    final String description = "Replaces the single statement lambdas `o -> o instanceOf X`, `o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, `o -> o == null` with the equivalent method reference.";
 
     @Override
     public Set<String> getTags() {

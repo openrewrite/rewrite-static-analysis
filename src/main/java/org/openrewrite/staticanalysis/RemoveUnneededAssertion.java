@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -48,15 +49,11 @@ public class RemoveUnneededAssertion extends Recipe {
     private static final MethodMatcher TEST_NG_ASSERT_TRUE_MATCHER = new MethodMatcher("org.testng.Assert assertTrue(..)");
     private static final MethodMatcher TEST_NG_ASSERT_FALSE_MATCHER = new MethodMatcher("org.testng.Assert assertFalse(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove unneeded assertions";
-    }
+    @Getter
+    final String displayName = "Remove unneeded assertions";
 
-    @Override
-    public String getDescription() {
-        return "Remove unneeded assertions like `assert true`, `assertTrue(true)`, or `assertFalse(false)`.";
-    }
+    @Getter
+    final String description = "Remove unneeded assertions like `assert true`, `assertTrue(true)`, or `assertFalse(false)`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

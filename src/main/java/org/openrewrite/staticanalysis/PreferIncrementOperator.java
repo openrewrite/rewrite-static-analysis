@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -32,15 +33,11 @@ import java.time.Duration;
 
 public class PreferIncrementOperator extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Prefer increment/decrement and compound assignment operators";
-    }
+    @Getter
+    final String displayName = "Prefer increment/decrement and compound assignment operators";
 
-    @Override
-    public String getDescription() {
-        return "Prefer the use of increment and decrement operators (`++`, `--`, `+=`, `-=`) over their more verbose equivalents.";
-    }
+    @Getter
+    final String description = "Prefer the use of increment and decrement operators (`++`, `--`, `+=`, `-=`) over their more verbose equivalents.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

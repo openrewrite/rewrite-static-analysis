@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -33,15 +34,11 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class UnnecessaryCloseInTryWithResources extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Unnecessary close in try-with-resources";
-    }
+    @Getter
+    final String displayName = "Unnecessary close in try-with-resources";
 
-    @Override
-    public String getDescription() {
-        return "Remove unnecessary `AutoCloseable#close()` statements in try-with-resources.";
-    }
+    @Getter
+    final String description = "Remove unnecessary `AutoCloseable#close()` statements in try-with-resources.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

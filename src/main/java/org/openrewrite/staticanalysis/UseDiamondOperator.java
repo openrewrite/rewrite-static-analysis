@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -37,18 +38,14 @@ import static org.openrewrite.java.tree.TypeUtils.findDeclaredMethod;
 
 public class UseDiamondOperator extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use the diamond operator";
-    }
+    @Getter
+    final String displayName = "Use the diamond operator";
 
-    @Override
-    public String getDescription() {
-        return "The diamond operator (`<>`) should be used. Java 7 introduced the diamond operator to " +
-               "reduce the verbosity of generics code. For instance, instead of having to declare a `List`'s " +
-               "type in both its declaration and its constructor, you can now simplify the constructor declaration " +
-               "with `<>`, and the compiler will infer the type.";
-    }
+    @Getter
+    final String description = "The diamond operator (`<>`) should be used. Java 7 introduced the diamond operator to " +
+            "reduce the verbosity of generics code. For instance, instead of having to declare a `List`'s " +
+            "type in both its declaration and its constructor, you can now simplify the constructor declaration " +
+            "with `<>`, and the compiler will infer the type.";
 
     @Override
     public Set<String> getTags() {

@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -40,15 +41,11 @@ import static java.util.Collections.emptyList;
  */
 public class FinalizeMethodArguments extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Finalize method arguments";
-    }
+    @Getter
+    final String displayName = "Finalize method arguments";
 
-    @Override
-    public String getDescription() {
-        return "Adds the `final` modifier keyword to method parameters.";
-    }
+    @Getter
+    final String description = "Adds the `final` modifier keyword to method parameters.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -25,15 +26,11 @@ import static java.util.Collections.singleton;
 
 public class DefaultComesLast extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Default comes last";
-    }
+    @Getter
+    final String displayName = "Default comes last";
 
-    @Override
-    public String getDescription() {
-        return "Ensure the `default` case comes last after all the cases in a switch statement.";
-    }
+    @Getter
+    final String description = "Ensure the `default` case comes last after all the cases in a switch statement.";
 
     @Override
     public Set<String> getTags() {

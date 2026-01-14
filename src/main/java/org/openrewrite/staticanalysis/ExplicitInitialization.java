@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -28,19 +29,15 @@ import static java.util.Collections.singleton;
 
 public class ExplicitInitialization extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Explicit initialization";
-    }
+    @Getter
+    final String displayName = "Explicit initialization";
 
-    @Override
-    public String getDescription() {
-        return "Checks if any class or object member is explicitly initialized to default for its type value:\n" +
-               " - `null` for object references\n" +
-               " - zero for numeric types and `char`\n" +
-               " - and `false` for `boolean`\n" +
-               "Removes explicit initializations where they aren't necessary.";
-    }
+    @Getter
+    final String description = "Checks if any class or object member is explicitly initialized to default for its type value:\n" +
+            " - `null` for object references\n" +
+            " - zero for numeric types and `char`\n" +
+            " - and `false` for `boolean`\n" +
+            "Removes explicit initializations where they aren't necessary.";
 
     @Override
     public Set<String> getTags() {

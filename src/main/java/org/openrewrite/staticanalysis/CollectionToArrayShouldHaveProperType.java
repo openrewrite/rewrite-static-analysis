@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -35,16 +36,12 @@ import static java.util.Objects.requireNonNull;
 public class CollectionToArrayShouldHaveProperType extends Recipe {
     private static final MethodMatcher TO_ARRAY = new MethodMatcher("java.util.Collection toArray()", true);
 
-    @Override
-    public String getDisplayName() {
-        return "'Collection.toArray()' should be passed an array of the proper type";
-    }
+    @Getter
+    final String displayName = "'Collection.toArray()' should be passed an array of the proper type";
 
-    @Override
-    public String getDescription() {
-        return "Using `Collection.toArray()` without parameters returns an `Object[]`, which requires casting. " +
-                "It is more efficient and clearer to use `Collection.toArray(new T[0])` instead.";
-    }
+    @Getter
+    final String description = "Using `Collection.toArray()` without parameters returns an `Object[]`, which requires casting. " +
+            "It is more efficient and clearer to use `Collection.toArray(new T[0])` instead.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Incubating;
@@ -34,15 +35,11 @@ import java.util.List;
 @Incubating(since = "7.33.0")
 public class RemoveEmptyJavaDocParameters extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove JavaDoc `@param`, `@return`, and `@throws` with no description";
-    }
+    @Getter
+    final String displayName = "Remove JavaDoc `@param`, `@return`, and `@throws` with no description";
 
-    @Override
-    public String getDescription() {
-        return "Removes `@param`, `@return`, and `@throws` with no description from JavaDocs.";
-    }
+    @Getter
+    final String description = "Removes `@param`, `@return`, and `@throws` with no description from JavaDocs.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

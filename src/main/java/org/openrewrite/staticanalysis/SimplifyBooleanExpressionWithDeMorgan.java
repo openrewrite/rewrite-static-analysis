@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
@@ -36,16 +37,12 @@ import static java.util.Objects.requireNonNull;
 
 public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Simplify boolean expressions using De Morgan's laws";
-    }
+    @Getter
+    final String displayName = "Simplify boolean expressions using De Morgan's laws";
 
-    @Override
-    public String getDescription() {
-        return "Applies De Morgan's laws to simplify boolean expressions with negation. " +
-                "Transforms `!(a && b)` to `!a || !b` and `!(a || b)` to `!a && !b`.";
-    }
+    @Getter
+    final String description = "Applies De Morgan's laws to simplify boolean expressions with negation. " +
+            "Transforms `!(a && b)` to `!a || !b` and `!(a || b)` to `!a && !b`.";
 
     @Override
     public Set<String> getTags() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -44,15 +45,11 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
             ATOMIC_ATOMIC_BOOLEAN, ATOMIC_ATOMIC_INTEGER, ATOMIC_ATOMIC_LONG
     );
 
-    @Override
-    public String getDisplayName() {
-        return "Atomic Boolean, Integer, and Long equality checks compare their values";
-    }
+    @Getter
+    final String displayName = "Atomic Boolean, Integer, and Long equality checks compare their values";
 
-    @Override
-    public String getDescription() {
-        return "`AtomicBoolean#equals(Object)`, `AtomicInteger#equals(Object)` and `AtomicLong#equals(Object)` are only equal to their instance. This recipe converts `a.equals(b)` to `a.get() == b.get()`.";
-    }
+    @Getter
+    final String description = "`AtomicBoolean#equals(Object)`, `AtomicInteger#equals(Object)` and `AtomicLong#equals(Object)` are only equal to their instance. This recipe converts `a.equals(b)` to `a.get() == b.get()`.";
 
     @Override
     public Set<String> getTags() {

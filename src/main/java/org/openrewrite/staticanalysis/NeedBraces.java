@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -38,15 +39,11 @@ import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 
 public class NeedBraces extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Fix missing braces";
-    }
+    @Getter
+    final String displayName = "Fix missing braces";
 
-    @Override
-    public String getDescription() {
-        return "Adds missing braces around code such as single-line `if`, `for`, `while`, and `do-while` block bodies.";
-    }
+    @Getter
+    final String description = "Adds missing braces around code such as single-line `if`, `for`, `while`, and `do-while` block bodies.";
 
     @Override
     public Set<String> getTags() {

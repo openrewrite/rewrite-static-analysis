@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
@@ -27,15 +28,11 @@ import static java.util.Collections.singleton;
 @Incubating(since = "7.0.0")
 public class HideUtilityClassConstructor extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Hide utility class constructor";
-    }
+    @Getter
+    final String displayName = "Hide utility class constructor";
 
-    @Override
-    public String getDescription() {
-        return "Ensures utility classes (classes containing only static methods or fields in their API) do not have a public constructor.";
-    }
+    @Getter
+    final String description = "Ensures utility classes (classes containing only static methods or fields in their API) do not have a public constructor.";
 
     @Override
     public Set<String> getTags() {

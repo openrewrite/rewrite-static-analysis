@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -28,16 +29,12 @@ import static java.util.Collections.singleton;
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class AbstractClassPublicConstructor extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Constructors of an `abstract` class should not be declared `public`";
-    }
+    @Getter
+    final String displayName = "Constructors of an `abstract` class should not be declared `public`";
 
-    @Override
-    public String getDescription() {
-        return "Constructors of `abstract` classes can only be called in constructors of their subclasses. " +
-                "Therefore the visibility of `public` constructors are reduced to `protected`.";
-    }
+    @Getter
+    final String description = "Constructors of `abstract` classes can only be called in constructors of their subclasses. " +
+            "Therefore the visibility of `public` constructors are reduced to `protected`.";
 
     @Override
     public Set<String> getTags() {

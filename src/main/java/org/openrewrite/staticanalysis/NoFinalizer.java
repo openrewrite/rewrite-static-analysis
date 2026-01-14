@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -34,15 +35,11 @@ public class NoFinalizer extends Recipe {
 
     private static final MethodMatcher FINALIZER = new MethodMatcher("java.lang.Object finalize()", true);
 
-    @Override
-    public String getDisplayName() {
-        return "Remove `finalize()` method";
-    }
+    @Getter
+    final String displayName = "Remove `finalize()` method";
 
-    @Override
-    public String getDescription() {
-        return "Finalizers are deprecated. Use of `finalize()` can lead to performance issues, deadlocks, hangs, and other undesirable behavior.";
-    }
+    @Getter
+    final String description = "Finalizers are deprecated. Use of `finalize()` can lead to performance issues, deadlocks, hangs, and other undesirable behavior.";
 
     @Override
     public Set<String> getTags() {

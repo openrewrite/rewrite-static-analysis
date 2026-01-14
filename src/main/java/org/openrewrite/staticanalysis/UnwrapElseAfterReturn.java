@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
@@ -33,16 +34,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class UnwrapElseAfterReturn extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Unwrap else block after return or throw statement";
-    }
+    @Getter
+    final String displayName = "Unwrap else block after return or throw statement";
 
-    @Override
-    public String getDescription() {
-        return "Unwraps the else block when the if block ends with a return or throw statement, " +
-                "reducing nesting and improving code readability.";
-    }
+    @Getter
+    final String description = "Unwraps the else block when the if block ends with a return or throw statement, " +
+            "reducing nesting and improving code readability.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

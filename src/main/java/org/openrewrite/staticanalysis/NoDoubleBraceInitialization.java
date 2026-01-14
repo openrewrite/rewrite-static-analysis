@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -35,15 +36,11 @@ public class NoDoubleBraceInitialization extends Recipe {
     private static final JavaType LIST_TYPE = JavaType.buildType("java.util.List");
     private static final JavaType SET_TYPE = JavaType.buildType("java.util.Set");
 
-    @Override
-    public String getDisplayName() {
-        return "No double brace initialization";
-    }
+    @Getter
+    final String displayName = "No double brace initialization";
 
-    @Override
-    public String getDescription() {
-        return "Replace `List`, `Map`, and `Set` double brace initialization with an initialization block.";
-    }
+    @Getter
+    final String description = "Replace `List`, `Map`, and `Set` double brace initialization with an initialization block.";
 
     @Override
     public Set<String> getTags() {

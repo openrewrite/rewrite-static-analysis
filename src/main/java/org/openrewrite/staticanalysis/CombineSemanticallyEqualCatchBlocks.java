@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -32,16 +33,12 @@ import static org.openrewrite.java.tree.Space.EMPTY;
 @Incubating(since = "7.25.0")
 public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Combine semantically equal catch blocks";
-    }
+    @Getter
+    final String displayName = "Combine semantically equal catch blocks";
 
-    @Override
-    public String getDescription() {
-        return "Combine catches in a try that contain semantically equivalent blocks. " +
-                "No change will be made when a caught exception exists if combining catches may change application behavior or type attribution is missing.";
-    }
+    @Getter
+    final String description = "Combine catches in a try that contain semantically equivalent blocks. " +
+            "No change will be made when a caught exception exists if combining catches may change application behavior or type attribution is missing.";
 
     @Override
     public Set<String> getTags() {

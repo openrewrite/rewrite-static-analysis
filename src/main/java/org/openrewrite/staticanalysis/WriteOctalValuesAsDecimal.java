@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -28,15 +29,11 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class WriteOctalValuesAsDecimal extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Write octal values as decimal";
-    }
+    @Getter
+    final String displayName = "Write octal values as decimal";
 
-    @Override
-    public String getDescription() {
-        return "Developers may not recognize octal values as such, mistaking them instead for decimal values.";
-    }
+    @Getter
+    final String description = "Developers may not recognize octal values as such, mistaking them instead for decimal values.";
 
     @Override
     public Set<String> getTags() {

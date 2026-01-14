@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -35,18 +36,14 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
 
     private static final String JAVA_LANG_EXCEPTION = "java.lang.Exception";
 
-    @Override
-    public String getDisplayName() {
-        return "Replace `catch(Exception)` with specific declared exceptions thrown in the try block";
-    }
+    @Getter
+    final String displayName = "Replace `catch(Exception)` with specific declared exceptions thrown in the try block";
 
-    @Override
-    public String getDescription() {
-        return "Replaces `catch(Exception e)` blocks with a multi-catch block " +
-                "(`catch (SpecificException1 | SpecificException2 e)`) containing only the exceptions declared " +
-                "thrown by method or constructor invocations within the `try` block that are not already caught " +
-                "by more specific `catch` clauses.";
-    }
+    @Getter
+    final String description = "Replaces `catch(Exception e)` blocks with a multi-catch block " +
+            "(`catch (SpecificException1 | SpecificException2 e)`) containing only the exceptions declared " +
+            "thrown by method or constructor invocations within the `try` block that are not already caught " +
+            "by more specific `catch` clauses.";
 
     @Override
     public Set<String> getTags() {

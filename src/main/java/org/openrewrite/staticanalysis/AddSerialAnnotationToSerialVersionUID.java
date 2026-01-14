@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -35,15 +36,11 @@ import java.time.Duration;
 import static java.util.Comparator.comparing;
 
 public class AddSerialAnnotationToSerialVersionUID extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Add `@Serial` annotation to `serialVersionUID`";
-    }
+    @Getter
+    final String displayName = "Add `@Serial` annotation to `serialVersionUID`";
 
-    @Override
-    public String getDescription() {
-        return "Annotate any `serialVersionUID` fields with `@Serial` to indicate it's part of the serialization mechanism.";
-    }
+    @Getter
+    final String description = "Annotate any `serialVersionUID` fields with `@Serial` to indicate it's part of the serialization mechanism.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

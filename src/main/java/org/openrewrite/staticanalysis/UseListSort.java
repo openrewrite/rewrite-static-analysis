@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -27,15 +28,11 @@ import org.openrewrite.java.tree.J;
 
 public class UseListSort extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Replace invocations of `Collections#sort(List, Comparator)` with `List#sort(Comparator)`";
-    }
+    @Getter
+    final String displayName = "Replace invocations of `Collections#sort(List, Comparator)` with `List#sort(Comparator)`";
 
-    @Override
-    public String getDescription() {
-        return "The `java.util.Collections#sort(..)` implementation defers to the `java.util.List#sort(Comparator)`, replaced it with the `java.util.List#sort(Comparator)` implementation for better readability.";
-    }
+    @Getter
+    final String description = "The `java.util.Collections#sort(..)` implementation defers to the `java.util.List#sort(Comparator)`, replaced it with the `java.util.List#sort(Comparator)` implementation for better readability.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

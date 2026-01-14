@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -38,20 +39,16 @@ import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class UnnecessaryThrows extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Unnecessary throws";
-    }
+    @Getter
+    final String displayName = "Unnecessary throws";
 
-    @Override
-    public String getDescription() {
-        return "Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions if:\n" +
-                "\n" +
-                " - The declaring class or the method declaration is `final`.\n" +
-                " - The method declaration is `static` or `private`.\n" +
-                " - The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
-                " - The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
-    }
+    @Getter
+    final String description = "Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions if:\n" +
+            "\n" +
+            " - The declaring class or the method declaration is `final`.\n" +
+            " - The method declaration is `static` or `private`.\n" +
+            " - The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
+            " - The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
 
     @Override
     public Set<String> getTags() {

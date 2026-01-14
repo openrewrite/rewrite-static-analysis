@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
@@ -45,21 +46,17 @@ import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 public class RenamePrivateFieldsToCamelCase extends Recipe {
     private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
-    @Override
-    public String getDisplayName() {
-        return "Reformat private field names to camelCase";
-    }
+    @Getter
+    final String displayName = "Reformat private field names to camelCase";
 
-    @Override
-    public String getDescription() {
-        return "Reformat private field names to camelCase to comply with Java naming convention. " +
-               "The recipe will not rename fields with default, protected or public access modifiers. " +
-               "The recipe will not rename private constants. " +
-               "The first character is set to lower case and existing capital letters are preserved. " +
-               "Special characters that are allowed in java field names `$` and `_` are removed. " +
-               "If a special character is removed the next valid alphanumeric will be capitalized. " +
-               "The recipe will not rename a field if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
-    }
+    @Getter
+    final String description = "Reformat private field names to camelCase to comply with Java naming convention. " +
+            "The recipe will not rename fields with default, protected or public access modifiers. " +
+            "The recipe will not rename private constants. " +
+            "The first character is set to lower case and existing capital letters are preserved. " +
+            "Special characters that are allowed in java field names `$` and `_` are removed. " +
+            "If a special character is removed the next valid alphanumeric will be capitalized. " +
+            "The recipe will not rename a field if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
 
     @Override
     public Set<String> getTags() {

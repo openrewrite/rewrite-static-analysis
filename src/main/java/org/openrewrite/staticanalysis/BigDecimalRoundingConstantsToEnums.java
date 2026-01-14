@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -37,15 +38,11 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
     private static final MethodMatcher BIG_DECIMAL_DIVIDE_WITH_SCALE = new MethodMatcher("java.math.BigDecimal divide(java.math.BigDecimal, int, int)");
     private static final MethodMatcher BIG_DECIMAL_SET_SCALE = new MethodMatcher("java.math.BigDecimal setScale(int, int)");
 
-    @Override
-    public String getDisplayName() {
-        return "`BigDecimal` rounding constants to `RoundingMode` enums";
-    }
+    @Getter
+    final String displayName = "`BigDecimal` rounding constants to `RoundingMode` enums";
 
-    @Override
-    public String getDescription() {
-        return "Convert `BigDecimal` rounding constants to the equivalent `RoundingMode` enum.";
-    }
+    @Getter
+    final String description = "Convert `BigDecimal` rounding constants to the equivalent `RoundingMode` enum.";
 
     @Override
     public Set<String> getTags() {

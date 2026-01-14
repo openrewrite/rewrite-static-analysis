@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -28,15 +29,11 @@ import static java.util.Collections.singleton;
 
 public class WhileInsteadOfFor extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Prefer `while` over `for` loops";
-    }
+    @Getter
+    final String displayName = "Prefer `while` over `for` loops";
 
-    @Override
-    public String getDescription() {
-        return "When only the condition expression is defined in a for loop, and the initialization and increment expressions are missing, a while loop should be used instead to increase readability.";
-    }
+    @Getter
+    final String description = "When only the condition expression is defined in a for loop, and the initialization and increment expressions are missing, a while loop should be used instead to increase readability.";
 
     @Override
     public Set<String> getTags() {

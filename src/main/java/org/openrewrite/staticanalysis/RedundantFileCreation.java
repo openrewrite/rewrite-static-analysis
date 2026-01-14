@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -26,15 +27,11 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
 public class RedundantFileCreation extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Redundant file creation";
-    }
+    @Getter
+    final String displayName = "Redundant file creation";
 
-    @Override
-    public String getDescription() {
-        return "Remove unnecessary intermediate creations of files.";
-    }
+    @Getter
+    final String description = "Remove unnecessary intermediate creations of files.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

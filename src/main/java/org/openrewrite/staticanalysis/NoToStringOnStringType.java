@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -32,15 +33,11 @@ import static java.util.Collections.singleton;
 public class NoToStringOnStringType extends Recipe {
     private static final MethodMatcher TO_STRING = new MethodMatcher("java.lang.String toString()");
 
-    @Override
-    public String getDisplayName() {
-        return "Unnecessary `String#toString`";
-    }
+    @Getter
+    final String displayName = "Unnecessary `String#toString`";
 
-    @Override
-    public String getDescription() {
-        return "Remove unnecessary `String#toString` invocations on objects which are already a string.";
-    }
+    @Getter
+    final String description = "Remove unnecessary `String#toString` invocations on objects which are already a string.";
 
     @Override
     public Set<String> getTags() {

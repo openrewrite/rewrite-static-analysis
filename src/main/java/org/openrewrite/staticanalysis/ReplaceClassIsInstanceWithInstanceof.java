@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -41,15 +42,11 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     private static final MethodMatcher ISINSTANCE_MATCHER = new MethodMatcher("java.lang.Class isInstance(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Replace `A.class.isInstance(a)` with `a instanceof A`";
-    }
+    @Getter
+    final String displayName = "Replace `A.class.isInstance(a)` with `a instanceof A`";
 
-    @Override
-    public String getDescription() {
-        return "There should be no `A.class.isInstance(a)`, it should be replaced by `a instanceof A`.";
-    }
+    @Getter
+    final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by `a instanceof A`.";
 
     @Override
     public Set<String> getTags() {

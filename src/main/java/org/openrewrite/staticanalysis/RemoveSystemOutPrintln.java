@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -35,16 +36,12 @@ import static org.openrewrite.Tree.randomId;
 public class RemoveSystemOutPrintln extends Recipe {
     private static final MethodMatcher SYSTEM_OUT_PRINTLN = new MethodMatcher("java.io.PrintStream println(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove `System.out#println` statements";
-    }
+    @Getter
+    final String displayName = "Remove `System.out#println` statements";
 
-    @Override
-    public String getDescription() {
-        return "Print statements are often left accidentally after debugging an issue. " +
-                "This recipe removes all `System.out#println` and `System.err#println` statements from the code.";
-    }
+    @Getter
+    final String description = "Print statements are often left accidentally after debugging an issue. " +
+            "This recipe removes all `System.out#println` and `System.err#println` statements from the code.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

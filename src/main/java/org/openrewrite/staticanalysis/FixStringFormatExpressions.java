@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -42,15 +43,11 @@ public class FixStringFormatExpressions extends Recipe {
     private static final MethodMatcher FORMAT_MATCHER = new MethodMatcher("java.lang.String format(..)");
     private static final MethodMatcher FORMATTED_MATCHER = new MethodMatcher("java.lang.String formatted(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Fix `String#format` and `String#formatted` expressions";
-    }
+    @Getter
+    final String displayName = "Fix `String#format` and `String#formatted` expressions";
 
-    @Override
-    public String getDescription() {
-        return "Fix `String#format` and `String#formatted` expressions by replacing `\\n` newline characters with `%n` and removing any unused arguments. Note this recipe is scoped to only transform format expressions which do not specify the argument index.";
-    }
+    @Getter
+    final String description = "Fix `String#format` and `String#formatted` expressions by replacing `\\n` newline characters with `%n` and removing any unused arguments. Note this recipe is scoped to only transform format expressions which do not specify the argument index.";
 
     @Override
     public Set<String> getTags() {

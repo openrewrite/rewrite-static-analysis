@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -40,17 +41,13 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class ControlFlowIndentation extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Control flow statement indentation";
-    }
+    @Getter
+    final String displayName = "Control flow statement indentation";
 
-    @Override
-    public String getDescription() {
-        return "Program flow control statements like `if`, `while`, and `for` can omit curly braces when they apply to " +
-                "only a single statement. This recipe ensures that any statements which follow that statement are correctly " +
-                "indented to show they are not part of the flow control statement.";
-    }
+    @Getter
+    final String description = "Program flow control statements like `if`, `while`, and `for` can omit curly braces when they apply to " +
+            "only a single statement. This recipe ensures that any statements which follow that statement are correctly " +
+            "indented to show they are not part of the flow control statement.";
 
     @Override
     public Set<String> getTags() {

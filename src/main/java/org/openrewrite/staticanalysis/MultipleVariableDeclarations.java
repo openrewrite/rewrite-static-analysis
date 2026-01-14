@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -27,16 +28,12 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class MultipleVariableDeclarations extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "No multiple variable declarations";
-    }
+    @Getter
+    final String displayName = "No multiple variable declarations";
 
-    @Override
-    public String getDescription() {
-        return "Places each variable declaration in its own statement and on its own line. " +
-                "Using one variable declaration per line encourages commenting and can increase readability.";
-    }
+    @Getter
+    final String description = "Places each variable declaration in its own statement and on its own line. " +
+            "Using one variable declaration per line encourages commenting and can increase readability.";
 
     @Override
     public Set<String> getTags() {

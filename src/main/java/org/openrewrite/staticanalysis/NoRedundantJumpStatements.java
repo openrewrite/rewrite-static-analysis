@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -32,15 +33,11 @@ import static java.util.Collections.singleton;
 
 public class NoRedundantJumpStatements extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Jump statements should not be redundant";
-    }
+    @Getter
+    final String displayName = "Jump statements should not be redundant";
 
-    @Override
-    public String getDescription() {
-        return "Jump statements such as return and continue let you change the default flow of program execution, but jump statements that direct the control flow to the original direction are just a waste of keystrokes.";
-    }
+    @Getter
+    final String description = "Jump statements such as return and continue let you change the default flow of program execution, but jump statements that direct the control flow to the original direction are just a waste of keystrokes.";
 
     @Override
     public Set<String> getTags() {
