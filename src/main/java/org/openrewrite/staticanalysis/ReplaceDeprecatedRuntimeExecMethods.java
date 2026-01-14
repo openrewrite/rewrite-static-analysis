@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -35,16 +36,12 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     private static final MethodMatcher RUNTIME_EXEC_CMD_ENVP = new MethodMatcher("java.lang.Runtime exec(String, String[])");
     private static final MethodMatcher RUNTIME_EXEC_CMD_ENVP_FILE = new MethodMatcher("java.lang.Runtime exec(String, String[], java.io.File)");
 
-    @Override
-    public String getDisplayName() {
-        return "Replace deprecated `Runtime#exec()` methods";
-    }
+    @Getter
+    final String displayName = "Replace deprecated `Runtime#exec()` methods";
 
-    @Override
-    public String getDescription() {
-        return "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
-               "after Java 18 and is no longer recommended for use by the Java documentation.";
-    }
+    @Getter
+    final String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
+            "after Java 18 and is no longer recommended for use by the Java documentation.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

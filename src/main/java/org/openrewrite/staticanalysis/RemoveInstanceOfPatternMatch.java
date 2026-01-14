@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -34,15 +35,11 @@ import static java.util.Collections.singletonList;
  */
 public class RemoveInstanceOfPatternMatch extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Removes from code Java 14's `instanceof` pattern matching";
-    }
+    @Getter
+    final String displayName = "Removes from code Java 14's `instanceof` pattern matching";
 
-    @Override
-    public String getDescription() {
-        return "Adds an explicit variable declaration at the beginning of `if` statement instead of `instanceof` pattern matching.";
-    }
+    @Getter
+    final String description = "Adds an explicit variable declaration at the beginning of `if` statement instead of `instanceof` pattern matching.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

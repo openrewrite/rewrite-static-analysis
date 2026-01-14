@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -36,17 +37,13 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class UseLambdaForFunctionalInterface extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Use lambda expressions instead of anonymous classes";
-    }
+    @Getter
+    final String displayName = "Use lambda expressions instead of anonymous classes";
 
-    @Override
-    public String getDescription() {
-        return "Instead of anonymous class declarations, use a lambda where possible. Using lambdas to replace " +
-               "anonymous classes can lead to more expressive and maintainable code, improve code readability, reduce " +
-               "code duplication, and achieve better performance in some cases.";
-    }
+    @Getter
+    final String description = "Instead of anonymous class declarations, use a lambda where possible. Using lambdas to replace " +
+            "anonymous classes can lead to more expressive and maintainable code, improve code readability, reduce " +
+            "code duplication, and achieve better performance in some cases.";
 
     @Override
     public Set<String> getTags() {

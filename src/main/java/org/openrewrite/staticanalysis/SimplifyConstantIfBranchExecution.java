@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -34,15 +35,11 @@ import java.util.Optional;
 
 public class SimplifyConstantIfBranchExecution extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Simplify constant if branch execution";
-    }
+    @Getter
+    final String displayName = "Simplify constant if branch execution";
 
-    @Override
-    public String getDescription() {
-        return "Checks for if expressions that are always `true` or `false` and simplifies them.";
-    }
+    @Getter
+    final String description = "Checks for if expressions that are always `true` or `false` and simplifies them.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

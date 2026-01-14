@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
@@ -28,15 +29,11 @@ import java.util.List;
 
 @Incubating(since = "7.21.0")
 public class RemoveUnneededBlock extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Remove unneeded block";
-    }
+    @Getter
+    final String displayName = "Remove unneeded block";
 
-    @Override
-    public String getDescription() {
-        return "Flatten blocks into inline statements when possible.";
-    }
+    @Getter
+    final String description = "Flatten blocks into inline statements when possible.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

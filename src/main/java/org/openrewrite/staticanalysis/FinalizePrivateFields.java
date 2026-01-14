@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -34,15 +35,11 @@ import static java.util.stream.Collectors.*;
 import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
 public class FinalizePrivateFields extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Finalize private fields";
-    }
+    @Getter
+    final String displayName = "Finalize private fields";
 
-    @Override
-    public String getDescription() {
-        return "Adds the `final` modifier keyword to private instance variables which are not reassigned.";
-    }
+    @Getter
+    final String description = "Adds the `final` modifier keyword to private instance variables which are not reassigned.";
 
     @Override
     public @Nullable Duration getEstimatedEffortPerOccurrence() {

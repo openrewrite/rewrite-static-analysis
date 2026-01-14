@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -33,15 +34,11 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class NoEqualityInForCondition extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Use comparison rather than equality checks in for conditions";
-    }
+    @Getter
+    final String displayName = "Use comparison rather than equality checks in for conditions";
 
-    @Override
-    public String getDescription() {
-        return "Testing for loop termination using an equality operator (`==` and `!=`) is dangerous, because it could set up an infinite loop. Using a relational operator instead makes it harder to accidentally write an infinite loop.";
-    }
+    @Getter
+    final String description = "Testing for loop termination using an equality operator (`==` and `!=`) is dangerous, because it could set up an infinite loop. Using a relational operator instead makes it harder to accidentally write an infinite loop.";
 
     @Override
     public Set<String> getTags() {

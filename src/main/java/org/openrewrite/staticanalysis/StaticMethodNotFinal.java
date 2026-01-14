@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -28,15 +29,11 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class StaticMethodNotFinal extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Static methods need not be final";
-    }
+    @Getter
+    final String displayName = "Static methods need not be final";
 
-    @Override
-    public String getDescription() {
-        return "Static methods do not need to be declared final because they cannot be overridden.";
-    }
+    @Getter
+    final String description = "Static methods do not need to be declared final because they cannot be overridden.";
 
     @Override
     public Set<String> getTags() {

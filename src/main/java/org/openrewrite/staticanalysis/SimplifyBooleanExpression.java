@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -30,15 +31,11 @@ import static java.util.Collections.singleton;
 
 public class SimplifyBooleanExpression extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Simplify boolean expression";
-    }
+    @Getter
+    final String displayName = "Simplify boolean expression";
 
-    @Override
-    public String getDescription() {
-        return "Checks for overly complicated boolean expressions, such as `if (b == true)`, `b || true`, `!false`, etc.";
-    }
+    @Getter
+    final String description = "Checks for overly complicated boolean expressions, such as `if (b == true)`, `b || true`, `!false`, etc.";
 
     @Override
     public Set<String> getTags() {

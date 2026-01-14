@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -31,15 +32,11 @@ import static java.util.Collections.singleton;
 import static org.openrewrite.java.tree.J.Modifier.Type.Static;
 
 public class NestedEnumsAreNotStatic extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Nested enums are not static";
-    }
+    @Getter
+    final String displayName = "Nested enums are not static";
 
-    @Override
-    public String getDescription() {
-        return "Remove static modifier from nested enum types since they are implicitly static.";
-    }
+    @Getter
+    final String description = "Remove static modifier from nested enum types since they are implicitly static.";
 
     @Override
     public Set<String> getTags() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -33,15 +34,11 @@ import static java.util.Collections.singleton;
 public class ObjectFinalizeCallsSuper extends Recipe {
     private static final MethodMatcher FINALIZE_METHOD_MATCHER = new MethodMatcher("java.lang.Object finalize()", true);
 
-    @Override
-    public String getDisplayName() {
-        return "`finalize()` calls super";
-    }
+    @Getter
+    final String displayName = "`finalize()` calls super";
 
-    @Override
-    public String getDescription() {
-        return "Overrides of `Object#finalize()` should call super.";
-    }
+    @Getter
+    final String description = "Overrides of `Object#finalize()` should call super.";
 
     @Override
     public Set<String> getTags() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -28,15 +29,11 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SimplifyConsecutiveAssignments extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Simplify consecutive assignments";
-    }
+    @Getter
+    final String displayName = "Simplify consecutive assignments";
 
-    @Override
-    public String getDescription() {
-        return "Combine consecutive assignments into a single statement where possible.";
-    }
+    @Getter
+    final String description = "Combine consecutive assignments into a single statement where possible.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

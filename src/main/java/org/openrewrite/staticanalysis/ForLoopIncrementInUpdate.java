@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -35,15 +36,11 @@ import static java.util.Collections.singleton;
 
 public class ForLoopIncrementInUpdate extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "`for` loop counters incremented in update";
-    }
+    @Getter
+    final String displayName = "`for` loop counters incremented in update";
 
-    @Override
-    public String getDescription() {
-        return "The increment should be moved to the loop's increment clause if possible.";
-    }
+    @Getter
+    final String description = "The increment should be moved to the loop's increment clause if possible.";
 
     @Override
     public Set<String> getTags() {

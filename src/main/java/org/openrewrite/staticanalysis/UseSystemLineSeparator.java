@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -31,15 +32,11 @@ public class UseSystemLineSeparator extends Recipe {
     private static final MethodMatcher GET_PROPERTY = new MethodMatcher("java.lang.System getProperty(..)");
     private static final String LINE_SEPARATOR = "line.separator";
 
-    @Override
-    public String getDisplayName() {
-        return "Use `System.lineSeparator()`";
-    }
+    @Getter
+    final String displayName = "Use `System.lineSeparator()`";
 
-    @Override
-    public String getDescription() {
-        return "Replace calls to `System.getProperty(\"line.separator\")` with `System.lineSeparator()`.";
-    }
+    @Getter
+    final String description = "Replace calls to `System.getProperty(\"line.separator\")` with `System.lineSeparator()`.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

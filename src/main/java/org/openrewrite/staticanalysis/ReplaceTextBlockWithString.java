@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
@@ -31,15 +32,11 @@ import static java.util.Collections.emptyList;
 
 public class ReplaceTextBlockWithString extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Replace text block with regular string";
-    }
+    @Getter
+    final String displayName = "Replace text block with regular string";
 
-    @Override
-    public String getDescription() {
-        return "Replace text block with a regular multi-line string.";
-    }
+    @Getter
+    final String description = "Replace text block with a regular multi-line string.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

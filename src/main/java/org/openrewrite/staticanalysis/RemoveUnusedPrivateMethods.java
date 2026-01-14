@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -31,15 +32,11 @@ import static java.util.Collections.singleton;
 
 public class RemoveUnusedPrivateMethods extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove unused private methods";
-    }
+    @Getter
+    final String displayName = "Remove unused private methods";
 
-    @Override
-    public String getDescription() {
-        return "`private` methods that are never executed are dead code and should be removed.";
-    }
+    @Getter
+    final String description = "`private` methods that are never executed are dead code and should be removed.";
 
     @Override
     public Set<String> getTags() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -27,15 +28,11 @@ import java.util.Set;
 
 public class UnnecessaryParentheses extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove unnecessary parentheses";
-    }
+    @Getter
+    final String displayName = "Remove unnecessary parentheses";
 
-    @Override
-    public String getDescription() {
-        return "Removes unnecessary parentheses from code where extra parentheses pairs are redundant.";
-    }
+    @Getter
+    final String description = "Removes unnecessary parentheses from code where extra parentheses pairs are redundant.";
 
     @Override
     public Set<String> getTags() {

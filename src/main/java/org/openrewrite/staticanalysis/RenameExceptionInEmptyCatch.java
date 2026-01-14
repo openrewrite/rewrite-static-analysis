@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -30,15 +31,11 @@ import static java.util.stream.Collectors.toList;
 
 public class RenameExceptionInEmptyCatch extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Rename caught exceptions in empty catch blocks to `ignored`";
-    }
+    @Getter
+    final String displayName = "Rename caught exceptions in empty catch blocks to `ignored`";
 
-    @Override
-    public String getDescription() {
-        return "Renames caught exceptions in empty catch blocks to `ignored`. `ignored` will be incremented by 1 if a namespace conflict exists.";
-    }
+    @Getter
+    final String description = "Renames caught exceptions in empty catch blocks to `ignored`. `ignored` will be incremented by 1 if a namespace conflict exists.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

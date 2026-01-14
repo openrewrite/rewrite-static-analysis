@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -54,15 +55,11 @@ public class SimplifyDurationCreationUnits extends Recipe {
         }
     }
 
-    @Override
-    public String getDisplayName() {
-        return "Simplify `java.time.Duration` units";
-    }
+    @Getter
+    final String displayName = "Simplify `java.time.Duration` units";
 
-    @Override
-    public String getDescription() {
-        return "Simplifies `java.time.Duration` units to be more human-readable.";
-    }
+    @Getter
+    final String description = "Simplifies `java.time.Duration` units to be more human-readable.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

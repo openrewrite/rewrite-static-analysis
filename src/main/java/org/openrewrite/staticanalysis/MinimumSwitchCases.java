@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.Value;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
@@ -41,16 +42,12 @@ import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
 public class MinimumSwitchCases extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "`switch` statements should have at least 3 `case` clauses";
-    }
+    @Getter
+    final String displayName = "`switch` statements should have at least 3 `case` clauses";
 
-    @Override
-    public String getDescription() {
-        return "`switch` statements are useful when many code paths branch depending on the value of a single expression. " +
-               "For just one or two code paths, the code will be more readable with `if` statements.";
-    }
+    @Getter
+    final String description = "`switch` statements are useful when many code paths branch depending on the value of a single expression. " +
+            "For just one or two code paths, the code will be more readable with `if` statements.";
 
     @Override
     public Set<String> getTags() {

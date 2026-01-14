@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -34,16 +35,12 @@ import static java.util.Collections.singleton;
 public class SimplifyArraysAsList extends Recipe {
     private static final MethodMatcher ARRAYS_AS_LIST = new MethodMatcher("java.util.Arrays asList(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Simplify `Arrays.asList(..)` with varargs";
-    }
+    @Getter
+    final String displayName = "Simplify `Arrays.asList(..)` with varargs";
 
-    @Override
-    public String getDescription() {
-        return "Simplifies `Arrays.asList()` method calls that use explicit array creation to use varargs instead. " +
-                "For example, `Arrays.asList(new String[]{\"a\", \"b\", \"c\"})` becomes `Arrays.asList(\"a\", \"b\", \"c\")`.";
-    }
+    @Getter
+    final String description = "Simplifies `Arrays.asList()` method calls that use explicit array creation to use varargs instead. " +
+            "For example, `Arrays.asList(new String[]{\"a\", \"b\", \"c\"})` becomes `Arrays.asList(\"a\", \"b\", \"c\")`.";
 
     @Override
     public Set<String> getTags() {

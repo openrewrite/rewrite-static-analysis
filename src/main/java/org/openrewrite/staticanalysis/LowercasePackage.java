@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.ChangePackage;
@@ -31,16 +32,12 @@ import static java.util.Objects.requireNonNull;
 
 public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
 
-    @Override
-    public String getDisplayName() {
-        return "Rename packages to lowercase";
-    }
+    @Getter
+    final String displayName = "Rename packages to lowercase";
 
-    @Override
-    public String getDescription() {
-        return "By convention all Java package names should contain only lowercase letters, numbers, and dashes. " +
-               "This recipe converts any uppercase letters in package names to be lowercase.";
-    }
+    @Getter
+    final String description = "By convention all Java package names should contain only lowercase letters, numbers, and dashes. " +
+            "This recipe converts any uppercase letters in package names to be lowercase.";
 
     @Override
     public Set<String> getTags() {

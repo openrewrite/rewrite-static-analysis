@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
@@ -42,21 +43,17 @@ import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
  */
 public class RenameLocalVariablesToCamelCase extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Reformat local variable names to camelCase";
-    }
+    @Getter
+    final String displayName = "Reformat local variable names to camelCase";
 
-    @Override
-    public String getDescription() {
-        return "Reformat local variable and method parameter names to camelCase to comply with Java naming convention. " +
-                "The recipe will not rename variables declared in for loop controls or catches with a single character. " +
-                "The first character is set to lower case and existing capital letters are preserved. " +
-                "Special characters that are allowed in java field names `$` and `_` are removed (unless the name starts with one). " +
-                "If a special character is removed the next valid alphanumeric will be capitalized. " +
-                "Currently, does not support renaming members of classes. " +
-                "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
-    }
+    @Getter
+    final String description = "Reformat local variable and method parameter names to camelCase to comply with Java naming convention. " +
+            "The recipe will not rename variables declared in for loop controls or catches with a single character. " +
+            "The first character is set to lower case and existing capital letters are preserved. " +
+            "Special characters that are allowed in java field names `$` and `_` are removed (unless the name starts with one). " +
+            "If a special character is removed the next valid alphanumeric will be capitalized. " +
+            "Currently, does not support renaming members of classes. " +
+            "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
 
     @Override
     public Set<String> getTags() {

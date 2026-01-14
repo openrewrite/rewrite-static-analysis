@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -33,15 +34,11 @@ import static java.util.Collections.singleton;
 
 public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use primitive wrapper `valueOf` method";
-    }
+    @Getter
+    final String displayName = "Use primitive wrapper `valueOf` method";
 
-    @Override
-    public String getDescription() {
-        return "The constructor of all primitive types has been deprecated in favor of using the static factory method `valueOf` available for each of the primitive type wrappers.";
-    }
+    @Getter
+    final String description = "The constructor of all primitive types has been deprecated in favor of using the static factory method `valueOf` available for each of the primitive type wrappers.";
 
     @Override
     public Set<String> getTags() {

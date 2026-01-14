@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -34,16 +35,12 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
     private static final MethodMatcher METHOD_MATCHER = new MethodMatcher("java.lang.String#valueOf(..)", false);
 
-    @Override
-    public String getDisplayName() {
-        return "Replace String concatenation with `String.valueOf()`";
-    }
+    @Getter
+    final String displayName = "Replace String concatenation with `String.valueOf()`";
 
-    @Override
-    public String getDescription() {
-        return "Replace inefficient string concatenation patterns like `\"\" + ...` with `String.valueOf(...)`. " +
-                "This improves code readability and may have minor performance benefits.";
-    }
+    @Getter
+    final String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with `String.valueOf(...)`. " +
+            "This improves code readability and may have minor performance benefits.";
 
     @Override
     public Set<String> getTags() {

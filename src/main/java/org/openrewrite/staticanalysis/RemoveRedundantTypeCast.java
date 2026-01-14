@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
@@ -31,15 +32,11 @@ import static org.openrewrite.staticanalysis.LambdaBlockToExpression.hasMethodOv
 public class RemoveRedundantTypeCast extends Recipe {
     private static final String REMOVE_UNNECESSARY_PARENTHESES = "removeUnnecessaryParentheses";
 
-    @Override
-    public String getDisplayName() {
-        return "Remove redundant casts";
-    }
+    @Getter
+    final String displayName = "Remove redundant casts";
 
-    @Override
-    public String getDescription() {
-        return "Removes unnecessary type casts. Does not currently check casts in lambdas and class constructors.";
-    }
+    @Getter
+    final String description = "Removes unnecessary type casts. Does not currently check casts in lambdas and class constructors.";
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

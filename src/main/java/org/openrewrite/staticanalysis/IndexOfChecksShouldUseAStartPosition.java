@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -31,15 +32,11 @@ import static java.util.Collections.singleton;
 public class IndexOfChecksShouldUseAStartPosition extends Recipe {
     private static final MethodMatcher STRING_INDEX_MATCHER = new MethodMatcher("java.lang.String indexOf(String)");
 
-    @Override
-    public String getDisplayName() {
-        return "Use `indexOf(String, int)`";
-    }
+    @Getter
+    final String displayName = "Use `indexOf(String, int)`";
 
-    @Override
-    public String getDescription() {
-        return "Replaces `indexOf(String)` in binary operations if the compared value is an int and not less than 1.";
-    }
+    @Getter
+    final String description = "Replaces `indexOf(String)` in binary operations if the compared value is an int and not less than 1.";
 
     @Override
     public Set<String> getTags() {

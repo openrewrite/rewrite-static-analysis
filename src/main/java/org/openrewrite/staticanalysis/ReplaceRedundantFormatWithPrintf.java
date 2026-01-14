@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -44,15 +45,11 @@ public class ReplaceRedundantFormatWithPrintf extends Recipe {
             new MethodMatcher("java.io.PrintStream println(java.lang.String)", true);
 
 
-    @Override
-    public String getDisplayName() {
-        return "Replace redundant String format invocations that are wrapped with PrintStream operations";
-    }
+    @Getter
+    final String displayName = "Replace redundant String format invocations that are wrapped with PrintStream operations";
 
-    @Override
-    public String getDescription() {
-        return "Replaces `PrintStream.print(String.format(format, ...args))` with `PrintStream.printf(format, ...args)` (and for `println`, appends a newline to the format string).";
-    }
+    @Getter
+    final String description = "Replaces `PrintStream.print(String.format(format, ...args))` with `PrintStream.printf(format, ...args)` (and for `println`, appends a newline to the format string).";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

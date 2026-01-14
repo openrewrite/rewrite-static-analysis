@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -52,16 +53,12 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
         return singleton("RSPEC-S2116");
     }
 
-    @Override
-    public String getDisplayName() {
-        return "Remove `toString()` calls on arrays";
-    }
+    @Getter
+    final String displayName = "Remove `toString()` calls on arrays";
 
-    @Override
-    public String getDescription() {
-        return "The result from `toString()` calls on arrays is largely useless. The output does not actually reflect " +
-               "the contents of the array. `Arrays.toString(array)` should be used instead as it gives the contents of the array.";
-    }
+    @Getter
+    final String description = "The result from `toString()` calls on arrays is largely useless. The output does not actually reflect " +
+            "the contents of the array. `Arrays.toString(array)` should be used instead as it gives the contents of the array.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

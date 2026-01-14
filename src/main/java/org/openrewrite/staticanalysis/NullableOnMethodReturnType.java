@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -29,15 +30,11 @@ import static java.util.Objects.requireNonNull;
 
 public class NullableOnMethodReturnType extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Move `@Nullable` method annotations to the return type";
-    }
+    @Getter
+    final String displayName = "Move `@Nullable` method annotations to the return type";
 
-    @Override
-    public String getDescription() {
-        return "This is the way the cool kids do it.";
-    }
+    @Getter
+    final String description = "This is the way the cool kids do it.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

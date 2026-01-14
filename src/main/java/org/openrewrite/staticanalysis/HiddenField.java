@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
@@ -26,15 +27,11 @@ import static java.util.Collections.singleton;
 
 @Incubating(since = "7.6.0")
 public class HiddenField extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Hidden field";
-    }
+    @Getter
+    final String displayName = "Hidden field";
 
-    @Override
-    public String getDescription() {
-        return "Refactor local variables or parameters which shadow a field defined in the same class.";
-    }
+    @Getter
+    final String description = "Refactor local variables or parameters which shadow a field defined in the same class.";
 
     @Override
     public Set<String> getTags() {

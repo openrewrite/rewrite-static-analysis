@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
@@ -29,15 +30,11 @@ import static java.util.Collections.singleton;
 
 public class UseJavaStyleArrayDeclarations extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "No C-style array declarations";
-    }
+    @Getter
+    final String displayName = "No C-style array declarations";
 
-    @Override
-    public String getDescription() {
-        return "Change C-Style array declarations `int i[];` to `int[] i;`.";
-    }
+    @Getter
+    final String description = "Change C-Style array declarations `int i[];` to `int[] i;`.";
 
     @Override
     public Set<String> getTags() {

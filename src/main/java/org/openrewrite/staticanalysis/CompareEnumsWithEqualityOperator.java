@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -28,15 +29,11 @@ import static java.util.Collections.singleton;
 
 public class CompareEnumsWithEqualityOperator extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Enum values should be compared with \"==\"";
-    }
+    @Getter
+    final String displayName = "Enum values should be compared with \"==\"";
 
-    @Override
-    public String getDescription() {
-        return "Replaces `Enum equals(java.lang.Object)` with `Enum == java.lang.Object`. An `!Enum equals(java.lang.Object)` will change to `!=`.";
-    }
+    @Getter
+    final String description = "Replaces `Enum equals(java.lang.Object)` with `Enum == java.lang.Object`. An `!Enum equals(java.lang.Object)` will change to `!=`.";
 
     @Override
     public Set<String> getTags() {

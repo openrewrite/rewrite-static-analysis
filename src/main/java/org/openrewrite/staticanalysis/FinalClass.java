@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -26,15 +27,11 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class FinalClass extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Finalize classes with private constructors";
-    }
+    @Getter
+    final String displayName = "Finalize classes with private constructors";
 
-    @Override
-    public String getDescription() {
-        return "Adds the `final` modifier to classes that expose no public or package-private constructors.";
-    }
+    @Getter
+    final String description = "Adds the `final` modifier to classes that expose no public or package-private constructors.";
 
     @Override
     public Set<String> getTags() {

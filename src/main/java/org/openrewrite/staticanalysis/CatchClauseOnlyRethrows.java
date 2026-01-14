@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -33,16 +34,12 @@ import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isCSharpTr
 
 public class CatchClauseOnlyRethrows extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Catch clause should do more than just rethrow";
-    }
+    @Getter
+    final String displayName = "Catch clause should do more than just rethrow";
 
-    @Override
-    public String getDescription() {
-        return "A `catch` clause that only rethrows the caught exception is unnecessary. " +
-               "Letting the exception bubble up as normal achieves the same result with less code.";
-    }
+    @Getter
+    final String description = "A `catch` clause that only rethrows the caught exception is unnecessary. " +
+            "Letting the exception bubble up as normal achieves the same result with less code.";
 
     @Override
     public Set<String> getTags() {

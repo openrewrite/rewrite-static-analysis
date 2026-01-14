@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -37,16 +38,12 @@ import static org.openrewrite.java.tree.J.Binary.Type.Equal;
 
 public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Ternary operators should not be nested";
-    }
+    @Getter
+    final String displayName = "Ternary operators should not be nested";
 
-    @Override
-    public String getDescription() {
-        return "Nested ternary operators can be hard to read quickly. Prefer simpler constructs for improved readability. " +
-                "If supported, this recipe will try to replace nested ternaries with switch expressions.";
-    }
+    @Getter
+    final String description = "Nested ternary operators can be hard to read quickly. Prefer simpler constructs for improved readability. " +
+            "If supported, this recipe will try to replace nested ternaries with switch expressions.";
     @Override
     public Set<String> getTags() {
         return singleton("RSPEC-S3358");

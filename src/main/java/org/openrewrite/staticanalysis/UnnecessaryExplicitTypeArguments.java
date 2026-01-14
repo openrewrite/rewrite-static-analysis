@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
@@ -25,15 +26,11 @@ import java.util.List;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Unnecessary explicit type arguments";
-    }
+    @Getter
+    final String displayName = "Unnecessary explicit type arguments";
 
-    @Override
-    public String getDescription() {
-        return "When explicit type arguments are inferable by the compiler, they may be removed.";
-    }
+    @Getter
+    final String description = "When explicit type arguments are inferable by the compiler, they may be removed.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -29,16 +30,12 @@ public class ReplaceWeekYearWithYear extends Recipe {
     private static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");
     private static final MethodMatcher OF_PATTERN_MATCHER = new MethodMatcher("java.time.format.DateTimeFormatter ofPattern(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Week Year (YYYY) should not be used for date formatting";
-    }
+    @Getter
+    final String displayName = "Week Year (YYYY) should not be used for date formatting";
 
-    @Override
-    public String getDescription() {
-        return "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. However, on the last week of " +
-               "December and the first week of January, Week Year could produce unexpected results.";
-    }
+    @Getter
+    final String description = "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. However, on the last week of " +
+            "December and the first week of January, Week Year could produce unexpected results.";
 
     @Override
     public Set<String> getTags() {

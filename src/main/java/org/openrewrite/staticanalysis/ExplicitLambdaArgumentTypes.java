@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -33,17 +34,13 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 
 public class ExplicitLambdaArgumentTypes extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Use explicit types on lambda arguments";
-    }
+    @Getter
+    final String displayName = "Use explicit types on lambda arguments";
 
-    @Override
-    public String getDescription() {
-        return "Adds explicit types on lambda arguments, which are otherwise optional. This can make the code clearer and easier to read. " +
-                "This does not add explicit types on arguments when the lambda has one or two parameters and does not have a block body, as things are considered more readable in those cases. " +
-                "For example, `stream.map((a, b) -> a.length);` will not have explicit types added.";
-    }
+    @Getter
+    final String description = "Adds explicit types on lambda arguments, which are otherwise optional. This can make the code clearer and easier to read. " +
+            "This does not add explicit types on arguments when the lambda has one or two parameters and does not have a block body, as things are considered more readable in those cases. " +
+            "For example, `stream.map((a, b) -> a.length);` will not have explicit types added.";
 
     @Override
     public Set<String> getTags() {

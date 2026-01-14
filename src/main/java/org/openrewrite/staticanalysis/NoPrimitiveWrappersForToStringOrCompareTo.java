@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -41,15 +42,11 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     private static final MethodMatcher NUMBER_COMPARE_TO_MATCHER = new MethodMatcher("java.lang.Number compareTo(..)", true);
     private static final MethodMatcher BOOLEAN_COMPARE_TO_MATCHER = new MethodMatcher("java.lang.Boolean compareTo(..)", true);
 
-    @Override
-    public String getDisplayName() {
-        return "No primitive wrappers for #toString() or #compareTo(..)";
-    }
+    @Getter
+    final String displayName = "No primitive wrappers for #toString() or #compareTo(..)";
 
-    @Override
-    public String getDescription() {
-        return "Primitive wrappers should not be instantiated only for `#toString()` or `#compareTo(..)` invocations.";
-    }
+    @Getter
+    final String description = "Primitive wrappers should not be instantiated only for `#toString()` or `#compareTo(..)` invocations.";
 
     @Override
     public Set<String> getTags() {
