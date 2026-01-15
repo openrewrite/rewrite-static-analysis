@@ -29,8 +29,8 @@ class ExplicitThisTest implements RewriteTest {
         spec.recipe(new ExplicitThis());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void replacePatterns() {
         rewriteRun(
           //language=java

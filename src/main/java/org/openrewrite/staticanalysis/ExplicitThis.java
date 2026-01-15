@@ -20,14 +20,10 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.FieldAccess;
 import org.openrewrite.java.tree.J.Identifier;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.JavaType.Method;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -163,7 +159,7 @@ public class ExplicitThis extends Recipe {
                 return m;
             }
 
-            if (m.getName().getSimpleName().equals("super") || m.getName().getSimpleName().equals("this")) {
+            if ("super".equals(m.getName().getSimpleName()) || "this".equals(m.getName().getSimpleName())) {
                 return m;
             }
 
@@ -200,12 +196,11 @@ public class ExplicitThis extends Recipe {
             return namedVar.getName() == this.getCursor().getValue();
         }
 
-        @Nullable
-        private ClassContext getCurrentClassContext() {
+        private @Nullable ClassContext getCurrentClassContext() {
             Cursor currentCursor = this.getCursor().dropParentUntil(p ->
-                p instanceof J.ClassDeclaration ||
-                (p instanceof J.NewClass && ((J.NewClass) p).getBody() != null) ||
-                p == Cursor.ROOT_VALUE
+                    p instanceof J.ClassDeclaration ||
+                            (p instanceof J.NewClass && ((J.NewClass) p).getBody() != null) ||
+                            p == Cursor.ROOT_VALUE
             );
 
             if (currentCursor.getValue() instanceof J.ClassDeclaration) {
@@ -217,7 +212,8 @@ public class ExplicitThis extends Recipe {
                 String currentClassName = this.getSimpleClassName(currentClassType.getFullyQualifiedName());
                 boolean currentIsAnonymous = this.isAnonymousClassName(currentClassName);
                 return new ClassContext(currentClassType, currentIsAnonymous);
-            } else if (currentCursor.getValue() instanceof J.NewClass) {
+            }
+            if (currentCursor.getValue() instanceof J.NewClass) {
                 J.NewClass newClass = currentCursor.getValue();
                 JavaType type = newClass.getType();
                 if (!(type instanceof JavaType.FullyQualified)) {
@@ -228,8 +224,7 @@ public class ExplicitThis extends Recipe {
             return null;
         }
 
-        @Nullable
-        private Expression createQualifiedThisExpression(ClassContext currentContext, JavaType.FullyQualified targetType) {
+        private @Nullable Expression createQualifiedThisExpression(ClassContext currentContext, JavaType.FullyQualified targetType) {
             if (currentContext.type.getFullyQualifiedName().equals(targetType.getFullyQualifiedName())) {
                 return new Identifier(
                         Tree.randomId(),
