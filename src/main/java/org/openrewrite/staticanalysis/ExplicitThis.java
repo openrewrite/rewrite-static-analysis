@@ -87,8 +87,7 @@ public class ExplicitThis extends Recipe {
                     return id;
                 }
 
-                // Skip static fields - check the Modifier.STATIC flag (0x0008)
-                if ((fieldType.getFlagsBitMap() & 0x0008L) != 0) {
+                if (fieldType.hasFlags(Flag.Static)) {
                     return id;
                 }
 
@@ -126,8 +125,7 @@ public class ExplicitThis extends Recipe {
 
                 Method methodType = method.getMethodType();
                 if (methodType != null) {
-                    // Check if the method is static - set isStatic flag using Modifier.STATIC (0x0008)
-                    this.isStatic = (methodType.getFlagsBitMap() & 0x0008L) != 0;
+                    this.isStatic = methodType.hasFlags(Flag.Static);
                 }
 
                 J.MethodDeclaration result = (J.MethodDeclaration) super.visitMethodDeclaration(method, ctx);
@@ -154,7 +152,7 @@ public class ExplicitThis extends Recipe {
                 if (
                         m.getSelect() != null ||
                                 methodType == null ||
-                                (methodType.getFlagsBitMap() & 0x0008L) != 0
+                                methodType.hasFlags(Flag.Static)
                 ) {
                     return m;
                 }
