@@ -51,284 +51,281 @@ public class ExplicitThis extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new ExplicitThisVisitor();
-    }
+        return new JavaVisitor<ExecutionContext>() {
+            private boolean isStatic;
+            private boolean isInsideFieldAccess;
 
-    private static final class ExplicitThisVisitor extends JavaVisitor<ExecutionContext> {
+            @Override
+            public J visitFieldAccess(FieldAccess fieldAccess, ExecutionContext ctx) {
+                boolean previousIsInsideFieldAccess = this.isInsideFieldAccess;
+                this.isInsideFieldAccess = true;
 
-        private boolean isStatic;
-        private boolean isInsideFieldAccess;
+                J result = super.visitFieldAccess(fieldAccess, ctx);
 
-        private static class ClassContext {
-            final JavaType.FullyQualified type;
-            final boolean isAnonymous;
-
-            ClassContext(JavaType.FullyQualified type, boolean isAnonymous) {
-                this.type = type;
-                this.isAnonymous = isAnonymous;
-            }
-        }
-
-        @Override
-        public J visitFieldAccess(FieldAccess fieldAccess, ExecutionContext ctx) {
-            boolean previousIsInsideFieldAccess = this.isInsideFieldAccess;
-            this.isInsideFieldAccess = true;
-
-            J result = super.visitFieldAccess(fieldAccess, ctx);
-
-            this.isInsideFieldAccess = previousIsInsideFieldAccess;
-            return result;
-        }
-
-        @Override
-        public J visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
-            J.Identifier id = (J.Identifier) super.visitIdentifier(identifier, ctx);
-
-            if (this.isStatic) {
-                return id;
+                this.isInsideFieldAccess = previousIsInsideFieldAccess;
+                return result;
             }
 
-            if (this.isInsideFieldAccess) {
-                return id;
-            }
+            @Override
+            public J visitIdentifier(Identifier identifier, ExecutionContext ctx) {
+                Identifier id = (Identifier) super.visitIdentifier(identifier, ctx);
 
-            JavaType.Variable fieldType = id.getFieldType();
-            if (fieldType == null) {
-                return id;
-            }
-
-            if (fieldType.getOwner() == null || !(fieldType.getOwner() instanceof JavaType.Class)) {
-                return id;
-            }
-
-            // Skip static fields - check the Modifier.STATIC flag (0x0008)
-            if ((fieldType.getFlagsBitMap() & 0x0008L) != 0) {
-                return id;
-            }
-
-            String name = id.getSimpleName();
-            if ("this".equals(name) || "super".equals(name)) {
-                return id;
-            }
-
-            if (this.isPartOfDeclaration()) {
-                return id;
-            }
-
-            J.FieldAccess fieldAccess = this.createFieldAccess(id);
-            return fieldAccess != null ? fieldAccess : id;
-        }
-
-        @Override
-        public J visitBlock(J.Block block, ExecutionContext ctx) {
-            if (!block.isStatic()) {
-                return super.visitBlock(block, ctx);
-            }
-
-            boolean previousStatic = this.isStatic;
-            this.isStatic = true;
-
-            J.Block result = (J.Block) super.visitBlock(block, ctx);
-
-            this.isStatic = previousStatic;
-            return result;
-        }
-
-        @Override
-        public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-            boolean previousStatic = this.isStatic;
-
-            JavaType.Method methodType = method.getMethodType();
-            if (methodType != null) {
-                // Check if the method is static - set isStatic flag using Modifier.STATIC (0x0008)
-                this.isStatic = (methodType.getFlagsBitMap() & 0x0008L) != 0;
-            }
-
-            J.MethodDeclaration result = (J.MethodDeclaration) super.visitMethodDeclaration(method, ctx);
-
-            this.isStatic = previousStatic;
-
-            return result;
-        }
-
-        @Override
-        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-            J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-
-            if (this.isStatic) {
-                return m;
-            }
-
-            if ("super".equals(m.getName().getSimpleName()) || "this".equals(m.getName().getSimpleName())) {
-                return m;
-            }
-
-            Method methodType = m.getMethodType();
-            // Skip if already qualified, type info is missing, or the method is static (Modifier.STATIC = 0x0008)
-            if (
-                    m.getSelect() != null ||
-                            methodType == null ||
-                            (methodType.getFlagsBitMap() & 0x0008L) != 0
-            ) {
-                return m;
-            }
-
-            ClassContext currentContext = this.getCurrentClassContext();
-            if (currentContext == null) {
-                return m;
-            }
-
-            JavaType.FullyQualified methodOwnerType = methodType.getDeclaringType();
-            Expression thisExpression = this.createQualifiedThisExpression(currentContext, methodOwnerType);
-            if (thisExpression == null) {
-                return m;
-            }
-
-            return m.withSelect(thisExpression);
-        }
-
-        private boolean isPartOfDeclaration() {
-            Cursor parent = this.getCursor().getParent();
-            if (parent == null || !(parent.getValue() instanceof J.VariableDeclarations.NamedVariable)) {
-                return false;
-            }
-            J.VariableDeclarations.NamedVariable namedVar = parent.getValue();
-            return namedVar.getName() == this.getCursor().getValue();
-        }
-
-        private @Nullable ClassContext getCurrentClassContext() {
-            Cursor currentCursor = this.getCursor().dropParentUntil(p ->
-                    p instanceof J.ClassDeclaration ||
-                            (p instanceof J.NewClass && ((J.NewClass) p).getBody() != null) ||
-                            p == Cursor.ROOT_VALUE
-            );
-
-            if (currentCursor.getValue() instanceof J.ClassDeclaration) {
-                J.ClassDeclaration currentClass = currentCursor.getValue();
-                JavaType.FullyQualified currentClassType = currentClass.getType();
-                if (currentClassType == null) {
-                    return null;
+                if (this.isStatic) {
+                    return id;
                 }
-                String currentClassName = this.getSimpleClassName(currentClassType.getFullyQualifiedName());
-                boolean currentIsAnonymous = this.isAnonymousClassName(currentClassName);
-                return new ClassContext(currentClassType, currentIsAnonymous);
-            }
-            if (currentCursor.getValue() instanceof J.NewClass) {
-                J.NewClass newClass = currentCursor.getValue();
-                JavaType type = newClass.getType();
-                if (!(type instanceof JavaType.FullyQualified)) {
-                    return null;
-                }
-                return new ClassContext((JavaType.FullyQualified) type, true);
-            }
-            return null;
-        }
 
-        private @Nullable Expression createQualifiedThisExpression(ClassContext currentContext, JavaType.FullyQualified targetType) {
-            if (currentContext.type.getFullyQualifiedName().equals(targetType.getFullyQualifiedName())) {
-                return new Identifier(
+                if (this.isInsideFieldAccess) {
+                    return id;
+                }
+
+                JavaType.Variable fieldType = id.getFieldType();
+                if (fieldType == null) {
+                    return id;
+                }
+
+                if (fieldType.getOwner() == null || !(fieldType.getOwner() instanceof JavaType.Class)) {
+                    return id;
+                }
+
+                // Skip static fields - check the Modifier.STATIC flag (0x0008)
+                if ((fieldType.getFlagsBitMap() & 0x0008L) != 0) {
+                    return id;
+                }
+
+                String name = id.getSimpleName();
+                if ("this".equals(name) || "super".equals(name)) {
+                    return id;
+                }
+
+                if (this.isPartOfDeclaration()) {
+                    return id;
+                }
+
+                FieldAccess fieldAccess = this.createFieldAccess(id);
+                return fieldAccess != null ? fieldAccess : id;
+            }
+
+            @Override
+            public J visitBlock(J.Block block, ExecutionContext ctx) {
+                if (!block.isStatic()) {
+                    return super.visitBlock(block, ctx);
+                }
+
+                boolean previousStatic = this.isStatic;
+                this.isStatic = true;
+
+                J.Block result = (J.Block) super.visitBlock(block, ctx);
+
+                this.isStatic = previousStatic;
+                return result;
+            }
+
+            @Override
+            public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                boolean previousStatic = this.isStatic;
+
+                Method methodType = method.getMethodType();
+                if (methodType != null) {
+                    // Check if the method is static - set isStatic flag using Modifier.STATIC (0x0008)
+                    this.isStatic = (methodType.getFlagsBitMap() & 0x0008L) != 0;
+                }
+
+                J.MethodDeclaration result = (J.MethodDeclaration) super.visitMethodDeclaration(method, ctx);
+
+                this.isStatic = previousStatic;
+
+                return result;
+            }
+
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+
+                if (this.isStatic) {
+                    return m;
+                }
+
+                if ("super".equals(m.getName().getSimpleName()) || "this".equals(m.getName().getSimpleName())) {
+                    return m;
+                }
+
+                Method methodType = m.getMethodType();
+                // Skip if already qualified, type info is missing, or the method is static (Modifier.STATIC = 0x0008)
+                if (
+                        m.getSelect() != null ||
+                                methodType == null ||
+                                (methodType.getFlagsBitMap() & 0x0008L) != 0
+                ) {
+                    return m;
+                }
+
+                ClassContext currentContext = this.getCurrentClassContext();
+                if (currentContext == null) {
+                    return m;
+                }
+
+                JavaType.FullyQualified methodOwnerType = methodType.getDeclaringType();
+                Expression thisExpression = this.createQualifiedThisExpression(currentContext, methodOwnerType);
+                if (thisExpression == null) {
+                    return m;
+                }
+
+                return m.withSelect(thisExpression);
+            }
+
+            private boolean isPartOfDeclaration() {
+                Cursor parent = this.getCursor().getParent();
+                if (parent == null || !(parent.getValue() instanceof J.VariableDeclarations.NamedVariable)) {
+                    return false;
+                }
+                J.VariableDeclarations.NamedVariable namedVar = parent.getValue();
+                return namedVar.getName() == this.getCursor().getValue();
+            }
+
+            private ExplicitThis.@Nullable ClassContext getCurrentClassContext() {
+                Cursor currentCursor = this.getCursor().dropParentUntil(p ->
+                        p instanceof J.ClassDeclaration ||
+                                (p instanceof J.NewClass && ((J.NewClass) p).getBody() != null) ||
+                                p == Cursor.ROOT_VALUE
+                );
+
+                if (currentCursor.getValue() instanceof J.ClassDeclaration) {
+                    J.ClassDeclaration currentClass = currentCursor.getValue();
+                    JavaType.FullyQualified currentClassType = currentClass.getType();
+                    if (currentClassType == null) {
+                        return null;
+                    }
+                    String currentClassName = this.getSimpleClassName(currentClassType.getFullyQualifiedName());
+                    boolean currentIsAnonymous = this.isAnonymousClassName(currentClassName);
+                    return new ClassContext(currentClassType, currentIsAnonymous);
+                }
+                if (currentCursor.getValue() instanceof J.NewClass) {
+                    J.NewClass newClass = currentCursor.getValue();
+                    JavaType type = newClass.getType();
+                    if (!(type instanceof JavaType.FullyQualified)) {
+                        return null;
+                    }
+                    return new ClassContext((JavaType.FullyQualified) type, true);
+                }
+                return null;
+            }
+
+            private @Nullable Expression createQualifiedThisExpression(ClassContext currentContext, JavaType.FullyQualified targetType) {
+                if (currentContext.type.getFullyQualifiedName().equals(targetType.getFullyQualifiedName())) {
+                    return new Identifier(
+                            Tree.randomId(),
+                            Space.EMPTY,
+                            Markers.EMPTY,
+                            emptyList(),
+                            "this",
+                            currentContext.type,
+                            null
+                    );
+                }
+
+                if (currentContext.isAnonymous) {
+                    String ownerClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
+                    if (this.isAnonymousClassName(ownerClassName)) {
+                        return null;
+                    }
+                    return this.createOuterThisReference(targetType, ownerClassName);
+                }
+
+                String simpleClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
+                return this.createOuterThisReference(targetType, simpleClassName);
+            }
+
+            private FieldAccess createOuterThisReference(JavaType.FullyQualified ownerType, String simpleClassName) {
+                Identifier outerClassIdentifier = new Identifier(
+                        Tree.randomId(),
+                        Space.EMPTY,
+                        Markers.EMPTY,
+                        emptyList(),
+                        simpleClassName,
+                        ownerType,
+                        null
+                );
+
+                Identifier thisIdentifier = new Identifier(
                         Tree.randomId(),
                         Space.EMPTY,
                         Markers.EMPTY,
                         emptyList(),
                         "this",
-                        currentContext.type,
+                        ownerType,
+                        null
+                );
+
+                return new FieldAccess(
+                        Tree.randomId(),
+                        Space.EMPTY,
+                        Markers.EMPTY,
+                        outerClassIdentifier,
+                        JLeftPadded.build(thisIdentifier),
                         null
                 );
             }
 
-            if (currentContext.isAnonymous) {
-                String ownerClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
-                if (this.isAnonymousClassName(ownerClassName)) {
+            private @Nullable FieldAccess createFieldAccess(Identifier identifier) {
+                JavaType.Variable fieldType = identifier.getFieldType();
+                if (fieldType == null || fieldType.getOwner() == null) {
                     return null;
                 }
-                return this.createOuterThisReference(targetType, ownerClassName);
+
+                JavaType.FullyQualified fieldOwnerType = (JavaType.FullyQualified) fieldType.getOwner();
+
+                ClassContext currentContext = this.getCurrentClassContext();
+                if (currentContext == null) {
+                    return null;
+                }
+
+                Expression thisExpression = this.createQualifiedThisExpression(currentContext, fieldOwnerType);
+                if (thisExpression == null) {
+                    return null;
+                }
+
+                return new FieldAccess(
+                        Tree.randomId(),
+                        identifier.getPrefix(),
+                        Markers.EMPTY,
+                        thisExpression,
+                        JLeftPadded.build(identifier.withPrefix(Space.EMPTY)),
+                        identifier.getFieldType()
+                );
             }
 
-            String simpleClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
-            return this.createOuterThisReference(targetType, simpleClassName);
-        }
-
-        private J.FieldAccess createOuterThisReference(JavaType.FullyQualified ownerType, String simpleClassName) {
-            J.Identifier outerClassIdentifier = new J.Identifier(
-                    Tree.randomId(),
-                    Space.EMPTY,
-                    Markers.EMPTY,
-                    emptyList(),
-                    simpleClassName,
-                    ownerType,
-                    null
-            );
-
-            J.Identifier thisIdentifier = new J.Identifier(
-                    Tree.randomId(),
-                    Space.EMPTY,
-                    Markers.EMPTY,
-                    emptyList(),
-                    "this",
-                    ownerType,
-                    null
-            );
-
-            return new J.FieldAccess(
-                    Tree.randomId(),
-                    Space.EMPTY,
-                    Markers.EMPTY,
-                    outerClassIdentifier,
-                    JLeftPadded.build(thisIdentifier),
-                    null
-            );
-        }
-
-        private J.@Nullable FieldAccess createFieldAccess(J.Identifier identifier) {
-            JavaType.Variable fieldType = identifier.getFieldType();
-            if (fieldType == null || fieldType.getOwner() == null) {
-                return null;
+            /**
+             * Extracts the simple class name from a fully qualified class name.
+             * Handles both package-separated names (dots) and inner class separators (dollar signs).
+             * Examples: "com.example.Outer$Inner" -> "Inner", "com.example.Outer" -> "Outer"
+             */
+            private String getSimpleClassName(String fullyQualifiedName) {
+                int lastDot = fullyQualifiedName.lastIndexOf('.');
+                int lastDollar = fullyQualifiedName.lastIndexOf('$');
+                int lastSeparator = Math.max(lastDot, lastDollar);
+                return lastSeparator >= 0 ? fullyQualifiedName.substring(lastSeparator + 1) : fullyQualifiedName;
             }
 
-            JavaType.FullyQualified fieldOwnerType = (JavaType.FullyQualified) fieldType.getOwner();
-
-            ClassContext currentContext = this.getCurrentClassContext();
-            if (currentContext == null) {
-                return null;
+            /**
+             * Detects if a class name represents an anonymous class.
+             * Anonymous classes are identified by numeric names (generated by the compiler as 1, 2, 3, etc.).
+             */
+            private boolean isAnonymousClassName(String simpleName) {
+                if (simpleName.isEmpty()) {
+                    return false;
+                }
+                return Character.isDigit(simpleName.charAt(0));
             }
+        };
+    }
 
-            Expression thisExpression = this.createQualifiedThisExpression(currentContext, fieldOwnerType);
-            if (thisExpression == null) {
-                return null;
-            }
+    private static class ClassContext {
+        final JavaType.FullyQualified type;
+        final boolean isAnonymous;
 
-            return new J.FieldAccess(
-                    Tree.randomId(),
-                    identifier.getPrefix(),
-                    Markers.EMPTY,
-                    thisExpression,
-                    JLeftPadded.build(identifier.withPrefix(Space.EMPTY)),
-                    identifier.getFieldType()
-            );
-        }
-
-        /**
-         * Extracts the simple class name from a fully qualified class name.
-         * Handles both package-separated names (dots) and inner class separators (dollar signs).
-         * Examples: "com.example.Outer$Inner" -> "Inner", "com.example.Outer" -> "Outer"
-         */
-        private String getSimpleClassName(String fullyQualifiedName) {
-            int lastDot = fullyQualifiedName.lastIndexOf('.');
-            int lastDollar = fullyQualifiedName.lastIndexOf('$');
-            int lastSeparator = Math.max(lastDot, lastDollar);
-            return lastSeparator >= 0 ? fullyQualifiedName.substring(lastSeparator + 1) : fullyQualifiedName;
-        }
-
-        /**
-         * Detects if a class name represents an anonymous class.
-         * Anonymous classes are identified by numeric names (generated by the compiler as 1, 2, 3, etc.).
-         */
-        private boolean isAnonymousClassName(String simpleName) {
-            if (simpleName.isEmpty()) {
-                return false;
-            }
-            return Character.isDigit(simpleName.charAt(0));
+        ClassContext(JavaType.FullyQualified type, boolean isAnonymous) {
+            this.type = type;
+            this.isAnonymous = isAnonymous;
         }
     }
 }
