@@ -38,10 +38,8 @@ public class ReplaceTextBlockWithString extends Recipe {
     @Getter
     final String description = "Replace text block with a regular multi-line string.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -50,10 +50,8 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
         return singleton("RSPEC-S1221");
     }
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

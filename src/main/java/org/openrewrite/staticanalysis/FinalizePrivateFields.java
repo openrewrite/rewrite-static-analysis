@@ -41,10 +41,8 @@ public class FinalizePrivateFields extends Recipe {
     @Getter
     final String description = "Adds the `final` modifier keyword to private instance variables which are not reassigned.";
 
-    @Override
-    public @Nullable Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

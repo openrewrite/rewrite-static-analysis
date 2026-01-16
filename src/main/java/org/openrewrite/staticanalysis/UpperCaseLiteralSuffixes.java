@@ -44,10 +44,8 @@ public class UpperCaseLiteralSuffixes extends Recipe {
         return singleton("RSPEC-S818");
     }
 
-    @Override
-    public @Nullable Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

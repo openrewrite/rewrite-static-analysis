@@ -47,10 +47,8 @@ public class NoDoubleBraceInitialization extends Recipe {
         return new LinkedHashSet<>(Arrays.asList("RSPEC-S1171", "RSPEC-S3599"));
     }
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(30);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(30);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -50,10 +50,8 @@ public class NoValueOfOnStringType extends Recipe {
         return singleton("RSPEC-S1153");
     }
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(4);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(4);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -44,10 +44,8 @@ public class ReplaceStringBuilderWithString extends Recipe {
             "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
             "expressions into a single String object, which can be more efficient than using StringBuilder.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

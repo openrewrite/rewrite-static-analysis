@@ -39,10 +39,7 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
     String description = "Removes redundant null checks before `equals()` comparisons when the receiver is a literal string, " +
                "since literals can never be null and `equals()` returns false for null arguments.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

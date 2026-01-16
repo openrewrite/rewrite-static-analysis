@@ -45,10 +45,7 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
         return singleton("RSPEC-S1697");
     }
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

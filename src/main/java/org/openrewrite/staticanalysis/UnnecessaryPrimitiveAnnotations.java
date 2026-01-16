@@ -48,10 +48,8 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
         return singleton("RSPEC-S4682");
     }
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -42,10 +42,8 @@ public class AddSerialAnnotationToSerialVersionUID extends Recipe {
     @Getter
     final String description = "Annotate any `serialVersionUID` fields with `@Serial` to indicate it's part of the serialization mechanism.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     @NonNull

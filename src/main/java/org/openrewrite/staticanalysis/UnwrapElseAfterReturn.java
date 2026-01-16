@@ -41,10 +41,8 @@ public class UnwrapElseAfterReturn extends Recipe {
     final String description = "Unwraps the else block when the if block ends with a return or throw statement, " +
             "reducing nesting and improving code readability.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -46,10 +46,8 @@ public class NoFinalizer extends Recipe {
         return singleton("RSPEC-S1111");
     }
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(20);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

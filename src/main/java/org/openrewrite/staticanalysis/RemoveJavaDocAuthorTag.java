@@ -36,10 +36,8 @@ public class RemoveJavaDocAuthorTag extends Recipe {
     @Getter
     final String description = "Removes author tags from JavaDocs to reduce code maintenance.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

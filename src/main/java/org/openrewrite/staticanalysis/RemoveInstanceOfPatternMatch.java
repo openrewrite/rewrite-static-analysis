@@ -41,10 +41,8 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
     @Getter
     final String description = "Adds an explicit variable declaration at the beginning of `if` statement instead of `instanceof` pattern matching.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

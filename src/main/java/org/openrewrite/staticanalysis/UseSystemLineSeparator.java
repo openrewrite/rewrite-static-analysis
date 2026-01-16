@@ -38,10 +38,8 @@ public class UseSystemLineSeparator extends Recipe {
     @Getter
     final String description = "Replace calls to `System.getProperty(\"line.separator\")` with `System.lineSeparator()`.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
