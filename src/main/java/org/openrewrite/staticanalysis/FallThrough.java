@@ -35,10 +35,8 @@ public class FallThrough extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S128");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

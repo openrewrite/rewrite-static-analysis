@@ -38,10 +38,8 @@ public class RemoveRedundantTypeCast extends Recipe {
     @Getter
     final String description = "Removes unnecessary type casts. Does not currently check casts in lambdas and class constructors.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1905");

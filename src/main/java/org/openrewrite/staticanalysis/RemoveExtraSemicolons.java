@@ -43,10 +43,8 @@ public class RemoveExtraSemicolons extends Recipe {
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1116", "RSPEC-S2959"));
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     @SuppressWarnings("ConstantConditions")

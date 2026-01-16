@@ -43,10 +43,8 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
     final String description = "Using `Collection.toArray()` without parameters returns an `Object[]`, which requires casting. " +
             "It is more efficient and clearer to use `Collection.toArray(new T[0])` instead.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3020");

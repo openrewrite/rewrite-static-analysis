@@ -45,10 +45,8 @@ public class UseCollectionInterfaces extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S1319");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
 

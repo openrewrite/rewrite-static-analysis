@@ -51,10 +51,7 @@ public class UsePortableNewlines extends Recipe {
 
     Set<String> tags = singleton("RSPEC-S3457");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -55,10 +55,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
 
     Set<String> tags = new LinkedHashSet<>(asList("RSPEC-1192", "RSPEC-1889"));
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     int maxVariableLength = 40;
 

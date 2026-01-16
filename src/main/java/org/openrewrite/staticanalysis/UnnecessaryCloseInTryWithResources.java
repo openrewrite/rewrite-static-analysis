@@ -40,10 +40,8 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
     @Getter
     final String description = "Remove unnecessary `AutoCloseable#close()` statements in try-with-resources.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S4087");

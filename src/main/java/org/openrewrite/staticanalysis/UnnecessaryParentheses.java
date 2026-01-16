@@ -37,10 +37,8 @@ public class UnnecessaryParentheses extends Recipe {
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1110", "RSPEC-S1611"));
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

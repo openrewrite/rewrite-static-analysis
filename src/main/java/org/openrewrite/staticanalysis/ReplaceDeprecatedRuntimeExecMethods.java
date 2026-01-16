@@ -43,10 +43,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     final String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
             "after Java 18 and is no longer recommended for use by the Java documentation.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(3);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(3);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

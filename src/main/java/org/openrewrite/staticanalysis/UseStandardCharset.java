@@ -41,10 +41,8 @@ public class UseStandardCharset extends Recipe {
     @Getter
     final String description = "Replaces `Charset.forName(java.lang.String)` with the equivalent `StandardCharset` constant.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

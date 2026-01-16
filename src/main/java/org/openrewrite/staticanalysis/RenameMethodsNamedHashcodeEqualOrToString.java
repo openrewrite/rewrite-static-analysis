@@ -48,10 +48,8 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S1221");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -44,10 +44,8 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
     @Getter
     final String description = "`Externalizable` classes handle both serialization and deserialization and must have a no-args constructor for the deserialization process.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(20);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2060");

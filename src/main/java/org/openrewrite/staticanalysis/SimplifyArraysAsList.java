@@ -45,10 +45,8 @@ public class SimplifyArraysAsList extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S3878");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

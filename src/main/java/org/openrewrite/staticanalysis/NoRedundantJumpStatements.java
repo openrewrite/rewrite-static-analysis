@@ -42,10 +42,8 @@ public class NoRedundantJumpStatements extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S3626");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

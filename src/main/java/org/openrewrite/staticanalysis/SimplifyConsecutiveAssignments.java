@@ -35,10 +35,8 @@ public class SimplifyConsecutiveAssignments extends Recipe {
     @Getter
     final String description = "Combine consecutive assignments into a single statement where possible.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

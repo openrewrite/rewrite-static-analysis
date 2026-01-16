@@ -55,10 +55,7 @@ public class EqualsAvoidsNull extends Recipe {
 
     Set<String> tags = singleton("RSPEC-S1132");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return ofMinutes(10);
-    }
+    Duration estimatedEffortPerOccurrence = ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
