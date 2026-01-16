@@ -32,10 +32,8 @@ public class FallThrough extends Recipe {
     @Getter
     final String description = "Checks for fall-through in switch statements, adding `break` statements in locations where a case contains Java code but does not have a `break`, `return`, `throw`, or `continue` statement.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S128");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S128");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

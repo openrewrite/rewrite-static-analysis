@@ -42,10 +42,8 @@ public class ForLoopIncrementInUpdate extends Recipe {
     @Getter
     final String description = "The increment should be moved to the loop's increment clause if possible.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1994");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1994");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

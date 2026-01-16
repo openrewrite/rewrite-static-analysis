@@ -41,10 +41,8 @@ public class RemoveCallsToObjectFinalize extends Recipe {
     @Getter
     final String description = "Remove calls to `Object.finalize()`. This method is called during garbage collection and calling it manually is misleading.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1111");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1111");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

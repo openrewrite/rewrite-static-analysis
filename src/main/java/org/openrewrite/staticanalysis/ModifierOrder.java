@@ -40,10 +40,8 @@ public class ModifierOrder extends Recipe {
     @Getter
     final String description = "Modifiers should be declared in the correct order as recommended by the JLS.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1124");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1124");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

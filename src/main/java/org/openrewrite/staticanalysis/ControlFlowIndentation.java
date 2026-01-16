@@ -49,10 +49,8 @@ public class ControlFlowIndentation extends Recipe {
             "only a single statement. This recipe ensures that any statements which follow that statement are correctly " +
             "indented to show they are not part of the flow control statement.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2681");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2681");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

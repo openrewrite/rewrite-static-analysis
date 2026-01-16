@@ -40,10 +40,8 @@ public class ObjectFinalizeCallsSuper extends Recipe {
     @Getter
     final String description = "Overrides of `Object#finalize()` should call super.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1114");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1114");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

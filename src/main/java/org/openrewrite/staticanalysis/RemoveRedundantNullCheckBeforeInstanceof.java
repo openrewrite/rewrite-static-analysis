@@ -40,10 +40,7 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
     String description = "Removes redundant null checks before instanceof operations since instanceof returns false for null.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1697");
-    }
+    Set<String> tags = singleton("RSPEC-S1697");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

@@ -35,10 +35,8 @@ public class MultipleVariableDeclarations extends Recipe {
     final String description = "Places each variable declaration in its own statement and on its own line. " +
             "Using one variable declaration per line encourages commenting and can increase readability.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1659");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1659");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

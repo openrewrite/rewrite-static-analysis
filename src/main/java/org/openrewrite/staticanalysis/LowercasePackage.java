@@ -39,10 +39,8 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
     final String description = "By convention all Java package names should contain only lowercase letters, numbers, and dashes. " +
             "This recipe converts any uppercase letters in package names to be lowercase.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S120");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S120");
 
     @Override
     public Map<String, String> getInitialValue(ExecutionContext ctx) {

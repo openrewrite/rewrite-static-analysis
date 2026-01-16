@@ -41,10 +41,8 @@ public class InlineVariable extends Recipe {
     final String description = "Inline variables when they are immediately used to return or throw. " +
             "Supports both variable declarations and assignments to local variables.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1488");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1488");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

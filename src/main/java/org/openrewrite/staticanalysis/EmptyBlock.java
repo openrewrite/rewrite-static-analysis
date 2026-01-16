@@ -32,10 +32,8 @@ public class EmptyBlock extends Recipe {
     @Getter
     final String description = "Remove empty blocks that effectively do nothing.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S108");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S108");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

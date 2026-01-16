@@ -43,10 +43,8 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
     @Getter
     final String description = "Primitives can't be null anyway, so these annotations are not useful in this context.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S4682");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4682");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

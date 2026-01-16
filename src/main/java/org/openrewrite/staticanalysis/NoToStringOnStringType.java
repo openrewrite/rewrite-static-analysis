@@ -39,10 +39,8 @@ public class NoToStringOnStringType extends Recipe {
     @Getter
     final String description = "Remove unnecessary `String#toString` invocations on objects which are already a string.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1858");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1858");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

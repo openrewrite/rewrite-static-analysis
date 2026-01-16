@@ -36,10 +36,8 @@ public class AbstractClassPublicConstructor extends Recipe {
     final String description = "Constructors of `abstract` classes can only be called in constructors of their subclasses. " +
             "Therefore the visibility of `public` constructors are reduced to `protected`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S5993");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S5993");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

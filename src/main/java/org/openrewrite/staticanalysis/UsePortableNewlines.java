@@ -49,10 +49,7 @@ public class UsePortableNewlines extends Recipe {
 
     String description = "Format strings should use %n rather than \\n to produce platform-specific line separators.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3457");
-    }
+    Set<String> tags = singleton("RSPEC-S3457");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

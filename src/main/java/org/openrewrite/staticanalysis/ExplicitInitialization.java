@@ -39,10 +39,8 @@ public class ExplicitInitialization extends Recipe {
             " - and `false` for `boolean`\n" +
             "Removes explicit initializations where they aren't necessary.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3052");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3052");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

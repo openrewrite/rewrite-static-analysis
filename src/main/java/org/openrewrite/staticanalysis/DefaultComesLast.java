@@ -32,10 +32,8 @@ public class DefaultComesLast extends Recipe {
     @Getter
     final String description = "Ensure the `default` case comes last after all the cases in a switch statement.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S4524");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4524");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

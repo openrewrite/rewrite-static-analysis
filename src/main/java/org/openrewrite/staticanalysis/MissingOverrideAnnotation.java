@@ -47,10 +47,7 @@ public class MissingOverrideAnnotation extends Recipe {
                 "Annotating methods improves readability by showing the author's intent to override. " +
                 "Additionally, when annotated, the compiler will emit an error when a signature of the overridden method does not match the superclass method.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1161");
-    }
+    Set<String> tags = singleton("RSPEC-S1161");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

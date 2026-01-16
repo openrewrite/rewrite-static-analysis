@@ -35,10 +35,8 @@ public class WriteOctalValuesAsDecimal extends Recipe {
     @Getter
     final String description = "Developers may not recognize octal values as such, mistaking them instead for decimal values.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1314");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1314");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

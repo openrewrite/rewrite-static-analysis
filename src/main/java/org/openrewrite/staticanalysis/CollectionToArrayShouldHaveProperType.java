@@ -48,10 +48,8 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
         return Duration.ofMinutes(2);
     }
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3020");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3020");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

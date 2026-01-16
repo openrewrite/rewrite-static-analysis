@@ -45,10 +45,8 @@ public class NoValueOfOnStringType extends Recipe {
             "This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf(\"example\")`. " +
             "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1153");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1153");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

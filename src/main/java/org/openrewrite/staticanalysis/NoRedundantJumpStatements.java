@@ -39,10 +39,8 @@ public class NoRedundantJumpStatements extends Recipe {
     @Getter
     final String description = "Jump statements such as return and continue let you change the default flow of program execution, but jump statements that direct the control flow to the original direction are just a waste of keystrokes.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3626");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3626");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

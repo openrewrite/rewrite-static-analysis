@@ -48,10 +48,8 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
     @Getter
     final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by `a instanceof A`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S6202");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S6202");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

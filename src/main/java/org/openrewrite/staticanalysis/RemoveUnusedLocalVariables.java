@@ -86,10 +86,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
     String description = "If a local variable is declared but not used, it is dead code and should be removed.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1481");
-    }
+    Set<String> tags = singleton("RSPEC-S1481");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

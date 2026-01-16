@@ -35,10 +35,8 @@ public class CompareEnumsWithEqualityOperator extends Recipe {
     @Getter
     final String description = "Replaces `Enum equals(java.lang.Object)` with `Enum == java.lang.Object`. An `!Enum equals(java.lang.Object)` will change to `!=`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S4551");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4551");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

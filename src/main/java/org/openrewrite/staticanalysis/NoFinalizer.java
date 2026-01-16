@@ -41,10 +41,8 @@ public class NoFinalizer extends Recipe {
     @Getter
     final String description = "Finalizers are deprecated. Use of `finalize()` can lead to performance issues, deadlocks, hangs, and other undesirable behavior.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1111");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1111");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

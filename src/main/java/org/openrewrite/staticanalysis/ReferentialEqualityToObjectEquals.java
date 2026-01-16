@@ -41,10 +41,8 @@ public class ReferentialEqualityToObjectEquals extends Recipe {
             "except when the comparison is within an overridden `Object.equals(Object obj)` method declaration itself. " +
             "The resulting transformation must be carefully reviewed since any modifications change the program's semantics.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1698");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1698");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

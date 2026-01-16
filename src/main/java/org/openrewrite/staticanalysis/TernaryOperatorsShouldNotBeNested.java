@@ -44,10 +44,9 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     @Getter
     final String description = "Nested ternary operators can be hard to read quickly. Prefer simpler constructs for improved readability. " +
             "If supported, this recipe will try to replace nested ternaries with switch expressions.";
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3358");
-    }
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3358");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -40,10 +40,8 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
     final String description = "Combine catches in a try that contain semantically equivalent blocks. " +
             "No change will be made when a caught exception exists if combining catches may change application behavior or type attribution is missing.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2147");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2147");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

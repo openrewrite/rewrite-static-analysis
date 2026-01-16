@@ -42,10 +42,8 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     final String description = "Replace `hashCode()` calls on arrays with `Arrays.hashCode()` because the results from `hashCode()` " +
             "are not helpful.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2116");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2116");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -41,10 +41,8 @@ public class CatchClauseOnlyRethrows extends Recipe {
     final String description = "A `catch` clause that only rethrows the caught exception is unnecessary. " +
             "Letting the exception bubble up as normal achieves the same result with less code.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2737");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2737");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

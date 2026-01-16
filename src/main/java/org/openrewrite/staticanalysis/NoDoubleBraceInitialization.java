@@ -42,10 +42,8 @@ public class NoDoubleBraceInitialization extends Recipe {
     @Getter
     final String description = "Replace `List`, `Map`, and `Set` double brace initialization with an initialization block.";
 
-    @Override
-    public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1171", "RSPEC-S3599"));
-    }
+    @Getter
+    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1171", "RSPEC-S3599"));
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

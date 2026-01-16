@@ -42,10 +42,8 @@ public class SimplifyArraysAsList extends Recipe {
     final String description = "Simplifies `Arrays.asList()` method calls that use explicit array creation to use varargs instead. " +
             "For example, `Arrays.asList(new String[]{\"a\", \"b\", \"c\"})` becomes `Arrays.asList(\"a\", \"b\", \"c\")`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3878");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3878");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

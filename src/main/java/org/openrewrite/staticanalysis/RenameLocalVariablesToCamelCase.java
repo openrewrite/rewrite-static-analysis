@@ -55,10 +55,8 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
             "Currently, does not support renaming members of classes. " +
             "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S117");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S117");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

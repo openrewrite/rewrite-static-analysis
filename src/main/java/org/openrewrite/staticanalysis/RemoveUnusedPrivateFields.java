@@ -40,10 +40,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
     String description = "If a private field is declared but not used in the program, it can be considered dead code and should therefore be removed.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1068");
-    }
+    Set<String> tags = singleton("RSPEC-S1068");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

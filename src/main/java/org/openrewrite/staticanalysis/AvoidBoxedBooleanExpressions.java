@@ -36,10 +36,8 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
     final String description = "Under certain conditions the `java.lang.Boolean` type is used as an expression, " +
             "and it may throw a `NullPointerException` if the value is null.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S5411");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S5411");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -40,10 +40,8 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
     @Getter
     final String description = "The constructor of all primitive types has been deprecated in favor of using the static factory method `valueOf` available for each of the primitive type wrappers.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2129");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2129");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

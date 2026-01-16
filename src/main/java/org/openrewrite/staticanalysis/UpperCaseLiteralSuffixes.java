@@ -39,10 +39,8 @@ public class UpperCaseLiteralSuffixes extends Recipe {
     @Getter
     final String description = "Using upper case literal suffixes for declaring literals is less ambiguous, e.g., `1l` versus `1L`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S818");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S818");
 
     @Override
     public @Nullable Duration getEstimatedEffortPerOccurrence() {

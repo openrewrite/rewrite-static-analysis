@@ -38,10 +38,8 @@ public class NestedEnumsAreNotStatic extends Recipe {
     @Getter
     final String description = "Remove static modifier from nested enum types since they are implicitly static.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2786");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2786");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
