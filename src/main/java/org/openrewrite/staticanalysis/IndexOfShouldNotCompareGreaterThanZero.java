@@ -42,10 +42,8 @@ public class IndexOfShouldNotCompareGreaterThanZero extends Recipe {
             "with the intent of including all elements. If the intent is to check whether a value in included in a `String` or `List`, " +
             "the `String#contains(String)` or `List#contains(Object)` methods may be better options altogether.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2692");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2692");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

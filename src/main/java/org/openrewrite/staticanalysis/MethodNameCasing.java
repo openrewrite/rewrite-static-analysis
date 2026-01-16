@@ -57,10 +57,7 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                "For example, `String getFoo_bar()` would be adjusted to `String getFooBar()` " +
                "and `int DoSomething()` would be adjusted to `int doSomething()`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S100");
-    }
+    Set<String> tags = singleton("RSPEC-S100");
 
     @Override
     public List<MethodNameChange> getInitialValue(ExecutionContext ctx) {

@@ -38,10 +38,8 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
     @Getter
     final String description = "Replaces `indexOf(String)` in binary operations if the compared value is an int and not less than 1.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2912");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2912");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

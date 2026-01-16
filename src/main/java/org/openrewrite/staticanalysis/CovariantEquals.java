@@ -46,10 +46,8 @@ public class CovariantEquals extends Recipe {
     final String description = "Checks that classes and records which define a covariant `equals()` method also override method `equals(Object)`. " +
             "Covariant `equals()` means a method that is similar to `equals(Object)`, but with a covariant parameter type (any subtype of `Object`).";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2162");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2162");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

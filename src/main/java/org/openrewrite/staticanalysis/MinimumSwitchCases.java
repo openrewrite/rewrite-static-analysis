@@ -49,10 +49,8 @@ public class MinimumSwitchCases extends Recipe {
     final String description = "`switch` statements are useful when many code paths branch depending on the value of a single expression. " +
             "For just one or two code paths, the code will be more readable with `if` statements.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1301");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1301");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

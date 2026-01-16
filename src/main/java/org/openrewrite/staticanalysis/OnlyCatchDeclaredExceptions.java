@@ -45,10 +45,8 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
             "thrown by method or constructor invocations within the `try` block that are not already caught " +
             "by more specific `catch` clauses.";
 
-    @Override
-    public Set<String> getTags() {
-        return new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));
-    }
+    @Getter
+    final Set<String> tags = new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

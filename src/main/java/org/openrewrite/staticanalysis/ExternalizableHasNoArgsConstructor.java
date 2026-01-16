@@ -49,10 +49,8 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
         return Duration.ofMinutes(20);
     }
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2060");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2060");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

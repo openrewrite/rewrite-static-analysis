@@ -45,10 +45,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             "anonymous classes can lead to more expressive and maintainable code, improve code readability, reduce " +
             "code duplication, and achieve better performance in some cases.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1604");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1604");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -45,10 +45,8 @@ public class NeedBraces extends Recipe {
     @Getter
     final String description = "Adds missing braces around code such as single-line `if`, `for`, `while`, and `do-while` block bodies.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S121");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S121");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

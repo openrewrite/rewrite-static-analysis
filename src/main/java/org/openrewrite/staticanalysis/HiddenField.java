@@ -33,10 +33,8 @@ public class HiddenField extends Recipe {
     @Getter
     final String description = "Refactor local variables or parameters which shadow a field defined in the same class.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1117");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1117");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

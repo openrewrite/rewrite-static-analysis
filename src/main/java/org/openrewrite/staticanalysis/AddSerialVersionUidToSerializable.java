@@ -53,10 +53,7 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                 "defined on a `Serializable` class, the compiler will generate this value. If a change is later made " +
                 "to the class, the generated value will change and attempts to deserialize the class will fail.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2057");
-    }
+    Set<String> tags = singleton("RSPEC-S2057");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

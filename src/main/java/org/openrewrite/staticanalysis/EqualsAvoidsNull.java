@@ -53,10 +53,7 @@ public class EqualsAvoidsNull extends Recipe {
                 "Also checks for String literals assigned to some field (such as `someString.equals(anotherString = \"text\"))`. " +
                 "And removes redundant null checks in conjunction with equals comparisons.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1132");
-    }
+    Set<String> tags = singleton("RSPEC-S1132");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

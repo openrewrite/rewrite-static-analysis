@@ -48,10 +48,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
     );
     private static final List<MethodMatcher> METHOD_MATCHERS = PATTERNS.stream().map(MethodMatcher::new).collect(toList());
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2116");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2116");
 
     @Getter
     final String displayName = "Remove `toString()` calls on arrays";

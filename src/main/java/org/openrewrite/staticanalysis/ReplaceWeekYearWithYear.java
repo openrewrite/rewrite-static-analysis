@@ -37,10 +37,8 @@ public class ReplaceWeekYearWithYear extends Recipe {
     final String description = "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. However, on the last week of " +
             "December and the first week of January, Week Year could produce unexpected results.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3986");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3986");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

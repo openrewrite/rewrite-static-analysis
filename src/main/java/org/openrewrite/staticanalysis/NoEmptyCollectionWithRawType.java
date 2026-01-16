@@ -43,10 +43,8 @@ public class NoEmptyCollectionWithRawType extends Recipe {
     @Getter
     final String description = "Replaces `Collections#EMPTY_...` with methods that return generic types.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1596");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1596");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

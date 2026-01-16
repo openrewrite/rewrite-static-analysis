@@ -51,10 +51,8 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
     @Getter
     final String description = "`AtomicBoolean#equals(Object)`, `AtomicInteger#equals(Object)` and `AtomicLong#equals(Object)` are only equal to their instance. This recipe converts `a.equals(b)` to `a.get() == b.get()`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2204");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2204");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

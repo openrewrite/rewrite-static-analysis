@@ -38,10 +38,8 @@ public class IndexOfReplaceableByContains extends Recipe {
     @Getter
     final String description = "Checking if a value is included in a `String` or `List` using `indexOf(value)>-1` or `indexOf(value)>=0` can be replaced with `contains(value)`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2692");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2692");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

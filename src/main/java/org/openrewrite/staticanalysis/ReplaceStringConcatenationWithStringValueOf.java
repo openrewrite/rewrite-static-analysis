@@ -42,10 +42,8 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
     final String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with `String.valueOf(...)`. " +
             "This improves code readability and may have minor performance benefits.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1153");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1153");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

@@ -43,10 +43,8 @@ public class IsEmptyCallOnCollections extends Recipe {
     @Getter
     final String description = "Also check for _not_ `isEmpty()` when testing for not equal to zero size.";
 
-    @Override
-    public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
-    }
+    @Getter
+    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

@@ -35,10 +35,8 @@ public class StaticMethodNotFinal extends Recipe {
     @Getter
     final String description = "Static methods do not need to be declared final because they cannot be overridden.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2333");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2333");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

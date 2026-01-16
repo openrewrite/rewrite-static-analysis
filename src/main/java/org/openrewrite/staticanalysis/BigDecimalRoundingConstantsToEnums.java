@@ -44,10 +44,8 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
     @Getter
     final String description = "Convert `BigDecimal` rounding constants to the equivalent `RoundingMode` enum.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2111");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2111");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

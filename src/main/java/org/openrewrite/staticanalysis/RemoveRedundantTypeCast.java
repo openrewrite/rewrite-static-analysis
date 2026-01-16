@@ -43,10 +43,8 @@ public class RemoveRedundantTypeCast extends Recipe {
         return Duration.ofMinutes(2);
     }
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1905");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1905");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -35,10 +35,8 @@ public class WhileInsteadOfFor extends Recipe {
     @Getter
     final String description = "When only the condition expression is defined in a for loop, and the initialization and increment expressions are missing, a while loop should be used instead to increase readability.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1264");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1264");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

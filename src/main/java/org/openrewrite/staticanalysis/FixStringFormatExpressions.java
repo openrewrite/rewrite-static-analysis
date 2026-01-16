@@ -49,10 +49,8 @@ public class FixStringFormatExpressions extends Recipe {
     @Getter
     final String description = "Fix `String#format` and `String#formatted` expressions by replacing `\\n` newline characters with `%n` and removing any unused arguments. Note this recipe is scoped to only transform format expressions which do not specify the argument index.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3457");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3457");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -58,10 +58,8 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             "If a special character is removed the next valid alphanumeric will be capitalized. " +
             "The recipe will not rename a field if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
 
-    @Override
-    public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
-    }
+    @Getter
+    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

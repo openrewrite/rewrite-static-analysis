@@ -48,10 +48,8 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     @Getter
     final String description = "Primitive wrappers should not be instantiated only for `#toString()` or `#compareTo(..)` invocations.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1158");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1158");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

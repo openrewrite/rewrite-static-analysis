@@ -40,10 +40,8 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
     @Getter
     final String description = "Instantiating a `StringBuilder` or a `StringBuffer` with a `Character` results in the `int` representation of the character being used for the initial size.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1317");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1317");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

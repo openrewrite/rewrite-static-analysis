@@ -45,10 +45,8 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
     final String description = "Methods should not be named `hashcode`, `equal`, or `tostring`. " +
             "Any of these are confusing as they appear to be intended as overridden methods from the `Object` base class, despite being case-insensitive.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1221");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1221");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

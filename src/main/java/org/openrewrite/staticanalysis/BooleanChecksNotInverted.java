@@ -35,10 +35,8 @@ public class BooleanChecksNotInverted extends Recipe {
     @Getter
     final String description = "Ensures that boolean checks are not unnecessarily inverted. Also fixes double negative boolean expressions.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1940");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1940");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

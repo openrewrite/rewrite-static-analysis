@@ -40,10 +40,8 @@ public class RemoveExtraSemicolons extends Recipe {
             " * after the last enum value if no field or method is defined,\n" +
             " * no statement between two semicolon.";
 
-    @Override
-    public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1116", "RSPEC-S2959"));
-    }
+    @Getter
+    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1116", "RSPEC-S2959"));
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

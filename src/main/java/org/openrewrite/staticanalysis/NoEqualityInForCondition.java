@@ -40,10 +40,8 @@ public class NoEqualityInForCondition extends Recipe {
     @Getter
     final String description = "Testing for loop termination using an equality operator (`==` and `!=`) is dangerous, because it could set up an infinite loop. Using a relational operator instead makes it harder to accidentally write an infinite loop.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S888");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S888");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

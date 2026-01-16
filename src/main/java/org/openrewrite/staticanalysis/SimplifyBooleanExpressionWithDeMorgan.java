@@ -44,10 +44,8 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
     final String description = "Applies De Morgan's laws to simplify boolean expressions with negation. " +
             "Transforms `!(a && b)` to `!a || !b` and `!(a || b)` to `!a && !b`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-1125");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-1125");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

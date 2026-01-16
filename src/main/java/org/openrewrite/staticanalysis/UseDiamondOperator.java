@@ -47,10 +47,8 @@ public class UseDiamondOperator extends Recipe {
             "type in both its declaration and its constructor, you can now simplify the constructor declaration " +
             "with `<>`, and the compiler will infer the type.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2293");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2293");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

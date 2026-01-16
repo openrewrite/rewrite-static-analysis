@@ -45,10 +45,8 @@ public class SimplifyBooleanReturn extends Recipe {
     @Getter
     final String description = "Simplifies Boolean expressions by removing redundancies. For example, `a && true` simplifies to `a`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1126");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1126");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

@@ -50,10 +50,8 @@ public class UnnecessaryThrows extends Recipe {
             " - The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
             " - The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1130");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1130");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

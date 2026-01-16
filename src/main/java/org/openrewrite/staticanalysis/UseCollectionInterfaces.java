@@ -42,10 +42,8 @@ public class UseCollectionInterfaces extends Recipe {
     final String description = "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
             "Replaces the return type of public method declarations and the variable type public variable declarations.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1319");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1319");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

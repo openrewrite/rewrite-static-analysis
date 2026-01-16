@@ -37,10 +37,8 @@ public class StringLiteralEquality extends Recipe {
             "This only modifies code where at least one side of the binary operation (`==` or `!=`) is a String literal, such as `\"someString\" == someVariable;`. " +
             "This is to prevent inadvertently changing code where referential equality is the user's intent.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S4973");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4973");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

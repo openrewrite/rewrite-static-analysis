@@ -42,10 +42,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     @Getter
     final String description = "Replaces the single statement lambdas `o -> o instanceOf X`, `o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, `o -> o == null` with the equivalent method reference.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1612");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1612");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

@@ -42,10 +42,8 @@ public class RemoveCallsToSystemGc extends Recipe {
     @Getter
     final String description = "Removes calls to `System.gc()` and `Runtime.gc()`. When to invoke garbage collection is best left to the JVM.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1215");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1215");
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {

@@ -33,10 +33,8 @@ public class FinalClass extends Recipe {
     @Getter
     final String description = "Adds the `final` modifier to classes that expose no public or package-private constructors.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2974");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2974");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

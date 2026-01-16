@@ -45,10 +45,8 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
         return Duration.ofMinutes(2);
     }
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S4087");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4087");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

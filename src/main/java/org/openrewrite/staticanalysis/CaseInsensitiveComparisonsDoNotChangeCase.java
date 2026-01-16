@@ -43,10 +43,8 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
     @Getter
     final String description = "Remove `String#toLowerCase()` or `String#toUpperCase()` from `String#equalsIgnoreCase(..)` comparisons.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1157");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1157");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

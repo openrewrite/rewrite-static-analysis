@@ -34,10 +34,8 @@ public class UnnecessaryParentheses extends Recipe {
     @Getter
     final String description = "Removes unnecessary parentheses from code where extra parentheses pairs are redundant.";
 
-    @Override
-    public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1110", "RSPEC-S1611"));
-    }
+    @Getter
+    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1110", "RSPEC-S1611"));
 
     @Override
     public Duration getEstimatedEffortPerOccurrence() {
