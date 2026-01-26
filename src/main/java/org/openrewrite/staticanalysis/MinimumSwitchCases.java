@@ -220,8 +220,33 @@ public class MinimumSwitchCases extends Recipe {
                 if (switch_.getCases().getStatements().size() > 2) {
                     return false;
                 }
+                // Don't transform if any case has an identifier pattern without type info
+                // (we can't properly qualify it in the if statement)
+                if (hasUnresolvableIdentifierCasePattern(switch_)) {
+                    return false;
+                }
                 return switch_.getCases().getStatements().stream()
                                .reduce(0, (a, b) -> a + ((J.Case) b).getCaseLabels().size(), Integer::sum) < 3;
+            }
+
+            private boolean hasUnresolvableIdentifierCasePattern(J.Switch switch_) {
+                for (Statement statement : switch_.getCases().getStatements()) {
+                    if (statement instanceof J.Case) {
+                        J.Case aCase = (J.Case) statement;
+                        if (!isDefault(aCase)) {
+                            Expression pattern = aCase.getPattern();
+                            // Identifiers (like enum constants or static fields) need type info
+                            // to be properly qualified in an if statement
+                            if (pattern instanceof J.Identifier) {
+                                JavaType patternType = pattern.getType();
+                                if (patternType == null || patternType instanceof JavaType.Unknown) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
             }
 
             private List<Statement> getStatements(J.Case aCase) {
@@ -242,8 +267,27 @@ public class MinimumSwitchCases extends Recipe {
 
             private boolean switchesOnEnum(J.Switch switch_) {
                 JavaType selectorType = switch_.getSelector().getTree().getType();
-                return selectorType instanceof JavaType.Class &&
-                       ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum;
+                if (selectorType instanceof JavaType.Class &&
+                       ((JavaType.Class) selectorType).getKind() == JavaType.Class.Kind.Enum) {
+                    return true;
+                }
+
+                // Also check case pattern types - handles cases where selector type is unknown
+                // but the case patterns have type information
+                for (Statement statement : switch_.getCases().getStatements()) {
+                    if (statement instanceof J.Case) {
+                        J.Case aCase = (J.Case) statement;
+                        Expression pattern = aCase.getPattern();
+                        if (pattern instanceof J.Identifier && !isDefault(aCase)) {
+                            JavaType patternType = pattern.getType();
+                            if (patternType instanceof JavaType.Class &&
+                                ((JavaType.Class) patternType).getKind() == JavaType.Class.Kind.Enum) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
             }
 
         });
