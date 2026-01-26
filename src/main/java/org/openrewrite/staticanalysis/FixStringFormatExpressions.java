@@ -104,11 +104,15 @@ public class FixStringFormatExpressions extends Recipe {
                     private Expression replaceNewLineChars(Expression arg0) {
                         if (arg0 instanceof J.Literal) {
                             J.Literal fmt = (J.Literal) arg0;
-                            if (fmt.getValue() != null) {
-                                fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().toString()).replaceAll("%n"));
-                            }
                             if (fmt.getValueSource() != null) {
-                                fmt = fmt.withValueSource(ESCAPED_NEWLINE_PATTERN.matcher(fmt.getValueSource()).replaceAll("%n"));
+                                String newValueSource = ESCAPED_NEWLINE_PATTERN.matcher(fmt.getValueSource()).replaceAll("%n");
+                                // Only modify if the valueSource actually changed
+                                if (!newValueSource.equals(fmt.getValueSource())) {
+                                    fmt = fmt.withValueSource(newValueSource);
+                                    if (fmt.getValue() != null) {
+                                        fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().toString()).replaceAll("%n"));
+                                    }
+                                }
                             }
                             return fmt;
                         }
