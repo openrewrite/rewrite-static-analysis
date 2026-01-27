@@ -39,19 +39,13 @@ public class MoveFieldAnnotationToType extends Recipe {
     @Nullable
     String annotationType;
 
-    @Override
-    public String getDisplayName() {
-        return "Move annotation to type instead of field";
-    }
+    String displayName = "Move annotation to type instead of field";
 
-    @Override
-    public String getDescription() {
-        return "Annotations that could be applied to either a field or a " +
+    String description = "Annotations that could be applied to either a field or a " +
                "type are better applied to the type, because similar annotations " +
                "may be more restrictive, leading to compile errors like " +
                "'scoping construct cannot be annotated with type-use annotation' " +
                "when migrating later.";
-    }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

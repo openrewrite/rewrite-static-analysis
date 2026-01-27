@@ -887,4 +887,190 @@ class MinimumSwitchCasesTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    @Test
+    void switchOnStringWithStaticConstant() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Dialog {
+                  public static class PredefinedButton {
+                      public static final String YES = "Yes";
+                      public static final String NO = "No";
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import static com.example.Dialog.PredefinedButton.YES;
+
+              class Test {
+                  String button;
+                  void test() {
+                      switch (button) {
+                          case YES:
+                              doSomething();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """,
+            """
+              import static com.example.Dialog.PredefinedButton.YES;
+
+              class Test {
+                  String button;
+                  void test() {
+                      if (YES.equals(button)) {
+                          doSomething();
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    @Test
+    void switchOnIntWithStaticConstant() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Dialog {
+                  public static class PredefinedButton {
+                      public static final int YES = 1;
+                      public static final int NO = 0;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import static com.example.Dialog.PredefinedButton.YES;
+
+              class Test {
+                  int button;
+                  void test() {
+                      switch (button) {
+                          case YES:
+                              doSomething();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """,
+            """
+              import static com.example.Dialog.PredefinedButton.YES;
+
+              class Test {
+                  int button;
+                  void test() {
+                      if (button == YES) {
+                          doSomething();
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    @Test
+    void switchOnEnumWithNestedClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Dialog {
+                  public enum PredefinedButton {
+                      YES, NO
+                  }
+
+                  PredefinedButton hideButton;
+
+                  public PredefinedButton getHideButton() {
+                      return hideButton;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import com.example.Dialog;
+
+              class Test {
+                  void test(Dialog event) {
+                      switch (event.getHideButton()) {
+                          case YES:
+                              doSomething();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """,
+            """
+              import com.example.Dialog;
+
+              class Test {
+                  void test(Dialog event) {
+                      if (event.getHideButton() == Dialog.PredefinedButton.YES) {
+                          doSomething();
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
+    @Test
+    void skipsTransformationWhenTypeInfoMissing() {
+        // When type info is missing (e.g., incomplete classpath), the recipe should NOT transform
+        // the switch, because it cannot properly qualify the identifier in the resulting if statement.
+        // Without this check, the recipe would produce broken code like `if (x == YES)` instead of
+        // `if (x == Dialog.PredefinedButton.YES)`.
+        rewriteRun(
+          spec -> spec.typeValidationOptions(org.openrewrite.test.TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import com.example.Dialog;
+              import com.example.Dialog.PredefinedButton;
+
+              class Test {
+                  void test(Dialog event) {
+                      switch (event.getHideButton()) {
+                          case YES:
+                              doSomething();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """
+          )
+        );
+    }
 }

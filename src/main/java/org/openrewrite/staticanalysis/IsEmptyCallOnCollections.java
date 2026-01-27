@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -36,25 +37,17 @@ import java.util.Set;
 public class IsEmptyCallOnCollections extends Recipe {
     private static final MethodMatcher COLLECTION_SIZE = new MethodMatcher("java.util.Collection size()", true);
 
-    @Override
-    public String getDisplayName() {
-        return "Use `Collection#isEmpty()` instead of comparing `size()`";
-    }
+    @Getter
+    final String displayName = "Use `Collection#isEmpty()` instead of comparing `size()`";
 
-    @Override
-    public String getDescription() {
-        return "Also check for _not_ `isEmpty()` when testing for not equal to zero size.";
-    }
+    @Getter
+    final String description = "Also check for _not_ `isEmpty()` when testing for not equal to zero size.";
 
-    @Override
-    public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
-    }
+    @Getter
+    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

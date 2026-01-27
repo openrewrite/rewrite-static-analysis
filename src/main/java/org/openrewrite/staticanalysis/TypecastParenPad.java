@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -29,16 +30,12 @@ import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.style.Style;
 
 public class TypecastParenPad extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Typecast parenthesis padding";
-    }
+    @Getter
+    final String displayName = "Typecast parenthesis padding";
 
-    @Override
-    public String getDescription() {
-        return "Fixes whitespace padding between a typecast type identifier and the enclosing left and right parentheses. " +
-                "For example, when configured to remove spacing, `( int ) 0L;` becomes `(int) 0L;`.";
-    }
+    @Getter
+    final String description = "Fixes whitespace padding between a typecast type identifier and the enclosing left and right parentheses. " +
+            "For example, when configured to remove spacing, `( int ) 0L;` becomes `(int) 0L;`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -31,20 +32,14 @@ public class IndexOfReplaceableByContains extends Recipe {
     private static final MethodMatcher STRING_INDEX_MATCHER = new MethodMatcher("java.lang.String indexOf(String)");
     private static final MethodMatcher LIST_INDEX_MATCHER = new MethodMatcher("java.util.List indexOf(Object)");
 
-    @Override
-    public String getDisplayName() {
-        return "`indexOf()` replaceable by `contains()`";
-    }
+    @Getter
+    final String displayName = "`indexOf()` replaceable by `contains()`";
 
-    @Override
-    public String getDescription() {
-        return "Checking if a value is included in a `String` or `List` using `indexOf(value)>-1` or `indexOf(value)>=0` can be replaced with `contains(value)`.";
-    }
+    @Getter
+    final String description = "Checking if a value is included in a `String` or `List` using `indexOf(value)>-1` or `indexOf(value)>=0` can be replaced with `contains(value)`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2692");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2692");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

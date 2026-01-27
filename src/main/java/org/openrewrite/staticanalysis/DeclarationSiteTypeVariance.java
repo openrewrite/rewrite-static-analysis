@@ -55,16 +55,10 @@ public class DeclarationSiteTypeVariance extends Recipe {
     @Nullable
     Boolean excludeFinalClasses;
 
-    @Override
-    public String getDisplayName() {
-        return "Properly use declaration-site type variance";
-    }
+    String displayName = "Properly use declaration-site type variance";
 
-    @Override
-    public String getDescription() {
-        return "Currently, Java requires use-site type variance, so if someone has `Function<IN, OUT>` method parameter, it should rather be `Function<? super IN, ? extends OUT>`. " +
+    String description = "Currently, Java requires use-site type variance, so if someone has `Function<IN, OUT>` method parameter, it should rather be `Function<? super IN, ? extends OUT>`. " +
                "Unfortunately, it is not easy to notice that `? super` and `? extends` is missing, so this recipe adds it where that would improve the situation.";
-    }
 
     @Override
     public Validated<Object> validate() {

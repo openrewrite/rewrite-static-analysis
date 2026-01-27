@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -34,25 +35,17 @@ public class RemoveCallsToObjectFinalize extends Recipe {
 
     private static final MethodMatcher OBJECT_FINALIZE = new MethodMatcher("java.lang.Object finalize()");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove `Object.finalize()` invocations";
-    }
+    @Getter
+    final String displayName = "Remove `Object.finalize()` invocations";
 
-    @Override
-    public String getDescription() {
-        return "Remove calls to `Object.finalize()`. This method is called during garbage collection and calling it manually is misleading.";
-    }
+    @Getter
+    final String description = "Remove calls to `Object.finalize()`. This method is called during garbage collection and calling it manually is misleading.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1111");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1111");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

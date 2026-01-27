@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -30,29 +31,20 @@ import java.util.*;
 
 public class RemoveExtraSemicolons extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove extra semicolons";
-    }
+    @Getter
+    final String displayName = "Remove extra semicolons";
 
-    @Override
-    public String getDescription() {
-        //language=markdown
-        return "Removes not needed semicolons. Semicolons are considered not needed:\n" +
-                " * Optional semicolons at the end of try-with-resources,\n" +
-                " * after the last enum value if no field or method is defined,\n" +
-                " * no statement between two semicolon.";
-    }
+    @Getter
+    final String description = "Removes not needed semicolons. Semicolons are considered not needed:\n" +
+            " * Optional semicolons at the end of try-with-resources,\n" +
+            " * after the last enum value if no field or method is defined,\n" +
+            " * no statement between two semicolon.";
 
-    @Override
-    public Set<String> getTags() {
-        return new LinkedHashSet<>(Arrays.asList("RSPEC-S1116", "RSPEC-S2959"));
-    }
+    @Getter
+    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1116", "RSPEC-S2959"));
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     @SuppressWarnings("ConstantConditions")

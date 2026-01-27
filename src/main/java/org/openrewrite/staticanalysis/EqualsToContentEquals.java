@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -35,15 +36,11 @@ public class EqualsToContentEquals extends Recipe {
             new UsesType<>("java.lang.StringBuilder", false)
     );
 
-    @Override
-    public String getDisplayName() {
-        return "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`";
-    }
+    @Getter
+    final String displayName = "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`";
 
-    @Override
-    public String getDescription() {
-        return "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`.";
-    }
+    @Getter
+    final String description = "Use `String.contentEquals(CharSequence)` instead of `String.equals(CharSequence.toString())`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

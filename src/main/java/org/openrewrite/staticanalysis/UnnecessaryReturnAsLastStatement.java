@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -27,15 +28,11 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 public class UnnecessaryReturnAsLastStatement extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Unnecessary `return` as last statement in void method";
-    }
+    @Getter
+    final String displayName = "Unnecessary `return` as last statement in void method";
 
-    @Override
-    public String getDescription() {
-        return "Removes `return` from a `void` method if it's the last statement.";
-    }
+    @Getter
+    final String description = "Removes `return` from a `void` method if it's the last statement.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

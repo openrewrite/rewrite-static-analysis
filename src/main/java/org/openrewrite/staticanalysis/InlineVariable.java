@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -33,26 +34,18 @@ import static java.util.Objects.requireNonNull;
 
 public class InlineVariable extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Inline variable";
-    }
+    @Getter
+    final String displayName = "Inline variable";
 
-    @Override
-    public String getDescription() {
-        return "Inline variables when they are immediately used to return or throw. " +
-                "Supports both variable declarations and assignments to local variables.";
-    }
+    @Getter
+    final String description = "Inline variables when they are immediately used to return or throw. " +
+            "Supports both variable declarations and assignments to local variables.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1488");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1488");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

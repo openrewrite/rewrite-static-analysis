@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -24,6 +25,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
 
 import java.util.Comparator;
@@ -37,25 +39,19 @@ import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class UnnecessaryThrows extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Unnecessary throws";
-    }
+    @Getter
+    final String displayName = "Unnecessary throws";
 
-    @Override
-    public String getDescription() {
-        return "Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions if:\n" +
-                "\n" +
-                " - The declaring class or the method declaration is `final`.\n" +
-                " - The method declaration is `static` or `private`.\n" +
-                " - The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
-                " - The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
-    }
+    @Getter
+    final String description = "Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions if:\n" +
+            "\n" +
+            " - The declaring class or the method declaration is `final`.\n" +
+            " - The method declaration is `static` or `private`.\n" +
+            " - The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
+            " - The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1130");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1130");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -121,17 +117,38 @@ public class UnnecessaryThrows extends Recipe {
                                 }
                             }
                         }
-                    }.visit(m, ctx);
+                    }.visit(m, ctx, getCursor().getParent());
 
                     if (!unusedThrows.isEmpty()) {
-                        m = m.withThrows(ListUtils.map(m.getThrows(), t -> {
-                            JavaType.FullyQualified type = TypeUtils.asFullyQualified(t.getType());
-                            if (type != null && unusedThrows.contains(type)) {
-                                maybeRemoveImport(type);
-                                return null;
-                            }
-                            return t;
+                        MethodMatcher originalMethodMatcher = new MethodMatcher(m);
+
+                        JavaType.Method replacementMethodType = m.getMethodType().withThrownExceptions(ListUtils.map(m.getMethodType().getThrownExceptions(), t -> {
+                            JavaType.FullyQualified type = TypeUtils.asFullyQualified(t);
+                            return type != null && unusedThrows.contains(type) ? null : t;
                         }));
+                        m = m.withThrows(ListUtils.map(m.getThrows(), t -> {
+                                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(t.getType());
+                                    if (type != null && unusedThrows.contains(type)) {
+                                        maybeRemoveImport(type);
+                                        return null;
+                                    }
+                                    return t;
+                                }))
+                                .withMethodType(replacementMethodType)
+                                .withName(m.getName().withType(replacementMethodType));
+
+                        // Remove the thrown exceptions from the method type, such that UnnecessaryCatch can continue
+                        doAfterVisit(new JavaIsoVisitor<ExecutionContext>() {
+                            @Override
+                            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation invocation, ExecutionContext ctx) {
+                                if (originalMethodMatcher.matches(invocation)) {
+                                    invocation =  invocation.withMethodType(replacementMethodType)
+                                            .withName(invocation.getName().withType(replacementMethodType));
+                                }
+                                return super.visitMethodInvocation(invocation, ctx);
+                            }
+                        });
+                        doAfterVisit(new UnnecessaryCatch(true, false).getVisitor());
                     }
                 }
 

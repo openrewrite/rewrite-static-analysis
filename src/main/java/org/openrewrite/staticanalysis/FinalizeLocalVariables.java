@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -31,15 +32,11 @@ import static java.util.Collections.emptyList;
 @Incubating(since = "7.0.0")
 public class FinalizeLocalVariables extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Finalize local variables";
-    }
+    @Getter
+    final String displayName = "Finalize local variables";
 
-    @Override
-    public String getDescription() {
-        return "Adds the `final` modifier keyword to local variables which are not reassigned.";
-    }
+    @Getter
+    final String description = "Adds the `final` modifier keyword to local variables which are not reassigned.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

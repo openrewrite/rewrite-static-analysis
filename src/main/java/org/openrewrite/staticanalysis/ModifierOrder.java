@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -33,25 +34,17 @@ import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toList;
 
 public class ModifierOrder extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Modifier order";
-    }
+    @Getter
+    final String displayName = "Modifier order";
 
-    @Override
-    public String getDescription() {
-        return "Modifiers should be declared in the correct order as recommended by the JLS.";
-    }
+    @Getter
+    final String description = "Modifiers should be declared in the correct order as recommended by the JLS.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1124");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1124");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

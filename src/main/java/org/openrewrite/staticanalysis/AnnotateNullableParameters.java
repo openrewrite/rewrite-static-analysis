@@ -31,6 +31,8 @@ import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
 
+import static java.util.Collections.singletonList;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
 @EqualsAndHashCode(callSuper = false)
@@ -56,19 +58,13 @@ public class AnnotateNullableParameters extends Recipe {
     @Nullable
     List<String> additionalNullCheckingMethods;
 
-    @Override
-    public String getDisplayName() {
-        return "Annotate null-checked method parameters with `@Nullable`";
-    }
+    String displayName = "Annotate null-checked method parameters with `@Nullable`";
 
-    @Override
-    public String getDescription() {
-        return "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. " +
+    String description = "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. " +
                 "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
                 "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
                 "This recipe scans for methods that do not already have parameters annotated with `@Nullable` annotation and checks their usages " +
                 "for potential null checks. Additional null-checking methods can be specified via the `additionalNullCheckingMethods` option.";
-    }
 
     @Override
     public Validated<Object> validate() {
@@ -110,7 +106,31 @@ public class AnnotateNullableParameters extends Recipe {
                                             String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
                                     .build()
                                     .apply(new Cursor(getCursor(), vd),
-                                            vd.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                                            vd.getCoordinates().addAnnotation(comparing(J.Annotation::getSimpleName)));
+
+                            // For array types, move annotation from leading annotations to array brackets
+                            if (annotated.getTypeExpression() instanceof J.ArrayType) {
+                                // Find the annotation we just added
+                                J.Annotation nullableAnnotation = null;
+                                for (J.Annotation ann : annotated.getLeadingAnnotations()) {
+                                    if (ann.getSimpleName().equals(simpleName)) {
+                                        nullableAnnotation = ann;
+                                        break;
+                                    }
+                                }
+                                if (nullableAnnotation != null) {
+                                    J.Annotation finalAnnotation = nullableAnnotation;
+                                    J.ArrayType arrayType = (J.ArrayType) annotated.getTypeExpression();
+                                    annotated = annotated.withLeadingAnnotations(ListUtils.map(annotated.getLeadingAnnotations(),
+                                            a -> a == finalAnnotation ? null : a));
+                                    arrayType = arrayType.withAnnotations(singletonList(finalAnnotation.withPrefix(Space.SINGLE_SPACE)));
+                                    if (annotated.getLeadingAnnotations().isEmpty()) {
+                                        arrayType = arrayType.withPrefix(Space.EMPTY);
+                                    }
+                                    annotated = annotated.withTypeExpression(arrayType);
+                                }
+                            }
+
                             doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
                             doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
                             return annotated.withModifiers(ListUtils.mapFirst(annotated.getModifiers(), first -> first.withPrefix(Space.SINGLE_SPACE)));

@@ -77,7 +77,7 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               }
               """,
                 spec -> spec.afterRecipe(cu -> {
-                    J.VariableDeclarations declarations = (J.VariableDeclarations) cu.getClasses().getFirst().getBody().getStatements().getFirst();
+                    var declarations = (J.VariableDeclarations) cu.getClasses().getFirst().getBody().getStatements().getFirst();
                     assertThat(declarations.getModifiers()).anySatisfy(
                             m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
                     assertThat(declarations.getVariables().getFirst().getVariableType().getFlags()).contains(Flag.Final);

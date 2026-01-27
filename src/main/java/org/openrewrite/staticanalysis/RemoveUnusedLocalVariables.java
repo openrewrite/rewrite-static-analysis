@@ -21,9 +21,13 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.*;
+import org.openrewrite.java.DeleteStatement;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.util.Arrays;
@@ -33,6 +37,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.Preconditions.and;
+import static org.openrewrite.Preconditions.not;
 
 @EqualsAndHashCode(callSuper = false)
 @SuppressWarnings("ConstantConditions")
@@ -70,27 +76,17 @@ public class RemoveUnusedLocalVariables extends Recipe {
     }
 
     @Deprecated
-    @InlineMe(replacement = "new RemoveUnusedLocalVariables(ignoreVariablesNamed, null, withSideEffects)")
     public RemoveUnusedLocalVariables(
             String @Nullable [] ignoreVariablesNamed,
             @Nullable Boolean withSideEffects) {
         this(ignoreVariablesNamed, null, withSideEffects);
     }
 
-    @Override
-    public String getDisplayName() {
-        return "Remove unused local variables";
-    }
+    String displayName = "Remove unused local variables";
 
-    @Override
-    public String getDescription() {
-        return "If a local variable is declared but not used, it is dead code and should be removed.";
-    }
+    String description = "If a local variable is declared but not used, it is dead code and should be removed.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1481");
-    }
+    Set<String> tags = singleton("RSPEC-S1481");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -105,7 +101,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
             ignoreVariableNames.addAll(Arrays.asList(ignoreVariablesNamed));
         }
 
-        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> notJsNorKt = and(not(new JavascriptFileChecker<>()), not(new KotlinFileChecker<>()));
+        return Preconditions.check(notJsNorKt, new JavaIsoVisitor<ExecutionContext>() {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||
@@ -165,7 +162,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     // skip if defined as a parameter to a lambda expression
                     parent instanceof J.Lambda ||
                     // skip if the initializer may have a side effect
-                    initializerMightSideEffect(variable)
+                    mightSideEffect(variable.getInitializer())
                 ) {
                     return variable;
                 }
@@ -175,6 +172,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
                     for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment) {
+                            if (mightSideEffect(((J.Assignment) ref).getAssignment())) {
+                                return variable;
+                            }
                             doAfterVisit(new PruneAssignmentExpression((J.Assignment) ref));
                         }
                         doAfterVisit(new DeleteStatement<>(ref));
@@ -210,18 +210,14 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 return mv;
             }
 
-            private boolean initializerMightSideEffect(J.VariableDeclarations.NamedVariable variable) {
-                if (variable.getInitializer() == null) {
-                    return false;
-                }
-                AtomicBoolean mightSideEffect = new AtomicBoolean(false);
-                new JavaIsoVisitor<AtomicBoolean>() {
+            private boolean mightSideEffect(Expression initializer) {
+                return initializer != null && new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, AtomicBoolean result) {
                         if (SAFE_GETTER_METHODS.matches(methodInvocation)) {
                             return methodInvocation;
                         }
-                        if (withSideEffects == null || Boolean.FALSE.equals(withSideEffects)) {
+                        if (withSideEffects == null || !withSideEffects) {
                             result.set(true);
                         }
                         return methodInvocation;
@@ -238,8 +234,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
                         result.set(true);
                         return assignment;
                     }
-                }.visit(variable.getInitializer(), mightSideEffect);
-                return mightSideEffect.get();
+                }.reduce(initializer, new AtomicBoolean(false)).get();
             }
         });
     }
@@ -262,7 +257,12 @@ public class RemoveUnusedLocalVariables extends Recipe {
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation m, ExecutionContext ctx) {
             AssignmentToLiteral atl = new AssignmentToLiteral(assignment);
-            return m.withArguments(ListUtils.map(m.getArguments(), it -> (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow())));
+            return m.withArguments(ListUtils.map(m.getArguments(), it -> {
+                if (it instanceof J.Assignment) {
+                    return (Expression) atl.visitNonNull(it, ctx, getCursor().getParentOrThrow());
+                }
+                return it;
+            }));
         }
     }
 

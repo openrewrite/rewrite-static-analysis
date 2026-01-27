@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaTemplate;
@@ -35,22 +36,16 @@ public class ReplaceStringBuilderWithString extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(..)");
     private static final MethodMatcher STRING_BUILDER_TO_STRING = new MethodMatcher("java.lang.StringBuilder toString()");
 
-    @Override
-    public String getDisplayName() {
-        return "Replace `StringBuilder#append` with `String`";
-    }
+    @Getter
+    final String displayName = "Replace `StringBuilder#append` with `String`";
 
-    @Override
-    public String getDescription() {
-        return "Replace `StringBuilder.append()` with String if you are only concatenating a small number of strings " +
-               "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
-               "expressions into a single String object, which can be more efficient than using StringBuilder.";
-    }
+    @Getter
+    final String description = "Replace `StringBuilder.append()` with String if you are only concatenating a small number of strings " +
+            "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
+            "expressions into a single String object, which can be more efficient than using StringBuilder.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -99,6 +94,21 @@ public class ReplaceStringBuilderWithString extends Recipe {
             private J.Literal toStringLiteral(J.Literal input) {
                 if (input.getType() == JavaType.Primitive.String) {
                     return input;
+                }
+
+                // Handle character literals by stripping single quotes and wrapping in double quotes
+                if (input.getType() == JavaType.Primitive.Char) {
+                    String charSource = input.getValueSource();
+                    if (charSource != null && charSource.length() >= 2 &&
+                        charSource.startsWith("'") && charSource.endsWith("'")) {
+                        String charContent = charSource.substring(1, charSource.length() - 1);
+                        String stringValue = input.getValue() != null ? String.valueOf(input.getValue()) : charContent;
+                        String valueSource = "\"" + charContent + "\"";
+                        return input
+                                .withType(JavaType.Primitive.String)
+                                .withValue(stringValue)
+                                .withValueSource(valueSource);
+                    }
                 }
 
                 String value = input.getValueSource();

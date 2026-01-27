@@ -150,6 +150,32 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AnnotateRequiredParameters
+examples:
+- description: '`AnnotateRequiredParametersTest#annotateParameterWithNullCheckThrowingException`'
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      class Test {
+          public void process(String value) {
+              if (value == null) {
+                  throw new IllegalArgumentException("value cannot be null");
+              }
+              System.out.println(value);
+          }
+      }
+    after: |
+      import org.jspecify.annotations.NonNull;
+
+      class Test {
+          public void process(@NonNull String value) {
+              System.out.println(value);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AtomicPrimitiveEqualsUsesGet
 examples:
 - description: '`AtomicPrimitiveEqualsUsesGetTest#usesEquals`'
@@ -358,6 +384,25 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
 examples:
+- description: '`CatchClauseOnlyRethrowsCsharpTest#verifyCsharpImplicitThrow`'
+  sources:
+  - before: |
+      class A {
+          void foo() throws IllegalAccessException {
+              try {
+                  throw new IllegalAccessException();
+              } catch (Exception e) {
+                  throw e; // `e` is removed below
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() throws IllegalAccessException {
+              throw new IllegalAccessException();
+          }
+      }
+    language: java
 - description: '`CatchClauseOnlyRethrowsTest#tryCanBeRemoved`'
   sources:
   - before: |
@@ -380,25 +425,6 @@ examples:
       class A {
           void foo() throws IOException {
               new FileReader("").read();
-          }
-      }
-    language: java
-- description: '`CatchClauseOnlyRethrowsCsharpTest#verifyCsharpImplicitThrow`'
-  sources:
-  - before: |
-      class A {
-          void foo() throws IllegalAccessException {
-              try {
-                  throw new IllegalAccessException();
-              } catch (Exception e) {
-                  throw e; // `e` is removed below
-              }
-          }
-      }
-    after: |
-      class A {
-          void foo() throws IllegalAccessException {
-              throw new IllegalAccessException();
           }
       }
     language: java
@@ -2530,14 +2556,29 @@ examples:
 - description: '`RemoveSystemOutPrintlnTest#removePrintln`'
   sources:
   - before: |
+      import java.io.PrintStream;
+
       class Test {
-          void test() {
+          void printOut() {
               System.out.println("Hello, world!");
+          }
+          void printErr() {
+              System.err.println("Hello, world!");
+          }
+          void printStream(PrintStream printStream) {
+              printStream.println("Hello, world!");
           }
       }
     after: |
+      import java.io.PrintStream;
+
       class Test {
-          void test() {
+          void printOut() {
+          }
+          void printErr() {
+          }
+          void printStream(PrintStream printStream) {
+              printStream.println("Hello, world!");
           }
       }
     language: java
@@ -2719,6 +2760,19 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenameLocalVariablesToCamelCase
 examples:
+- description: '`RenameLocalVariablesToCamelCaseTest#regular`'
+  sources:
+  - before: |
+      fun foo() {
+          var EMPTY_METAS = HashMap<String, Any>()
+          EMPTY_METAS.isEmpty()
+      }
+    after: |
+      fun foo() {
+          var emptyMetas = HashMap<String, Any>()
+          emptyMetas.isEmpty()
+      }
+    language: kotlin
 - description: '`RenameLocalVariablesToCamelCaseTest#renameAllCapsAcronyms`'
   sources:
   - before: |
@@ -2734,19 +2788,6 @@ examples:
           }
       }
     language: java
-- description: '`RenameLocalVariablesToCamelCaseTest#regular`'
-  sources:
-  - before: |
-      fun foo() {
-          var EMPTY_METAS = HashMap<String, Any>()
-          EMPTY_METAS.isEmpty()
-      }
-    after: |
-      fun foo() {
-          var emptyMetas = HashMap<String, Any>()
-          emptyMetas.isEmpty()
-      }
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RenameMethodsNamedHashcodeEqualOrToString
@@ -2839,6 +2880,33 @@ examples:
           public int getThirty() {
               return doChange * 3;
           }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReorderAnnotationAttributes
+examples:
+- description: '`ReorderAnnotationAttributesTest#reordersAnnotationAttributes`'
+  sources:
+  - before: |
+      @interface MyAnnotation {
+          String name();
+          int value();
+          boolean enabled();
+      }
+
+      @MyAnnotation(value = 123, name = "test", enabled = true)
+      class A {
+      }
+    after: |
+      @interface MyAnnotation {
+          String name();
+          int value();
+          boolean enabled();
+      }
+
+      @MyAnnotation(enabled = true, name = "test", value = 123)
+      class A {
       }
     language: java
 ---
@@ -3184,6 +3252,25 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceStringConcatenationWithStringValueOf
+examples:
+- description: '`ReplaceStringConcatenationWithStringValueOfTest#replaceIntegerConcatenation`'
+  sources:
+  - before: |
+      class Test {
+          void method() {
+              String s = "" + 1;
+          }
+      }
+    after: |
+      class Test {
+          void method() {
+              String s = String.valueOf(1);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceTextBlockWithString
 examples:
 - description: '`ReplaceTextBlockWithStringTest#newLine`'
@@ -3305,6 +3392,18 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpression
 examples:
+- description: '`SimplifyBooleanExpressionTest#regular`'
+  sources:
+  - before: |
+      fun getSymbol() : String? {
+          return null
+      }
+    language: kotlin
+  - before: |
+      val isPositive = getSymbol().equals("+") == true
+    after: |
+      val isPositive = getSymbol().equals("+")
+    language: kotlin
 - description: '`SimplifyBooleanExpressionTest#simplifyEqualsLiteralTrueIf`'
   sources:
   - before: |
@@ -3324,18 +3423,6 @@ examples:
           }
       }
     language: java
-- description: '`SimplifyBooleanExpressionTest#regular`'
-  sources:
-  - before: |
-      fun getSymbol() : String? {
-          return null
-      }
-    language: kotlin
-  - before: |
-      val isPositive = getSymbol().equals("+") == true
-    after: |
-      val isPositive = getSymbol().equals("+")
-    language: kotlin
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyBooleanExpressionWithDeMorgan
@@ -3671,24 +3758,6 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.TernaryOperatorsShouldNotBeNested
 examples:
-- description: '`SwitchExpressionNotSupported#doReplaceNestedOrTernaryWithIfFollowedByTernary`'
-  sources:
-  - before: |
-      class Test {
-        public String determineSomething(String a, String b) {
-          return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
-        }
-      }
-    after: |
-      class Test {
-        public String determineSomething(String a, String b) {
-            if ("a".equals(a)) {
-                return "a";
-            }
-            return "b".equals(b) ? "b" : "nope";
-        }
-      }
-    language: java
 - description: '`ReplaceWithSwitchExpression#doReplaceNestedOrTernaryWithSwitchExpression`'
   sources:
   - before: |
@@ -3705,6 +3774,24 @@ examples:
               case "b" -> "b";
               default -> "nope";
           };
+        }
+      }
+    language: java
+- description: '`SwitchExpressionNotSupported#doReplaceNestedOrTernaryWithIfFollowedByTernary`'
+  sources:
+  - before: |
+      class Test {
+        public String determineSomething(String a, String b) {
+          return "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+        }
+      }
+    after: |
+      class Test {
+        public String determineSomething(String a, String b) {
+            if ("a".equals(a)) {
+                return "a";
+            }
+            return "b".equals(b) ? "b" : "nope";
         }
       }
     language: java

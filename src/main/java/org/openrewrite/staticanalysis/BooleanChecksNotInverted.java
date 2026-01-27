@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -28,25 +29,17 @@ import static java.util.Collections.singleton;
 
 public class BooleanChecksNotInverted extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Boolean checks should not be inverted";
-    }
+    @Getter
+    final String displayName = "Boolean checks should not be inverted";
 
-    @Override
-    public String getDescription() {
-        return "Ensures that boolean checks are not unnecessarily inverted. Also fixes double negative boolean expressions.";
-    }
+    @Getter
+    final String description = "Ensures that boolean checks are not unnecessarily inverted. Also fixes double negative boolean expressions.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1940");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1940");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

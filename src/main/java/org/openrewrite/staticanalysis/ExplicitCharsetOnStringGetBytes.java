@@ -37,16 +37,10 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
     @Nullable
     String encoding;
 
-    @Override
-    public String getDisplayName() {
-        return "Set charset encoding explicitly when calling `String#getBytes`";
-    }
+    String displayName = "Set charset encoding explicitly when calling `String#getBytes`";
 
-    @Override
-    public String getDescription() {
-        return "This makes the behavior of the code platform neutral. It will not override any " +
+    String description = "This makes the behavior of the code platform neutral. It will not override any " +
                "existing explicit encodings, even if they don't match the default encoding option.";
-    }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

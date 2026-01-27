@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -26,25 +27,18 @@ import org.openrewrite.java.tree.Statement;
 import java.time.Duration;
 import java.util.*;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 public class RenameExceptionInEmptyCatch extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Rename caught exceptions in empty catch blocks to `ignored`";
-    }
+    @Getter
+    final String displayName = "Rename caught exceptions in empty catch blocks to `ignored`";
 
-    @Override
-    public String getDescription() {
-        return "Renames caught exceptions in empty catch blocks to `ignored`. `ignored` will be incremented by 1 if a namespace conflict exists.";
-    }
+    @Getter
+    final String description = "Renames caught exceptions in empty catch blocks to `ignored`. `ignored` will be incremented by 1 if a namespace conflict exists.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -53,7 +47,6 @@ public class RenameExceptionInEmptyCatch extends Recipe {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     Map<Cursor, Set<String>> variableScopes = new LinkedHashMap<>();
                     getCursor().putMessage("VARIABLES_KEY", variableScopes);
                 }

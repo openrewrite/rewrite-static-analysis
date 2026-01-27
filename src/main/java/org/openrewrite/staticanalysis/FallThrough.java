@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -25,25 +26,17 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class FallThrough extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Fall through";
-    }
+    @Getter
+    final String displayName = "Fall through";
 
-    @Override
-    public String getDescription() {
-        return "Checks for fall-through in switch statements, adding `break` statements in locations where a case contains Java code but does not have a `break`, `return`, `throw`, or `continue` statement.";
-    }
+    @Getter
+    final String description = "Checks for fall-through in switch statements, adding `break` statements in locations where a case contains Java code but does not have a `break`, `return`, `throw`, or `continue` statement.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S128");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S128");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

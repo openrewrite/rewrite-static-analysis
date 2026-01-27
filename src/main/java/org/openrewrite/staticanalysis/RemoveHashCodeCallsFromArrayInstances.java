@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -34,21 +35,15 @@ import static java.util.Collections.singleton;
 public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher HASHCODE_MATCHER = new MethodMatcher("java.lang.Object hashCode()");
 
-    @Override
-    public String getDisplayName() {
-        return "`hashCode()` should not be called on array instances";
-    }
+    @Getter
+    final String displayName = "`hashCode()` should not be called on array instances";
 
-    @Override
-    public String getDescription() {
-        return "Replace `hashCode()` calls on arrays with `Arrays.hashCode()` because the results from `hashCode()` " +
-               "are not helpful.";
-    }
+    @Getter
+    final String description = "Replace `hashCode()` calls on arrays with `Arrays.hashCode()` because the results from `hashCode()` " +
+            "are not helpful.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2116");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2116");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

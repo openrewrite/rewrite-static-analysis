@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -31,28 +32,20 @@ import java.util.Set;
 import static java.util.Collections.*;
 
 public class ReferentialEqualityToObjectEquals extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Replace referential equality operators with Object equals method invocations when the operands both override `Object.equals(Object obj)`";
-    }
+    @Getter
+    final String displayName = "Replace referential equality operators with Object equals method invocations when the operands both override `Object.equals(Object obj)`";
 
-    @Override
-    public String getDescription() {
-        return "Using `==` or `!=` compares object references, not the equality of two objects. " +
-                "This modifies code where both sides of a binary operation (`==` or `!=`) override `Object.equals(Object obj)` " +
-                "except when the comparison is within an overridden `Object.equals(Object obj)` method declaration itself. " +
-                "The resulting transformation must be carefully reviewed since any modifications change the program's semantics.";
-    }
+    @Getter
+    final String description = "Using `==` or `!=` compares object references, not the equality of two objects. " +
+            "This modifies code where both sides of a binary operation (`==` or `!=`) override `Object.equals(Object obj)` " +
+            "except when the comparison is within an overridden `Object.equals(Object obj)` method declaration itself. " +
+            "The resulting transformation must be carefully reviewed since any modifications change the program's semantics.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1698");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1698");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

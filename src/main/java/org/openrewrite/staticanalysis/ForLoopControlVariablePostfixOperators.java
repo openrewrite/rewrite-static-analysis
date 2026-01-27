@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -23,16 +24,12 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 
 public class ForLoopControlVariablePostfixOperators extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "`for` loop counters should use postfix operators";
-    }
+    @Getter
+    final String displayName = "`for` loop counters should use postfix operators";
 
-    @Override
-    public String getDescription() {
-        return "Replace `for` loop control variables using pre-increment (`++i`) or pre-decrement (`--i`) operators " +
-                "with their post-increment (`i++`) or post-decrement (`i++`) notation equivalents.";
-    }
+    @Getter
+    final String description = "Replace `for` loop control variables using pre-increment (`++i`) or pre-decrement (`--i`) operators " +
+            "with their post-increment (`i++`) or post-decrement (`i++`) notation equivalents.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

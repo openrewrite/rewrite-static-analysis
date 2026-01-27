@@ -21,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -250,6 +251,36 @@ class AnnotateNullableParametersTest implements RewriteTest {
                   public class Foo {
                       public void bar(@Nullable final String name) {
                           if (name == null) {}
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-migrate-java/issues/934")
+        @Test
+        void arrayParameter() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class ArrayProcessor {
+                      public void processItems(String[] items) {
+                          if (items == null) {
+                              return;
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class ArrayProcessor {
+                      public void processItems(String @Nullable[] items) {
+                          if (items == null) {
+                              return;
+                          }
                       }
                   }
                   """

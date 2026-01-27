@@ -45,25 +45,13 @@ public class UsePortableNewlines extends Recipe {
     private static final MethodMatcher FORMATTER_FORMAT = new MethodMatcher("java.util.Formatter format(java.lang.String, ..)");
     private static final MethodMatcher CONSOLE_PRINTF = new MethodMatcher("java.io.Console printf(java.lang.String, ..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Use %n instead of \\n in format strings";
-    }
+    String displayName = "Use %n instead of \\n in format strings";
 
-    @Override
-    public String getDescription() {
-        return "Format strings should use %n rather than \\n to produce platform-specific line separators.";
-    }
+    String description = "Format strings should use %n rather than \\n to produce platform-specific line separators.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S3457");
-    }
+    Set<String> tags = singleton("RSPEC-S3457");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

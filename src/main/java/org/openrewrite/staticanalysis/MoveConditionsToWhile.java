@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -28,16 +29,12 @@ import java.util.List;
 
 public class MoveConditionsToWhile extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Convert `while (true)` with initial `if` break to loop condition";
-    }
+    @Getter
+    final String displayName = "Convert `while (true)` with initial `if` break to loop condition";
 
-    @Override
-    public String getDescription() {
-        return "Simplifies `while (true)` loops where the first statement is an `if` statement that only contains a `break`. " +
-                "The condition is inverted and moved to the loop condition for better readability.";
-    }
+    @Getter
+    final String description = "Simplifies `while (true)` loops where the first statement is an `if` statement that only contains a `break`. " +
+            "The condition is inverted and moved to the loop condition for better readability.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

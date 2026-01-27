@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -38,21 +39,15 @@ public class CovariantEquals extends Recipe {
     private static final MethodMatcher EQUALS_OBJECT_MATCHER = new MethodMatcher("* equals(java.lang.Object)");
     private static final AnnotationMatcher OVERRIDE_ANNOTATION = new AnnotationMatcher("@java.lang.Override");
 
-    @Override
-    public String getDisplayName() {
-        return "Covariant equals";
-    }
+    @Getter
+    final String displayName = "Covariant equals";
 
-    @Override
-    public String getDescription() {
-        return "Checks that classes and records which define a covariant `equals()` method also override method `equals(Object)`. " +
-               "Covariant `equals()` means a method that is similar to `equals(Object)`, but with a covariant parameter type (any subtype of `Object`).";
-    }
+    @Getter
+    final String description = "Checks that classes and records which define a covariant `equals()` method also override method `equals(Object)`. " +
+            "Covariant `equals()` means a method that is similar to `equals(Object)`, but with a covariant parameter type (any subtype of `Object`).";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2162");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2162");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -65,7 +60,15 @@ public class CovariantEquals extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                J.ClassDeclaration enclosingClass = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration).getValue();
+
+                Cursor parent;
+                try {
+                    parent = getCursor().dropParentUntil(p -> p instanceof J.ClassDeclaration);
+                } catch (IllegalStateException __) {
+                    return m;
+                }
+
+                J.ClassDeclaration enclosingClass = parent.getValue();
 
                 /*
                  * Looking for "public boolean equals(EnclosingClassType)" as the method signature match.

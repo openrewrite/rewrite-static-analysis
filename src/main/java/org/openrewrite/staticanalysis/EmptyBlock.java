@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -25,20 +26,14 @@ import static java.util.Collections.singleton;
 
 public class EmptyBlock extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove empty blocks";
-    }
+    @Getter
+    final String displayName = "Remove empty blocks";
 
-    @Override
-    public String getDescription() {
-        return "Remove empty blocks that effectively do nothing.";
-    }
+    @Getter
+    final String description = "Remove empty blocks that effectively do nothing.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S108");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S108");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

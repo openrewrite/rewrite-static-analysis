@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -36,27 +37,19 @@ import static org.openrewrite.java.ParenthesizeVisitor.maybeParenthesize;
 public class NoValueOfOnStringType extends Recipe {
     private static final MethodMatcher VALUE_OF = new MethodMatcher("java.lang.String valueOf(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Unnecessary `String#valueOf(..)`";
-    }
+    @Getter
+    final String displayName = "Unnecessary `String#valueOf(..)`";
 
-    @Override
-    public String getDescription() {
-        return "Replace unnecessary `String#valueOf(..)` method invocations with the argument directly. " +
-               "This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf(\"example\")`. " +
-               "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`.";
-    }
+    @Getter
+    final String description = "Replace unnecessary `String#valueOf(..)` method invocations with the argument directly. " +
+            "This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf(\"example\")`. " +
+            "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1153");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1153");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(4);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(4);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

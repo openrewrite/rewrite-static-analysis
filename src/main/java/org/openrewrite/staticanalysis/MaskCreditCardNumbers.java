@@ -30,16 +30,10 @@ import java.util.regex.Pattern;
 @Value
 public class MaskCreditCardNumbers extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Mask credit card numbers";
-    }
+    String displayName = "Mask credit card numbers";
 
-    @Override
-    public String getDescription() {
-        return "When encountering string literals which appear to be credit card numbers, " +
+    String description = "When encountering string literals which appear to be credit card numbers, " +
                 "mask the last eight digits with the letter 'X'.";
-    }
 
     private static final Pattern CC_PATTERN = Pattern.compile("([0-9]{4} ?[0-9]{4} ?)([0-9]{4} ?[0-9]{4} ?)");
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d");

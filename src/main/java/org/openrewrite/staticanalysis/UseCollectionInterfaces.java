@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -34,26 +35,18 @@ import static org.openrewrite.Tree.randomId;
 
 public class UseCollectionInterfaces extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use `Collection` interfaces";
-    }
+    @Getter
+    final String displayName = "Use `Collection` interfaces";
 
-    @Override
-    public String getDescription() {
-        return "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
-                "Replaces the return type of public method declarations and the variable type public variable declarations.";
-    }
+    @Getter
+    final String description = "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
+            "Replaces the return type of public method declarations and the variable type public variable declarations.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1319");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1319");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     static final Map<String, String> rspecRulesReplaceTypeMap = new HashMap<>();
 

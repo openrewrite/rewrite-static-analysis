@@ -125,4 +125,27 @@ class NestedEnumsAreNotStaticTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void emptyInnerEnum() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Outer {
+                  static enum Inner {
+                      A, B, C
+                  }
+              }
+              """,
+            """
+              class Outer {
+                  enum Inner {
+                      A, B, C
+                  }
+              }
+              """
+          )
+        );
+    }
 }

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -44,26 +45,18 @@ import static java.util.Collections.singleton;
  */
 public class UseStringReplace extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use `String::replace()` when first parameter is not a real regular expression";
-    }
+    @Getter
+    final String displayName = "Use `String::replace()` when first parameter is not a real regular expression";
 
-    @Override
-    public String getDescription() {
-        return "When `String::replaceAll` is used, the first argument should be a real regular expression. " +
-               "If it’s not the case, `String::replace` does exactly the same thing as `String::replaceAll` without the performance drawback of the regex.";
-    }
+    @Getter
+    final String description = "When `String::replaceAll` is used, the first argument should be a real regular expression. " +
+            "If it’s not the case, `String::replace` does exactly the same thing as `String::replaceAll` without the performance drawback of the regex.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S5361");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S5361");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

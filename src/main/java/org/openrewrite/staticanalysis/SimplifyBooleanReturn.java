@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
@@ -38,25 +39,17 @@ import static java.util.stream.Collectors.toList;
 
 public class SimplifyBooleanReturn extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Simplify boolean return";
-    }
+    @Getter
+    final String displayName = "Simplify boolean return";
 
-    @Override
-    public String getDescription() {
-        return "Simplifies Boolean expressions by removing redundancies. For example, `a && true` simplifies to `a`.";
-    }
+    @Getter
+    final String description = "Simplifies Boolean expressions by removing redundancies. For example, `a && true` simplifies to `a`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1126");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1126");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

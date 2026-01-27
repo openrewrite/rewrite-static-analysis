@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -37,25 +38,17 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
 
     private static final JavaType EXTERNALIZABLE_TYPE = JavaType.buildType("java.io.Externalizable");
 
-    @Override
-    public String getDisplayName() {
-        return "`Externalizable` classes have no-arguments constructor";
-    }
+    @Getter
+    final String displayName = "`Externalizable` classes have no-arguments constructor";
 
-    @Override
-    public String getDescription() {
-        return "`Externalizable` classes handle both serialization and deserialization and must have a no-args constructor for the deserialization process.";
-    }
+    @Getter
+    final String description = "`Externalizable` classes handle both serialization and deserialization and must have a no-args constructor for the deserialization process.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(20);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2060");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2060");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

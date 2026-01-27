@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -27,15 +28,11 @@ import java.util.List;
 import java.util.Optional;
 
 public class LambdaBlockToExpression extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Simplify lambda blocks to expressions";
-    }
+    @Getter
+    final String displayName = "Simplify lambda blocks to expressions";
 
-    @Override
-    public String getDescription() {
-        return "Single-line statement lambdas returning a value can be replaced with expression lambdas.";
-    }
+    @Getter
+    final String description = "Single-line statement lambdas returning a value can be replaced with expression lambdas.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -43,15 +44,11 @@ public class PreferSystemGetPropertyOverGetenv extends Recipe {
         ENV_TO_PROPERTY.put("TMP", "java.io.tmpdir");
     }
 
-    @Override
-    public String getDisplayName() {
-        return "Prefer `System.getProperty(\"user.home\")` over `System.getenv(\"HOME\")`";
-    }
+    @Getter
+    final String displayName = "Prefer `System.getProperty(\"user.home\")` over `System.getenv(\"HOME\")`";
 
-    @Override
-    public String getDescription() {
-        return "Replaces `System.getenv(\"HOME\")` with `System.getProperty(\"user.home\")` for better portability.";
-    }
+    @Getter
+    final String description = "Replaces `System.getenv(\"HOME\")` with `System.getProperty(\"user.home\")` for better portability.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -51,22 +51,13 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
     @Nullable
     Boolean renamePublicMethods;
 
-    @Override
-    public String getDisplayName() {
-        return "Standardize method name casing";
-    }
+    String displayName = "Standardize method name casing";
 
-    @Override
-    public String getDescription() {
-        return "Fixes method names that do not follow standard naming conventions. " +
+    String description = "Fixes method names that do not follow standard naming conventions. " +
                "For example, `String getFoo_bar()` would be adjusted to `String getFooBar()` " +
                "and `int DoSomething()` would be adjusted to `int doSomething()`.";
-    }
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S100");
-    }
+    Set<String> tags = singleton("RSPEC-S100");
 
     @Override
     public List<MethodNameChange> getInitialValue(ExecutionContext ctx) {

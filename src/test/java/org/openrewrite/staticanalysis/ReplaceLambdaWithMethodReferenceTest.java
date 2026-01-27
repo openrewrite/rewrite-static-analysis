@@ -1576,4 +1576,214 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/774")
+    @Test
+    void methodRefWithGenerics() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.function.Supplier;
+
+              class Foo {
+                  <R> R fold(final Supplier<R> supplier) {return null;}
+
+                  void foo(String l) {}
+                  void foo(Optional<String> l) {}
+
+                  void bar() {
+                      foo(fold(() -> Optional.empty()));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simpleGenericMethodTest() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Foo {
+                  <R> R fold(final Supplier<R> supplier) {return null;}
+
+                  String getString() { return "test"; }
+
+                  void bar() {
+                      String result = fold(() -> getString());
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Foo {
+                  <R> R fold(final Supplier<R> supplier) {return null;}
+
+                  String getString() { return "test"; }
+
+                  void bar() {
+                      String result = fold(this::getString);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/336")
+    @Test
+    void localRecordMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.stream.Stream;
+
+              class Test {
+                  String method() {
+                      record R(String s) {}
+                      return Stream.of(new R("hello world"))
+                          .map(r -> r.s())
+                          .findFirst()
+                          .orElse(null);
+                  }
+              }
+              """,
+            """
+              import java.util.stream.Stream;
+
+              class Test {
+                  String method() {
+                      record R(String s) {}
+                      return Stream.of(new R("hello world"))
+                          .map(R::s)
+                          .findFirst()
+                          .orElse(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/336")
+    @Test
+    void localClassMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.stream.Stream;
+
+              class Test {
+                  String method() {
+                      class Local {
+                          String getValue() { return "test"; }
+                      }
+                      return Stream.of(new Local())
+                          .map(l -> l.getValue())
+                          .findFirst()
+                          .orElse(null);
+                  }
+              }
+              """,
+            """
+              import java.util.stream.Stream;
+
+              class Test {
+                  String method() {
+                      class Local {
+                          String getValue() { return "test"; }
+                      }
+                      return Stream.of(new Local())
+                          .map(Local::getValue)
+                          .findFirst()
+                          .orElse(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/336")
+    @Test
+    void localRecordWithInstanceOfCheck() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> method(List<Object> input) {
+                      record R(String s) {}
+                      return input.stream()
+                          .filter(o -> o instanceof R)
+                          .collect(Collectors.toList());
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> method(List<Object> input) {
+                      record R(String s) {}
+                      return input.stream()
+                          .filter(R.class::isInstance)
+                          .collect(Collectors.toList());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/336")
+    @Test
+    void localRecordWithCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> method(List<Object> input) {
+                      record R(String s) {}
+                      return input.stream()
+                          .filter(R.class::isInstance)
+                          .map(o -> (R) o)
+                          .collect(Collectors.toList());
+                  }
+              }
+              """,
+            """
+              import java.util.List;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  List<Object> method(List<Object> input) {
+                      record R(String s) {}
+                      return input.stream()
+                          .filter(R.class::isInstance)
+                          .map(R.class::cast)
+                          .collect(Collectors.toList());
+                  }
+              }
+              """
+          )
+        );
+    }
 }

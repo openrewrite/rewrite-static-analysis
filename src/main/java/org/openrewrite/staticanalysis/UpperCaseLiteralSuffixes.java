@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -32,25 +33,17 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class UpperCaseLiteralSuffixes extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Upper case literal suffixes";
-    }
+    @Getter
+    final String displayName = "Upper case literal suffixes";
 
-    @Override
-    public String getDescription() {
-        return "Using upper case literal suffixes for declaring literals is less ambiguous, e.g., `1l` versus `1L`.";
-    }
+    @Getter
+    final String description = "Using upper case literal suffixes for declaring literals is less ambiguous, e.g., `1l` versus `1L`.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S818");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S818");
 
-    @Override
-    public @Nullable Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

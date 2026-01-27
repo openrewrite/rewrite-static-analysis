@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -37,26 +38,18 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
     private static final MethodMatcher NO_ARGS = new MethodMatcher("*..* *()", true);
     private static final MethodMatcher OBJECT_ARG = new MethodMatcher("*..* *(java.lang.Object)", true);
 
-    @Override
-    public String getDisplayName() {
-        return "Rename methods named `hashcode`, `equal`, or `tostring`";
-    }
+    @Getter
+    final String displayName = "Rename methods named `hashcode`, `equal`, or `tostring`";
 
-    @Override
-    public String getDescription() {
-        return "Methods should not be named `hashcode`, `equal`, or `tostring`. " +
-               "Any of these are confusing as they appear to be intended as overridden methods from the `Object` base class, despite being case-insensitive.";
-    }
+    @Getter
+    final String description = "Methods should not be named `hashcode`, `equal`, or `tostring`. " +
+            "Any of these are confusing as they appear to be intended as overridden methods from the `Object` base class, despite being case-insensitive.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1221");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1221");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(10);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

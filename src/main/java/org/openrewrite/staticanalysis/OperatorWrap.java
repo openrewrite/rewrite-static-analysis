@@ -40,15 +40,9 @@ public class OperatorWrap extends Recipe {
             required = false)
     OperatorWrapStyle.@Nullable WrapOption wrapOption;
 
-    @Override
-    public String getDisplayName() {
-        return "Operator wrapping";
-    }
+    String displayName = "Operator wrapping";
 
-    @Override
-    public String getDescription() {
-        return "Fixes line wrapping policies on operators.";
-    }
+    String description = "Fixes line wrapping policies on operators.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -179,7 +173,7 @@ public class OperatorWrap extends Recipe {
             @Override
             public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, ExecutionContext ctx) {
                 J.InstanceOf i = super.visitInstanceOf(instanceOf, ctx);
-                if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof())) {
+                if (Boolean.TRUE.equals(operatorWrapStyle.getLiteralInstanceof()) && i.getClazz() != null) {
                     if (OperatorWrapStyle.WrapOption.NL == operatorWrapStyle.getWrapOption()) {
                         if (i.getClazz().getPrefix().getWhitespace().contains("\n")) {
                             i = i.getPadding().withExpression(

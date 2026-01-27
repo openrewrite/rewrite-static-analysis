@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -22,67 +23,50 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.java.tree.J.Modifier.Type.Static;
 
 public class NestedEnumsAreNotStatic extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Nested enums are not static";
-    }
+    @Getter
+    final String displayName = "Nested enums are not static";
 
-    @Override
-    public String getDescription() {
-        return "Remove static modifier from nested enum types since they are implicitly static.";
-    }
+    @Getter
+    final String description = "Remove static modifier from nested enum types since they are implicitly static.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2786");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2786");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        TreeVisitor<?, ExecutionContext> preconditions = Preconditions.and(new HasNestedEnum(), Preconditions.not(new CSharpFileChecker<>()));
-        return Preconditions.check(preconditions, new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
-                    if (J.Modifier.hasModifier(cd.getModifiers(), J.Modifier.Type.Static)) {
-                        J.Block enumBody = cd.getBody();
-                        //noinspection DataFlowIssue
-                        cd = cd.withBody(null);
-                        cd = maybeAutoFormat(cd,
-                                cd.withModifiers(ListUtils.map(cd.getModifiers(), mod ->
-                                        mod.getType() == J.Modifier.Type.Static ? null : mod)),
-                                ctx);
-                        cd = cd.withBody(enumBody);
-                    }
+                if (shouldRemoveStaticModifierFromClass(cd)) {
+                    return maybeAutoFormat(
+                            cd,
+                            cd.withModifiers(ListUtils.filter(cd.getModifiers(), mod -> mod.getType() != Static)),
+                            cd.getName(),
+                            ctx,
+                            getCursor().getParent());
                 }
                 return cd;
             }
-        });
-    }
 
-    private static class HasNestedEnum extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-            J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-            if (cd.getKind() == J.ClassDeclaration.Kind.Type.Enum && cd.getType() != null && cd.getType().getOwningClass() != null) {
-                cd = SearchResult.found(cd);
+            private boolean shouldRemoveStaticModifierFromClass(J.ClassDeclaration cd) {
+                return cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
+                        cd.getType() != null &&
+                        cd.getType().getOwningClass() != null &&
+                        J.Modifier.hasModifier(cd.getModifiers(), Static);
             }
-            return cd;
-        }
+        });
     }
 }

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaVisitor;
@@ -29,20 +30,14 @@ import static java.util.Collections.reverse;
 
 public class RemoveJavaDocAuthorTag extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove author tags from JavaDocs";
-    }
+    @Getter
+    final String displayName = "Remove author tags from JavaDocs";
 
-    @Override
-    public String getDescription() {
-        return "Removes author tags from JavaDocs to reduce code maintenance.";
-    }
+    @Getter
+    final String description = "Removes author tags from JavaDocs to reduce code maintenance.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -36,25 +37,17 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
     private static final AnnotationMatcher CHECK_FOR_NULL_ANNOTATION_MATCHER = new AnnotationMatcher("@javax.annotation.CheckForNull");
     private static final AnnotationMatcher NULLABLE_ANNOTATION_MATCHER = new AnnotationMatcher("@javax.annotation.Nullable");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove `@Nullable` and `@CheckForNull` annotations from primitives";
-    }
+    @Getter
+    final String displayName = "Remove `@Nullable` and `@CheckForNull` annotations from primitives";
 
-    @Override
-    public String getDescription() {
-        return "Primitives can't be null anyway, so these annotations are not useful in this context.";
-    }
+    @Getter
+    final String description = "Primitives can't be null anyway, so these annotations are not useful in this context.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S4682");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4682");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -25,15 +26,11 @@ import org.openrewrite.java.tree.J;
 import java.util.Iterator;
 
 public class UseForEachRemoveInsteadOfSetRemoveAll extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Replace `java.util.Set#removeAll(java.util.Collection)` with `java.util.Collection#forEach(Set::remove)`";
-    }
+    @Getter
+    final String displayName = "Replace `java.util.Set#removeAll(java.util.Collection)` with `java.util.Collection#forEach(Set::remove)`";
 
-    @Override
-    public String getDescription() {
-        return "Using `java.util.Collection#forEach(Set::remove)` rather than `java.util.Set#removeAll(java.util.Collection)` may improve performance due to a possible O(n^2) complexity.";
-    }
+    @Getter
+    final String description = "Using `java.util.Collection#forEach(Set::remove)` rather than `java.util.Set#removeAll(java.util.Collection)` may improve performance due to a possible O(n^2) complexity.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

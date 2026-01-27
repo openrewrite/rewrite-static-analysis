@@ -33,15 +33,9 @@ import java.util.List;
 @Value
 public class ReorderAnnotations extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Reorder annotations alphabetically";
-    }
+    String displayName = "Reorder annotations alphabetically";
 
-    @Override
-    public String getDescription() {
-        return "Consistently order annotations by comparing their simple name.";
-    }
+    String description = "Consistently order annotations by comparing their simple name.";
 
     private static final Comparator<J.Annotation> comparator = Comparator
             .comparing((J.Annotation a) -> {

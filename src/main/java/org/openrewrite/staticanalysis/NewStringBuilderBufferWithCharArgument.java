@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -33,20 +34,14 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
     public static final String STRING_BUILDER = "java.lang.StringBuilder";
     public static final String STRING_BUFFER = "java.lang.StringBuffer";
 
-    @Override
-    public String getDisplayName() {
-        return "Change `StringBuilder` and `StringBuffer` character constructor argument to `String`";
-    }
+    @Getter
+    final String displayName = "Change `StringBuilder` and `StringBuffer` character constructor argument to `String`";
 
-    @Override
-    public String getDescription() {
-        return "Instantiating a `StringBuilder` or a `StringBuffer` with a `Character` results in the `int` representation of the character being used for the initial size.";
-    }
+    @Getter
+    final String description = "Instantiating a `StringBuilder` or a `StringBuffer` with a `Character` results in the `int` representation of the character being used for the initial size.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1317");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1317");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

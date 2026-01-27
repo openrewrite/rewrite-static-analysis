@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -23,16 +24,12 @@ import org.openrewrite.java.tree.J;
 
 public class PreferEqualityComparisonOverDifferenceCheck extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Prefer direct comparison of numbers";
-    }
+    @Getter
+    final String displayName = "Prefer direct comparison of numbers";
 
-    @Override
-    public String getDescription() {
-        return "Replace `a - b == 0` with `a == b`, `a - b != 0` with `a != b`, `a - b < 0` with `a < b`, " +
-                "and similar transformations for all comparison operators to improve readability and avoid overflow issues.";
-    }
+    @Getter
+    final String description = "Replace `a - b == 0` with `a == b`, `a - b != 0` with `a != b`, `a - b < 0` with `a < b`, " +
+            "and similar transformations for all comparison operators to improve readability and avoid overflow issues.";
 
     @Override
     public JavaIsoVisitor<ExecutionContext> getVisitor() {

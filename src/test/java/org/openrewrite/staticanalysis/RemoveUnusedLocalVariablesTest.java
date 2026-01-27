@@ -24,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({
@@ -703,7 +704,7 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                       try {
                           used = new Object();
                           assertEquals(used, null);
-                          unused = new Object();
+                          unused = used;
                       } catch (Exception e) {
                           // do nothing
                       }
@@ -974,6 +975,47 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void assignmentWithinExpressionSubBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class A {
+                  void foo() {
+                      consumer(() -> {
+                          String removeMeLiteral;
+                          String removeMeIdentifier;
+                          String bar = "abc";
+                          removeMeLiteral = "123";
+                          removeMeIdentifier = bar;
+                          return bar;
+                      });
+                  }
+
+                  void consumer(Supplier<String> supplier) {}
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class A {
+                  void foo() {
+                      consumer(() -> {
+                          String bar = "abc";
+                          return bar;
+                      });
+                  }
+
+                  void consumer(Supplier<String> supplier) {}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2509")
     @Test
     void recordCompactConstructor() {
@@ -1191,6 +1233,29 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/740")
+    @Test
+    void doNotRemoveVariableAssignmentWithPotentialSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private String baz() {
+                      String foo;
+                      try {
+                          foo = String.valueOf(1);
+                      } catch (RuntimeException e) {
+                          return "error";
+                      }
+                      return "ok";
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/760")
     @Test
     void doNotRemoveUnusedPatternMatchingVariables() {
@@ -1300,6 +1365,22 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                               throw IllegalStateException("Regex should match")
                           }
                       }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class Typescript {
+        @Test
+        void noChange() {
+            rewriteRun(
+              typescript(
+                """
+                  class Foo {
+                    bar: string;
                   }
                   """
               )

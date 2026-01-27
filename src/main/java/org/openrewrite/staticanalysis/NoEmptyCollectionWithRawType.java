@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -36,25 +37,17 @@ import static java.util.Collections.singleton;
 
 public class NoEmptyCollectionWithRawType extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use `Collections#emptyList()`, `emptyMap()`, and `emptySet()`";
-    }
+    @Getter
+    final String displayName = "Use `Collections#emptyList()`, `emptyMap()`, and `emptySet()`";
 
-    @Override
-    public String getDescription() {
-        return "Replaces `Collections#EMPTY_...` with methods that return generic types.";
-    }
+    @Getter
+    final String description = "Replaces `Collections#EMPTY_...` with methods that return generic types.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1596");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1596");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

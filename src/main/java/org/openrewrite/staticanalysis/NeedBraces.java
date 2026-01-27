@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -38,25 +39,17 @@ import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 
 public class NeedBraces extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Fix missing braces";
-    }
+    @Getter
+    final String displayName = "Fix missing braces";
 
-    @Override
-    public String getDescription() {
-        return "Adds missing braces around code such as single-line `if`, `for`, `while`, and `do-while` block bodies.";
-    }
+    @Getter
+    final String description = "Adds missing braces around code such as single-line `if`, `for`, `while`, and `do-while` block bodies.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S121");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S121");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -197,6 +190,7 @@ public class NeedBraces extends Recipe {
 
                 if (!prefix.getComments().isEmpty() && prefix.getWhitespace().contains("\n")) {
                     body = body.withPrefix(prefix);
+                    elem = elem.withPrefix(Space.EMPTY);
                 }
 
                 J.Block b = buildBlock(body);

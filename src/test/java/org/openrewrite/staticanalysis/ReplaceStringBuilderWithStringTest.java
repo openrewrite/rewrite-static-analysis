@@ -390,4 +390,35 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void characterLiterals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String track(Object consumer) {
+                      return "tracked";
+                  }
+
+                  String method(String text, Object consumer) {
+                      return new StringBuilder(50).append('[').append(track(consumer)).append("]: ").append(text).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String track(Object consumer) {
+                      return "tracked";
+                  }
+
+                  String method(String text, Object consumer) {
+                      return "[" + track(consumer) + "]: " + text;
+                  }
+              }
+              """
+          )
+        );
+    }
 }

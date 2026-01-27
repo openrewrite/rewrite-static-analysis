@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -36,20 +37,14 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
     private static final MethodMatcher TO_LOWER_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String toLowerCase()");
     private static final MethodMatcher TO_UPPER_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String toUpperCase()");
 
-    @Override
-    public String getDisplayName() {
-        return "CaseInsensitive comparisons do not alter case";
-    }
+    @Getter
+    final String displayName = "CaseInsensitive comparisons do not alter case";
 
-    @Override
-    public String getDescription() {
-        return "Remove `String#toLowerCase()` or `String#toUpperCase()` from `String#equalsIgnoreCase(..)` comparisons.";
-    }
+    @Getter
+    final String description = "Remove `String#toLowerCase()` or `String#toUpperCase()` from `String#equalsIgnoreCase(..)` comparisons.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1157");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1157");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

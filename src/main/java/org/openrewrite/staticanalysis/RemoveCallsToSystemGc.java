@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -35,25 +36,17 @@ public class RemoveCallsToSystemGc extends Recipe {
     private static final MethodMatcher SYSTEM_GC = new MethodMatcher("java.lang.System gc()");
     private static final MethodMatcher RUNTIME_GC = new MethodMatcher("java.lang.Runtime gc()");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove garbage collection invocations";
-    }
+    @Getter
+    final String displayName = "Remove garbage collection invocations";
 
-    @Override
-    public String getDescription() {
-        return "Removes calls to `System.gc()` and `Runtime.gc()`. When to invoke garbage collection is best left to the JVM.";
-    }
+    @Getter
+    final String description = "Removes calls to `System.gc()` and `Runtime.gc()`. When to invoke garbage collection is best left to the JVM.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S1215");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1215");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

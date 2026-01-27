@@ -24,6 +24,7 @@ import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.Arrays;
@@ -45,21 +46,15 @@ public class AnnotateNullableMethods extends Recipe {
 
     private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
 
-    @Override
-    public String getDisplayName() {
-        return "Annotate methods which may return `null` with `@Nullable`";
-    }
+    String displayName = "Annotate methods which may return `null` with `@Nullable`";
 
-    @Override
-    public String getDescription() {
-        return "Add `@Nullable` to non-private methods that may return `null`. " +
+    String description = "Add `@Nullable` to non-private methods that may return `null`. " +
                 "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
                 "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
                 "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
                 "statements for potential null values. It also identifies known methods from standard libraries that may " +
                 "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
                 "The return of streams, or lambdas are not taken into account.";
-    }
 
     @Override
     public Validated<Object> validate() {
@@ -80,8 +75,7 @@ public class AnnotateNullableMethods extends Recipe {
                         methodDeclaration.getMethodType() == null ||
                         methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
                         service(AnnotationService.class).matches(getCursor(), new AnnotationMatcher("@" + fullyQualifiedName)) ||
-                        (methodDeclaration.getReturnTypeExpression() != null &&
-                                service(AnnotationService.class).matches(new Cursor(null, methodDeclaration.getReturnTypeExpression()), new AnnotationMatcher("@" + fullyQualifiedName)))) {
+                        hasNullableAnnotation(methodDeclaration.getReturnTypeExpression(), fullyQualifiedName)) {
                     return methodDeclaration;
                 }
 
@@ -99,6 +93,27 @@ public class AnnotateNullableMethods extends Recipe {
                             .visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
                 }
                 return md;
+            }
+
+            private boolean hasNullableAnnotation(@Nullable TypeTree returnType, String annotationFqn) {
+                if (returnType == null) {
+                    return false;
+                }
+
+                // Check if the return type itself is annotated
+                if (service(AnnotationService.class).matches(new Cursor(null, returnType), new AnnotationMatcher("@" + annotationFqn))) {
+                    return true;
+                }
+
+                // For array types, check if the element type is annotated
+                if (returnType instanceof J.ArrayType) {
+                    J.ArrayType arrayType = (J.ArrayType) returnType;
+                    if (arrayType.getElementType() instanceof J.AnnotatedType) {
+                        return service(AnnotationService.class).matches(new Cursor(null, arrayType.getElementType()), new AnnotationMatcher("@" + annotationFqn));
+                    }
+                }
+
+                return false;
             }
         };
         return Repeat.repeatUntilStable(javaIsoVisitor, 5);
@@ -210,7 +225,7 @@ public class AnnotateNullableMethods extends Recipe {
 
             // Visit the entire compilation unit to find the method declaration
             AnnotationMatcher annotationMatcher = new AnnotationMatcher("@" + nullableAnnotationClass);
-            J.CompilationUnit cu = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class);
+            SourceFile sf = getCursor().firstEnclosingOrThrow(SourceFile.class);
             return new JavaIsoVisitor<AtomicBoolean>() {
                 @Override
                 public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, AtomicBoolean p) {
@@ -228,7 +243,7 @@ public class AnnotateNullableMethods extends Recipe {
                     }
                     return super.visitMethodDeclaration(method, p);
                 }
-            }.reduce(cu, new AtomicBoolean(false)).get();
+            }.reduce(sf, new AtomicBoolean(false)).get();
         }
     }
 }

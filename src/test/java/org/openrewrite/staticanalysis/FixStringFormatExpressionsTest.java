@@ -131,4 +131,26 @@ class FixStringFormatExpressionsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void textBlockWithNewlinesShouldNotBeModified() {
+        // Text blocks contain actual newline characters in their value, not \n escape sequences.
+        // The recipe should not modify these since changing actual newlines to %n in text blocks
+        // would change the semantics and the valueSource wouldn't match the value.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  static {
+                      String s = ""\"
+                          Hello
+                          World
+                          ""\".formatted();
+                  }
+              }
+              """
+          )
+        );
+    }
 }

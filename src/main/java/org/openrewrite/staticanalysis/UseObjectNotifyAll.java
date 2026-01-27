@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -30,27 +31,19 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class UseObjectNotifyAll extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Replaces `Object.notify()` with `Object.notifyAll()`";
-    }
+    @Getter
+    final String displayName = "Replaces `Object.notify()` with `Object.notifyAll()`";
 
-    @Override
-    public String getDescription() {
-        return "`Object.notifyAll()` and `Object.notify()` both wake up sleeping threads, but `Object.notify()` only rouses one while `Object.notifyAll()` rouses all of them. " +
-               "Since `Object.notify()` might not wake up the right thread, `Object.notifyAll()` should be used instead. " +
-               "See [this](https://wiki.sei.cmu.edu/confluence/display/java/THI02-J.+Notify+all+waiting+threads+rather+than+a+single+thread) for more information.";
-    }
+    @Getter
+    final String description = "`Object.notifyAll()` and `Object.notify()` both wake up sleeping threads, but `Object.notify()` only rouses one while `Object.notifyAll()` rouses all of them. " +
+            "Since `Object.notify()` might not wake up the right thread, `Object.notifyAll()` should be used instead. " +
+            "See [this](https://wiki.sei.cmu.edu/confluence/display/java/THI02-J.+Notify+all+waiting+threads+rather+than+a+single+thread) for more information.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2446");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2446");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

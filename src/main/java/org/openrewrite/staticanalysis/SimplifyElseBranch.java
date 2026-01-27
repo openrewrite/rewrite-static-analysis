@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.internal.ListUtils;
@@ -27,17 +28,11 @@ import static org.openrewrite.java.format.ShiftFormat.indent;
 
 public class SimplifyElseBranch extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        // language=markdown
-        return "Simplify `else` branch if it only has a single `if`";
-    }
+    @Getter
+    final String displayName = "Simplify `else` branch if it only has a single `if`";
 
-    @Override
-    public String getDescription() {
-        // language=markdown
-        return "Simplify `else` branch if it only has a single `if`.";
-    }
+    @Getter
+    final String description = "Simplify `else` branch if it only has a single `if`.";
 
     @Override
     public JavaIsoVisitor<ExecutionContext> getVisitor() {

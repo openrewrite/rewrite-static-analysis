@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -36,15 +37,11 @@ import static java.util.stream.Collectors.toList;
 public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extends Recipe {
     private static final MethodMatcher VALIDATE_NOTNULL = new MethodMatcher("org.apache.commons.lang3.Validate notNull(Object, String, Object[])");
 
-    @Override
-    public String getDisplayName() {
-        return "Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
-    }
+    @Getter
+    final String displayName = "Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
 
-    @Override
-    public String getDescription() {
-        return "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`.";
-    }
+    @Getter
+    final String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -29,16 +30,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UnwrapRepeatableAnnotations extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Unwrap `@Repeatable` annotations";
-    }
+    @Getter
+    final String displayName = "Unwrap `@Repeatable` annotations";
 
-    @Override
-    public String getDescription() {
-        return "Java 8 introduced the concept of `@Repeatable` annotations, " +
-               "making the wrapper annotation unnecessary.";
-    }
+    @Getter
+    final String description = "Java 8 introduced the concept of `@Repeatable` annotations, " +
+            "making the wrapper annotation unnecessary.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

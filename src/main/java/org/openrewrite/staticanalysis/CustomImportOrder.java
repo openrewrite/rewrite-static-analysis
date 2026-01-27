@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -28,15 +29,11 @@ import org.openrewrite.style.Style;
 
 public class CustomImportOrder extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Custom import order";
-    }
+    @Getter
+    final String displayName = "Custom import order";
 
-    @Override
-    public String getDescription() {
-        return "Updates and reorders Java import declarations according to group and order settings compatible with the Checkstyle 'CustomImportOrder' check.";
-    }
+    @Getter
+    final String description = "Updates and reorders Java import declarations according to group and order settings compatible with the Checkstyle 'CustomImportOrder' check.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

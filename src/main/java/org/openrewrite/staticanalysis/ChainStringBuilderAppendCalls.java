@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -35,20 +36,14 @@ public class ChainStringBuilderAppendCalls extends Recipe {
     @SuppressWarnings("ALL") // Stop NoMutableStaticFieldsInRecipes from suggesting to remove this mutable static field
     private static J.Binary additiveBinaryTemplate = null;
 
-    @Override
-    public String getDisplayName() {
-        return "Chain `StringBuilder.append()` calls";
-    }
+    @Getter
+    final String displayName = "Chain `StringBuilder.append()` calls";
 
-    @Override
-    public String getDescription() {
-        return "String concatenation within calls to `StringBuilder.append()` causes unnecessary memory allocation. Except for concatenations of String literals, which are joined together at compile time. Replaces inefficient concatenations with chained calls to `StringBuilder.append()`.";
-    }
+    @Getter
+    final String description = "String concatenation within calls to `StringBuilder.append()` causes unnecessary memory allocation. Except for concatenations of String literals, which are joined together at compile time. Replaces inefficient concatenations with chained calls to `StringBuilder.append()`.";
 
-    @Override
-    public @Nullable Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(2);
-    }
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

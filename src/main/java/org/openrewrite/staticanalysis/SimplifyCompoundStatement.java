@@ -15,20 +15,17 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 
 public class SimplifyCompoundStatement extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Simplify compound statement";
-    }
+    @Getter
+    final String displayName = "Simplify compound statement";
 
-    @Override
-    public String getDescription() {
-        return "Fixes or removes useless compound statements. For example, removing `b &= true`, and replacing `b &= false` with `b = false`.";
-    }
+    @Getter
+    final String description = "Fixes or removes useless compound statements. For example, removing `b &= true`, and replacing `b &= false` with `b = false`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

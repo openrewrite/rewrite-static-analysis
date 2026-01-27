@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -28,21 +29,15 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class AvoidBoxedBooleanExpressions extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Avoid boxed boolean expressions";
-    }
+    @Getter
+    final String displayName = "Avoid boxed boolean expressions";
 
-    @Override
-    public String getDescription() {
-        return "Under certain conditions the `java.lang.Boolean` type is used as an expression, " +
-               "and it may throw a `NullPointerException` if the value is null.";
-    }
+    @Getter
+    final String description = "Under certain conditions the `java.lang.Boolean` type is used as an expression, " +
+            "and it may throw a `NullPointerException` if the value is null.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S5411");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S5411");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -36,15 +36,30 @@ class RemoveSystemOutPrintlnTest implements RewriteTest {
           //language=java
           java(
             """
+              import java.io.PrintStream;
+
               class Test {
-                  void test() {
+                  void printOut() {
                       System.out.println("Hello, world!");
+                  }
+                  void printErr() {
+                      System.err.println("Hello, world!");
+                  }
+                  void printStream(PrintStream printStream) {
+                      printStream.println("Hello, world!");
                   }
               }
               """,
             """
+              import java.io.PrintStream;
+
               class Test {
-                  void test() {
+                  void printOut() {
+                  }
+                  void printErr() {
+                  }
+                  void printStream(PrintStream printStream) {
+                      printStream.println("Hello, world!");
                   }
               }
               """

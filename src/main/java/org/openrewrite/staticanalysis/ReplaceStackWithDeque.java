@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -30,16 +31,12 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeTree;
 
 public class ReplaceStackWithDeque extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Replace `java.util.Stack` with `java.util.Deque`";
-    }
+    @Getter
+    final String displayName = "Replace `java.util.Stack` with `java.util.Deque`";
 
-    @Override
-    public String getDescription() {
-        return "From the Javadoc of `Stack`:\n" +
-               "> A more complete and consistent set of LIFO stack operations is provided by the Deque interface and its implementations, which should be used in preference to this class.";
-    }
+    @Getter
+    final String description = "From the Javadoc of `Stack`:\n" +
+            "> A more complete and consistent set of LIFO stack operations is provided by the Deque interface and its implementations, which should be used in preference to this class.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

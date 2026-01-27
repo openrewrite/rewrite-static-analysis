@@ -672,4 +672,35 @@ class OperatorWrapTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void recordPatternInstanceOf() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().styles(operatorWrapStyle())),
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.Objects;
+
+              record SomeRecord(int field, byte[] value) {
+                  @Override
+                  public boolean equals(Object o) {
+                      if (this == o) return true;
+                      if (!(o instanceof SomeRecord f)) {
+                          return false;
+                      }
+                      return field == f.field
+                             && Arrays.equals(value, f.value);
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return 31 * Objects.hash(field) + Arrays.hashCode(value);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

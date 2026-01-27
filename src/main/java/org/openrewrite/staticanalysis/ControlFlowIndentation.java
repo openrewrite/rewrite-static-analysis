@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -26,6 +27,7 @@ import org.openrewrite.java.format.TabsAndIndentsVisitor;
 import org.openrewrite.java.style.IntelliJ;
 import org.openrewrite.java.style.SpacesStyle;
 import org.openrewrite.java.style.TabsAndIndentsStyle;
+import org.openrewrite.java.style.WrappingAndBracesStyle;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.Loop;
@@ -39,22 +41,16 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 
 public class ControlFlowIndentation extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Control flow statement indentation";
-    }
+    @Getter
+    final String displayName = "Control flow statement indentation";
 
-    @Override
-    public String getDescription() {
-        return "Program flow control statements like `if`, `while`, and `for` can omit curly braces when they apply to " +
-                "only a single statement. This recipe ensures that any statements which follow that statement are correctly " +
-                "indented to show they are not part of the flow control statement.";
-    }
+    @Getter
+    final String description = "Program flow control statements like `if`, `while`, and `for` can omit curly braces when they apply to " +
+            "only a single statement. This recipe ensures that any statements which follow that statement are correctly " +
+            "indented to show they are not part of the flow control statement.";
 
-    @Override
-    public Set<String> getTags() {
-        return singleton("RSPEC-S2681");
-    }
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S2681");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -63,6 +59,8 @@ public class ControlFlowIndentation extends Recipe {
             TabsAndIndentsStyle tabsAndIndentsStyle;
             @Nullable
             SpacesStyle spacesStyle;
+            @Nullable
+            WrappingAndBracesStyle wrappingStyle;
 
             @Override
             public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
@@ -70,6 +68,7 @@ public class ControlFlowIndentation extends Recipe {
                     JavaSourceFile cu = (JavaSourceFile) requireNonNull(tree);
                     tabsAndIndentsStyle = Style.from(TabsAndIndentsStyle.class, cu, IntelliJ::tabsAndIndents);
                     spacesStyle = Style.from(SpacesStyle.class, cu, IntelliJ::spaces);
+                    wrappingStyle = Style.from(WrappingAndBracesStyle.class, cu, IntelliJ::wrappingAndBraces);
                 }
                 return super.visit(tree, ctx);
             }
@@ -83,7 +82,8 @@ public class ControlFlowIndentation extends Recipe {
                         foundControlFlowRequiringReformatting.set(true);
                         return (Statement) new TabsAndIndentsVisitor<>(
                                 requireNonNull(tabsAndIndentsStyle),
-                                requireNonNull(spacesStyle))
+                                requireNonNull(spacesStyle),
+                                requireNonNull(wrappingStyle))
                                 .visit(statement, ctx, getCursor());
                     }
                     return statement;
