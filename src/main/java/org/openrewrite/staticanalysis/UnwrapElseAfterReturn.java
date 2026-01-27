@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
@@ -50,39 +51,92 @@ public class UnwrapElseAfterReturn extends Recipe {
             @Override
             public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                 J.Block b = visitAndCast(block, ctx, super::visitBlock);
-                AtomicReference<Space> endWhitespace = new AtomicReference<>(null);
+                AtomicReference<@Nullable Space> endWhitespace = new AtomicReference<>(null);
                 J.Block alteredBlock = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
                     if (statement instanceof J.If) {
                         J.If ifStatement = (J.If) statement;
                         if (ifStatement.getElsePart() != null && endsWithReturnOrThrow(ifStatement.getThenPart())) {
-                            J.If newIf = ifStatement.withElsePart(null);
                             Statement elsePart = ifStatement.getElsePart().getBody();
-                            if (elsePart instanceof J.Block) {
-                                J.Block elseBlock = (J.Block) elsePart;
-                                endWhitespace.set(elseBlock.getEnd());
-                                return ListUtils.concat(newIf, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
-                                    // Combine comments from the else block itself and the first statement
-                                    List<Comment> elseComments = elseBlock.getPrefix().getComments();
-                                    List<Comment> stmtComments = elseStmt.getPrefix().getComments();
-                                    if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
-                                        return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
-                                    }
-                                    String whitespace = ifStatement.getElsePart().getPrefix().getWhitespace();
-                                    return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
-                                }));
+                            if (elsePart instanceof J.If) {
+                                // Else-if chain: find and unwrap the innermost else
+                                J.If innermost = findInnermostIfWithElse((J.If) elsePart);
+                                if (innermost != null &&
+                                        innermost.getElsePart() != null &&
+                                        endsWithReturnOrThrow(innermost.getThenPart()) &&
+                                        !(innermost.getElsePart().getBody() instanceof J.If)) {
+                                    // Unwrap the innermost else
+                                    J.If modifiedChain = removeInnermostElse(ifStatement);
+                                    Statement innermostElseBody = innermost.getElsePart().getBody();
+                                    return flatten(innermost, innermostElseBody, endWhitespace, modifiedChain);
+                                }
+                            } else {
+                                // Plain else block: unwrap directly
+                                J.If newIf = ifStatement.withElsePart(null);
+                                return flatten(ifStatement, elsePart, endWhitespace, newIf);
                             }
-                            return Arrays.asList(newIf, elsePart.<Statement>withPrefix(ifStatement.getElsePart().getPrefix()));
                         }
                     }
                     return statement;
                 }));
 
-                if (endWhitespace.get() != null) {
-                    List<Comment> mergedComments = ListUtils.concatAll(endWhitespace.get().getComments(), b.getEnd().getComments());
-                    alteredBlock = alteredBlock.withEnd(b.getEnd().withComments(mergedComments).withWhitespace(endWhitespace.get().getWhitespace()));
+                Space end = endWhitespace.get();
+                if (end != null) {
+                    List<Comment> mergedComments = ListUtils.concatAll(end.getComments(), b.getEnd().getComments());
+                    alteredBlock = alteredBlock.withEnd(b.getEnd().withComments(mergedComments).withWhitespace(end.getWhitespace()));
                 }
 
                 return maybeAutoFormat(b, alteredBlock, ctx);
+            }
+
+            private List<Statement> flatten(J.If tailIf, Statement tailElse, AtomicReference<@Nullable Space> endWhitespace, J.If ifWithoutElse) {
+                if (tailElse instanceof J.Block) {
+                    J.Block elseBlock = (J.Block) tailElse;
+                    endWhitespace.set(elseBlock.getEnd());
+                    return ListUtils.concat(ifWithoutElse, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
+                        List<Comment> elseComments = elseBlock.getPrefix().getComments();
+                        List<Comment> stmtComments = elseStmt.getPrefix().getComments();
+                        if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
+                            return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
+                        }
+                        String whitespace = tailIf.getElsePart().getPrefix().getWhitespace();
+                        return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
+                    }));
+                }
+                return Arrays.asList(ifWithoutElse, tailElse.withPrefix(tailIf.getElsePart().getPrefix()));
+            }
+
+            private J.@Nullable If findInnermostIfWithElse(J.If ifStatement) {
+                if (ifStatement.getElsePart() == null) {
+                    return null;
+                }
+                Statement elseBody = ifStatement.getElsePart().getBody();
+                if (elseBody instanceof J.If) {
+                    J.If result = findInnermostIfWithElse((J.If) elseBody);
+                    return result != null ? result : ifStatement;
+                }
+                return ifStatement;
+            }
+
+            private J.If removeInnermostElse(J.If ifStatement) {
+                if (ifStatement.getElsePart() == null) {
+                    return ifStatement;
+                }
+                Statement elseBody = ifStatement.getElsePart().getBody();
+                if (elseBody instanceof J.If) {
+                    J.If innerIf = (J.If) elseBody;
+                    if (innerIf.getElsePart() != null && !(innerIf.getElsePart().getBody() instanceof J.If)) {
+                        // This is the innermost if with a non-if else, remove its else
+                        return ifStatement.withElsePart(
+                                ifStatement.getElsePart().withBody(innerIf.withElsePart(null))
+                        );
+                    }
+                    // Recurse deeper into the chain
+                    return ifStatement.withElsePart(
+                            ifStatement.getElsePart().withBody(removeInnermostElse(innerIf))
+                    );
+                }
+                // Direct else (not else-if), remove it
+                return ifStatement.withElsePart(null);
             }
 
             private boolean endsWithReturnOrThrow(Statement statement) {
