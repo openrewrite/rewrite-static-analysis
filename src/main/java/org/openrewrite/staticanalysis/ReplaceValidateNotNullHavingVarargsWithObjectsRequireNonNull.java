@@ -82,7 +82,7 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
                 stringFormatMi = stringFormatMi.withArguments(
                         ListUtils.map(stringFormatMi.getArguments(), (a, b) -> b.withPrefix(arguments.get(a).getPrefix())));
 
-                lambda = maybeAutoFormat(lambda, lambda.withBody(stringFormatMi), ctx);
+                lambda = maybeAutoFormat(lambda, lambda.withBody(stringFormatMi), ctx, getCursor());
                 return maybeAutoFormat(mi, mi.withArguments(Stream.of(arg0, lambda).collect(toList())), ctx);
             }
         });

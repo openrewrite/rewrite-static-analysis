@@ -48,7 +48,6 @@ class UnnecessaryPrimitiveAnnotationsTest implements RewriteTest {
               """,
             """
               class A {
-
                   public int getCount(int val) {
                       return val;
                   }
