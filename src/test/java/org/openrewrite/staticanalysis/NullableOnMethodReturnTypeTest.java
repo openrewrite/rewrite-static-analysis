@@ -47,7 +47,6 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
             """
               import org.openrewrite.internal.lang.Nullable;
               class Test {
-
                   public @Nullable String test() {
                   }
               }
@@ -87,7 +86,6 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
               import org.openrewrite.internal.lang.Nullable;
 
               public class Foo {
-
                   public @Nullable B.C bar() {
                       return null;
                   }
@@ -149,7 +147,6 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
             """
               import org.openrewrite.internal.lang.Nullable;
               class Test {
-
                   public String @Nullable[] test() {
                       return null;
                   }
@@ -176,7 +173,6 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
             """
               import org.openrewrite.internal.lang.Nullable;
               class Test {
-
                   public int @Nullable[] test() {
                       return null;
                   }
@@ -203,7 +199,6 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
             """
               import org.openrewrite.internal.lang.Nullable;
               class Test {
-
                   public String @Nullable[][] test() {
                       return null;
                   }

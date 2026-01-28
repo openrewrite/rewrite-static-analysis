@@ -223,7 +223,6 @@ class AnnotateNullableMethodsTest implements RewriteTest {
 
                   public Callable<String> getString() {
                       Callable<String> callable = new Callable<>() {
-
                           @Override
                           public @Nullable String call() throws Exception {
                               return null;
@@ -367,7 +366,6 @@ class AnnotateNullableMethodsTest implements RewriteTest {
               import org.jspecify.annotations.Nullable;
 
               public class Foo {
-
                   public  B.@Nullable C bar() {
                       return null;
                   }

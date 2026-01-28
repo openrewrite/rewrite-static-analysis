@@ -62,78 +62,96 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
             @Override
             public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
-                J.NewClass n = (J.NewClass) super.visitNewClass(newClass, ctx);
-                updateCursor(n);
-                if (n.getBody() != null &&
-                    n.getBody().getStatements().size() == 1 &&
-                    n.getBody().getStatements().get(0) instanceof J.MethodDeclaration &&
-                    n.getClazz() != null) {
-                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
-                    if (type != null && type.getKind() == JavaType.Class.Kind.Interface) {
-                        JavaType.Method sam = getSamCompatible(type);
-                        if (sam == null) {
-                            return n;
-                        }
-
-                        if (usesThis(getCursor()) ||
-                            shadowsLocalVariable(getCursor()) ||
-                            usedAsStatement(getCursor()) ||
-                            fieldInitializerReferencingUninitializedField(getCursor())) {
-                            return n;
-                        }
-
-                        // The interface may be parameterized and that is needed to maintain type attribution:
-                        JavaType.FullyQualified typedInterface = null;
-                        JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
-                        if (anonymousClass != null) {
-                            typedInterface = anonymousClass.getInterfaces().stream().filter(i -> i.getFullyQualifiedName().equals(type.getFullyQualifiedName())).findFirst().orElse(null);
-                        }
-                        if (typedInterface == null) {
-                            return n;
-                        }
-
-                        StringBuilder templateBuilder = new StringBuilder();
-                        J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
-
-                        // If the functional interface method has type parameters, we can't replace it with a lambda.
-                        if (methodDeclaration.getTypeParameters() != null && !methodDeclaration.getTypeParameters().isEmpty()) {
-                            return n;
-                        }
-
-                        if (methodDeclaration.getParameters().get(0) instanceof J.Empty) {
-                            templateBuilder.append("() -> {");
-                        } else {
-                            templateBuilder.append(methodDeclaration.getParameters().stream()
-                                    .map(param -> ((J.VariableDeclarations) param).getVariables().get(0).getSimpleName())
-                                    .collect(joining(",", "(", ") -> {")));
-                        }
-
-                        JavaType returnType = sam.getReturnType();
-                        if (JavaType.Primitive.Void != returnType) {
-                            templateBuilder.append("return ").append(valueOfType(returnType)).append(';');
-                        }
-                        templateBuilder.append('}');
-
-                        J.Lambda lambda = JavaTemplate.builder(templateBuilder.toString())
-                                .contextSensitive()
-                                .build()
-                                .apply(getCursor(), n.getCoordinates().replace());
-                        lambda = lambda.withType(typedInterface);
-                        lambda = (J.Lambda) new UnnecessaryParenthesesVisitor<>()
-                                .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
-
-                        J.Block lambdaBody = methodDeclaration.getBody();
-                        assert lambdaBody != null;
-
-                        lambda = lambda.withBody(lambdaBody.withPrefix(Space.format(" ")));
-
-                        lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
-                        doAfterVisit(new RemoveUnusedImports().getVisitor());
-
-                        return autoFormat(maybeAddCast(lambda, newClass), ctx);
-                    }
+                // Check if this anonymous class should be converted to a lambda.
+                // We must determine this BEFORE calling super.visitNewClass() to avoid
+                // cursor invalidation issues when nested anonymous classes are transformed.
+                // See https://github.com/openrewrite/rewrite/issues/1828
+                if (shouldConvertToLambda(newClass)) {
+                    return convertToLambda(newClass, ctx);
                 }
-                return n;
+                return super.visitNewClass(newClass, ctx);
+            }
+
+            private boolean shouldConvertToLambda(J.NewClass n) {
+                if (n.getBody() == null ||
+                    n.getBody().getStatements().size() != 1 ||
+                    !(n.getBody().getStatements().get(0) instanceof J.MethodDeclaration) ||
+                    n.getClazz() == null) {
+                    return false;
+                }
+                JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
+                if (type == null || type.getKind() != JavaType.Class.Kind.Interface) {
+                    return false;
+                }
+                JavaType.Method sam = getSamCompatible(type);
+                if (sam == null) {
+                    return false;
+                }
+                if (usesThis(getCursor()) ||
+                    shadowsLocalVariable(getCursor()) ||
+                    usedAsStatement(getCursor()) ||
+                    fieldInitializerReferencingUninitializedField(getCursor())) {
+                    return false;
+                }
+                JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
+                if (anonymousClass == null) {
+                    return false;
+                }
+                JavaType.FullyQualified typedInterface = anonymousClass.getInterfaces().stream()
+                        .filter(i -> i.getFullyQualifiedName().equals(type.getFullyQualifiedName()))
+                        .findFirst()
+                        .orElse(null);
+                if (typedInterface == null) {
+                    return false;
+                }
+                J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
+                // If the functional interface method has type parameters, we can't replace it with a lambda.
+                return methodDeclaration.getTypeParameters() == null || methodDeclaration.getTypeParameters().isEmpty();
+            }
+
+            private J convertToLambda(J.NewClass n, ExecutionContext ctx) {
+                JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
+                JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
+                JavaType.FullyQualified typedInterface = anonymousClass.getInterfaces().stream()
+                        .filter(i -> i.getFullyQualifiedName().equals(type.getFullyQualifiedName()))
+                        .findFirst()
+                        .orElse(null);
+                JavaType.Method sam = getSamCompatible(type);
+
+                StringBuilder templateBuilder = new StringBuilder();
+                J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
+
+                if (methodDeclaration.getParameters().get(0) instanceof J.Empty) {
+                    templateBuilder.append("() -> {");
+                } else {
+                    templateBuilder.append(methodDeclaration.getParameters().stream()
+                            .map(param -> ((J.VariableDeclarations) param).getVariables().get(0).getSimpleName())
+                            .collect(joining(",", "(", ") -> {")));
+                }
+
+                JavaType returnType = sam.getReturnType();
+                if (JavaType.Primitive.Void != returnType) {
+                    templateBuilder.append("return ").append(valueOfType(returnType)).append(';');
+                }
+                templateBuilder.append('}');
+
+                J.Lambda lambda = JavaTemplate.builder(templateBuilder.toString())
+                        .contextSensitive()
+                        .build()
+                        .apply(getCursor(), n.getCoordinates().replace());
+                lambda = lambda.withType(typedInterface);
+                lambda = (J.Lambda) new UnnecessaryParenthesesVisitor<>()
+                        .visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
+
+                J.Block lambdaBody = methodDeclaration.getBody();
+                assert lambdaBody != null;
+
+                lambda = lambda.withBody(lambdaBody.withPrefix(Space.format(" ")));
+
+                lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
+                doAfterVisit(new RemoveUnusedImports().getVisitor());
+
+                return autoFormat(maybeAddCast(lambda, n), ctx);
             }
 
             private J maybeAddCast(J.Lambda lambda, J.NewClass original) {

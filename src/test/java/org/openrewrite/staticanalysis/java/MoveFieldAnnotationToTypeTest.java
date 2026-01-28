@@ -266,7 +266,6 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
               import org.openrewrite.internal.lang.Nullable;
 
               public class Foo {
-
                   public B.@Nullable C bar() {
                       return null;
                   }
