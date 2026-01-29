@@ -50,20 +50,12 @@ public class CombineMergeableIfStatements extends Recipe {
 
     private static final String CONTINUATION_KEY = "continuationAfterLogicalAnd";
 
-    @Override
-    public String getDisplayName() {
-        // language=markdown
-        return "Mergeable `if` statements should be combined";
-    }
-
-    @Override
-    public String getDescription() {
-        // language=markdown
-        return "Mergeable `if` statements should be combined.";
-    }
-
-    @Override
-    public Set<String> getTags() {
+    @Getter
+    final String displayName = "Mergeable `if` statements should be combined";
+    @Getter
+    final String description = "Mergeable `if` statements should be combined.";
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1066");
         return singleton("RSPEC-S1066");
     }
 
