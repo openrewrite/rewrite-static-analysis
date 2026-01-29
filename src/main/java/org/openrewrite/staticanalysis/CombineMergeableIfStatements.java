@@ -56,8 +56,6 @@ public class CombineMergeableIfStatements extends Recipe {
     final String description = "Mergeable `if` statements should be combined.";
     @Getter
     final Set<String> tags = singleton("RSPEC-S1066");
-        return singleton("RSPEC-S1066");
-    }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
