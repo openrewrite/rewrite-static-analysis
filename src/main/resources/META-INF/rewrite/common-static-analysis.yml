@@ -19,6 +19,8 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.CommonStaticAnalysis
 displayName: Common static analysis issues
 description: Resolve common static analysis issues (also known as SAST issues).
+preconditions:
+  - org.openrewrite.Singleton
 recipeList:
   - org.openrewrite.staticanalysis.AbstractClassPublicConstructor
 #  - org.openrewrite.staticanalysis.AddSerialVersionUidToSerializable
