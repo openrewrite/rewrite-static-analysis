@@ -79,10 +79,12 @@ public class UnnecessaryThrows extends Recipe {
 
                             JavaType.FullyQualified resourceType = TypeUtils.asFullyQualified(resource.getType());
                             if (resourceType != null) {
-                                if (TypeUtils.isAssignableTo(JavaType.ShallowClass.build("java.io.Closeable"), resourceType)) {
-                                    unusedThrows.remove(JavaType.ShallowClass.build("java.io.IOException"));
-                                } else if (TypeUtils.isAssignableTo(JavaType.ShallowClass.build("java.lang.AutoCloseable"), resourceType)) {
-                                    unusedThrows.remove(JavaType.ShallowClass.build("java.lang.Exception"));
+                                // Find the close() method on the resource type to get its actual thrown exceptions
+                                for (JavaType.Method method : resourceType.getMethods()) {
+                                    if ("close".equals(method.getName()) && method.getParameterTypes().isEmpty()) {
+                                        removeThrownTypes(method);
+                                        break;
+                                    }
                                 }
                             }
 
