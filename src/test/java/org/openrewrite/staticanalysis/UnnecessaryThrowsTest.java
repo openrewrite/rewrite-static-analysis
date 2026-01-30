@@ -85,6 +85,27 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/728")
+    @SuppressWarnings("EmptyTryBlock")
+    @Test
+    void necessaryThrowsFromInputStreamClose() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.InputStream;
+
+              class Test {
+                  void customStripSpaceXSL() throws Exception {
+                      try (InputStream is = getClass().getClassLoader().getResourceAsStream("foo.xsl")) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/631")
     @SuppressWarnings("EmptyTryBlock")
     @Test
