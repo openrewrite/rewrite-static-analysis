@@ -18,9 +18,16 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.Tree;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.style.IntelliJ;
+import org.openrewrite.java.style.SpacesStyle;
+import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
@@ -54,6 +61,44 @@ class TypecastParenPadTest implements RewriteTest {
                       int j = (int) 0L;
                       int k = (int) 0L;
                       int l = (int) 0L;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotChangeMethodArgumentSpacingWithDefaultStyle() {
+        // Test with default SpacesStyle - should not change method arguments
+        rewriteRun(
+          java(
+            """
+              class A {
+                  void m(int a, int b) {
+                      Object o = (Object) m(1, 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotChangeMethodArgumentSpacingWithAfterCommaFalse() {
+        // SpacesStyle with afterComma=false should not affect method arguments inside typecast
+        SpacesStyle noSpaceAfterComma = IntelliJ.spaces()
+            .withOther(IntelliJ.spaces().getOther().withAfterComma(false));
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+              .styles(singletonList(
+                  new NamedStyles(Tree.randomId(), "test", "test", "test", emptySet(),
+                      singletonList(noSpaceAfterComma))))),
+          java(
+            """
+              class A {
+                  void m(int a, int b) {
+                      Object o = (Object) m(1, 2);
                   }
               }
               """

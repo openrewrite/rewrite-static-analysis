@@ -24,8 +24,10 @@ import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.IntelliJ;
 import org.openrewrite.java.style.SpacesStyle;
 import org.openrewrite.java.style.TypecastParenPadStyle;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.style.Style;
 
@@ -58,11 +60,26 @@ public class TypecastParenPad extends Recipe {
                         return super.visit(tree, ctx);
                     }
 
+                    @SuppressWarnings("unchecked")
                     @Override
                     public J.TypeCast visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                         J.TypeCast tc = super.visitTypeCast(typeCast, ctx);
-                        return (J.TypeCast) new SpacesVisitor<>(spacesStyle, null, null, tc)
-                                .visitNonNull(tc, ctx, getCursor().getParentTreeCursor().fork());
+                        // Only format the clazz part (type inside parentheses), not the entire typecast
+                        // which would incorrectly apply spacing rules to nested expressions
+                        J.ControlParentheses<TypeTree> clazz = tc.getClazz();
+                        J.ControlParentheses<TypeTree> formattedClazz = (J.ControlParentheses<TypeTree>) new SpacesVisitor<>(spacesStyle, null, null, clazz)
+                                .visitNonNull(clazz, ctx, getCursor().fork());
+                        tc = tc.withClazz(formattedClazz);
+
+                        // Handle afterTypeCast spacing (space between closing paren and expression)
+                        boolean afterTypeCast = spacesStyle.getOther().getAfterTypeCast();
+                        String expectedPrefix = afterTypeCast ? " " : "";
+                        Expression expr = tc.getExpression();
+                        String currentPrefix = expr.getPrefix().getWhitespace();
+                        if (!currentPrefix.equals(expectedPrefix) && !currentPrefix.contains("\n")) {
+                            tc = tc.withExpression(expr.withPrefix(expr.getPrefix().withWhitespace(expectedPrefix)));
+                        }
+                        return tc;
                     }
                 }
         );
