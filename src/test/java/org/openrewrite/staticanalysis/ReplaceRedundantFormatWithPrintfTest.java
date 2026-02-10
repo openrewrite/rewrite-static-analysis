@@ -166,7 +166,7 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
               class Test {
                   void test(String arg) {
                       System.out.printf(\"\"\"
-                        hello %s\"\"\", arg);
+                              hello %s\"\"\", arg);
                   }
               }
               """
@@ -214,7 +214,7 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
               class Test {
                   void test(String arg) {
                       System.out.printf(\"\"\"
-                        hello %s%n\"\"\", arg);
+                              hello %s%n\"\"\", arg);
                   }
               }
               """
