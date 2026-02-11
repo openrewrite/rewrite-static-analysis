@@ -2060,7 +2060,6 @@ examples:
     after: |
       import org.openrewrite.internal.lang.Nullable;
       class Test {
-
           public @Nullable String test() {
           }
       }
@@ -4001,7 +4000,6 @@ examples:
       }
     after: |
       class A {
-
           public int getCount(int val) {
               return val;
           }
