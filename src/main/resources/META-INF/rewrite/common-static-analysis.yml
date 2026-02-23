@@ -111,4 +111,5 @@ recipeList:
   - org.openrewrite.kotlin.cleanup.EqualsMethodUsage
   - org.openrewrite.kotlin.cleanup.ImplicitParameterInLambda
   - org.openrewrite.kotlin.cleanup.ReplaceCharToIntWithCode
-  - org.openrewrite.staticanalysis.CustomImportOrder
+  # OrderImports responds to ImportLayoutStyle parsed from checkstyle's CustomImportOrder rule
+  - org.openrewrite.java.OrderImports
