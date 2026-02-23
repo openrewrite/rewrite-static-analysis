@@ -621,30 +621,6 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
-recipeName: org.openrewrite.staticanalysis.CustomImportOrder
-examples:
-- description: '`CustomImportOrderRecipeTest#ordersStaticThenStandardThenThirdPartyWithNoGroupBlankLine`'
-  sources:
-  - before: |
-      package com.example;
-
-      import org.apache.commons.lang3.StringUtils;
-      import java.util.Collections;
-      import static java.util.Collections.*;
-
-      class Test {}
-    after: |
-      package com.example;
-
-      import static java.util.Collections.*;
-
-      import java.util.Collections;
-      import org.apache.commons.lang3.StringUtils;
-
-      class Test {}
-    language: java
----
-type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.DeclarationSiteTypeVariance
 examples:
 - description: '`DeclarationSiteTypeVarianceTest#inOutVariance`'
