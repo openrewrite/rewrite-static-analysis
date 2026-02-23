@@ -28,20 +28,29 @@ tags:
 preconditions:
   - org.openrewrite.Singleton
 recipeList:
-  # Empty catch blocks that swallow exceptions
+  # CWE-390: Empty catch blocks that swallow exceptions
   - org.openrewrite.staticanalysis.EmptyBlock
   - org.openrewrite.staticanalysis.RenameExceptionInEmptyCatch
   - org.openrewrite.staticanalysis.CatchClauseOnlyRethrows
-  # Overly broad exception types
+  # CWE-396: Overly broad exception types
   - org.openrewrite.staticanalysis.OnlyCatchDeclaredExceptions
   - org.openrewrite.staticanalysis.UnnecessaryCatch
   - org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks
-  # Sensitive information in error messages / stack traces
+  # CWE-397: Declaration of throws for generic exception
+  - org.openrewrite.staticanalysis.UnnecessaryThrows
+  # CWE-209, CWE-215, CWE-550: Sensitive information in error messages / stack traces
   - org.openrewrite.staticanalysis.RemoveSystemOutPrintln
   - org.openrewrite.staticanalysis.RemovePrintStackTrace
-  # Missing null checks leading to NullPointerException
+  - org.openrewrite.staticanalysis.MaskCreditCardNumbers
+  # CWE-476: Missing null checks leading to NullPointerException
   - org.openrewrite.staticanalysis.EqualsAvoidsNull
   - org.openrewrite.staticanalysis.AnnotateNullableMethods
   - org.openrewrite.staticanalysis.AnnotateNullableParameters
-  # Resource leak prevention
+  - org.openrewrite.staticanalysis.AvoidBoxedBooleanExpressions
+  # CWE-478: Missing default case in switch
+  - org.openrewrite.staticanalysis.DefaultComesLast
+  # CWE-484: Omitted break statement in switch
+  - org.openrewrite.staticanalysis.FallThrough
+  # CWE-460, CWE-755: Resource leak prevention / improper cleanup on exception
   - org.openrewrite.staticanalysis.BufferedWriterCreationRecipes
+  - org.openrewrite.staticanalysis.UnnecessaryCloseInTryWithResources
