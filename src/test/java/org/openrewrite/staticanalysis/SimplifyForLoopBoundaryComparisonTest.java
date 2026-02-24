@@ -59,7 +59,7 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
     }
 
     @Test
-    void lessThanWithAdditionOnRight() {
+    void doNotChangeLessThanWithAdditionOnRight() {
         rewriteRun(
           //language=java
           java(
@@ -67,14 +67,6 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
             class Test {
                 void test(int n) {
                     for (int i = 0; i < n + 1; i++) {
-                    }
-                }
-            }
-            """,
-            """
-            class Test {
-                void test(int n) {
-                    for (int i = 0; i <= n; i++) {
                     }
                 }
             }

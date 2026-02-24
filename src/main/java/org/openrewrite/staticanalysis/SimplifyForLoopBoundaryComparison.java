@@ -31,7 +31,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
     final String displayName = "Simplify for loop boundary comparisons";
 
     @Getter
-    final String description = "Simplify for loop conditions that use `<` or `<=` with a `+1` or `-1` offset by adjusting the comparison operator. " +
+    final String description = "Replace `<=` with `<` in for loop conditions by removing `+1` or `-1` offsets. " +
             "For example, `i <= n - 1` simplifies to `i < n`.";
 
     @Override
@@ -43,7 +43,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 binary = super.visitBinary(binary, ctx);
 
                 J.Binary.Type op = binary.getOperator();
-                if (!isLessThanComparison(op) ||
+                if (op != J.Binary.Type.LessThanOrEqual ||
                     !isIntegralType(binary.getLeft().getType()) ||
                     !isIntegralType(binary.getRight().getType()) ||
                     getCursor().firstEnclosing(J.ForLoop.Control.class) == null) {
@@ -54,12 +54,9 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 if (right instanceof J.Binary) {
                     J.Binary rightArith = (J.Binary) right;
                     Expression simplified = getSimplifiedOperand(rightArith);
-                    if (simplified != null) {
-                        J.Binary.Type newOp = transformedOperator(op, rightArith.getOperator(), true);
-                        if (newOp != null) {
-                            return binary.withOperator(newOp)
-                                    .withRight(simplified.withPrefix(binary.getRight().getPrefix()));
-                        }
+                    if (simplified != null && canSimplify(rightArith.getOperator(), true)) {
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withRight(simplified.withPrefix(binary.getRight().getPrefix()));
                     }
                 }
 
@@ -67,21 +64,13 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 if (left instanceof J.Binary) {
                     J.Binary leftArith = (J.Binary) left;
                     Expression simplified = getSimplifiedOperand(leftArith);
-                    if (simplified != null) {
-                        J.Binary.Type newOp = transformedOperator(op, leftArith.getOperator(), false);
-                        if (newOp != null) {
-                            return binary.withOperator(newOp)
-                                    .withLeft(simplified.withPrefix(binary.getLeft().getPrefix()));
-                        }
+                    if (simplified != null && canSimplify(leftArith.getOperator(), false)) {
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withLeft(simplified.withPrefix(binary.getLeft().getPrefix()));
                     }
                 }
 
                 return binary;
-            }
-
-            private boolean isLessThanComparison(J.Binary.Type op) {
-                return op == J.Binary.Type.LessThan ||
-                       op == J.Binary.Type.LessThanOrEqual;
             }
 
             private Expression unwrapParentheses(Expression expr) {
@@ -127,20 +116,10 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                        p == JavaType.Primitive.Char;
             }
 
-            private J.Binary.@Nullable Type transformedOperator(J.Binary.Type op, J.Binary.Type arithmeticOp, boolean isOnRight) {
+            private boolean canSimplify(J.Binary.Type arithmeticOp, boolean isOnRight) {
                 boolean isSubtraction = arithmeticOp == J.Binary.Type.Subtraction;
-                if (isOnRight == isSubtraction) {
-                    // Right subtract or Left add: <= → <
-                    if (op == J.Binary.Type.LessThanOrEqual) {
-                        return J.Binary.Type.LessThan;
-                    }
-                } else {
-                    // Right add or Left subtract: < → <=
-                    if (op == J.Binary.Type.LessThan) {
-                        return J.Binary.Type.LessThanOrEqual;
-                    }
-                }
-                return null;
+                // Right subtract (i <= n - 1) or Left add (i + 1 <= n)
+                return isOnRight == isSubtraction;
             }
         };
     }
