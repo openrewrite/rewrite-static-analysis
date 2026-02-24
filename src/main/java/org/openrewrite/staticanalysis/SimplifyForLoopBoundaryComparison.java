@@ -19,11 +19,10 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
+import org.openrewrite.marker.Markers;
 
 public class SimplifyForLoopBoundaryComparison extends Recipe {
 
@@ -31,8 +30,8 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
     final String displayName = "Simplify for loop boundary comparisons";
 
     @Getter
-    final String description = "Replace `<=` with `<` in for loop conditions by removing `+1` or `-1` offsets. " +
-            "For example, `i <= n - 1` simplifies to `i < n`.";
+    final String description = "Replace `<=` with `<` in for loop conditions by adjusting the comparison operands. " +
+            "For example, `i <= n - 1` simplifies to `i < n`, and `i <= n` becomes `i < n + 1`.";
 
     @Override
     public JavaIsoVisitor<ExecutionContext> getVisitor() {
@@ -42,35 +41,115 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
             public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
                 binary = super.visitBinary(binary, ctx);
 
-                J.Binary.Type op = binary.getOperator();
-                if (op != J.Binary.Type.LessThanOrEqual ||
+                if (binary.getOperator() != J.Binary.Type.LessThanOrEqual ||
                     !isIntegralType(binary.getLeft().getType()) ||
                     !isIntegralType(binary.getRight().getType()) ||
                     getCursor().firstEnclosing(J.ForLoop.Control.class) == null) {
                     return binary;
                 }
 
-                Expression right = unwrapParentheses(binary.getRight());
-                if (right instanceof J.Binary) {
-                    J.Binary rightArith = (J.Binary) right;
-                    Expression simplified = getSimplifiedOperand(rightArith);
-                    if (simplified != null && canSimplify(rightArith.getOperator(), true)) {
-                        return binary.withOperator(J.Binary.Type.LessThan)
-                                .withRight(simplified.withPrefix(binary.getRight().getPrefix()));
+                // Try adjusting right-side arithmetic directly (no parentheses)
+                if (binary.getRight() instanceof J.Binary) {
+                    J.Binary result = tryAdjustRight(binary, (J.Binary) binary.getRight());
+                    if (result != null) {
+                        return result;
                     }
                 }
 
-                Expression left = unwrapParentheses(binary.getLeft());
-                if (left instanceof J.Binary) {
-                    J.Binary leftArith = (J.Binary) left;
-                    Expression simplified = getSimplifiedOperand(leftArith);
-                    if (simplified != null && canSimplify(leftArith.getOperator(), false)) {
-                        return binary.withOperator(J.Binary.Type.LessThan)
-                                .withLeft(simplified.withPrefix(binary.getLeft().getPrefix()));
+                // Try adjusting left-side addition directly (no parentheses)
+                if (binary.getLeft() instanceof J.Binary) {
+                    J.Binary result = tryAdjustLeft(binary, (J.Binary) binary.getLeft());
+                    if (result != null) {
+                        return result;
                     }
                 }
 
-                return binary;
+                // Handle parenthesized subtraction on right: i <= (n - 1) → i < n
+                Expression unwrappedRight = unwrapParentheses(binary.getRight());
+                if (unwrappedRight != binary.getRight() && unwrappedRight instanceof J.Binary) {
+                    J.Binary rightArith = (J.Binary) unwrappedRight;
+                    if (rightArith.getOperator() == J.Binary.Type.Subtraction && isIntLiteral(rightArith.getRight(), 1)) {
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withRight(rightArith.getLeft().withPrefix(binary.getRight().getPrefix()));
+                    }
+                }
+
+                // Handle parenthesized addition on left: (i + 1) <= n → i < n
+                Expression unwrappedLeft = unwrapParentheses(binary.getLeft());
+                if (unwrappedLeft != binary.getLeft() && unwrappedLeft instanceof J.Binary) {
+                    J.Binary leftArith = (J.Binary) unwrappedLeft;
+                    if (leftArith.getOperator() == J.Binary.Type.Addition) {
+                        if (isIntLiteral(leftArith.getRight(), 1)) {
+                            return binary.withOperator(J.Binary.Type.LessThan)
+                                    .withLeft(leftArith.getLeft().withPrefix(binary.getLeft().getPrefix()));
+                        }
+                        if (isIntLiteral(leftArith.getLeft(), 1)) {
+                            return binary.withOperator(J.Binary.Type.LessThan)
+                                    .withLeft(leftArith.getRight().withPrefix(binary.getLeft().getPrefix()));
+                        }
+                    }
+                }
+
+                // General fallback: A <= B → A < B + 1
+                return binary.withOperator(J.Binary.Type.LessThan)
+                        .withRight(addOne(binary.getRight()));
+            }
+
+            private J.@Nullable Binary tryAdjustRight(J.Binary binary, J.Binary rightArith) {
+                if (rightArith.getOperator() == J.Binary.Type.Subtraction) {
+                    Integer val = getIntLiteralValue(rightArith.getRight());
+                    if (val != null && val >= 1) {
+                        if (val == 1) {
+                            return binary.withOperator(J.Binary.Type.LessThan)
+                                    .withRight(rightArith.getLeft().withPrefix(binary.getRight().getPrefix()));
+                        }
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withRight(rightArith.withRight(
+                                        withNewValue((J.Literal) rightArith.getRight(), val - 1)));
+                    }
+                }
+                if (rightArith.getOperator() == J.Binary.Type.Addition) {
+                    Integer val = getIntLiteralValue(rightArith.getRight());
+                    if (val != null) {
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withRight(rightArith.withRight(
+                                        withNewValue((J.Literal) rightArith.getRight(), val + 1)));
+                    }
+                    val = getIntLiteralValue(rightArith.getLeft());
+                    if (val != null) {
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withRight(rightArith.withLeft(
+                                        withNewValue((J.Literal) rightArith.getLeft(), val + 1)));
+                    }
+                }
+                return null;
+            }
+
+            private J.@Nullable Binary tryAdjustLeft(J.Binary binary, J.Binary leftArith) {
+                if (leftArith.getOperator() != J.Binary.Type.Addition) {
+                    return null;
+                }
+                Integer val = getIntLiteralValue(leftArith.getRight());
+                if (val != null && val >= 1) {
+                    if (val == 1) {
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withLeft(leftArith.getLeft().withPrefix(binary.getLeft().getPrefix()));
+                    }
+                    return binary.withOperator(J.Binary.Type.LessThan)
+                            .withLeft(leftArith.withRight(
+                                    withNewValue((J.Literal) leftArith.getRight(), val - 1)));
+                }
+                val = getIntLiteralValue(leftArith.getLeft());
+                if (val != null && val >= 1) {
+                    if (val == 1) {
+                        return binary.withOperator(J.Binary.Type.LessThan)
+                                .withLeft(leftArith.getRight().withPrefix(binary.getLeft().getPrefix()));
+                    }
+                    return binary.withOperator(J.Binary.Type.LessThan)
+                            .withLeft(leftArith.withLeft(
+                                    withNewValue((J.Literal) leftArith.getLeft(), val - 1)));
+                }
+                return null;
             }
 
             private Expression unwrapParentheses(Expression expr) {
@@ -80,33 +159,29 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 return expr;
             }
 
-            private @Nullable Expression getSimplifiedOperand(J.Binary arithmetic) {
-                if (arithmetic.getOperator() == J.Binary.Type.Addition) {
-                    if (isLiteralOne(arithmetic.getRight())) {
-                        return arithmetic.getLeft();
+            private @Nullable Integer getIntLiteralValue(Expression expr) {
+                if (expr instanceof J.Literal) {
+                    Object value = ((J.Literal) expr).getValue();
+                    if (value instanceof Integer) {
+                        return (Integer) value;
                     }
-                    if (isLiteralOne(arithmetic.getLeft())) {
-                        return arithmetic.getRight();
-                    }
-                } else if (arithmetic.getOperator() == J.Binary.Type.Subtraction) {
-                    if (isLiteralOne(arithmetic.getRight())) {
-                        return arithmetic.getLeft();
+                    if (value instanceof Long) {
+                        return ((Long) value).intValue();
                     }
                 }
                 return null;
             }
 
-            private boolean isLiteralOne(Expression expr) {
-                if (expr instanceof J.Literal) {
-                    Object value = ((J.Literal) expr).getValue();
-                    if (value instanceof Integer) {
-                        return (Integer) value == 1;
-                    }
-                    if (value instanceof Long) {
-                        return (Long) value == 1L;
-                    }
+            private boolean isIntLiteral(Expression expr, int expected) {
+                Integer val = getIntLiteralValue(expr);
+                return val != null && val == expected;
+            }
+
+            private J.Literal withNewValue(J.Literal literal, int newValue) {
+                if (literal.getValue() instanceof Long) {
+                    return literal.withValue((long) newValue).withValueSource(newValue + "L");
                 }
-                return false;
+                return literal.withValue(newValue).withValueSource(String.valueOf(newValue));
             }
 
             private boolean isIntegralType(@Nullable JavaType type) {
@@ -116,10 +191,16 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                        p == JavaType.Primitive.Char;
             }
 
-            private boolean canSimplify(J.Binary.Type arithmeticOp, boolean isOnRight) {
-                boolean isSubtraction = arithmeticOp == J.Binary.Type.Subtraction;
-                // Right subtract (i <= n - 1) or Left add (i + 1 <= n)
-                return isOnRight == isSubtraction;
+            private Expression addOne(Expression expr) {
+                return new J.Binary(
+                        Tree.randomId(),
+                        expr.getPrefix(),
+                        Markers.EMPTY,
+                        expr.withPrefix(Space.EMPTY),
+                        new JLeftPadded<>(Space.format(" "), J.Binary.Type.Addition, Markers.EMPTY),
+                        new J.Literal(Tree.randomId(), Space.format(" "), Markers.EMPTY, 1, "1", null, JavaType.Primitive.Int),
+                        expr.getType()
+                );
             }
         };
     }

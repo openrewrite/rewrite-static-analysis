@@ -59,14 +59,47 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeLessThanWithAdditionOnRight() {
+    void lessThanOrEqualWithSubtractionOfTwo() {
         rewriteRun(
           //language=java
           java(
             """
             class Test {
                 void test(int n) {
-                    for (int i = 0; i < n + 1; i++) {
+                    for (int i = 0; i <= n - 2; i++) {
+                    }
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i < n - 1; i++) {
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void lessThanOrEqualWithAdditionOnRight() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i <= n + 1; i++) {
+                    }
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i < n + 2; i++) {
                     }
                 }
             }
@@ -101,7 +134,82 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
     }
 
     @Test
-    void parenthesizedArithmetic() {
+    void additionOnLeftWithTwo() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i + 3 <= n; i++) {
+                    }
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i + 2 < n; i++) {
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void subtractionOnLeft() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i - 1 <= n; i++) {
+                    }
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i - 1 < n + 1; i++) {
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void noArithmetic() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i <= n; i++) {
+                    }
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i < n + 1; i++) {
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void parenthesizedSubtraction() {
         rewriteRun(
           //language=java
           java(
@@ -176,6 +284,31 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
     }
 
     @Test
+    void additionWithOneOnLeftOfSum() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; 1 + i <= n; i++) {
+                    }
+                }
+            }
+            """,
+            """
+            class Test {
+                void test(int n) {
+                    for (int i = 0; i < n; i++) {
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeOutsideForLoop() {
         rewriteRun(
           //language=java
@@ -192,31 +325,14 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeWithoutOffset() {
+    void doNotChangeGreaterThanOrEqual() {
         rewriteRun(
           //language=java
           java(
             """
             class Test {
                 void test(int n) {
-                    for (int i = 0; i <= n; i++) {
-                    }
-                }
-            }
-            """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeNonOneOffset() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-            class Test {
-                void test(int n) {
-                    for (int i = 0; i <= n - 2; i++) {
+                    for (int i = n; i >= 0 + 1; i--) {
                     }
                 }
             }
@@ -243,41 +359,7 @@ class SimplifyForLoopBoundaryComparisonTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeGreaterThanOrEqual() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-            class Test {
-                void test(int n) {
-                    for (int i = n; i >= 0 + 1; i--) {
-                    }
-                }
-            }
-            """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeGreaterThan() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-            class Test {
-                void test(int n) {
-                    for (int i = n; i > 0 - 1; i--) {
-                    }
-                }
-            }
-            """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeNonSimplifiableCombination() {
+    void doNotChangeLessThan() {
         rewriteRun(
           //language=java
           java(
