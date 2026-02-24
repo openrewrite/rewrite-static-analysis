@@ -19,10 +19,12 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.*;
-import org.openrewrite.marker.Markers;
+import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeUtils;
 
 public class SimplifyForLoopBoundaryComparison extends Recipe {
 
@@ -34,12 +36,11 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
             "For example, `i <= n - 1` simplifies to `i < n`, and `i <= n` becomes `i < n + 1`.";
 
     @Override
-    public JavaIsoVisitor<ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-
+    public JavaVisitor<ExecutionContext> getVisitor() {
+        return new JavaVisitor<ExecutionContext>() {
             @Override
-            public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
-                binary = super.visitBinary(binary, ctx);
+            public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                binary = (J.Binary) super.visitBinary(binary, ctx);
 
                 if (binary.getOperator() != J.Binary.Type.LessThanOrEqual ||
                     !isIntegralType(binary.getLeft().getType()) ||
@@ -91,8 +92,9 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 }
 
                 // General fallback: A <= B → A < B + 1
-                return binary.withOperator(J.Binary.Type.LessThan)
-                        .withRight(addOne(binary.getRight()));
+                return JavaTemplate.builder("#{any()} < #{any()} + 1").build()
+                        .apply(getCursor(), binary.getCoordinates().replace(),
+                                binary.getLeft(), binary.getRight());
             }
 
             private J.@Nullable Binary tryAdjustRight(J.Binary binary, J.Binary rightArith) {
@@ -189,18 +191,6 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 return p == JavaType.Primitive.Int || p == JavaType.Primitive.Long ||
                        p == JavaType.Primitive.Short || p == JavaType.Primitive.Byte ||
                        p == JavaType.Primitive.Char;
-            }
-
-            private Expression addOne(Expression expr) {
-                return new J.Binary(
-                        Tree.randomId(),
-                        expr.getPrefix(),
-                        Markers.EMPTY,
-                        expr.withPrefix(Space.EMPTY),
-                        new JLeftPadded<>(Space.format(" "), J.Binary.Type.Addition, Markers.EMPTY),
-                        new J.Literal(Tree.randomId(), Space.format(" "), Markers.EMPTY, 1, "1", null, JavaType.Primitive.Int),
-                        expr.getType()
-                );
             }
         };
     }
