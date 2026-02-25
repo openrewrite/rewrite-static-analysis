@@ -28,9 +28,9 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TextComment;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Set;
 import java.util.regex.Pattern;
+
+import static java.util.Collections.singleton;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -38,27 +38,15 @@ public class RemoveTrailingWhitespace extends Recipe {
 
     private static final Pattern TRAILING_WHITESPACE = Pattern.compile("[ \\t]+(?=\\r?\\n)");
 
-    @Override
-    public String getDisplayName() {
-        return "Remove trailing whitespace";
-    }
+    String displayName = "Remove trailing whitespace";
 
-    @Override
-    public String getDescription() {
-        return "Remove trailing whitespace from the end of each line. " +
-                "Trailing whitespace is simply useless and should not stay in code. " +
-                "It may generate noise when comparing different versions of the same file.";
-    }
+    String description = "Remove trailing whitespace from the end of each line. " +
+            "Trailing whitespace is simply useless and should not stay in code. " +
+            "It may generate noise when comparing different versions of the same file.";
 
-    @Override
-    public Set<String> getTags() {
-        return Collections.singleton("RSPEC-S1131");
-    }
+    Set<String> tags = singleton("RSPEC-S1131");
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofMinutes(1);
-    }
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

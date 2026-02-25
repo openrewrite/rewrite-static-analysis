@@ -2580,6 +2580,19 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveTrailingWhitespace
+examples:
+- description: '`RemoveTrailingWhitespaceTest#trailingSpacesOnCodeLines`'
+  sources:
+  - after: |
+      class Test {
+          void foo() {
+              int a = 1;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnneededAssertion
 examples:
 - description: '`RemoveUnneededAssertionTest#assertTrue`'
@@ -3566,6 +3579,27 @@ examples:
                   System.out.println("Password is too short.");
               } else if (password.length() > 12) {
                   System.out.println("Password is too long.");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyForLoopBoundaryComparison
+examples:
+- description: '`SimplifyForLoopBoundaryComparisonTest#lessThanOrEqualWithSubtractionOnRight`'
+  sources:
+  - before: |
+      class Test {
+          void test(int n) {
+              for (int i = 0; i <= n - 1; i++) {
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test(int n) {
+              for (int i = 0; i < n; i++) {
               }
           }
       }
