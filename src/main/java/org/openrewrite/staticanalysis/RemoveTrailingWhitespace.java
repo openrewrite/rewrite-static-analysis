@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TextComment;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import static java.util.Collections.singleton;
