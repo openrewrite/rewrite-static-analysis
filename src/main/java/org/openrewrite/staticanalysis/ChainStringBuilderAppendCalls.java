@@ -57,7 +57,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
                     List<Expression> flattenExpressions = new ArrayList<>();
                     boolean flattenable = flatAdditiveExpressions(arguments.get(0).unwrap(), flattenExpressions);
-                    if (!flattenable) {
+                    if (!flattenable || flattenExpressions.size() <= 1) {
                         return m;
                     }
 

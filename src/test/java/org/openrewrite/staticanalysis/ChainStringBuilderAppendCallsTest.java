@@ -280,6 +280,29 @@ class ChainStringBuilderAppendCallsTest implements RewriteTest {
     }
 
     @Test
+    void singleMethodInvocationArgumentUnchanged() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void method1() {
+                      StringBuilder sb = new StringBuilder();
+                      sb.append(
+                          String.format(
+                              "value: %d items (%.1f%%)",
+                              42,
+                              99.5
+                          )
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void methodArgument() {
         rewriteRun(
           //language=java
