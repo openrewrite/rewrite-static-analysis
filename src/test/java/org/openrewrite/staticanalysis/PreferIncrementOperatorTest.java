@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -198,6 +199,68 @@ class PreferIncrementOperatorTest implements RewriteTest {
                       if ((i = i + 1) > 10) {
                           System.out.println(i);
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/696")
+    @Test
+    void compoundAssignmentWithChainedAddition() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(int lastEnd, int startIndex, int i) {
+                      lastEnd = lastEnd + startIndex + i + 1;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int lastEnd, int startIndex, int i) {
+                      lastEnd += startIndex + i + 1;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/696")
+    @Test
+    void compoundAssignmentWithChainedMixedOperators() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(int x, int a, int b) {
+                      x = x + a - b;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int x, int a, int b) {
+                      x += a - b;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/696")
+    @Test
+    void doNotChangeChainStartingWithSubtraction() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(int x, int a, int b) {
+                      x = x - a + b;
                   }
               }
               """
