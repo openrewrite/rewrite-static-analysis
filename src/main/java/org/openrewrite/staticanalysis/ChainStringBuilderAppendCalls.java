@@ -27,7 +27,9 @@ import org.openrewrite.marker.Markers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 
 public class ChainStringBuilderAppendCalls extends Recipe {
@@ -38,6 +40,9 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
     @Getter
     final String description = "String concatenation within calls to `StringBuilder.append()` causes unnecessary memory allocation. Except for concatenations of String literals, which are joined together at compile time. Replaces inefficient concatenations with chained calls to `StringBuilder.append()`.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3024");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

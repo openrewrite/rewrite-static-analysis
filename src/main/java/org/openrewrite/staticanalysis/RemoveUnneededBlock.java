@@ -26,6 +26,9 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @Incubating(since = "7.21.0")
 public class RemoveUnneededBlock extends Recipe {
@@ -34,6 +37,9 @@ public class RemoveUnneededBlock extends Recipe {
 
     @Getter
     final String description = "Flatten blocks into inline statements when possible.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1199");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
