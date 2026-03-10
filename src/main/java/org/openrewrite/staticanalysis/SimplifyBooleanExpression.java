@@ -38,7 +38,7 @@ public class SimplifyBooleanExpression extends Recipe {
     final String description = "Checks for overly complicated boolean expressions, such as `if (b == true)`, `b || true`, `!false`, etc.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-1125");
+    final Set<String> tags = singleton("RSPEC-S1125");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

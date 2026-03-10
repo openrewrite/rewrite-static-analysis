@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -51,6 +52,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
     String description = "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`. " +
                "Currently, this recipe supports `if` statements and ternary operator expressions.";
+
+    Set<String> tags = singleton("RSPEC-S6201");
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 

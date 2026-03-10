@@ -25,6 +25,10 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
+import java.util.Set;
+
+import static java.util.Collections.singleton;
+
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class ExplicitCharsetOnStringGetBytes extends Recipe {
@@ -41,6 +45,8 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
 
     String description = "This makes the behavior of the code platform neutral. It will not override any " +
                "existing explicit encodings, even if they don't match the default encoding option.";
+
+    Set<String> tags = singleton("RSPEC-S4719");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

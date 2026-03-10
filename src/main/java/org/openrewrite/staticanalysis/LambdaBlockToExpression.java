@@ -26,6 +26,9 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class LambdaBlockToExpression extends Recipe {
     @Getter
@@ -33,6 +36,9 @@ public class LambdaBlockToExpression extends Recipe {
 
     @Getter
     final String description = "Single-line statement lambdas returning a value can be replaced with expression lambdas.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1602");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
