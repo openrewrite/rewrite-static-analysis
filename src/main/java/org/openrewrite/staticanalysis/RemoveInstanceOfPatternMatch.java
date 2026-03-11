@@ -15,7 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -269,6 +271,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
      * Analyzes variable usage. Only variables declared using instanceof
      * pattern matching are considered.
      */
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     private static class VariableUsageAnalyzer extends JavaIsoVisitor<J> {
 
         /**
@@ -287,9 +290,6 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
          * Results of variable usage analyzes.
          */
         private final VariableUsage variableUsage = new VariableUsage();
-
-        private VariableUsageAnalyzer() {
-        }
 
         /**
          * Analyzes variable usage.

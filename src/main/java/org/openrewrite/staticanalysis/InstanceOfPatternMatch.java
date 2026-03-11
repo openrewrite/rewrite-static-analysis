@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -387,13 +389,10 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {
 
         private final InstanceOfPatternReplacements replacements;
-
-        public UseInstanceOfPatternMatching(InstanceOfPatternReplacements replacements) {
-            this.replacements = replacements;
-        }
 
         static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
             return new UseInstanceOfPatternMatching(replacements).visit(tree, 0, cursor);
@@ -466,6 +465,7 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private static class VariableNameStrategy {
         public static final Pattern NAME_SPLIT_PATTERN = Pattern.compile("[$._]*(?=\\p{Upper}+[\\p{Lower}\\p{Digit}]*)");
         private final Style style;
@@ -477,12 +477,6 @@ public class InstanceOfPatternMatch extends Recipe {
 
         enum Style {
             SHORT, NORMAL, EXACT
-        }
-
-        private VariableNameStrategy(Style style, @Nullable String exactName, Set<Cursor> contextScopes) {
-            this.style = style;
-            this.name = exactName;
-            this.contextScopes = contextScopes;
         }
 
         static VariableNameStrategy short_() {
