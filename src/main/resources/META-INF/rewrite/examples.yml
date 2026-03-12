@@ -2580,19 +2580,6 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
-recipeName: org.openrewrite.staticanalysis.RemoveTrailingWhitespace
-examples:
-- description: '`RemoveTrailingWhitespaceTest#trailingSpacesOnCodeLines`'
-  sources:
-  - after: |
-      class Test {
-          void foo() {
-              int a = 1;
-          }
-      }
-    language: java
----
-type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnneededAssertion
 examples:
 - description: '`RemoveUnneededAssertionTest#assertTrue`'
