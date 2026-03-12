@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -199,12 +200,9 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor
     private static class RemoveUnusedField extends JavaVisitor<AtomicBoolean> {
         private final J.VariableDeclarations.NamedVariable namedVariable;
-
-        public RemoveUnusedField(J.VariableDeclarations.NamedVariable namedVariable) {
-            this.namedVariable = namedVariable;
-        }
 
         @Override
         public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
@@ -226,16 +224,12 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor
     private static class MaybeRemoveComment extends JavaVisitor<ExecutionContext> {
         @Nullable
         private final Statement statement;
 
         private final J.ClassDeclaration classDeclaration;
-
-        public MaybeRemoveComment(@Nullable Statement statement, J.ClassDeclaration classDeclaration) {
-            this.statement = statement;
-            this.classDeclaration = classDeclaration;
-        }
 
         @Override
         public J visitStatement(Statement s, ExecutionContext ctx) {
