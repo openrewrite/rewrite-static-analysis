@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -48,7 +49,12 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesJavaVersion<>(14), new RemoveInstanceOfPatternMatchVisitor());
+        return Preconditions.check(
+                Preconditions.and(
+                        Preconditions.not(new GroovyFileChecker<>()),
+                        new UsesJavaVersion<>(14)
+                ),
+                new RemoveInstanceOfPatternMatchVisitor());
     }
 
     /**
