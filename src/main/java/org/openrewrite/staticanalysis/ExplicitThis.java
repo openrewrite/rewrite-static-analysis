@@ -20,6 +20,7 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.FieldAccess;
 import org.openrewrite.java.tree.J.Identifier;
@@ -51,7 +52,7 @@ public class ExplicitThis extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new ExplicitThisVisitor();
+        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new ExplicitThisVisitor());
     }
 
     private static final class ExplicitThisVisitor extends JavaVisitor<ExecutionContext> {
@@ -222,7 +223,8 @@ public class ExplicitThis extends Recipe {
 
         @Nullable
         private Expression createQualifiedThisExpression(ClassContext currentContext, JavaType.FullyQualified targetType) {
-            if (TypeUtils.isOfType(currentContext.type, targetType)) {
+            if (TypeUtils.isOfType(currentContext.type, targetType) ||
+                    TypeUtils.isAssignableTo(targetType.getFullyQualifiedName(), currentContext.type)) {
                 return JavaElementFactory.newThis(currentContext.type);
             }
 
