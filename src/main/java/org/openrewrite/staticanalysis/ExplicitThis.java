@@ -20,14 +20,10 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.FieldAccess;
 import org.openrewrite.java.tree.J.Identifier;
-import org.openrewrite.java.tree.JLeftPadded;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.JavaType.Method;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
@@ -101,12 +97,11 @@ public class ExplicitThis extends Recipe {
                 return id;
             }
 
-            if (fieldType.getOwner() == null || !(fieldType.getOwner() instanceof JavaType.Class)) {
+            if (!(fieldType.getOwner() instanceof JavaType.FullyQualified)) {
                 return id;
             }
 
-            // Skip static fields - check the Modifier.STATIC flag (0x0008)
-            if ((fieldType.getFlagsBitMap() & 0x0008L) != 0) {
+            if (fieldType.hasFlags(Flag.Static)) {
                 return id;
             }
 
@@ -119,7 +114,7 @@ public class ExplicitThis extends Recipe {
                 return id;
             }
 
-            J.FieldAccess fieldAccess = this.createFieldAccess(id);
+            J.FieldAccess fieldAccess = this.createFieldAccess(id, (JavaType.FullyQualified) fieldType.getOwner());
             return fieldAccess != null ? fieldAccess : id;
         }
 
@@ -142,10 +137,8 @@ public class ExplicitThis extends Recipe {
         public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
             boolean previousStatic = this.isStatic;
 
-            JavaType.Method methodType = method.getMethodType();
-            if (methodType != null) {
-                // Check if the method is static - set isStatic flag using Modifier.STATIC (0x0008)
-                this.isStatic = (methodType.getFlagsBitMap() & 0x0008L) != 0;
+            if (method.hasModifier(J.Modifier.Type.Static)) {
+                this.isStatic = true;
             }
 
             J.MethodDeclaration result = (J.MethodDeclaration) super.visitMethodDeclaration(method, ctx);
@@ -168,11 +161,10 @@ public class ExplicitThis extends Recipe {
             }
 
             Method methodType = m.getMethodType();
-            // Skip if already qualified, type info is missing, or the method is static (Modifier.STATIC = 0x0008)
             if (
                     m.getSelect() != null ||
                             methodType == null ||
-                            (methodType.getFlagsBitMap() & 0x0008L) != 0
+                            methodType.hasFlags(Flag.Static)
             ) {
                 return m;
             }
@@ -230,16 +222,8 @@ public class ExplicitThis extends Recipe {
 
         @Nullable
         private Expression createQualifiedThisExpression(ClassContext currentContext, JavaType.FullyQualified targetType) {
-            if (currentContext.type.getFullyQualifiedName().equals(targetType.getFullyQualifiedName())) {
-                return new Identifier(
-                        Tree.randomId(),
-                        Space.EMPTY,
-                        Markers.EMPTY,
-                        emptyList(),
-                        "this",
-                        currentContext.type,
-                        null
-                );
+            if (TypeUtils.isOfType(currentContext.type, targetType)) {
+                return JavaElementFactory.newThis(currentContext.type);
             }
 
             if (currentContext.isAnonymous) {
@@ -256,24 +240,9 @@ public class ExplicitThis extends Recipe {
 
         private J.FieldAccess createOuterThisReference(JavaType.FullyQualified ownerType, String simpleClassName) {
             J.Identifier outerClassIdentifier = new J.Identifier(
-                    Tree.randomId(),
-                    Space.EMPTY,
-                    Markers.EMPTY,
-                    emptyList(),
-                    simpleClassName,
-                    ownerType,
-                    null
-            );
-
-            J.Identifier thisIdentifier = new J.Identifier(
-                    Tree.randomId(),
-                    Space.EMPTY,
-                    Markers.EMPTY,
-                    emptyList(),
-                    "this",
-                    ownerType,
-                    null
-            );
+                    Tree.randomId(), Space.EMPTY, Markers.EMPTY,
+                    emptyList(), simpleClassName, ownerType, null);
+            J.Identifier thisIdentifier = JavaElementFactory.newThis(ownerType);
 
             return new J.FieldAccess(
                     Tree.randomId(),
@@ -285,14 +254,7 @@ public class ExplicitThis extends Recipe {
             );
         }
 
-        private J.@Nullable FieldAccess createFieldAccess(J.Identifier identifier) {
-            JavaType.Variable fieldType = identifier.getFieldType();
-            if (fieldType == null || fieldType.getOwner() == null) {
-                return null;
-            }
-
-            JavaType.FullyQualified fieldOwnerType = (JavaType.FullyQualified) fieldType.getOwner();
-
+        private J.@Nullable FieldAccess createFieldAccess(J.Identifier identifier, JavaType.FullyQualified fieldOwnerType) {
             ClassContext currentContext = this.getCurrentClassContext();
             if (currentContext == null) {
                 return null;
