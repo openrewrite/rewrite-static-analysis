@@ -228,6 +228,13 @@ public class ExplicitThis extends Recipe {
                 return JavaElementFactory.newThis(currentContext.type);
             }
 
+            // An intermediate enclosing class may inherit from the target type,
+            // e.g. inner class B extends outer class A — use B.this, not A.this
+            JavaType.FullyQualified nearestAssignable = this.findNearestEnclosingTypeAssignableTo(targetType);
+            if (nearestAssignable != null) {
+                targetType = nearestAssignable;
+            }
+
             if (currentContext.isAnonymous) {
                 String ownerClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
                 if (this.isAnonymousClassName(ownerClassName)) {
@@ -238,6 +245,32 @@ public class ExplicitThis extends Recipe {
 
             String simpleClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
             return this.createOuterThisReference(targetType, simpleClassName);
+        }
+
+        private JavaType.@Nullable FullyQualified findNearestEnclosingTypeAssignableTo(JavaType.FullyQualified targetType) {
+            boolean skippedCurrent = false;
+            Cursor c = this.getCursor();
+            while (c != null) {
+                Object value = c.getValue();
+                JavaType.FullyQualified type = null;
+                if (value instanceof J.ClassDeclaration) {
+                    type = ((J.ClassDeclaration) value).getType();
+                } else if (value instanceof J.NewClass && ((J.NewClass) value).getBody() != null) {
+                    JavaType t = ((J.NewClass) value).getType();
+                    if (t instanceof JavaType.FullyQualified) {
+                        type = (JavaType.FullyQualified) t;
+                    }
+                }
+                if (type != null) {
+                    if (!skippedCurrent) {
+                        skippedCurrent = true;
+                    } else if (TypeUtils.isAssignableTo(targetType.getFullyQualifiedName(), type)) {
+                        return type;
+                    }
+                }
+                c = c.getParent();
+            }
+            return null;
         }
 
         private J.FieldAccess createOuterThisReference(JavaType.FullyQualified ownerType, String simpleClassName) {

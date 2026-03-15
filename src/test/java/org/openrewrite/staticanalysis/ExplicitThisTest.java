@@ -310,6 +310,95 @@ class ExplicitThisTest implements RewriteTest {
     }
 
     @Test
+    void innerClassExtendsOuterClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String aField;
+
+                  void aMethod() {}
+
+                  class B {
+                      String bField;
+
+                      class C extends A {
+                          String cField;
+
+                          void test() {
+                              aField = "inherited";
+                              bField = "enclosing";
+                              cField = "own";
+                              aMethod();
+                          }
+                      }
+                  }
+
+                  class D extends A {
+                      String dField;
+
+                      void test() {
+                          aField = "inherited";
+                          dField = "own";
+                          aMethod();
+                      }
+
+                      class E {
+                          void test() {
+                              aField = "outerInherited";
+                              dField = "outer";
+                              aMethod();
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  String aField;
+
+                  void aMethod() {}
+
+                  class B {
+                      String bField;
+
+                      class C extends A {
+                          String cField;
+
+                          void test() {
+                              this.aField = "inherited";
+                              B.this.bField = "enclosing";
+                              this.cField = "own";
+                              this.aMethod();
+                          }
+                      }
+                  }
+
+                  class D extends A {
+                      String dField;
+
+                      void test() {
+                          this.aField = "inherited";
+                          this.dField = "own";
+                          this.aMethod();
+                      }
+
+                      class E {
+                          void test() {
+                              D.this.aField = "outerInherited";
+                              D.this.dField = "outer";
+                              D.this.aMethod();
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void unchangedWhenAlreadyQualified() {
         rewriteRun(
           //language=java
