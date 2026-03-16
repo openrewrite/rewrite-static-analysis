@@ -26,6 +26,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.SearchResult;
@@ -46,6 +47,8 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
             "This rule will not report if a method overrides a parent method.";
     Set<String> tags = singleton("RSPEC-S1845");
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
+
+    private static final String MESSAGE = "Rename this member to not match other members differing only by capitalization";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -87,7 +90,6 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
 
                 // Check each current member against inherited names and other current members
                 Set<J> marked = new HashSet<>();
-                String message = "Rename this member to not match other members differing only by capitalization";
                 for (int i = 0; i < currentMembers.size(); i++) {
                     MemberInfo member = currentMembers.get(i);
 
@@ -120,11 +122,11 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
                     if (stmt instanceof J.VariableDeclarations) {
                         J.VariableDeclarations vd = (J.VariableDeclarations) stmt;
                         return vd.withVariables(ListUtils.map(vd.getVariables(), var ->
-                                marked.contains(var) ? SearchResult.found(var, message) : var));
+                                marked.contains(var) ? SearchResult.found(var, MESSAGE) : var));
                     } else if (stmt instanceof J.MethodDeclaration) {
                         J.MethodDeclaration method = (J.MethodDeclaration) stmt;
                         if (marked.contains(method)) {
-                            return method.withName(SearchResult.found(method.getName(), message));
+                            return method.withName(SearchResult.found(method.getName(), MESSAGE));
                         }
                     }
                     return stmt;
@@ -132,14 +134,16 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
             }
 
             private void collectInheritedNames(JavaType.@Nullable FullyQualified type, Set<String> names, Set<String> visited) {
-                if (type == null || "java.lang.Object".equals(type.getFullyQualifiedName()) || !visited.add(type.getFullyQualifiedName())) {
+                if (type == null || !visited.add(type.getFullyQualifiedName())) {
                     return;
                 }
                 for (JavaType.Variable member : type.getMembers()) {
-                    names.add(member.getName());
+                    if (!member.hasFlags(Flag.Private)) {
+                        names.add(member.getName());
+                    }
                 }
                 for (JavaType.Method method : type.getMethods()) {
-                    if (!method.isConstructor()) {
+                    if (!method.isConstructor() && !method.hasFlags(Flag.Private)) {
                         names.add(method.getName());
                     }
                 }

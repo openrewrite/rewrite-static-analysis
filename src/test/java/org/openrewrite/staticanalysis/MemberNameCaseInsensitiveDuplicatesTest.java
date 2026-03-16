@@ -157,6 +157,47 @@ class MemberNameCaseInsensitiveDuplicatesTest implements RewriteTest {
     }
 
     @Test
+    void methodConflictsWithObjectMethod() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                class A {
+                    void tostring() {}
+                }
+                """,
+                """
+                class A {
+                    void /*~~(Rename this member to not match other members differing only by capitalization)~~>*/tostring() {}
+                }
+                """
+            )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenParentMemberIsPrivate() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                class Parent {
+                    private int secret;
+                }
+                """
+            ),
+            //language=java
+            java(
+                """
+                class Child extends Parent {
+                    int Secret;
+                }
+                """
+            )
+        );
+    }
+
+    @Test
     void doNotChangeCompletelyDifferentNames() {
         rewriteRun(
             //language=java
