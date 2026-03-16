@@ -104,6 +104,41 @@ class TryWithResourcesTest implements RewriteTest {
     }
 
     @Test
+    void nullGuardedCloseWithoutBraces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
+                          int data = in.read();
+                      } finally {
+                          if (in != null)
+                              in.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      try (InputStream in = new FileInputStream("file.txt")) {
+                          int data = in.read();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void tryCatchWrappedClose() {
         rewriteRun(
           //language=java

@@ -24,12 +24,12 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesJavaVersion;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,29 +63,24 @@ public class TryWithResources extends Recipe {
                     public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                         J.Block b = super.visitBlock(block, ctx);
                         List<Statement> stmts = b.getStatements();
-
-                        boolean changed = false;
-                        List<Statement> newStmts = new ArrayList<>(stmts.size());
-
-                        for (int i = 0; i < stmts.size(); i++) {
-                            if (i + 1 < stmts.size()
-                                    && stmts.get(i) instanceof J.VariableDeclarations
+                        return b.withStatements(ListUtils.map(stmts, (i, stmt) -> {
+                            // Transform varDecl into try-with-resources
+                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size()
                                     && stmts.get(i + 1) instanceof J.Try) {
-
-                                J.VariableDeclarations varDecl = (J.VariableDeclarations) stmts.get(i);
+                                J.VariableDeclarations varDecl = (J.VariableDeclarations) stmt;
                                 J.Try tryStmt = (J.Try) stmts.get(i + 1);
-
                                 if (canTransform(varDecl, tryStmt, stmts, i)) {
-                                    newStmts.add(transform(varDecl, tryStmt));
-                                    i++; // skip the try statement
-                                    changed = true;
-                                    continue;
+                                    return transform(varDecl, tryStmt);
                                 }
                             }
-                            newStmts.add(stmts.get(i));
-                        }
-
-                        return changed ? b.withStatements(newStmts) : b;
+                            // Remove the try statement that was merged into the preceding varDecl
+                            if (stmt instanceof J.Try && i > 0
+                                    && stmts.get(i - 1) instanceof J.VariableDeclarations
+                                    && canTransform((J.VariableDeclarations) stmts.get(i - 1), (J.Try) stmt, stmts, i - 1)) {
+                                return null;
+                            }
+                            return stmt;
+                        }));
                     }
                 });
     }
@@ -189,14 +184,16 @@ public class TryWithResources extends Recipe {
             if (!isNullCheck(ifStmt.getIfCondition().getTree(), varName)) {
                 return false;
             }
-            if (!(ifStmt.getThenPart() instanceof J.Block)) {
-                return false;
+            Statement inner;
+            if (ifStmt.getThenPart() instanceof J.Block) {
+                J.Block thenBlock = (J.Block) ifStmt.getThenPart();
+                if (thenBlock.getStatements().size() != 1) {
+                    return false;
+                }
+                inner = thenBlock.getStatements().get(0);
+            } else {
+                inner = ifStmt.getThenPart();
             }
-            J.Block thenBlock = (J.Block) ifStmt.getThenPart();
-            if (thenBlock.getStatements().size() != 1) {
-                return false;
-            }
-            Statement inner = thenBlock.getStatements().get(0);
             return isDirectClose(inner, varName) || isTryCatchClose(inner, varName);
         }
 
