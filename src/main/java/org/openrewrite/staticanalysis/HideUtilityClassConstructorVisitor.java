@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
@@ -121,12 +122,9 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
      * We consider a Utility Class to have an "exposed" constructor if the constructor is Public or Package-Private.
      * The constructor may be "Protected" in cases where it's desirable to subclass the Utility Class.
      */
+    @RequiredArgsConstructor
     private static class UtilityClassWithExposedConstructorInspectionVisitor<P> extends JavaIsoVisitor<P> {
         private final J.ClassDeclaration utilityClass;
-
-        public UtilityClassWithExposedConstructorInspectionVisitor(J.ClassDeclaration utilityClass) {
-            this.utilityClass = utilityClass;
-        }
 
         @Override
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {

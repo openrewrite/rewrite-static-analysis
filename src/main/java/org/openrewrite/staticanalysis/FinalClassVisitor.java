@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Tree;
@@ -104,12 +105,9 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
      * Adding the `final` modifier is performed in a second phase, because we first need to check if any of the
      * classes need to remain non-final due to inheritance.
      */
+    @RequiredArgsConstructor
     private static class FinalizingVisitor extends JavaIsoVisitor<ExecutionContext> {
         private final Set<String> typesToFinalize;
-
-        public FinalizingVisitor(Set<String> typesToFinalize) {
-            this.typesToFinalize = typesToFinalize;
-        }
 
         @Override
         public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {

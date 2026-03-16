@@ -15,7 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -133,13 +135,10 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             return t;
         }
 
+        @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
         @SuppressWarnings("ConstantConditions")
         static class RemoveCatches extends JavaVisitor<ExecutionContext> {
             private final List<J.Try.Catch> removeCatches;
-
-            RemoveCatches(@Nullable List<J.Try.Catch> removeCatches) {
-                this.removeCatches = removeCatches;
-            }
 
             @Override
             public @Nullable J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
@@ -163,18 +162,11 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             }
         }
 
+        @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
         private static class CombineCatches extends JavaVisitor<ExecutionContext> {
             private final J.Try.Catch scope;
             private final List<J.Try.Catch> equivalentCatches;
             private final Map<J.Try.Catch, Set<NameTree>> childClassesToExclude;
-
-            CombineCatches(J.Try.Catch scope,
-                           List<J.Try.Catch> equivalentCatches,
-                           Map<J.Try.Catch, Set<NameTree>> childClassesToExclude) {
-                this.scope = scope;
-                this.equivalentCatches = equivalentCatches;
-                this.childClassesToExclude = childClassesToExclude;
-            }
 
             @Override
             public J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {

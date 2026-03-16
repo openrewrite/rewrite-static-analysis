@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -139,12 +140,9 @@ public class NoDoubleBraceInitialization extends Recipe {
             return ListUtils.map(statements, statement -> (Statement) selectVisitor.visitNonNull(statement, ctx));
         }
 
+        @RequiredArgsConstructor
         private static class AddSelectVisitor extends JavaIsoVisitor<ExecutionContext> {
             private final J.Identifier identifier;
-
-            public AddSelectVisitor(J.Identifier identifier) {
-                this.identifier = identifier;
-            }
 
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
