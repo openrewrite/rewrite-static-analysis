@@ -30,6 +30,7 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -69,15 +70,29 @@ public class TryWithResources extends Recipe {
                                     && stmts.get(i + 1) instanceof J.Try) {
                                 J.VariableDeclarations varDecl = (J.VariableDeclarations) stmt;
                                 J.Try tryStmt = (J.Try) stmts.get(i + 1);
-                                if (canTransform(varDecl, tryStmt, stmts, i)) {
+                                if (canTransform(varDecl, tryStmt)) {
+                                    boolean usedAfter = isUsedAfter(varDecl.getVariables().get(0).getSimpleName(), stmts, i + 1);
+                                    if (usedAfter) {
+                                        // Keep the varDecl; the try will be transformed below
+                                        return stmt;
+                                    }
                                     return transform(varDecl, tryStmt);
                                 }
                             }
-                            // Remove the try statement that was merged into the preceding varDecl
+                            // Transform or remove the try statement that follows a transformable varDecl
                             if (stmt instanceof J.Try && i > 0
-                                    && stmts.get(i - 1) instanceof J.VariableDeclarations
-                                    && canTransform((J.VariableDeclarations) stmts.get(i - 1), (J.Try) stmt, stmts, i - 1)) {
-                                return null;
+                                    && stmts.get(i - 1) instanceof J.VariableDeclarations) {
+                                J.VariableDeclarations prevDecl = (J.VariableDeclarations) stmts.get(i - 1);
+                                J.Try tryStmt = (J.Try) stmt;
+                                if (canTransform(prevDecl, tryStmt)) {
+                                    boolean usedAfter = isUsedAfter(prevDecl.getVariables().get(0).getSimpleName(), stmts, i);
+                                    if (usedAfter) {
+                                        // Use Java 9+ try(varName) syntax
+                                        return transformJava9(prevDecl, tryStmt);
+                                    }
+                                    // Merged into varDecl above, remove this try
+                                    return null;
+                                }
                             }
                             return stmt;
                         }));
@@ -85,8 +100,7 @@ public class TryWithResources extends Recipe {
                 });
     }
 
-    private static boolean canTransform(J.VariableDeclarations varDecl, J.Try tryStmt,
-                                        List<Statement> stmts, int varDeclIndex) {
+    private static boolean canTransform(J.VariableDeclarations varDecl, J.Try tryStmt) {
         // Single variable only
         if (varDecl.getVariables().size() != 1) {
             return false;
@@ -116,13 +130,8 @@ public class TryWithResources extends Recipe {
             return false;
         }
 
-        // Finally block must only close this variable
-        if (!isFinallyOnlyClosing(tryStmt.getFinally(), varName)) {
-            return false;
-        }
-
-        // Variable must not be used after the try
-        if (isUsedAfter(varName, stmts, varDeclIndex + 1)) {
+        // Finally block must contain a close for this variable
+        if (!finallyContainsClose(tryStmt.getFinally(), varName)) {
             return false;
         }
 
@@ -158,15 +167,72 @@ public class TryWithResources extends Recipe {
                 Markers.EMPTY
         );
 
-        return tryStmt.getPadding()
+        String varName = varDecl.getVariables().get(0).getSimpleName();
+        J.Try result = tryStmt.getPadding()
                 .withResources(resources)
-                .withFinally(null)
                 .withPrefix(varDecl.getPrefix());
+        return result.getPadding()
+                .withFinally(stripCloseFromFinally(result.getPadding().getFinally(), varName));
     }
 
-    private static boolean isFinallyOnlyClosing(J.Block finallyBlock, String varName) {
-        List<Statement> stmts = finallyBlock.getStatements();
-        return stmts.size() == 1 && isCloseStatement(stmts.get(0), varName);
+    private static J.Try transformJava9(J.VariableDeclarations varDecl, J.Try tryStmt) {
+        J.VariableDeclarations.NamedVariable namedVar = varDecl.getVariables().get(0);
+        J.Identifier resourceRef = new J.Identifier(
+                Tree.randomId(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                Collections.emptyList(),
+                namedVar.getSimpleName(),
+                namedVar.getType(),
+                null
+        );
+
+        J.Try.Resource resource = new J.Try.Resource(
+                Tree.randomId(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                resourceRef,
+                false
+        );
+
+        JContainer<J.Try.Resource> resources = JContainer.build(
+                Space.SINGLE_SPACE,
+                singletonList(JRightPadded.build(resource)),
+                Markers.EMPTY
+        );
+
+        String varName = namedVar.getSimpleName();
+        J.Try result = tryStmt.getPadding()
+                .withResources(resources);
+        return result.getPadding()
+                .withFinally(stripCloseFromFinally(result.getPadding().getFinally(), varName));
+    }
+
+    private static boolean finallyContainsClose(J.Block finallyBlock, String varName) {
+        for (Statement stmt : finallyBlock.getStatements()) {
+            if (isCloseStatement(stmt, varName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Remove the close statement from the finally block. Returns null if the finally block
+     * becomes empty (so it can be removed entirely), otherwise returns the pruned finally block.
+     */
+    @SuppressWarnings("DataFlowIssue")
+    private static JLeftPadded<J.Block> stripCloseFromFinally(JLeftPadded<J.Block> finallyPadded, String varName) {
+        if (finallyPadded == null) {
+            return null;
+        }
+        J.Block finallyBlock = finallyPadded.getElement();
+        List<Statement> remaining = ListUtils.map(finallyBlock.getStatements(),
+                stmt -> isCloseStatement(stmt, varName) ? null : stmt);
+        if (remaining.isEmpty()) {
+            return null;
+        }
+        return finallyPadded.withElement(finallyBlock.withStatements(remaining));
     }
 
     private static boolean isCloseStatement(Statement stmt, String varName) {

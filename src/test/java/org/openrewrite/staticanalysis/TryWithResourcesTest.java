@@ -253,7 +253,7 @@ class TryWithResourcesTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeResourceUsedAfterTry() {
+    void resourceUsedAfterTryUsesJava9Syntax() {
         rewriteRun(
           //language=java
           java(
@@ -267,6 +267,19 @@ class TryWithResourcesTest implements RewriteTest {
                           int data = in.read();
                       } finally {
                           in.close();
+                      }
+                      System.out.println(in);
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try (in) {
+                          int data = in.read();
                       }
                       System.out.println(in);
                   }
@@ -404,7 +417,7 @@ class TryWithResourcesTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeFinallyWithExtraLogic() {
+    void finallyWithExtraLogicKeepsRemainingStatements() {
         rewriteRun(
           //language=java
           java(
@@ -419,6 +432,110 @@ class TryWithResourcesTest implements RewriteTest {
                       } finally {
                           System.out.println("closing");
                           in.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      try (InputStream in = new FileInputStream("file.txt")) {
+                          int data = in.read();
+                      } finally {
+                          System.out.println("closing");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeQualifiedCloseMethodCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  static class Wrapper {
+                      InputStream stream;
+                      Wrapper(InputStream s) { this.stream = s; }
+                      InputStream getStream() { return stream; }
+                  }
+
+                  void method() throws IOException {
+                      Wrapper wrapper = new Wrapper(new FileInputStream("file.txt"));
+                      try {
+                          int data = wrapper.getStream().read();
+                      } finally {
+                          wrapper.getStream().close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeResourceAssignedToField() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  private InputStream fieldStream;
+
+                  void method() throws IOException {
+                      fieldStream = new FileInputStream("file.txt");
+                      try {
+                          int data = fieldStream.read();
+                      } finally {
+                          fieldStream.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeNullInitializedResourceClosedInCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() {
+                      InputStream in = null;
+                      try {
+                          in = new FileInputStream("file.txt");
+                          int data = in.read();
+                      } catch (IOException e) {
+                          if (in != null) {
+                              try {
+                                  in.close();
+                              } catch (IOException ignored) {
+                              }
+                          }
+                          throw new RuntimeException(e);
+                      } finally {
+                          if (in != null) {
+                              try {
+                                  in.close();
+                              } catch (IOException ignored) {
+                              }
+                          }
                       }
                   }
               }
