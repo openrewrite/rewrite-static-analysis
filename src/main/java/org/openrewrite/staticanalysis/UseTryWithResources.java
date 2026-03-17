@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 
-public class TryWithResources extends Recipe {
+public class UseTryWithResources extends Recipe {
 
     private static final MethodMatcher CLOSE = new MethodMatcher("java.lang.AutoCloseable close()", true);
     private static final JavaType.ShallowClass AUTO_CLOSEABLE = JavaType.ShallowClass.build("java.lang.AutoCloseable");

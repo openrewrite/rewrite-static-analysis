@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@ import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 
 @SuppressWarnings({"ConstantConditions", "TryFinallyCanBeTryWithResources", "unused"})
-class TryWithResourcesTest implements RewriteTest {
+class UseTryWithResourcesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new TryWithResources())
+        spec.recipe(new UseTryWithResources())
             .allSources(s -> s.markers(javaVersion(9)));
     }
 
