@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -100,7 +101,7 @@ public class TryWithResources extends Recipe {
 
         // Must have a non-null initializer
         Expression init = namedVar.getInitializer();
-        if (init == null || (init instanceof J.Literal && ((J.Literal) init).getValue() == null)) {
+        if (init == null || init instanceof J.Literal && ((J.Literal) init).getValue() == null) {
             return false;
         }
 
@@ -192,7 +193,7 @@ public class TryWithResources extends Recipe {
      * becomes empty (so it can be removed entirely), otherwise returns the pruned finally block.
      */
     @SuppressWarnings("DataFlowIssue")
-    private static JLeftPadded<J.Block> stripCloseFromFinally(JLeftPadded<J.Block> finallyPadded, String varName) {
+    private static JLeftPadded<J.Block> stripCloseFromFinally(@Nullable JLeftPadded<J.Block> finallyPadded, String varName) {
         if (finallyPadded == null) {
             return null;
         }
@@ -267,16 +268,14 @@ public class TryWithResources extends Recipe {
         if (binary.getOperator() != J.Binary.Type.NotEqual) {
             return false;
         }
-        return (isIdentifier(binary.getLeft(), varName) && isNullLiteral(binary.getRight()))
-                || (isNullLiteral(binary.getLeft()) && isIdentifier(binary.getRight(), varName));
+        if (isIdentifier(binary.getLeft(), varName) && J.Literal.isLiteralValue(binary.getRight(), null)) {
+            return true;
+        }
+        return J.Literal.isLiteralValue(binary.getLeft(), null) && isIdentifier(binary.getRight(), varName);
     }
 
     private static boolean isIdentifier(Expression expr, String name) {
         return expr instanceof J.Identifier && ((J.Identifier) expr).getSimpleName().equals(name);
-    }
-
-    private static boolean isNullLiteral(Expression expr) {
-        return expr instanceof J.Literal && ((J.Literal) expr).getValue() == null;
     }
 
     private static boolean isUsedAfter(String varName, List<Statement> stmts, int tryIndex) {
