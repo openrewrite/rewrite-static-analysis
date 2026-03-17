@@ -151,28 +151,9 @@ public class TryWithResources extends Recipe {
     }
 
     private static J.Try transform(J.VariableDeclarations varDecl, J.Try tryStmt) {
-        J.VariableDeclarations resourceDecl = varDecl.withPrefix(Space.EMPTY);
-
-        J.Try.Resource resource = new J.Try.Resource(
-                Tree.randomId(),
-                Space.EMPTY,
-                Markers.EMPTY,
-                resourceDecl,
-                false
-        );
-
-        JContainer<J.Try.Resource> resources = JContainer.build(
-                Space.SINGLE_SPACE,
-                singletonList(JRightPadded.build(resource)),
-                Markers.EMPTY
-        );
-
-        String varName = varDecl.getVariables().get(0).getSimpleName();
-        J.Try result = tryStmt.getPadding()
-                .withResources(resources)
-                .withPrefix(varDecl.getPrefix());
-        return result.getPadding()
-                .withFinally(stripCloseFromFinally(result.getPadding().getFinally(), varName));
+        return addResource(varDecl.withPrefix(Space.EMPTY),
+                varDecl.getVariables().get(0).getSimpleName(),
+                tryStmt.withPrefix(varDecl.getPrefix()));
     }
 
     private static J.Try transformJava9(J.VariableDeclarations varDecl, J.Try tryStmt) {
@@ -186,24 +167,23 @@ public class TryWithResources extends Recipe {
                 namedVar.getType(),
                 null
         );
+        return addResource(resourceRef, namedVar.getSimpleName(), tryStmt);
+    }
 
+    private static J.Try addResource(TypedTree resourceExpr, String varName, J.Try tryStmt) {
         J.Try.Resource resource = new J.Try.Resource(
                 Tree.randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
-                resourceRef,
+                resourceExpr,
                 false
         );
-
-        JContainer<J.Try.Resource> resources = JContainer.build(
-                Space.SINGLE_SPACE,
-                singletonList(JRightPadded.build(resource)),
-                Markers.EMPTY
-        );
-
-        String varName = namedVar.getSimpleName();
         J.Try result = tryStmt.getPadding()
-                .withResources(resources);
+                .withResources(JContainer.build(
+                        Space.SINGLE_SPACE,
+                        singletonList(JRightPadded.build(resource)),
+                        Markers.EMPTY
+                ));
         return result.getPadding()
                 .withFinally(stripCloseFromFinally(result.getPadding().getFinally(), varName));
     }
