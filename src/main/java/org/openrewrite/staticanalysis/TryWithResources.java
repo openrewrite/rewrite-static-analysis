@@ -65,21 +65,6 @@ public class TryWithResources extends Recipe {
                         J.Block b = super.visitBlock(block, ctx);
                         List<Statement> stmts = b.getStatements();
                         return b.withStatements(ListUtils.map(stmts, (i, stmt) -> {
-                            // Transform varDecl into try-with-resources
-                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size()
-                                    && stmts.get(i + 1) instanceof J.Try) {
-                                J.VariableDeclarations varDecl = (J.VariableDeclarations) stmt;
-                                J.Try tryStmt = (J.Try) stmts.get(i + 1);
-                                if (canTransform(varDecl, tryStmt)) {
-                                    boolean usedAfter = isUsedAfter(varDecl.getVariables().get(0).getSimpleName(), stmts, i + 1);
-                                    if (usedAfter) {
-                                        // Keep the varDecl; the try will be transformed below
-                                        return stmt;
-                                    }
-                                    return transform(varDecl, tryStmt);
-                                }
-                            }
-                            // Transform or remove the try statement that follows a transformable varDecl
                             if (stmt instanceof J.Try && i > 0
                                     && stmts.get(i - 1) instanceof J.VariableDeclarations) {
                                 J.VariableDeclarations prevDecl = (J.VariableDeclarations) stmts.get(i - 1);
@@ -87,12 +72,17 @@ public class TryWithResources extends Recipe {
                                 if (canTransform(prevDecl, tryStmt)) {
                                     boolean usedAfter = isUsedAfter(prevDecl.getVariables().get(0).getSimpleName(), stmts, i);
                                     if (usedAfter) {
-                                        // Use Java 9+ try(varName) syntax
                                         return transformJava9(prevDecl, tryStmt);
                                     }
-                                    // Merged into varDecl above, remove this try
-                                    return null;
+                                    return transform(prevDecl, tryStmt);
                                 }
+                            }
+                            // Remove varDecl that was merged into the following try-with-resources
+                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size()
+                                    && stmts.get(i + 1) instanceof J.Try
+                                    && canTransform((J.VariableDeclarations) stmt, (J.Try) stmts.get(i + 1))
+                                    && !isUsedAfter(((J.VariableDeclarations) stmt).getVariables().get(0).getSimpleName(), stmts, i + 1)) {
+                                return null;
                             }
                             return stmt;
                         }));
