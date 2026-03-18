@@ -31,6 +31,7 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -116,11 +117,6 @@ public class UseTryWithResources extends Recipe {
             return false;
         }
 
-        // Must not already have resources
-        if (tryStmt.getResources() != null && !tryStmt.getResources().isEmpty()) {
-            return false;
-        }
-
         // Finally block must contain a close for this variable
         if (!finallyContainsClose(tryStmt.getFinally(), varName)) {
             return false;
@@ -169,10 +165,24 @@ public class UseTryWithResources extends Recipe {
                 resourceExpr,
                 false
         );
+        List<JRightPadded<J.Try.Resource>> existingResources = tryStmt.getPadding().getResources() != null ?
+                tryStmt.getPadding().getResources().getPadding().getElements() : Collections.emptyList();
+        List<JRightPadded<J.Try.Resource>> newResources;
+        if (existingResources.isEmpty()) {
+            newResources = singletonList(JRightPadded.build(resource));
+        } else {
+            newResources = new ArrayList<>(existingResources);
+            // Set semicolon on the previous last resource
+            int lastIdx = newResources.size() - 1;
+            JRightPadded<J.Try.Resource> prev = newResources.get(lastIdx);
+            newResources.set(lastIdx, prev.withElement(prev.getElement().withTerminatedWithSemicolon(true)));
+            newResources.add(JRightPadded.build(resource.withPrefix(Space.SINGLE_SPACE)));
+        }
         J.Try result = tryStmt.getPadding()
                 .withResources(JContainer.build(
-                        Space.SINGLE_SPACE,
-                        singletonList(JRightPadded.build(resource)),
+                        tryStmt.getPadding().getResources() != null ?
+                                tryStmt.getPadding().getResources().getBefore() : Space.SINGLE_SPACE,
+                        newResources,
                         Markers.EMPTY
                 ));
         return result.getPadding()

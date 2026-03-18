@@ -508,6 +508,40 @@ class UseTryWithResourcesTest implements RewriteTest {
     }
 
     @Test
+    void addResourceToExistingTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      OutputStream out = new FileOutputStream("out.txt");
+                      try (InputStream in = new FileInputStream("in.txt")) {
+                          out.write(in.read());
+                      } finally {
+                          out.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      try (InputStream in = new FileInputStream("in.txt"); OutputStream out = new FileOutputStream("out.txt")) {
+                          out.write(in.read());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeNullInitializedResourceClosedInCatch() {
         rewriteRun(
           //language=java
