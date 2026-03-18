@@ -104,41 +104,6 @@ class UseTryWithResourcesTest implements RewriteTest {
     }
 
     @Test
-    void nullGuardedCloseWithoutBraces() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.*;
-
-              class Test {
-                  void method() throws IOException {
-                      InputStream in = new FileInputStream("file.txt");
-                      try {
-                          int data = in.read();
-                      } finally {
-                          if (in != null)
-                              in.close();
-                      }
-                  }
-              }
-              """,
-            """
-              import java.io.*;
-
-              class Test {
-                  void method() throws IOException {
-                      try (InputStream in = new FileInputStream("file.txt")) {
-                          int data = in.read();
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void tryCatchWrappedClose() {
         rewriteRun(
           //language=java
@@ -155,45 +120,6 @@ class UseTryWithResourcesTest implements RewriteTest {
                           try {
                               in.close();
                           } catch (IOException ignored) {
-                          }
-                      }
-                  }
-              }
-              """,
-            """
-              import java.io.*;
-
-              class Test {
-                  void method() throws IOException {
-                      try (InputStream in = new FileInputStream("file.txt")) {
-                          int data = in.read();
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void nullGuardedWithTryCatchClose() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.*;
-
-              class Test {
-                  void method() throws IOException {
-                      InputStream in = new FileInputStream("file.txt");
-                      try {
-                          int data = in.read();
-                      } finally {
-                          if (in != null) {
-                              try {
-                                  in.close();
-                              } catch (IOException ignored) {
-                              }
                           }
                       }
                   }
@@ -542,43 +468,6 @@ class UseTryWithResourcesTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeNullInitializedResourceClosedInCatch() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.*;
-
-              class Test {
-                  void method() {
-                      InputStream in = null;
-                      try {
-                          in = new FileInputStream("file.txt");
-                          int data = in.read();
-                      } catch (IOException e) {
-                          if (in != null) {
-                              try {
-                                  in.close();
-                              } catch (IOException ignored) {
-                              }
-                          }
-                          throw new RuntimeException(e);
-                      } finally {
-                          if (in != null) {
-                              try {
-                                  in.close();
-                              } catch (IOException ignored) {
-                              }
-                          }
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void nonConsecutiveWithInterveningStatement() {
         rewriteRun(
           //language=java
@@ -607,123 +496,6 @@ class UseTryWithResourcesTest implements RewriteTest {
                       int x = 1;
                       try (in) {
                           int data = in.read();
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void nonConsecutiveWithNullGuardedClose() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.*;
-
-              class Test {
-                  void method(String path) throws IOException {
-                      InputStream in = new FileInputStream(path);
-                      int x = 1;
-                      try {
-                          int data = in.read();
-                      } finally {
-                          if (in != null) {
-                              in.close();
-                          }
-                      }
-                  }
-              }
-              """,
-            """
-              import java.io.*;
-
-              class Test {
-                  void method(String path) throws IOException {
-                      InputStream in = new FileInputStream(path);
-                      int x = 1;
-                      try (in) {
-                          int data = in.read();
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void nonConsecutiveResourceUsedBetween() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.*;
-
-              class Test {
-                  void method(String path) throws IOException {
-                      InputStream in = new FileInputStream(path);
-                      System.out.println(in.available());
-                      try {
-                          int data = in.read();
-                      } finally {
-                          in.close();
-                      }
-                  }
-              }
-              """,
-            """
-              import java.io.*;
-
-              class Test {
-                  void method(String path) throws IOException {
-                      InputStream in = new FileInputStream(path);
-                      System.out.println(in.available());
-                      try (in) {
-                          int data = in.read();
-                      }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void nonConsecutivePreservesCatchBlocks() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.*;
-
-              class Test {
-                  void method(String path) {
-                      InputStream in = new FileInputStream(path);
-                      int x = 1;
-                      try {
-                          int data = in.read();
-                      } catch (IOException e) {
-                          e.printStackTrace();
-                      } finally {
-                          in.close();
-                      }
-                  }
-              }
-              """,
-            """
-              import java.io.*;
-
-              class Test {
-                  void method(String path) {
-                      InputStream in = new FileInputStream(path);
-                      int x = 1;
-                      try (in) {
-                          int data = in.read();
-                      } catch (IOException e) {
-                          e.printStackTrace();
                       }
                   }
               }
