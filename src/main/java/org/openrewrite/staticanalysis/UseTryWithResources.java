@@ -24,6 +24,7 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.tree.*;
@@ -119,16 +120,10 @@ public class UseTryWithResources extends Recipe {
 
         // Must not already be a resource in the try
         if (tryStmt.getResources() != null) {
+            J.VariableDeclarations normalized = varDecl.withPrefix(Space.EMPTY);
             for (J.Try.Resource res : tryStmt.getResources()) {
-                if (res.getVariableDeclarations() instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations resDecl = (J.VariableDeclarations) res.getVariableDeclarations();
-                    if (resDecl.getVariables().get(0).getSimpleName().equals(varName)) {
-                        return false;
-                    }
-                } else if (res.getVariableDeclarations() instanceof J.Identifier) {
-                    if (((J.Identifier) res.getVariableDeclarations()).getSimpleName().equals(varName)) {
-                        return false;
-                    }
+                if (SemanticallyEqual.areEqual(res.getVariableDeclarations(), normalized)) {
+                    return false;
                 }
             }
         }
