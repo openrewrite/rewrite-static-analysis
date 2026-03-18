@@ -32,11 +32,11 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 
@@ -117,6 +117,22 @@ public class UseTryWithResources extends Recipe {
             return false;
         }
 
+        // Must not already be a resource in the try
+        if (tryStmt.getResources() != null) {
+            for (J.Try.Resource res : tryStmt.getResources()) {
+                if (res.getVariableDeclarations() instanceof J.VariableDeclarations) {
+                    J.VariableDeclarations resDecl = (J.VariableDeclarations) res.getVariableDeclarations();
+                    if (resDecl.getVariables().get(0).getSimpleName().equals(varName)) {
+                        return false;
+                    }
+                } else if (res.getVariableDeclarations() instanceof J.Identifier) {
+                    if (((J.Identifier) res.getVariableDeclarations()).getSimpleName().equals(varName)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
         // Finally block must contain a close for this variable
         if (!finallyContainsClose(tryStmt.getFinally(), varName)) {
             return false;
@@ -149,7 +165,7 @@ public class UseTryWithResources extends Recipe {
                 Tree.randomId(),
                 Space.EMPTY,
                 Markers.EMPTY,
-                Collections.emptyList(),
+                emptyList(),
                 namedVar.getSimpleName(),
                 namedVar.getType(),
                 null
@@ -166,7 +182,7 @@ public class UseTryWithResources extends Recipe {
                 false
         );
         List<JRightPadded<J.Try.Resource>> existingResources = tryStmt.getPadding().getResources() != null ?
-                tryStmt.getPadding().getResources().getPadding().getElements() : Collections.emptyList();
+                tryStmt.getPadding().getResources().getPadding().getElements() : emptyList();
         List<JRightPadded<J.Try.Resource>> newResources;
         if (existingResources.isEmpty()) {
             newResources = singletonList(JRightPadded.build(resource));
