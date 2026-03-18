@@ -652,23 +652,17 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
     }
 
     @Test
-    void pythonSimpleIfElseWithReturn() {
+    void pythonWithImport() {
         rewriteRun(
           python(
             """
-              def foo(condition) :
-                  if condition :
-                      return 1
-                  else :
-                      return 2
-              """,
-            """
-              def foo(condition) :
-                  if condition :
-                      return 1
-                 \s
-                  return 2
+              from os import path
 
+              def foo(condition):
+                  if condition:
+                      return 1
+                  else:
+                      return 2
               """
           )
         );
