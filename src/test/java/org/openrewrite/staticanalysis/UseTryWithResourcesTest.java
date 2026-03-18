@@ -757,6 +757,46 @@ class UseTryWithResourcesTest implements RewriteTest {
     }
 
     @Test
+    void multipleClosesInFinallyPicksMatchingVariable() {
+        rewriteRun(
+          spec -> spec.expectedCyclesThatMakeChanges(2),
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method(String path) throws IOException {
+                      OutputStream out = new FileOutputStream("out.txt");
+                      int x = 1;
+                      InputStream in = new FileInputStream(path);
+                      try {
+                          out.write(in.read());
+                      } finally {
+                          out.close();
+                          in.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method(String path) throws IOException {
+                      OutputStream out = new FileOutputStream("out.txt");
+                      int x = 1;
+                      try (InputStream in = new FileInputStream(path); out) {
+                          out.write(in.read());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeNonConsecutiveNullInitialized() {
         rewriteRun(
           //language=java

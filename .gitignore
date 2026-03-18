@@ -13,3 +13,4 @@ bin/
 .gitmodules
 docs
 Sonar.MD
+working-set*/
