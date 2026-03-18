@@ -663,6 +663,14 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       return 1
                   else:
                       return 2
+              """,
+            """
+              from os import path
+
+              def foo(condition):
+                  if condition:
+                      return 1
+                  return 2
               """
           )
         );
