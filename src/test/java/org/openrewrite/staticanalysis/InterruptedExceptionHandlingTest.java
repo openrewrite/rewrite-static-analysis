@@ -140,7 +140,9 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
                       try {
                           Thread.sleep(1000);
                       } catch (IOException | InterruptedException e) {
-                          Thread.currentThread().interrupt();
+                          if (e instanceof InterruptedException) {
+                              Thread.currentThread().interrupt();
+                          }
                           System.out.println("error");
                       }
                   }
@@ -185,7 +187,9 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
                       try {
                           Thread.sleep(1000);
                       } catch (IOException | InterruptedException e) {
-                          Thread.currentThread().interrupt();
+                          if (e instanceof InterruptedException) {
+                              Thread.currentThread().interrupt();
+                          }
                       }
                   }
               }

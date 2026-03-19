@@ -61,11 +61,21 @@ public class InterruptedExceptionHandling extends Recipe {
             public J.Try.Catch visitCatch(J.Try.Catch aCatch, ExecutionContext ctx) {
                 J.Try.Catch c = super.visitCatch(aCatch, ctx);
                 if (catchesInterruptedException(c) && !hasThreadInterruptCall(c)) {
-                    c = JavaTemplate.builder("Thread.currentThread().interrupt();")
-                            .contextSensitive()
-                            .build()
-                            .apply(updateCursor(c),
-                                    c.getBody().getCoordinates().firstStatement());
+                    boolean isMultiCatch = c.getParameter().getType() instanceof JavaType.MultiCatch;
+                    if (isMultiCatch) {
+                        J.Identifier varId = c.getParameter().getTree().getVariables().get(0).getName();
+                        c = JavaTemplate.builder("if (#{any()} instanceof InterruptedException) { Thread.currentThread().interrupt(); }")
+                                .contextSensitive()
+                                .build()
+                                .apply(updateCursor(c),
+                                        c.getBody().getCoordinates().firstStatement(), varId);
+                    } else {
+                        c = JavaTemplate.builder("Thread.currentThread().interrupt();")
+                                .contextSensitive()
+                                .build()
+                                .apply(updateCursor(c),
+                                        c.getBody().getCoordinates().firstStatement());
+                    }
                 }
                 return c;
             }
@@ -84,18 +94,19 @@ public class InterruptedExceptionHandling extends Recipe {
             }
 
             private boolean hasThreadInterruptCall(J.Try.Catch aCatch) {
-                AtomicBoolean found = new AtomicBoolean(false);
-                new JavaIsoVisitor<AtomicBoolean>() {
+                return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean exists) {
-                        J.MethodInvocation mi = super.visitMethodInvocation(method, exists);
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean found) {
+                        if (found.get()) {
+                            return method;
+                        }
+                        J.MethodInvocation mi = super.visitMethodInvocation(method, found);
                         if (THREAD_INTERRUPT.matches(mi)) {
-                            exists.set(true);
+                            found.set(true);
                         }
                         return mi;
                     }
-                }.visit(aCatch, found);
-                return found.get();
+                }.reduce(aCatch, new AtomicBoolean()).get();
             }
         };
     }
