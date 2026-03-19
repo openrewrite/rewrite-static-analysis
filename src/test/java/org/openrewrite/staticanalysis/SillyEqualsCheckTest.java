@@ -206,6 +206,89 @@ class SillyEqualsCheckTest implements RewriteTest {
     }
 
     @Test
+    void replaceMultidimensionalArrayEqualsWithDeepEquals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  boolean foo(int[][] a, int[][] b) {
+                      return a.equals(b);
+                  }
+              }
+              """,
+            """
+              import java.util.Arrays;
+
+              class A {
+                  boolean foo(int[][] a, int[][] b) {
+                      return Arrays.deepEquals(a, b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void replaceEqualsNullInIfCondition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(String s) {
+                      if (s.equals(null)) {
+                          System.out.println("null");
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(String s) {
+                      if (s == null) {
+                          System.out.println("null");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void replaceEqualsNullWithMethodSelect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  boolean foo() {
+                      return getObj().equals(null);
+                  }
+
+                  Object getObj() {
+                      return new Object();
+                  }
+              }
+              """,
+            """
+              class A {
+                  boolean foo() {
+                      return getObj() == null;
+                  }
+
+                  Object getObj() {
+                      return new Object();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void unchangedWhenSameType() {
         rewriteRun(
           //language=java

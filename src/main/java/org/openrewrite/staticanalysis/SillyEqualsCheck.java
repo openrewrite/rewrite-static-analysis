@@ -79,10 +79,12 @@ public class SillyEqualsCheck extends Recipe {
                 JavaType.Array selectArray = TypeUtils.asArray(selectType);
                 JavaType.Array argArray = TypeUtils.asArray(argType);
 
-                // Case: both arrays -> Arrays.equals()
+                // Case: both arrays -> Arrays.equals() or Arrays.deepEquals() for multidimensional
                 if (selectArray != null && argArray != null) {
                     maybeAddImport("java.util.Arrays");
-                    return JavaTemplate.builder("Arrays.equals(#{any()}, #{any()})")
+                    boolean multidimensional = selectArray.getElemType() instanceof JavaType.Array;
+                    String arrayMethod = multidimensional ? "deepEquals" : "equals";
+                    return JavaTemplate.builder("Arrays." + arrayMethod + "(#{any()}, #{any()})")
                             .imports("java.util.Arrays")
                             .build()
                             .apply(getCursor(), mi.getCoordinates().replace(), mi.getSelect(), arg);
@@ -117,7 +119,12 @@ public class SillyEqualsCheck extends Recipe {
                 Cursor parent = getCursor().dropParentUntil(is ->
                         is instanceof J.Unary || is instanceof J.Block ||
                         is instanceof J.Binary || is instanceof J.Ternary ||
-                        is instanceof J.Lambda);
+                        is instanceof J.Lambda || is instanceof J.Return ||
+                        is instanceof J.If || is instanceof J.Assignment ||
+                        is instanceof J.VariableDeclarations ||
+                        is instanceof J.MethodInvocation ||
+                        is instanceof J.ControlParentheses ||
+                        is instanceof J.Parentheses);
                 boolean isNot = parent.getValue() instanceof J.Unary &&
                         ((J.Unary) parent.getValue()).getOperator() == J.Unary.Type.Not;
                 if (isNot) {
