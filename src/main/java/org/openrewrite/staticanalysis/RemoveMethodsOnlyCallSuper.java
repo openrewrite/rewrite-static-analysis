@@ -119,31 +119,13 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
             }
 
             private boolean argumentsMatchParameters(List<Statement> parameters, List<Expression> arguments) {
-                // Filter out J.Empty from parameters (used for no-arg methods)
-                int paramCount = 0;
-                for (Statement param : parameters) {
-                    if (param instanceof J.VariableDeclarations) {
-                        paramCount++;
-                    }
-                }
-
-                // Filter out J.Empty from arguments
-                int argCount = 0;
-                for (Expression arg : arguments) {
-                    if (!(arg instanceof J.Empty)) {
-                        argCount++;
-                    }
-                }
-
-                if (paramCount != argCount) {
-                    return false;
-                }
-
                 int argIndex = 0;
+                int paramCount = 0;
                 for (Statement param : parameters) {
                     if (!(param instanceof J.VariableDeclarations)) {
                         continue;
                     }
+                    paramCount++;
                     J.VariableDeclarations varDecls = (J.VariableDeclarations) param;
                     if (varDecls.getVariables().size() != 1) {
                         return false;
@@ -164,7 +146,15 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     }
                     argIndex++;
                 }
-                return true;
+
+                // Verify no extra non-empty arguments remain
+                while (argIndex < arguments.size()) {
+                    if (!(arguments.get(argIndex) instanceof J.Empty)) {
+                        return false;
+                    }
+                    argIndex++;
+                }
+                return paramCount > 0 || arguments.isEmpty() || arguments.stream().allMatch(a -> a instanceof J.Empty);
             }
 
             private boolean widensVisibility(JavaType.Method methodType) {
