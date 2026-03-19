@@ -20,25 +20,19 @@ import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
-import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
-import static java.util.Collections.emptyList;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -120,53 +114,8 @@ public class StaticAccessViaInstance extends Recipe {
             }
 
             private Expression buildClassReference(Expression select, JavaType.FullyQualified declaringType) {
-                String className = declaringType.getClassName();
-                if (!className.contains(".")) {
-                    return new J.Identifier(
-                            Tree.randomId(),
-                            select.getPrefix(),
-                            Markers.EMPTY,
-                            emptyList(),
-                            className,
-                            declaringType,
-                            null
-                    );
-                }
-                // Nested class: build Outer.Inner as a J.FieldAccess chain
-                String[] parts = className.split("\\.");
-                Expression result = new J.Identifier(
-                        Tree.randomId(),
-                        select.getPrefix(),
-                        Markers.EMPTY,
-                        emptyList(),
-                        parts[0],
-                        null,
-                        null
-                );
-                for (int i = 1; i < parts.length; i++) {
-                    JavaType type = i == parts.length - 1 ? declaringType : null;
-                    result = new J.FieldAccess(
-                            Tree.randomId(),
-                            Space.EMPTY,
-                            Markers.EMPTY,
-                            result,
-                            new JLeftPadded<>(
-                                    Space.EMPTY,
-                                    new J.Identifier(
-                                            Tree.randomId(),
-                                            Space.EMPTY,
-                                            Markers.EMPTY,
-                                            emptyList(),
-                                            parts[i],
-                                            type,
-                                            null
-                                    ),
-                                    Markers.EMPTY
-                            ),
-                            type
-                    );
-                }
-                return result;
+                return JavaElementFactory.className(declaringType, false)
+                        .withPrefix(select.getPrefix());
             }
         });
     }
