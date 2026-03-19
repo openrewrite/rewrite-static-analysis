@@ -255,4 +255,23 @@ class StaticAccessViaInstanceTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotChangeChainedFieldAccessWithSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class MyClass {
+                static int COUNT = 0;
+                MyClass field;
+                static MyClass getInstance() { return new MyClass(); }
+                void foo() {
+                    int x = getInstance().field.COUNT;
+                }
+            }
+            """
+          )
+        );
+    }
 }

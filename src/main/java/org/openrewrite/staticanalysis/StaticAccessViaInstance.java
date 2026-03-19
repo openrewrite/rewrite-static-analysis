@@ -26,7 +26,9 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -68,7 +70,7 @@ public class StaticAccessViaInstance extends Recipe {
                     return fa;
                 }
                 maybeAddImport(declaringType.getFullyQualifiedName());
-                return fa.withTarget(buildClassIdentifier(select, declaringType));
+                return fa.withTarget(buildClassReference(select, declaringType));
             }
 
             @Override
@@ -87,7 +89,7 @@ public class StaticAccessViaInstance extends Recipe {
                     return mi;
                 }
                 maybeAddImport(declaringType.getFullyQualifiedName());
-                return mi.withSelect(buildClassIdentifier(select, declaringType));
+                return mi.withSelect(buildClassReference(select, declaringType));
             }
 
             private boolean isInstanceAccess(Expression select) {
@@ -100,24 +102,71 @@ public class StaticAccessViaInstance extends Recipe {
                 }
                 if (select instanceof J.FieldAccess) {
                     J.FieldAccess fa = (J.FieldAccess) select;
-                    // this.field or super.field chains are instance access
-                    // but skip if target involves method calls
-                    return fa.getName().getFieldType() != null;
+                    // Only safe when the entire chain is side-effect-free
+                    return fa.getName().getFieldType() != null && isSideEffectFree(fa.getTarget());
                 }
                 // Skip method invocations, new expressions, etc. to preserve side effects
                 return false;
             }
 
-            private J.Identifier buildClassIdentifier(Expression select, JavaType.FullyQualified declaringType) {
-                return new J.Identifier(
+            private boolean isSideEffectFree(Expression expr) {
+                if (expr instanceof J.Identifier) {
+                    return true;
+                }
+                if (expr instanceof J.FieldAccess) {
+                    return isSideEffectFree(((J.FieldAccess) expr).getTarget());
+                }
+                return false;
+            }
+
+            private Expression buildClassReference(Expression select, JavaType.FullyQualified declaringType) {
+                String className = declaringType.getClassName();
+                if (!className.contains(".")) {
+                    return new J.Identifier(
+                            Tree.randomId(),
+                            select.getPrefix(),
+                            Markers.EMPTY,
+                            emptyList(),
+                            className,
+                            declaringType,
+                            null
+                    );
+                }
+                // Nested class: build Outer.Inner as a J.FieldAccess chain
+                String[] parts = className.split("\\.");
+                Expression result = new J.Identifier(
                         Tree.randomId(),
                         select.getPrefix(),
                         Markers.EMPTY,
                         emptyList(),
-                        declaringType.getClassName(),
-                        declaringType,
+                        parts[0],
+                        null,
                         null
                 );
+                for (int i = 1; i < parts.length; i++) {
+                    JavaType type = i == parts.length - 1 ? declaringType : null;
+                    result = new J.FieldAccess(
+                            Tree.randomId(),
+                            Space.EMPTY,
+                            Markers.EMPTY,
+                            result,
+                            new JLeftPadded<>(
+                                    Space.EMPTY,
+                                    new J.Identifier(
+                                            Tree.randomId(),
+                                            Space.EMPTY,
+                                            Markers.EMPTY,
+                                            emptyList(),
+                                            parts[i],
+                                            type,
+                                            null
+                                    ),
+                                    Markers.EMPTY
+                            ),
+                            type
+                    );
+                }
+                return result;
             }
         });
     }
