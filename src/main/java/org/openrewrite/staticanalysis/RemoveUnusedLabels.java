@@ -50,8 +50,7 @@ public class RemoveUnusedLabels extends Recipe {
                 J.Label l = (J.Label) super.visitLabel(label, ctx);
                 String labelName = l.getLabel().getSimpleName();
 
-                AtomicBoolean used = new AtomicBoolean(false);
-                new JavaVisitor<AtomicBoolean>() {
+                boolean used = new JavaVisitor<AtomicBoolean>() {
                     @Override
                     public J visitBreak(J.Break breakStatement, AtomicBoolean u) {
                         if (breakStatement.getLabel() != null &&
@@ -69,9 +68,9 @@ public class RemoveUnusedLabels extends Recipe {
                         }
                         return super.visitContinue(continueStatement, u);
                     }
-                }.visit(l.getStatement(), used);
+                }.reduce(l.getStatement(), new AtomicBoolean(false)).get();
 
-                if (!used.get()) {
+                if (!used) {
                     return l.getStatement().withPrefix(l.getPrefix());
                 }
                 return l;
