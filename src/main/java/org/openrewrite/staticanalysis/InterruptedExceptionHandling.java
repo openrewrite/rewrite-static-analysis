@@ -40,15 +40,12 @@ public class InterruptedExceptionHandling extends Recipe {
     private static final MethodMatcher THREAD_INTERRUPT = new MethodMatcher("java.lang.Thread interrupt()", true);
     private static final MethodMatcher CURRENT_THREAD = new MethodMatcher("java.lang.Thread currentThread()", true);
 
-    final String displayName = "Restore interrupted state in catch blocks";
-
-    final String description = "When `InterruptedException` is caught, `Thread.currentThread().interrupt()` should be called " +
+    String displayName = "Restore interrupted state in catch blocks";
+    String description = "When `InterruptedException` is caught, `Thread.currentThread().interrupt()` should be called " +
             "to restore the thread's interrupted state. Failing to do so can suppress the interruption signal and prevent " +
             "proper thread cancellation.";
-
-    final Set<String> tags = singleton("RSPEC-S2142");
-
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
+    Set<String> tags = singleton("RSPEC-S2142");
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
