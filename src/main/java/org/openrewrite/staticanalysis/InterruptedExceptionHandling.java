@@ -38,6 +38,7 @@ import static java.util.Collections.singleton;
 public class InterruptedExceptionHandling extends Recipe {
 
     private static final MethodMatcher THREAD_INTERRUPT = new MethodMatcher("java.lang.Thread interrupt()", true);
+    private static final MethodMatcher CURRENT_THREAD = new MethodMatcher("java.lang.Thread currentThread()", true);
 
     final String displayName = "Restore interrupted state in catch blocks";
 
@@ -96,7 +97,9 @@ public class InterruptedExceptionHandling extends Recipe {
                             return method;
                         }
                         J.MethodInvocation mi = super.visitMethodInvocation(method, found);
-                        if (THREAD_INTERRUPT.matches(mi)) {
+                        if (THREAD_INTERRUPT.matches(mi) &&
+                            mi.getSelect() instanceof J.MethodInvocation &&
+                            CURRENT_THREAD.matches((J.MethodInvocation) mi.getSelect())) {
                             found.set(true);
                         }
                         return mi;

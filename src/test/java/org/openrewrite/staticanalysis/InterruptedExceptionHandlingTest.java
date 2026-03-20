@@ -175,6 +175,38 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
     }
 
     @Test
+    void interruptOnDifferentThreadDoesNotSatisfyRule() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void foo(Thread other) {
+                      try {
+                          Thread.sleep(1000);
+                      } catch (InterruptedException e) {
+                          other.interrupt();
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void foo(Thread other) {
+                      try {
+                          Thread.sleep(1000);
+                      } catch (InterruptedException e) {
+                          Thread.currentThread().interrupt();
+                          other.interrupt();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeWhenInterruptExistsInMultiCatch() {
         rewriteRun(
           //language=java
