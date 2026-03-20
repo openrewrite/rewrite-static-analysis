@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -40,18 +39,14 @@ public class InterruptedExceptionHandling extends Recipe {
 
     private static final MethodMatcher THREAD_INTERRUPT = new MethodMatcher("java.lang.Thread interrupt()", true);
 
-    @Getter
     final String displayName = "Restore interrupted state in catch blocks";
 
-    @Getter
     final String description = "When `InterruptedException` is caught, `Thread.currentThread().interrupt()` should be called " +
             "to restore the thread's interrupted state. Failing to do so can suppress the interruption signal and prevent " +
             "proper thread cancellation.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S2142");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
