@@ -24,8 +24,6 @@ import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.test.AdHocRecipe;
 
-import java.util.List;
-
 import static org.openrewrite.test.RewriteTest.toRecipe;
 
 public class JavaToCsharp {
