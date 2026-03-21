@@ -104,11 +104,11 @@ public class ExplicitThis extends Recipe {
                     return id;
                 }
 
-                if (this.isPartOfDeclaration()) {
+                if (isPartOfDeclaration()) {
                     return id;
                 }
 
-                FieldAccess fieldAccess = this.createFieldAccess(id, (JavaType.FullyQualified) fieldType.getOwner());
+                FieldAccess fieldAccess = createFieldAccess(id, (JavaType.FullyQualified) fieldType.getOwner());
                 return fieldAccess != null ? fieldAccess : id;
             }
 
@@ -150,26 +150,23 @@ public class ExplicitThis extends Recipe {
                     return m;
                 }
 
-                if (m.getName().getSimpleName().equals("super") || m.getName().getSimpleName().equals("this")) {
+                String simpleName = m.getName().getSimpleName();
+                if ("super".equals(simpleName) || "this".equals(simpleName)) {
                     return m;
                 }
 
                 Method methodType = m.getMethodType();
-                if (
-                        m.getSelect() != null ||
-                                methodType == null ||
-                                methodType.hasFlags(Flag.Static)
-                ) {
+                if (m.getSelect() != null || methodType == null || methodType.hasFlags(Flag.Static)) {
                     return m;
                 }
 
-                ClassContext currentContext = this.getCurrentClassContext();
+                ClassContext currentContext = getCurrentClassContext();
                 if (currentContext == null) {
                     return m;
                 }
 
                 JavaType.FullyQualified methodOwnerType = methodType.getDeclaringType();
-                Expression thisExpression = this.createQualifiedThisExpression(currentContext, methodOwnerType);
+                Expression thisExpression = createQualifiedThisExpression(currentContext.type, currentContext.isAnonymous, methodOwnerType);
                 if (thisExpression == null) {
                     return m;
                 }
@@ -178,20 +175,19 @@ public class ExplicitThis extends Recipe {
             }
 
             private boolean isPartOfDeclaration() {
-                Cursor parent = this.getCursor().getParent();
+                Cursor parent = getCursor().getParent();
                 if (parent == null || !(parent.getValue() instanceof J.VariableDeclarations.NamedVariable)) {
                     return false;
                 }
                 J.VariableDeclarations.NamedVariable namedVar = parent.getValue();
-                return namedVar.getName() == this.getCursor().getValue();
+                return namedVar.getName() == getCursor().getValue();
             }
 
             private ExplicitThis.@Nullable ClassContext getCurrentClassContext() {
-                Cursor currentCursor = this.getCursor().dropParentUntil(p ->
+                Cursor currentCursor = getCursor().dropParentUntil(p ->
                         p instanceof J.ClassDeclaration ||
                                 (p instanceof J.NewClass && ((J.NewClass) p).getBody() != null) ||
-                                p == Cursor.ROOT_VALUE
-                );
+                                p == Cursor.ROOT_VALUE);
 
                 if (currentCursor.getValue() instanceof J.ClassDeclaration) {
                     J.ClassDeclaration currentClass = currentCursor.getValue();
@@ -199,8 +195,8 @@ public class ExplicitThis extends Recipe {
                     if (currentClassType == null) {
                         return null;
                     }
-                    String currentClassName = this.getSimpleClassName(currentClassType.getFullyQualifiedName());
-                    boolean currentIsAnonymous = this.isAnonymousClassName(currentClassName);
+                    String currentClassName = getSimpleClassName(currentClassType.getFullyQualifiedName());
+                    boolean currentIsAnonymous = isAnonymousClassName(currentClassName);
                     return new ClassContext(currentClassType, currentIsAnonymous);
                 } else if (currentCursor.getValue() instanceof J.NewClass) {
                     J.NewClass newClass = currentCursor.getValue();
@@ -213,34 +209,35 @@ public class ExplicitThis extends Recipe {
                 return null;
             }
 
-            private @Nullable Expression createQualifiedThisExpression(ClassContext currentContext, JavaType.FullyQualified targetType) {
-                if (TypeUtils.isOfType(currentContext.type, targetType) ||
-                        TypeUtils.isAssignableTo(targetType.getFullyQualifiedName(), currentContext.type)) {
-                    return JavaElementFactory.newThis(currentContext.type);
+            private @Nullable Expression createQualifiedThisExpression(
+                    JavaType.FullyQualified classType, boolean isAnonymous, JavaType.FullyQualified targetType) {
+                if (TypeUtils.isOfType(classType, targetType) ||
+                        TypeUtils.isAssignableTo(targetType.getFullyQualifiedName(), classType)) {
+                    return JavaElementFactory.newThis(classType);
                 }
 
                 // An intermediate enclosing class may inherit from the target type,
                 // e.g. inner class B extends outer class A — use B.this, not A.this
-                JavaType.FullyQualified nearestAssignable = this.findNearestEnclosingTypeAssignableTo(targetType);
+                JavaType.FullyQualified nearestAssignable = findNearestEnclosingTypeAssignableTo(targetType);
                 if (nearestAssignable != null) {
                     targetType = nearestAssignable;
                 }
 
-                if (currentContext.isAnonymous) {
-                    String ownerClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
-                    if (this.isAnonymousClassName(ownerClassName)) {
+                if (isAnonymous) {
+                    String ownerClassName = getSimpleClassName(targetType.getFullyQualifiedName());
+                    if (isAnonymousClassName(ownerClassName)) {
                         return null;
                     }
-                    return this.createOuterThisReference(targetType, ownerClassName);
+                    return createOuterThisReference(targetType, ownerClassName);
                 }
 
-                String simpleClassName = this.getSimpleClassName(targetType.getFullyQualifiedName());
-                return this.createOuterThisReference(targetType, simpleClassName);
+                String simpleClassName = getSimpleClassName(targetType.getFullyQualifiedName());
+                return createOuterThisReference(targetType, simpleClassName);
             }
 
             private JavaType.@Nullable FullyQualified findNearestEnclosingTypeAssignableTo(JavaType.FullyQualified targetType) {
                 boolean skippedCurrent = false;
-                Cursor c = this.getCursor();
+                Cursor c = getCursor();
                 while (c != null) {
                     Object value = c.getValue();
                     JavaType.FullyQualified type = null;
@@ -281,12 +278,12 @@ public class ExplicitThis extends Recipe {
             }
 
             private @Nullable FieldAccess createFieldAccess(Identifier identifier, JavaType.FullyQualified fieldOwnerType) {
-                ClassContext currentContext = this.getCurrentClassContext();
+                ClassContext currentContext = getCurrentClassContext();
                 if (currentContext == null) {
                     return null;
                 }
 
-                Expression thisExpression = this.createQualifiedThisExpression(currentContext, fieldOwnerType);
+                Expression thisExpression = createQualifiedThisExpression(currentContext.type, currentContext.isAnonymous, fieldOwnerType);
                 if (thisExpression == null) {
                     return null;
                 }
