@@ -38,7 +38,7 @@ public class ExplicitThis extends Recipe {
 
     @Override
     public String getDisplayName() {
-        return "`field` → `this.field`";
+        return "Use explicit `this.field` and `this.method()`";
     }
 
     @Override
