@@ -399,6 +399,70 @@ class ExplicitThisTest implements RewriteTest {
     }
 
     @Test
+    void doNotChangeVariablesShadowingFields() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.InputStream;
+              import java.io.ByteArrayInputStream;
+              import java.util.List;
+              import java.util.function.Consumer;
+
+              class Test {
+                  private String field;
+                  private int i;
+                  private String item;
+                  private Exception e;
+                  private String value;
+                  private InputStream in;
+
+                  void localVariable() {
+                      String field = "local";
+                      field = "reassigned";
+                      System.out.println(field);
+                  }
+
+                  void forLoop() {
+                      for (int i = 0; i < 10; i++) {
+                          System.out.println(i);
+                      }
+                  }
+
+                  void enhancedForLoop(List<String> items) {
+                      for (String item : items) {
+                          System.out.println(item);
+                      }
+                  }
+
+                  void catchBlock() {
+                      try {
+                          System.out.println("try");
+                      } catch (Exception e) {
+                          System.out.println(e);
+                      }
+                  }
+
+                  void lambdaParameter() {
+                      Consumer<String> consumer = value -> {
+                          System.out.println(value);
+                      };
+                  }
+
+                  void tryWithResources() {
+                      try (InputStream in = new ByteArrayInputStream(new byte[0])) {
+                          System.out.println(in);
+                      } catch (Exception e) {
+                          // ignore
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void unchangedWhenAlreadyQualified() {
         rewriteRun(
           //language=java
