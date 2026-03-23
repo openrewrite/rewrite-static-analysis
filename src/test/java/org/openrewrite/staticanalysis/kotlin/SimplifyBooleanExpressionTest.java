@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis.kotlin;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.staticanalysis.SimplifyBooleanExpression;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -106,6 +107,62 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
                   val name : String? = null
                   val isPositive1 = name?.equals("+") == true
                   val isPositive2 = name.equals("+")
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+    @Test
+    void nullableBooleanReceiverEqualsTrue() {
+        rewriteRun(
+          kotlin(
+            """
+              fun Boolean?.toLegacyFlag() = if (this == true) "1" else "0"
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+    @Test
+    void nullableBooleanFieldEqualsTrue() {
+        rewriteRun(
+          kotlin(
+            """
+              data class Todo(val completed: Boolean?)
+              fun main() {
+                  val todo = Todo(null)
+                  val isCompleted: Boolean = todo.completed == true
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+    @Test
+    void nullableBooleanParameterEqualsFalse() {
+        rewriteRun(
+          kotlin(
+            """
+              fun check(b: Boolean?) {
+                  if (b == false) println("false or null")
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
+    @Test
+    void nullableBooleanParameterNotEqualTrue() {
+        rewriteRun(
+          kotlin(
+            """
+              fun check(b: Boolean?) {
+                  if (b != true) println("not true")
               }
               """
           )
