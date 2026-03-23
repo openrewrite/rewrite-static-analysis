@@ -61,14 +61,6 @@ public class SimplifyBooleanExpression extends Recipe {
                 if (j instanceof J.MethodInvocation) {
                     return !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
                 }
-                // For non-Java source files (e.g. Kotlin), only simplify when the
-                // expression type is primitive boolean to avoid changing semantics
-                // of nullable Boolean comparisons like `Boolean? == true`.
-                // Once the parent class includes this logic, this block can be
-                // replaced with just `super.shouldSimplifyEqualsOn(j)`.
-                if (!(getCursor().firstEnclosing(SourceFile.class) instanceof J.CompilationUnit)) {
-                    return j instanceof Expression && ((Expression) j).getType() == JavaType.Primitive.Boolean;
-                }
                 return super.shouldSimplifyEqualsOn(j);
             }
         };
