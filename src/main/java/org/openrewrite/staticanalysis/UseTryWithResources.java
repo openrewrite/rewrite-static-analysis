@@ -22,11 +22,11 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -37,9 +37,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 
 public class UseTryWithResources extends Recipe {
 
@@ -98,10 +96,10 @@ public class UseTryWithResources extends Recipe {
                                 }
                             }
                             // Remove varDecl that was merged into the following try-with-resources
-                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size()
-                                    && stmts.get(i + 1) instanceof J.Try
-                                    && canTransform((J.VariableDeclarations) stmt, (J.Try) stmts.get(i + 1))
-                                    && !isUsedAfter(((J.VariableDeclarations) stmt).getVariables().get(0).getSimpleName(), stmts, i + 1)) {
+                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size() &&
+                                    stmts.get(i + 1) instanceof J.Try &&
+                                    canTransform((J.VariableDeclarations) stmt, (J.Try) stmts.get(i + 1)) &&
+                                    !isUsedAfter(((J.VariableDeclarations) stmt).getVariables().get(0).getSimpleName(), stmts, i + 1)) {
                                 return null;
                             }
                             return stmt;
@@ -120,7 +118,7 @@ public class UseTryWithResources extends Recipe {
 
         // Must have a non-null initializer
         Expression init = namedVar.getInitializer();
-        if (init == null || init instanceof J.Literal && ((J.Literal) init).getValue() == null) {
+        if (init == null || J.Literal.isLiteralValue(init, null)) {
             return false;
         }
 
@@ -278,10 +276,10 @@ public class UseTryWithResources extends Recipe {
         for (int i = tryIndex - 1; i >= 0; i--) {
             if (stmts.get(i) instanceof J.VariableDeclarations) {
                 J.VariableDeclarations decl = (J.VariableDeclarations) stmts.get(i);
-                if (decl.getVariables().size() == 1
-                        && decl.getVariables().get(0).getSimpleName().equals(varName)) {
+                if (decl.getVariables().size() == 1 &&
+                        decl.getVariables().get(0).getSimpleName().equals(varName)) {
                     Expression init = decl.getVariables().get(0).getInitializer();
-                    if (init == null || init instanceof J.Literal && ((J.Literal) init).getValue() == null) {
+                    if (init == null || J.Literal.isLiteralValue(init, null)) {
                         continue;
                     }
                     JavaType.FullyQualified type = TypeUtils.asFullyQualified(decl.getType());
@@ -367,9 +365,9 @@ public class UseTryWithResources extends Recipe {
     }
 
     private static boolean isCloseInvocation(J.MethodInvocation mi, String varName) {
-        return CLOSE.matches(mi)
-                && mi.getSelect() instanceof J.Identifier
-                && ((J.Identifier) mi.getSelect()).getSimpleName().equals(varName);
+        return CLOSE.matches(mi) &&
+                mi.getSelect() instanceof J.Identifier &&
+                ((J.Identifier) mi.getSelect()).getSimpleName().equals(varName);
     }
 
     private static boolean isTryCatchClose(Statement stmt, String varName) {

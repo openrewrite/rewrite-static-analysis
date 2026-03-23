@@ -21,12 +21,12 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.java.tree.J.FieldAccess;
 import org.openrewrite.java.tree.J.Identifier;
 import org.openrewrite.java.tree.JavaType.Method;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 
@@ -36,20 +36,11 @@ import static java.util.Collections.emptyList;
 @EqualsAndHashCode(callSuper = false)
 public class ExplicitThis extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use explicit `this.field` and `this.method()`";
-    }
+    String displayName = "Use explicit `this.field` and `this.method()`";
 
-    @Override
-    public String getDescription() {
-        return "Add explicit 'this.' prefix to field and method access.";
-    }
+    String description = "Add explicit 'this.' prefix to field and method access.";
 
-    @Override
-    public Duration getEstimatedEffortPerOccurrence() {
-        return Duration.ofSeconds(5);
-    }
+    Duration estimatedEffortPerOccurrence = Duration.ofSeconds(5);
 
     @RequiredArgsConstructor
     private static class ClassContext {
