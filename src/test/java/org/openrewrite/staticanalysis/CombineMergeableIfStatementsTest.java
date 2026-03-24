@@ -630,4 +630,34 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void combineMergeableIfStatementsWithTwoSpaceIndent() {
+        rewriteRun(
+          // language=java
+          java(
+            """
+              class A {
+                void a(boolean condition1, boolean condition2) {
+                  if (condition1) {
+                    if (condition2) {
+                      System.out.println("OK");
+                    }
+                  }
+                }
+              }
+              """,
+            """
+              class A {
+                void a(boolean condition1, boolean condition2) {
+                  if (condition1 &&
+                          condition2) {
+                    System.out.println("OK");
+                  }
+                }
+              }
+              """
+          )
+        );
+    }
 }

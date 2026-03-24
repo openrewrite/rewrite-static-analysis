@@ -47,7 +47,6 @@ import java.util.UUID;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
-import static org.openrewrite.java.format.ShiftFormat.indent;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -98,19 +97,68 @@ public class CombineMergeableIfStatements extends Recipe {
                                 Optional.ofNullable(outerBlock).map(J::getComments).orElse(emptyList()));
 
                         doAfterVisit(new MergedConditionalVisitor<>());
+
+                        // Compute actual indent difference between inner and outer if
+                        String outerIndent = outerIf.getPrefix().getIndent();
+                        String innerIndent = innerIf.getPrefix().getIndent();
+                        int indentSize = innerIndent.length() - outerIndent.length();
+
                         return JavaTemplate.<J.If>apply(
                                 String.format("#{any()} /*%s,%s,%s*/&& #{any()}", CONTINUATION_KEY, innerIfId, outerBlockId),
                                 getCursor(),
                                 outerCondition.getCoordinates().replace(),
                                 outerCondition,
                                 innerCondition)
-                                .withThenPart(indent(innerIf.getThenPart(), getCursor(), -1));
+                                .withThenPart(shiftLeft(innerIf.getThenPart(), indentSize));
                     }
                 }
 
                 return outerIf;
             }
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <J2 extends J> J2 shiftLeft(J j, int shift) {
+        if (shift <= 0) {
+            return (J2) j;
+        }
+        return (J2) new JavaIsoVisitor<Integer>() {
+            @Override
+            public Space visitSpace(Space space, Space.Location loc, Integer p) {
+                Space s = super.visitSpace(space, loc, p);
+                String ws = s.getWhitespace();
+                if (ws.contains("\n") || ws.contains("\r")) {
+                    s = s.withWhitespace(trimRight(ws, shift));
+                }
+                List<Comment> comments = s.getComments();
+                if (!comments.isEmpty()) {
+                    s = s.withComments(ListUtils.map(comments, c -> {
+                        String suffix = c.getSuffix();
+                        if (suffix.contains("\n") || suffix.contains("\r")) {
+                            return c.withSuffix(trimRight(suffix, shift));
+                        }
+                        return c;
+                    }));
+                }
+                return s;
+            }
+
+            private String trimRight(String whitespace, int amount) {
+                int lastNewline = Math.max(whitespace.lastIndexOf('\n'), whitespace.lastIndexOf('\r'));
+                if (lastNewline < 0) {
+                    return whitespace;
+                }
+                // Handle \r\n
+                int lineStart = lastNewline + 1;
+                if (lastNewline < whitespace.length() - 1 && whitespace.charAt(lastNewline) == '\r' && whitespace.charAt(lastNewline + 1) == '\n') {
+                    lineStart = lastNewline + 2;
+                }
+                String indent = whitespace.substring(lineStart);
+                int newLen = Math.max(0, indent.length() - amount);
+                return whitespace.substring(0, lineStart) + indent.substring(0, newLen);
+            }
+        }.visitNonNull(j, 0);
     }
 
     @RequiredArgsConstructor
