@@ -341,7 +341,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenOuterIfHasElsePart() {
+    void doNotChangeWhenOuterIfHasElsePart() {
         rewriteRun(
           // language=java
           java(
@@ -363,7 +363,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenOuterIfHasEmptyBlockAsElsePart() {
+    void doNotChangeWhenOuterIfHasEmptyBlockAsElsePart() {
         rewriteRun(
           // language=java
           java(
@@ -384,7 +384,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenOuterIfHasEmptyStatementAsElsePart() {
+    void doNotChangeWhenOuterIfHasEmptyStatementAsElsePart() {
         rewriteRun(
           // language=java
           java(
@@ -404,7 +404,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenOuterIfHasOneStatementInThenPartButIsNotIf() {
+    void doNotChangeWhenOuterIfHasOneStatementInThenPartButIsNotIf() {
         rewriteRun(
           // language=java
           java(
@@ -422,7 +422,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenOuterIfHasOneStatementWithoutBlockInThenPartButIsNotIf() {
+    void doNotChangeWhenOuterIfHasOneStatementWithoutBlockInThenPartButIsNotIf() {
         rewriteRun(
           // language=java
           java(
@@ -439,7 +439,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenOuterIfHasTwoStatementsInThenPart() {
+    void doNotChangeWhenOuterIfHasTwoStatementsInThenPart() {
         rewriteRun(
           // language=java
           java(
@@ -460,7 +460,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenInnerIfHasElsePart() {
+    void doNotChangeWhenInnerIfHasElsePart() {
         rewriteRun(
           // language=java
           java(
@@ -482,7 +482,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenInnerIfHasEmptyBlockAsElsePart() {
+    void doNotChangeWhenInnerIfHasEmptyBlockAsElsePart() {
         rewriteRun(
           // language=java
           java(
@@ -503,7 +503,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void noSimplificationWhenInnerIfHasEmptyStatementAsElsePart() {
+    void doNotChangeWhenInnerIfHasEmptyStatementAsElsePart() {
         rewriteRun(
           // language=java
           java(

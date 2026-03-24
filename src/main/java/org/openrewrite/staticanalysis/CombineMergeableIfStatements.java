@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
@@ -36,6 +38,7 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TextComment;
 import org.openrewrite.style.Style;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -46,16 +49,20 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.format.ShiftFormat.indent;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class CombineMergeableIfStatements extends Recipe {
 
     private static final String CONTINUATION_KEY = "continuationAfterLogicalAnd";
 
     @Getter
-    final String displayName = "Mergeable `if` statements should be combined";
+    String displayName = "Mergeable `if` statements should be combined";
     @Getter
-    final String description = "Mergeable `if` statements should be combined.";
+    String description = "Mergeable `if` statements should be combined.";
     @Getter
-    final Set<String> tags = singleton("RSPEC-S1066");
+    Set<String> tags = singleton("RSPEC-S1066");
+    @Getter
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
