@@ -45,6 +45,7 @@ recipeList:
   - org.openrewrite.java.ShortenFullyQualifiedTypeReferences
   - org.openrewrite.java.SimplifySingleElementAnnotation
   - org.openrewrite.java.OrderImports
+  - org.openrewrite.staticanalysis.RemoveUnusedLabels
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
