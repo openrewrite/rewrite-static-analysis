@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings("ConstantConditions")
 class UnwrapElseAfterReturnTest implements RewriteTest {
@@ -645,6 +646,31 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       return 2; // end 2
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void pythonWithImport() {
+        rewriteRun(
+          python(
+            """
+              from os import path
+
+              def foo(condition):
+                  if condition:
+                      return 1
+                  else:
+                      return 2
+              """,
+            """
+              from os import path
+
+              def foo(condition):
+                  if condition:
+                      return 1
+                  return 2
               """
           )
         );
