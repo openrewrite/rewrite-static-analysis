@@ -17,9 +17,15 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Tree;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.style.TabsAndIndentsStyle;
+import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 
@@ -634,6 +640,9 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
     @Test
     void combineMergeableIfStatementsWithTwoSpaceIndent() {
         rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().styles(singletonList(
+            new NamedStyles(Tree.randomId(), "test", "test", "test", emptySet(),
+              singletonList(new TabsAndIndentsStyle(false, 2, 2, 4, false)))))),
           // language=java
           java(
             """
@@ -651,7 +660,7 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
               class A {
                 void a(boolean condition1, boolean condition2) {
                   if (condition1 &&
-                          condition2) {
+                      condition2) {
                     System.out.println("OK");
                   }
                 }
