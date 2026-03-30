@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
@@ -37,8 +36,6 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TextComment;
 import org.openrewrite.style.Style;
-
-import static org.openrewrite.java.format.ShiftFormat.indent;
 
 import java.time.Duration;
 import java.util.List;
@@ -96,13 +93,14 @@ public class CombineMergeableIfStatements extends Recipe {
 
                         doAfterVisit(new MergedConditionalVisitor<>());
 
-                        return JavaTemplate.<J.If>apply(
+                        J.If merged = JavaTemplate.<J.If>apply(
                                 String.format("#{any()} /*%s,%s,%s*/&& #{any()}", CONTINUATION_KEY, innerIfId, outerBlockId),
                                 getCursor(),
                                 outerCondition.getCoordinates().replace(),
                                 outerCondition,
                                 innerCondition)
-                                .withThenPart(indent(innerIf.getThenPart(), getCursor(), -1));
+                                .withThenPart(innerIf.getThenPart());
+                        return autoFormat(merged, ctx);
                     }
                 }
 

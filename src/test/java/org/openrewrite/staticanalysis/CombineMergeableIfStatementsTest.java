@@ -563,8 +563,8 @@ class CombineMergeableIfStatementsTest implements RewriteTest {
                                * Comment 2.2
                                */ // Comment 2.3
                               condition2) /* Comment 3 */ { // Comment 4
-                          System.out.println("OK");
-                      }
+                              System.out.println("OK");
+                          }
                   }
               }
               """
