@@ -19,10 +19,13 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.kotlin.marker.IsNullSafe;
 
 import java.util.Set;
@@ -38,7 +41,7 @@ public class SimplifyBooleanExpression extends Recipe {
     final String description = "Checks for overly complicated boolean expressions, such as `if (b == true)`, `b || true`, `!false`, etc.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-1125");
+    final Set<String> tags = singleton("RSPEC-S1125");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -52,10 +55,13 @@ public class SimplifyBooleanExpression extends Recipe {
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
+            // and `nullableBoolean == true` is not equivalent to `nullableBoolean`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                return !(j instanceof J.MethodInvocation) ||
-                        !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                if (j instanceof J.MethodInvocation) {
+                    return !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                }
+                return super.shouldSimplifyEqualsOn(j);
             }
         };
     }

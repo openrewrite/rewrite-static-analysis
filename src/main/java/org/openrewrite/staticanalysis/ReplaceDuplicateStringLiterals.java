@@ -53,7 +53,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                "A new variable name will be generated based on the literal value if an existing field does not exist. " +
                "The generated name will append a numeric value to the variable name if a name already exists in the compilation unit.";
 
-    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-1192", "RSPEC-1889"));
+    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1192", "RSPEC-S1889"));
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 

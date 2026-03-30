@@ -27,12 +27,19 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.util.Set;
+
+import static java.util.Collections.singleton;
+
 public class UnnecessaryReturnAsLastStatement extends Recipe {
     @Getter
     final String displayName = "Unnecessary `return` as last statement in void method";
 
     @Getter
     final String description = "Removes `return` from a `void` method if it's the last statement.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3626");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

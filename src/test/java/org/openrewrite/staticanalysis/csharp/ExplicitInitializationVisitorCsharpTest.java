@@ -16,16 +16,25 @@
 package org.openrewrite.staticanalysis.csharp;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.staticanalysis.ExplicitInitialization;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.staticanalysis.csharp.JavaToCsharp.toCsRecipe;
 
+@EnabledIf("isCsharpRuntimeAvailable")
 class ExplicitInitializationVisitorCsharpTest implements RewriteTest {
+
+    static boolean isCsharpRuntimeAvailable() {
+        return Files.exists(Path.of(System.getProperty("user.home"), ".dotnet/tools/.store/openrewrite.csharp"));
+    }
 
     @Override
     public void defaults(RecipeSpec spec) {

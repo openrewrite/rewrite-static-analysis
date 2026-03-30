@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
@@ -93,14 +95,10 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
         return super.visitClassDeclaration(classDecl, p);
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private static class FindExistingVariableDeclarations extends JavaIsoVisitor<Set<J.VariableDeclarations.NamedVariable>> {
         private final Cursor childTargetReference;
         private final String childTargetName;
-
-        private FindExistingVariableDeclarations(Cursor childTargetReference, String childTargetName) {
-            this.childTargetReference = childTargetReference;
-            this.childTargetName = childTargetName;
-        }
 
         /**
          * In the context of {@link HiddenFieldVisitor}, this is used to determine whether there is an existing variable definition
@@ -127,14 +125,10 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
         }
     }
 
+    @RequiredArgsConstructor
     private static class RenameShadowedName<P> extends JavaIsoVisitor<P> {
         private final J.VariableDeclarations.NamedVariable targetVariable;
         private final HiddenFieldStyle hiddenFieldStyle;
-
-        public RenameShadowedName(J.VariableDeclarations.NamedVariable targetVariable, HiddenFieldStyle hiddenFieldStyle) {
-            this.targetVariable = targetVariable;
-            this.hiddenFieldStyle = hiddenFieldStyle;
-        }
 
         private static String nextName(String name) {
             Matcher nameMatcher = NEXT_NAME_PATTERN.matcher(name);
@@ -178,16 +172,11 @@ public class HiddenFieldVisitor<P> extends JavaIsoVisitor<P> {
 
     }
 
+    @RequiredArgsConstructor
     private static class FindNameShadows extends JavaIsoVisitor<Set<J.VariableDeclarations.NamedVariable>> {
         private final J.VariableDeclarations.NamedVariable targetVariable;
         private final J.ClassDeclaration targetVariableEnclosingClass;
         private final HiddenFieldStyle hiddenFieldStyle;
-
-        public FindNameShadows(J.VariableDeclarations.NamedVariable targetVariable, J.ClassDeclaration targetVariableEnclosingClass, HiddenFieldStyle hiddenFieldStyle) {
-            this.targetVariable = targetVariable;
-            this.targetVariableEnclosingClass = targetVariableEnclosingClass;
-            this.hiddenFieldStyle = hiddenFieldStyle;
-        }
 
         /**
          * Find {@link J.VariableDeclarations.NamedVariable} definitions within the searched tree which "hide" the target variable definition

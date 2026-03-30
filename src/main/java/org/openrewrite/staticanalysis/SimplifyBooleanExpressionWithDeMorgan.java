@@ -45,7 +45,7 @@ public class SimplifyBooleanExpressionWithDeMorgan extends Recipe {
             "Transforms `!(a && b)` to `!a || !b` and `!(a || b)` to `!a && !b`.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-1125");
+    final Set<String> tags = singleton("RSPEC-S1125");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

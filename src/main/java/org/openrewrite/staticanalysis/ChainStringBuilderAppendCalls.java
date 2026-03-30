@@ -19,28 +19,30 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 
 public class ChainStringBuilderAppendCalls extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(String)");
-
-    @SuppressWarnings("ALL") // Stop NoMutableStaticFieldsInRecipes from suggesting to remove this mutable static field
-    private static J.Binary additiveBinaryTemplate = null;
 
     @Getter
     final String displayName = "Chain `StringBuilder.append()` calls";
 
     @Getter
     final String description = "String concatenation within calls to `StringBuilder.append()` causes unnecessary memory allocation. Except for concatenations of String literals, which are joined together at compile time. Replaces inefficient concatenations with chained calls to `StringBuilder.append()`.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S3024");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
@@ -60,7 +62,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
                     List<Expression> flattenExpressions = new ArrayList<>();
                     boolean flattenable = flatAdditiveExpressions(arguments.get(0).unwrap(), flattenExpressions);
-                    if (!flattenable) {
+                    if (!flattenable || flattenExpressions.size() <= 1) {
                         return m;
                     }
 
@@ -119,11 +121,16 @@ public class ChainStringBuilderAppendCalls extends Recipe {
      * Concat two literals to an expression with '+' and surrounded with single space.
      */
     public static J.Binary concatAdditionBinary(Expression left, Expression right) {
-        J.Binary b = getAdditiveBinaryTemplate();
         Space rightPrefix = right.getPrefix().isEmpty() ? Space.SINGLE_SPACE : right.getPrefix();
-        return b.withPrefix(b.getLeft().getPrefix())
-                .withLeft(left)
-                .withRight(right.withPrefix(rightPrefix));
+        return new J.Binary(
+                Tree.randomId(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                left,
+                JLeftPadded.build(J.Binary.Type.Addition).withBefore(Space.SINGLE_SPACE),
+                right.withPrefix(rightPrefix),
+                JavaType.Primitive.String
+        );
     }
 
     /**
@@ -141,25 +148,6 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
     public static @Nullable Expression additiveExpression(List<Expression> expressions) {
         return additiveExpression(expressions.toArray(new Expression[0]));
-    }
-
-    public static J.Binary getAdditiveBinaryTemplate() {
-        if (additiveBinaryTemplate == null) {
-            //noinspection OptionalGetWithoutIsPresent
-            J.CompilationUnit cu = JavaParser.fromJavaVersion()
-                    .build()
-                    .parse("class A { String s = \"A\" + \"B\";}")
-                    .map(J.CompilationUnit.class::cast)
-                    .findFirst()
-                    .get();
-            additiveBinaryTemplate = (J.Binary) ((J.VariableDeclarations) cu.getClasses().get(0)
-                    .getBody()
-                    .getStatements().get(0))
-                    .getVariables().get(0)
-                    .getInitializer();
-            assert additiveBinaryTemplate != null;
-        }
-        return additiveBinaryTemplate;
     }
 
     /**

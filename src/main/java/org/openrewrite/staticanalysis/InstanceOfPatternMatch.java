@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -34,8 +36,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -51,6 +52,8 @@ public class InstanceOfPatternMatch extends Recipe {
 
     String description = "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`. " +
                "Currently, this recipe supports `if` statements and ternary operator expressions.";
+
+    Set<String> tags = singleton("RSPEC-S6201");
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
@@ -386,13 +389,10 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {
 
         private final InstanceOfPatternReplacements replacements;
-
-        public UseInstanceOfPatternMatching(InstanceOfPatternReplacements replacements) {
-            this.replacements = replacements;
-        }
 
         static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
             return new UseInstanceOfPatternMatching(replacements).visit(tree, 0, cursor);
@@ -465,6 +465,7 @@ public class InstanceOfPatternMatch extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     private static class VariableNameStrategy {
         public static final Pattern NAME_SPLIT_PATTERN = Pattern.compile("[$._]*(?=\\p{Upper}+[\\p{Lower}\\p{Digit}]*)");
         private final Style style;
@@ -476,12 +477,6 @@ public class InstanceOfPatternMatch extends Recipe {
 
         enum Style {
             SHORT, NORMAL, EXACT
-        }
-
-        private VariableNameStrategy(Style style, @Nullable String exactName, Set<Cursor> contextScopes) {
-            this.style = style;
-            this.name = exactName;
-            this.contextScopes = contextScopes;
         }
 
         static VariableNameStrategy short_() {

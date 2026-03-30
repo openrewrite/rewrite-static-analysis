@@ -615,6 +615,58 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/323")
+    @Test
+    void doesNotImportConflictingClassName() {
+        rewriteRun(
+          java(
+            """
+              package foo;
+              public class A { }
+              """
+          ),
+          java(
+            """
+              package buzz;
+              public class A { }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import foo.A;
+              import java.util.List;
+
+              class Test {
+                  A field;
+                  void method(List<List<buzz.A>> outer) {
+                      outer.forEach((inner) -> {
+                          inner.forEach((a) -> {
+                              System.out.println(a);
+                          });
+                      });
+                  }
+              }
+              """,
+            """
+              import foo.A;
+              import java.util.List;
+
+              class Test {
+                  A field;
+                  void method(List<List<buzz.A>> outer) {
+                      outer.forEach((List<buzz.A> inner) -> {
+                          inner.forEach((buzz.A a) -> {
+                              System.out.println(a);
+                          });
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2177")
     @Test
     void extendsConstraint() {

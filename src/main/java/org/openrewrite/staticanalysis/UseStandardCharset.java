@@ -32,6 +32,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.time.Duration;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class UseStandardCharset extends Recipe {
 
@@ -40,6 +43,9 @@ public class UseStandardCharset extends Recipe {
 
     @Getter
     final String description = "Replaces `Charset.forName(java.lang.String)` with the equivalent `StandardCharset` constant.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S4719");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

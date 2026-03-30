@@ -17,17 +17,18 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.style.Checkstyle;
+import org.openrewrite.java.style.EmptyBlockStyle;
+import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
+import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({
-  "ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions",
-  "SynchronizationOnLocalVariableOrMethodParameter", "CatchMayIgnoreException", "EmptyFinallyBlock",
-  "InfiniteLoopStatement", "UnnecessaryContinue", "EmptyClassInitializer", "EmptyTryBlock",
-  "resource"
-})
+@SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SynchronizationOnLocalVariableOrMethodParameter", "CatchMayIgnoreException", "EmptyFinallyBlock", "InfiniteLoopStatement", "UnnecessaryContinue", "EmptyClassInitializer", "EmptyTryBlock", "resource", "RedundantFileCreation", "ExpressionComparedToItself"})
 class EmptyBlockTest implements RewriteTest {
 
     @Override
@@ -65,15 +66,26 @@ class EmptyBlockTest implements RewriteTest {
     @Test
     void emptyBlockWithComment() {
         rewriteRun(
-          //language=java
           java(
+            //language=java
             """
               public class A {
                   {
                       // comment
                   }
               }
-              """
+              """,
+            spec -> spec.markers(
+              new NamedStyles(
+                randomId(),
+                "Checkstyle",
+                "Checkstyle",
+                "Checkstyle defaults to only preserving blocks but the recipe should support other configurations.",
+                emptySet(),
+                singleton(Checkstyle.emptyBlock().withBlockPolicy(
+                  EmptyBlockStyle.BlockPolicy.TEXT))
+              )
+            )
           )
         );
     }

@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
@@ -240,14 +241,10 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
         return resources == null || resources.isEmpty();
     }
 
+    @RequiredArgsConstructor
     private static class ExtractSideEffectsOfIfCondition<P> extends JavaVisitor<P> {
         private final J.Block enclosingBlock;
         private final J.If toExtract;
-
-        public ExtractSideEffectsOfIfCondition(J.Block enclosingBlock, J.If toExtract) {
-            this.enclosingBlock = enclosingBlock;
-            this.toExtract = toExtract;
-        }
 
         @Override
         public J visitBlock(J.Block block, P p) {
