@@ -41,8 +41,43 @@ public class AnnotateNullableParameters extends Recipe {
 
     private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
 
+    /**
+     * Well-known nullable annotations from various frameworks. If any of these is already present
+     * on a parameter, we skip annotating it to avoid duplication such as {@code @CheckForNull @Nullable Type param}.
+     */
+    private static final List<String> KNOWN_NULLABLE_ANNOTATIONS = Arrays.asList(
+            "android.support.annotation.Nullable",
+            "androidx.annotation.Nullable",
+            "edu.umd.cs.findbugs.annotations.Nullable",
+            "edu.umd.cs.findbugs.annotations.CheckForNull",
+            "javax.annotation.Nullable",
+            "jakarta.annotation.Nullable",
+            "javax.annotation.CheckForNull",
+            "org.checkerframework.checker.nullness.qual.Nullable",
+            "org.checkerframework.checker.nullness.compatqual.NullableDecl",
+            "org.eclipse.jdt.annotation.Nullable",
+            "org.jetbrains.annotations.Nullable",
+            "org.jspecify.annotations.Nullable",
+            "org.springframework.lang.Nullable"
+    );
+
+    /**
+     * Subset of nullable annotations that are meta-annotated with {@code @Target(TYPE_USE)}.
+     * Only these annotations can be positioned before the inner type of nested type
+     * (e.g. {@code Outer.@Nullable Inner}) or on array brackets (e.g. {@code String @Nullable[]}).
+     * Declaration-target annotations like {@code @CheckForNull} must remain as leading annotations.
+     */
+    private static final Set<String> TYPE_USE_NULLABLE_ANNOTATIONS = new HashSet<>(Arrays.asList(
+            "jakarta.annotation.Nullable",
+            "org.checkerframework.checker.nullness.qual.Nullable",
+            "org.eclipse.jdt.annotation.Nullable",
+            "org.jspecify.annotations.Nullable"
+    ));
+
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.Nullable`",
+            description = "The fully qualified name of the @Nullable annotation to add. " +
+                    "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
+                    "Defaults to `org.jspecify.annotations.Nullable`.",
             example = "org.jspecify.annotations.Nullable",
             required = false)
     @Nullable
@@ -61,10 +96,11 @@ public class AnnotateNullableParameters extends Recipe {
     String displayName = "Annotate null-checked method parameters with `@Nullable`";
 
     String description = "Add `@Nullable` to parameters of public methods that are explicitly checked for `null`. " +
-                "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
-                "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
-                "This recipe scans for methods that do not already have parameters annotated with `@Nullable` annotation and checks their usages " +
-                "for potential null checks. Additional null-checking methods can be specified via the `additionalNullCheckingMethods` option.";
+            "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
+            "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
+            "Parameters that already carry a known nullable annotation are skipped to avoid duplication. " +
+            "This recipe scans for methods that do not already have parameters annotated with a nullable annotation and checks their usages " +
+            "for potential null checks. Additional null-checking methods can be specified via the `additionalNullCheckingMethods` option.";
 
     @Override
     public Validated<Object> validate() {
@@ -108,31 +144,37 @@ public class AnnotateNullableParameters extends Recipe {
                                     .apply(new Cursor(getCursor(), vd),
                                             vd.getCoordinates().addAnnotation(comparing(J.Annotation::getSimpleName)));
 
-                            // For array types, move annotation from leading annotations to array brackets
-                            if (annotated.getTypeExpression() instanceof J.ArrayType) {
-                                // Find the annotation we just added
-                                J.Annotation nullableAnnotation = null;
-                                for (J.Annotation ann : annotated.getLeadingAnnotations()) {
-                                    if (ann.getSimpleName().equals(simpleName)) {
-                                        nullableAnnotation = ann;
-                                        break;
+                            // TYPE_USE annotations can be positioned on array brackets and before inner types
+                            // of nested types; declaration-target annotations stay as leading annotations
+                            if (TYPE_USE_NULLABLE_ANNOTATIONS.contains(fullyQualifiedName)) {
+                                // For array types, move annotation from leading annotations to array brackets
+                                if (annotated.getTypeExpression() instanceof J.ArrayType) {
+                                    // Find the annotation we just added
+                                    J.Annotation nullableAnnotation = null;
+                                    for (J.Annotation ann : annotated.getLeadingAnnotations()) {
+                                        if (ann.getSimpleName().equals(simpleName)) {
+                                            nullableAnnotation = ann;
+                                            break;
+                                        }
+                                    }
+                                    if (nullableAnnotation != null) {
+                                        J.Annotation finalAnnotation = nullableAnnotation;
+                                        J.ArrayType arrayType = (J.ArrayType) annotated.getTypeExpression();
+                                        annotated = annotated.withLeadingAnnotations(ListUtils.map(annotated.getLeadingAnnotations(),
+                                                a -> a == finalAnnotation ? null : a));
+                                        arrayType = arrayType.withAnnotations(singletonList(finalAnnotation.withPrefix(Space.SINGLE_SPACE)));
+                                        if (annotated.getLeadingAnnotations().isEmpty()) {
+                                            arrayType = arrayType.withPrefix(Space.EMPTY);
+                                        }
+                                        annotated = annotated.withTypeExpression(arrayType);
                                     }
                                 }
-                                if (nullableAnnotation != null) {
-                                    J.Annotation finalAnnotation = nullableAnnotation;
-                                    J.ArrayType arrayType = (J.ArrayType) annotated.getTypeExpression();
-                                    annotated = annotated.withLeadingAnnotations(ListUtils.map(annotated.getLeadingAnnotations(),
-                                            a -> a == finalAnnotation ? null : a));
-                                    arrayType = arrayType.withAnnotations(singletonList(finalAnnotation.withPrefix(Space.SINGLE_SPACE)));
-                                    if (annotated.getLeadingAnnotations().isEmpty()) {
-                                        arrayType = arrayType.withPrefix(Space.EMPTY);
-                                    }
-                                    annotated = annotated.withTypeExpression(arrayType);
-                                }
+
+                                // For nested types, move annotation before the inner type (e.g. Outer.@Nullable Inner)
+                                doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
                             }
 
                             doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotated));
-                            doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
                             return annotated.withModifiers(ListUtils.mapFirst(annotated.getModifiers(), first -> first.withPrefix(Space.SINGLE_SPACE)));
                         }
                     }
@@ -151,23 +193,41 @@ public class AnnotateNullableParameters extends Recipe {
 
     /**
      * Finds method parameters that are candidates for @Nullable annotation.
-     * A parameter is a candidate if it doesn't already have the target nullable annotation.
+     * A parameter is a candidate if it doesn't already have the target nullable annotation
+     * or any other well-known nullable annotation. This prevents duplication such as
+     * {@code @CheckForNull @Nullable Type param} when a different nullable annotation is already present.
      *
      * @param md  the method declaration to analyze
      * @param fqn the fully qualified name of the nullable annotation
      * @return list of parameter declarations that could receive the annotation
      */
     private List<J.VariableDeclarations> findCandidateParameters(J.MethodDeclaration md, String fqn) {
+        // Build the set of annotations to check: the target annotation plus all known nullable annotations
+        Set<String> annotationsToCheck = new LinkedHashSet<>(KNOWN_NULLABLE_ANNOTATIONS);
+        annotationsToCheck.add(fqn);
+
         List<J.VariableDeclarations> candidates = new ArrayList<>();
         for (Statement parameter : md.getParameters()) {
             if (parameter instanceof J.VariableDeclarations) {
                 J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
-                if (FindAnnotations.find(vd, "@" + fqn).isEmpty()) {
+                if (!hasAnyNullableAnnotation(vd, annotationsToCheck)) {
                     candidates.add(vd);
                 }
             }
         }
         return candidates;
+    }
+
+    /**
+     * Checks whether the given variable declaration already has any of the specified nullable annotations.
+     */
+    private static boolean hasAnyNullableAnnotation(J.VariableDeclarations vd, Set<String> annotationFqns) {
+        for (String annotationFqn : annotationFqns) {
+            if (!FindAnnotations.find(vd, "@" + annotationFqn).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Map<J.VariableDeclarations, J.Identifier> buildIdentifierMap(List<J.VariableDeclarations> parameters) {

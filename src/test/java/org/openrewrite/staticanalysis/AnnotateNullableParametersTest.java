@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,6 +48,36 @@ class AnnotateNullableParametersTest implements RewriteTest {
                 // language=java
                 """
                   package org.openrewrite.jgit.annotations;
+                  public @interface Nullable {}
+                  """,
+                // language=java
+                """
+                  package javax.annotation;
+                  public @interface CheckForNull {}
+                  """,
+                // language=java
+                """
+                  package javax.annotation;
+                  public @interface Nullable {}
+                  """,
+                // language=java
+                """
+                  package edu.umd.cs.findbugs.annotations;
+                  public @interface Nullable {}
+                  """,
+                // language=java
+                """
+                  package edu.umd.cs.findbugs.annotations;
+                  public @interface CheckForNull {}
+                  """,
+                // language=java
+                """
+                  package org.jetbrains.annotations;
+                  public @interface Nullable {}
+                  """,
+                // language=java
+                """
+                  package org.springframework.lang;
                   public @interface Nullable {}
                   """,
                 // language=java
@@ -234,6 +265,46 @@ class AnnotateNullableParametersTest implements RewriteTest {
         }
 
         @Test
+        void nestedTypeWithNonTypeUseAnnotation() {
+            rewriteRun(
+              spec -> spec.recipe(new AnnotateNullableParameters("javax.annotation.CheckForNull", null)),
+              //language=java
+              java(
+                "package a; public class B { public static class C {} }",
+                SourceSpec::skip
+              ),
+              //language=java
+              java(
+                """
+                  import a.B;
+                  public class PersonBuilder {
+                      public PersonBuilder setName(B.C name) {
+                          if (name == null) {
+                              return this;
+                          }
+                          return this;
+                      }
+                  }
+                  """,
+                """
+                  import a.B;
+
+                  import javax.annotation.CheckForNull;
+
+                  public class PersonBuilder {
+                      public PersonBuilder setName(@CheckForNull B.C name) {
+                          if (name == null) {
+                              return this;
+                          }
+                          return this;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void finalVariableSpacing() {
             rewriteRun(
               //language=java
@@ -334,6 +405,95 @@ class AnnotateNullableParametersTest implements RewriteTest {
                           if (last != null) {
                               this.last = last;
                           }
+                          return this;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @CsvSource({
+          ", javax.annotation.CheckForNull",
+          ", javax.annotation.Nullable",
+          ", edu.umd.cs.findbugs.annotations.Nullable",
+          ", edu.umd.cs.findbugs.annotations.CheckForNull",
+          ", org.jetbrains.annotations.Nullable",
+          ", org.springframework.lang.Nullable",
+          "org.openrewrite.jgit.annotations.Nullable, javax.annotation.CheckForNull",
+          "org.openrewrite.jgit.annotations.Nullable, javax.annotation.Nullable",
+          "org.openrewrite.jgit.annotations.Nullable, edu.umd.cs.findbugs.annotations.Nullable",
+          "org.openrewrite.jgit.annotations.Nullable, edu.umd.cs.findbugs.annotations.CheckForNull",
+          "org.openrewrite.jgit.annotations.Nullable, org.jetbrains.annotations.Nullable",
+          "org.openrewrite.jgit.annotations.Nullable, org.springframework.lang.Nullable",
+        })
+        @ParameterizedTest
+        void parameterAlreadyAnnotatedWithKnownNullableAnnotation(@Nullable String targetAnnotation, String existingAnnotation) {
+            String simpleAnnotation = existingAnnotation.substring(existingAnnotation.lastIndexOf('.') + 1);
+            rewriteRun(
+              spec -> spec.recipe(new AnnotateNullableParameters(targetAnnotation, null)),
+              //language=java
+              java(
+                """
+                  import %s;
+
+                  public class PersonBuilder {
+                      private String name = "Unknown";
+
+                      public PersonBuilder setName(@%s String name) {
+                          if (name == null) {
+                              return this;
+                          }
+                          this.name = name.substring(0, 1).toUpperCase() + name.substring(1);
+                          return this;
+                      }
+                  }
+                  """.formatted(existingAnnotation, simpleAnnotation)
+              )
+            );
+        }
+
+        @Test
+        void mixedAnnotationsOnlyAnnotatesUnannotatedParams() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import javax.annotation.CheckForNull;
+
+                  public class PersonBuilder {
+                      private String first = "Unknown";
+                      private String last = "Unknown";
+
+                      public PersonBuilder setName(@CheckForNull String first, String last) {
+                          if (first != null) {
+                              this.first = first;
+                          }
+                          if (last == null) {
+                              return this;
+                          }
+                          this.last = last;
+                          return this;
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  import javax.annotation.CheckForNull;
+
+                  public class PersonBuilder {
+                      private String first = "Unknown";
+                      private String last = "Unknown";
+
+                      public PersonBuilder setName(@CheckForNull String first, @Nullable String last) {
+                          if (first != null) {
+                              this.first = first;
+                          }
+                          if (last == null) {
+                              return this;
+                          }
+                          this.last = last;
                           return this;
                       }
                   }
