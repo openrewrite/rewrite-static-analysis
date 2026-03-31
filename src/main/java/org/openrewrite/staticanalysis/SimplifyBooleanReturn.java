@@ -54,11 +54,6 @@ public class SimplifyBooleanReturn extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
-            private final JavaTemplate notIfConditionReturn = JavaTemplate.builder("return !(#{any(boolean)});")
-                    .build();
-            private final JavaTemplate plainReturn = JavaTemplate.builder("return #{any(boolean)};")
-                  .build();
-
             @Override
             public J visitIf(J.If iff, ExecutionContext ctx) {
                 J.If i = visitAndCast(iff, ctx, super::visitIf);
@@ -119,10 +114,14 @@ public class SimplifyBooleanReturn extends Recipe {
                                 if (ifCondition instanceof J.Unary) {
                                     J.Unary u = (J.Unary) ifCondition;
                                     if (u.getOperator() == J.Unary.Type.Not) {
-                                        return plainReturn.apply(updateCursor(i), i.getCoordinates().replace(), u.getExpression());
+                                        return JavaTemplate.builder("return #{any(boolean)};")
+                                                .build()
+                                                .apply(updateCursor(i), i.getCoordinates().replace(), u.getExpression());
                                     }
                                 }
-                                return notIfConditionReturn.apply(updateCursor(i), i.getCoordinates().replace(), ifCondition);
+                                return JavaTemplate.builder("return !(#{any(boolean)});")
+                                        .build()
+                                        .apply(updateCursor(i), i.getCoordinates().replace(), ifCondition);
                             }
                         }
                     }

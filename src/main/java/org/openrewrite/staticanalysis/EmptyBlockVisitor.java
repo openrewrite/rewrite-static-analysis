@@ -47,7 +47,6 @@ import static org.openrewrite.Tree.randomId;
 @AllArgsConstructor
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     private EmptyBlockStyle emptyBlockStyle;
-    private final JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
@@ -64,7 +63,8 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
             J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
+            w = JavaTemplate.builder("continue;").build()
+                    .apply(updateCursor(w), body.getCoordinates().lastStatement());
         }
 
         return w;
@@ -76,7 +76,8 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
             J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
+            w = JavaTemplate.builder("continue;").build()
+                    .apply(updateCursor(w), body.getCoordinates().lastStatement());
         }
 
         return w;

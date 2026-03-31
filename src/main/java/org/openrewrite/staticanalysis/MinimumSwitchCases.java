@@ -55,34 +55,6 @@ public class MinimumSwitchCases extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
-            final JavaTemplate ifElseIfPrimitive = JavaTemplate.builder("" +
-                                                                        "if(#{any()} == #{any()}) {\n" +
-                                                                        "} else if(#{any()} == #{any()}) {\n" +
-                                                                        "}").build();
-
-            final JavaTemplate ifElseIfString = JavaTemplate.builder("" +
-                                                                     "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                                                                     "} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                                                                     "}").build();
-
-            final JavaTemplate ifElsePrimitive = JavaTemplate.builder("" +
-                                                                      "if(#{any()} == #{any()}) {\n" +
-                                                                      "} else {\n" +
-                                                                      "}").build();
-
-            final JavaTemplate ifElseString = JavaTemplate.builder("" +
-                                                                   "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                                                                   "} else {\n" +
-                                                                   "}").build();
-
-            final JavaTemplate ifPrimitive = JavaTemplate.builder("" +
-                                                                  "if(#{any()} == #{any()}) {\n" +
-                                                                  "}").build();
-
-            final JavaTemplate ifString = JavaTemplate.builder("" +
-                                                               "if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n" +
-                                                               "}").build();
-
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
                 // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
@@ -147,11 +119,14 @@ public class MinimumSwitchCases extends Recipe {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                                 }
-                                generatedIf = ifString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
+                                generatedIf = JavaTemplate.builder("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n}").build()
+                                        .apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else if (isDefault(cases[1])) {
-                                generatedIf = ifElseString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
+                                generatedIf = JavaTemplate.builder("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n} else {\n}").build()
+                                        .apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else {
-                                generatedIf = ifElseIfString.apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree, cases[1].getPattern(), tree);
+                                generatedIf = JavaTemplate.builder("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n}").build()
+                                        .apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree, cases[1].getPattern(), tree);
                             }
                         } else if (switchesOnEnum(switch_)) {
                             if (cases[1] == null && isDefault(cases[0])) {
@@ -179,11 +154,14 @@ public class MinimumSwitchCases extends Recipe {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                                 }
-                                generatedIf = ifPrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
+                                generatedIf = JavaTemplate.builder("if(#{any()} == #{any()}) {\n}").build()
+                                        .apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else if (isDefault(cases[1])) {
-                                generatedIf = ifElsePrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
+                                generatedIf = JavaTemplate.builder("if(#{any()} == #{any()}) {\n} else {\n}").build()
+                                        .apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else {
-                                generatedIf = ifElseIfPrimitive.apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern(), tree, cases[1].getPattern());
+                                generatedIf = JavaTemplate.builder("if(#{any()} == #{any()}) {\n} else if(#{any()} == #{any()}) {\n}").build()
+                                        .apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern(), tree, cases[1].getPattern());
                             }
                         }
 
