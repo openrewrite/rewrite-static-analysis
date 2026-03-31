@@ -21,7 +21,6 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.*;
-import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -30,6 +29,7 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
@@ -40,26 +40,6 @@ import static java.util.stream.Collectors.toList;
 public class AnnotateNullableParameters extends Recipe {
 
     private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
-
-    /**
-     * Well-known nullable annotations from various frameworks. If any of these is already present
-     * on a parameter, we skip annotating it to avoid duplication such as {@code @CheckForNull @Nullable Type param}.
-     */
-    private static final List<String> KNOWN_NULLABLE_ANNOTATIONS = Arrays.asList(
-            "android.support.annotation.Nullable",
-            "androidx.annotation.Nullable",
-            "edu.umd.cs.findbugs.annotations.Nullable",
-            "edu.umd.cs.findbugs.annotations.CheckForNull",
-            "javax.annotation.Nullable",
-            "jakarta.annotation.Nullable",
-            "javax.annotation.CheckForNull",
-            "org.checkerframework.checker.nullness.qual.Nullable",
-            "org.checkerframework.checker.nullness.compatqual.NullableDecl",
-            "org.eclipse.jdt.annotation.Nullable",
-            "org.jetbrains.annotations.Nullable",
-            "org.jspecify.annotations.Nullable",
-            "org.springframework.lang.Nullable"
-    );
 
     /**
      * Subset of nullable annotations that are meta-annotated with {@code @Target(TYPE_USE)}.
@@ -128,7 +108,7 @@ public class AnnotateNullableParameters extends Recipe {
                     return md;
                 }
 
-                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md, fullyQualifiedName));
+                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md));
                 Set<J.Identifier> nullCheckedIdentifiers = new NullCheckVisitor(candidateIdentifiers.values(), additionalNullCheckingMethods)
                         .reduce(md.getBody(), new HashSet<>());
 
@@ -193,24 +173,16 @@ public class AnnotateNullableParameters extends Recipe {
 
     /**
      * Finds method parameters that are candidates for @Nullable annotation.
-     * A parameter is a candidate if it doesn't already have the target nullable annotation
-     * or any other well-known nullable annotation. This prevents duplication such as
-     * {@code @CheckForNull @Nullable Type param} when a different nullable annotation is already present.
-     *
-     * @param md  the method declaration to analyze
-     * @param fqn the fully qualified name of the nullable annotation
-     * @return list of parameter declarations that could receive the annotation
+     * A parameter is a candidate if it doesn't already have any annotation whose simple name
+     * contains "null" (case-insensitive). This catches @Nullable, @CheckForNull, @NullableDecl,
+     * @NonNull, @NotNull, etc. from any framework, preventing duplication and conflicts.
      */
-    private List<J.VariableDeclarations> findCandidateParameters(J.MethodDeclaration md, String fqn) {
-        // Build the set of annotations to check: the target annotation plus all known nullable annotations
-        Set<String> annotationsToCheck = new LinkedHashSet<>(KNOWN_NULLABLE_ANNOTATIONS);
-        annotationsToCheck.add(fqn);
-
+    private static List<J.VariableDeclarations> findCandidateParameters(J.MethodDeclaration md) {
         List<J.VariableDeclarations> candidates = new ArrayList<>();
         for (Statement parameter : md.getParameters()) {
             if (parameter instanceof J.VariableDeclarations) {
                 J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
-                if (!hasAnyNullableAnnotation(vd, annotationsToCheck)) {
+                if (!hasNullRelatedAnnotation(vd)) {
                     candidates.add(vd);
                 }
             }
@@ -218,16 +190,28 @@ public class AnnotateNullableParameters extends Recipe {
         return candidates;
     }
 
-    /**
-     * Checks whether the given variable declaration already has any of the specified nullable annotations.
-     */
-    private static boolean hasAnyNullableAnnotation(J.VariableDeclarations vd, Set<String> annotationFqns) {
-        for (String annotationFqn : annotationFqns) {
-            if (!FindAnnotations.find(vd, "@" + annotationFqn).isEmpty()) {
+    private static boolean hasNullRelatedAnnotation(J.VariableDeclarations vd) {
+        for (J.Annotation ann : vd.getLeadingAnnotations()) {
+            if (isNullAnnotation(ann)) {
                 return true;
             }
         }
-        return false;
+        // Also check type-use annotations on the type expression (e.g., String @Nullable[] or Outer.@Nullable Inner)
+        AtomicBoolean found = new AtomicBoolean(false);
+        new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean f) {
+                if (isNullAnnotation(annotation)) {
+                    f.set(true);
+                }
+                return annotation;
+            }
+        }.visit(vd.getTypeExpression(), found);
+        return found.get();
+    }
+
+    private static boolean isNullAnnotation(J.Annotation ann) {
+        return ann.getSimpleName().toLowerCase(Locale.ROOT).contains("null");
     }
 
     private Map<J.VariableDeclarations, J.Identifier> buildIdentifierMap(List<J.VariableDeclarations> parameters) {
