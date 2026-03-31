@@ -63,8 +63,7 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
                                 }
                                 return l;
                             }
-                            return JavaTemplate.builder("String.valueOf(#{any()})").build()
-                                    .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace(), arg);
+                            return JavaTemplate.apply("String.valueOf(#{any()})", new Cursor(getCursor(), arg), arg.getCoordinates().replace(), arg);
                         }));
                     }
                 }

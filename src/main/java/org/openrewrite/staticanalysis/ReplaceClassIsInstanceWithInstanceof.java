@@ -65,9 +65,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
                     // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
                     JavaCoordinates coordinates = method.getCoordinates().replace();
-                    J updated = JavaTemplate.builder("#{any()} instanceof Object")
-                            .build()
-                            .apply(getCursor(), coordinates, objectExpression);
+                    J updated = JavaTemplate.apply("#{any()} instanceof Object", getCursor(), coordinates, objectExpression);
                     updated = mapInstanceOf(updated,
                             instanceOf -> instanceOf.withClazz(fieldAccessPart.getTarget().withPrefix(instanceOf.getClazz().getPrefix())));
                     return maybeAutoFormat(method, updated, ctx);

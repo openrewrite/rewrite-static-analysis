@@ -72,12 +72,8 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
                         // Avoid breaking symmetry in chained String concatenations
                         !(binary.getRight() instanceof J.Binary) &&
                         !(getCursor().getParentTreeCursor().getValue() instanceof J.Binary)) {
-                    return JavaTemplate.builder("String.valueOf(#{any()})")
-                            .build()
-                            .apply(getCursor(),
-                                    binary.getCoordinates().replace(),
-                                    binary.getRight() instanceof J.Parentheses ?
-                                            ((J.Parentheses<?>) binary.getRight()).getTree() : binary.getRight())
+                    return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), binary.getCoordinates().replace(), binary.getRight() instanceof J.Parentheses ?
+                            ((J.Parentheses<?>) binary.getRight()).getTree() : binary.getRight())
                             .withPrefix(binary.getPrefix());
                 }
                 return super.visitBinary(binary, ctx);

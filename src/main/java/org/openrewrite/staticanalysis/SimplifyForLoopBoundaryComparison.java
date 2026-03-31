@@ -92,9 +92,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 }
 
                 // General fallback: A <= B → A < B + 1
-                return JavaTemplate.builder("#{any()} < #{any()} + 1").build()
-                        .apply(getCursor(), binary.getCoordinates().replace(),
-                                binary.getLeft(), binary.getRight());
+                return JavaTemplate.apply("#{any()} < #{any()} + 1", getCursor(), binary.getCoordinates().replace(), binary.getLeft(), binary.getRight());
             }
 
             private J.@Nullable Binary tryAdjustRight(J.Binary binary, J.Binary rightArith) {

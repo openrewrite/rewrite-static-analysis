@@ -58,8 +58,7 @@ public class IndexOfReplaceableByContains extends Recipe {
                                     boolean isGreaterThanOrEqualToZero = asBinary.getOperator() == J.Binary.Type.GreaterThanOrEqual && "0".equals(valueSource);
                                     if (isGreaterThanNegativeOne || isGreaterThanOrEqualToZero) {
                                         Cursor cursor = new Cursor(updateCursor(asBinary), asBinary.getLeft());
-                                        j = JavaTemplate.builder("#{any()}.contains(#{any()})").build()
-                                                .apply(cursor, mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0))
+                                        j = JavaTemplate.apply("#{any()}.contains(#{any()})", cursor, mi.getCoordinates().replace(), mi.getSelect(), mi.getArguments().get(0))
                                                 .withPrefix(asBinary.getPrefix());
                                     }
                                 }

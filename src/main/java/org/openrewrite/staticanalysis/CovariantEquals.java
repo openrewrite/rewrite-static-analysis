@@ -85,9 +85,7 @@ public class CovariantEquals extends Recipe {
                         new MethodMatcher(ecfqn + " equals(" + ecfqn + ")").matches(m, enclosingClass)) {
 
                     if (!service(AnnotationService.class).matches(getCursor(), OVERRIDE_ANNOTATION)) {
-                        m = JavaTemplate.builder("@Override").build()
-                                .apply(updateCursor(m),
-                                        m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
+                        m = JavaTemplate.apply("@Override", updateCursor(m), m.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                     }
 
                     /*
@@ -97,10 +95,7 @@ public class CovariantEquals extends Recipe {
                      */
                     J.VariableDeclarations.NamedVariable oldParamName = ((J.VariableDeclarations) m.getParameters().get(0)).getVariables().get(0);
                     String paramName = "obj".equals(oldParamName.getSimpleName()) ? "other" : "obj";
-                    m = JavaTemplate.builder("Object #{}").build()
-                            .apply(updateCursor(m),
-                                    m.getCoordinates().replaceParameters(),
-                                    paramName);
+                    m = JavaTemplate.apply("Object #{}", updateCursor(m), m.getCoordinates().replaceParameters(), paramName);
 
                     /*
                      * We'll prepend this type-check and type-cast to the beginning of the existing
