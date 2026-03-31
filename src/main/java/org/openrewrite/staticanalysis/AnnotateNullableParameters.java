@@ -197,8 +197,7 @@ public class AnnotateNullableParameters extends Recipe {
             }
         }
         // Also check type-use annotations on the type expression (e.g., String @Nullable[] or Outer.@Nullable Inner)
-        AtomicBoolean found = new AtomicBoolean(false);
-        new JavaIsoVisitor<AtomicBoolean>() {
+        return new JavaIsoVisitor<AtomicBoolean>() {
             @Override
             public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean f) {
                 if (isNullAnnotation(annotation)) {
@@ -206,8 +205,7 @@ public class AnnotateNullableParameters extends Recipe {
                 }
                 return annotation;
             }
-        }.visit(vd.getTypeExpression(), found);
-        return found.get();
+        }.reduce(vd.getTypeExpression(), new AtomicBoolean(false)).get();
     }
 
     private static boolean isNullAnnotation(J.Annotation ann) {
