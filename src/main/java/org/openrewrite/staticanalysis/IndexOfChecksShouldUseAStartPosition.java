@@ -53,11 +53,7 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
 
                     J.MethodInvocation m = (J.MethodInvocation) b.getLeft();
                     Cursor cursor = new Cursor(getCursor(), b.getLeft());
-                    b = b.withLeft(JavaTemplate.builder("#{any(java.lang.String)}, #{any(int)}").build()
-                            .apply(cursor,
-                                    m.getCoordinates().replaceArguments(),
-                                    m.getArguments().get(0),
-                                    b.getRight()));
+                    b = b.withLeft(JavaTemplate.apply("#{any(java.lang.String)}, #{any(int)}", cursor, m.getCoordinates().replaceArguments(), m.getArguments().get(0), b.getRight()));
 
                     b = b.withRight(new J.Literal(
                             Tree.randomId(),
