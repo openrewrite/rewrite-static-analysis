@@ -20,41 +20,60 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.*;
-import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class AnnotateNullableMethods extends Recipe {
 
+    private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
+
+    /**
+     * Simple names of well-known nullable annotations. If a method already carries an annotation
+     * (on the method itself or on its return type) whose simple name matches any of these,
+     * we skip annotating it to avoid duplication.
+     */
+    private static final Set<String> NULLABLE_ANNOTATION_SIMPLE_NAMES = new HashSet<>(Arrays.asList(
+            "Nullable",
+            "CheckForNull"
+    ));
+
+    /**
+     * FQNs of nullable annotations that are NOT meta-annotated with {@code @Target(TYPE_USE)}.
+     * These annotations cannot be positioned before the inner type of a nested type or on array brackets,
+     * and must remain as method-level annotations. All other nullable annotations (including custom ones)
+     * are assumed to be TYPE_USE and will be moved to the return type position.
+     */
+    private static final Set<String> NON_TYPE_USE_FQN = new HashSet<>(Arrays.asList(
+            "javax.annotation.CheckForNull"
+    ));
+
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.Nullable`",
+            description = "The fully qualified name of the @Nullable annotation to add. " +
+                    "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
+                    "Defaults to `org.jspecify.annotations.Nullable`.",
             example = "org.jspecify.annotations.Nullable",
             required = false)
     @Nullable
     String nullableAnnotationClass;
 
-    private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
-
     String displayName = "Annotate methods which may return `null` with `@Nullable`";
 
     String description = "Add `@Nullable` to non-private methods that may return `null`. " +
-                "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
-                "When providing a custom `nullableAnnotationClass` that annotation should be meta annotated with `@Target(TYPE_USE)`. " +
-                "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
-                "statements for potential null values. It also identifies known methods from standard libraries that may " +
-                "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
-                "The return of streams, or lambdas are not taken into account.";
+            "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
+            "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
+            "Methods that already carry a known nullable annotation (matched by simple name) are skipped to avoid duplication. " +
+            "This recipe scans for methods that do not already have a `@Nullable` annotation and checks their return " +
+            "statements for potential null values. It also identifies known methods from standard libraries that may " +
+            "return null, such as methods from `Map`, `Queue`, `Deque`, `NavigableSet`, and `Spliterator`. " +
+            "The return of streams, or lambdas are not taken into account.";
 
     @Override
     public Validated<Object> validate() {
@@ -68,14 +87,15 @@ public class AnnotateNullableMethods extends Recipe {
         String fullyQualifiedName = nullableAnnotationClass != null ? nullableAnnotationClass : DEFAULT_NULLABLE_ANN_CLASS;
         String fullyQualifiedPackage = fullyQualifiedName.substring(0, fullyQualifiedName.lastIndexOf('.'));
         String simpleName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.') + 1);
+        boolean isTypeUseAnnotation = !NON_TYPE_USE_FQN.contains(fullyQualifiedName);
+
         JavaIsoVisitor<ExecutionContext> javaIsoVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
                 if (!methodDeclaration.hasModifier(J.Modifier.Type.Public) ||
                         methodDeclaration.getMethodType() == null ||
                         methodDeclaration.getMethodType().getReturnType() instanceof JavaType.Primitive ||
-                        service(AnnotationService.class).matches(getCursor(), new AnnotationMatcher("@" + fullyQualifiedName)) ||
-                        hasNullableAnnotation(methodDeclaration.getReturnTypeExpression(), fullyQualifiedName)) {
+                        hasAnyNullableAnnotation(methodDeclaration)) {
                     return methodDeclaration;
                 }
 
@@ -88,31 +108,46 @@ public class AnnotateNullableMethods extends Recipe {
                             .build()
                             .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                     doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotatedMethod));
-                    doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
-                    return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor()
-                            .visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
+
+                    // TYPE_USE annotations are moved to the return type position (e.g. public @Nullable String foo())
+                    // and positioned before inner types of nested types (e.g. Outer.@Nullable Inner).
+                    // Declaration-target annotations stay as method-level annotations (e.g. @CheckForNull \n public String foo()).
+                    if (isTypeUseAnnotation) {
+                        doAfterVisit(new MoveFieldAnnotationToType(fullyQualifiedName).getVisitor());
+                        return (J.MethodDeclaration) new NullableOnMethodReturnType().getVisitor()
+                                .visitNonNull(annotatedMethod, ctx, getCursor().getParentTreeCursor());
+                    }
+                    return annotatedMethod;
                 }
                 return md;
             }
 
-            private boolean hasNullableAnnotation(@Nullable TypeTree returnType, String annotationFqn) {
-                if (returnType == null) {
-                    return false;
-                }
-
-                // Check if the return type itself is annotated
-                if (service(AnnotationService.class).matches(new Cursor(null, returnType), new AnnotationMatcher("@" + annotationFqn))) {
-                    return true;
-                }
-
-                // For array types, check if the element type is annotated
-                if (returnType instanceof J.ArrayType) {
-                    J.ArrayType arrayType = (J.ArrayType) returnType;
-                    if (arrayType.getElementType() instanceof J.AnnotatedType) {
-                        return service(AnnotationService.class).matches(new Cursor(null, arrayType.getElementType()), new AnnotationMatcher("@" + annotationFqn));
+            /**
+             * Checks whether the method declaration already has any known nullable annotation,
+             * either as a method-level annotation or anywhere on the return type.
+             */
+            private boolean hasAnyNullableAnnotation(J.MethodDeclaration methodDeclaration) {
+                // Check method-level annotations
+                for (J.Annotation annotation : methodDeclaration.getLeadingAnnotations()) {
+                    if (NULLABLE_ANNOTATION_SIMPLE_NAMES.contains(annotation.getSimpleName())) {
+                        return true;
                     }
                 }
-
+                // Scan the entire return type tree for any annotation with a known nullable simple name.
+                // Uses a TreeVisitor to reliably traverse all AST node types regardless of structure
+                // (J.AnnotatedType, J.FieldAccess with annotated names, J.ArrayType with bracket annotations, etc.)
+                TypeTree returnType = methodDeclaration.getReturnTypeExpression();
+                if (returnType != null) {
+                    return new JavaIsoVisitor<AtomicBoolean>() {
+                        @Override
+                        public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean found) {
+                            if (NULLABLE_ANNOTATION_SIMPLE_NAMES.contains(annotation.getSimpleName())) {
+                                found.set(true);
+                            }
+                            return annotation;
+                        }
+                    }.reduce(returnType, new AtomicBoolean(false), getCursor()).get();
+                }
                 return false;
             }
         };

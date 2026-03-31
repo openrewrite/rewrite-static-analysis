@@ -103,6 +103,43 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     }
 
     @Test
+    void methodReturnNullButIsAlreadyAnnotatedWithCheckForNull() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import javax.annotation.CheckForNull;
+
+              public class Test {
+                  @CheckForNull
+                  public String getString() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void methodReturnNullButArrayIsAlreadyAnnotated() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+
+              public class Test {
+                  public String @Nullable [] getArray() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void methodDoesNotReturnNull() {
         rewriteRun(
           //language=java
@@ -266,6 +303,35 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     }
 
     @Test
+    void provideCustomNonTypeUseNullableAnnotationOption() {
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableMethods("javax.annotation.CheckForNull")),
+          //language=java
+          java(
+            """
+              public class Test {
+
+                  public String getString() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import javax.annotation.CheckForNull;
+
+              public class Test {
+
+                  @CheckForNull
+                  public String getString() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void validate() {
         assertThat(new AnnotateNullableMethods("Nullable").validate().isInvalid()).isTrue();
     }
@@ -367,6 +433,46 @@ class AnnotateNullableMethodsTest implements RewriteTest {
 
               public class Foo {
                   public  B.@Nullable C bar() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedTypeWithNonTypeUseAnnotation() {
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableMethods("javax.annotation.CheckForNull")),
+          //language=java
+          java(
+            """
+              package a;
+              public class B {
+                  public static class C {}
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              import a.B;
+              public class Foo {
+                  public B.C bar() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import a.B;
+
+              import javax.annotation.CheckForNull;
+
+              public class Foo {
+                  @CheckForNull
+                  public B.C bar() {
                       return null;
                   }
               }
