@@ -93,6 +93,19 @@ public class PreferIncrementOperator extends Recipe {
                                             assignment.getType()
                                     );
                                 }
+
+                                Expression remainder = extractRemainderFromLeftSpine(binary, variable);
+                                if (remainder != null) {
+                                    return new J.AssignmentOperation(
+                                            Tree.randomId(),
+                                            assignment.getPrefix(),
+                                            assignment.getMarkers(),
+                                            variable.withPrefix(Space.EMPTY),
+                                            new JLeftPadded<>(Space.SINGLE_SPACE, J.AssignmentOperation.Type.Addition, Markers.EMPTY),
+                                            remainder.withPrefix(Space.SINGLE_SPACE),
+                                            assignment.getType()
+                                    );
+                                }
                             }
                         }
                     }
@@ -101,5 +114,21 @@ public class PreferIncrementOperator extends Recipe {
                 }));
             }
         };
+    }
+
+    private static Expression extractRemainderFromLeftSpine(J.Binary binary, Expression variable) {
+        Expression left = binary.getLeft();
+        if (left instanceof J.Binary) {
+            J.Binary leftBinary = (J.Binary) left;
+            if (leftBinary.getOperator() == J.Binary.Type.Addition || leftBinary.getOperator() == J.Binary.Type.Subtraction) {
+                Expression remainder = extractRemainderFromLeftSpine(leftBinary, variable);
+                if (remainder != null) {
+                    return binary.withLeft(remainder);
+                }
+            }
+        } else if (SemanticallyEqual.areEqual(variable, left) && binary.getOperator() == J.Binary.Type.Addition) {
+            return binary.getRight().withPrefix(Space.EMPTY);
+        }
+        return null;
     }
 }
