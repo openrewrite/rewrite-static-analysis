@@ -293,7 +293,8 @@ class AnnotateNullableMethodsTest implements RewriteTest {
 
               public class Test {
 
-                  public @Nullable String getString() {
+                  @Nullable
+                  public String getString() {
                       return null;
                   }
               }
@@ -551,7 +552,8 @@ class AnnotateNullableMethodsTest implements RewriteTest {
                       return new Random().nextBoolean() ? "Not null" : null;
                   }
 
-                  public @Nullable String getString() {
+                  @Nullable
+                  public String getString() {
                       return maybeNullString();
                   }
               }

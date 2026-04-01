@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = false)
@@ -36,23 +37,16 @@ public class AnnotateNullableMethods extends Recipe {
     private static final String DEFAULT_NULLABLE_ANN_CLASS = "org.jspecify.annotations.Nullable";
 
     /**
-     * Simple names of well-known nullable annotations. If a method already carries an annotation
-     * (on the method itself or on its return type) whose simple name matches any of these,
-     * we skip annotating it to avoid duplication.
+     * FQNs of nullable annotations that are meta-annotated with {@code @Target(TYPE_USE)}.
+     * These annotations can be positioned before the inner type of a nested type or on array brackets.
+     * All other nullable annotations are assumed to be declaration-target only and will remain
+     * as method-level annotations.
      */
-    private static final Set<String> NULLABLE_ANNOTATION_SIMPLE_NAMES = new HashSet<>(Arrays.asList(
-            "Nullable",
-            "CheckForNull"
-    ));
-
-    /**
-     * FQNs of nullable annotations that are NOT meta-annotated with {@code @Target(TYPE_USE)}.
-     * These annotations cannot be positioned before the inner type of a nested type or on array brackets,
-     * and must remain as method-level annotations. All other nullable annotations (including custom ones)
-     * are assumed to be TYPE_USE and will be moved to the return type position.
-     */
-    private static final Set<String> NON_TYPE_USE_FQN = new HashSet<>(Arrays.asList(
-            "javax.annotation.CheckForNull"
+    private static final Set<String> TYPE_USE_NULLABLE_ANNOTATIONS = new HashSet<>(Arrays.asList(
+            "jakarta.annotation.Nullable",
+            "org.checkerframework.checker.nullness.qual.Nullable",
+            "org.eclipse.jdt.annotation.Nullable",
+            "org.jspecify.annotations.Nullable"
     ));
 
     @Option(displayName = "`@Nullable` annotation class",
@@ -87,7 +81,7 @@ public class AnnotateNullableMethods extends Recipe {
         String fullyQualifiedName = nullableAnnotationClass != null ? nullableAnnotationClass : DEFAULT_NULLABLE_ANN_CLASS;
         String fullyQualifiedPackage = fullyQualifiedName.substring(0, fullyQualifiedName.lastIndexOf('.'));
         String simpleName = fullyQualifiedName.substring(fullyQualifiedName.lastIndexOf('.') + 1);
-        boolean isTypeUseAnnotation = !NON_TYPE_USE_FQN.contains(fullyQualifiedName);
+        boolean isTypeUseAnnotation = TYPE_USE_NULLABLE_ANNOTATIONS.contains(fullyQualifiedName);
 
         JavaIsoVisitor<ExecutionContext> javaIsoVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
@@ -129,7 +123,7 @@ public class AnnotateNullableMethods extends Recipe {
             private boolean hasAnyNullableAnnotation(J.MethodDeclaration methodDeclaration) {
                 // Check method-level annotations
                 for (J.Annotation annotation : methodDeclaration.getLeadingAnnotations()) {
-                    if (NULLABLE_ANNOTATION_SIMPLE_NAMES.contains(annotation.getSimpleName())) {
+                    if (isNullAnnotation(annotation)) {
                         return true;
                     }
                 }
@@ -141,7 +135,7 @@ public class AnnotateNullableMethods extends Recipe {
                     return new JavaIsoVisitor<AtomicBoolean>() {
                         @Override
                         public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean found) {
-                            if (NULLABLE_ANNOTATION_SIMPLE_NAMES.contains(annotation.getSimpleName())) {
+                            if (isNullAnnotation(annotation)) {
                                 found.set(true);
                             }
                             return annotation;
@@ -149,6 +143,10 @@ public class AnnotateNullableMethods extends Recipe {
                     }.reduce(returnType, new AtomicBoolean(false), getCursor()).get();
                 }
                 return false;
+            }
+
+            private boolean isNullAnnotation(J.Annotation ann) {
+                return ann.getSimpleName().toLowerCase(Locale.ROOT).contains("null");
             }
         };
         return Repeat.repeatUntilStable(javaIsoVisitor, 5);
