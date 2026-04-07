@@ -1766,4 +1766,28 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             ), 17)
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/4173")
+    @Test
+    void unchangedTryWithResourcesCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Closeable;
+
+              class A {
+                  void foo(Object object) {
+                      if (object instanceof Closeable) {
+                          try (Closeable c = (Closeable) object) {
+                              System.out.println(c);
+                          } catch (Exception e) {
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
