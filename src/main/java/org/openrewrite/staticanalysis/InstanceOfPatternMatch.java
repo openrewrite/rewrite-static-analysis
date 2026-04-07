@@ -198,7 +198,8 @@ public class InstanceOfPatternMatch extends Recipe {
                 for (Iterator<?> it = cursor.getPath(); it.hasNext(); ) {
                     Object next = it.next();
                     if (validContexts.contains(next)) {
-                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent)) {
+                        if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
+                                cursor.firstEnclosing(J.Try.Resource.class) == null) {
                             if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
                                     !variablesToDelete.containsKey(instanceOf)) {
                                 variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
