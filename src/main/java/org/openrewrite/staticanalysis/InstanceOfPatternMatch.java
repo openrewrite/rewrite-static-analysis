@@ -162,7 +162,7 @@ public class InstanceOfPatternMatch extends Recipe {
         private final Map<J.InstanceOf, Set<J>> contexts = new HashMap<>();
         private final Map<J.InstanceOf, Set<Cursor>> contextScopes = new HashMap<>();
         private final Map<J.TypeCast, J.InstanceOf> replacements = new HashMap<>();
-        private final Map<J.InstanceOf, VariableAndTypeTree> variablesToDelete = new HashMap<>();
+        private final Map<J.InstanceOf, List<VariableAndTypeTree>> variablesToDelete = new HashMap<>();
 
         public void registerInstanceOf(J.InstanceOf instanceOf, Set<J> contexts) {
             Expression expression = instanceOf.getExpression();
@@ -201,9 +201,11 @@ public class InstanceOfPatternMatch extends Recipe {
                         if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
                                 cursor.firstEnclosing(J.Try.Resource.class) == null) {
                             if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
-                                    !variablesToDelete.containsKey(instanceOf)) {
-                                variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
-                                        requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
+                                    shouldDeleteVariableDeclaration(parent, instanceOf)) {
+                                variablesToDelete
+                                        .computeIfAbsent(instanceOf, i -> new ArrayList<>())
+                                        .add(new VariableAndTypeTree(parent.getValue(),
+                                                requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
                             } else {
                                 replacements.put(typeCast, instanceOf);
                             }
@@ -284,6 +286,18 @@ public class InstanceOfPatternMatch extends Recipe {
             return replacements.isEmpty() && variablesToDelete.isEmpty();
         }
 
+        private boolean shouldDeleteVariableDeclaration(Cursor parent, J.InstanceOf instanceOf) {
+            J.VariableDeclarations.NamedVariable namedVariable = parent.getValue();
+            TypeTree typeExpression = requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression());
+            List<VariableAndTypeTree> existingVariables = variablesToDelete.get(instanceOf);
+            if (existingVariables == null || existingVariables.isEmpty()) {
+                return true;
+            }
+            VariableAndTypeTree primaryVariable = existingVariables.get(0);
+            return namedVariable.getSimpleName().equals(primaryVariable.getVariable().getSimpleName()) &&
+                   SemanticallyEqual.areEqual(typeExpression, primaryVariable.getType());
+        }
+
         public J.InstanceOf processInstanceOf(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
@@ -328,7 +342,7 @@ public class InstanceOfPatternMatch extends Recipe {
                     .map(e -> e.getKey().getClazz().getTree())
                     .orElse(null);
             if (typeCastTypeTree == null) {
-                VariableAndTypeTree variable = variablesToDelete.get(instanceOf);
+                VariableAndTypeTree variable = getPrimaryVariableToDelete(instanceOf);
                 if (variable != null) {
                     typeCastTypeTree = variable.getType();
                 }
@@ -340,7 +354,7 @@ public class InstanceOfPatternMatch extends Recipe {
             VariableNameStrategy strategy;
             JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
             if (root instanceof J.If) {
-                VariableAndTypeTree variableData = variablesToDelete.get(instanceOf);
+                VariableAndTypeTree variableData = getPrimaryVariableToDelete(instanceOf);
                 if (variableData != null) {
                     // under the assumption that the code compiled previously we don't need to check for duplicates
                     return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
@@ -366,6 +380,14 @@ public class InstanceOfPatternMatch extends Recipe {
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
+        private @Nullable VariableAndTypeTree getPrimaryVariableToDelete(J.InstanceOf instanceOf) {
+            List<VariableAndTypeTree> variables = variablesToDelete.get(instanceOf);
+            if (variables == null || variables.isEmpty()) {
+                return null;
+            }
+            return variables.get(0);
+        }
+
         public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
             J.InstanceOf instanceOf = replacements.get(typeCast);
             if (instanceOf != null && instanceOf.getPattern() != null) {
@@ -386,7 +408,9 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         public @Nullable J processVariableDeclarations(J.VariableDeclarations multiVariable) {
-            return multiVariable.getVariables().stream().anyMatch(v -> variablesToDelete.values().stream().anyMatch(vd -> vd.getVariable() == v)) ? null : multiVariable;
+            return multiVariable.getVariables().stream().anyMatch(v -> variablesToDelete.values().stream()
+                    .flatMap(Collection::stream)
+                    .anyMatch(vd -> vd.getVariable() == v)) ? null : multiVariable;
         }
     }
 

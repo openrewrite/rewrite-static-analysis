@@ -521,6 +521,87 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/305")
+        @Test
+        void doesNotIntroduceSelfAssignmentInElseIfBranches() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      String test(Object obj, String fieldName) {
+                          if (obj instanceof Contact) {
+                              if (fieldName.equals("FIRST_NAME")) {
+                                  Contact cont = (Contact) obj;
+                                  return getContactLink(cont, null, cont.getFirstName());
+                              } else if (fieldName.equals("LAST_NAME")) {
+                                  Contact cont = (Contact) obj;
+                                  return getContactLink(cont, null, cont.getLastName());
+                              } else if (fieldName.equals("FULL_NAME")) {
+                                  Contact cont = (Contact) obj;
+                                  return getContactLink(cont, null, cont.getDisplayName());
+                              }
+                          }
+                          return "";
+                      }
+
+                      String getContactLink(Contact contact, Object unused, String value) {
+                          return value;
+                      }
+
+                      static class Contact {
+                          String getFirstName() {
+                              return "";
+                          }
+
+                          String getLastName() {
+                              return "";
+                          }
+
+                          String getDisplayName() {
+                              return "";
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      String test(Object obj, String fieldName) {
+                          if (obj instanceof Contact cont) {
+                              if (fieldName.equals("FIRST_NAME")) {
+                                  return getContactLink(cont, null, cont.getFirstName());
+                              } else if (fieldName.equals("LAST_NAME")) {
+                                  return getContactLink(cont, null, cont.getLastName());
+                              } else if (fieldName.equals("FULL_NAME")) {
+                                  return getContactLink(cont, null, cont.getDisplayName());
+                              }
+                          }
+                          return "";
+                      }
+
+                      String getContactLink(Contact contact, Object unused, String value) {
+                          return value;
+                      }
+
+                      static class Contact {
+                          String getFirstName() {
+                              return "";
+                          }
+
+                          String getLastName() {
+                              return "";
+                          }
+
+                          String getDisplayName() {
+                              return "";
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @Test
         void conflictingVariableInBody() {
             rewriteRun(
