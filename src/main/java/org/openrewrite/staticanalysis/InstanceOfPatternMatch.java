@@ -162,7 +162,7 @@ public class InstanceOfPatternMatch extends Recipe {
         private final Map<J.InstanceOf, Set<J>> contexts = new HashMap<>();
         private final Map<J.InstanceOf, Set<Cursor>> contextScopes = new HashMap<>();
         private final Map<J.TypeCast, J.InstanceOf> replacements = new HashMap<>();
-        private final Map<J.InstanceOf, VariableAndTypeTree> variablesToDelete = new HashMap<>();
+        private final Map<J.InstanceOf, List<VariableAndTypeTree>> variablesToDelete = new HashMap<>();
 
         public void registerInstanceOf(J.InstanceOf instanceOf, Set<J> contexts) {
             Expression expression = instanceOf.getExpression();
@@ -201,9 +201,11 @@ public class InstanceOfPatternMatch extends Recipe {
                         if (isAcceptableTypeCast(typeCast.getType()) && isTheSameAsOtherTypeCasts(typeCast, instanceOf) && isAcceptableParentTypeCast(parent) &&
                                 cursor.firstEnclosing(J.Try.Resource.class) == null) {
                             if (parent.getValue() instanceof J.VariableDeclarations.NamedVariable &&
-                                    !variablesToDelete.containsKey(instanceOf)) {
-                                variablesToDelete.put(instanceOf, new VariableAndTypeTree(parent.getValue(),
-                                        requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
+                                    shouldDeleteVariableDeclaration(parent, instanceOf)) {
+                                variablesToDelete
+                                        .computeIfAbsent(instanceOf, i -> new ArrayList<>())
+                                        .add(new VariableAndTypeTree(parent.getValue(),
+                                                requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression())));
                             } else {
                                 replacements.put(typeCast, instanceOf);
                             }
@@ -284,6 +286,21 @@ public class InstanceOfPatternMatch extends Recipe {
             return replacements.isEmpty() && variablesToDelete.isEmpty();
         }
 
+        private boolean shouldDeleteVariableDeclaration(Cursor parent, J.InstanceOf instanceOf) {
+            J.VariableDeclarations.NamedVariable namedVariable = parent.getValue();
+            TypeTree typeExpression = requireNonNull(requireNonNull(parent.firstEnclosing(J.VariableDeclarations.class)).getTypeExpression());
+            List<VariableAndTypeTree> existingVariables = variablesToDelete.get(instanceOf);
+            if (existingVariables == null || existingVariables.isEmpty()) {
+                return true;
+            }
+            VariableAndTypeTree primaryVariable = existingVariables.get(0);
+            JavaType currentType = typeExpression.getType();
+            JavaType primaryType = primaryVariable.getType().getType();
+            return namedVariable.getSimpleName().equals(primaryVariable.getVariable().getSimpleName()) &&
+                   ((currentType != null && primaryType != null && hasSameRawType(currentType, primaryType)) ||
+                    SemanticallyEqual.areEqual(typeExpression, primaryVariable.getType()));
+        }
+
         public J.InstanceOf processInstanceOf(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             if (!contextScopes.containsKey(instanceOf)) {
                 return instanceOf;
@@ -320,27 +337,22 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         private TypeTree computeTypeTreeFromTypeCasts(J.InstanceOf instanceOf) {
-            TypeTree typeCastTypeTree = replacements
-                    .entrySet()
-                    .stream()
-                    .filter(e -> e.getValue() == instanceOf)
-                    .findFirst()
-                    .map(e -> e.getKey().getClazz().getTree())
-                    .orElse(null);
-            if (typeCastTypeTree == null) {
-                VariableAndTypeTree variable = variablesToDelete.get(instanceOf);
-                if (variable != null) {
-                    typeCastTypeTree = variable.getType();
-                }
-            }
-            return typeCastTypeTree;
+            List<TypeTree> candidateTypes = Stream.concat(
+                            replacements.entrySet().stream()
+                                    .filter(e -> e.getValue() == instanceOf)
+                                    .map(e -> e.getKey().getClazz().getTree()),
+                            variablesToDelete.getOrDefault(instanceOf, emptyList()).stream()
+                                    .map(VariableAndTypeTree::getType)
+                    )
+                    .collect(toList());
+            return chooseTypeTree(candidateTypes, (TypeTree) instanceOf.getClazz());
         }
 
         private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
             VariableNameStrategy strategy;
             JavaType type = ((TypeTree) instanceOf.getClazz()).getType();
             if (root instanceof J.If) {
-                VariableAndTypeTree variableData = variablesToDelete.get(instanceOf);
+                VariableAndTypeTree variableData = getPrimaryVariableToDelete(instanceOf);
                 if (variableData != null) {
                     // under the assumption that the code compiled previously we don't need to check for duplicates
                     return VariableNameStrategy.exact(variableData.getVariable().getSimpleName()).variableName(type);
@@ -366,6 +378,68 @@ public class InstanceOfPatternMatch extends Recipe {
             return VariableNameUtils.generateVariableName(baseName, cursor, INCREMENT_NUMBER);
         }
 
+        private @Nullable VariableAndTypeTree getPrimaryVariableToDelete(J.InstanceOf instanceOf) {
+            List<VariableAndTypeTree> variables = variablesToDelete.get(instanceOf);
+            if (variables == null || variables.isEmpty()) {
+                return null;
+            }
+            return variables.get(0);
+        }
+
+        private TypeTree chooseTypeTree(List<TypeTree> candidates, TypeTree originalTypeTree) {
+            if (candidates.isEmpty()) {
+                return originalTypeTree;
+            }
+
+            JavaType originalType = originalTypeTree.getType();
+            TypeTree firstCandidate = candidates.get(0);
+            JavaType firstType = firstCandidate.getType();
+            if (originalType == null || firstType == null) {
+                return originalTypeTree;
+            }
+
+            boolean allSameRawType = candidates.stream()
+                    .map(TypeTree::getType)
+                    .allMatch(type -> type != null &&
+                                      hasSameRawType(type, originalType) &&
+                                      hasSameRawType(type, firstType));
+            if (!allSameRawType) {
+                return originalTypeTree;
+            }
+
+            if (candidates.size() == 1) {
+                return candidates.get(0);
+            }
+
+            List<TypeTree> wildcardCandidates = candidates.stream()
+                    .filter(this::isUnboundedWildcardParameterized)
+                    .collect(toList());
+
+            if (!wildcardCandidates.isEmpty()) {
+                if (wildcardCandidates.stream().allMatch(candidate -> SemanticallyEqual.areEqual(candidate, wildcardCandidates.get(0)))) {
+                    return wildcardCandidates.get(0);
+                }
+                return originalTypeTree;
+            }
+
+            if (candidates.stream().allMatch(candidate -> SemanticallyEqual.areEqual(candidate, firstCandidate))) {
+                return firstCandidate;
+            }
+
+            return originalTypeTree;
+        }
+
+        private boolean isUnboundedWildcardParameterized(TypeTree typeTree) {
+            JavaType type = typeTree.getType();
+            if (!(type instanceof JavaType.Parameterized)) {
+                return false;
+            }
+            return requireNonNull(((JavaType.Parameterized) type).getTypeParameters()).stream()
+                    .allMatch(typeParameter -> typeParameter instanceof JavaType.GenericTypeVariable &&
+                                               ((JavaType.GenericTypeVariable) typeParameter).getBounds().isEmpty() &&
+                                               "?".equals(((JavaType.GenericTypeVariable) typeParameter).getName()));
+        }
+
         public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
             J.InstanceOf instanceOf = replacements.get(typeCast);
             if (instanceOf != null && instanceOf.getPattern() != null) {
@@ -386,7 +460,9 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         public @Nullable J processVariableDeclarations(J.VariableDeclarations multiVariable) {
-            return multiVariable.getVariables().stream().anyMatch(v -> variablesToDelete.values().stream().anyMatch(vd -> vd.getVariable() == v)) ? null : multiVariable;
+            return multiVariable.getVariables().stream().anyMatch(v -> variablesToDelete.values().stream()
+                    .flatMap(Collection::stream)
+                    .anyMatch(vd -> vd.getVariable() == v)) ? null : multiVariable;
         }
     }
 
