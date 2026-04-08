@@ -294,8 +294,11 @@ public class InstanceOfPatternMatch extends Recipe {
                 return true;
             }
             VariableAndTypeTree primaryVariable = existingVariables.get(0);
+            JavaType currentType = typeExpression.getType();
+            JavaType primaryType = primaryVariable.getType().getType();
             return namedVariable.getSimpleName().equals(primaryVariable.getVariable().getSimpleName()) &&
-                   SemanticallyEqual.areEqual(typeExpression, primaryVariable.getType());
+                   ((currentType != null && primaryType != null && hasSameRawType(currentType, primaryType)) ||
+                    SemanticallyEqual.areEqual(typeExpression, primaryVariable.getType()));
         }
 
         public J.InstanceOf processInstanceOf(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {

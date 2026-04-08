@@ -602,6 +602,48 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/305")
+        @Test
+        void doesNotIntroduceSelfAssignmentWhenAliasTypeSpellingsDiffer() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List) {
+                              if (b) {
+                                  List<?> list = (List<?>) obj;
+                                  System.out.println(list.size());
+                              } else {
+                                  List list = (List) obj;
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List<?> list) {
+                              if (b) {
+                                  System.out.println(list.size());
+                              } else {
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @Test
         void conflictingVariableInBody() {
             rewriteRun(
