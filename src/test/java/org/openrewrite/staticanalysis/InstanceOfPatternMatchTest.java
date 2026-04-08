@@ -645,6 +645,82 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         }
 
         @Test
+        void prefersStableTypeSpellingRegardlessOfBranchOrder() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List) {
+                              if (b) {
+                                  List list = (List) obj;
+                                  System.out.println(list.size());
+                              } else {
+                                  List<?> list = (List<?>) obj;
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List<?> list) {
+                              if (b) {
+                                  System.out.println(list.size());
+                              } else {
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class B {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List) {
+                              if (b) {
+                                  List<?> list = (List<?>) obj;
+                                  System.out.println(list.size());
+                              } else {
+                                  List list = (List) obj;
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+
+                  class B {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List<?> list) {
+                              if (b) {
+                                  System.out.println(list.size());
+                              } else {
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void conflictingVariableInBody() {
             rewriteRun(
               //language=java

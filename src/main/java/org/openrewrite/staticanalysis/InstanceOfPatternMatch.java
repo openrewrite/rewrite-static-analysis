@@ -337,20 +337,15 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         private TypeTree computeTypeTreeFromTypeCasts(J.InstanceOf instanceOf) {
-            TypeTree typeCastTypeTree = replacements
-                    .entrySet()
-                    .stream()
-                    .filter(e -> e.getValue() == instanceOf)
-                    .findFirst()
-                    .map(e -> e.getKey().getClazz().getTree())
-                    .orElse(null);
-            if (typeCastTypeTree == null) {
-                VariableAndTypeTree variable = getPrimaryVariableToDelete(instanceOf);
-                if (variable != null) {
-                    typeCastTypeTree = variable.getType();
-                }
-            }
-            return typeCastTypeTree;
+            List<TypeTree> candidateTypes = Stream.concat(
+                            replacements.entrySet().stream()
+                                    .filter(e -> e.getValue() == instanceOf)
+                                    .map(e -> e.getKey().getClazz().getTree()),
+                            variablesToDelete.getOrDefault(instanceOf, emptyList()).stream()
+                                    .map(VariableAndTypeTree::getType)
+                    )
+                    .collect(toList());
+            return chooseTypeTree(candidateTypes, (TypeTree) instanceOf.getClazz());
         }
 
         private String patternVariableName(J.InstanceOf instanceOf, Cursor cursor, Set<String> usedNames) {
@@ -389,6 +384,60 @@ public class InstanceOfPatternMatch extends Recipe {
                 return null;
             }
             return variables.get(0);
+        }
+
+        private TypeTree chooseTypeTree(List<TypeTree> candidates, TypeTree originalTypeTree) {
+            if (candidates.isEmpty()) {
+                return originalTypeTree;
+            }
+
+            JavaType originalType = originalTypeTree.getType();
+            TypeTree firstCandidate = candidates.get(0);
+            JavaType firstType = firstCandidate.getType();
+            if (originalType == null || firstType == null) {
+                return originalTypeTree;
+            }
+
+            boolean allSameRawType = candidates.stream()
+                    .map(TypeTree::getType)
+                    .allMatch(type -> type != null &&
+                                      hasSameRawType(type, originalType) &&
+                                      hasSameRawType(type, firstType));
+            if (!allSameRawType) {
+                return originalTypeTree;
+            }
+
+            if (candidates.size() == 1) {
+                return candidates.get(0);
+            }
+
+            List<TypeTree> wildcardCandidates = candidates.stream()
+                    .filter(this::isUnboundedWildcardParameterized)
+                    .collect(toList());
+
+            if (!wildcardCandidates.isEmpty()) {
+                if (wildcardCandidates.stream().allMatch(candidate -> SemanticallyEqual.areEqual(candidate, wildcardCandidates.get(0)))) {
+                    return wildcardCandidates.get(0);
+                }
+                return originalTypeTree;
+            }
+
+            if (candidates.stream().allMatch(candidate -> SemanticallyEqual.areEqual(candidate, firstCandidate))) {
+                return firstCandidate;
+            }
+
+            return originalTypeTree;
+        }
+
+        private boolean isUnboundedWildcardParameterized(TypeTree typeTree) {
+            JavaType type = typeTree.getType();
+            if (!(type instanceof JavaType.Parameterized)) {
+                return false;
+            }
+            return requireNonNull(((JavaType.Parameterized) type).getTypeParameters()).stream()
+                    .allMatch(typeParameter -> typeParameter instanceof JavaType.GenericTypeVariable &&
+                                               ((JavaType.GenericTypeVariable) typeParameter).getBounds().isEmpty() &&
+                                               "?".equals(((JavaType.GenericTypeVariable) typeParameter).getName()));
         }
 
         public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
