@@ -42,7 +42,8 @@ public class UseStandardCharset extends Recipe {
     final String displayName = "Use `StandardCharset` constants";
 
     @Getter
-    final String description = "Replaces `Charset.forName(java.lang.String)` with the equivalent `StandardCharset` constant.";
+    final String description = "Replaces `Charset.forName(java.lang.String)` with the equivalent `StandardCharset` constant. " +
+            "Using the predefined constants is both compile-time safe and avoids the need to handle `UnsupportedEncodingException` for charsets that are guaranteed to exist on every JVM.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S4719");

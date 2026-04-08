@@ -46,7 +46,8 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     final String displayName = "No primitive wrappers for #toString() or #compareTo(..)";
 
     @Getter
-    final String description = "Primitive wrappers should not be instantiated only for `#toString()` or `#compareTo(..)` invocations.";
+    final String description = "Primitive wrappers should not be instantiated only for `#toString()` or `#compareTo(..)` invocations. " +
+            "Allocating a wrapper object just to call a method that has a static equivalent is wasteful; the static versions avoid the unnecessary object creation.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1158");

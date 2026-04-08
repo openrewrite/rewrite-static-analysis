@@ -36,7 +36,8 @@ public class IndexOfReplaceableByContains extends Recipe {
     final String displayName = "`indexOf()` replaceable by `contains()`";
 
     @Getter
-    final String description = "Checking if a value is included in a `String` or `List` using `indexOf(value)>-1` or `indexOf(value)>=0` can be replaced with `contains(value)`.";
+    final String description = "Checking if a value is included in a `String` or `List` using `indexOf(value)>-1` or `indexOf(value)>=0` can be replaced with `contains(value)`. " +
+            "Using `contains()` expresses the intent more directly and avoids the mental overhead of interpreting index comparisons.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2692");

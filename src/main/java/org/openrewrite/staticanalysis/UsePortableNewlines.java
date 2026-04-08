@@ -47,7 +47,8 @@ public class UsePortableNewlines extends Recipe {
 
     String displayName = "Use %n instead of \\n in format strings";
 
-    String description = "Format strings should use %n rather than \\n to produce platform-specific line separators.";
+    String description = "Format strings should use %n rather than \\n to produce platform-specific line separators. " +
+            "Hard-coded `\\n` characters produce incorrect line endings on Windows, whereas `%n` adapts to the runtime platform automatically.";
 
     Set<String> tags = singleton("RSPEC-S3457");
 

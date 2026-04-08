@@ -21,7 +21,8 @@ import org.openrewrite.java.template.RecipeDescriptor;
 
 @RecipeDescriptor(
         name = "Simplify ternary expressions",
-        description = "Simplifies various types of ternary expressions to improve code readability.",
+        description = "Simplifies various types of ternary expressions to improve code readability. " +
+                "Ternaries that simply select between `true` and `false` are redundant wrappers around the condition itself and add unnecessary complexity.",
         tags = {"RSPEC-S1125"}
 )
 public class SimplifyTernary {

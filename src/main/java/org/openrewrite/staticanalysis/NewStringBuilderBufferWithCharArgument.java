@@ -38,7 +38,8 @@ public class NewStringBuilderBufferWithCharArgument extends Recipe {
     final String displayName = "Change `StringBuilder` and `StringBuffer` character constructor argument to `String`";
 
     @Getter
-    final String description = "Instantiating a `StringBuilder` or a `StringBuffer` with a `Character` results in the `int` representation of the character being used for the initial size.";
+    final String description = "Instantiating a `StringBuilder` or a `StringBuffer` with a `Character` results in the `int` representation of the character being used for the initial size. " +
+            "This is almost never the developer's intent and silently produces a buffer with an arbitrary capacity instead of the expected initial content.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1317");

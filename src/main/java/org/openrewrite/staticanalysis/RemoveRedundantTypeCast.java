@@ -36,7 +36,8 @@ public class RemoveRedundantTypeCast extends Recipe {
     final String displayName = "Remove redundant casts";
 
     @Getter
-    final String description = "Removes unnecessary type casts. Does not currently check casts in lambdas and class constructors.";
+    final String description = "Removes unnecessary type casts. Does not currently check casts in lambdas and class constructors. " +
+            "Redundant casts add visual noise and can obscure the actual type relationships in the code, making it harder to follow the data flow.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

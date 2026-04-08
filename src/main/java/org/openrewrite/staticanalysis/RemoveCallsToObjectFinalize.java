@@ -39,7 +39,8 @@ public class RemoveCallsToObjectFinalize extends Recipe {
     final String displayName = "Remove `Object.finalize()` invocations";
 
     @Getter
-    final String description = "Remove calls to `Object.finalize()`. This method is called during garbage collection and calling it manually is misleading.";
+    final String description = "Remove calls to `Object.finalize()`. This method is called during garbage collection and calling it manually is misleading. " +
+            "Explicit finalize invocations can trigger resource cleanup prematurely while the object is still in use, leading to unpredictable behavior.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1111");

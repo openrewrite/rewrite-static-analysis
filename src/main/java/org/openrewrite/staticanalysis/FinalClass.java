@@ -31,7 +31,8 @@ public class FinalClass extends Recipe {
     final String displayName = "Finalize classes with private constructors";
 
     @Getter
-    final String description = "Adds the `final` modifier to classes that expose no public or package-private constructors.";
+    final String description = "Adds the `final` modifier to classes that expose no public or package-private constructors. " +
+            "If a class cannot be instantiated from the outside, marking it `final` communicates that it was not designed for inheritance and prevents accidental subclassing.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2974");

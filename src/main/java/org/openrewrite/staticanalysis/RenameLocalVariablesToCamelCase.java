@@ -53,7 +53,8 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
             "Special characters that are allowed in java field names `$` and `_` are removed (unless the name starts with one). " +
             "If a special character is removed the next valid alphanumeric will be capitalized. " +
             "Currently, does not support renaming members of classes. " +
-            "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
+            "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank. " +
+            "Consistent naming conventions improve readability and reduce friction when navigating unfamiliar code.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S117");

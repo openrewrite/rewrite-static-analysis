@@ -43,7 +43,8 @@ public class NeedBraces extends Recipe {
     final String displayName = "Fix missing braces";
 
     @Getter
-    final String description = "Adds missing braces around code such as single-line `if`, `for`, `while`, and `do-while` block bodies.";
+    final String description = "Adds missing braces around code such as single-line `if`, `for`, `while`, and `do-while` block bodies. " +
+            "Omitting braces can lead to dangling-statement bugs when additional lines are later added to a block without realizing they fall outside the control structure.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S121");

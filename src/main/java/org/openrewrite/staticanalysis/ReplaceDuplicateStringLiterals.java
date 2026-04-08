@@ -51,7 +51,8 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                "Qualified `String` literals include final Strings, method invocations, and new class invocations. " +
                "Adds a new `private static final String` or uses an existing equivalent class field. " +
                "A new variable name will be generated based on the literal value if an existing field does not exist. " +
-               "The generated name will append a numeric value to the variable name if a name already exists in the compilation unit.";
+               "The generated name will append a numeric value to the variable name if a name already exists in the compilation unit. " +
+               "Centralizing repeated string values into constants makes refactoring safer and reduces the risk of inconsistent updates.";
 
     Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1192", "RSPEC-S1889"));
 

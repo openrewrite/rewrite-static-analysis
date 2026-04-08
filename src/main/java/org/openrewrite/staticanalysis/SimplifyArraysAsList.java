@@ -40,7 +40,8 @@ public class SimplifyArraysAsList extends Recipe {
 
     @Getter
     final String description = "Simplifies `Arrays.asList()` method calls that use explicit array creation to use varargs instead. " +
-            "For example, `Arrays.asList(new String[]{\"a\", \"b\", \"c\"})` becomes `Arrays.asList(\"a\", \"b\", \"c\")`.";
+            "For example, `Arrays.asList(new String[]{\"a\", \"b\", \"c\"})` becomes `Arrays.asList(\"a\", \"b\", \"c\")`. " +
+            "Explicitly constructing an array to pass to a varargs parameter adds visual clutter without changing behavior, since the compiler generates the array automatically.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3878");

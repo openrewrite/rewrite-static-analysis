@@ -43,7 +43,8 @@ public class NoValueOfOnStringType extends Recipe {
     @Getter
     final String description = "Replace unnecessary `String#valueOf(..)` method invocations with the argument directly. " +
             "This occurs when the argument to `String#valueOf(arg)` is a string literal, such as `String.valueOf(\"example\")`. " +
-            "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`.";
+            "Or, when the `String#valueOf(..)` invocation is used in a concatenation, such as `\"example\" + String.valueOf(\"example\")`. " +
+            "The wrapping call is redundant since Java already performs the conversion implicitly in these contexts.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1153");

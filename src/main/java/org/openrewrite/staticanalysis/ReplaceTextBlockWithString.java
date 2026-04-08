@@ -38,7 +38,8 @@ public class ReplaceTextBlockWithString extends Recipe {
     final String displayName = "Replace text block with regular string";
 
     @Getter
-    final String description = "Replace text block with a regular multi-line string.";
+    final String description = "Replace text block with a regular multi-line string. " +
+            "Text blocks that fit on a single line without concatenation or escaped newlines gain no readability benefit from the triple-quote syntax and are clearer as plain string literals.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S5663");

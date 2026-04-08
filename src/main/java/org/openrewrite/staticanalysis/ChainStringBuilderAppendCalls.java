@@ -39,7 +39,8 @@ public class ChainStringBuilderAppendCalls extends Recipe {
     final String displayName = "Chain `StringBuilder.append()` calls";
 
     @Getter
-    final String description = "String concatenation within calls to `StringBuilder.append()` causes unnecessary memory allocation. Except for concatenations of String literals, which are joined together at compile time. Replaces inefficient concatenations with chained calls to `StringBuilder.append()`.";
+    final String description = "String concatenation within calls to `StringBuilder.append()` causes unnecessary memory allocation. Except for concatenations of String literals, which are joined together at compile time. Replaces inefficient concatenations with chained calls to `StringBuilder.append()`. " +
+            "Using `+` inside `append()` defeats the purpose of the `StringBuilder`, since the concatenation creates a temporary `String` before appending.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3024");

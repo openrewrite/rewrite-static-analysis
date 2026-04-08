@@ -38,7 +38,8 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
     final String displayName = "Unnecessary close in try-with-resources";
 
     @Getter
-    final String description = "Remove unnecessary `AutoCloseable#close()` statements in try-with-resources.";
+    final String description = "Remove unnecessary `AutoCloseable#close()` statements in try-with-resources. " +
+            "Try-with-resources already guarantees that each declared resource is closed when the block exits, so an explicit `close()` call is redundant and can be confusing.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

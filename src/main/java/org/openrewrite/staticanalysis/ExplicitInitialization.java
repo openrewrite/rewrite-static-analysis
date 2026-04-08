@@ -37,7 +37,8 @@ public class ExplicitInitialization extends Recipe {
             " - `null` for object references\n" +
             " - zero for numeric types and `char`\n" +
             " - and `false` for `boolean`\n" +
-            "Removes explicit initializations where they aren't necessary.";
+            "Removes explicit initializations where they aren't necessary. " +
+            "Since the JVM already guarantees these defaults, restating them adds visual noise and can obscure fields that are intentionally initialized to non-default values.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3052");

@@ -36,7 +36,8 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
     final String displayName = "Unnecessary `return` as last statement in void method";
 
     @Getter
-    final String description = "Removes `return` from a `void` method if it's the last statement.";
+    final String description = "Removes `return` from a `void` method if it's the last statement. " +
+            "A trailing `return` in a void method has no effect on control flow and is just noise that distracts from the meaningful logic.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3626");

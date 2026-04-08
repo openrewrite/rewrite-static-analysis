@@ -36,7 +36,8 @@ public class RemoveUnneededBlock extends Recipe {
     final String displayName = "Remove unneeded block";
 
     @Getter
-    final String description = "Flatten blocks into inline statements when possible.";
+    final String description = "Flatten blocks into inline statements when possible. " +
+            "Unnecessary nested blocks add indentation and scope boundaries that obscure the control flow, often indicating code that should be extracted into its own method.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1199");

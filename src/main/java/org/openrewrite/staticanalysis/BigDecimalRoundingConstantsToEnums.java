@@ -42,7 +42,8 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
     final String displayName = "`BigDecimal` rounding constants to `RoundingMode` enums";
 
     @Getter
-    final String description = "Convert `BigDecimal` rounding constants to the equivalent `RoundingMode` enum.";
+    final String description = "Convert `BigDecimal` rounding constants to the equivalent `RoundingMode` enum. " +
+            "The integer-based rounding constants on `BigDecimal` are deprecated and lack type safety; the `RoundingMode` enum makes the rounding behavior self-documenting and prevents invalid values.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2111");

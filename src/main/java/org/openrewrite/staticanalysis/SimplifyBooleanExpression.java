@@ -35,7 +35,8 @@ public class SimplifyBooleanExpression extends Recipe {
     final String displayName = "Simplify boolean expression";
 
     @Getter
-    final String description = "Checks for overly complicated boolean expressions, such as `if (b == true)`, `b || true`, `!false`, etc.";
+    final String description = "Checks for overly complicated boolean expressions, such as `if (b == true)`, `b || true`, `!false`, etc. " +
+            "Needlessly complex boolean logic makes code harder to reason about and increases the chance of introducing errors during future modifications.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1125");

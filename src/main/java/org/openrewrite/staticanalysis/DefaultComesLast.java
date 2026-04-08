@@ -30,7 +30,8 @@ public class DefaultComesLast extends Recipe {
     final String displayName = "Default comes last";
 
     @Getter
-    final String description = "Ensure the `default` case comes last after all the cases in a switch statement.";
+    final String description = "Ensure the `default` case comes last after all the cases in a switch statement. " +
+            "Placing `default` at the end follows a widely expected convention, making it easy to find the fallback behavior at a glance.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S4524");
