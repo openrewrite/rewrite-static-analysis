@@ -39,9 +39,10 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
     final String displayName = "Replace String concatenation with `String.valueOf()`";
 
     @Getter
-    final String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with `String.valueOf(...)`. " +
-            "This improves code readability and may have minor performance benefits. " +
-            "The empty string prefix `\"\" +` is an indirect way to convert a value to a `String`, while `String.valueOf()` clearly communicates the conversion intent.";
+    final String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with " +
+            "`String.valueOf(...)`. This improves code readability and may have minor performance " +
+            "benefits. The empty string prefix `\"\" +` is an indirect way to convert a value to " +
+            "a `String`, while `String.valueOf()` clearly communicates the conversion intent.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1153");

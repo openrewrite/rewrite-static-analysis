@@ -32,8 +32,10 @@ public class HideUtilityClassConstructor extends Recipe {
     final String displayName = "Hide utility class constructor";
 
     @Getter
-    final String description = "Ensures utility classes (classes containing only static methods or fields in their API) do not have a public constructor. " +
-            "Instantiating a utility class is almost certainly a mistake, and a private constructor makes that intent clear while preventing misuse.";
+    final String description = "Ensures utility classes (classes containing only static methods " +
+            "or fields in their API) do not have a public constructor. " +
+            "Instantiating a utility class is almost certainly a mistake, and a " +
+            "private constructor makes that intent clear while preventing misuse.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1118");

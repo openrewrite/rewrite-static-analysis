@@ -47,14 +47,18 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
     final String displayName = "Reformat local variable names to camelCase";
 
     @Getter
-    final String description = "Reformat local variable and method parameter names to camelCase to comply with Java naming convention. " +
-            "The recipe will not rename variables declared in for loop controls or catches with a single character. " +
+    final String description = "Reformat local variable and method parameter names to camelCase to comply " +
+            "with Java naming convention. The recipe will not rename variables declared in for loop " +
+            "controls or catches with a single character. " +
             "The first character is set to lower case and existing capital letters are preserved. " +
-            "Special characters that are allowed in java field names `$` and `_` are removed (unless the name starts with one). " +
+            "Special characters that are allowed in java field names `$` and `_` are removed " +
+            "(unless the name starts with one). " +
             "If a special character is removed the next valid alphanumeric will be capitalized. " +
             "Currently, does not support renaming members of classes. " +
-            "The recipe will not rename a variable if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank. " +
-            "Consistent naming conventions improve readability and reduce friction when navigating unfamiliar code.";
+            "The recipe will not rename a variable if the result already exists in the class, " +
+            "conflicts with a java reserved keyword, or the result is blank. " +
+            "Consistent naming conventions improve readability and reduce friction when " +
+            "navigating unfamiliar code.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S117");

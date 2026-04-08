@@ -44,8 +44,9 @@ public class RemoveSystemOutPrintln extends Recipe {
 
     @Getter
     final String description = "Print statements are often left accidentally after debugging an issue. " +
-            "This recipe removes all `System.out#println` and `System.err#println` statements from the code. " +
-            "Production code should use a proper logging framework which provides consistent formatting, configurable log levels, and centralized output control.";
+            "This recipe removes all `System.out#println` and `System.err#println` statements " +
+            "from the code. Production code should use a proper logging framework which provides " +
+            "consistent formatting, configurable log levels, and centralized output control.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S106");

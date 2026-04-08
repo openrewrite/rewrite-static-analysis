@@ -33,12 +33,15 @@ public class ExplicitInitialization extends Recipe {
     final String displayName = "Explicit initialization";
 
     @Getter
-    final String description = "Checks if any class or object member is explicitly initialized to default for its type value:\n" +
+    final String description = "Checks if any class or object member is explicitly initialized " +
+            "to default for its type value:\n" +
             " - `null` for object references\n" +
             " - zero for numeric types and `char`\n" +
             " - and `false` for `boolean`\n" +
             "Removes explicit initializations where they aren't necessary. " +
-            "Since the JVM already guarantees these defaults, restating them adds visual noise and can obscure fields that are intentionally initialized to non-default values.";
+            "Since the JVM already guarantees these defaults, restating them adds visual " +
+            "noise and can obscure fields that are intentionally initialized to " +
+            "non-default values.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3052");

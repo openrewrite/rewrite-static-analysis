@@ -43,9 +43,13 @@ public class CovariantEquals extends Recipe {
     final String displayName = "Covariant equals";
 
     @Getter
-    final String description = "Checks that classes and records which define a covariant `equals()` method also override method `equals(Object)`. " +
-            "Covariant `equals()` means a method that is similar to `equals(Object)`, but with a covariant parameter type (any subtype of `Object`). " +
-            "Without a proper `equals(Object)` override, collections and other framework code that rely on the standard signature will silently use `Object.equals`, leading to incorrect behavior.";
+    final String description = "Checks that classes and records which define a covariant " +
+            "`equals()` method also override method `equals(Object)`. Covariant " +
+            "`equals()` means a method that is similar to `equals(Object)`, but with a " +
+            "covariant parameter type (any subtype of `Object`). Without a proper " +
+            "`equals(Object)` override, collections and other framework code that rely " +
+            "on the standard signature will silently use `Object.equals`, leading to " +
+            "incorrect behavior.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2162");

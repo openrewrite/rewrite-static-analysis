@@ -42,8 +42,11 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
     final String displayName = "`Externalizable` classes have no-arguments constructor";
 
     @Getter
-    final String description = "`Externalizable` classes handle both serialization and deserialization and must have a no-args constructor for the deserialization process. " +
-            "Without a public no-argument constructor, the JVM cannot instantiate the object during deserialization and will throw an `InvalidClassException` at runtime.";
+    final String description = "`Externalizable` classes handle both serialization and " +
+            "deserialization and must have a no-args constructor for the deserialization " +
+            "process. Without a public no-argument constructor, the JVM cannot instantiate " +
+            "the object during deserialization and will throw an " +
+            "`InvalidClassException` at runtime.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);

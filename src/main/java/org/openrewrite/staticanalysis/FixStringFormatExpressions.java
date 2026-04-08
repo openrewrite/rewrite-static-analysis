@@ -47,8 +47,13 @@ public class FixStringFormatExpressions extends Recipe {
     final String displayName = "Fix `String#format` and `String#formatted` expressions";
 
     @Getter
-    final String description = "Fix `String#format` and `String#formatted` expressions by replacing `\\n` newline characters with `%n` and removing any unused arguments. Note this recipe is scoped to only transform format expressions which do not specify the argument index. " +
-            "Using `%n` ensures the correct platform-specific line separator, and removing unused arguments eliminates dead code that may mask a mismatch between the format string and its parameters.";
+    final String description = "Fix `String#format` and `String#formatted` expressions by replacing " +
+            "`\\n` newline characters with `%n` and removing any unused arguments. " +
+            "Note this recipe is scoped to only transform format expressions which " +
+            "do not specify the argument index. Using `%n` ensures the correct " +
+            "platform-specific line separator, and removing unused arguments " +
+            "eliminates dead code that may mask a mismatch between the format " +
+            "string and its parameters.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3457");

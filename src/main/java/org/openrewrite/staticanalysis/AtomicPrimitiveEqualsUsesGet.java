@@ -49,9 +49,12 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
     final String displayName = "Atomic Boolean, Integer, and Long equality checks compare their values";
 
     @Getter
-    final String description = "`AtomicBoolean#equals(Object)`, `AtomicInteger#equals(Object)` and `AtomicLong#equals(Object)` are only equal to their instance. " +
+    final String description = "`AtomicBoolean#equals(Object)`, `AtomicInteger#equals(Object)` and " +
+            "`AtomicLong#equals(Object)` are only equal to their instance. " +
             "This recipe converts `a.equals(b)` to `a.get() == b.get()`. " +
-            "These atomic classes do not override `equals` from `Object`, so calling it compares object identity rather than the wrapped value, which is almost never the intended behavior.";
+            "These atomic classes do not override `equals` from `Object`, so calling it " +
+            "compares object identity rather than the wrapped value, which is almost never " +
+            "the intended behavior.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2204");

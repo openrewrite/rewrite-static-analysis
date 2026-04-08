@@ -41,8 +41,10 @@ public class UnnecessaryPrimitiveAnnotations extends Recipe {
     final String displayName = "Remove `@Nullable` and `@CheckForNull` annotations from primitives";
 
     @Getter
-    final String description = "Primitives can't be null anyway, so these annotations are not useful in this context. " +
-            "Leaving them in place gives the false impression that a null value is possible, which can confuse readers and static analysis tools alike.";
+    final String description = "Primitives can't be null anyway, so these annotations are " +
+            "not useful in this context. Leaving them in place gives the false " +
+            "impression that a null value is possible, which can confuse readers " +
+            "and static analysis tools alike.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S4682");

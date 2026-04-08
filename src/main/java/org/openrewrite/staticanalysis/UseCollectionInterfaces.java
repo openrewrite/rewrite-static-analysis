@@ -39,9 +39,13 @@ public class UseCollectionInterfaces extends Recipe {
     final String displayName = "Use `Collection` interfaces";
 
     @Getter
-    final String description = "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, and `Set` instead of implemented collections. " +
-            "Replaces the return type of public method declarations and the variable type public variable declarations. " +
-            "Programming to an interface rather than a concrete collection type decouples callers from a specific implementation, making it easier to swap data structures later without breaking dependent code.";
+    final String description = "Use `Deque`, `List`, `Map`, `ConcurrentMap`, `Queue`, " +
+            "and `Set` instead of implemented collections. Replaces the return type " +
+            "of public method declarations and the variable type public variable " +
+            "declarations. Programming to an interface rather than a concrete " +
+            "collection type decouples callers from a specific implementation, " +
+            "making it easier to swap data structures later without breaking " +
+            "dependent code.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1319");

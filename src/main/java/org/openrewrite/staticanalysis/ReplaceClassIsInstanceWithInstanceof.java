@@ -46,8 +46,10 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
     final String displayName = "Replace `A.class.isInstance(a)` with `a instanceof A`";
 
     @Getter
-    final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by `a instanceof A`. " +
-            "Using `instanceof` enables the compiler to catch type incompatibilities at compile time rather than silently passing at runtime, which helps detect dead code early.";
+    final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by " +
+            "`a instanceof A`. Using `instanceof` enables the compiler to catch type " +
+            "incompatibilities at compile time rather than silently passing at runtime, " +
+            "which helps detect dead code early.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S6202");

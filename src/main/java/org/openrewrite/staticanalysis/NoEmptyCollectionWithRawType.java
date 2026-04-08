@@ -41,8 +41,10 @@ public class NoEmptyCollectionWithRawType extends Recipe {
     final String displayName = "Use `Collections#emptyList()`, `emptyMap()`, and `emptySet()`";
 
     @Getter
-    final String description = "Replaces `Collections#EMPTY_...` with methods that return generic types. " +
-            "The raw-typed constant fields bypass generics checks, which can hide type mismatches that only surface as `ClassCastException` at runtime.";
+    final String description = "Replaces `Collections#EMPTY_...` with methods that return " +
+            "generic types. The raw-typed constant fields bypass generics " +
+            "checks, which can hide type mismatches that only surface as " +
+            "`ClassCastException` at runtime.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1596");

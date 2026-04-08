@@ -45,10 +45,13 @@ public class ControlFlowIndentation extends Recipe {
     final String displayName = "Control flow statement indentation";
 
     @Getter
-    final String description = "Program flow control statements like `if`, `while`, and `for` can omit curly braces when they apply to " +
-            "only a single statement. This recipe ensures that any statements which follow that statement are correctly " +
+    final String description = "Program flow control statements like `if`, `while`, and `for` " +
+            "can omit curly braces when they apply to only a single statement. This " +
+            "recipe ensures that any statements which follow that statement are correctly " +
             "indented to show they are not part of the flow control statement. " +
-            "Misleading indentation can give the false impression that a line executes conditionally when it actually runs unconditionally, which is a common source of logic errors.";
+            "Misleading indentation can give the false impression that a line executes " +
+            "conditionally when it actually runs unconditionally, which is a common " +
+            "source of logic errors.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2681");

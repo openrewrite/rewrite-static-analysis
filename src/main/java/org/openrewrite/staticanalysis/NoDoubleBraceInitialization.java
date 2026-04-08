@@ -41,8 +41,11 @@ public class NoDoubleBraceInitialization extends Recipe {
     final String displayName = "No double brace initialization";
 
     @Getter
-    final String description = "Replace `List`, `Map`, and `Set` double brace initialization with an initialization block. " +
-            "Double brace initialization creates an anonymous inner class that holds a hidden reference to the enclosing instance, which can cause memory leaks and serialization issues.";
+    final String description = "Replace `List`, `Map`, and `Set` double brace initialization " +
+            "with an initialization block. Double brace initialization creates " +
+            "an anonymous inner class that holds a hidden reference to the " +
+            "enclosing instance, which can cause memory leaks and " +
+            "serialization issues.";
 
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1171", "RSPEC-S3599"));

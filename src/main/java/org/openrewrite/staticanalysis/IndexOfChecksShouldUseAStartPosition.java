@@ -36,8 +36,11 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
     final String displayName = "Use `indexOf(String, int)`";
 
     @Getter
-    final String description = "Replaces `indexOf(String)` in binary operations if the compared value is an int and not less than 1. " +
-            "Using the two-argument `indexOf(String, int)` form with a start position avoids redundantly scanning the beginning of the string when you already know the match must occur after a certain index.";
+    final String description = "Replaces `indexOf(String)` in binary operations if the " +
+            "compared value is an int and not less than 1. Using the two-argument " +
+            "`indexOf(String, int)` form with a start position avoids redundantly " +
+            "scanning the beginning of the string when you already know the match " +
+            "must occur after a certain index.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2912");
