@@ -33,7 +33,11 @@ public class WriteOctalValuesAsDecimal extends Recipe {
     final String displayName = "Write octal values as decimal";
 
     @Getter
-    final String description = "Developers may not recognize octal values as such, mistaking them instead for decimal values.";
+    final String description = "Developers may not recognize octal values as such, " +
+            "mistaking them instead for decimal values. Because a leading zero " +
+            "silently switches the literal to base-8, what looks like `010` " +
+            "actually represents `8`, which is a common source of subtle " +
+            "numeric bugs.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1314");

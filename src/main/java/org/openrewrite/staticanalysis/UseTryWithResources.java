@@ -48,7 +48,11 @@ public class UseTryWithResources extends Recipe {
     final String displayName = "Use try-with-resources";
 
     @Getter
-    final String description = "Refactor try/finally blocks to use try-with-resources when the finally block only closes an `AutoCloseable` resource.";
+    final String description = "Refactor try/finally blocks to use try-with-resources " +
+            "when the finally block only closes an `AutoCloseable` resource. " +
+            "Try-with-resources guarantees that resources are closed even when " +
+            "exceptions occur, eliminating an entire class of resource-leak bugs " +
+            "that manual `finally` blocks are prone to.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);

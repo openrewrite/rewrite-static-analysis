@@ -36,7 +36,8 @@ public class NestedEnumsAreNotStatic extends Recipe {
     final String displayName = "Nested enums are not static";
 
     @Getter
-    final String description = "Remove static modifier from nested enum types since they are implicitly static.";
+    final String description = "Remove static modifier from nested enum types since they are implicitly static. " +
+            "The redundant modifier adds visual noise and may mislead readers into thinking there is a non-static alternative.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2786");

@@ -33,8 +33,10 @@ public class AvoidBoxedBooleanExpressions extends Recipe {
     final String displayName = "Avoid boxed boolean expressions";
 
     @Getter
-    final String description = "Under certain conditions the `java.lang.Boolean` type is used as an expression, " +
-            "and it may throw a `NullPointerException` if the value is null.";
+    final String description = "Under certain conditions the `java.lang.Boolean` type is used as an " +
+            "expression, and it may throw a `NullPointerException` if the value is null. " +
+            "Using `Boolean.TRUE.equals(...)` guards against unboxing a `null` reference " +
+            "in control flow positions like `if` conditions and ternary operators.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S5411");

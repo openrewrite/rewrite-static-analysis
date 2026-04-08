@@ -39,7 +39,9 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
     String displayName = "Remove unused private fields";
 
-    String description = "If a private field is declared but not used in the program, it can be considered dead code and should therefore be removed.";
+    String description = "If a private field is declared but not used in the program, it can be considered " +
+            "dead code and should therefore be removed. Dead fields clutter the class, increase its " +
+            "memory footprint, and can mislead developers into thinking they are part of the class's behavior.";
 
     Set<String> tags = singleton("RSPEC-S1068");
 

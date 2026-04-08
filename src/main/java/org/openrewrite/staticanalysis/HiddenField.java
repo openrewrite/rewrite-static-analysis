@@ -31,7 +31,10 @@ public class HiddenField extends Recipe {
     final String displayName = "Hidden field";
 
     @Getter
-    final String description = "Refactor local variables or parameters which shadow a field defined in the same class.";
+    final String description = "Refactor local variables or parameters which shadow a field " +
+            "defined in the same class. Shadowing a field with a local variable " +
+            "of the same name makes it easy to accidentally reference the wrong " +
+            "one, leading to confusing bugs.";
 
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1117", "RSPEC-S2387"));

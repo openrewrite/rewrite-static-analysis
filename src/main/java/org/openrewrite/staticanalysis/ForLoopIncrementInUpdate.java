@@ -40,7 +40,10 @@ public class ForLoopIncrementInUpdate extends Recipe {
     final String displayName = "`for` loop counters incremented in update";
 
     @Getter
-    final String description = "The increment should be moved to the loop's increment clause if possible.";
+    final String description = "The increment should be moved to the loop's increment clause " +
+            "if possible. Placing the counter update in the loop body rather than " +
+            "the update clause obscures the loop's control flow and makes it " +
+            "harder to reason about termination.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1994");

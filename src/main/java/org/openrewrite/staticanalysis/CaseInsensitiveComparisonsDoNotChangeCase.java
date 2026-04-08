@@ -41,7 +41,8 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
     final String displayName = "CaseInsensitive comparisons do not alter case";
 
     @Getter
-    final String description = "Remove `String#toLowerCase()` or `String#toUpperCase()` from `String#equalsIgnoreCase(..)` comparisons.";
+    final String description = "Remove `String#toLowerCase()` or `String#toUpperCase()` from `String#equalsIgnoreCase(..)` comparisons. " +
+            "Changing case before a case-insensitive comparison is redundant and allocates unnecessary intermediate `String` objects.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1157");

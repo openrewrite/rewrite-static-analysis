@@ -37,7 +37,8 @@ public class NoToStringOnStringType extends Recipe {
     final String displayName = "Unnecessary `String#toString`";
 
     @Getter
-    final String description = "Remove unnecessary `String#toString` invocations on objects which are already a string.";
+    final String description = "Remove unnecessary `String#toString` invocations on objects which are already a string. " +
+            "Calling `toString()` on something that is already a `String` is redundant and clutters the code.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1858");

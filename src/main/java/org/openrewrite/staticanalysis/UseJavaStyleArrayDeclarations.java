@@ -34,7 +34,10 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
     final String displayName = "No C-style array declarations";
 
     @Getter
-    final String description = "Change C-Style array declarations `int i[];` to `int[] i;`.";
+    final String description = "Change C-Style array declarations `int i[];` to " +
+            "`int[] i;`. Keeping the brackets with the type groups all type " +
+            "information in one place, so readers do not have to inspect both the " +
+            "type and the variable name to determine whether something is an array.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1197");

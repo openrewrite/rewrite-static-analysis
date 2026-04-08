@@ -43,8 +43,11 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
 
     String displayName = "Set charset encoding explicitly when calling `String#getBytes`";
 
-    String description = "This makes the behavior of the code platform neutral. It will not override any " +
-               "existing explicit encodings, even if they don't match the default encoding option.";
+    String description = "This makes the behavior of the code platform neutral. It will not " +
+               "override any existing explicit encodings, even if they don't match the " +
+               "default encoding option. Relying on the platform default charset can " +
+               "produce different results across environments, leading to subtle data " +
+               "corruption bugs.";
 
     Set<String> tags = singleton("RSPEC-S4719");
 

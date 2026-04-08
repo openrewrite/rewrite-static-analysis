@@ -43,7 +43,10 @@ public class SimplifyBooleanReturn extends Recipe {
     final String displayName = "Simplify boolean return";
 
     @Getter
-    final String description = "Simplifies Boolean expressions by removing redundancies. For example, `a && true` simplifies to `a`.";
+    final String description = "Simplifies Boolean expressions by removing redundancies. " +
+            "For example, `a && true` simplifies to `a`. Wrapping a boolean expression " +
+            "in an if-then-else just to return `true` or `false` adds unnecessary " +
+            "control flow that obscures the straightforward intent of the expression.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1126");

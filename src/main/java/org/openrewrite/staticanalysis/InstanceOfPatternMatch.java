@@ -50,8 +50,14 @@ public class InstanceOfPatternMatch extends Recipe {
 
     String displayName = "Changes code to use Java 17's `instanceof` pattern matching";
 
-    String description = "Adds pattern variables to `instanceof` expressions wherever the same (side effect free) expression is referenced in a corresponding type cast expression within the flow scope of the `instanceof`. " +
-               "Currently, this recipe supports `if` statements and ternary operator expressions.";
+    String description = "Adds pattern variables to `instanceof` expressions wherever " +
+               "the same (side effect free) expression is referenced in a " +
+               "corresponding type cast expression within the flow scope of the " +
+               "`instanceof`. Currently, this recipe supports `if` statements " +
+               "and ternary operator expressions. Pattern matching for " +
+               "`instanceof` collapses the type check, cast, and variable " +
+               "declaration into a single expression, reducing boilerplate and " +
+               "eliminating the risk of an incorrect cast.";
 
     Set<String> tags = singleton("RSPEC-S6201");
 

@@ -38,8 +38,11 @@ public class InlineVariable extends Recipe {
     final String displayName = "Inline variable";
 
     @Getter
-    final String description = "Inline variables when they are immediately used to return or throw. " +
-            "Supports both variable declarations and assignments to local variables.";
+    final String description = "Inline variables when they are immediately used to return or " +
+            "throw. Supports both variable declarations and assignments to local " +
+            "variables. A variable that is declared only to be returned or thrown " +
+            "on the very next line adds an unnecessary level of indirection " +
+            "without improving readability.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1488");
