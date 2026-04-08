@@ -176,14 +176,12 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                 if (s instanceof J.Assignment) {
                     J.Assignment assign = (J.Assignment) s;
                     // TODO if we had a `replace()` coordinate on every `Expression`, we wouldn't need the left side of this
-                    J.Assignment after = JavaTemplate.builder("o = (#{any()} #{} #{any()});").build()
-                            .apply(cursor, s.getCoordinates().replace(), assign.getAssignment(), op, right);
+                    J.Assignment after = JavaTemplate.apply("o = (#{any()} #{} #{any()});", cursor, s.getCoordinates().replace(), assign.getAssignment(), op, right);
                     return assign.withAssignment(after.getAssignment());
                 }
                 if (s instanceof J.VariableDeclarations) {
                     J.VariableDeclarations variables = (J.VariableDeclarations) s;
-                    J.Assignment after = JavaTemplate.builder("o = (#{any()} #{} #{any()});").build()
-                            .apply(cursor, s.getCoordinates().replace(), variables.getVariables().get(0).getInitializer(), op, right);
+                    J.Assignment after = JavaTemplate.apply("o = (#{any()} #{} #{any()});", cursor, s.getCoordinates().replace(), variables.getVariables().get(0).getInitializer(), op, right);
                     return variables.withVariables(ListUtils.map(variables.getVariables(), (i, namedVar) -> i == 0 ?
                             namedVar.withInitializer(after.getAssignment()) : namedVar));
                 }

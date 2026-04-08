@@ -114,14 +114,10 @@ public class SimplifyBooleanReturn extends Recipe {
                                 if (ifCondition instanceof J.Unary) {
                                     J.Unary u = (J.Unary) ifCondition;
                                     if (u.getOperator() == J.Unary.Type.Not) {
-                                        return JavaTemplate.builder("return #{any(boolean)};")
-                                                .build()
-                                                .apply(updateCursor(i), i.getCoordinates().replace(), u.getExpression());
+                                        return JavaTemplate.apply("return #{any(boolean)};", updateCursor(i), i.getCoordinates().replace(), u.getExpression());
                                     }
                                 }
-                                return JavaTemplate.builder("return !(#{any(boolean)});")
-                                        .build()
-                                        .apply(updateCursor(i), i.getCoordinates().replace(), ifCondition);
+                                return JavaTemplate.apply("return !(#{any(boolean)});", updateCursor(i), i.getCoordinates().replace(), ifCondition);
                             }
                         }
                     }

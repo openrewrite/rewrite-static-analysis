@@ -47,9 +47,7 @@ public class WhileInsteadOfFor extends Recipe {
                     forLoop.getControl().getUpdate().get(0) instanceof J.Empty &&
                     !(forLoop.getControl().getCondition() instanceof J.Empty)
                 ) {
-                    J.WhileLoop w = JavaTemplate.builder("while(#{any(boolean)}) {}")
-                            .build()
-                            .apply(getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());
+                    J.WhileLoop w = JavaTemplate.apply("while(#{any(boolean)}) {}", getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());
                     return w.withBody(forLoop.getBody());
                 }
                 return super.visitForLoop(forLoop, ctx);

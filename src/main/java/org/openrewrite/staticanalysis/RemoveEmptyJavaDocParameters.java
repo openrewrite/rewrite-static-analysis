@@ -56,7 +56,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     md = md.withComments(ListUtils.map(md.getComments(), it -> {
                         if (it instanceof Javadoc.DocComment) {
                             Javadoc.DocComment docComment = (Javadoc.DocComment) it;
-                            return (Comment) removeEmptyParamVisitor.visitDocComment(docComment, ctx);
+                            return (Comment) removeEmptyParamVisitor.visit(docComment, ctx, getCursor().getParentTreeCursor());
                         }
                         return it;
                     }));

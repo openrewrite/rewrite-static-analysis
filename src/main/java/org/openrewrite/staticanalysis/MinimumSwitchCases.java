@@ -119,14 +119,11 @@ public class MinimumSwitchCases extends Recipe {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                                 }
-                                generatedIf = JavaTemplate.builder("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n}").build()
-                                        .apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
+                                generatedIf = JavaTemplate.apply("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n}", getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else if (isDefault(cases[1])) {
-                                generatedIf = JavaTemplate.builder("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n} else {\n}").build()
-                                        .apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
+                                generatedIf = JavaTemplate.apply("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n} else {\n}", getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree);
                             } else {
-                                generatedIf = JavaTemplate.builder("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n}").build()
-                                        .apply(getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree, cases[1].getPattern(), tree);
+                                generatedIf = JavaTemplate.apply("if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n} else if(#{any(java.lang.String)}.equals(#{any(java.lang.String)})) {\n}", getCursor(), switch_.getCoordinates().replace(), cases[0].getPattern(), tree, cases[1].getPattern(), tree);
                             }
                         } else if (switchesOnEnum(switch_)) {
                             if (cases[1] == null && isDefault(cases[0])) {
@@ -154,14 +151,11 @@ public class MinimumSwitchCases extends Recipe {
                                 if (isDefault(cases[0])) {
                                     return switch_.withMarkers(switch_.getMarkers().add(new DefaultOnly()));
                                 }
-                                generatedIf = JavaTemplate.builder("if(#{any()} == #{any()}) {\n}").build()
-                                        .apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
+                                generatedIf = JavaTemplate.apply("if(#{any()} == #{any()}) {\n}", getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else if (isDefault(cases[1])) {
-                                generatedIf = JavaTemplate.builder("if(#{any()} == #{any()}) {\n} else {\n}").build()
-                                        .apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
+                                generatedIf = JavaTemplate.apply("if(#{any()} == #{any()}) {\n} else {\n}", getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern());
                             } else {
-                                generatedIf = JavaTemplate.builder("if(#{any()} == #{any()}) {\n} else if(#{any()} == #{any()}) {\n}").build()
-                                        .apply(getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern(), tree, cases[1].getPattern());
+                                generatedIf = JavaTemplate.apply("if(#{any()} == #{any()}) {\n} else if(#{any()} == #{any()}) {\n}", getCursor(), switch_.getCoordinates().replace(), tree, cases[0].getPattern(), tree, cases[1].getPattern());
                             }
                         }
 
