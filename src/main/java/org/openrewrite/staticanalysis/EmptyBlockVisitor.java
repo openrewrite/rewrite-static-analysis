@@ -58,16 +58,6 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     @Override
-    public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
-        return super.visitWhileLoop(whileLoop, p);
-    }
-
-    @Override
-    public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, P p) {
-        return super.visitDoWhileLoop(doWhileLoop, p);
-    }
-
-    @Override
     public J.Block visitBlock(J.Block block, P p) {
         J.Block b = super.visitBlock(block, p);
 
