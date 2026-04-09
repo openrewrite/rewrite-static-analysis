@@ -32,10 +32,7 @@ import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
@@ -162,20 +159,45 @@ public class MinimumSwitchCases extends Recipe {
 
                         // move first case to "if"
                         List<Statement> thenStatements = getStatements(cases[0]);
+                        List<Statement> filteredThen = removeBreaksPreservingComments(thenStatements);
 
-                        generatedIf = generatedIf.withThenPart(((J.Block) generatedIf.getThenPart()).withStatements(ListUtils.map(thenStatements,
-                                s -> s instanceof J.Break ? null : s)));
+                        generatedIf = generatedIf.withThenPart(((J.Block) generatedIf.getThenPart()).withStatements(filteredThen));
+
+                        // Collect variable declarations from first case for redeclaration in else block
+                        Map<String, J.VariableDeclarations> declaredVars = collectDeclaredVariables(filteredThen);
 
                         // move second case to "else"
                         if (cases[1] != null) {
                             assert generatedIf.getElsePart() != null;
+                            List<Statement> elseStatements = removeBreaksPreservingComments(getStatements(cases[1]));
+                            // Transfer comments from the switch block's end space to the else block
+                            Space switchEnd = sortedSwitch.getCases().getEnd();
+                            if (!switchEnd.getComments().isEmpty()) {
+                                if (elseStatements.isEmpty()) {
+                                    // Create a placeholder empty statement to carry the comments
+                                    J.Block elseBlock = (J.Block) (isDefault(cases[1]) ?
+                                            generatedIf.getElsePart().getBody() :
+                                            ((J.If) generatedIf.getElsePart().getBody()).getThenPart());
+                                    elseBlock = elseBlock.withEnd(elseBlock.getEnd().withComments(
+                                            ListUtils.concatAll(switchEnd.getComments(), elseBlock.getEnd().getComments())));
+                                    if (isDefault(cases[1])) {
+                                        generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseBlock));
+                                    } else {
+                                        generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(
+                                                ((J.If) generatedIf.getElsePart().getBody()).withThenPart(elseBlock)));
+                                    }
+                                } else {
+                                    Statement first = elseStatements.get(0);
+                                    elseStatements.set(0, first.withPrefix(first.getPrefix().withComments(
+                                            ListUtils.concatAll(switchEnd.getComments(), first.getPrefix().getComments()))));
+                                }
+                            }
+                            elseStatements = redeclareAssignments(elseStatements, declaredVars);
                             if (isDefault(cases[1])) {
-                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(((J.Block) generatedIf.getElsePart().getBody()).withStatements(ListUtils.map(getStatements(cases[1]),
-                                        s -> s instanceof J.Break ? null : s))));
+                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(((J.Block) generatedIf.getElsePart().getBody()).withStatements(elseStatements)));
                             } else {
                                 J.If elseIf = (J.If) generatedIf.getElsePart().getBody();
-                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseIf.withThenPart(((J.Block) elseIf.getThenPart()).withStatements(ListUtils.map(getStatements(cases[1]),
-                                        s -> s instanceof J.Break ? null : s)))));
+                                generatedIf = generatedIf.withElsePart(generatedIf.getElsePart().withBody(elseIf.withThenPart(((J.Block) elseIf.getThenPart()).withStatements(elseStatements))));
                             }
                         }
 
@@ -232,6 +254,66 @@ public class MinimumSwitchCases extends Recipe {
                     }
                 }
                 return statements;
+            }
+
+            private List<Statement> removeBreaksPreservingComments(List<Statement> statements) {
+                return ListUtils.map(statements, (i, s) -> {
+                    if (s instanceof J.Break) {
+                        return null;
+                    }
+                    // Collect comments from any following break statement
+                    if (i + 1 < statements.size() && statements.get(i + 1) instanceof J.Break) {
+                        List<Comment> breakComments = statements.get(i + 1).getComments();
+                        if (!breakComments.isEmpty()) {
+                            return s.withPrefix(s.getPrefix().withComments(
+                                    ListUtils.concatAll(s.getPrefix().getComments(), breakComments)));
+                        }
+                    }
+                    return s;
+                });
+            }
+
+            private Map<String, J.VariableDeclarations> collectDeclaredVariables(List<Statement> statements) {
+                Map<String, J.VariableDeclarations> vars = new LinkedHashMap<>();
+                for (Statement s : statements) {
+                    if (s instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations vd = (J.VariableDeclarations) s;
+                        for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
+                            vars.put(v.getSimpleName(), vd);
+                        }
+                    }
+                }
+                return vars;
+            }
+
+            private List<Statement> redeclareAssignments(List<Statement> statements, Map<String, J.VariableDeclarations> declaredVars) {
+                if (declaredVars.isEmpty()) {
+                    return statements;
+                }
+                List<Statement> result = new ArrayList<>();
+                for (Statement s : statements) {
+                    if (s instanceof J.Assignment) {
+                        J.Assignment assignment = (J.Assignment) s;
+                        if (assignment.getVariable() instanceof J.Identifier) {
+                            String name = ((J.Identifier) assignment.getVariable()).getSimpleName();
+                            J.VariableDeclarations originalDecl = declaredVars.get(name);
+                            if (originalDecl != null) {
+                                J.VariableDeclarations.NamedVariable newVar = originalDecl.getVariables().get(0)
+                                        .withName(((J.Identifier) assignment.getVariable()).withPrefix(Space.EMPTY))
+                                        .withInitializer(assignment.getAssignment())
+                                        .withId(randomId());
+                                J.VariableDeclarations newDecl = originalDecl
+                                        .withVariables(singletonList(newVar))
+                                        .withPrefix(s.getPrefix())
+                                        .withId(randomId());
+                                result.add(newDecl);
+                                continue;
+                            }
+                        }
+                    }
+                    result.add(s);
+                }
+                return result;
             }
 
             private boolean isDefault(J.Case case_) {
