@@ -36,7 +36,11 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
     final String displayName = "Use `indexOf(String, int)`";
 
     @Getter
-    final String description = "Replaces `indexOf(String)` in binary operations if the compared value is an int and not less than 1.";
+    final String description = "Replaces `indexOf(String)` in binary operations if the " +
+            "compared value is an int and not less than 1. Using the two-argument " +
+            "`indexOf(String, int)` form with a start position avoids redundantly " +
+            "scanning the beginning of the string when you already know the match " +
+            "must occur after a certain index.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2912");
@@ -53,11 +57,7 @@ public class IndexOfChecksShouldUseAStartPosition extends Recipe {
 
                     J.MethodInvocation m = (J.MethodInvocation) b.getLeft();
                     Cursor cursor = new Cursor(getCursor(), b.getLeft());
-                    b = b.withLeft(JavaTemplate.builder("#{any(java.lang.String)}, #{any(int)}").build()
-                            .apply(cursor,
-                                    m.getCoordinates().replaceArguments(),
-                                    m.getArguments().get(0),
-                                    b.getRight()));
+                    b = b.withLeft(JavaTemplate.apply("#{any(java.lang.String)}, #{any(int)}", cursor, m.getCoordinates().replaceArguments(), m.getArguments().get(0), b.getRight()));
 
                     b = b.withRight(new J.Literal(
                             Tree.randomId(),

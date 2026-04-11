@@ -38,7 +38,8 @@ public class ObjectFinalizeCallsSuper extends Recipe {
     final String displayName = "`finalize()` calls super";
 
     @Getter
-    final String description = "Overrides of `Object#finalize()` should call super.";
+    final String description = "Overrides of `Object#finalize()` should call super. " +
+            "Skipping the super call can prevent parent classes from releasing critical system resources during garbage collection.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1114");

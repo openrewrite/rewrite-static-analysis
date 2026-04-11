@@ -123,8 +123,7 @@ public class ReplaceStringBuilderWithString extends Recipe {
                             if (arg instanceof J.Literal) {
                                 return toStringLiteral((J.Literal) arg);
                             }
-                            return JavaTemplate.builder("String.valueOf(#{any()})").build()
-                                    .apply(getCursor(), method.getCoordinates().replace(), arg)
+                            return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), method.getCoordinates().replace(), arg)
                                     .withPrefix(arg.getPrefix());
                         }
                     } else if (!(arg instanceof J.Identifier || arg instanceof J.Literal || arg instanceof J.MethodInvocation)) {

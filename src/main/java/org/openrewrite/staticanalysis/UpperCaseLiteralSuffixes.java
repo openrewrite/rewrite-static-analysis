@@ -37,7 +37,8 @@ public class UpperCaseLiteralSuffixes extends Recipe {
     final String displayName = "Upper case literal suffixes";
 
     @Getter
-    final String description = "Using upper case literal suffixes for declaring literals is less ambiguous, e.g., `1l` versus `1L`.";
+    final String description = "Using upper case literal suffixes for declaring literals is less ambiguous, e.g., `1l` versus `1L`. " +
+            "A lowercase `l` is easily mistaken for the digit `1` in many fonts, which can lead to incorrect assumptions about the value.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S818");

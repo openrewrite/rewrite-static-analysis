@@ -461,6 +461,30 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/7")
+    @Test
+    void renameVariableWithSameNameAsType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Fizz {
+                  void bar() {
+                      final Fizz Fizz = new Fizz();
+                  }
+              }
+              """,
+            """
+              class Fizz {
+                  void bar() {
+                      final Fizz fizz = new Fizz();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/205")
     @Test
     void doNotRenameMethodArguments() {

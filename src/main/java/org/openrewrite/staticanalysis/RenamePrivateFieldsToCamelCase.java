@@ -56,7 +56,10 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             "The first character is set to lower case and existing capital letters are preserved. " +
             "Special characters that are allowed in java field names `$` and `_` are removed. " +
             "If a special character is removed the next valid alphanumeric will be capitalized. " +
-            "The recipe will not rename a field if the result already exists in the class, conflicts with a java reserved keyword, or the result is blank.";
+            "The recipe will not rename a field if the result already exists in the class, " +
+            "conflicts with a java reserved keyword, or the result is blank. " +
+            "Consistent naming conventions improve code readability and help developers quickly " +
+            "understand the purpose and scope of fields.";
 
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));

@@ -40,8 +40,11 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
     final String displayName = "'Collection.toArray()' should be passed an array of the proper type";
 
     @Getter
-    final String description = "Using `Collection.toArray()` without parameters returns an `Object[]`, which requires casting. " +
-            "It is more efficient and clearer to use `Collection.toArray(new T[0])` instead.";
+    final String description = "Using `Collection.toArray()` without parameters returns an " +
+            "`Object[]`, which requires casting. It is more efficient and clearer to use " +
+            "`Collection.toArray(new T[0])` instead. The parameterless form can cause a " +
+            "`ClassCastException` at runtime when the returned `Object[]` is cast to a " +
+            "more specific array type.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
