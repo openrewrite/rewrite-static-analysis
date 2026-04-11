@@ -15,10 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.analysis.search.FindMethods;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -64,7 +62,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
         );
     }
 
-    @Disabled
     @Test
     void doNotReplaceIfReturned() {
         rewriteRun(
@@ -86,26 +83,4 @@ class ReplaceStackWithDequeTest implements RewriteTest {
         );
     }
 
-    @Disabled
-    @Test
-    void dataFlow() {
-        rewriteRun(
-          spec -> spec.recipe(new FindMethods("java.util.Stack <constructor>(..)", false, "data")),
-          //language=java
-          java(
-            """
-              import java.util.Stack;
-
-              class Test {
-                  Stack<Integer> test() {
-                      Stack<Integer> stack = new Stack<>();
-                      stack.add(1);
-                      stack.add(2);
-                      return stack;
-                  }
-              }
-              """
-          )
-        );
-    }
 }

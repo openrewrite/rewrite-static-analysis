@@ -30,7 +30,10 @@ public class EmptyBlock extends Recipe {
     final String displayName = "Remove empty blocks";
 
     @Getter
-    final String description = "Remove empty blocks that effectively do nothing.";
+    final String description = "Remove empty blocks that effectively do nothing. " +
+            "Empty blocks are ambiguous -- they may indicate incomplete implementation " +
+            "or accidentally deleted code -- and removing them makes the intent of the " +
+            "surrounding code explicit.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S108");

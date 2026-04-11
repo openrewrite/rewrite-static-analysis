@@ -32,8 +32,11 @@ public class MultipleVariableDeclarations extends Recipe {
     final String displayName = "No multiple variable declarations";
 
     @Getter
-    final String description = "Places each variable declaration in its own statement and on its own line. " +
-            "Using one variable declaration per line encourages commenting and can increase readability.";
+    final String description = "Places each variable declaration in its own statement and on " +
+            "its own line. Using one variable declaration per line encourages " +
+            "commenting and can increase readability. Multi-variable declarations " +
+            "also make it harder to track individual types and initializers, " +
+            "increasing the risk of subtle errors.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1659");

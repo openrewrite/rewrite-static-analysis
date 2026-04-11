@@ -85,6 +85,13 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         private final J.Case scope;
 
         @Override
+        public J.Switch visitSwitch(J.Switch switch_, P p) {
+            // Don't descend into nested switches (including switch expressions)
+            // to avoid adding breaks inside their cases/blocks
+            return switch_;
+        }
+
+        @Override
         public J.Case visitCase(J.Case case_, P p) {
             if (scope.isScope(case_)) {
                 List<Statement> statements = case_.getStatements();
@@ -181,11 +188,21 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     }
                     return true;
                 }
+                if (s instanceof J.Switch) {
+                    // Arrow-style switches used as statements don't prevent fall-through
+                    J.Switch sw = (J.Switch) s;
+                    List<Statement> cases = sw.getCases().getStatements();
+                    for (Statement cs : cases) {
+                        if (cs instanceof J.Case && ((J.Case) cs).getType() == J.Case.Type.Rule) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
                 return s instanceof J.Return ||
                         s instanceof J.Break ||
                         s instanceof J.Continue ||
-                        s instanceof J.Throw ||
-                        s instanceof J.Switch;
+                        s instanceof J.Throw;
             }
 
             @Override

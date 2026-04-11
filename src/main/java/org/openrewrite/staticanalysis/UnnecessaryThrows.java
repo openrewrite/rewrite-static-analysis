@@ -43,12 +43,18 @@ public class UnnecessaryThrows extends Recipe {
     final String displayName = "Unnecessary throws";
 
     @Getter
-    final String description = "Remove unnecessary `throws` declarations. This recipe will only remove unused, checked exceptions if:\n" +
+    final String description = "Remove unnecessary `throws` declarations. This recipe " +
+            "will only remove unused, checked exceptions if:\n" +
             "\n" +
             " - The declaring class or the method declaration is `final`.\n" +
             " - The method declaration is `static` or `private`.\n" +
-            " - The method overrides a method declaration in a super class and the super class does not throw the exception.\n" +
-            " - The method is `public` or `protected` and the exception is not documented via a JavaDoc as a `@throws` tag.";
+            " - The method overrides a method declaration in a super class " +
+            "and the super class does not throw the exception.\n" +
+            " - The method is `public` or `protected` and the exception is not " +
+            "documented via a JavaDoc as a `@throws` tag.\n\n" +
+            "Declaring exceptions that are never thrown misleads callers into " +
+            "writing unnecessary error-handling code and obscures the method's " +
+            "true behavior.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1130");

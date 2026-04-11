@@ -35,7 +35,8 @@ public class LambdaBlockToExpression extends Recipe {
     final String displayName = "Simplify lambda blocks to expressions";
 
     @Getter
-    final String description = "Single-line statement lambdas returning a value can be replaced with expression lambdas.";
+    final String description = "Single-line statement lambdas returning a value can be replaced with expression lambdas. " +
+            "Expression-form lambdas are more concise and consistent with a functional programming style, making the code easier to scan.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1602");

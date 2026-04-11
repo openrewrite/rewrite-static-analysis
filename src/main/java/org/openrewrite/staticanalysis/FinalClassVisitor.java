@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Tree;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -33,6 +34,8 @@ import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.staticanalysis.ModifierOrder.sortModifiers;
 
 public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
+
+    private static final AnnotationMatcher CONFIGURATION_ANNOTATION = new AnnotationMatcher("@org.springframework.context.annotation.Configuration");
 
     Tree visitRoot;
 
@@ -69,6 +72,11 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
         excludeSupertypes(cd.getType());
 
         if (cd.hasModifier(J.Modifier.Type.Abstract) || cd.hasModifier(J.Modifier.Type.Final)) {
+            return cd;
+        }
+
+        // Spring @Configuration classes are proxied at runtime and must not be final
+        if (cd.getLeadingAnnotations().stream().anyMatch(a -> CONFIGURATION_ANNOTATION.matches(a))) {
             return cd;
         }
 

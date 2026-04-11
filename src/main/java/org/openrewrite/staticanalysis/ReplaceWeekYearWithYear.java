@@ -34,8 +34,11 @@ public class ReplaceWeekYearWithYear extends Recipe {
     final String displayName = "Week Year (YYYY) should not be used for date formatting";
 
     @Getter
-    final String description = "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. However, on the last week of " +
-            "December and the first week of January, Week Year could produce unexpected results.";
+    final String description = "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. " +
+            "However, on the last week of December and the first week of January, Week Year could " +
+            "produce unexpected results. This is a common source of off-by-one-year bugs that " +
+            "typically only manifest around New Year's Eve, making them difficult to catch " +
+            "during development and testing.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3986");

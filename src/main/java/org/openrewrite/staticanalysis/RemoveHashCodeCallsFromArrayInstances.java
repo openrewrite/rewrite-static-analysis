@@ -40,7 +40,9 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
 
     @Getter
     final String description = "Replace `hashCode()` calls on arrays with `Arrays.hashCode()` because the results from `hashCode()` " +
-            "are not helpful.";
+            "are not helpful. " +
+            "Arrays inherit `hashCode()` from `Object`, which returns an identity-based value unrelated to the array contents, " +
+            "so two arrays with identical elements will produce different hash codes.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2116");

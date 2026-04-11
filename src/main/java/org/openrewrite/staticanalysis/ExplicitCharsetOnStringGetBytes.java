@@ -43,26 +43,27 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
 
     String displayName = "Set charset encoding explicitly when calling `String#getBytes`";
 
-    String description = "This makes the behavior of the code platform neutral. It will not override any " +
-               "existing explicit encodings, even if they don't match the default encoding option.";
+    String description = "This makes the behavior of the code platform neutral. It will not " +
+               "override any existing explicit encodings, even if they don't match the " +
+               "default encoding option. Relying on the platform default charset can " +
+               "produce different results across environments, leading to subtle data " +
+               "corruption bugs.";
 
     Set<String> tags = singleton("RSPEC-S4719");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(GET_BYTES), new JavaIsoVisitor<ExecutionContext>() {
-            final JavaTemplate WITH_ENCODING = JavaTemplate
-                    .builder("getBytes(StandardCharsets.#{})")
-                    .contextSensitive()
-                    .imports("java.nio.charset.StandardCharsets")
-                    .build();
-
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 if (GET_BYTES.matches(method)) {
                     maybeAddImport("java.nio.charset.StandardCharsets");
-                    m = WITH_ENCODING.apply(updateCursor(m), m.getCoordinates().replaceMethod(), encoding == null ? "UTF_8" : encoding);
+                    m = JavaTemplate.builder("getBytes(StandardCharsets.#{})")
+                            .contextSensitive()
+                            .imports("java.nio.charset.StandardCharsets")
+                            .build()
+                            .apply(updateCursor(m), m.getCoordinates().replaceMethod(), encoding == null ? "UTF_8" : encoding);
                 }
                 return m;
             }

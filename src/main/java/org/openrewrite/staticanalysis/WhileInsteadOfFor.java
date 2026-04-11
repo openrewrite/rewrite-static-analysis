@@ -33,7 +33,12 @@ public class WhileInsteadOfFor extends Recipe {
     final String displayName = "Prefer `while` over `for` loops";
 
     @Getter
-    final String description = "When only the condition expression is defined in a for loop, and the initialization and increment expressions are missing, a while loop should be used instead to increase readability.";
+    final String description = "When only the condition expression is defined in a for " +
+            "loop, and the initialization and increment expressions are missing, " +
+            "a while loop should be used instead to increase readability. A `for` " +
+            "loop with empty init and update sections signals iteration mechanics " +
+            "that do not exist, whereas `while` clearly communicates a simple " +
+            "conditional loop.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1264");
@@ -41,16 +46,13 @@ public class WhileInsteadOfFor extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaVisitor<ExecutionContext>() {
-            final JavaTemplate whileLoop = JavaTemplate.builder("while(#{any(boolean)}) {}")
-                    .build();
-
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
                 if (forLoop.getControl().getInit().get(0) instanceof J.Empty &&
                     forLoop.getControl().getUpdate().get(0) instanceof J.Empty &&
                     !(forLoop.getControl().getCondition() instanceof J.Empty)
                 ) {
-                    J.WhileLoop w = whileLoop.apply(getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());
+                    J.WhileLoop w = JavaTemplate.apply("while(#{any(boolean)}) {}", getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());
                     return w.withBody(forLoop.getBody());
                 }
                 return super.visitForLoop(forLoop, ctx);

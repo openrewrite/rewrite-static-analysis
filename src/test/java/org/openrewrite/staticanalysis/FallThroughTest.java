@@ -102,6 +102,61 @@ class FallThroughTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/14")
+    @Test
+    void switchExpressionInsideSwitchStatement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void statement() {
+                  }
+
+                  void test() {
+                      switch (2) {
+                          case 0:
+                              switch (3) {
+                                  case 1 -> statement();
+                                  case 3 -> {
+                                      statement();
+                                      statement();
+                                  }
+                              }
+                          case 2:
+                              statement();
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void statement() {
+                  }
+
+                  void test() {
+                      switch (2) {
+                          case 0:
+                              switch (3) {
+                                  case 1 -> statement();
+                                  case 3 -> {
+                                      statement();
+                                      statement();
+                                  }
+                              }
+                              break;
+                          case 2:
+                              statement();
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void switchExpressions() {
         rewriteRun(

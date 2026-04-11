@@ -38,7 +38,8 @@ public class ModifierOrder extends Recipe {
     final String displayName = "Modifier order";
 
     @Getter
-    final String description = "Modifiers should be declared in the correct order as recommended by the JLS.";
+    final String description = "Modifiers should be declared in the correct order as recommended by the JLS. " +
+            "Ordering modifiers consistently reduces cognitive load for developers who are accustomed to the standard sequence.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1124");

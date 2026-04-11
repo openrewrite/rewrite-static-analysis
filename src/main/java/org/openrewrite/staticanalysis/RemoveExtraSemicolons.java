@@ -38,7 +38,9 @@ public class RemoveExtraSemicolons extends Recipe {
     final String description = "Removes not needed semicolons. Semicolons are considered not needed:\n" +
             " * Optional semicolons at the end of try-with-resources,\n" +
             " * after the last enum value if no field or method is defined,\n" +
-            " * no statement between two semicolon.";
+            " * no statement between two semicolon.\n\n" +
+            "Stray semicolons are typically typos or remnants of refactoring and can mislead " +
+            "readers into thinking a statement is present.";
 
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1116", "RSPEC-S2959"));
