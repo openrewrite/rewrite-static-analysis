@@ -78,7 +78,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
                 if (original != null && !original.isEmpty()) {
                     Cursor methodCursor = getCursor().dropParentUntil(
-                            v -> v instanceof J.MethodDeclaration || v instanceof J.ClassDeclaration);
+                            v -> v instanceof J.MethodDeclaration || v instanceof J.ClassDeclaration || v == Cursor.ROOT_VALUE);
                     Set<String> introducedNames = methodCursor.computeMessageIfAbsent(
                             "introducedPatternVarNames", k -> new HashSet<>());
                     return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow(), introducedNames);
@@ -505,17 +505,13 @@ public class InstanceOfPatternMatch extends Recipe {
                 Expression newRight;
                 if (binary.getRight() instanceof J.InstanceOf) {
                     J.InstanceOf rightResult = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor, usedNames);
-                    if (rightResult.getPattern() != null && ((J.InstanceOf) binary.getRight()).getPattern() == null) {
-                        introducedNames.add(((J.Identifier) rightResult.getPattern()).getSimpleName());
-                    }
+                    trackIntroducedName((J.InstanceOf) binary.getRight(), rightResult);
                     newRight = rightResult;
                 } else if (binary.getRight() instanceof J.Parentheses &&
                         ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
                     @SuppressWarnings("unchecked") J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
                     J.InstanceOf rightResult = replacements.processInstanceOf(originalRight.getTree(), widenedCursor, usedNames);
-                    if (rightResult.getPattern() != null && originalRight.getTree().getPattern() == null) {
-                        introducedNames.add(((J.Identifier) rightResult.getPattern()).getSimpleName());
-                    }
+                    trackIntroducedName(originalRight.getTree(), rightResult);
                     newRight = originalRight.withTree(rightResult);
                 } else {
                     newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
@@ -530,10 +526,14 @@ public class InstanceOfPatternMatch extends Recipe {
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
             J.InstanceOf result = replacements.processInstanceOf(instanceOf, getCursor(), new HashSet<>(introducedNames));
-            if (result.getPattern() != null && instanceOf.getPattern() == null) {
+            trackIntroducedName(instanceOf, result);
+            return result;
+        }
+
+        private void trackIntroducedName(J.InstanceOf original, J.InstanceOf result) {
+            if (result.getPattern() != null && original.getPattern() == null) {
                 introducedNames.add(((J.Identifier) result.getPattern()).getSimpleName());
             }
-            return result;
         }
 
         @Override
