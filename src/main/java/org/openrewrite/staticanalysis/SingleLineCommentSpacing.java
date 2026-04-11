@@ -55,7 +55,11 @@ public class SingleLineCommentSpacing extends Recipe {
                     }
                     TextComment tc = (TextComment) comment;
                     String text = tc.getText();
-                    if (text.isEmpty() || text.startsWith(" ") || text.startsWith("language=")) {
+                    if (text.isEmpty() || text.startsWith(" ") ||
+                            text.startsWith("language=") ||
+                            text.startsWith("noinspection") ||
+                            text.startsWith("region") ||
+                            text.startsWith("endregion")) {
                         return comment;
                     }
                     return tc.withText(" " + text);

@@ -102,7 +102,7 @@ class SingleLineCommentSpacingTest implements RewriteTest {
     }
 
     @Test
-    void skipsSpecialComment() {
+    void skipsLanguageComment() {
         rewriteRun(
             //language=java
             java(
@@ -112,6 +112,41 @@ class SingleLineCommentSpacingTest implements RewriteTest {
                         //language=java
                         int a = 1;
                     }
+                }
+                """
+            )
+        );
+    }
+
+    @Test
+    void skipsNoinspectionComment() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                class Test {
+                    @SuppressWarnings("unchecked")
+                    void method() {
+                        //noinspection unchecked
+                        int a = 1;
+                    }
+                }
+                """
+            )
+        );
+    }
+
+    @Test
+    void skipsRegionComments() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                class Test {
+                    //region MyRegion
+                    void method() {
+                    }
+                    //endregion
                 }
                 """
             )
