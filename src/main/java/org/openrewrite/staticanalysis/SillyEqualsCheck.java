@@ -61,7 +61,7 @@ public class SillyEqualsCheck extends Recipe {
                 Expression arg = mi.getArguments().get(0);
 
                 // Case: x.equals(null) -> x == null
-                if (arg instanceof J.Literal && ((J.Literal) arg).getValue() == null) {
+                if (J.Literal.isLiteralValue(arg, null)) {
                     return replaceWithEqualityCheck(mi);
                 }
 
