@@ -51,7 +51,8 @@ public class AddSerialVersionUidToSerializable extends Recipe {
 
     String description = "A `serialVersionUID` field is strongly recommended in all `Serializable` classes. If this is not " +
                 "defined on a `Serializable` class, the compiler will generate this value. If a change is later made " +
-                "to the class, the generated value will change and attempts to deserialize the class will fail.";
+                "to the class, the generated value will change and attempts to deserialize the class will fail. " +
+                "Explicitly declaring this field gives you control over binary compatibility across versions.";
 
     Set<String> tags = singleton("RSPEC-S2057");
 

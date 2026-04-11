@@ -418,6 +418,29 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/276")
+    @Test
+    void doNotNegateConditionOfTernaryWhenBranchesAreNotSwapped() {
+        rewriteRun(
+          java(
+            """
+              class A {
+                  boolean foo(String name) {
+                      return !(name != null ? !name.equals(System.out.toString()) : false);
+                  }
+              }
+              """,
+            """
+              class A {
+                  boolean foo(String name) {
+                      return name != null ? name.equals(System.out.toString()) : true;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void correctlySimplifyNegatedTernaryEqualsNull() {
         rewriteRun(

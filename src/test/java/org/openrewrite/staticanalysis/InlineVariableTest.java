@@ -253,6 +253,32 @@ class InlineVariableTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/9")
+    @Test
+    void preserveEnumArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum ImportType {
+                  TIMETABLE, DUTIES
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  static ImportType[] getList() {
+                      ImportType[] list = {ImportType.TIMETABLE, ImportType.DUTIES};
+                      return list;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void inlineAssignmentReturn() {
         rewriteRun(

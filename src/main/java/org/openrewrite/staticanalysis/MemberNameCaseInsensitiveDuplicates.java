@@ -25,8 +25,8 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Flag;
+import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.SearchResult;
@@ -44,7 +44,8 @@ public class MemberNameCaseInsensitiveDuplicates extends Recipe {
     String displayName = "Members should not have names differing only by capitalization";
     String description = "Looking at the set of methods and fields in a class and all of its parents, " +
             "no two members should have names that differ only in capitalization. " +
-            "This rule will not report if a method overrides a parent method.";
+            "This rule will not report if a method overrides a parent method. " +
+            "Members with near-identical names are easily confused, leading to bugs where the wrong field or method is referenced.";
     Set<String> tags = singleton("RSPEC-S1845");
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 

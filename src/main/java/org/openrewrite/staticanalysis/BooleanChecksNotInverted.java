@@ -33,7 +33,10 @@ public class BooleanChecksNotInverted extends Recipe {
     final String displayName = "Boolean checks should not be inverted";
 
     @Getter
-    final String description = "Ensures that boolean checks are not unnecessarily inverted. Also fixes double negative boolean expressions.";
+    final String description = "Ensures that boolean checks are not unnecessarily inverted. " +
+            "Also fixes double negative boolean expressions. Negating a comparison and " +
+            "then inverting it adds cognitive overhead; using the direct operator " +
+            "(e.g., `>=` instead of `!(... < ...)`) is clearer and easier to reason about.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1940");

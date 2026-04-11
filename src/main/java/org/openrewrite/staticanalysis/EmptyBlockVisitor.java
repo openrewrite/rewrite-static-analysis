@@ -24,7 +24,6 @@ import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.style.Checkstyle;
@@ -47,7 +46,6 @@ import static org.openrewrite.Tree.randomId;
 @AllArgsConstructor
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     private EmptyBlockStyle emptyBlockStyle;
-    private final JavaTemplate continueStatement = JavaTemplate.builder("continue;").build();
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
@@ -56,30 +54,6 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             emptyBlockStyle = Style.from(EmptyBlockStyle.class, (SourceFile)tree, Checkstyle::emptyBlock);
         }
         return super.visit(tree, p);
-    }
-
-    @Override
-    public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, P p) {
-        J.WhileLoop w = super.visitWhileLoop(whileLoop, p);
-
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
-            J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
-        }
-
-        return w;
-    }
-
-    @Override
-    public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, P p) {
-        J.DoWhileLoop w = super.visitDoWhileLoop(doWhileLoop, p);
-
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralWhile()) && isEmptyBlock(w.getBody())) {
-            J.Block body = (J.Block) w.getBody();
-            w = continueStatement.apply(updateCursor(w), body.getCoordinates().lastStatement());
-        }
-
-        return w;
     }
 
     @Override

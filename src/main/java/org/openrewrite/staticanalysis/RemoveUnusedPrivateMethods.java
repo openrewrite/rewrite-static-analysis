@@ -36,7 +36,8 @@ public class RemoveUnusedPrivateMethods extends Recipe {
     final String displayName = "Remove unused private methods";
 
     @Getter
-    final String description = "`private` methods that are never executed are dead code and should be removed.";
+    final String description = "`private` methods that are never executed are dead code and should be removed. " +
+            "Keeping unreachable methods around adds maintenance burden and can give a false impression of the class's capabilities.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1144");

@@ -611,4 +611,24 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/221")
+    @Test
+    void doNotRemoveCharacterCastInGenericContext() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Arrays;
+              import java.util.List;
+
+              class Test {
+                  List<Character> foo() {
+                      return Arrays.asList((Character) '{', (Character) '}', (Character) '#');
+                  }
+              }
+              """
+          )
+        );
+    }
 }

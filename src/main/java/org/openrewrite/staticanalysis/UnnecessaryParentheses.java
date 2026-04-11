@@ -32,7 +32,10 @@ public class UnnecessaryParentheses extends Recipe {
     final String displayName = "Remove unnecessary parentheses";
 
     @Getter
-    final String description = "Removes unnecessary parentheses from code where extra parentheses pairs are redundant.";
+    final String description = "Removes unnecessary parentheses from code where extra " +
+            "parentheses pairs are redundant. Redundant parentheses add visual noise " +
+            "and can obscure the actual structure of an expression, making code " +
+            "harder to read at a glance.";
 
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1110", "RSPEC-S1611"));

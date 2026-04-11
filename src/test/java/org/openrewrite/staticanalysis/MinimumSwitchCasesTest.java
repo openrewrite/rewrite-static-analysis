@@ -1044,6 +1044,93 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/6")
+    @Test
+    void preserveDefaultCaseComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int variable;
+                  void test() {
+                      switch (variable) {
+                          case 0:
+                              doSomething();
+                              break;
+                          default:
+                              // Pass other keys to children
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """,
+            """
+              class Test {
+                  int variable;
+                  void test() {
+                      if (variable == 0) {
+                          doSomething();
+                      } else {
+                          // Pass other keys to children
+                      }
+                  }
+                  void doSomething() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/687")
+    @Test
+    void variableRedeclaredInElseBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              @SuppressWarnings("ConstantConditions")
+              class Test {
+                  int variable;
+                  void test() {
+                      switch (variable) {
+                          case 1:
+                              String data = getSomeString();
+                              doThingWith(data);
+                              break;
+                          case 2:
+                              data = getSomeOtherString();
+                              doThingWith(data);
+                              break;
+                      }
+                  }
+                  String getSomeString() { return ""; }
+                  String getSomeOtherString() { return ""; }
+                  void doThingWith(String s) {}
+              }
+              """,
+            """
+              @SuppressWarnings("ConstantConditions")
+              class Test {
+                  int variable;
+                  void test() {
+                      if (variable == 1) {
+                          String data = getSomeString();
+                          doThingWith(data);
+                      } else if (variable == 2) {
+                          String data = getSomeOtherString();
+                          doThingWith(data);
+                      }
+                  }
+                  String getSomeString() { return ""; }
+                  String getSomeOtherString() { return ""; }
+                  void doThingWith(String s) {}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/moderneinc/customer-requests/issues/1536")
     @Test
     void skipsTransformationWhenTypeInfoMissing() {
