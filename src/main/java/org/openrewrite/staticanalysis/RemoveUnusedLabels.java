@@ -28,18 +28,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class RemoveUnusedLabels extends Recipe {
 
-    @Getter
     final String displayName = "Remove unused labels";
 
-    @Getter
     final String description = "Remove labels that are not referenced by any `break` or `continue` statement.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S1065");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
@@ -70,10 +67,10 @@ public class RemoveUnusedLabels extends Recipe {
                     }
                 }.reduce(l.getStatement(), new AtomicBoolean(false)).get();
 
-                if (!used) {
-                    return l.getStatement().withPrefix(l.getPrefix());
+                if (used) {
+                    return l;
                 }
-                return l;
+                return l.getStatement().withPrefix(l.getPrefix());
             }
         };
     }
