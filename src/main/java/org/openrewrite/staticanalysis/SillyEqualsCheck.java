@@ -116,15 +116,10 @@ public class SillyEqualsCheck extends Recipe {
             }
 
             private J replaceWithEqualityCheck(J.MethodInvocation mi) {
-                Cursor parent = getCursor().dropParentUntil(is ->
-                        is instanceof J.Unary || is instanceof J.Block ||
-                        is instanceof J.Binary || is instanceof J.Ternary ||
-                        is instanceof J.Lambda || is instanceof J.Return ||
-                        is instanceof J.If || is instanceof J.Assignment ||
-                        is instanceof J.VariableDeclarations ||
-                        is instanceof J.MethodInvocation ||
-                        is instanceof J.ControlParentheses ||
-                        is instanceof J.Parentheses);
+                Cursor parent = getCursor().getParentTreeCursor();
+                while (parent.getValue() instanceof J.Parentheses) {
+                    parent = parent.getParentTreeCursor();
+                }
                 boolean isNot = parent.getValue() instanceof J.Unary &&
                         ((J.Unary) parent.getValue()).getOperator() == J.Unary.Type.Not;
                 if (isNot) {
