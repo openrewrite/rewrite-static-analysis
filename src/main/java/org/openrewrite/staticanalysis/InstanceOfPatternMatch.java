@@ -72,12 +72,20 @@ public class InstanceOfPatternMatch extends Recipe {
         );
 
         return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
+            final Set<String> introducedPatternVarNames = new HashSet<>();
+
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                introducedPatternVarNames.clear();
+                return (J.MethodDeclaration) super.visitMethodDeclaration(method, ctx);
+            }
+
             @Override
             public @Nullable J postVisit(J tree, ExecutionContext ctx) {
                 J result = super.postVisit(tree, ctx);
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
                 if (original != null && !original.isEmpty()) {
-                    return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow());
+                    return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow(), introducedPatternVarNames);
                 }
                 return result;
             }
@@ -476,9 +484,10 @@ public class InstanceOfPatternMatch extends Recipe {
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {
 
         private final InstanceOfPatternReplacements replacements;
+        private final Set<String> introducedNames;
 
-        static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
-            return new UseInstanceOfPatternMatching(replacements).visit(tree, 0, cursor);
+        static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor, Set<String> introducedNames) {
+            return new UseInstanceOfPatternMatching(replacements, introducedNames).visit(tree, 0, cursor);
         }
 
         @Override
@@ -489,7 +498,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 Cursor widenedCursor = updateCursor(b);
 
                 // Collect names from the left side if it's an instanceof with a pattern
-                Set<String> usedNames = new HashSet<>();
+                Set<String> usedNames = new HashSet<>(introducedNames);
                 if (b.getLeft() instanceof J.InstanceOf) {
                     J.InstanceOf leftInstanceOf = (J.InstanceOf) b.getLeft();
                     if (leftInstanceOf.getPattern() != null) {
@@ -499,11 +508,19 @@ public class InstanceOfPatternMatch extends Recipe {
 
                 Expression newRight;
                 if (binary.getRight() instanceof J.InstanceOf) {
-                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor, usedNames);
+                    J.InstanceOf rightResult = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor, usedNames);
+                    if (rightResult.getPattern() != null && ((J.InstanceOf) binary.getRight()).getPattern() == null) {
+                        introducedNames.add(((J.Identifier) rightResult.getPattern()).getSimpleName());
+                    }
+                    newRight = rightResult;
                 } else if (binary.getRight() instanceof J.Parentheses &&
                         ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
                     @SuppressWarnings("unchecked") J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
-                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor, usedNames));
+                    J.InstanceOf rightResult = replacements.processInstanceOf(originalRight.getTree(), widenedCursor, usedNames);
+                    if (rightResult.getPattern() != null && originalRight.getTree().getPattern() == null) {
+                        introducedNames.add(((J.Identifier) rightResult.getPattern()).getSimpleName());
+                    }
+                    newRight = originalRight.withTree(rightResult);
                 } else {
                     newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
@@ -516,7 +533,11 @@ public class InstanceOfPatternMatch extends Recipe {
         @Override
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
-            return replacements.processInstanceOf(instanceOf, getCursor(), new HashSet<>());
+            J.InstanceOf result = replacements.processInstanceOf(instanceOf, getCursor(), new HashSet<>(introducedNames));
+            if (result.getPattern() != null && instanceOf.getPattern() == null) {
+                introducedNames.add(((J.Identifier) result.getPattern()).getSimpleName());
+            }
+            return result;
         }
 
         @Override
