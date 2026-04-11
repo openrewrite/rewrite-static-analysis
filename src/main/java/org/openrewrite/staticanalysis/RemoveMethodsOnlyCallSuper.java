@@ -96,6 +96,11 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     }
                 }
 
+                // Skip if method is final (prevents further overriding)
+                if (methodType.hasFlags(Flag.Final)) {
+                    return md;
+                }
+
                 // Skip if method widens visibility compared to the overridden method
                 if (widensVisibility(methodType)) {
                     return md;

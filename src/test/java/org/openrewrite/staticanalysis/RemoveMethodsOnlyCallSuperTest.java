@@ -342,6 +342,32 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
     }
 
     @Test
+    void doNotChangeFinalMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  final void foo() {
+                      super.foo();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeMethodNotCallingSuper() {
         rewriteRun(
           //language=java
