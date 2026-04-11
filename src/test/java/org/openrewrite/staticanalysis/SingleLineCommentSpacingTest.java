@@ -69,6 +69,39 @@ class SingleLineCommentSpacingTest implements RewriteTest {
     }
 
     @Test
+    void doesNotChangeBlockComment() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                class Test {
+                    void method() {
+                        /*message*/
+                        int a = 1;
+                    }
+                }
+                """
+            )
+        );
+    }
+
+    @Test
+    void doesNotChangeBlockCommentDivider() {
+        rewriteRun(
+            //language=java
+            java(
+                """
+                class Test {
+                    /****divider****/
+                    void method() {
+                    }
+                }
+                """
+            )
+        );
+    }
+
+    @Test
     void skipsSpecialComment() {
         rewriteRun(
             //language=java
