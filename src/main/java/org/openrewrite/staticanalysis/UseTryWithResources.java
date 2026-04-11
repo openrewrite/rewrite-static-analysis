@@ -22,11 +22,11 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
-import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -37,9 +37,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 
 public class UseTryWithResources extends Recipe {
 
@@ -50,7 +48,11 @@ public class UseTryWithResources extends Recipe {
     final String displayName = "Use try-with-resources";
 
     @Getter
-    final String description = "Refactor try/finally blocks to use try-with-resources when the finally block only closes an `AutoCloseable` resource.";
+    final String description = "Refactor try/finally blocks to use try-with-resources " +
+            "when the finally block only closes an `AutoCloseable` resource. " +
+            "Try-with-resources guarantees that resources are closed even when " +
+            "exceptions occur, eliminating an entire class of resource-leak bugs " +
+            "that manual `finally` blocks are prone to.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
@@ -68,23 +70,40 @@ public class UseTryWithResources extends Recipe {
                         J.Block b = super.visitBlock(block, ctx);
                         List<Statement> stmts = b.getStatements();
                         return b.withStatements(ListUtils.map(stmts, (i, stmt) -> {
-                            if (stmt instanceof J.Try && i > 0
-                                    && stmts.get(i - 1) instanceof J.VariableDeclarations) {
-                                J.VariableDeclarations prevDecl = (J.VariableDeclarations) stmts.get(i - 1);
+                            if (stmt instanceof J.Try) {
                                 J.Try tryStmt = (J.Try) stmt;
-                                if (canTransform(prevDecl, tryStmt)) {
-                                    boolean usedAfter = isUsedAfter(prevDecl.getVariables().get(0).getSimpleName(), stmts, i);
-                                    if (usedAfter) {
-                                        return transformJava9(prevDecl, tryStmt);
+
+                                // Case 1: Consecutive — varDecl immediately before try
+                                if (i > 0 && stmts.get(i - 1) instanceof J.VariableDeclarations) {
+                                    J.VariableDeclarations prevDecl = (J.VariableDeclarations) stmts.get(i - 1);
+                                    if (canTransform(prevDecl, tryStmt)) {
+                                        boolean usedAfter = isUsedAfter(prevDecl.getVariables().get(0).getSimpleName(), stmts, i);
+                                        if (usedAfter) {
+                                            return transformJava9(prevDecl, tryStmt);
+                                        }
+                                        return transform(prevDecl, tryStmt);
                                     }
-                                    return transform(prevDecl, tryStmt);
+                                }
+
+                                // Case 2: Non-consecutive — varDecl separated by intervening statements
+                                if (tryStmt.getFinally() != null) {
+                                    String closedVar = extractClosedVarName(tryStmt.getFinally());
+                                    if (closedVar != null) {
+                                        int declIdx = findMatchingVarDecl(stmts, i, closedVar);
+                                        if (declIdx >= 0 && declIdx < i - 1) {
+                                            J.VariableDeclarations varDecl = (J.VariableDeclarations) stmts.get(declIdx);
+                                            if (canTransform(varDecl, tryStmt) && !isReassignedBetween(closedVar, stmts, declIdx, i)) {
+                                                return transformJava9(varDecl, tryStmt);
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             // Remove varDecl that was merged into the following try-with-resources
-                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size()
-                                    && stmts.get(i + 1) instanceof J.Try
-                                    && canTransform((J.VariableDeclarations) stmt, (J.Try) stmts.get(i + 1))
-                                    && !isUsedAfter(((J.VariableDeclarations) stmt).getVariables().get(0).getSimpleName(), stmts, i + 1)) {
+                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size() &&
+                                    stmts.get(i + 1) instanceof J.Try &&
+                                    canTransform((J.VariableDeclarations) stmt, (J.Try) stmts.get(i + 1)) &&
+                                    !isUsedAfter(((J.VariableDeclarations) stmt).getVariables().get(0).getSimpleName(), stmts, i + 1)) {
                                 return null;
                             }
                             return stmt;
@@ -103,7 +122,7 @@ public class UseTryWithResources extends Recipe {
 
         // Must have a non-null initializer
         Expression init = namedVar.getInitializer();
-        if (init == null || init instanceof J.Literal && ((J.Literal) init).getValue() == null) {
+        if (init == null || J.Literal.isLiteralValue(init, null)) {
             return false;
         }
 
@@ -200,6 +219,92 @@ public class UseTryWithResources extends Recipe {
                 .withFinally(stripCloseFromFinally(result.getPadding().getFinally(), varName));
     }
 
+    private static @Nullable String extractClosedVarName(J.Block finallyBlock) {
+        for (Statement stmt : finallyBlock.getStatements()) {
+            String name = extractVarNameFromCloseStatement(stmt);
+            if (name != null) {
+                return name;
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable String extractVarNameFromCloseStatement(Statement stmt) {
+        // Direct: var.close()
+        if (stmt instanceof J.MethodInvocation) {
+            return extractVarNameFromClose((J.MethodInvocation) stmt);
+        }
+
+        // Null-guarded: if (var != null) { ... close ... }
+        if (stmt instanceof J.If) {
+            J.If ifStmt = (J.If) stmt;
+            if (ifStmt.getElsePart() != null) {
+                return null;
+            }
+            Statement inner;
+            if (ifStmt.getThenPart() instanceof J.Block) {
+                J.Block thenBlock = (J.Block) ifStmt.getThenPart();
+                if (thenBlock.getStatements().size() != 1) {
+                    return null;
+                }
+                inner = thenBlock.getStatements().get(0);
+            } else {
+                inner = ifStmt.getThenPart();
+            }
+            return extractVarNameFromCloseStatement(inner);
+        }
+
+        // Try-catch wrapped: try { var.close(); } catch (...) {}
+        if (stmt instanceof J.Try) {
+            J.Try innerTry = (J.Try) stmt;
+            if (innerTry.getFinally() != null) {
+                return null;
+            }
+            List<Statement> body = innerTry.getBody().getStatements();
+            if (body.size() == 1 && body.get(0) instanceof J.MethodInvocation) {
+                return extractVarNameFromClose((J.MethodInvocation) body.get(0));
+            }
+        }
+
+        return null;
+    }
+
+    private static @Nullable String extractVarNameFromClose(J.MethodInvocation mi) {
+        if (CLOSE.matches(mi) && mi.getSelect() instanceof J.Identifier) {
+            return ((J.Identifier) mi.getSelect()).getSimpleName();
+        }
+        return null;
+    }
+
+    private static int findMatchingVarDecl(List<Statement> stmts, int tryIndex, String varName) {
+        for (int i = tryIndex - 1; i >= 0; i--) {
+            if (stmts.get(i) instanceof J.VariableDeclarations) {
+                J.VariableDeclarations decl = (J.VariableDeclarations) stmts.get(i);
+                if (decl.getVariables().size() == 1 &&
+                        decl.getVariables().get(0).getSimpleName().equals(varName)) {
+                    Expression init = decl.getVariables().get(0).getInitializer();
+                    if (init == null || J.Literal.isLiteralValue(init, null)) {
+                        continue;
+                    }
+                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(decl.getType());
+                    if (type != null && TypeUtils.isAssignableTo(AUTO_CLOSEABLE, type)) {
+                        return i;
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isReassignedBetween(String varName, List<Statement> stmts, int fromIndex, int toIndex) {
+        for (int i = fromIndex + 1; i < toIndex; i++) {
+            if (isReassigned(varName, stmts.get(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean finallyContainsClose(J.Block finallyBlock, String varName) {
         for (Statement stmt : finallyBlock.getStatements()) {
             if (isCloseStatement(stmt, varName)) {
@@ -264,9 +369,9 @@ public class UseTryWithResources extends Recipe {
     }
 
     private static boolean isCloseInvocation(J.MethodInvocation mi, String varName) {
-        return CLOSE.matches(mi)
-                && mi.getSelect() instanceof J.Identifier
-                && ((J.Identifier) mi.getSelect()).getSimpleName().equals(varName);
+        return CLOSE.matches(mi) &&
+                mi.getSelect() instanceof J.Identifier &&
+                ((J.Identifier) mi.getSelect()).getSimpleName().equals(varName);
     }
 
     private static boolean isTryCatchClose(Statement stmt, String varName) {

@@ -43,7 +43,9 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
     final String description = "Replaces `catch(Exception e)` blocks with a multi-catch block " +
             "(`catch (SpecificException1 | SpecificException2 e)`) containing only the exceptions declared " +
             "thrown by method or constructor invocations within the `try` block that are not already caught " +
-            "by more specific `catch` clauses.";
+            "by more specific `catch` clauses. " +
+            "Catching a broad `Exception` type can unintentionally swallow runtime exceptions that indicate programming errors, " +
+            "making bugs harder to detect and diagnose.";
 
     @Getter
     final Set<String> tags = new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));

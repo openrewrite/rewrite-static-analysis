@@ -38,7 +38,9 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
     String displayName = "Remove redundant null checks before instanceof";
 
-    String description = "Removes redundant null checks before instanceof operations since instanceof returns false for null.";
+    String description = "Removes redundant null checks before instanceof operations since " +
+            "instanceof returns false for null. Removing the extra check simplifies the conditional " +
+            "and makes the null-safety guarantee of `instanceof` more visible to readers.";
 
     Set<String> tags = singleton("RSPEC-S1697");
 
