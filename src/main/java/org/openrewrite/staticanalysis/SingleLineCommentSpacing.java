@@ -50,18 +50,15 @@ public class SingleLineCommentSpacing extends Recipe {
                 Space s = super.visitSpace(space, loc, ctx);
 
                 return s.withComments(ListUtils.map(s.getComments(), comment -> {
-                    if (comment instanceof TextComment) {
-                        TextComment tc = (TextComment) comment;
-                        if (tc.isMultiline()) {
-                            return comment;
-                        }
-                        String text = tc.getText();
-                        if (text.isEmpty() || text.startsWith(" ") || text.startsWith("language=")) {
-                            return comment;
-                        }
-                        return tc.withText(" " + text);
+                    if (!(comment instanceof TextComment) || ((TextComment) comment).isMultiline()) {
+                        return comment;
                     }
-                    return comment;
+                    TextComment tc = (TextComment) comment;
+                    String text = tc.getText();
+                    if (text.isEmpty() || text.startsWith(" ") || text.startsWith("language=")) {
+                        return comment;
+                    }
+                    return tc.withText(" " + text);
                 }));
             }
         };
