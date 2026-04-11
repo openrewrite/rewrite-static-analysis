@@ -257,6 +257,126 @@ class StaticAccessViaInstanceTest implements RewriteTest {
     }
 
     @Test
+    void staticFieldViaInstanceOfInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Outer {
+                class Inner {
+                    static int COUNT = 0;
+                }
+                void foo(Inner inner) {
+                    int x = inner.COUNT;
+                }
+            }
+            """,
+            """
+            class Outer {
+                class Inner {
+                    static int COUNT = 0;
+                }
+                void foo(Inner inner) {
+                    int x = Outer.Inner.COUNT;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void staticMethodViaInstanceOfInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Outer {
+                static class Inner {
+                    static int compute() { return 0; }
+                }
+                void foo(Inner inner) {
+                    int x = inner.compute();
+                }
+            }
+            """,
+            """
+            class Outer {
+                static class Inner {
+                    static int compute() { return 0; }
+                }
+                void foo(Inner inner) {
+                    int x = Outer.Inner.compute();
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void staticFieldAccessFromWithinInnerClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            class Outer {
+                static class Inner {
+                    static int COUNT = 0;
+                    void foo(Inner inner) {
+                        int x = inner.COUNT;
+                    }
+                }
+            }
+            """,
+            """
+            class Outer {
+                static class Inner {
+                    static int COUNT = 0;
+                    void foo(Inner inner) {
+                        int x = Outer.Inner.COUNT;
+                    }
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
+    void staticFieldViaInstanceOfAnonymousClassParent() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+            abstract class Base {
+                static int COUNT = 0;
+            }
+            """
+          ),
+          //language=java
+          java(
+            """
+            class MyClass {
+                void foo() {
+                    Base b = new Base() {};
+                    int x = b.COUNT;
+                }
+            }
+            """,
+            """
+            class MyClass {
+                void foo() {
+                    Base b = new Base() {};
+                    int x = Base.COUNT;
+                }
+            }
+            """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeChainedFieldAccessWithSideEffect() {
         rewriteRun(
           //language=java
