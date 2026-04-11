@@ -72,20 +72,16 @@ public class InstanceOfPatternMatch extends Recipe {
         );
 
         return Preconditions.check(preconditions, new JavaVisitor<ExecutionContext>() {
-            final Set<String> introducedPatternVarNames = new HashSet<>();
-
-            @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                introducedPatternVarNames.clear();
-                return (J.MethodDeclaration) super.visitMethodDeclaration(method, ctx);
-            }
-
             @Override
             public @Nullable J postVisit(J tree, ExecutionContext ctx) {
                 J result = super.postVisit(tree, ctx);
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
                 if (original != null && !original.isEmpty()) {
-                    return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow(), introducedPatternVarNames);
+                    Cursor methodCursor = getCursor().dropParentUntil(
+                            v -> v instanceof J.MethodDeclaration || v instanceof J.ClassDeclaration);
+                    Set<String> introducedNames = methodCursor.computeMessageIfAbsent(
+                            "introducedPatternVarNames", k -> new HashSet<>());
+                    return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow(), introducedNames);
                 }
                 return result;
             }
