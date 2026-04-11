@@ -31,20 +31,17 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class MergeIdenticalBranches extends Recipe {
 
-    @Getter
     final String displayName = "Branches with identical implementations should be merged";
 
-    @Getter
     final String description = "When two consecutive branches of an `if`/`else if` chain execute the same code, " +
             "they can be merged by combining their conditions with `||`. " +
             "This removes duplication and makes the intent clearer.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S1871");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override

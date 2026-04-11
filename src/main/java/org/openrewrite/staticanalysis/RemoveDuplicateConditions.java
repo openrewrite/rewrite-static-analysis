@@ -32,20 +32,17 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class RemoveDuplicateConditions extends Recipe {
 
-    @Getter
     final String displayName = "Related \"if/else if\" conditions should not be the same";
 
-    @Getter
     final String description = "When an `if`/`else if` chain contains the same condition more than once, " +
             "the second branch can never execute because the first matching branch always wins. " +
             "The duplicate branch is dead code and should be removed.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S1862");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override

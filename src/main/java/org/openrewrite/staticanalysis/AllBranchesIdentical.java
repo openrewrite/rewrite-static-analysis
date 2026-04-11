@@ -31,19 +31,16 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class AllBranchesIdentical extends Recipe {
 
-    @Getter
     final String displayName = "All branches in a conditional should not have the same implementation";
 
-    @Getter
     final String description = "When every branch of an `if`/`else` chain executes the same code, " +
             "the condition serves no purpose and the code block can be used directly.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S3923");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override

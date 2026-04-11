@@ -33,20 +33,17 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class RemoveUnconditionalValueOverwrite extends Recipe {
 
-    @Getter
     final String displayName = "Map values should not be replaced unconditionally";
 
-    @Getter
     final String description = "When `map.put(key, value)` is called twice in a row with the same key, " +
             "the first call is dead code because its value is immediately overwritten. " +
             "Remove the first call to make the intent clear.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S4143");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     private static final MethodMatcher MAP_PUT = new MethodMatcher("java.util.Map put(..)", true);

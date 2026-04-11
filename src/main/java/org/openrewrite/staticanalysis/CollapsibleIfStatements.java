@@ -29,20 +29,17 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class CollapsibleIfStatements extends Recipe {
 
-    @Getter
     final String displayName = "Mergeable \"if\" statements should be combined";
 
-    @Getter
     final String description = "When an `if` statement body contains only another `if` with no `else`, " +
             "the two conditions can be combined with `&&`. " +
             "Merging the conditions reduces nesting and makes the code easier to read.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S1066");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override

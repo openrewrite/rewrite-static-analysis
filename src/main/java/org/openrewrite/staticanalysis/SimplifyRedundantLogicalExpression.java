@@ -28,20 +28,17 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class SimplifyRedundantLogicalExpression extends Recipe {
 
-    @Getter
     final String displayName = "Identical expressions used with logical operators should be simplified";
 
-    @Getter
     final String description = "When the same expression appears on both sides of `&&`, `||`, `&`, or `|`, " +
             "the result is always equal to that expression. For example, `x && x` is always " +
             "just `x`. This is typically a copy-paste error where one side should have been different.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S1764");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override

@@ -29,19 +29,16 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@Getter
 public class RemoveSelfAssignment extends Recipe {
 
-    @Getter
     final String displayName = "Variables should not be self-assigned";
 
-    @Getter
     final String description = "Self-assignments such as `x = x` have no effect and indicate a copy-paste " +
             "error or typo where the left-hand or right-hand side should reference a different variable.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S1656");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(3);
 
     @Override
