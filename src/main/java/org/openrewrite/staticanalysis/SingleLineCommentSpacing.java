@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.openrewrite.staticanalysis;
 
 import java.time.Duration;
@@ -27,6 +28,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Comment;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.TextComment;
 
 public class SingleLineCommentSpacing extends Recipe {
 
@@ -58,35 +60,53 @@ public class SingleLineCommentSpacing extends Recipe {
             public Space visitSpace(Space space, Space.Location loc, ExecutionContext ctx) {
                 Space s = super.visitSpace(space, loc, ctx);
 
-                if (s.getComments() == null || s.getComments().isEmpty()) {
+                List<Comment> comments = s.getComments();
+                if (comments.isEmpty()) {
                     return s;
                 }
 
-                List<Comment> updatedComments = new ArrayList<>();
+                boolean changed = false;
+                List<Comment> updatedComments = new ArrayList<>(comments.size());
 
-                for (Comment comment : s.getComments()) {
+                for (Comment comment : comments) {
+                    Comment updated = comment;
 
-                    String text = comment.toString();
+                    if (comment instanceof TextComment) {
+                        TextComment tc = (TextComment) comment;
+                        String text = tc.getText();
 
-                    // Check if it's a single-line comment
-                    if (text.startsWith("//") && text.length() > 2) {
+                        // Skip empty comments
+                        if (text.isEmpty()) {
+                            updatedComments.add(comment);
+                            continue;
+                        }
 
-                        char nextChar = text.charAt(2);
+                        // Skip special comments like //language=java
+                        if (text.startsWith("language=")) {
+                            updatedComments.add(comment);
+                            continue;
+                        }
 
-                        // Fix ONLY if there is no space after //
-                        if (nextChar != ' ' && !text.startsWith("//language=")) {
+                        // If already has space after //
+                        if (text.startsWith(" ")) {
+                            updatedComments.add(comment);
+                            continue;
+                        }
 
-                            // Add a space at beginning of suffix
-                            String newSuffix = " " + comment.getSuffix();
+                        // Add space after //
+                        String newText = " " + text;
 
-                            comment = comment.withSuffix(newSuffix);
+                        if (!newText.equals(text)) {
+                            updated = tc.withText(newText);
+                            changed = true;
                         }
                     }
 
-                    updatedComments.add(comment);
+                    updatedComments.add(updated);
                 }
 
-                return s.withComments(updatedComments);
+                // Only return new object if something changed (important for single-cycle rule)
+                return changed ? s.withComments(updatedComments) : s;
             }
         };
     }
