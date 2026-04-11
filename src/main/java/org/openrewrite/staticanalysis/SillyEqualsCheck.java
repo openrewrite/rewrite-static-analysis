@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
@@ -39,18 +38,14 @@ import static java.util.Collections.singleton;
 public class SillyEqualsCheck extends Recipe {
     private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("java.lang.Object equals(java.lang.Object)", true);
 
-    @Getter
     final String displayName = "Silly equality checks should not be made";
 
-    @Getter
     final String description = "Detects `.equals()` calls that compare incompatible types and will always return `false`. " +
             "Replaces `.equals(null)` with `== null` and array `.equals()` with `Arrays.equals()`. " +
             "Flags comparisons between unrelated types or between arrays and non-arrays.";
 
-    @Getter
     final Set<String> tags = singleton("RSPEC-S2159");
 
-    @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
