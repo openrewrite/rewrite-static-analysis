@@ -1989,4 +1989,48 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/moderneinc/customer-requests/issues/2202")
+    @Test
+    void flowScopedPatternVariableConflictWithElseReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void test(Object objNotOnOrAfter, Object objNotBefore) {
+                      String strNotOnOrAfter = "";
+                      if (objNotOnOrAfter != null && objNotOnOrAfter instanceof String) {
+                          strNotOnOrAfter = (String) objNotOnOrAfter;
+                      } else {
+                          return;
+                      }
+
+                      String strNotBefore = "";
+                      if (objNotBefore != null && objNotBefore instanceof String) {
+                          strNotBefore = (String) objNotBefore;
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void test(Object objNotOnOrAfter, Object objNotBefore) {
+                      String strNotOnOrAfter = "";
+                      if (objNotOnOrAfter != null && objNotOnOrAfter instanceof String string) {
+                          strNotOnOrAfter = string;
+                      } else {
+                          return;
+                      }
+
+                      String strNotBefore = "";
+                      if (objNotBefore != null && objNotBefore instanceof String string1) {
+                          strNotBefore = string1;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
