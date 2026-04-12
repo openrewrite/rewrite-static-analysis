@@ -90,7 +90,38 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                             inferredType = methodDeclaration.getReturnTypeExpression().getType();
                         }
                     } else if (e instanceof J.Lambda) {
-                        inferredType = ((J.Lambda) e).getType();
+                        JavaType.Parameterized parameterized = TypeUtils.asParameterized(((J.Lambda) e).getType());
+                        if (parameterized != null) {
+                            JavaType.Method sam = null;
+                            for (JavaType.Method candidate : parameterized.getMethods()) {
+                                if (candidate.hasFlags(Flag.Default) || candidate.hasFlags(Flag.Static)) {
+                                    continue;
+                                }
+                                if (sam != null) {
+                                    sam = null;
+                                    break;
+                                }
+                                sam = candidate;
+                            }
+                            if (sam != null) {
+                                JavaType samReturn = sam.getReturnType();
+                                if (samReturn instanceof JavaType.GenericTypeVariable) {
+                                    String name = ((JavaType.GenericTypeVariable) samReturn).getName();
+                                    List<JavaType> formalParams = parameterized.getType().getTypeParameters();
+                                    List<JavaType> actualParams = parameterized.getTypeParameters();
+                                    for (int i = 0; i < formalParams.size() && i < actualParams.size(); i++) {
+                                        JavaType formal = formalParams.get(i);
+                                        if (formal instanceof JavaType.GenericTypeVariable &&
+                                                name.equals(((JavaType.GenericTypeVariable) formal).getName())) {
+                                            inferredType = actualParams.get(i);
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    inferredType = samReturn;
+                                }
+                            }
+                        }
                     }
                 }
 

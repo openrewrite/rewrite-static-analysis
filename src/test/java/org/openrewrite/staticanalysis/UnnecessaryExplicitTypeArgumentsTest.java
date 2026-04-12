@@ -71,7 +71,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Not implemented yet")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/670")
     @Test
     void withinLambda() {
         rewriteRun(
