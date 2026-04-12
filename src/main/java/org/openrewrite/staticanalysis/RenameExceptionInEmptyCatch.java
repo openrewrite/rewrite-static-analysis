@@ -155,7 +155,7 @@ public class RenameExceptionInEmptyCatch extends Recipe {
             // Sets structure for cursor positions to aggregate namespaces.
             private Cursor getCursorToParentScope() {
                 return getCursor().dropParentUntil(is ->
-                        is instanceof J.CompilationUnit ||
+                        is instanceof JavaSourceFile ||
                         is instanceof J.ClassDeclaration ||
                         is instanceof J.Block ||
                         is instanceof J.MethodDeclaration ||
