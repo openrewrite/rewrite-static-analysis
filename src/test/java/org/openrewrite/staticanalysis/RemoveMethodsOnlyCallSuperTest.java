@@ -123,37 +123,6 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
     }
 
     @Test
-    void removeMethodWithOnlyOverrideAnnotation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Parent {
-                  String getValue() {
-                      return "value";
-                  }
-              }
-              """
-          ),
-          //language=java
-          java(
-            """
-              class Child extends Parent {
-                  @Override
-                  String getValue() {
-                      return super.getValue();
-                  }
-              }
-              """,
-            """
-              class Child extends Parent {
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void removeDeprecatedMethodOnlyCallingSuper() {
         rewriteRun(
           //language=java
@@ -206,6 +175,43 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
                   @Override
                   void foo() {
                       super.foo();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeMethodWithSemanticAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target(ElementType.METHOD)
+              @interface Transactional {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Parent {
+                  void save() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Transactional
+                  @Override
+                  void save() {
+                      super.save();
                   }
               }
               """
