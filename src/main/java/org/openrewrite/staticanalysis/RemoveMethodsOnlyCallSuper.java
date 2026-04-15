@@ -81,10 +81,12 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method has annotations other than @Override
+                // Skip if method has annotations other than @Override or @Deprecated
                 for (J.Annotation annotation : md.getLeadingAnnotations()) {
                     JavaType annotationType = annotation.getAnnotationType().getType();
-                    if (annotationType == null || !TypeUtils.isOfClassType(annotationType, "java.lang.Override")) {
+                    if (annotationType == null ||
+                        !TypeUtils.isOfClassType(annotationType, "java.lang.Override") &&
+                        !TypeUtils.isOfClassType(annotationType, "java.lang.Deprecated")) {
                         return md;
                     }
                 }

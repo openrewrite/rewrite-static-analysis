@@ -154,7 +154,7 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeMethodWithDeprecatedAnnotation() {
+    void removeDeprecatedMethodOnlyCallingSuper() {
         rewriteRun(
           //language=java
           java(
@@ -174,6 +174,10 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
                   void foo() {
                       super.foo();
                   }
+              }
+              """,
+            """
+              class Child extends Parent {
               }
               """
           )
