@@ -1786,4 +1786,25 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/20")
+    @Test
+    void castToTypeParameterInLambda() {
+        // given / when / then
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class SequenceFileReader<K, V> {
+                  interface Converter<T> {
+                      T convert(Object o);
+                  }
+
+                  private Converter<K> keyConverter = o -> (K) o;
+                  private Converter<V> valConverter = o -> (V) o;
+              }
+              """
+          )
+        );
+    }
 }
