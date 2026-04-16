@@ -87,6 +87,18 @@ public class FinalizePrivateFields extends Recipe {
                         .map(Map.Entry::getKey)
                         .collect(toSet());
 
+                // Skip fields only assigned in the constructor body that are read inside a lambda or
+                // anonymous class in an instance initializer: finalizing them breaks javac's definite
+                // assignment analysis, since initializers run before the constructor body.
+                Set<JavaType.Variable> uninitializedFinalizable = privateFields.stream()
+                        .filter(v -> v.getInitializer() == null && v.getVariableType() != null)
+                        .map(J.VariableDeclarations.NamedVariable::getVariableType)
+                        .filter(privateFieldsToBeFinalized::contains)
+                        .collect(toSet());
+                if (!uninitializedFinalizable.isEmpty()) {
+                    privateFieldsToBeFinalized.removeAll(findFieldsReadInDeferredInitializer(classDecl, uninitializedFinalizable));
+                }
+
                 return super.visitClassDeclaration(classDecl, ctx);
             }
 
@@ -152,6 +164,57 @@ public class FinalizePrivateFields extends Recipe {
 
     private static boolean isInnerClass(J.ClassDeclaration classDecl) {
         return classDecl.getType() != null && classDecl.getType().getOwningClass() != null;
+    }
+
+    private static Set<JavaType.Variable> findFieldsReadInDeferredInitializer(J.ClassDeclaration classDecl, Set<JavaType.Variable> candidates) {
+        Set<JavaType.Variable> found = new HashSet<>();
+        JavaIsoVisitor<Set<JavaType.Variable>> reader = new JavaIsoVisitor<Set<JavaType.Variable>>() {
+            int lambdaOrAnonDepth;
+
+            @Override
+            public J.Lambda visitLambda(J.Lambda lambda, Set<JavaType.Variable> set) {
+                lambdaOrAnonDepth++;
+                J.Lambda l = super.visitLambda(lambda, set);
+                lambdaOrAnonDepth--;
+                return l;
+            }
+
+            @Override
+            public J.NewClass visitNewClass(J.NewClass newClass, Set<JavaType.Variable> set) {
+                boolean anonymous = newClass.getBody() != null;
+                if (anonymous) {
+                    lambdaOrAnonDepth++;
+                }
+                J.NewClass nc = super.visitNewClass(newClass, set);
+                if (anonymous) {
+                    lambdaOrAnonDepth--;
+                }
+                return nc;
+            }
+
+            @Override
+            public J.Identifier visitIdentifier(J.Identifier identifier, Set<JavaType.Variable> set) {
+                if (lambdaOrAnonDepth > 0 && candidates.contains(identifier.getFieldType())) {
+                    set.add(identifier.getFieldType());
+                }
+                return super.visitIdentifier(identifier, set);
+            }
+        };
+        for (Statement stmt : classDecl.getBody().getStatements()) {
+            if (stmt instanceof J.VariableDeclarations) {
+                J.VariableDeclarations vd = (J.VariableDeclarations) stmt;
+                if (!vd.hasModifier(J.Modifier.Type.Static)) {
+                    for (J.VariableDeclarations.NamedVariable v : vd.getVariables()) {
+                        if (v.getInitializer() != null) {
+                            reader.visit(v.getInitializer(), found);
+                        }
+                    }
+                }
+            } else if (stmt instanceof J.Block && !((J.Block) stmt).isStatic()) {
+                reader.visit(stmt, found);
+            }
+        }
+        return found;
     }
 
     private static class CollectPrivateFieldsAssignmentCounts extends JavaIsoVisitor<Map<JavaType.Variable, Integer>> {
