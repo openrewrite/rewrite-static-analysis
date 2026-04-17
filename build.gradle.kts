@@ -24,6 +24,7 @@ dependencies {
     provided("org.openrewrite:rewrite-javascript:${rewriteVersion}")
     provided("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
+    provided("org.openrewrite:rewrite-python:${rewriteVersion}")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
@@ -38,6 +39,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.testng:testng:7.+")
     testImplementation("org.openrewrite:rewrite-javascript:${rewriteVersion}")
+    testImplementation("org.openrewrite:rewrite-python:${rewriteVersion}")
 
     testImplementation("com.google.code.gson:gson:latest.release")
 
