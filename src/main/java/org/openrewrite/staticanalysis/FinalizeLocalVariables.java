@@ -69,7 +69,8 @@ public class FinalizeLocalVariables extends Recipe {
                 }
 
                 // ignores anonymous class fields, contributed code for issue #181
-                if (this.getCursorToParentScope(this.getCursor()).getValue() instanceof J.NewClass) {
+                Object parentScope = this.getCursorToParentScope(this.getCursor()).getValue();
+                if (parentScope instanceof J.NewClass || parentScope instanceof SourceFile) {
                     return mv;
                 }
 
@@ -88,7 +89,7 @@ public class FinalizeLocalVariables extends Recipe {
             }
 
             private Cursor getCursorToParentScope(final Cursor cursor) {
-                return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration);
+                return cursor.dropParentUntil(is -> is instanceof J.NewClass || is instanceof J.ClassDeclaration || is instanceof SourceFile);
             }
         };
     }

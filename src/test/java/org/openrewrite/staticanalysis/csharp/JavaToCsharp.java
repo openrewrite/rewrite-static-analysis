@@ -24,8 +24,7 @@ import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.test.AdHocRecipe;
 
-import java.util.List;
-
+import static java.util.Collections.emptyList;
 import static org.openrewrite.test.RewriteTest.toRecipe;
 
 public class JavaToCsharp {
@@ -51,9 +50,9 @@ public class JavaToCsharp {
           cu.getCharset().name(),
           cu.isCharsetBomMarked(),
           cu.getChecksum(),
-          List.of(),
-          List.of(),
-          List.of(),
+          emptyList(),
+          emptyList(),
+          emptyList(),
           cu.getClasses().stream()
             .map(Statement.class::cast)
             .map(JRightPadded::build)

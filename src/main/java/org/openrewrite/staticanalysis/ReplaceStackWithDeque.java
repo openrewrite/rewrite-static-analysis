@@ -30,13 +30,24 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeTree;
 
+import java.util.Set;
+
+import static java.util.Collections.singleton;
+
 public class ReplaceStackWithDeque extends Recipe {
     @Getter
     final String displayName = "Replace `java.util.Stack` with `java.util.Deque`";
 
     @Getter
     final String description = "From the Javadoc of `Stack`:\n" +
-            "> A more complete and consistent set of LIFO stack operations is provided by the Deque interface and its implementations, which should be used in preference to this class.";
+            "> A more complete and consistent set of LIFO stack operations is provided by " +
+            "the Deque interface and its implementations, which should be used in preference " +
+            "to this class.\n\n" +
+            "`Stack` inherits from `Vector`, which carries unnecessary synchronization overhead " +
+            "in single-threaded contexts and exposes non-stack operations like random index access.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1149");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

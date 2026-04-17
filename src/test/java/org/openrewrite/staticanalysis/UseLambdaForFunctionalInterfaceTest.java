@@ -830,4 +830,72 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/20")
+    @Test
+    void anonymousClassInsideParameterizedMethodCall() {
+        // given / when / then
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+              import java.util.concurrent.atomic.AtomicInteger;
+
+              class TypeLiteral<T> {
+              }
+
+              class Binder {
+                  <T> Binding<T> bind(TypeLiteral<T> typeLiteral) {
+                      return new Binding<>();
+                  }
+              }
+
+              class Binding<T> {
+                  void toInstance(T instance) {
+                  }
+              }
+
+              class Test {
+                  void test(Binder binder) {
+                      final AtomicInteger suffix = new AtomicInteger();
+                      binder.bind(new TypeLiteral<Supplier<String>>() {
+                      }).toInstance(new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              return suffix.getAndIncrement() + "";
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+              import java.util.concurrent.atomic.AtomicInteger;
+
+              class TypeLiteral<T> {
+              }
+
+              class Binder {
+                  <T> Binding<T> bind(TypeLiteral<T> typeLiteral) {
+                      return new Binding<>();
+                  }
+              }
+
+              class Binding<T> {
+                  void toInstance(T instance) {
+                  }
+              }
+
+              class Test {
+                  void test(Binder binder) {
+                      final AtomicInteger suffix = new AtomicInteger();
+                      binder.bind(new TypeLiteral<Supplier<String>>() {
+                      }).toInstance(() -> suffix.getAndIncrement() + "");
+                  }
+              }
+              """
+          )
+        );
+    }
 }

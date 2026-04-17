@@ -42,10 +42,6 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesMethod<>(COLLECTORS_TO_SET_METHOD_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
-            private final JavaTemplate template = JavaTemplate.builder("Collectors.toCollection(LinkedHashSet::new)")
-                    .imports("java.util.stream.Collectors", "java.util.LinkedHashSet")
-                    .build();
-
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
@@ -55,7 +51,10 @@ public class SortedSetStreamToLinkedHashSet extends Recipe {
                     maybeRemoveImport("java.util.stream.Collectors.toSet");
                     maybeAddImport("java.util.LinkedHashSet");
                     maybeAddImport("java.util.stream.Collectors");
-                    return template.apply(updateCursor(mi), mi.getCoordinates().replaceArguments());
+                    return JavaTemplate.builder("Collectors.toCollection(LinkedHashSet::new)")
+                            .imports("java.util.stream.Collectors", "java.util.LinkedHashSet")
+                            .build()
+                            .apply(updateCursor(mi), mi.getCoordinates().replaceArguments());
                 }
                 return mi;
             }

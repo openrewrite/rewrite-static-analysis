@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -40,7 +41,11 @@ public class NoDoubleBraceInitialization extends Recipe {
     final String displayName = "No double brace initialization";
 
     @Getter
-    final String description = "Replace `List`, `Map`, and `Set` double brace initialization with an initialization block.";
+    final String description = "Replace `List`, `Map`, and `Set` double brace initialization " +
+            "with an initialization block. Double brace initialization creates " +
+            "an anonymous inner class that holds a hidden reference to the " +
+            "enclosing instance, which can cause memory leaks and " +
+            "serialization issues.";
 
     @Getter
     final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1171", "RSPEC-S3599"));
@@ -139,12 +144,9 @@ public class NoDoubleBraceInitialization extends Recipe {
             return ListUtils.map(statements, statement -> (Statement) selectVisitor.visitNonNull(statement, ctx));
         }
 
+        @RequiredArgsConstructor
         private static class AddSelectVisitor extends JavaIsoVisitor<ExecutionContext> {
             private final J.Identifier identifier;
-
-            public AddSelectVisitor(J.Identifier identifier) {
-                this.identifier = identifier;
-            }
 
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {

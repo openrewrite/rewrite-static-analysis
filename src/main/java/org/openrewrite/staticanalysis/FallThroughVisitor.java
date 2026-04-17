@@ -15,8 +15,10 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
@@ -78,11 +80,15 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         return c;
     }
 
+    @RequiredArgsConstructor
     private static class AddBreak<P> extends JavaIsoVisitor<P> {
         private final J.Case scope;
 
-        public AddBreak(J.Case scope) {
-            this.scope = scope;
+        @Override
+        public J.Switch visitSwitch(J.Switch switch_, P p) {
+            // Don't descend into nested switches (including switch expressions)
+            // to avoid adding breaks inside their cases/blocks
+            return switch_;
         }
 
         @Override
@@ -121,9 +127,8 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
         }
     }
 
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     private static class FindLastLineBreaksOrFallsThroughComments {
-        private FindLastLineBreaksOrFallsThroughComments() {
-        }
 
         /**
          * If no results are found, it means we should append a {@link J.Break} to the provided {@link J.Case}.
@@ -140,15 +145,12 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
             return references;
         }
 
+        @RequiredArgsConstructor
         private static class FindLastLineBreaksOrFallsThroughCommentsVisitor extends JavaIsoVisitor<Set<J>> {
             private static final Predicate<Comment> HAS_RELIEF_PATTERN_COMMENT = comment ->
                     comment instanceof TextComment &&
                             RELIEF_PATTERN.matcher(((TextComment) comment).getText()).find();
             private final J.Case scope;
-
-            public FindLastLineBreaksOrFallsThroughCommentsVisitor(J.Case scope) {
-                this.scope = scope;
-            }
 
             private static boolean lastLineBreaksOrFallsThrough(List<? extends Statement> trees) {
                 return trees.stream()
@@ -186,11 +188,21 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                     }
                     return true;
                 }
+                if (s instanceof J.Switch) {
+                    // Arrow-style switches used as statements don't prevent fall-through
+                    J.Switch sw = (J.Switch) s;
+                    List<Statement> cases = sw.getCases().getStatements();
+                    for (Statement cs : cases) {
+                        if (cs instanceof J.Case && ((J.Case) cs).getType() == J.Case.Type.Rule) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
                 return s instanceof J.Return ||
                         s instanceof J.Break ||
                         s instanceof J.Continue ||
-                        s instanceof J.Throw ||
-                        s instanceof J.Switch;
+                        s instanceof J.Throw;
             }
 
             @Override

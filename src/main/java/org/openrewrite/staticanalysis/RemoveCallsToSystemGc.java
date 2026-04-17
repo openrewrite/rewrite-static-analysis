@@ -40,7 +40,10 @@ public class RemoveCallsToSystemGc extends Recipe {
     final String displayName = "Remove garbage collection invocations";
 
     @Getter
-    final String description = "Removes calls to `System.gc()` and `Runtime.gc()`. When to invoke garbage collection is best left to the JVM.";
+    final String description = "Removes calls to `System.gc()` and `Runtime.gc()`. When to " +
+            "invoke garbage collection is best left to the JVM. Manual GC calls " +
+            "produce unpredictable results across different JVM implementations " +
+            "and can cause unnecessary application pauses.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1215");

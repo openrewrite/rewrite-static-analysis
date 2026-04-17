@@ -84,7 +84,9 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
     String displayName = "Remove unused local variables";
 
-    String description = "If a local variable is declared but not used, it is dead code and should be removed.";
+    String description = "If a local variable is declared but not used, it is dead code and should be removed. " +
+            "Unused variables increase cognitive load for readers who must determine whether the variable matters, " +
+            "and they may signal incomplete implementations or missed refactoring.";
 
     Set<String> tags = singleton("RSPEC-S1481");
 

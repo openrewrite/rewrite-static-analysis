@@ -28,6 +28,9 @@ import org.openrewrite.java.tree.J;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class UnwrapRepeatableAnnotations extends Recipe {
     @Getter
@@ -35,7 +38,11 @@ public class UnwrapRepeatableAnnotations extends Recipe {
 
     @Getter
     final String description = "Java 8 introduced the concept of `@Repeatable` annotations, " +
-            "making the wrapper annotation unnecessary.";
+            "making the wrapper annotation unnecessary. " +
+            "Using the repeatable form directly reduces nesting and makes the individual annotations easier to scan.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1710");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

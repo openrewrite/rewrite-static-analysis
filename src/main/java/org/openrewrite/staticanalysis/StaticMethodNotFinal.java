@@ -33,7 +33,8 @@ public class StaticMethodNotFinal extends Recipe {
     final String displayName = "Static methods need not be final";
 
     @Getter
-    final String description = "Static methods do not need to be declared final because they cannot be overridden.";
+    final String description = "Static methods do not need to be declared final because they cannot be overridden. " +
+            "Redundant modifiers add noise to the code and can suggest a misunderstanding of the language's dispatch model.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2333");

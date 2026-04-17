@@ -42,7 +42,7 @@ public class NoFinalizer extends Recipe {
     final String description = "Finalizers are deprecated. Use of `finalize()` can lead to performance issues, deadlocks, hangs, and other undesirable behavior.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S1111");
+    final Set<String> tags = singleton("RSPEC-S1113");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);

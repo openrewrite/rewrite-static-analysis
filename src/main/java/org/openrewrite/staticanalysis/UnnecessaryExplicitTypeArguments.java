@@ -21,6 +21,8 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -90,7 +92,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                             inferredType = methodDeclaration.getReturnTypeExpression().getType();
                         }
                     } else if (e instanceof J.Lambda) {
-                        inferredType = ((J.Lambda) e).getType();
+                        inferredType = getLambdaReturnType(((J.Lambda) e).getType());
                     }
                 }
 
@@ -99,6 +101,46 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 }
 
                 return m;
+            }
+
+            private JavaType.@Nullable Method findMethodIfUnambiguous(JavaType.FullyQualified type) {
+                JavaType.Method sam = null;
+                for (JavaType.Method candidate : type.getMethods()) {
+                    if (candidate.hasFlags(Flag.Default) || candidate.hasFlags(Flag.Static)) {
+                        continue;
+                    }
+                    if (sam != null) {
+                        return null;
+                    }
+                    sam = candidate;
+                }
+                return sam;
+            }
+
+            private @Nullable JavaType getLambdaReturnType(@Nullable JavaType lambdaType) {
+                JavaType.Parameterized parameterized = TypeUtils.asParameterized(lambdaType);
+                if (parameterized == null) {
+                    return null;
+                }
+                JavaType.Method sam = findMethodIfUnambiguous(parameterized);
+                if (sam == null) {
+                    return null;
+                }
+                JavaType samReturn = sam.getReturnType();
+                if (samReturn instanceof JavaType.GenericTypeVariable) {
+                    String name = ((JavaType.GenericTypeVariable) samReturn).getName();
+                    List<JavaType> formalParams = parameterized.getType().getTypeParameters();
+                    List<JavaType> actualParams = parameterized.getTypeParameters();
+                    for (int i = 0; i < formalParams.size() && i < actualParams.size(); i++) {
+                        JavaType formal = formalParams.get(i);
+                        if (formal instanceof JavaType.GenericTypeVariable &&
+                                name.equals(((JavaType.GenericTypeVariable) formal).getName())) {
+                            return actualParams.get(i);
+                        }
+                    }
+                    return null;
+                }
+                return samReturn;
             }
 
             private boolean shouldRetainOnStaticMethod(JavaType.Method methodType) {

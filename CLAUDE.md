@@ -189,6 +189,7 @@ Recipes are organized into YAML files in `src/main/resources/META-INF/rewrite/`:
 - `static-analysis.yml` - General static analysis recipes
 
 ### Adding Recipes to Collections
+- Do NOT add new recipes to `common-static-analysis.yml` by default — it contains tested and proven recipes only
 - Add new recipes to appropriate YAML files based on their scope
 - Comment out recipes that are experimental or have known issues (with a comment explaining why)
 - Group related recipes together in the YAML lists

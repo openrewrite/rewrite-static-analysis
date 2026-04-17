@@ -39,7 +39,8 @@ public class CatchClauseOnlyRethrows extends Recipe {
 
     @Getter
     final String description = "A `catch` clause that only rethrows the caught exception is unnecessary. " +
-            "Letting the exception bubble up as normal achieves the same result with less code.";
+            "Letting the exception bubble up as normal achieves the same result with less code. " +
+            "Such catch blocks add visual noise and indentation without changing program behavior.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2737");

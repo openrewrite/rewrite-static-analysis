@@ -39,8 +39,10 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
     final String displayName = "Replace String concatenation with `String.valueOf()`";
 
     @Getter
-    final String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with `String.valueOf(...)`. " +
-            "This improves code readability and may have minor performance benefits.";
+    final String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with " +
+            "`String.valueOf(...)`. This improves code readability and may have minor performance " +
+            "benefits. The empty string prefix `\"\" +` is an indirect way to convert a value to " +
+            "a `String`, while `String.valueOf()` clearly communicates the conversion intent.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1153");
@@ -72,12 +74,8 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
                         // Avoid breaking symmetry in chained String concatenations
                         !(binary.getRight() instanceof J.Binary) &&
                         !(getCursor().getParentTreeCursor().getValue() instanceof J.Binary)) {
-                    return JavaTemplate.builder("String.valueOf(#{any()})")
-                            .build()
-                            .apply(getCursor(),
-                                    binary.getCoordinates().replace(),
-                                    binary.getRight() instanceof J.Parentheses ?
-                                            ((J.Parentheses<?>) binary.getRight()).getTree() : binary.getRight())
+                    return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), binary.getCoordinates().replace(), binary.getRight() instanceof J.Parentheses ?
+                            ((J.Parentheses<?>) binary.getRight()).getTree() : binary.getRight())
                             .withPrefix(binary.getPrefix());
                 }
                 return super.visitBinary(binary, ctx);

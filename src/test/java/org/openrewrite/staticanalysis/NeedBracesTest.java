@@ -519,6 +519,67 @@ class NeedBracesTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/611")
+    @Test
+    void trailingCommentPreservedOnDoWhileBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void method(Object obj) {
+                      do
+                          obj.notify(); // notify
+                      while (true);
+                      System.out.println("done");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method(Object obj) {
+                      do {
+                          obj.notify(); // notify
+                      } while (true);
+                      System.out.println("done");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/611")
+    @Test
+    void trailingCommentPreservedOnIfBodyBeforeElse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean method(boolean nullable, String columnName) {
+                      if (nullable)
+                          return false; // skip
+                      else
+                          throw new IllegalArgumentException("cannot write non-nullable column with null value: " + columnName);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean method(boolean nullable, String columnName) {
+                      if (nullable) {
+                          return false; // skip
+                      } else {
+                          throw new IllegalArgumentException("cannot write non-nullable column with null value: " + columnName);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/315")
     @Test
     void trailingCommentsElseBlock() {

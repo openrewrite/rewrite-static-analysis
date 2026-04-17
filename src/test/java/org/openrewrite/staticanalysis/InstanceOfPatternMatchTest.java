@@ -521,6 +521,205 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             );
         }
 
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/305")
+        @Test
+        void doesNotIntroduceSelfAssignmentInElseIfBranches() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class A {
+                      String test(Object obj, String fieldName) {
+                          if (obj instanceof Contact) {
+                              if (fieldName.equals("FIRST_NAME")) {
+                                  Contact cont = (Contact) obj;
+                                  return getContactLink(cont, null, cont.getFirstName());
+                              } else if (fieldName.equals("LAST_NAME")) {
+                                  Contact cont = (Contact) obj;
+                                  return getContactLink(cont, null, cont.getLastName());
+                              } else if (fieldName.equals("FULL_NAME")) {
+                                  Contact cont = (Contact) obj;
+                                  return getContactLink(cont, null, cont.getDisplayName());
+                              }
+                          }
+                          return "";
+                      }
+
+                      String getContactLink(Contact contact, Object unused, String value) {
+                          return value;
+                      }
+
+                      static class Contact {
+                          String getFirstName() {
+                              return "";
+                          }
+
+                          String getLastName() {
+                              return "";
+                          }
+
+                          String getDisplayName() {
+                              return "";
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class A {
+                      String test(Object obj, String fieldName) {
+                          if (obj instanceof Contact cont) {
+                              if (fieldName.equals("FIRST_NAME")) {
+                                  return getContactLink(cont, null, cont.getFirstName());
+                              } else if (fieldName.equals("LAST_NAME")) {
+                                  return getContactLink(cont, null, cont.getLastName());
+                              } else if (fieldName.equals("FULL_NAME")) {
+                                  return getContactLink(cont, null, cont.getDisplayName());
+                              }
+                          }
+                          return "";
+                      }
+
+                      String getContactLink(Contact contact, Object unused, String value) {
+                          return value;
+                      }
+
+                      static class Contact {
+                          String getFirstName() {
+                              return "";
+                          }
+
+                          String getLastName() {
+                              return "";
+                          }
+
+                          String getDisplayName() {
+                              return "";
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/305")
+        @Test
+        void doesNotIntroduceSelfAssignmentWhenAliasTypeSpellingsDiffer() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List) {
+                              if (b) {
+                                  List<?> list = (List<?>) obj;
+                                  System.out.println(list.size());
+                              } else {
+                                  List list = (List) obj;
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List<?> list) {
+                              if (b) {
+                                  System.out.println(list.size());
+                              } else {
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void prefersStableTypeSpellingRegardlessOfBranchOrder() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List) {
+                              if (b) {
+                                  List list = (List) obj;
+                                  System.out.println(list.size());
+                              } else {
+                                  List<?> list = (List<?>) obj;
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+
+                  class A {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List<?> list) {
+                              if (b) {
+                                  System.out.println(list.size());
+                              } else {
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """
+              ),
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  class B {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List) {
+                              if (b) {
+                                  List<?> list = (List<?>) obj;
+                                  System.out.println(list.size());
+                              } else {
+                                  List list = (List) obj;
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import java.util.List;
+
+                  class B {
+                      void test(Object obj, boolean b) {
+                          if (obj instanceof List<?> list) {
+                              if (b) {
+                                  System.out.println(list.size());
+                              } else {
+                                  System.out.println(list.size());
+                              }
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @Test
         void conflictingVariableInBody() {
             rewriteRun(
@@ -1764,6 +1963,74 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                 }
                 """
             ), 17)
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/4173")
+    @Test
+    void unchangedTryWithResourcesCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Closeable;
+
+              class A {
+                  void foo(Object object) {
+                      if (object instanceof Closeable) {
+                          try (Closeable c = (Closeable) object) {
+                              System.out.println(c);
+                          } catch (Exception e) {
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/moderneinc/customer-requests/issues/2202")
+    @Test
+    void flowScopedPatternVariableConflictWithElseReturn() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void test(Object objNotOnOrAfter, Object objNotBefore) {
+                      String strNotOnOrAfter = "";
+                      if (objNotOnOrAfter != null && objNotOnOrAfter instanceof String) {
+                          strNotOnOrAfter = (String) objNotOnOrAfter;
+                      } else {
+                          return;
+                      }
+
+                      String strNotBefore = "";
+                      if (objNotBefore != null && objNotBefore instanceof String) {
+                          strNotBefore = (String) objNotBefore;
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void test(Object objNotOnOrAfter, Object objNotBefore) {
+                      String strNotOnOrAfter = "";
+                      if (objNotOnOrAfter != null && objNotOnOrAfter instanceof String string) {
+                          strNotOnOrAfter = string;
+                      } else {
+                          return;
+                      }
+
+                      String strNotBefore = "";
+                      if (objNotBefore != null && objNotBefore instanceof String string1) {
+                          strNotBefore = string1;
+                      }
+                  }
+              }
+              """
+          )
         );
     }
 }

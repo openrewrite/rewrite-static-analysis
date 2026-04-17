@@ -30,7 +30,10 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
+import java.util.Set;
+
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static org.openrewrite.Tree.randomId;
 
 public class RemoveSystemOutPrintln extends Recipe {
@@ -41,7 +44,12 @@ public class RemoveSystemOutPrintln extends Recipe {
 
     @Getter
     final String description = "Print statements are often left accidentally after debugging an issue. " +
-            "This recipe removes all `System.out#println` and `System.err#println` statements from the code.";
+            "This recipe removes all `System.out#println` and `System.err#println` statements " +
+            "from the code. Production code should use a proper logging framework which provides " +
+            "consistent formatting, configurable log levels, and centralized output control.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S106");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

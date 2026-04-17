@@ -26,13 +26,20 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class LambdaBlockToExpression extends Recipe {
     @Getter
     final String displayName = "Simplify lambda blocks to expressions";
 
     @Getter
-    final String description = "Single-line statement lambdas returning a value can be replaced with expression lambdas.";
+    final String description = "Single-line statement lambdas returning a value can be replaced with expression lambdas. " +
+            "Expression-form lambdas are more concise and consistent with a functional programming style, making the code easier to scan.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1602");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

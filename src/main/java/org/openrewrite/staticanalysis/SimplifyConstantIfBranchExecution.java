@@ -32,6 +32,9 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.style.Style;
 
 import java.util.Optional;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class SimplifyConstantIfBranchExecution extends Recipe {
 
@@ -39,7 +42,11 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
     final String displayName = "Simplify constant if branch execution";
 
     @Getter
-    final String description = "Checks for if expressions that are always `true` or `false` and simplifies them.";
+    final String description = "Checks for if expressions that are always `true` or `false` and simplifies them. " +
+            "Branches that can never execute are dead code that misleads readers and may mask logic errors introduced during refactoring.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S6646");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

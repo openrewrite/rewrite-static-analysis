@@ -45,7 +45,8 @@ public class UseDiamondOperator extends Recipe {
     final String description = "The diamond operator (`<>`) should be used. Java 7 introduced the diamond operator to " +
             "reduce the verbosity of generics code. For instance, instead of having to declare a `List`'s " +
             "type in both its declaration and its constructor, you can now simplify the constructor declaration " +
-            "with `<>`, and the compiler will infer the type.";
+            "with `<>`, and the compiler will infer the type. " +
+            "Repeating type arguments that the compiler can already deduce is unnecessary boilerplate that clutters the code.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2293");

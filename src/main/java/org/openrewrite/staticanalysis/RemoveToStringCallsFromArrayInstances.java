@@ -56,7 +56,9 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
 
     @Getter
     final String description = "The result from `toString()` calls on arrays is largely useless. The output does not actually reflect " +
-            "the contents of the array. `Arrays.toString(array)` should be used instead as it gives the contents of the array.";
+            "the contents of the array. `Arrays.toString(array)` should be used instead as it gives the contents of the array. " +
+            "Since arrays do not override `toString()` from `Object`, calling it produces only the type name and memory address, " +
+            "which is rarely what was intended.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

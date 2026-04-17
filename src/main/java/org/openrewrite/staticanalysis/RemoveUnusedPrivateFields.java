@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -38,7 +39,9 @@ public class RemoveUnusedPrivateFields extends Recipe {
 
     String displayName = "Remove unused private fields";
 
-    String description = "If a private field is declared but not used in the program, it can be considered dead code and should therefore be removed.";
+    String description = "If a private field is declared but not used in the program, it can be considered " +
+            "dead code and should therefore be removed. Dead fields clutter the class, increase its " +
+            "memory footprint, and can mislead developers into thinking they are part of the class's behavior.";
 
     Set<String> tags = singleton("RSPEC-S1068");
 
@@ -199,12 +202,9 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor
     private static class RemoveUnusedField extends JavaVisitor<AtomicBoolean> {
         private final J.VariableDeclarations.NamedVariable namedVariable;
-
-        public RemoveUnusedField(J.VariableDeclarations.NamedVariable namedVariable) {
-            this.namedVariable = namedVariable;
-        }
 
         @Override
         public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
@@ -226,16 +226,12 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
     }
 
+    @RequiredArgsConstructor
     private static class MaybeRemoveComment extends JavaVisitor<ExecutionContext> {
         @Nullable
         private final Statement statement;
 
         private final J.ClassDeclaration classDeclaration;
-
-        public MaybeRemoveComment(@Nullable Statement statement, J.ClassDeclaration classDeclaration) {
-            this.statement = statement;
-            this.classDeclaration = classDeclaration;
-        }
 
         @Override
         public J visitStatement(Statement s, ExecutionContext ctx) {

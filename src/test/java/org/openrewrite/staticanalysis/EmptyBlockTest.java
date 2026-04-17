@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.EmptyBlockStyle;
 import org.openrewrite.style.NamedStyles;
@@ -226,8 +227,9 @@ class EmptyBlockTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/570")
     @Test
-    void emptyLoops() {
+    void emptyLoopsUnchanged() {
         rewriteRun(
           //language=java
           java(
@@ -237,18 +239,6 @@ class EmptyBlockTest implements RewriteTest {
                       while(true) {
                       }
                       do {
-                      } while(true);
-                  }
-              }
-              """,
-            """
-              public class A {
-                  public void foo() {
-                      while(true) {
-                          continue;
-                      }
-                      do {
-                          continue;
                       } while(true);
                   }
               }

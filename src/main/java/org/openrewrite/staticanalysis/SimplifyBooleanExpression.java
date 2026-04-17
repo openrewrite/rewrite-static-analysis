@@ -35,10 +35,13 @@ public class SimplifyBooleanExpression extends Recipe {
     final String displayName = "Simplify boolean expression";
 
     @Getter
-    final String description = "Checks for overly complicated boolean expressions, such as `if (b == true)`, `b || true`, `!false`, etc.";
+    final String description = "Checks for overly complicated boolean expressions, such as " +
+            "`if (b == true)`, `b || true`, `!false`, etc. Needlessly complex boolean logic makes " +
+            "code harder to reason about and increases the chance of introducing errors " +
+            "during future modifications.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-1125");
+    final Set<String> tags = singleton("RSPEC-S1125");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -52,10 +55,13 @@ public class SimplifyBooleanExpression extends Recipe {
 
             // Comparing Kotlin nullable type `?` with true/false can not be simplified,
             // e.g. `X?.fun() == true` is not equivalent to `X?.fun()`
+            // and `nullableBoolean == true` is not equivalent to `nullableBoolean`
             @Override
             protected boolean shouldSimplifyEqualsOn(@Nullable J j) {
-                return !(j instanceof J.MethodInvocation) ||
-                        !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                if (j instanceof J.MethodInvocation) {
+                    return !j.getMarkers().findFirst(IsNullSafe.class).isPresent();
+                }
+                return super.shouldSimplifyEqualsOn(j);
             }
         };
     }

@@ -46,7 +46,10 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
     final String displayName = "Replace `A.class.isInstance(a)` with `a instanceof A`";
 
     @Getter
-    final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by `a instanceof A`.";
+    final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by " +
+            "`a instanceof A`. Using `instanceof` enables the compiler to catch type " +
+            "incompatibilities at compile time rather than silently passing at runtime, " +
+            "which helps detect dead code early.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S6202");
@@ -65,9 +68,7 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
                     // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
                     JavaCoordinates coordinates = method.getCoordinates().replace();
-                    J updated = JavaTemplate.builder("#{any()} instanceof Object")
-                            .build()
-                            .apply(getCursor(), coordinates, objectExpression);
+                    J updated = JavaTemplate.apply("#{any()} instanceof Object", getCursor(), coordinates, objectExpression);
                     updated = mapInstanceOf(updated,
                             instanceOf -> instanceOf.withClazz(fieldAccessPart.getTarget().withPrefix(instanceOf.getClazz().getPrefix())));
                     return maybeAutoFormat(method, updated, ctx);
