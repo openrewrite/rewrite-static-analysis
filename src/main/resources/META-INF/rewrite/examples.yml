@@ -2770,6 +2770,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveMethodsOnlyCallSuper
+examples:
+- description: '`RemoveMethodsOnlyCallSuperTest#removeVoidMethodOnlyCallingSuper`'
+  sources:
+  - before: |
+      class Child extends Parent {
+          @Override
+          void foo() {
+              super.foo();
+          }
+      }
+    after: |
+      class Child extends Parent {
+      }
+    language: java
+  - before: |
+      class Parent {
+          void foo() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
 examples:
 - description: '`RemoveRedundantNullCheckBeforeInstanceofTest#removeRedundantNullCheck`'
@@ -2939,6 +2962,29 @@ examples:
       public class A {
           void test() {
               System.out.println("hello!");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnusedLabels
+examples:
+- description: '`RemoveUnusedLabelsTest#unusedLabelOnForLoop`'
+  sources:
+  - before: |
+      class A {
+          void foo() {
+              label: for (int i = 0; i < 10; i++) {
+                  System.out.println(i);
+              }
+          }
+      }
+    after: |
+      class A {
+          void foo() {
+              for (int i = 0; i < 10; i++) {
+                  System.out.println(i);
+              }
           }
       }
     language: java
@@ -3661,6 +3707,25 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SillyEqualsCheck
+examples:
+- description: '`SillyEqualsCheckTest#replaceEqualsNullWithEqualityCheck`'
+  sources:
+  - before: |
+      class A {
+          boolean foo(String s) {
+              return s.equals(null);
+          }
+      }
+    after: |
+      class A {
+          boolean foo(String s) {
+              return s == null;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyArraysAsList
 examples:
 - description: '`SimplifyArraysAsListTest#simplifyStringArrayCreation`'
@@ -3993,6 +4058,27 @@ examples:
         void method(Set<Integer> set) {
             Set<Integer> sorted = set.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
         }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.StaticAccessViaInstance
+examples:
+- description: '`StaticAccessViaInstanceTest#staticFieldViaInstance`'
+  sources:
+  - before: |
+      class MyClass {
+          static int COUNT = 0;
+          void foo(MyClass instance) {
+              int x = instance.COUNT;
+          }
+      }
+    after: |
+      class MyClass {
+          static int COUNT = 0;
+          void foo(MyClass instance) {
+              int x = MyClass.COUNT;
+          }
       }
     language: java
 ---
