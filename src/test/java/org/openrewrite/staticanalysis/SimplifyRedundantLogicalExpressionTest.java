@@ -123,21 +123,15 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
     }
 
     @Test
-    void simplifyWithMethodCall() {
+    void doNotChangeMethodInvocationsWithHiddenState() {
         rewriteRun(
           //language=java
           java(
             """
+              import java.util.Iterator;
               class Test {
-                  boolean test(String s) {
-                      return s.isEmpty() && s.isEmpty();
-                  }
-              }
-              """,
-            """
-              class Test {
-                  boolean test(String s) {
-                      return s.isEmpty();
+                  boolean test(Iterator<Boolean> it) {
+                      return it.next() && it.next();
                   }
               }
               """

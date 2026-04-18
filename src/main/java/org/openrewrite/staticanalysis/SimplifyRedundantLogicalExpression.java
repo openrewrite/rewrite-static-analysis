@@ -16,15 +16,19 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -54,7 +58,8 @@ public class SimplifyRedundantLogicalExpression extends Recipe {
                     case Or:
                     case BitAnd:
                     case BitOr:
-                        if (SemanticallyEqual.areEqual(b.getLeft(), b.getRight())) {
+                        if (SemanticallyEqual.areEqual(b.getLeft(), b.getRight()) &&
+                                !hasSideEffects(b.getLeft())) {
                             return b.getLeft().unwrap().withPrefix(b.getPrefix());
                         }
                         break;
@@ -62,6 +67,58 @@ public class SimplifyRedundantLogicalExpression extends Recipe {
                         break;
                 }
                 return b;
+            }
+
+            private boolean hasSideEffects(J tree) {
+                AtomicBoolean found = new AtomicBoolean(false);
+                new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean result) {
+                        result.set(true);
+                        return method;
+                    }
+
+                    @Override
+                    public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean result) {
+                        result.set(true);
+                        return assignment;
+                    }
+
+                    @Override
+                    public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, AtomicBoolean result) {
+                        result.set(true);
+                        return assignOp;
+                    }
+
+                    @Override
+                    public J.Unary visitUnary(J.Unary unary, AtomicBoolean result) {
+                        switch (unary.getOperator()) {
+                            case PreIncrement:
+                            case PreDecrement:
+                            case PostIncrement:
+                            case PostDecrement:
+                                result.set(true);
+                                return unary;
+                            default:
+                                return super.visitUnary(unary, result);
+                        }
+                    }
+
+                    @Override
+                    public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean result) {
+                        result.set(true);
+                        return newClass;
+                    }
+
+                    @Override
+                    public @Nullable J visit(@Nullable Tree t, AtomicBoolean result) {
+                        if (result.get()) {
+                            return (J) t;
+                        }
+                        return super.visit(t, result);
+                    }
+                }.visit(tree, found);
+                return found.get();
             }
         };
     }
