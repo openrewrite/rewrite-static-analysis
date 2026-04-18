@@ -146,6 +146,75 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
     }
 
     @Test
+    void simplifyWithParenthesesOnOneSide() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(boolean a) {
+                      return (a) && a;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(boolean a) {
+                      return a;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyWithParenthesesOnRightSide() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(boolean a) {
+                      return a && (a);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(boolean a) {
+                      return a;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyWithParenthesesOnBothSides() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(boolean a) {
+                      return (a) && (a);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean test(boolean a) {
+                      return a;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeDifferentOperands() {
         rewriteRun(
           //language=java

@@ -55,7 +55,7 @@ public class SimplifyRedundantLogicalExpression extends Recipe {
                     case BitAnd:
                     case BitOr:
                         if (SemanticallyEqual.areEqual(b.getLeft(), b.getRight())) {
-                            return b.getLeft().withPrefix(b.getPrefix());
+                            return b.getLeft().unwrap().withPrefix(b.getPrefix());
                         }
                         break;
                     default:
