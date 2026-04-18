@@ -70,8 +70,7 @@ public class SimplifyRedundantLogicalExpression extends Recipe {
             }
 
             private boolean hasSideEffects(J tree) {
-                AtomicBoolean found = new AtomicBoolean(false);
-                new JavaIsoVisitor<AtomicBoolean>() {
+                return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean result) {
                         result.set(true);
@@ -117,8 +116,7 @@ public class SimplifyRedundantLogicalExpression extends Recipe {
                         }
                         return super.visit(t, result);
                     }
-                }.visit(tree, found);
-                return found.get();
+                }.reduce(tree, new AtomicBoolean(false)).get();
             }
         };
     }
