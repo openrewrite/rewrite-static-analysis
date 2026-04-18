@@ -57,25 +57,19 @@ public class AllBranchesIdentical extends Recipe {
 
                 List<Statement> bodies = new ArrayList<>();
                 J.If current = if__;
-                boolean hasExplicitElse = false;
 
                 while (current != null) {
                     bodies.add(current.getThenPart());
                     if (current.getElsePart() == null) {
-                        break;
+                        return if__;
                     }
                     Statement elseBody = current.getElsePart().getBody();
                     if (elseBody instanceof J.If) {
                         current = (J.If) elseBody;
                     } else {
                         bodies.add(elseBody);
-                        hasExplicitElse = true;
                         current = null;
                     }
-                }
-
-                if (!hasExplicitElse || bodies.size() < 2) {
-                    return if__;
                 }
 
                 Statement first = bodies.get(0);
