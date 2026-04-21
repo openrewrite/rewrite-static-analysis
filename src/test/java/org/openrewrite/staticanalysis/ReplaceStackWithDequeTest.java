@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -76,6 +77,44 @@ class ReplaceStackWithDequeTest implements RewriteTest {
                       stack.add(1);
                       stack.add(2);
                       return stack;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-analysis/pull/95")
+    @Test
+    void thisAsArgumentInMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Stack;
+
+              class Test {
+                  void test(java.util.List<Test> result) {
+                      Stack<Integer> stack = new Stack<>();
+                      stack.add(1);
+                      if (stack.isEmpty()) {
+                          result.add(this);
+                      }
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayDeque;
+              import java.util.Deque;
+              import java.util.Stack;
+
+              class Test {
+                  void test(java.util.List<Test> result) {
+                      Deque<Integer> stack = new ArrayDeque<>();
+                      stack.add(1);
+                      if (stack.isEmpty()) {
+                          result.add(this);
+                      }
                   }
               }
               """
