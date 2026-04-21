@@ -4036,6 +4036,27 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SingleLineCommentSpacing
+examples:
+- description: '`SingleLineCommentSpacingTest#addsSpaceAfterDoubleSlash`'
+  sources:
+  - before: |
+      class Test {
+          void method() {
+              //Hello
+              int a = 1;
+          }
+      }
+    after: |
+      class Test {
+          void method() {
+              // Hello
+              int a = 1;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SortedSetStreamToLinkedHashSet
 examples:
 - description: '`SortedSetStreamToLinkedHashSetTest#changeSortedSetStreamToLinkedHashSet`'
