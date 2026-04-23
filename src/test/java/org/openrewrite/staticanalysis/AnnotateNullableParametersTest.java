@@ -909,4 +909,30 @@ class AnnotateNullableParametersTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void unchangedWhenParameterDereferencedBeforeNullCheckingMethod() {
+        List<String> additionalNullCheckingMethods = List.of("org.my.util.Text isEmptyOrNull(java.lang.String)");
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableParameters(null, additionalNullCheckingMethods)),
+          //language=java
+          java(
+            """
+              import java.util.Map;
+              import org.my.util.Text;
+
+              public class PersonBuilder {
+                  private String name = "Unknown";
+
+                  public PersonBuilder setInfo(Map<String, String> infoMap) {
+                      if (!Text.isEmptyOrNull(infoMap.get("name"))) {
+                          this.name = infoMap.get("name");
+                      }
+                      return this;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
