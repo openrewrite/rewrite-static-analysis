@@ -318,14 +318,15 @@ public class AnnotateNullableParameters extends Recipe {
         }
 
         private void handleMethodInvocation(J.MethodInvocation mi, Set<J.Identifier> nullCheckedParams) {
-            if (isKnownNullMethodChecker(mi) && !mi.getArguments().isEmpty()) {
+            if (isKnownNullMethodChecker(mi)) {
                 // Only consider the parameter as null-checked if it's passed directly,
                 // not if it's dereferenced first (e.g., map.get("key"))
-                Expression firstArg = mi.getArguments().get(0);
-                if (firstArg instanceof J.Identifier) {
-                    J.Identifier identifier = (J.Identifier) firstArg;
-                    if (containsIdentifierByName(identifiers, identifier)) {
-                        nullCheckedParams.add(identifier);
+                for (Expression arg : mi.getArguments()) {
+                    if (arg instanceof J.Identifier) {
+                        J.Identifier identifier = (J.Identifier) arg;
+                        if (containsIdentifierByName(identifiers, identifier)) {
+                            nullCheckedParams.add(identifier);
+                        }
                     }
                 }
             }
