@@ -109,8 +109,12 @@ public class AnnotateNullableParameters extends Recipe {
                 }
 
                 Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md));
-                Set<J.Identifier> nullCheckedIdentifiers = new NullCheckVisitor(candidateIdentifiers.values(), additionalNullCheckingMethods)
-                        .reduce(md.getBody(), new HashSet<>());
+
+                // Use a single visitor pass to collect both null checks and dereferences
+                NullCheckAndDereferenceVisitor visitor = new NullCheckAndDereferenceVisitor(candidateIdentifiers.values(), additionalNullCheckingMethods);
+                visitor.visit(md.getBody(), ctx, getCursor());
+
+                Set<J.Identifier> nullCheckedIdentifiers = visitor.getNullCheckedIdentifiers(getCursor());
 
                 maybeAddImport(fullyQualifiedName);
                 return md.withParameters(ListUtils.map(md.getParameters(), stm -> {
@@ -224,23 +228,24 @@ public class AnnotateNullableParameters extends Recipe {
     }
 
     /**
-     * Visitor that traverses method bodies to identify parameters that are explicitly checked for null.
-     * This visitor looks for:
-     * <ul>
-     *   <li>Direct null comparisons (param == null, param != null)</li>
-     *   <li>Known null-checking method calls (Objects.isNull, StringUtils.isBlank, etc.)</li>
-     *   <li>Methods that provide default values for null parameters (Objects.requireNonNullElse, Objects.requireNonNullElseGet)</li>
-     *   <li>Methods that handle nullable values (Optional.ofNullable)</li>
-     *   <li>Negated null-checking method calls (!Objects.isNull, !StringUtils.isBlank, etc.)</li>
-     * </ul>
+     * Combined visitor that tracks both null checks and dereferences in a single pass.
+     * Stores state in Cursor messaging to track:
+     * - Parameters that are null-checked
+     * - Parameters that are dereferenced before being null-checked
+     * <p>
+     * This visitor maintains state as it traverses the method body, marking parameters as
+     * null-checked when it encounters checks, and flagging parameters that are dereferenced
+     * (via method calls or field access) before any null check.
      */
-    private static class NullCheckVisitor extends JavaIsoVisitor<Set<J.Identifier>> {
+    private static class NullCheckAndDereferenceVisitor extends JavaIsoVisitor<ExecutionContext> {
+        private static final String NULL_CHECKED_KEY = "NULL_CHECKED_PARAMS";
+        private static final String DEREFERENCED_KEY = "DEREFERENCED_PARAMS";
+        private static final String NULL_CHECK_STATE_KEY = "NULL_CHECK_STATE"; // Tracks whether each parameter has been null-checked at any given point during AST traversal.
+
         private static final List<MethodMatcher> NULL_SAFETY_METHOD_MATCHERS = Arrays.asList(
                 new MethodMatcher("com.google.common.base.Strings isNullOrEmpty(..)"), // Guava
                 new MethodMatcher("java.util.Objects isNull(..)"),
                 new MethodMatcher("java.util.Objects nonNull(..)"),
-                new MethodMatcher("java.util.Objects requireNonNullElse(..)"), // Provides default for null
-                new MethodMatcher("java.util.Objects requireNonNullElseGet(..)"), // Provides default for null
                 new MethodMatcher("java.util.Optional ofNullable(..)"), // Handles nullable values
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isBlank(..)"),
                 new MethodMatcher("org.apache.commons.lang3.StringUtils isEmpty(..)"),
@@ -252,10 +257,17 @@ public class AnnotateNullableParameters extends Recipe {
                 new MethodMatcher("org.springframework.util.StringUtils hasText(..)")
         );
 
+        // Methods where only the first parameter can be null (e.g., Objects.requireNonNullElse(nullable, nonnull))
+        private static final List<MethodMatcher> FIRST_ARG_NULLABLE_MATCHERS = Arrays.asList(
+                new MethodMatcher("java.util.Objects requireNonNullElse(..)"), // First param nullable, second is fallback (non-null)
+                new MethodMatcher("java.util.Objects requireNonNullElseGet(..)") // First param nullable, second is supplier (non-null)
+        );
+
         private final Collection<J.Identifier> identifiers;
         private final Collection<MethodMatcher> nullCheckingMethodMatchers;
+        private Cursor methodCursor;
 
-        public NullCheckVisitor(Collection<J.Identifier> identifiers, @Nullable Collection<String> additionalNullCheckingMethods) {
+        public NullCheckAndDereferenceVisitor(Collection<J.Identifier> identifiers, @Nullable Collection<String> additionalNullCheckingMethods) {
             this.identifiers = identifiers;
             if (additionalNullCheckingMethods == null) {
                 nullCheckingMethodMatchers = NULL_SAFETY_METHOD_MATCHERS;
@@ -268,36 +280,85 @@ public class AnnotateNullableParameters extends Recipe {
             }
         }
 
-        @Override
-        public J.If visitIf(J.If iff, Set<J.Identifier> nullCheckedParams) {
-            iff = super.visitIf(iff, nullCheckedParams);
-            handleCondition(iff.getIfCondition().getTree(), nullCheckedParams);
-            return iff;
+        public J.Block visit(J.Block block, ExecutionContext ctx, Cursor parentCursor) {
+            this.methodCursor = parentCursor;
+            // Initialize state tracking maps in cursor
+            Map<String, Boolean> nullCheckState = new HashMap<>();
+            for (J.Identifier id : identifiers) {
+                nullCheckState.put(id.getSimpleName(), false);
+            }
+            methodCursor.putMessage(NULL_CHECK_STATE_KEY, nullCheckState);
+            methodCursor.putMessage(NULL_CHECKED_KEY, new HashSet<J.Identifier>());
+            methodCursor.putMessage(DEREFERENCED_KEY, new HashSet<J.Identifier>());
+
+            return visitBlock(block, ctx);
         }
 
         @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Set<J.Identifier> nullCheckedParams) {
-            // Handle standalone Objects.requireNonNull calls (not just in if conditions)
-            if (isKnownNullMethodChecker(method) && method.getArguments().get(0) instanceof J.Identifier) {
-                J.Identifier firstArgument = (J.Identifier) method.getArguments().get(0);
-                if (containsIdentifierByName(identifiers, firstArgument)) {
-                    nullCheckedParams.add(firstArgument);
+        public J.If visitIf(J.If iff, ExecutionContext ctx) {
+            // Process condition first to update null-check state
+            handleCondition(iff.getIfCondition().getTree());
+            // Then visit the rest
+            return super.visitIf(iff, ctx);
+        }
+
+        @Override
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            // Check if this is a method where only the first argument can be null
+            if (isFirstArgNullableMethod(method)) {
+                if (!method.getArguments().isEmpty() && method.getArguments().get(0) instanceof J.Identifier) {
+                    J.Identifier identifier = (J.Identifier) method.getArguments().get(0);
+                    if (containsIdentifierByName(identifiers, identifier)) {
+                        markAsNullChecked(identifier);
+                    }
                 }
             }
-            return super.visitMethodInvocation(method, nullCheckedParams);
+            // Check if this is a null-checking method call (standalone, not in condition)
+            else if (isKnownNullMethodChecker(method)) {
+                for (Expression arg : method.getArguments()) {
+                    if (arg instanceof J.Identifier) {
+                        J.Identifier identifier = (J.Identifier) arg;
+                        if (containsIdentifierByName(identifiers, identifier)) {
+                            markAsNullChecked(identifier);
+                        }
+                    }
+                }
+            }
+
+            // Check if select is a parameter being dereferenced
+            if (method.getSelect() instanceof J.Identifier) {
+                J.Identifier select = (J.Identifier) method.getSelect();
+                if (isParameterNotYetNullChecked(select)) {
+                    markAsDereferenced(select);
+                }
+            }
+
+            return super.visitMethodInvocation(method, ctx);
         }
 
-        private void handleCondition(Expression condition, Set<J.Identifier> nullCheckedParams) {
+        @Override
+        public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, ExecutionContext ctx) {
+            // Check if target is a parameter being dereferenced
+            if (fieldAccess.getTarget() instanceof J.Identifier) {
+                J.Identifier target = (J.Identifier) fieldAccess.getTarget();
+                if (isParameterNotYetNullChecked(target)) {
+                    markAsDereferenced(target);
+                }
+            }
+            return super.visitFieldAccess(fieldAccess, ctx);
+        }
+
+        private void handleCondition(Expression condition) {
             if (condition instanceof J.Binary) {
-                handleBinary((J.Binary) condition, nullCheckedParams);
+                handleBinary((J.Binary) condition);
             } else if (condition instanceof J.MethodInvocation) {
-                handleMethodInvocation((J.MethodInvocation) condition, nullCheckedParams);
+                handleMethodInvocation((J.MethodInvocation) condition);
             } else if (condition instanceof J.Unary) {
-                handleUnary((J.Unary) condition, nullCheckedParams);
+                handleUnary((J.Unary) condition);
             }
         }
 
-        private void handleBinary(J.Binary binary, Set<J.Identifier> nullCheckedParams) {
+        private void handleBinary(J.Binary binary) {
             Expression maybeParam = null;
 
             if (J.Literal.isLiteralValue(binary.getLeft(), null)) {
@@ -305,36 +366,45 @@ public class AnnotateNullableParameters extends Recipe {
             } else if (J.Literal.isLiteralValue(binary.getRight(), null)) {
                 maybeParam = binary.getLeft();
             } else {
-                handleCondition(binary.getLeft(), nullCheckedParams);
-                handleCondition(binary.getRight(), nullCheckedParams);
+                // Recursively handle compound conditions
+                handleCondition(binary.getLeft());
+                handleCondition(binary.getRight());
             }
 
             if (maybeParam instanceof J.Identifier) {
                 J.Identifier identifier = (J.Identifier) maybeParam;
                 if (containsIdentifierByName(identifiers, identifier)) {
-                    nullCheckedParams.add((J.Identifier) maybeParam);
+                    markAsNullChecked(identifier);
                 }
             }
         }
 
-        private void handleMethodInvocation(J.MethodInvocation mi, Set<J.Identifier> nullCheckedParams) {
-            if (isKnownNullMethodChecker(mi)) {
-                // Only consider the parameter as null-checked if it's passed directly,
-                // not if it's dereferenced first (e.g., map.get("key"))
+        private void handleMethodInvocation(J.MethodInvocation mi) {
+            // Check if this is a method where only the first argument can be null
+            if (isFirstArgNullableMethod(mi)) {
+                if (!mi.getArguments().isEmpty() && mi.getArguments().get(0) instanceof J.Identifier) {
+                    J.Identifier identifier = (J.Identifier) mi.getArguments().get(0);
+                    if (containsIdentifierByName(identifiers, identifier)) {
+                        markAsNullChecked(identifier);
+                    }
+                }
+            }
+            // Check if this is a null-checking method
+            else if (isKnownNullMethodChecker(mi)) {
                 for (Expression arg : mi.getArguments()) {
                     if (arg instanceof J.Identifier) {
                         J.Identifier identifier = (J.Identifier) arg;
                         if (containsIdentifierByName(identifiers, identifier)) {
-                            nullCheckedParams.add(identifier);
+                            markAsNullChecked(identifier);
                         }
                     }
                 }
             }
         }
 
-        private void handleUnary(J.Unary unary, Set<J.Identifier> nullCheckedParams) {
+        private void handleUnary(J.Unary unary) {
             if (unary.getExpression() instanceof J.MethodInvocation) {
-                handleMethodInvocation((J.MethodInvocation) unary.getExpression(), nullCheckedParams);
+                handleMethodInvocation((J.MethodInvocation) unary.getExpression());
             }
         }
 
@@ -345,6 +415,66 @@ public class AnnotateNullableParameters extends Recipe {
                 }
             }
             return false;
+        }
+
+        private boolean isFirstArgNullableMethod(J.MethodInvocation methodInvocation) {
+            for (MethodMatcher m : FIRST_ARG_NULLABLE_MATCHERS) {
+                if (m.matches(methodInvocation)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean isParameterNotYetNullChecked(J.Identifier identifier) {
+            @SuppressWarnings("unchecked")
+            Map<String, Boolean> nullCheckState = methodCursor.getMessage(NULL_CHECK_STATE_KEY);
+            if (nullCheckState == null) {
+                return false;
+            }
+            Boolean isChecked = nullCheckState.get(identifier.getSimpleName());
+            return isChecked != null && !isChecked;
+        }
+
+        private void markAsNullChecked(J.Identifier identifier) {
+            @SuppressWarnings("unchecked")
+            Map<String, Boolean> nullCheckState = methodCursor.getMessage(NULL_CHECK_STATE_KEY);
+            if (nullCheckState != null) {
+                nullCheckState.put(identifier.getSimpleName(), true);
+            }
+
+            @SuppressWarnings("unchecked")
+            Set<J.Identifier> nullChecked = methodCursor.getMessage(NULL_CHECKED_KEY);
+            if (nullChecked != null) {
+                nullChecked.add(identifier);
+            }
+        }
+
+        private void markAsDereferenced(J.Identifier identifier) {
+            @SuppressWarnings("unchecked")
+            Set<J.Identifier> dereferenced = methodCursor.getMessage(DEREFERENCED_KEY);
+            if (dereferenced != null) {
+                dereferenced.add(identifier);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        public Set<J.Identifier> getNullCheckedIdentifiers(Cursor cursor) {
+            Set<J.Identifier> nullChecked = cursor.getMessage(NULL_CHECKED_KEY);
+            Set<J.Identifier> dereferenced = cursor.getMessage(DEREFERENCED_KEY);
+
+            if (nullChecked == null) {
+                return new HashSet<>();
+            }
+
+            // Filter out parameters that were dereferenced before null check
+            Set<J.Identifier> result = new HashSet<>();
+            for (J.Identifier id : nullChecked) {
+                if (!containsIdentifierByName(dereferenced, id)) {
+                    result.add(id);
+                }
+            }
+            return result;
         }
     }
 }

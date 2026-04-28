@@ -563,6 +563,31 @@ class AnnotateNullableParametersTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void noChangeWhenParameterDereferencedBeforeNullCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class Foo {
+                      public void processName(@Nullable String foo, String bar) {
+                          if (foo == null) {
+                              System.out.printf("Foo is null, but for some reason I'm also dereferencing bar for log purposes %s", bar.toLowerCase());
+                          }
+
+                          if (bar == null) {
+                              return;
+                          }
+                          System.out.println(bar);
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
 
