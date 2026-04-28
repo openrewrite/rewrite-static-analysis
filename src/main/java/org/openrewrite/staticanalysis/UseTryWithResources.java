@@ -306,9 +306,17 @@ public class UseTryWithResources extends Recipe {
     }
 
     private static boolean finallyContainsClose(J.Block finallyBlock, String varName) {
+        // The target close must be reachable without any non-close statements before it.
+        // Try-with-resources closes the resource before the finally block runs, so any
+        // statement that originally ran before the close in the finally would otherwise
+        // run after it. Other close statements (for variables that will also be merged
+        // into the try-with-resources) are tolerated.
         for (Statement stmt : finallyBlock.getStatements()) {
             if (isCloseStatement(stmt, varName)) {
                 return true;
+            }
+            if (extractVarNameFromCloseStatement(stmt) == null) {
+                return false;
             }
         }
         return false;
