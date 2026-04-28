@@ -168,7 +168,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
      * Until then, however, we'll keep this private and unexposed.
      */
     private final class UtilityClassMatcher {
-        private final AnnotationMatcher configurationAnnotation = new AnnotationMatcher("@org.springframework.context.annotation.Configuration");
+        private final AnnotationMatcher configurationAnnotation = new AnnotationMatcher("@org.springframework.context.annotation.Configuration", true);
         private final Collection<AnnotationMatcher> ignorableAnnotations;
 
         private UtilityClassMatcher(Collection<String> ignorableAnnotations) {
