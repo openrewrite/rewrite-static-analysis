@@ -566,6 +566,42 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/729")
+    @Test
+    void doNotChangeSpringTestConfigurationClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.springframework.context.annotation;
+              public @interface Configuration {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              package org.springframework.boot.test.context;
+              import org.springframework.context.annotation.Configuration;
+              @Configuration
+              public @interface TestConfiguration {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              import org.springframework.boot.test.context.TestConfiguration;
+
+              @TestConfiguration
+              class MyTestConfig {
+                  public static String someBean() {
+                      return "bean";
+                  }
+              }
+              """
+          )
+        );
+    }
+
     private static Consumer<RecipeSpec> hideUtilityClassConstructor(String... ignoreIfAnnotatedBy) {
         return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
           singletonList(

@@ -215,6 +215,40 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/729")
+    @Test
+    void doNotFinalizeSpringTestConfigurationClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.springframework.context.annotation;
+              public @interface Configuration {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              package org.springframework.boot.test.context;
+              import org.springframework.context.annotation.Configuration;
+              @Configuration
+              public @interface TestConfiguration {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              import org.springframework.boot.test.context.TestConfiguration;
+
+              @TestConfiguration
+              class MyTestConfig {
+                  private MyTestConfig() {}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/372")
     @Test
     void doNotFinalizeClassWithNestedStaticFinalSubclass() {
