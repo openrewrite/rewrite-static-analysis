@@ -380,8 +380,8 @@ class UseTryWithResourcesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/moderneinc/rewrite-java-application-server/issues/19")
+    @Test
     void doNotChangeWhenStatementsBeforeClose() {
         rewriteRun(
           //language=java
@@ -405,8 +405,8 @@ class UseTryWithResourcesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/moderneinc/rewrite-java-application-server/issues/19")
+    @Test
     void doNotChangeWhenCleanupBeforeClose() {
         rewriteRun(
           //language=java
