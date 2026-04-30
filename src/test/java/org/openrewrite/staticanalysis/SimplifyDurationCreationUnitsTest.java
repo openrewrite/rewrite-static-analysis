@@ -270,25 +270,19 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
         );
     }
 
-    /**
-     * This is not a necessary constraint but should be considered carefully
-     * before removing: when an operation other than multiplication is present
-     * in one of these method invocations, what does it mean to the user?
-     *
-     * <p>
-     * It's possible that simplifying units could obfuscate meaning.
-     * It may be better to distribute the multiplicative factor change, rather
-     * than simplify the expression; e.g. preferring
-     *
-     * <p>
-     *     `Duration.ofMillis(1000 + 1000)`  --> `Duration.ofSeconds(1 + 1)`
-     *
-     * <p>
-     * rather than
-     *
-     * <p>
-     *     `Duration.ofMillis(1000 + 1000)`  --> `Duration.ofSeconds(2)`
-     */
+    /// This is not a necessary constraint but should be considered carefully
+    /// before removing: when an operation other than multiplication is present
+    /// in one of these method invocations, what does it mean to the user?
+    ///
+    /// It's possible that simplifying units could obfuscate meaning.
+    /// It may be better to distribute the multiplicative factor change, rather
+    /// than simplify the expression; e.g. preferring
+    ///
+    ///     `Duration.ofMillis(1000 + 1000)`  --> `Duration.ofSeconds(1 + 1)`
+    ///
+    /// rather than
+    ///
+    ///     `Duration.ofMillis(1000 + 1000)`  --> `Duration.ofSeconds(2)`
     @Test
     void doesNotChangeNonMultiplicationArithmetic() {
         rewriteRun(
@@ -307,12 +301,10 @@ class SimplifyDurationCreationUnitsTest implements RewriteTest {
         );
     }
 
-    /**
-     * This is not a necessary constraint; the recipe could simplify when there's a
-     * constant multiplicative factor present (e.g. `Duration.ofSeconds(seconds)` here).
-     * <p>
-     * This test just documents the current behavior.
-     */
+    /// This is not a necessary constraint; the recipe could simplify when there's a
+    /// constant multiplicative factor present (e.g. `Duration.ofSeconds(seconds)` here).
+    ///
+    /// This test just documents the current behavior.
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     @Test
     void doesNotChangeNonConstantUnitCount() {
