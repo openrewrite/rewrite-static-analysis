@@ -325,7 +325,7 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
     @Test
     void recordCompactConstructor() {
         rewriteRun(
-          spec -> spec.beforeRecipe(cu -> {
+          spec -> spec.beforeRecipe(_ -> {
               var javaRuntimeVersion = System.getProperty("java.runtime.version");
               var javaVendor = System.getProperty("java.vm.vendor");
               if (new JavaVersion(UUID.randomUUID(), javaRuntimeVersion, javaVendor, javaRuntimeVersion, javaRuntimeVersion).getMajorVersion() != 17) {

@@ -29,11 +29,10 @@ import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
@@ -77,10 +76,10 @@ class OperatorWrapTest implements RewriteTest {
     }
 
     private static List<NamedStyles> operatorWrapStyle(UnaryOperator<OperatorWrapStyle> with) {
-        return singletonList(
+        return List.of(
           new NamedStyles(
-            Tree.randomId(), "test", "test", "test", emptySet(),
-            singletonList(with.apply(Checkstyle.operatorWrapStyle()))
+            Tree.randomId(), "test", "test", "test", Set.of(),
+            List.of(with.apply(Checkstyle.operatorWrapStyle()))
           )
         );
     }
