@@ -26,10 +26,9 @@ import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
@@ -41,9 +40,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         spec.recipe(new HideUtilityClassConstructor());
     }
 
-    /**
-     * Should be a utility class since all methods are static, but class has public constructor
-     */
+    /// Should be a utility class since all methods are static, but class has public constructor
     @DocumentExample
     @Test
     void changePublicConstructorToPrivate() {
@@ -222,9 +219,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Should be a utility class since all methods are static, but class has no constructor (default/package-private)
-     */
+    /// Should be a utility class since all methods are static, but class has no constructor (default/package-private)
     @Test
     void addPrivateConstructorWhenOnlyDefaultConstructor() {
         rewriteRun(
@@ -274,9 +269,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Should be a utility class since all fields are static, but class has public constructor
-     */
+    /// Should be a utility class since all fields are static, but class has public constructor
     @Test
     void identifyUtilityClassesOnlyStaticFields() {
         rewriteRun(
@@ -302,9 +295,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Not a utility class since the class implements an interface
-     */
+    /// Not a utility class since the class implements an interface
     @Test
     void identifyNonUtilityClassesWhenImplementsInterface() {
         rewriteRun(
@@ -333,9 +324,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Not a utility class since the class extends another
-     */
+    /// Not a utility class since the class extends another
     @Test
     void identifyNonUtilityClassesWhenExtendsClass() {
         rewriteRun(
@@ -363,9 +352,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Not a utility class since some fields are static, but at least one non-static
-     */
+    /// Not a utility class since some fields are static, but at least one non-static
     @Test
     void identifyNonUtilityClassesMixedFields() {
         rewriteRun(
@@ -385,9 +372,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Should be a utility class since all methods are static, but class has public constructor
-     */
+    /// Should be a utility class since all methods are static, but class has public constructor
     @Test
     void identifyUtilityClassesOnlyStaticMethods() {
         rewriteRun(
@@ -423,9 +408,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Inner class should be a utility class since all it's methods are static, but it has public constructor
-     */
+    /// Inner class should be a utility class since all it's methods are static, but it has public constructor
     @Test
     void identifyUtilityClassesInnerStaticClasses() {
         rewriteRun(
@@ -465,9 +448,7 @@ class HideUtilityClassConstructorTest implements RewriteTest {
         );
     }
 
-    /**
-     * Not a utility class since some methods are static, but at least one non-static
-     */
+    /// Not a utility class since some methods are static, but at least one non-static
     @Test
     void identifyNonUtilityClassesMixedMethods() {
         rewriteRun(
@@ -604,9 +585,9 @@ class HideUtilityClassConstructorTest implements RewriteTest {
 
     private static Consumer<RecipeSpec> hideUtilityClassConstructor(String... ignoreIfAnnotatedBy) {
         return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
-          singletonList(
+          List.of(
             new NamedStyles(
-              randomId(), "test", "test", "test", emptySet(), singletonList(
+              randomId(), "test", "test", "test", Set.of(), List.of(
               new HideUtilityClassConstructorStyle(List.of(ignoreIfAnnotatedBy))
             )
             )

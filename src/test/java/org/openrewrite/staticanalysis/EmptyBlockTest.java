@@ -24,8 +24,8 @@ import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
+import java.util.Set;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.Assertions.java;
 
@@ -82,9 +82,9 @@ class EmptyBlockTest implements RewriteTest {
                 "Checkstyle",
                 "Checkstyle",
                 "Checkstyle defaults to only preserving blocks but the recipe should support other configurations.",
-                emptySet(),
-                singleton(Checkstyle.emptyBlock().withBlockPolicy(
-                  EmptyBlockStyle.BlockPolicy.TEXT))
+                      Set.of(),
+                      Set.of(Checkstyle.emptyBlock().withBlockPolicy(
+                              EmptyBlockStyle.BlockPolicy.TEXT))
               )
             )
           )

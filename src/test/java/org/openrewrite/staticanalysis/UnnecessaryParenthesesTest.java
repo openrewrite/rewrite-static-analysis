@@ -26,11 +26,11 @@ import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ConstantConditions", "UnusedAssignment", "IdempotentLoopBody", "ParameterCanBeLocal", "UnnecessaryLocalVariable"})
@@ -96,10 +96,10 @@ class UnnecessaryParenthesesTest implements RewriteTest {
 
     private static Consumer<RecipeSpec> unnecessaryParentheses(UnaryOperator<UnnecessaryParenthesesStyle> with) {
         return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
-          singletonList(
+          List.of(
             new NamedStyles(
-              Tree.randomId(), "test", "test", "test", emptySet(),
-              singletonList(with.apply(new UnnecessaryParenthesesStyle(false, false, false, false, false,
+              Tree.randomId(), "test", "test", "test", Set.of(),
+              List.of(with.apply(new UnnecessaryParenthesesStyle(false, false, false, false, false,
                 false, false, false, false, false, false, false, false, false,
                 false, false, false, false, false, false, false, false, false))))))
         );

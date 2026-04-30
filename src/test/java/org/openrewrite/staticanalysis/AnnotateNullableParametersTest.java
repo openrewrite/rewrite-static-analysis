@@ -889,7 +889,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
     @Test
     void provideAdditionalNullCheckingMethods() {
-        List<String> additionalNullCheckingMethods = List.of("org.my.util.Text hasText(java.lang.String)", "org.my.util.Text isEmptyOrNull(java.lang.String)");
+        var additionalNullCheckingMethods = List.of("org.my.util.Text hasText(java.lang.String)", "org.my.util.Text isEmptyOrNull(java.lang.String)");
         rewriteRun(
           spec -> spec.recipe(new AnnotateNullableParameters(null, additionalNullCheckingMethods)),
           //language=java
@@ -937,7 +937,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
     @Test
     void unchangedWhenParameterDereferencedBeforeNullCheckingMethod() {
-        List<String> additionalNullCheckingMethods = List.of("org.my.util.Text isEmptyOrNull(java.lang.String)");
+        var additionalNullCheckingMethods = List.of("org.my.util.Text isEmptyOrNull(java.lang.String)");
         rewriteRun(
           spec -> spec.recipe(new AnnotateNullableParameters(null, additionalNullCheckingMethods)),
           //language=java

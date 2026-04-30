@@ -28,8 +28,9 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
+import java.util.List;
+import java.util.Set;
+
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches", "DefaultNotLastCaseInSwitch"})
@@ -135,9 +136,9 @@ class DefaultComesLastTest implements RewriteTest {
     void skipIfLastAndSharedWithCase() {
         rewriteRun(
           spec -> spec.parser(
-            JavaParser.fromJavaVersion().styles(singletonList(new NamedStyles(
-              Tree.randomId(), "test", "test", "test", emptySet(),
-              singletonList(new DefaultComesLastStyle(true)))))
+            JavaParser.fromJavaVersion().styles(List.of(new NamedStyles(
+              Tree.randomId(), "test", "test", "test", Set.of(),
+              List.of(new DefaultComesLastStyle(true)))))
           ),
           //language=java
           java(
