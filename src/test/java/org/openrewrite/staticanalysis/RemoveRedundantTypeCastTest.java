@@ -639,6 +639,27 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/874")
+    @Test
+    void doNotRemoveObjectBridgeCastForUncheckedGenericCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Main {
+                  void accept(List<String> values) {}
+
+                  void call(List<Integer> values) {
+                      accept((List<String>) (Object) values);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/221")
     @Test
     void doNotRemoveCharacterCastInGenericContext() {

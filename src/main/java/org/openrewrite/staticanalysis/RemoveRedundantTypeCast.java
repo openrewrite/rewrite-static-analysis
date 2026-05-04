@@ -70,6 +70,22 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType expressionType = visitedTypeCast.getExpression().getType();
                 JavaType castType = visitedTypeCast.getType();
 
+                // Bridge cast: if the immediate parent is another TypeCast and the outer cast type
+                // is not directly assignable to/from this cast's expression type, preserve this cast
+                // because removing it would make the outer (often unchecked generic) cast invalid.
+                Cursor parentTreeCursor = getCursor().getParentTreeCursor();
+                while (parentTreeCursor.getValue() instanceof J.Parentheses) {
+                    parentTreeCursor = parentTreeCursor.getParentTreeCursor();
+                }
+                if (parentTreeCursor.getValue() instanceof J.TypeCast) {
+                    JavaType outerCastType = ((J.TypeCast) parentTreeCursor.getValue()).getType();
+                    if (outerCastType != null && expressionType != null &&
+                            !TypeUtils.isAssignableTo(outerCastType, expressionType) &&
+                            !TypeUtils.isAssignableTo(expressionType, outerCastType)) {
+                        return visitedTypeCast;
+                    }
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
