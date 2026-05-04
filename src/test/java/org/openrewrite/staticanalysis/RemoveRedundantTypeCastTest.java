@@ -612,6 +612,33 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/871")
+    @Test
+    void doNotRemoveCastNeededForGenericMethodInferenceInLambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.file.Path;
+              import java.util.List;
+              import java.util.Optional;
+
+              interface SourceFile {
+                  <T extends SourceFile> T withSourcePath(Path path);
+              }
+
+              class Test {
+                  void foo(Optional<? extends SourceFile> opt, Path targetPath, List<SourceFile> generated) {
+                      opt
+                          .map(sourceFile -> (SourceFile) sourceFile.withSourcePath(targetPath))
+                          .ifPresent(generated::add);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/221")
     @Test
     void doNotRemoveCharacterCastInGenericContext() {
