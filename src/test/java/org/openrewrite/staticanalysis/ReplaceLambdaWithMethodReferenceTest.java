@@ -790,6 +790,31 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/873")
+    @Test
+    void zeroArgNullCheckLambdaCannotBecomeObjectsNonNull() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.Callable;
+
+              public class Main {
+                  private Object importerSource;
+
+                  void awaitReady(final ConditionFactory await) {
+                      await.until(() -> importerSource != null);
+                  }
+
+                  interface ConditionFactory {
+                      void until(Callable<Boolean> condition);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("Convert2MethodRef")
     @Test
     void isEqualToNull() {
