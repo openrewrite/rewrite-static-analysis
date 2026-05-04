@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Repeat;
+import org.openrewrite.SourceFile;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
@@ -85,7 +86,10 @@ public class UnwrapElseAfterReturn extends Recipe {
                     alteredBlock = alteredBlock.withEnd(b.getEnd().withComments(mergedComments).withWhitespace(end.getWhitespace()));
                 }
 
-                return maybeAutoFormat(b, alteredBlock, ctx);
+                if (getCursor().firstEnclosingOrThrow(SourceFile.class) instanceof J.CompilationUnit) {
+                    return maybeAutoFormat(b, alteredBlock, ctx);
+                }
+                return alteredBlock;
             }
 
             private List<Statement> flatten(J.If tailIf, Statement tailElse, AtomicReference<@Nullable Space> endWhitespace, J.If ifWithoutElse) {
