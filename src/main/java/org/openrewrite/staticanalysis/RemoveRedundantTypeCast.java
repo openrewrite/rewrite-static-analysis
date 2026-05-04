@@ -131,6 +131,23 @@ public class RemoveRedundantTypeCast extends Recipe {
                     }
                 }
 
+                // A cast inside a lambda body may pin the inferred return type of a generic method call
+                // so outer inference (e.g. Optional.map -> ifPresent) doesn't lose it to the type bound.
+                if (parentValue instanceof J.Lambda && typeCast.getExpression() instanceof J.MethodInvocation) {
+                    JavaType.Method invokedMethod = ((J.MethodInvocation) typeCast.getExpression()).getMethodType();
+                    if (invokedMethod != null && invokedMethod.getDeclaringType() != null) {
+                        for (JavaType.Method declared : invokedMethod.getDeclaringType().getMethods()) {
+                            if (declared.getName().equals(invokedMethod.getName()) &&
+                                    declared.getParameterTypes().size() == invokedMethod.getParameterTypes().size() &&
+                                    declared.getReturnType() instanceof JavaType.GenericTypeVariable &&
+                                    declared.getDeclaredFormalTypeNames().contains(
+                                            ((JavaType.GenericTypeVariable) declared.getReturnType()).getName())) {
+                                return visitedTypeCast;
+                            }
+                        }
+                    }
+                }
+
                 if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
                     TypeUtils.isOfType(targetType, expressionType) ||
                     TypeUtils.isAssignableTo(targetType, expressionType)) {
