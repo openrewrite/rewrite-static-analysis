@@ -653,6 +653,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
 
                   void call(List<Integer> values) {
                       accept((List<String>) (Object) values);
+                      accept((List<String>) ((Object) values));
                   }
               }
               """
