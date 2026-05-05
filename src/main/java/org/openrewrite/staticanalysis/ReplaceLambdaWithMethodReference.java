@@ -145,8 +145,17 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             if (body instanceof J.Binary) {
                 J.Binary binary = (J.Binary) body;
                 if ((binary.getOperator() == J.Binary.Type.Equal || binary.getOperator() == J.Binary.Type.NotEqual) &&
-                        isNullCheck(binary.getLeft(), binary.getRight()) ||
-                        isNullCheck(binary.getRight(), binary.getLeft())) {
+                        (isNullCheck(binary.getLeft(), binary.getRight()) ||
+                                isNullCheck(binary.getRight(), binary.getLeft()))) {
+                    List<J.VariableDeclarations.NamedVariable> lambdaParameters = getLambdaParameters(lambda);
+                    if (lambdaParameters.size() != 1) {
+                        return l;
+                    }
+                    Expression nonNullSide = isNullCheck(binary.getLeft(), binary.getRight()) ? binary.getLeft() : binary.getRight();
+                    if (!(nonNullSide instanceof J.Identifier) ||
+                            ((J.Identifier) nonNullSide).getFieldType() != lambdaParameters.get(0).getVariableType()) {
+                        return l;
+                    }
                     code = J.Binary.Type.Equal == binary.getOperator() ? "java.util.Objects::isNull" :
                             "java.util.Objects::nonNull";
                     J updated = JavaTemplate.builder(code)
