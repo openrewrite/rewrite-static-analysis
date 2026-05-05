@@ -56,6 +56,17 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return visited;
                 }
 
+                // A cast nested inside another cast typically bridges an unchecked generic
+                // conversion (e.g. `(List<String>) (Object) values`); preserve it.
+                Cursor parentTreeCursor = getCursor().getParentTreeCursor();
+                while (parentTreeCursor.getValue() instanceof J.Parentheses ||
+                        parentTreeCursor.getValue() instanceof J.ControlParentheses) {
+                    parentTreeCursor = parentTreeCursor.getParentTreeCursor();
+                }
+                if (parentTreeCursor.getValue() instanceof J.TypeCast) {
+                    return visited;
+                }
+
                 Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.VariableDeclarations ||
                                                                   is instanceof J.Lambda ||
                                                                   is instanceof J.Return ||
