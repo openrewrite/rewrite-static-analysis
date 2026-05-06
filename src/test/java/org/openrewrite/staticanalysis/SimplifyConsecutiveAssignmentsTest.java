@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -89,6 +90,25 @@ class SimplifyConsecutiveAssignmentsTest implements RewriteTest {
                           x = 2;
                       }
                       return x;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/881")
+    void doNotInlineWhenInitializerWouldBeSelfReferential() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Main {
+                  int swizzle(int state) {
+                      int result = state;
+                      result ^= result >>> 1;
+                      return result;
                   }
               }
               """
