@@ -267,6 +267,25 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/885")
+    @Test
+    void doNotFinalizeClassWithAnonymousSubclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Factory {
+                  private Factory() {}
+
+                  static Factory create() {
+                      return new Factory() {};
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/372")
     @Test
     void doNotFinalizeClassWithNestedStaticSubclass() {
