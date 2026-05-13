@@ -102,6 +102,19 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
         return cd;
     }
 
+    @Override
+    public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+        J.NewClass nc = super.visitNewClass(newClass, ctx);
+        // Anonymous classes extend their declared type; that supertype must not be made final
+        if (nc.getBody() != null && nc.getClazz() != null) {
+            JavaType.FullyQualified type = TypeUtils.asFullyQualified(nc.getClazz().getType());
+            if (type != null) {
+                typesToNotFinalize.add(type.getFullyQualifiedName());
+            }
+        }
+        return nc;
+    }
+
     private void excludeSupertypes(JavaType.FullyQualified type) {
         if (type.getSupertype() != null &&
                 typesToNotFinalize.add(type.getSupertype().getFullyQualifiedName())) {
