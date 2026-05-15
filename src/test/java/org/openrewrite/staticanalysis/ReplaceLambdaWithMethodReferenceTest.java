@@ -1090,6 +1090,37 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void multipleConstructorsOnGenericTypeWithDiamond() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class B<T> {
+                  B() {}
+                  B(boolean flag) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              import java.util.function.Supplier;
+
+              class A {
+                  void method(Supplier<B<?>> supplier) {}
+                  void method(Function<A, B<?>> function) {}
+
+                  void test() {
+                      method(() -> new B<>());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/2949")
     @Test
     void anotherMultipleConstructorsCaseEasyUnderstanding() {
