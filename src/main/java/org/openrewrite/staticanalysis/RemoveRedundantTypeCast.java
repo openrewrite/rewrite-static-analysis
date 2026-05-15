@@ -97,6 +97,14 @@ public class RemoveRedundantTypeCast extends Recipe {
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
                             if (arg == typeCast) {
+                                // A `null` literal cast at the last position of a (potential) varargs call
+                                // disambiguates between passing `null` as the array vs. a single null element.
+                                if (J.Literal.isLiteralValue(typeCast.getExpression(), null) &&
+                                        i == methodType.getParameterTypes().size() - 1 &&
+                                        i == arguments.size() - 1 &&
+                                        methodType.getParameterTypes().get(i) instanceof JavaType.Array) {
+                                    return visited;
+                                }
                                 targetType = getParameterType(methodType, i);
                                 break;
                             }

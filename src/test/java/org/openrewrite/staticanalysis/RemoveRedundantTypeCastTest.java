@@ -307,6 +307,29 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void doNotRemoveNullCastInVarargsPosition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.reflect.Method;
+
+              class Test {
+                  void invoke(Method method, Object resolver) throws Exception {
+                      method.invoke(resolver, (String) null);
+                  }
+                  void m(String... s) {
+                  }
+                  void foo() {
+                      m((String) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1647")
     @Test
     void downCast() {
