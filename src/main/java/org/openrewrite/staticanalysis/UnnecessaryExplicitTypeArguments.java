@@ -146,6 +146,11 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 if (!methodType.hasFlags(Flag.Static)) {
                     return false;
                 }
+                // Without arguments, the type parameter cannot be inferred from call-site parameters.
+                // Removing the explicit type arguments can break overload resolution in the enclosing call.
+                if (methodType.getParameterTypes().isEmpty()) {
+                    return true;
+                }
                 List<String> formalTypeNames = new ArrayList<>(methodType.getDeclaredFormalTypeNames());
                 methodType.getParameterTypes().stream()
                         .filter(p -> p instanceof JavaType.Parameterized)
