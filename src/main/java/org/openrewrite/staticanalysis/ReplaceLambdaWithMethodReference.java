@@ -172,11 +172,13 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     if (nc.getBody() != null) {
                         return l;
                     }
-                    if (isAMethodInvocationArgument(l, getCursor()) && nc.getType() instanceof JavaType.Class) {
-                        JavaType.Class clazz = (JavaType.Class) nc.getType();
-                        boolean hasMultipleConstructors = clazz.getMethods().stream().filter(JavaType.Method::isConstructor).count() > 1;
-                        if (hasMultipleConstructors) {
-                            return l;
+                    if (isAMethodInvocationArgument(l, getCursor())) {
+                        JavaType.FullyQualified clazz = TypeUtils.asFullyQualified(nc.getType());
+                        if (clazz != null) {
+                            boolean hasMultipleConstructors = clazz.getMethods().stream().filter(JavaType.Method::isConstructor).count() > 1;
+                            if (hasMultipleConstructors) {
+                                return l;
+                            }
                         }
                     }
                 } else if (method instanceof J.MemberReference) {
