@@ -81,6 +81,27 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType expressionType = visitedTypeCast.getExpression().getType();
                 JavaType castType = visitedTypeCast.getType();
 
+                // A cast on a generic method invocation pins the inferred return type so
+                // an overloaded outer call (e.g. `StringBuilder.append`) resolves unambiguously.
+                if (parentValue instanceof MethodCall && typeCast.getExpression() instanceof J.MethodInvocation) {
+                    JavaType.Method invokedMethod = ((J.MethodInvocation) typeCast.getExpression()).getMethodType();
+                    if (invokedMethod != null && invokedMethod.getDeclaringType() != null) {
+                        for (JavaType.Method declared : invokedMethod.getDeclaringType().getMethods()) {
+                            if (declared.getName().equals(invokedMethod.getName()) &&
+                                    declared.getParameterTypes().size() == invokedMethod.getParameterTypes().size() &&
+                                    declared.getReturnType() instanceof JavaType.GenericTypeVariable &&
+                                    declared.getDeclaredFormalTypeNames().contains(
+                                            ((JavaType.GenericTypeVariable) declared.getReturnType()).getName())) {
+                                JavaType.Method parentMethodType = ((MethodCall) parentValue).getMethodType();
+                                if (parentMethodType == null || hasMethodOverloading(parentMethodType)) {
+                                    return visited;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
