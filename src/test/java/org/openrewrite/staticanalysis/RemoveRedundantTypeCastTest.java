@@ -725,4 +725,28 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotRemoveObjectCastOnGenericMethodCallWithOverloads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Holder {
+                  <T> T getValue() {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  String render(Holder h) {
+                      StringBuilder sb = new StringBuilder();
+                      sb.append((Object) h.getValue());
+                      return sb.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
 }

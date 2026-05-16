@@ -81,6 +81,16 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType expressionType = visitedTypeCast.getExpression().getType();
                 JavaType castType = visitedTypeCast.getType();
 
+                // A cast on a generic method invocation pins the inferred return type so
+                // an overloaded outer call (e.g. `StringBuilder.append`) resolves unambiguously.
+                if (parentValue instanceof MethodCall) {
+                    JavaType.Method parentMethodType = ((MethodCall) parentValue).getMethodType();
+                    if ((parentMethodType == null || hasMethodOverloading(parentMethodType)) &&
+                            returnsDeclaredTypeParameter(typeCast.getExpression())) {
+                        return visited;
+                    }
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
@@ -152,19 +162,8 @@ public class RemoveRedundantTypeCast extends Recipe {
 
                 // A cast inside a lambda body may pin the inferred return type of a generic method call
                 // so outer inference (e.g. Optional.map -> ifPresent) doesn't lose it to the type bound.
-                if (parentValue instanceof J.Lambda && typeCast.getExpression() instanceof J.MethodInvocation) {
-                    JavaType.Method invokedMethod = ((J.MethodInvocation) typeCast.getExpression()).getMethodType();
-                    if (invokedMethod != null && invokedMethod.getDeclaringType() != null) {
-                        for (JavaType.Method declared : invokedMethod.getDeclaringType().getMethods()) {
-                            if (declared.getName().equals(invokedMethod.getName()) &&
-                                    declared.getParameterTypes().size() == invokedMethod.getParameterTypes().size() &&
-                                    declared.getReturnType() instanceof JavaType.GenericTypeVariable &&
-                                    declared.getDeclaredFormalTypeNames().contains(
-                                            ((JavaType.GenericTypeVariable) declared.getReturnType()).getName())) {
-                                return visitedTypeCast;
-                            }
-                        }
-                    }
+                if (parentValue instanceof J.Lambda && returnsDeclaredTypeParameter(typeCast.getExpression())) {
+                    return visitedTypeCast;
                 }
 
                 if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
@@ -190,6 +189,26 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return parentheses.getTree().withPrefix(parentheses.getPrefix());
                 }
                 return parentheses;
+            }
+
+            private boolean returnsDeclaredTypeParameter(Expression expression) {
+                if (!(expression instanceof J.MethodInvocation)) {
+                    return false;
+                }
+                JavaType.Method invokedMethod = ((J.MethodInvocation) expression).getMethodType();
+                if (invokedMethod == null || invokedMethod.getDeclaringType() == null) {
+                    return false;
+                }
+                for (JavaType.Method declared : invokedMethod.getDeclaringType().getMethods()) {
+                    if (declared.getName().equals(invokedMethod.getName()) &&
+                            declared.getParameterTypes().size() == invokedMethod.getParameterTypes().size() &&
+                            declared.getReturnType() instanceof JavaType.GenericTypeVariable &&
+                            declared.getDeclaredFormalTypeNames().contains(
+                                    ((JavaType.GenericTypeVariable) declared.getReturnType()).getName())) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private JavaType getParameterType(JavaType.Method method, int arg) {
