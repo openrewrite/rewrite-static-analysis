@@ -97,8 +97,8 @@ class SimplifyConsecutiveAssignmentsTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/881")
+    @Test
     void doNotInlineWhenInitializerWouldBeSelfReferential() {
         rewriteRun(
           //language=java

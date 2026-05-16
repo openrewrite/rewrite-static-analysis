@@ -62,7 +62,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
             J.Lambda after = l.withParameters(
                     l.getParameters().withParameters(
-                            ListUtils.map(l.getParameters().getParameters(), (parameter) -> {
+                            ListUtils.map(l.getParameters().getParameters(), parameter -> {
                                 if (parameter instanceof J.VariableDeclarations) {
                                     return maybeAddTypeExpression((J.VariableDeclarations) parameter);
                                 }

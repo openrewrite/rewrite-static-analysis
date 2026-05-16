@@ -147,7 +147,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             public @Nullable J visitMultiCatch(J.MultiCatch multiCatch, ExecutionContext ctx) {
                 Cursor parentCursor = getCursor().dropParentUntil(is -> is instanceof J.Try.Catch || is instanceof J.Try);
                 if (removeCatches != null && parentCursor.getValue() instanceof J.Try.Catch) {
-                    if (removeCatches.contains((J.Try.Catch) parentCursor.getValue())) {
+                    if (removeCatches.contains(parentCursor.getValue())) {
                         return null;
                     }
                 }
@@ -287,7 +287,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
             private final boolean compareMethodArguments = false;
 
             private boolean nullMissMatch(Object obj1, Object obj2) {
-                return (obj1 == null && obj2 != null || obj1 != null && obj2 == null);
+                return obj1 == null && obj2 != null || obj1 != null && obj2 == null;
             }
 
             private boolean doesNotContainSameComments(Space space1, Space space2) {

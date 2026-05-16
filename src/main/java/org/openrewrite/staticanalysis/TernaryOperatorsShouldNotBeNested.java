@@ -218,7 +218,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         private J.Case toCase(final J.Identifier switchVar, final J.Ternary ternary) {
             Expression compare;
             if (ternary.getCondition() instanceof J.MethodInvocation) {
-                J.MethodInvocation inv = ((J.MethodInvocation) ternary.getCondition());
+                J.MethodInvocation inv = (J.MethodInvocation) ternary.getCondition();
                 if (isObjectsEquals(inv)) {
                     maybeRemoveImport("java.util.Objects");
                     compare = isVariable(inv.getArguments().get(0)) ?
@@ -230,7 +230,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             inv.getSelect();
                 }
             } else if (isEqualsBinary(ternary.getCondition())) {
-                J.Binary bin = ((J.Binary) ternary.getCondition());
+                J.Binary bin = (J.Binary) ternary.getCondition();
                 compare = isEqualVariable(switchVar, bin.getLeft()) ?
                         bin.getRight() :
                         bin.getLeft();

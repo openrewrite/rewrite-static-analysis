@@ -117,7 +117,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             continue;
                         }
                         J.Literal replaceLiteral = duplicateLiterals.get(0).withId(randomId());
-                        String modifiers = (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Interface) ? "" : "private static final ";
+                        String modifiers = classDecl.getKind() == J.ClassDeclaration.Kind.Type.Interface ? "" : "private static final ";
                         JavaTemplate template = JavaTemplate.builder(modifiers + "String " + variableName + " = #{any(String)};").build();
                         if (classDecl.getKind() == J.ClassDeclaration.Kind.Type.Enum) {
                             J.Block applied = template
@@ -220,7 +220,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
                             !(privateStaticFinalVariable && ((J.Literal) v.getInitializer()).getValue() instanceof String) &&
                             !(((J.Literal) v.getInitializer()).getValue() == null)) {
-                        String value = (((J.Literal) v.getInitializer()).getValue()).toString();
+                        String value = ((J.Literal) v.getInitializer()).getValue().toString();
                         result.existingFieldValueToFieldName.put(v.getSimpleName(), value);
                     }
                     if (parentScope.getValue() instanceof J.ClassDeclaration &&
@@ -253,7 +253,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                              parent.getValue() instanceof J.NewClass ||
                              parent.getValue() instanceof J.MethodInvocation) {
 
-                            result.duplicateLiterals.computeIfAbsent(((String) literal.getValue()), k -> new ArrayList<>(1)).add(literal);
+                            result.duplicateLiterals.computeIfAbsent((String) literal.getValue(), k -> new ArrayList<>(1)).add(literal);
                         }
                     }
                     return literal;

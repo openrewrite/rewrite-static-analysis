@@ -30,7 +30,7 @@ public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
     private static final boolean IS_CSHARP_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.csharp.tree.Cs");
 
     public static boolean isCSharpTree(Cursor cursor) {
-        return IS_CSHARP_AVAILABLE && cursor.getPath(is -> is instanceof Cs).hasNext();
+        return IS_CSHARP_AVAILABLE && cursor.getPath(Cs.class::isInstance).hasNext();
     }
 
     public static boolean isInstanceOfCs(@Nullable Tree tree) {

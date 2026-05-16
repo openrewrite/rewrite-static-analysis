@@ -76,7 +76,7 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
         }
 
         // Spring @Configuration classes (including meta-annotated ones like @TestConfiguration / @SpringBootApplication) are proxied at runtime and must not be final
-        if (cd.getLeadingAnnotations().stream().anyMatch(a -> CONFIGURATION_ANNOTATION.matches(a))) {
+        if (cd.getLeadingAnnotations().stream().anyMatch(CONFIGURATION_ANNOTATION::matches)) {
             return cd;
         }
 

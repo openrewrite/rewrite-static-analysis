@@ -58,7 +58,7 @@ public class ReorderAnnotationAttributes extends Recipe {
 
             List<Expression> arguments = a.getArguments();
             if (arguments == null || arguments.size() <= 1 ||
-                    !arguments.stream().allMatch(e -> e instanceof J.Assignment)) {
+                    !arguments.stream().allMatch(J.Assignment.class::isInstance)) {
                 return a;
             }
 

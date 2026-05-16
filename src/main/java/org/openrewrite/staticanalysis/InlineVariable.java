@@ -124,12 +124,12 @@ public class InlineVariable extends Recipe {
                     Expression expression = return_.getExpression();
                     if (expression instanceof J.Identifier &&
                             !(expression.getType() instanceof JavaType.Array)) {
-                        return ((J.Identifier) expression);
+                        return (J.Identifier) expression;
                     }
                 } else if (lastStatement instanceof J.Throw) {
                     J.Throw thr = (J.Throw) lastStatement;
                     if (thr.getException() instanceof J.Identifier) {
-                        return ((J.Identifier) thr.getException());
+                        return (J.Identifier) thr.getException();
                     }
                 }
                 return null;

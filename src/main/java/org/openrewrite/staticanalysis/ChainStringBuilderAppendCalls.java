@@ -145,7 +145,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
         Expression expression = null;
         for (Expression element : expressions) {
             if (element != null) {
-                expression = (expression == null) ? element : concatAdditionBinary(expression, element);
+                expression = expression == null ? element : concatAdditionBinary(expression, element);
             }
         }
         return expression;
