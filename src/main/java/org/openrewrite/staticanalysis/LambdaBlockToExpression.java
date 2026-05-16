@@ -96,9 +96,7 @@ public class LambdaBlockToExpression extends Recipe {
         int numberOfParameters = methodType.getParameterNames().size();
         return Optional.of(methodType)
                 .map(JavaType.Method::getDeclaringType)
-                .filter(JavaType.Class.class::isInstance)
-                .map(JavaType.Class.class::cast)
-                .map(JavaType.Class::getMethods)
+                .map(JavaType.FullyQualified::getMethods)
                 .map(methods -> {
                     int overloadingCount = 0;
                     for (JavaType.Method dm : methods) {

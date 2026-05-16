@@ -308,6 +308,28 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
     }
 
     @Test
+    void doNotRemoveNullCastWithAmbiguousOverloads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Provider<T> {
+              }
+              interface Property<T> extends Provider<T> {
+                  void set(T value);
+                  void set(Provider<? extends T> provider);
+              }
+              class Test {
+                  void foo(Property<Integer> property) {
+                      property.set((Integer) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotRemoveNullCastInVarargsPosition() {
         rewriteRun(
           //language=java
