@@ -216,50 +216,24 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
 
             private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
-                if (type == null || type instanceof JavaType.Unknown) {
+                JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
+                if (fq == null) {
                     return null;
                 }
-                if (type instanceof JavaType.Primitive) {
-                    return new J.Primitive(Tree.randomId(), space, Markers.EMPTY, (JavaType.Primitive) type);
-                }
-                if (type instanceof JavaType.GenericTypeVariable) {
-                    JavaType.GenericTypeVariable g = (JavaType.GenericTypeVariable) type;
-                    if (!"?".equals(g.getName())) {
-                        return new J.Identifier(Tree.randomId(), space, Markers.EMPTY, emptyList(), g.getName(), type, null);
-                    }
-                    JLeftPadded<J.Wildcard.Bound> bound = null;
-                    NameTree boundedType = null;
-                    if (g.getVariance() == JavaType.GenericTypeVariable.Variance.COVARIANT) {
-                        bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Extends, Markers.EMPTY);
-                    } else if (g.getVariance() == JavaType.GenericTypeVariable.Variance.CONTRAVARIANT) {
-                        bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Super, Markers.EMPTY);
-                    }
-                    if (!g.getBounds().isEmpty()) {
-                        boundedType = buildTypeTree(g.getBounds().get(0), Space.format(" "));
-                        if (boundedType == null) {
-                            return null;
-                        }
-                    }
-                    return new J.Wildcard(Tree.randomId(), space, Markers.EMPTY, bound, boundedType);
-                }
-                if (type instanceof JavaType.FullyQualified) {
-                    JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
-                    J.Identifier identifier = new J.Identifier(Tree.randomId(), space, Markers.EMPTY,
-                            emptyList(), fq.getClassName(),
-                            type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type, null);
-                    if (fq.getTypeParameters().isEmpty()) {
-                        maybeAddImport(fq);
-                        return identifier;
-                    }
-                    JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters());
-                    if (typeParameters == null) {
-                        return null;
-                    }
+                J.Identifier identifier = new J.Identifier(Tree.randomId(), space, Markers.EMPTY,
+                        emptyList(), fq.getClassName(),
+                        type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type, null);
+                if (fq.getTypeParameters().isEmpty()) {
                     maybeAddImport(fq);
-                    return new J.ParameterizedType(Tree.randomId(), space, Markers.EMPTY, identifier, typeParameters,
-                            new JavaType.Parameterized(null, fq, fq.getTypeParameters()));
+                    return identifier;
                 }
-                return null;
+                JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters());
+                if (typeParameters == null) {
+                    return null;
+                }
+                maybeAddImport(fq);
+                return new J.ParameterizedType(Tree.randomId(), space, Markers.EMPTY, identifier, typeParameters,
+                        new JavaType.Parameterized(null, fq, fq.getTypeParameters()));
             }
 
             private boolean methodArgumentRequiresCast(J.Lambda lambda, MethodCall method, int argumentIndex) {

@@ -185,6 +185,42 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/892")
+    @Test
+    void diamondOperatorWithMultipleTypeParameters() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface A<T, R> { R run(T t); }
+                  interface B<T, R> { R run(T t); }
+                  static <T, R> R x(A<T, R> a, T arg) { return a.run(arg); }
+                  static <T, R> R x(B<T, R> b, T arg) { return b.run(arg); }
+                  void test() {
+                      x(new A<>() {
+                          @Override public String run(Integer t) {
+                              return t.toString();
+                          }
+                      }, 1);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface A<T, R> { R run(T t); }
+                  interface B<T, R> { R run(T t); }
+                  static <T, R> R x(A<T, R> a, T arg) { return a.run(arg); }
+                  static <T, R> R x(B<T, R> b, T arg) { return b.run(arg); }
+                  void test() {
+                      x((A<Integer, Object>) t -> t.toString(), 1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     @Test
     void usedAsStatementWithNonInferrableType() {
