@@ -206,7 +206,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 List<JRightPadded<Expression>> expressions = new ArrayList<>(typeParameters.size());
                 for (JavaType t : typeParameters) {
-                    TypeTree tree = buildTypeTree(t, Space.EMPTY);
+                    TypeTree tree = buildTypeTree(t);
                     if (tree == null) {
                         return null;
                     }
@@ -215,25 +215,26 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return JContainer.build(Space.EMPTY, expressions, Markers.EMPTY);
             }
 
-            private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
+            private @Nullable TypeTree buildTypeTree(@Nullable JavaType type) {
                 JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
                 if (fq == null) {
                     return null;
                 }
-                J.Identifier identifier = new J.Identifier(Tree.randomId(), space, Markers.EMPTY,
+                List<JavaType> fqTypeParameters = fq.getTypeParameters();
+                J.Identifier identifier = new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY,
                         emptyList(), fq.getClassName(),
                         type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type, null);
-                if (fq.getTypeParameters().isEmpty()) {
+                if (fqTypeParameters.isEmpty()) {
                     maybeAddImport(fq);
                     return identifier;
                 }
-                JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters());
+                JContainer<Expression> typeParameters = buildTypeParameters(fqTypeParameters);
                 if (typeParameters == null) {
                     return null;
                 }
                 maybeAddImport(fq);
-                return new J.ParameterizedType(Tree.randomId(), space, Markers.EMPTY, identifier, typeParameters,
-                        new JavaType.Parameterized(null, fq, fq.getTypeParameters()));
+                return new J.ParameterizedType(Tree.randomId(), Space.EMPTY, Markers.EMPTY, identifier, typeParameters,
+                        new JavaType.Parameterized(null, fq, fqTypeParameters));
             }
 
             private boolean methodArgumentRequiresCast(J.Lambda lambda, MethodCall method, int argumentIndex) {
