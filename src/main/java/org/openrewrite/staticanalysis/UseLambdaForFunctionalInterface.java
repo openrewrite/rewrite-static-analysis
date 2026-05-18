@@ -164,6 +164,16 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         Expression argument = arguments.get(i);
                         if (argument == original && methodArgumentRequiresCast(lambda, method, i) &&
                             original.getClazz() != null) {
+                            TypeTree castType = original.getClazz();
+                            // The diamond operator is only valid after `new` (JLS 15.9), not in a cast (JLS 15.16),
+                            // so strip it to produce a raw type cast.
+                            if (castType instanceof J.ParameterizedType) {
+                                J.ParameterizedType pt = (J.ParameterizedType) castType;
+                                List<Expression> typeParams = pt.getTypeParameters();
+                                if (typeParams != null && typeParams.size() == 1 && typeParams.get(0) instanceof J.Empty) {
+                                    castType = (TypeTree) pt.getClazz();
+                                }
+                            }
                             return new J.TypeCast(
                                     Tree.randomId(),
                                     lambda.getPrefix(),
@@ -172,7 +182,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                                             Tree.randomId(),
                                             Space.EMPTY,
                                             Markers.EMPTY,
-                                            JRightPadded.build(original.getClazz())
+                                            JRightPadded.build(castType)
                                     ),
                                     lambda.withPrefix(Space.format(" "))
                             );

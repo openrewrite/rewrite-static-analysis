@@ -150,6 +150,41 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/892")
+    @SuppressWarnings("removal")
+    @Test
+    void diamondOperatorInAnonymousClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.security.AccessController;
+              import java.security.PrivilegedAction;
+
+              class Test {
+                  void test() {
+                      AccessController.doPrivileged(new PrivilegedAction<>() {
+                          @Override public Integer run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              import java.security.AccessController;
+              import java.security.PrivilegedAction;
+
+              class Test {
+                  void test() {
+                      AccessController.doPrivileged((PrivilegedAction) () -> 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     @Test
     void usedAsStatementWithNonInferrableType() {
