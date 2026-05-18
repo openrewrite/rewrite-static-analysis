@@ -67,32 +67,22 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 // needs an explicit target type (JLS 14.4.1, 15.27.1). If we are about to convert the
                 // initializer to a lambda, replace `var` with the anonymous class's interface type.
                 TypeTree replacementType = null;
-                if (isVarType(multiVariable)) {
-                    Expression initializer = multiVariable.getVariables().get(0).getInitializer();
-                    if (initializer instanceof J.NewClass && ((J.NewClass) initializer).getClazz() != null) {
-                        replacementType = ((J.NewClass) initializer).getClazz();
+                TypeTree typeExpression = multiVariable.getTypeExpression();
+                if (typeExpression != null && typeExpression.getMarkers().findFirst(JavaVarKeyword.class).isPresent() &&
+                    multiVariable.getVariables().size() == 1 &&
+                    multiVariable.getVariables().get(0).getInitializer() instanceof J.NewClass) {
+                    J.NewClass nc = (J.NewClass) multiVariable.getVariables().get(0).getInitializer();
+                    if (nc.getClazz() != null) {
+                        replacementType = nc.getClazz();
                     }
                 }
                 J.VariableDeclarations result = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, ctx);
-                if (replacementType != null && result.getVariables().get(0).getInitializer() instanceof J.Lambda) {
-                    J.Lambda lambda = (J.Lambda) result.getVariables().get(0).getInitializer();
-                    if (replacementType instanceof J.ParameterizedType && hasDiamond((J.ParameterizedType) replacementType)) {
-                        J.ParameterizedType pt = (J.ParameterizedType) replacementType;
-                        JavaType lambdaType = lambda.getType();
-                        JContainer<Expression> resolved = lambdaType instanceof JavaType.Parameterized ?
-                                buildTypeParameters(((JavaType.Parameterized) lambdaType).getTypeParameters()) :
-                                null;
-                        replacementType = resolved != null ? pt.withTypeParameters(resolved.getElements()) : (TypeTree) pt.getClazz();
-                    }
-                    result = result.withTypeExpression(replacementType.withPrefix(multiVariable.getTypeExpression().getPrefix()));
+                Expression newInitializer = result.getVariables().get(0).getInitializer();
+                if (replacementType != null && newInitializer instanceof J.Lambda) {
+                    replacementType = resolveDiamond(replacementType, (J.Lambda) newInitializer);
+                    result = result.withTypeExpression(replacementType.withPrefix(typeExpression.getPrefix()));
                 }
                 return result;
-            }
-
-            private boolean isVarType(J.VariableDeclarations multiVariable) {
-                return multiVariable.getTypeExpression() instanceof J.Identifier &&
-                        "var".equals(((J.Identifier) multiVariable.getTypeExpression()).getSimpleName()) &&
-                        multiVariable.getVariables().size() == 1;
             }
 
             @Override
@@ -201,15 +191,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                             original.getClazz() != null) {
                             // The diamond operator is valid after `new` (JLS 15.9) but not in a cast (JLS 15.16),
                             // so rebuild the type with the resolved interface's type arguments.
-                            TypeTree castType = original.getClazz();
-                            if (castType instanceof J.ParameterizedType && hasDiamond((J.ParameterizedType) castType)) {
-                                J.ParameterizedType pt = (J.ParameterizedType) castType;
-                                JavaType lambdaType = lambda.getType();
-                                JContainer<Expression> resolved = lambdaType instanceof JavaType.Parameterized ?
-                                        buildTypeParameters(((JavaType.Parameterized) lambdaType).getTypeParameters()) :
-                                        null;
-                                castType = resolved != null ? pt.withTypeParameters(resolved.getElements()) : (TypeTree) pt.getClazz();
-                            }
+                            TypeTree castType = resolveDiamond(original.getClazz(), lambda);
                             return new J.TypeCast(
                                     Tree.randomId(),
                                     lambda.getPrefix(),
@@ -227,6 +209,18 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
 
                 return lambda;
+            }
+
+            private TypeTree resolveDiamond(TypeTree type, J.Lambda lambda) {
+                if (!(type instanceof J.ParameterizedType) || !hasDiamond((J.ParameterizedType) type)) {
+                    return type;
+                }
+                J.ParameterizedType pt = (J.ParameterizedType) type;
+                JavaType lambdaType = lambda.getType();
+                JContainer<Expression> resolved = lambdaType instanceof JavaType.Parameterized ?
+                        buildTypeParameters(((JavaType.Parameterized) lambdaType).getTypeParameters()) :
+                        null;
+                return resolved != null ? pt.withTypeParameters(resolved.getElements()) : (TypeTree) pt.getClazz();
             }
 
             private boolean hasDiamond(J.ParameterizedType pt) {
