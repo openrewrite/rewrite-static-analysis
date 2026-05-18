@@ -204,13 +204,13 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 if (typeParameters == null || typeParameters.isEmpty()) {
                     return null;
                 }
-                List<JRightPadded<Expression>> expressions = new ArrayList<>();
+                List<JRightPadded<Expression>> expressions = new ArrayList<>(typeParameters.size());
                 for (JavaType t : typeParameters) {
                     TypeTree tree = buildTypeTree(t, Space.EMPTY);
                     if (tree == null) {
                         return null;
                     }
-                    expressions.add(new JRightPadded<>((Expression) tree, Space.EMPTY, Markers.EMPTY));
+                    expressions.add(JRightPadded.build((Expression) tree));
                 }
                 return JContainer.build(Space.EMPTY, expressions, Markers.EMPTY);
             }
