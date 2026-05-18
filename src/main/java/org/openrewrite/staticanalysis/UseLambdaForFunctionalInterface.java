@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -164,20 +165,16 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         Expression argument = arguments.get(i);
                         if (argument == original && methodArgumentRequiresCast(lambda, method, i) &&
                             original.getClazz() != null) {
+                            // The diamond operator is valid after `new` (JLS 15.9) but not in a cast (JLS 15.16),
+                            // so rebuild the type with the resolved interface's type arguments.
                             TypeTree castType = original.getClazz();
-                            // The diamond operator is only valid after `new` (JLS 15.9), not in a cast (JLS 15.16).
-                            // Replace the diamond with the inferred type arguments from the resolved interface;
-                            // fall back to a raw type cast if reconstruction fails.
-                            if (castType instanceof J.ParameterizedType) {
+                            if (castType instanceof J.ParameterizedType && hasDiamond((J.ParameterizedType) castType)) {
                                 J.ParameterizedType pt = (J.ParameterizedType) castType;
-                                List<Expression> typeParams = pt.getTypeParameters();
-                                if (typeParams != null && typeParams.size() == 1 && typeParams.get(0) instanceof J.Empty) {
-                                    JContainer<Expression> resolved = buildTypeParameters(
-                                            lambda.getType() instanceof JavaType.Parameterized ?
-                                                    ((JavaType.Parameterized) lambda.getType()).getTypeParameters() :
-                                                    null);
-                                    castType = resolved != null ? pt.withTypeParameters(resolved.getElements()) : (TypeTree) pt.getClazz();
-                                }
+                                JavaType lambdaType = lambda.getType();
+                                JContainer<Expression> resolved = lambdaType instanceof JavaType.Parameterized ?
+                                        buildTypeParameters(((JavaType.Parameterized) lambdaType).getTypeParameters()) :
+                                        null;
+                                castType = resolved != null ? pt.withTypeParameters(resolved.getElements()) : (TypeTree) pt.getClazz();
                             }
                             return new J.TypeCast(
                                     Tree.randomId(),
@@ -196,6 +193,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
 
                 return lambda;
+            }
+
+            private boolean hasDiamond(J.ParameterizedType pt) {
+                List<Expression> typeParams = pt.getTypeParameters();
+                return typeParams != null && typeParams.size() == 1 && typeParams.get(0) instanceof J.Empty;
             }
 
             private @Nullable JContainer<Expression> buildTypeParameters(@Nullable List<JavaType> typeParameters) {
@@ -223,7 +225,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 if (type instanceof JavaType.GenericTypeVariable) {
                     JavaType.GenericTypeVariable g = (JavaType.GenericTypeVariable) type;
                     if (!"?".equals(g.getName())) {
-                        return new J.Identifier(Tree.randomId(), space, Markers.EMPTY, java.util.Collections.emptyList(), g.getName(), type, null);
+                        return new J.Identifier(Tree.randomId(), space, Markers.EMPTY, emptyList(), g.getName(), type, null);
                     }
                     JLeftPadded<J.Wildcard.Bound> bound = null;
                     NameTree boundedType = null;
@@ -243,7 +245,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 if (type instanceof JavaType.FullyQualified) {
                     JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
                     J.Identifier identifier = new J.Identifier(Tree.randomId(), space, Markers.EMPTY,
-                            java.util.Collections.emptyList(), fq.getClassName(),
+                            emptyList(), fq.getClassName(),
                             type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type, null);
                     if (fq.getTypeParameters().isEmpty()) {
                         maybeAddImport(fq);
