@@ -221,6 +221,80 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/895")
+    @Test
+    void varLocalVariableReplacedWithInterfaceType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface Action {
+                      String run(String input);
+                  }
+
+                  void execute() {
+                      final var action = new Action() {
+                          @Override
+                          public String run(String input) {
+                              return input.toUpperCase();
+                          }
+                      };
+                      action.run("hello");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface Action {
+                      String run(String input);
+                  }
+
+                  void execute() {
+                      final Action action = input -> input.toUpperCase();
+                      action.run("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/895")
+    @Test
+    void varLocalVariableWithDiamondReplacedWithResolvedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  void execute() {
+                      var f = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String s) {
+                              return s.length();
+                          }
+                      };
+                      f.apply("hello");
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  void execute() {
+                      Function<String, Integer> f = s -> s.length();
+                      f.apply("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     @Test
     void usedAsStatementWithNonInferrableType() {

@@ -62,6 +62,40 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
 
             @Override
+            public J visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                // `var` borrows its type from the right-hand side, but a lambda is a poly expression that
+                // needs an explicit target type (JLS 14.4.1, 15.27.1). If we are about to convert the
+                // initializer to a lambda, replace `var` with the anonymous class's interface type.
+                TypeTree replacementType = null;
+                if (isVarType(multiVariable)) {
+                    Expression initializer = multiVariable.getVariables().get(0).getInitializer();
+                    if (initializer instanceof J.NewClass && ((J.NewClass) initializer).getClazz() != null) {
+                        replacementType = ((J.NewClass) initializer).getClazz();
+                    }
+                }
+                J.VariableDeclarations result = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, ctx);
+                if (replacementType != null && result.getVariables().get(0).getInitializer() instanceof J.Lambda) {
+                    J.Lambda lambda = (J.Lambda) result.getVariables().get(0).getInitializer();
+                    if (replacementType instanceof J.ParameterizedType && hasDiamond((J.ParameterizedType) replacementType)) {
+                        J.ParameterizedType pt = (J.ParameterizedType) replacementType;
+                        JavaType lambdaType = lambda.getType();
+                        JContainer<Expression> resolved = lambdaType instanceof JavaType.Parameterized ?
+                                buildTypeParameters(((JavaType.Parameterized) lambdaType).getTypeParameters()) :
+                                null;
+                        replacementType = resolved != null ? pt.withTypeParameters(resolved.getElements()) : (TypeTree) pt.getClazz();
+                    }
+                    result = result.withTypeExpression(replacementType.withPrefix(multiVariable.getTypeExpression().getPrefix()));
+                }
+                return result;
+            }
+
+            private boolean isVarType(J.VariableDeclarations multiVariable) {
+                return multiVariable.getTypeExpression() instanceof J.Identifier &&
+                        "var".equals(((J.Identifier) multiVariable.getTypeExpression()).getSimpleName()) &&
+                        multiVariable.getVariables().size() == 1;
+            }
+
+            @Override
             public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 // Check if this anonymous class should be converted to a lambda.
                 // We must determine this BEFORE calling super.visitNewClass() to avoid
