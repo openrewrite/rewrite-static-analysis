@@ -177,7 +177,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
               class Test {
                   void test() {
-                      AccessController.doPrivileged((PrivilegedAction) () -> 0);
+                      AccessController.doPrivileged((PrivilegedAction<Object>) () -> 0);
                   }
               }
               """

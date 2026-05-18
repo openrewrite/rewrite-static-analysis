@@ -165,13 +165,18 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                         if (argument == original && methodArgumentRequiresCast(lambda, method, i) &&
                             original.getClazz() != null) {
                             TypeTree castType = original.getClazz();
-                            // The diamond operator is only valid after `new` (JLS 15.9), not in a cast (JLS 15.16),
-                            // so strip it to produce a raw type cast.
+                            // The diamond operator is only valid after `new` (JLS 15.9), not in a cast (JLS 15.16).
+                            // Replace the diamond with the inferred type arguments from the resolved interface;
+                            // fall back to a raw type cast if reconstruction fails.
                             if (castType instanceof J.ParameterizedType) {
                                 J.ParameterizedType pt = (J.ParameterizedType) castType;
                                 List<Expression> typeParams = pt.getTypeParameters();
                                 if (typeParams != null && typeParams.size() == 1 && typeParams.get(0) instanceof J.Empty) {
-                                    castType = (TypeTree) pt.getClazz();
+                                    JContainer<Expression> resolved = buildTypeParameters(
+                                            lambda.getType() instanceof JavaType.Parameterized ?
+                                                    ((JavaType.Parameterized) lambda.getType()).getTypeParameters() :
+                                                    null);
+                                    castType = resolved != null ? pt.withTypeParameters(resolved.getElements()) : (TypeTree) pt.getClazz();
                                 }
                             }
                             return new J.TypeCast(
@@ -191,6 +196,68 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
 
                 return lambda;
+            }
+
+            private @Nullable JContainer<Expression> buildTypeParameters(@Nullable List<JavaType> typeParameters) {
+                if (typeParameters == null || typeParameters.isEmpty()) {
+                    return null;
+                }
+                List<JRightPadded<Expression>> expressions = new ArrayList<>();
+                for (JavaType t : typeParameters) {
+                    TypeTree tree = buildTypeTree(t, Space.EMPTY);
+                    if (tree == null) {
+                        return null;
+                    }
+                    expressions.add(new JRightPadded<>((Expression) tree, Space.EMPTY, Markers.EMPTY));
+                }
+                return JContainer.build(Space.EMPTY, expressions, Markers.EMPTY);
+            }
+
+            private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
+                if (type == null || type instanceof JavaType.Unknown) {
+                    return null;
+                }
+                if (type instanceof JavaType.Primitive) {
+                    return new J.Primitive(Tree.randomId(), space, Markers.EMPTY, (JavaType.Primitive) type);
+                }
+                if (type instanceof JavaType.GenericTypeVariable) {
+                    JavaType.GenericTypeVariable g = (JavaType.GenericTypeVariable) type;
+                    if (!"?".equals(g.getName())) {
+                        return new J.Identifier(Tree.randomId(), space, Markers.EMPTY, java.util.Collections.emptyList(), g.getName(), type, null);
+                    }
+                    JLeftPadded<J.Wildcard.Bound> bound = null;
+                    NameTree boundedType = null;
+                    if (g.getVariance() == JavaType.GenericTypeVariable.Variance.COVARIANT) {
+                        bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Extends, Markers.EMPTY);
+                    } else if (g.getVariance() == JavaType.GenericTypeVariable.Variance.CONTRAVARIANT) {
+                        bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Super, Markers.EMPTY);
+                    }
+                    if (!g.getBounds().isEmpty()) {
+                        boundedType = buildTypeTree(g.getBounds().get(0), Space.format(" "));
+                        if (boundedType == null) {
+                            return null;
+                        }
+                    }
+                    return new J.Wildcard(Tree.randomId(), space, Markers.EMPTY, bound, boundedType);
+                }
+                if (type instanceof JavaType.FullyQualified) {
+                    JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
+                    J.Identifier identifier = new J.Identifier(Tree.randomId(), space, Markers.EMPTY,
+                            java.util.Collections.emptyList(), fq.getClassName(),
+                            type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type, null);
+                    if (fq.getTypeParameters().isEmpty()) {
+                        maybeAddImport(fq);
+                        return identifier;
+                    }
+                    JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters());
+                    if (typeParameters == null) {
+                        return null;
+                    }
+                    maybeAddImport(fq);
+                    return new J.ParameterizedType(Tree.randomId(), space, Markers.EMPTY, identifier, typeParameters,
+                            new JavaType.Parameterized(null, fq, fq.getTypeParameters()));
+                }
+                return null;
             }
 
             private boolean methodArgumentRequiresCast(J.Lambda lambda, MethodCall method, int argumentIndex) {
