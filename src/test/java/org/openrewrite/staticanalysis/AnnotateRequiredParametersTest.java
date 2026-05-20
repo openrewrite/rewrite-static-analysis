@@ -454,8 +454,9 @@ class AnnotateRequiredParametersTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite/issues/7741")
     @Test
-    void removeNullableAnnotationWhenAddingNonNull() {
+    void preserveNullableAnnotationAndNullCheck() {
         rewriteRun(
           //language=java
           java(
@@ -465,17 +466,8 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(@Nullable String value) {
                       if (value == null) {
-                          throw new IllegalArgumentException();
+                          throw new IllegalArgumentException("my concrete business exception");
                       }
-                      System.out.println(value);
-                  }
-              }
-              """,
-            """
-              import org.jspecify.annotations.NonNull;
-
-              class Test {
-                  public void process(@NonNull String value) {
                       System.out.println(value);
                   }
               }

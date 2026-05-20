@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Comparator.comparing;
 
@@ -145,16 +146,32 @@ public class AnnotateRequiredParameters extends Recipe {
     }
 
     /**
-     * Gets all method parameters.
+     * Gets all method parameters, excluding those already annotated with `@Nullable`.
+     * A parameter explicitly marked `@Nullable` signals that the developer intends
+     * to allow nulls; any accompanying null check + throw is therefore intentional
+     * business logic and must not be removed.
      *
      * @param md the method declaration to analyze
-     * @return set of all parameter declarations
+     * @return set of candidate parameter identifiers
      */
     private Set<J.Identifier> getAllParameters(J.MethodDeclaration md) {
         Set<J.Identifier> allParams = new LinkedHashSet<>();
         for (Statement parameter : md.getParameters()) {
             if (parameter instanceof J.VariableDeclarations) {
-                allParams.add(((J.VariableDeclarations) parameter).getVariables().get(0).getName());
+                J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
+                boolean nullable = new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean f) {
+                        if ("Nullable".equals(annotation.getSimpleName())) {
+                            f.set(true);
+                        }
+                        return annotation;
+                    }
+                }.reduce(vd, new AtomicBoolean()).get();
+                if (nullable) {
+                    continue;
+                }
+                allParams.add(vd.getVariables().get(0).getName());
             }
         }
         return allParams;
