@@ -91,21 +91,13 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
                     JavaSourceFile cu = getCursor().firstEnclosingOrThrow(JavaSourceFile.class);
                     for (JavaType.Method usedMethodType : cu.getTypesInUse().getUsedMethods()) {
-                        if (methodType.getName().equals(usedMethodType.getName()) && methodType.equals(usedMethodType)) {
+                        if (referencesMethod(methodType, usedMethodType)) {
                             return m;
                         }
                     }
 
                     for (JavaType javaType : cu.getTypesInUse().getTypesInUse()) {
                         if (TypeUtils.isOfClassType(javaType, "org.junit.jupiter.params.provider.MethodSource")) {
-                            return m;
-                        }
-                    }
-
-                    // Temporary stop-gap until we have data flow analysis.
-                    // Do not remove method declarations with generic types since the method invocation in `cu.getTypesInUse` will be bounded with a type.
-                    for (JavaType.Method usedMethodType : cu.getTypesInUse().getDeclaredMethods()) {
-                        if (methodType.getName().equals(usedMethodType.getName()) && methodType.equals(usedMethodType) && m.toString().contains("Generic{")) {
                             return m;
                         }
                     }
@@ -119,5 +111,32 @@ public class RemoveUnusedPrivateMethods extends Recipe {
             }
         };
         return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
+    }
+
+    private static boolean referencesMethod(JavaType.Method declaration, JavaType.Method used) {
+        if (!declaration.getName().equals(used.getName())) {
+            return false;
+        }
+        if (declaration.equals(used)) {
+            return true;
+        }
+        JavaType.FullyQualified declarationType = TypeUtils.asFullyQualified(declaration.getDeclaringType());
+        JavaType.FullyQualified usedDeclaringType = TypeUtils.asFullyQualified(used.getDeclaringType());
+        if (declarationType == null || usedDeclaringType == null ||
+                !TypeUtils.fullyQualifiedNamesAreEqual(declarationType.getFullyQualifiedName(), usedDeclaringType.getFullyQualifiedName())) {
+            return false;
+        }
+        List<JavaType> declarationParams = declaration.getParameterTypes();
+        List<JavaType> usedParams = used.getParameterTypes();
+        if (declarationParams.size() != usedParams.size()) {
+            return false;
+        }
+        for (int i = 0; i < declarationParams.size(); i++) {
+            if (!TypeUtils.isOfType(declarationParams.get(i), usedParams.get(i)) &&
+                    !TypeUtils.isOfType(usedParams.get(i), declarationParams.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }
