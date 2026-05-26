@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.kotlin.KotlinVisitor;
@@ -100,8 +101,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 }
                 J j = instanceOf.getClazz();
                 if ((j instanceof J.Identifier || j instanceof J.FieldAccess) &&
-                        instanceOf.getExpression() instanceof J.Identifier &&
-                        ((J.Identifier) instanceOf.getExpression()).getFieldType() == lambdaParameters.get(0).getVariableType()) {
+                        SemanticallyEqual.areEqual(instanceOf.getExpression(), lambdaParameters.get(0).getName())) {
                     // Create the class literal directly from the original expression
                     JavaType originalType = ((TypeTree) j).getType();
                     JavaType.Class classType = getClassType(originalType);
