@@ -94,9 +94,14 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
 
             if (body instanceof J.InstanceOf) {
                 J.InstanceOf instanceOf = (J.InstanceOf) body;
+                List<J.VariableDeclarations.NamedVariable> lambdaParameters = getLambdaParameters(lambda);
+                if (lambdaParameters.size() != 1) {
+                    return l;
+                }
                 J j = instanceOf.getClazz();
                 if ((j instanceof J.Identifier || j instanceof J.FieldAccess) &&
-                        instanceOf.getExpression() instanceof J.Identifier) {
+                        instanceOf.getExpression() instanceof J.Identifier &&
+                        ((J.Identifier) instanceOf.getExpression()).getFieldType() == lambdaParameters.get(0).getVariableType()) {
                     // Create the class literal directly from the original expression
                     JavaType originalType = ((TypeTree) j).getType();
                     JavaType.Class classType = getClassType(originalType);

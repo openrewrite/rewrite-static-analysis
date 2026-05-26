@@ -397,6 +397,41 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+    @Test
+    void doNotChangeBiPredicateInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.BiPredicate;
+
+              class Test {
+                  BiPredicate<String, Throwable> pred = (r, t) -> t instanceof IllegalArgumentException;
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+    @Test
+    void doNotChangeInstanceOfOnCapturedVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Predicate;
+
+              class Test {
+                  Object field;
+                  Predicate<String> pred = s -> field instanceof String;
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void nonStaticMethods() {
         rewriteRun(
