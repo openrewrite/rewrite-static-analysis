@@ -91,6 +91,17 @@ public class RemoveRedundantTypeCast extends Recipe {
                     }
                 }
 
+                // When the cast is an argument to an overloaded method, removing it can
+                // make resolution ambiguous (e.g. `log(String, Object...)` vs
+                // `log(String, Throwable)` selected by `(Object) value`). Bail out before
+                // any other branch decides the cast is redundant.
+                if (parentValue instanceof MethodCall) {
+                    JavaType.Method methodType = ((MethodCall) parentValue).getMethodType();
+                    if (methodType == null || hasMethodOverloading(methodType)) {
+                        return visited;
+                    }
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
@@ -99,9 +110,6 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
-                    if (methodType == null || hasMethodOverloading(methodType)) {
-                        return visited;
-                    }
                     if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {

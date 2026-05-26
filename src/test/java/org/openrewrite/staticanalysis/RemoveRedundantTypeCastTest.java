@@ -280,6 +280,26 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/899")
+    @Test
+    void keepObjectCastDisambiguatingVarargsFromThrowableOverload() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void log(String format, Object... args) {}
+                  void log(String format, Throwable t) {}
+
+                  void run(Object value) {
+                      log("value: {}", (Object) value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void varargsCall() {
         rewriteRun(
