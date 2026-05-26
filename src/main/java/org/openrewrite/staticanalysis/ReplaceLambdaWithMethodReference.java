@@ -122,8 +122,8 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
             if (body instanceof J.TypeCast && l.getParameters().getParameters().size() == 1) {
                 J.TypeCast cast = (J.TypeCast) body;
                 J param = l.getParameters().getParameters().get(0);
-                if (cast.getExpression() instanceof J.Identifier && param instanceof J.VariableDeclarations &&
-                        ((J.Identifier) cast.getExpression()).getSimpleName().equals(((J.VariableDeclarations) param).getVariables().get(0).getSimpleName())) {
+                if (param instanceof J.VariableDeclarations &&
+                        SemanticallyEqual.areEqual(cast.getExpression(), ((J.VariableDeclarations) param).getVariables().get(0).getName())) {
                     J.ControlParentheses<TypeTree> j = cast.getClazz();
                     J tree = j.getTree();
                     if ((tree instanceof J.Identifier || tree instanceof J.FieldAccess) &&
@@ -157,8 +157,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         return l;
                     }
                     Expression nonNullSide = isNullCheck(binary.getLeft(), binary.getRight()) ? binary.getLeft() : binary.getRight();
-                    if (!(nonNullSide instanceof J.Identifier) ||
-                            ((J.Identifier) nonNullSide).getFieldType() != lambdaParameters.get(0).getVariableType()) {
+                    if (!SemanticallyEqual.areEqual(nonNullSide, lambdaParameters.get(0).getName())) {
                         return l;
                     }
                     code = J.Binary.Type.Equal == binary.getOperator() ? "java.util.Objects::isNull" :
