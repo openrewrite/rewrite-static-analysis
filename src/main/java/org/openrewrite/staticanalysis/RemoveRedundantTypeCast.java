@@ -102,6 +102,16 @@ public class RemoveRedundantTypeCast extends Recipe {
                     }
                 }
 
+                // A raw cast on a parameterized expression (e.g. `(B) b` where `b` is `B<T>`)
+                // is an intentional unchecked conversion; removing it changes overload and
+                // type-inference behavior on parameterized receivers.
+                JavaType.Parameterized exprParameterized = TypeUtils.asParameterized(expressionType);
+                if (parentValue instanceof MethodCall && exprParameterized != null &&
+                        TypeUtils.asParameterized(castType) == null &&
+                        TypeUtils.isOfClassType(castType, exprParameterized.getType().getFullyQualifiedName())) {
+                    return visited;
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
