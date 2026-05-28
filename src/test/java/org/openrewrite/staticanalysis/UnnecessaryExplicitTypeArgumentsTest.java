@@ -216,6 +216,36 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void retainsWitnessWhenResultIsSelectOfMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class VarDec {
+                  List<String> getVariables() {
+                      return null;
+                  }
+              }
+
+              class Cursor {
+                  <T> T getValue() {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  String test(Cursor c) {
+                      return c.<VarDec>getValue().getVariables().get(0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class StaticMethods {
         static final SourceSpecs GENERIC_CLASS_SOURCE = java(
