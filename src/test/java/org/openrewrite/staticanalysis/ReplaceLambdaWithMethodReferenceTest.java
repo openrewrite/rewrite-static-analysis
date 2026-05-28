@@ -1878,6 +1878,62 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/906")
+    @Test
+    void useReceiverTypeWhenDeclaringTypeIsPackagePrivate() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.helloworld.internal;
+
+              import java.util.Optional;
+
+              abstract class Base {
+                  public Optional<String> getValue() {
+                      return Optional.empty();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.helloworld.internal;
+
+              public class Child extends Base {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.helloworld;
+
+              import com.helloworld.internal.Child;
+              import java.util.Optional;
+
+              public class Main {
+                  String get(final Optional<Child> opt) {
+                      return opt.flatMap(s -> s.getValue()).orElse("");
+                  }
+              }
+              """,
+            """
+              package com.helloworld;
+
+              import com.helloworld.internal.Child;
+              import java.util.Optional;
+
+              public class Main {
+                  String get(final Optional<Child> opt) {
+                      return opt.flatMap(Child::getValue).orElse("");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/20")
     @Test
     void castToTypeParameterInLambda() {
