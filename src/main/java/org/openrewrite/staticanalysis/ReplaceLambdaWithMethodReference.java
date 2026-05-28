@@ -211,7 +211,14 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         if (isLambdaInGenericAndOverloadedContext()) {
                             return l;
                         }
-                        J.MemberReference updated = newStaticMethodReference(methodType, true, lambda.getType()).withPrefix(lambda.getPrefix());
+                        JavaType.FullyQualified containingType = methodType.getDeclaringType();
+                        if (!methodType.hasFlags(Flag.Static) && select != null) {
+                            JavaType.FullyQualified selectType = TypeUtils.asFullyQualified(select.getType());
+                            if (selectType != null) {
+                                containingType = selectType;
+                            }
+                        }
+                        J.MemberReference updated = newInstanceMethodReference(className(containingType, true), methodType, lambda.getType()).withPrefix(lambda.getPrefix());
                         doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(updated));
                         return updated;
                     }
