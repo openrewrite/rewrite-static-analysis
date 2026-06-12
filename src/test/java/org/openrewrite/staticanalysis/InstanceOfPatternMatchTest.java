@@ -2033,4 +2033,56 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Test
+    void castDirectlyAfterThrowKeywordWithoutSpace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class BasisException extends RuntimeException {}
+              class A {
+                  void test(Exception e) {
+                      if (e instanceof BasisException)throw(BasisException)e;
+                  }
+              }
+              """,
+            """
+              class BasisException extends RuntimeException {}
+              class A {
+                  void test(Exception e) {
+                      if (e instanceof BasisException exception)throw exception;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Test
+    void castDirectlyAfterReturnKeywordWithoutSpace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String test(Object o) {
+                      if (o instanceof String)return(String)o;
+                      return "";
+                  }
+              }
+              """,
+            """
+              class A {
+                  String test(Object o) {
+                      if (o instanceof String string)return string;
+                      return "";
+                  }
+              }
+              """
+          )
+        );
+    }
 }

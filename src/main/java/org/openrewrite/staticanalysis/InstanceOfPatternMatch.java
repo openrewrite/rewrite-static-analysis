@@ -459,7 +459,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 JavaType.Variable fieldType = new JavaType.Variable(null, Flag.Default.getBitMask(), name, owner.getType(), typeCast.getType(), emptyList());
                 return new J.Identifier(
                         randomId(),
-                        typeCast.getPrefix(),
+                        keywordSafePrefix(typeCast.getPrefix(), cursor),
                         Markers.EMPTY,
                         emptyList(),
                         name,
@@ -467,6 +467,22 @@ public class InstanceOfPatternMatch extends Recipe {
                         fieldType);
             }
             return null;
+        }
+
+        /**
+         * A cast like {@code throw(Foo)e} starts with {@code (}, so it needs no whitespace separation
+         * from a preceding keyword. Replacing it with an identifier (e.g. {@code exception}) would fuse
+         * the tokens into {@code throwexception}, so ensure a separating space when the replaced
+         * expression directly follows a keyword (such as {@code throw}, {@code return} or {@code yield}).
+         */
+        private Space keywordSafePrefix(Space prefix, Cursor cursor) {
+            if (prefix.getWhitespace().isEmpty() && prefix.getComments().isEmpty()) {
+                Object parent = cursor.getParentTreeCursor().getValue();
+                if (parent instanceof J.Return || parent instanceof J.Throw || parent instanceof J.Yield) {
+                    return Space.SINGLE_SPACE;
+                }
+            }
+            return prefix;
         }
 
         public @Nullable J processVariableDeclarations(J.VariableDeclarations multiVariable) {
@@ -541,7 +557,7 @@ public class InstanceOfPatternMatch extends Recipe {
             if (parens.getTree() instanceof J.TypeCast) {
                 J replacement = replacements.processTypeCast((J.TypeCast) parens.getTree(), getCursor());
                 if (replacement != null) {
-                    return replacement.withPrefix(parens.getPrefix());
+                    return replacement.withPrefix(replacements.keywordSafePrefix(parens.getPrefix(), getCursor()));
                 }
             }
             return super.visitParentheses(parens, p);
