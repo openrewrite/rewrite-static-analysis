@@ -19,9 +19,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.Flag;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
@@ -100,6 +107,53 @@ class UseDiamondOperatorTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+
+    @Test
+    void varArgWithoutVarargsFlag() {
+        // Some methods attributed from the classpath / type-table during platform ingestion carry a
+        // `JavaType.Method` whose `Flag.Varargs` is absent even though the call passes more arguments than
+        // declared parameters. The standard in-memory parser never produces this, so we strip the flag in
+        // `mapBeforeRecipe` to reproduce the `ArrayIndexOutOfBoundsException` that this regression guards against.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              class Foo {
+                  void something(String first, List<Integer>... lists) {}
+                  void doSomething() {
+                      something("a", new ArrayList<Integer>(), new ArrayList<Integer>());
+                  }
+              }
+              """,
+            """
+              import java.util.*;
+
+              class Foo {
+                  void something(String first, List<Integer>... lists) {}
+                  void doSomething() {
+                      something("a", new ArrayList<>(), new ArrayList<>());
+                  }
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(cu -> (J.CompilationUnit) new JavaIsoVisitor<Integer>() {
+                @Override
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer p) {
+                    J.MethodInvocation mi = super.visitMethodInvocation(method, p);
+                    JavaType.Method mt = mi.getMethodType();
+                    if (mt != null && mt.hasFlags(Flag.Varargs)) {
+                        Set<Flag> flags = new HashSet<>(mt.getFlags());
+                        flags.remove(Flag.Varargs);
+                        JavaType.Method without = mt.withFlags(flags);
+                        mi = mi.withMethodType(without).withName(mi.getName().withType(without));
+                    }
+                    return mi;
+                }
+            }.visit(cu, 0))
           )
         );
     }

@@ -178,10 +178,15 @@ public class UseDiamondOperator extends Recipe {
         }
 
         private JavaType getMethodParamType(JavaType.Method methodType, int paramIndex) {
-            if (methodType.hasFlags(Flag.Varargs) && paramIndex >= methodType.getParameterTypes().size() - 1) {
-                return ((JavaType.Array) methodType.getParameterTypes().get(methodType.getParameterTypes().size() - 1)).getElemType();
+            List<JavaType> paramTypes = methodType.getParameterTypes();
+            // Treat an out-of-range index as the (vararg-like) last parameter, even when `Flag.Varargs` is
+            // absent. Methods attributed from the classpath / type-table can lack the flag despite the call
+            // passing more arguments than declared parameters, which would otherwise throw an AIOOBE here.
+            if (paramIndex >= paramTypes.size() - 1) {
+                JavaType last = paramTypes.get(paramTypes.size() - 1);
+                return last instanceof JavaType.Array ? ((JavaType.Array) last).getElemType() : last;
             }
-            return methodType.getParameterTypes().get(paramIndex);
+            return paramTypes.get(paramIndex);
         }
 
         @Override
