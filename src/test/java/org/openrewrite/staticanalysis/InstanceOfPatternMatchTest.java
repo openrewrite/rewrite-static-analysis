@@ -2085,4 +2085,47 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           )
         );
     }
+
+    @DocumentExample
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/916")
+    @Test
+    void doubleCastUnboxingIssueWithInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class DoubleCastUnboxingSample {
+
+                  public Integer foo(Class clazz, Object data) {
+                      Integer result;
+                      if (Integer.class == clazz && data instanceof Integer) {
+                          result = (int) data;
+                      } else if (Integer.class == clazz && data instanceof Long) {
+                          result = (int) (long) data;
+                      } else {
+                          result = null;
+                      }
+                      return result;
+                  }
+              }
+              """,
+            """
+              public class DoubleCastUnboxingSample {
+
+                  public Integer foo(Class clazz, Object data) {
+                      Integer result;
+                      if (Integer.class == clazz && data instanceof Integer integer) {
+                          result = integer;
+                      } else if (Integer.class == clazz && data instanceof Long long1) {
+                          result = (int) (long) long1;
+                      } else {
+                          result = null;
+                      }
+                      return result;
+                  }
+              }
+              """
+          )
+        );
+    }    
 }
