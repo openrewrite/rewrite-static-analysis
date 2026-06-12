@@ -2086,7 +2086,6 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/916")
     @Test
     void doubleCastUnboxingIssueWithInstanceOf() {
@@ -2127,5 +2126,5 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               """
           )
         );
-    }    
+    }
 }

@@ -453,9 +453,25 @@ public class InstanceOfPatternMatch extends Recipe {
         public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
             J.InstanceOf instanceOf = replacements.get(typeCast);
             if (instanceOf != null && instanceOf.getPattern() != null) {
-                String name = ((J.Identifier) instanceOf.getPattern()).getSimpleName();
+                J.Identifier pattern = (J.Identifier) instanceOf.getPattern();
+                String name = pattern.getSimpleName();
                 TypedTree owner = cursor.firstEnclosing(J.MethodDeclaration.class);
                 owner = owner != null ? owner : cursor.firstEnclosingOrThrow(J.ClassDeclaration.class);
+                // A primitive (unboxing) cast nested inside another cast is load-bearing: in `(int) (long) o`
+                // the `(long)` cast cannot be dropped, since `(int) o` on the boxed pattern variable does not
+                // compile. Keep the cast and replace only its expression with the pattern variable.
+                if (typeCast.getType() instanceof JavaType.Primitive &&
+                        cursor.getParentTreeCursor().getValue() instanceof J.TypeCast) {
+                    JavaType.Variable innerType = new JavaType.Variable(null, Flag.Default.getBitMask(), name, owner.getType(), pattern.getType(), emptyList());
+                    return typeCast.withExpression(new J.Identifier(
+                            randomId(),
+                            typeCast.getExpression().getPrefix(),
+                            Markers.EMPTY,
+                            emptyList(),
+                            name,
+                            pattern.getType(),
+                            innerType));
+                }
                 JavaType.Variable fieldType = new JavaType.Variable(null, Flag.Default.getBitMask(), name, owner.getType(), typeCast.getType(), emptyList());
                 return new J.Identifier(
                         randomId(),
