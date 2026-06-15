@@ -2095,12 +2095,14 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             """
               public class DoubleCastUnboxingSample {
 
-                  public Integer foo(Class clazz, Object data) {
-                      Integer result;
+                  public Number foo(Class clazz, Object data) {
+                      Number result;
                       if (Integer.class == clazz && data instanceof Integer) {
                           result = (int) data;
                       } else if (Integer.class == clazz && data instanceof Long) {
                           result = (int) (long) data;
+                      } else if (Short.class == clazz && data instanceof Integer) {
+                          result = (short) (int) data;
                       } else {
                           result = null;
                       }
@@ -2111,12 +2113,14 @@ class InstanceOfPatternMatchTest implements RewriteTest {
             """
               public class DoubleCastUnboxingSample {
 
-                  public Integer foo(Class clazz, Object data) {
-                      Integer result;
-                      if (Integer.class == clazz && data instanceof Integer integer) {
-                          result = integer;
+                  public Number foo(Class clazz, Object data) {
+                      Number result;
+                      if (Integer.class == clazz && data instanceof Integer integer1) {
+                          result = integer1;
                       } else if (Integer.class == clazz && data instanceof Long long1) {
                           result = (int) (long) long1;
+                      } else if (Short.class == clazz && data instanceof Integer integer) {
+                          result = (short) (int) integer;
                       } else {
                           result = null;
                       }
