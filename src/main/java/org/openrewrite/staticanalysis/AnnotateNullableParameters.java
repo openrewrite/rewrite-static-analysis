@@ -240,6 +240,14 @@ public class AnnotateNullableParameters extends Recipe {
      *       (Objects.requireNonNullElse, Objects.requireNonNullElseGet)</li>
      *   <li>Negated null-checking method calls (!Objects.isNull, !StringUtils.isBlank, etc.)</li>
      * </ul>
+     * <p>
+     * The dereference tracking is intentionally lexical rather than control-flow aware: a parameter
+     * is treated as dereferenced only when it is used as the target of a method invocation or field
+     * access that appears textually before any null check of that same parameter. Because null checks
+     * within an {@code if} condition are recorded before the body is visited, the common guard-clause
+     * pattern (null check first, dereference afterwards) is preserved. When textual order does not match
+     * execution order (e.g. a dereference captured in a lambda declared before the guard), the analysis
+     * errs on the side of not annotating.
      */
     private static class NullCheckAndDereferenceVisitor extends JavaIsoVisitor<ExecutionContext> {
         private static final List<MethodMatcher> NULL_SAFETY_METHOD_MATCHERS = Arrays.asList(

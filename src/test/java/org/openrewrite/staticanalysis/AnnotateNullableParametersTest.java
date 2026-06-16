@@ -358,6 +358,37 @@ class AnnotateNullableParametersTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void annotateWhenDereferencedAfterGuardClause() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void process(String name) {
+                          if (name == null) {
+                              return;
+                          }
+                          System.out.println(name.toLowerCase());
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class Foo {
+                      public void process(@Nullable String name) {
+                          if (name == null) {
+                              return;
+                          }
+                          System.out.println(name.toLowerCase());
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @Nested
