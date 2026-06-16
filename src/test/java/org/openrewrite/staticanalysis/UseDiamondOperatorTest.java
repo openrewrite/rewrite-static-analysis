@@ -34,7 +34,7 @@ import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
-@SuppressWarnings({"Convert2Diamond", "unchecked", "rawtypes"})
+@SuppressWarnings({"Convert2Diamond", "unchecked", "rawtypes", "ClassEscapesDefinedScope", "CodeBlock2Expr", "Convert2Lambda"})
 class UseDiamondOperatorTest implements RewriteTest {
 
     @Override
@@ -724,6 +724,31 @@ class UseDiamondOperatorTest implements RewriteTest {
                   List<@Nullable String> list1 = new ArrayList<@Nullable String>();
                   Map<@Nonnull String, @Nullable Integer> map = new HashMap<@Nonnull String, @Nullable Integer>();
                   List<String> list2 = new ArrayList<>(); // This should use diamond operator
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void anonymousClassArgBeyondVarargsParameterWithoutVarargsFlag() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(17))),
+          //language=java
+          java(
+            """
+              import java.lang.reflect.Method;
+              import java.util.function.Supplier;
+
+              class Test {
+                  void test(Method m, Object target) throws Exception {
+                      m.invoke(target, "arg", new Supplier<Object>() {
+                          @Override
+                          public Object get() {
+                              return null;
+                          }
+                      });
+                  }
               }
               """
           )

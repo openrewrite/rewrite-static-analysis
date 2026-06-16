@@ -769,6 +769,34 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/914")
+    @Test
+    void doNotRemoveRawSupertypeCastBridgingWildcardCapture() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class G<T extends Number> {}
+
+              interface I {
+                  Set<? extends G> doSomething();
+              }
+
+              class A {
+                  void test(I i) {
+                      Set<? extends G> s = new HashSet<>();
+                      s.addAll((Collection) i.doSomething());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotRemoveObjectCastOnGenericMethodCallWithOverloads() {
         rewriteRun(

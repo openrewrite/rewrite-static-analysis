@@ -178,15 +178,20 @@ public class UseDiamondOperator extends Recipe {
         }
 
         private JavaType getMethodParamType(JavaType.Method methodType, int paramIndex) {
-            List<JavaType> paramTypes = methodType.getParameterTypes();
-            // Treat an out-of-range index as the (vararg-like) last parameter, even when `Flag.Varargs` is
-            // absent. Methods attributed from the classpath / type-table can lack the flag despite the call
-            // passing more arguments than declared parameters, which would otherwise throw an AIOOBE here.
-            if (paramIndex >= paramTypes.size() - 1) {
-                JavaType last = paramTypes.get(paramTypes.size() - 1);
-                return last instanceof JavaType.Array ? ((JavaType.Array) last).getElemType() : last;
+            List<JavaType> parameterTypes = methodType.getParameterTypes();
+            int lastIndex = parameterTypes.size() - 1;
+            JavaType lastParamType = parameterTypes.get(lastIndex);
+            // The trailing parameter is varargs when the method is flagged as such, or when there are more
+            // arguments than declared parameters (only legal for varargs, even if type attribution dropped
+            // the Varargs flag). The latter guards against an ArrayIndexOutOfBoundsException on `paramIndex`.
+            boolean varargs = methodType.hasFlags(Flag.Varargs) || paramIndex > lastIndex;
+            if (varargs && paramIndex >= lastIndex && lastParamType instanceof JavaType.Array) {
+                return ((JavaType.Array) lastParamType).getElemType();
             }
-            return paramTypes.get(paramIndex);
+            if (paramIndex > lastIndex) {
+                return lastParamType;
+            }
+            return parameterTypes.get(paramIndex);
         }
 
         @Override
@@ -216,7 +221,9 @@ public class UseDiamondOperator extends Recipe {
             }
             List<JavaType> types = new ArrayList<>(parameterizedType.getTypeParameters().size());
             for (Expression typeParameter : parameterizedType.getTypeParameters()) {
-                types.add(typeParameter.getType());
+                if (typeParameter.getType() != null) {
+                    types.add(typeParameter.getType());
+                }
             }
             return types;
         }
