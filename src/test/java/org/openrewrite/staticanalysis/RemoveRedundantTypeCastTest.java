@@ -280,6 +280,26 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/899")
+    @Test
+    void keepObjectCastDisambiguatingVarargsFromThrowableOverload() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void log(String format, Object... args) {}
+                  void log(String format, Throwable t) {}
+
+                  void run(Object value) {
+                      log("value: {}", (Object) value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void varargsCall() {
         rewriteRun(
@@ -719,6 +739,57 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               class Test {
                   List<Character> foo() {
                       return Arrays.asList((Character) '{', (Character) '}', (Character) '#');
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/901")
+    @Test
+    void doNotRemoveRawCastBridgingWildcardCapture() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface I<T> {
+                  void method(B<T> param);
+              }
+
+              class B<T> {}
+
+              class A<T> {
+                  void test(I<? extends T> i, B<T> b) {
+                      i.method((B) b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/914")
+    @Test
+    void doNotRemoveRawSupertypeCastBridgingWildcardCapture() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class G<T extends Number> {}
+
+              interface I {
+                  Set<? extends G> doSomething();
+              }
+
+              class A {
+                  void test(I i) {
+                      Set<? extends G> s = new HashSet<>();
+                      s.addAll((Collection) i.doSomething());
                   }
               }
               """

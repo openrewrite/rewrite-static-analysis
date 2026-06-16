@@ -397,6 +397,41 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+    @Test
+    void doNotChangeBiPredicateInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.BiPredicate;
+
+              class Test {
+                  BiPredicate<String, Throwable> pred = (r, t) -> t instanceof IllegalArgumentException;
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+    @Test
+    void doNotChangeInstanceOfOnCapturedVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Predicate;
+
+              class Test {
+                  Object field;
+                  Predicate<String> pred = s -> field instanceof String;
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void nonStaticMethods() {
         rewriteRun(
@@ -1836,6 +1871,62 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                           .filter(R.class::isInstance)
                           .map(R.class::cast)
                           .collect(Collectors.toList());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/906")
+    @Test
+    void useReceiverTypeWhenDeclaringTypeIsPackagePrivate() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.helloworld.internal;
+
+              import java.util.Optional;
+
+              abstract class Base {
+                  public Optional<String> getValue() {
+                      return Optional.empty();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.helloworld.internal;
+
+              public class Child extends Base {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.helloworld;
+
+              import com.helloworld.internal.Child;
+              import java.util.Optional;
+
+              public class Main {
+                  String get(final Optional<Child> opt) {
+                      return opt.flatMap(s -> s.getValue()).orElse("");
+                  }
+              }
+              """,
+            """
+              package com.helloworld;
+
+              import com.helloworld.internal.Child;
+              import java.util.Optional;
+
+              public class Main {
+                  String get(final Optional<Child> opt) {
+                      return opt.flatMap(Child::getValue).orElse("");
                   }
               }
               """

@@ -2033,4 +2033,98 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Test
+    void castDirectlyAfterThrowKeywordWithoutSpace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class BasisException extends RuntimeException {}
+              class A {
+                  void test(Exception e) {
+                      if (e instanceof BasisException)throw(BasisException)e;
+                  }
+              }
+              """,
+            """
+              class BasisException extends RuntimeException {}
+              class A {
+                  void test(Exception e) {
+                      if (e instanceof BasisException exception)throw exception;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-apache/issues/135")
+    @Test
+    void castDirectlyAfterReturnKeywordWithoutSpace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String test(Object o) {
+                      if (o instanceof String)return(String)o;
+                      return "";
+                  }
+              }
+              """,
+            """
+              class A {
+                  String test(Object o) {
+                      if (o instanceof String string)return string;
+                      return "";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/916")
+    @Test
+    void doubleCastUnboxingIssueWithInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class DoubleCastUnboxingSample {
+
+                  public Integer foo(Class clazz, Object data) {
+                      Integer result;
+                      if (Integer.class == clazz && data instanceof Integer) {
+                          result = (int) data;
+                      } else if (Integer.class == clazz && data instanceof Long) {
+                          result = (int) (long) data;
+                      } else {
+                          result = null;
+                      }
+                      return result;
+                  }
+              }
+              """,
+            """
+              public class DoubleCastUnboxingSample {
+
+                  public Integer foo(Class clazz, Object data) {
+                      Integer result;
+                      if (Integer.class == clazz && data instanceof Integer integer) {
+                          result = integer;
+                      } else if (Integer.class == clazz && data instanceof Long long1) {
+                          result = (int) (long) long1;
+                      } else {
+                          result = null;
+                      }
+                      return result;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
