@@ -178,8 +178,15 @@ public class UseDiamondOperator extends Recipe {
         }
 
         private JavaType getMethodParamType(JavaType.Method methodType, int paramIndex) {
-            if (methodType.hasFlags(Flag.Varargs) && paramIndex >= methodType.getParameterTypes().size() - 1) {
-                return ((JavaType.Array) methodType.getParameterTypes().get(methodType.getParameterTypes().size() - 1)).getElemType();
+            List<JavaType> parameterTypes = methodType.getParameterTypes();
+            int lastIndex = parameterTypes.size() - 1;
+            JavaType lastParamType = parameterTypes.get(lastIndex);
+            // The trailing parameter is varargs when the method is flagged as such, or when there are more
+            // arguments than declared parameters (only legal for varargs, even if type attribution dropped
+            // the Varargs flag). The latter guards against an ArrayIndexOutOfBoundsException on `paramIndex`.
+            boolean varargs = methodType.hasFlags(Flag.Varargs) || paramIndex > lastIndex;
+            if (varargs && paramIndex >= lastIndex && lastParamType instanceof JavaType.Array) {
+                return ((JavaType.Array) lastParamType).getElemType();
             }
             return methodType.getParameterTypes().get(paramIndex);
         }
@@ -211,7 +218,9 @@ public class UseDiamondOperator extends Recipe {
             }
             List<JavaType> types = new ArrayList<>(parameterizedType.getTypeParameters().size());
             for (Expression typeParameter : parameterizedType.getTypeParameters()) {
-                types.add(typeParameter.getType());
+                if (typeParameter.getType() != null) {
+                    types.add(typeParameter.getType());
+                }
             }
             return types;
         }
