@@ -215,6 +215,17 @@ public class MinimumSwitchCases extends Recipe {
                 if (switch_.getCases().getStatements().size() > 2) {
                     return false;
                 }
+                // Don't transform switches that use Java 21 pattern matching (e.g. `case Foo.Bar b ->`),
+                // as those case labels are not simple expressions and cannot be converted to `==`/`equals` checks
+                for (Statement statement : switch_.getCases().getStatements()) {
+                    if (statement instanceof J.Case) {
+                        for (J label : ((J.Case) statement).getCaseLabels()) {
+                            if (!(label instanceof Expression)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
                 // Don't transform if any case has an identifier pattern without type info
                 // (we can't properly qualify it in the if statement)
                 if (hasUnresolvableIdentifierCasePattern(switch_)) {
