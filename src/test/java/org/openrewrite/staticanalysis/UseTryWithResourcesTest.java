@@ -343,6 +343,32 @@ class UseTryWithResourcesTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/920")
+    @Test
+    void doNotChangeResourceReferencedInCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
+                          int data = in.read();
+                      } catch (RuntimeException e) {
+                          in.reset();
+                      } finally {
+                          in.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void finallyWithExtraLogicAfterCloseKeepsRemainingStatements() {
         rewriteRun(

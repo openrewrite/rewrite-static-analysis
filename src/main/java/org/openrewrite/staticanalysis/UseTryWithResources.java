@@ -157,9 +157,11 @@ public class UseTryWithResources extends Recipe {
             return false;
         }
 
-        // Variable must not be closed in catch blocks
+        // Variable must not be referenced in catch blocks. The scope of a resource declared in
+        // the resource specification is the try block only (JLS 14.20.3), so any reference from a
+        // catch clause would become out of scope once the declaration moves into the header.
         for (J.Try.Catch aCatch : tryStmt.getCatches()) {
-            if (containsClose(varName, aCatch.getBody())) {
+            if (isReferenced(varName, aCatch.getBody())) {
                 return false;
             }
         }
@@ -457,14 +459,14 @@ public class UseTryWithResources extends Recipe {
         }.reduce(tree, new AtomicBoolean()).get();
     }
 
-    private static boolean containsClose(String varName, J tree) {
+    private static boolean isReferenced(String varName, J tree) {
         return new JavaIsoVisitor<AtomicBoolean>() {
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, AtomicBoolean f) {
-                if (isCloseInvocation(mi, varName)) {
+            public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean f) {
+                if (identifier.getSimpleName().equals(varName)) {
                     f.set(true);
                 }
-                return super.visitMethodInvocation(mi, f);
+                return super.visitIdentifier(identifier, f);
             }
         }.reduce(tree, new AtomicBoolean()).get();
     }
