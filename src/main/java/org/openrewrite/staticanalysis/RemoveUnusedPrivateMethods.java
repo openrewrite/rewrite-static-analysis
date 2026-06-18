@@ -91,7 +91,7 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
                     JavaSourceFile cu = getCursor().firstEnclosingOrThrow(JavaSourceFile.class);
                     for (JavaType.Method usedMethodType : cu.getTypesInUse().getUsedMethods()) {
-                        if (referencesMethod(methodType, usedMethodType)) {
+                        if (TypeUtils.isOfTypeIgnoringGenerics(methodType, usedMethodType)) {
                             return m;
                         }
                     }
@@ -111,32 +111,5 @@ public class RemoveUnusedPrivateMethods extends Recipe {
             }
         };
         return Preconditions.check(new NoMissingTypes(), Repeat.repeatUntilStable(visitor));
-    }
-
-    private static boolean referencesMethod(JavaType.Method declaration, JavaType.Method used) {
-        if (!declaration.getName().equals(used.getName())) {
-            return false;
-        }
-        if (declaration.equals(used)) {
-            return true;
-        }
-        JavaType.FullyQualified declarationType = TypeUtils.asFullyQualified(declaration.getDeclaringType());
-        JavaType.FullyQualified usedDeclaringType = TypeUtils.asFullyQualified(used.getDeclaringType());
-        if (declarationType == null || usedDeclaringType == null ||
-                !TypeUtils.fullyQualifiedNamesAreEqual(declarationType.getFullyQualifiedName(), usedDeclaringType.getFullyQualifiedName())) {
-            return false;
-        }
-        List<JavaType> declarationParams = declaration.getParameterTypes();
-        List<JavaType> usedParams = used.getParameterTypes();
-        if (declarationParams.size() != usedParams.size()) {
-            return false;
-        }
-        for (int i = 0; i < declarationParams.size(); i++) {
-            if (!TypeUtils.isOfType(declarationParams.get(i), usedParams.get(i)) &&
-                    !TypeUtils.isOfType(usedParams.get(i), declarationParams.get(i))) {
-                return false;
-            }
-        }
-        return true;
     }
 }
