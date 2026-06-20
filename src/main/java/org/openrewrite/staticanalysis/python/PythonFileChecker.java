@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2026 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,33 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.staticanalysis.csharp;
+package org.openrewrite.staticanalysis.python;
 
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.csharp.tree.Cs;
 import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.marker.SearchResult;
+import org.openrewrite.python.tree.Py;
 
 /**
- * Add a search marker if visiting a CSharp file
+ * Add a search marker if visiting a Python file
  */
-public class CSharpFileChecker<P> extends TreeVisitor<Tree, P> {
-    private static final boolean IS_CSHARP_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.csharp.tree.Cs");
-
-    public static boolean isCSharpTree(Cursor cursor) {
-        return IS_CSHARP_AVAILABLE && cursor.getPath(Cs.class::isInstance).hasNext();
-    }
-
-    public static boolean isInstanceOfCs(@Nullable Tree tree) {
-        return IS_CSHARP_AVAILABLE && tree instanceof Cs;
-    }
+public class PythonFileChecker<P> extends TreeVisitor<Tree, P> {
+    private static final boolean IS_PYTHON_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.python.tree.Py");
 
     @Override
     public @Nullable Tree visit(@Nullable Tree tree, P p) {
-        if (isInstanceOfCs(tree)) {
+        if (IS_PYTHON_AVAILABLE && tree instanceof Py.CompilationUnit) {
             return SearchResult.found(tree);
         }
         return tree;

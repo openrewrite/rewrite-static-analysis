@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -342,8 +343,72 @@ class UseTryWithResourcesTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/920")
     @Test
-    void finallyWithExtraLogicKeepsRemainingStatements() {
+    void doNotChangeResourceReferencedInCatch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
+                          int data = in.read();
+                      } catch (RuntimeException e) {
+                          in.reset();
+                      } finally {
+                          in.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void finallyWithExtraLogicAfterCloseKeepsRemainingStatements() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
+                          int data = in.read();
+                      } finally {
+                          in.close();
+                          System.out.println("closed");
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      try (InputStream in = new FileInputStream("file.txt")) {
+                          int data = in.read();
+                      } finally {
+                          System.out.println("closed");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/moderneinc/rewrite-java-application-server/issues/19")
+    @Test
+    void doNotChangeWhenStatementsBeforeClose() {
         rewriteRun(
           //language=java
           java(
@@ -361,16 +426,32 @@ class UseTryWithResourcesTest implements RewriteTest {
                       }
                   }
               }
-              """,
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/moderneinc/rewrite-java-application-server/issues/19")
+    @Test
+    void doNotChangeWhenCleanupBeforeClose() {
+        rewriteRun(
+          //language=java
+          java(
             """
               import java.io.*;
 
               class Test {
-                  void method() throws IOException {
-                      try (InputStream in = new FileInputStream("file.txt")) {
+                  interface CancellationTokenSource {
+                      void cancel();
+                  }
+
+                  void method(CancellationTokenSource cancellation) throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
                           int data = in.read();
                       } finally {
-                          System.out.println("closing");
+                          cancellation.cancel();
+                          in.close();
                       }
                   }
               }

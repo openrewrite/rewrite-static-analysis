@@ -22,7 +22,9 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.style.Checkstyle;
 import org.openrewrite.java.style.NeedBracesStyle;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JLeftPadded;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
@@ -229,7 +231,18 @@ public class NeedBraces extends Recipe {
                 J.Block b = buildBlock(elem.getBody());
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem.getBody());
+                // The trailing comment between the body and the `while` keyword lives in the
+                // `before` space of the `whileCondition`. When wrapping the body in a block,
+                // move a same-line trailing comment into the new block's end so it stays with
+                // the body statement rather than drifting onto the closing brace.
+                JLeftPadded<J.ControlParentheses<Expression>> whileCondition = elem.getPadding().getWhileCondition();
+                Space whileBefore = whileCondition.getBefore();
+                Space end = Space.EMPTY;
+                if (!whileBefore.getComments().isEmpty() && !whileBefore.getWhitespace().contains("\n")) {
+                    end = whileBefore;
+                    elem = elem.getPadding().withWhileCondition(whileCondition.withBefore(Space.SINGLE_SPACE));
+                }
+                J.Block b = buildBlock(elem.getBody()).withEnd(end);
                 elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
             }
             return elem;

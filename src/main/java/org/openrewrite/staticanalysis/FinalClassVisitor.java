@@ -35,7 +35,7 @@ import static org.openrewrite.staticanalysis.ModifierOrder.sortModifiers;
 
 public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
 
-    private static final AnnotationMatcher CONFIGURATION_ANNOTATION = new AnnotationMatcher("@org.springframework.context.annotation.Configuration");
+    private static final AnnotationMatcher CONFIGURATION_ANNOTATION = new AnnotationMatcher("@org.springframework.context.annotation.Configuration", true);
 
     Tree visitRoot;
 
@@ -75,8 +75,8 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
             return cd;
         }
 
-        // Spring @Configuration classes are proxied at runtime and must not be final
-        if (cd.getLeadingAnnotations().stream().anyMatch(a -> CONFIGURATION_ANNOTATION.matches(a))) {
+        // Spring @Configuration classes (including meta-annotated ones like @TestConfiguration / @SpringBootApplication) are proxied at runtime and must not be final
+        if (cd.getLeadingAnnotations().stream().anyMatch(CONFIGURATION_ANNOTATION::matches)) {
             return cd;
         }
 
@@ -100,6 +100,19 @@ public class FinalClassVisitor extends JavaIsoVisitor<ExecutionContext> {
         }
 
         return cd;
+    }
+
+    @Override
+    public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+        J.NewClass nc = super.visitNewClass(newClass, ctx);
+        // Anonymous classes extend their declared type; that supertype must not be made final
+        if (nc.getBody() != null && nc.getClazz() != null) {
+            JavaType.FullyQualified type = TypeUtils.asFullyQualified(nc.getClazz().getType());
+            if (type != null) {
+                typesToNotFinalize.add(type.getFullyQualifiedName());
+            }
+        }
+        return nc;
     }
 
     private void excludeSupertypes(JavaType.FullyQualified type) {

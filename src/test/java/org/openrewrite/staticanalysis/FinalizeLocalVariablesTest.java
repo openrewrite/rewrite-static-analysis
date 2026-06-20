@@ -21,8 +21,10 @@ import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("ALL")
 class FinalizeLocalVariablesTest implements RewriteTest {
@@ -479,6 +481,30 @@ class FinalizeLocalVariablesTest implements RewriteTest {
                       }
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/702")
+    @Test
+    void topLevelKotlinVar() {
+        rewriteRun(
+          kotlin(
+            """
+              var x = 1
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/702")
+    @Test
+    void topLevelGroovyVariable() {
+        rewriteRun(
+          groovy(
+            """
+              x = 1
               """
           )
         );

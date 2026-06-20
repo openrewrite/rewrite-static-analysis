@@ -26,6 +26,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SimplifyConsecutiveAssignments extends Recipe {
@@ -65,7 +66,8 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                             Expression acc = numericVariableAccumulation(nextStatement, name);
                             String op = numericVariableOperator(nextStatement, name);
 
-                            if (acc != null && op != null) {
+                            if (acc != null && op != null &&
+                                    !(stat instanceof J.VariableDeclarations && referencesVariable(acc, name))) {
                                 skip.set(i + 1);
                                 // combine this statement with the following statement into one binary expression
                                 return combine(new Cursor(getCursor(), stat), op, acc);
@@ -162,6 +164,18 @@ public class SimplifyConsecutiveAssignments extends Recipe {
                     }
                 }
                 return null;
+            }
+
+            private boolean referencesVariable(Expression expression, String name) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean found) {
+                        if (name.equals(identifier.getSimpleName()) && identifier.getFieldType() != null) {
+                            found.set(true);
+                        }
+                        return identifier;
+                    }
+                }.reduce(expression, new AtomicBoolean()).get();
             }
 
             private @Nullable String singleVariableName(Expression e) {

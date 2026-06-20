@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -392,6 +393,63 @@ class UnnecessaryCatchTest implements RewriteTest {
                       try (StringWriter sw = new StringWriter()) {
                       } catch (IOException e) {
                           // Caught on .close()
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/677")
+    @Test
+    void doNotRemoveCatchForCloseOnNestedTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.ByteArrayOutputStream;
+              import java.io.IOException;
+
+              class Scratch {
+                  void method() {
+                      try {
+                          try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+                              os.write(1);
+                          }
+                      } catch (IOException e) {
+                          throw new RuntimeException(e);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/677")
+    @Test
+    void doNotRemoveMultiCatchForCloseOnNestedTryWithResources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import javax.xml.transform.Transformer;
+              import javax.xml.transform.TransformerException;
+              import javax.xml.transform.stream.StreamResult;
+              import javax.xml.transform.stream.StreamSource;
+              import java.io.ByteArrayOutputStream;
+              import java.io.IOException;
+
+              class Scratch {
+                  static String transform(Transformer transformer, StreamSource text) {
+                      try {
+                          try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+                              transformer.transform(text, new StreamResult(os));
+                              return os.toString();
+                          }
+                      } catch (IOException | TransformerException e) {
+                          throw new RuntimeException(e);
                       }
                   }
               }

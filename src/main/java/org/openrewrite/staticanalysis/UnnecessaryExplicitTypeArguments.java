@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
@@ -52,24 +53,35 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
 
                 JavaType inferredType = null;
                 if (enclosing instanceof J.MethodInvocation) {
-                    if (shouldRetainOnStaticMethod(methodType)) {
-                        return m;
-                    }
-                    // Cannot remove type parameters if it would introduce ambiguity about which method should be called
                     J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
-                    if (enclosingMethod.getMethodType() == null) {
-                        return m;
-                    }
-                    if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
-                        return m;
-                    }
-                    JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
-                    // If there's another method on the class with the same name, skip removing type parameters
-                    // More nuanced detection of ambiguity introduction is possible
-                    if (declaringClass.getMethods().stream()
-                            .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
-                            .count() > 1) {
-                        return m;
+                    if (enclosingMethod.getSelect() == method) {
+                        // This invocation is the select (receiver) of the enclosing invocation, so the
+                        // enclosing call provides no target type to drive inference of this call's type
+                        // variables. Retain the witness unless those type variables can be inferred from
+                        // this call's own arguments.
+                        if (!canInferTypeArgumentsFromArguments(methodType)) {
+                            return m;
+                        }
+                    } else {
+                        // This invocation is an argument of the enclosing invocation.
+                        if (shouldRetainOnStaticMethod(methodType)) {
+                            return m;
+                        }
+                        // Cannot remove type parameters if it would introduce ambiguity about which method should be called
+                        if (enclosingMethod.getMethodType() == null) {
+                            return m;
+                        }
+                        if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
+                            return m;
+                        }
+                        JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
+                        // If there's another method on the class with the same name, skip removing type parameters
+                        // More nuanced detection of ambiguity introduction is possible
+                        if (declaringClass.getMethods().stream()
+                                .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
+                                .count() > 1) {
+                            return m;
+                        }
                     }
                     inferredType = methodType.getReturnType();
                 } else if (enclosing instanceof Expression) {
@@ -90,7 +102,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                             inferredType = methodDeclaration.getReturnTypeExpression().getType();
                         }
                     } else if (e instanceof J.Lambda) {
-                        inferredType = ((J.Lambda) e).getType();
+                        inferredType = getLambdaReturnType(((J.Lambda) e).getType());
                     }
                 }
 
@@ -101,8 +113,56 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 return m;
             }
 
+            private JavaType.@Nullable Method findMethodIfUnambiguous(JavaType.FullyQualified type) {
+                JavaType.Method sam = null;
+                for (JavaType.Method candidate : type.getMethods()) {
+                    if (candidate.hasFlags(Flag.Default) || candidate.hasFlags(Flag.Static)) {
+                        continue;
+                    }
+                    if (sam != null) {
+                        return null;
+                    }
+                    sam = candidate;
+                }
+                return sam;
+            }
+
+            private @Nullable JavaType getLambdaReturnType(@Nullable JavaType lambdaType) {
+                JavaType.Parameterized parameterized = TypeUtils.asParameterized(lambdaType);
+                if (parameterized == null) {
+                    return null;
+                }
+                JavaType.Method sam = findMethodIfUnambiguous(parameterized);
+                if (sam == null) {
+                    return null;
+                }
+                JavaType samReturn = sam.getReturnType();
+                if (samReturn instanceof JavaType.GenericTypeVariable) {
+                    String name = ((JavaType.GenericTypeVariable) samReturn).getName();
+                    List<JavaType> formalParams = parameterized.getType().getTypeParameters();
+                    List<JavaType> actualParams = parameterized.getTypeParameters();
+                    for (int i = 0; i < formalParams.size() && i < actualParams.size(); i++) {
+                        JavaType formal = formalParams.get(i);
+                        if (formal instanceof JavaType.GenericTypeVariable &&
+                                name.equals(((JavaType.GenericTypeVariable) formal).getName())) {
+                            return actualParams.get(i);
+                        }
+                    }
+                    return null;
+                }
+                return samReturn;
+            }
+
             private boolean shouldRetainOnStaticMethod(JavaType.Method methodType) {
-                if (!methodType.hasFlags(Flag.Static)) {
+                // Without a target type, removing the explicit type arguments of a static method can break
+                // overload resolution in the enclosing call when the type variables are not inferable from
+                // the call's own arguments.
+                return methodType.hasFlags(Flag.Static) && !canInferTypeArgumentsFromArguments(methodType);
+            }
+
+            private boolean canInferTypeArgumentsFromArguments(JavaType.Method methodType) {
+                // Without arguments, the type parameters cannot be inferred from call-site arguments.
+                if (methodType.getParameterTypes().isEmpty()) {
                     return false;
                 }
                 List<String> formalTypeNames = new ArrayList<>(methodType.getDeclaredFormalTypeNames());
@@ -111,7 +171,7 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         .flatMap(p -> ((JavaType.Parameterized) p).getTypeParameters().stream())
                         .filter(t -> t instanceof JavaType.GenericTypeVariable)
                         .forEach(it -> formalTypeNames.remove(((JavaType.GenericTypeVariable) it).getName()));
-                return !formalTypeNames.isEmpty();
+                return formalTypeNames.isEmpty();
             }
         });
     }

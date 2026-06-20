@@ -358,6 +358,37 @@ class AnnotateNullableParametersTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void annotateWhenDereferencedAfterGuardClause() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void process(String name) {
+                          if (name == null) {
+                              return;
+                          }
+                          System.out.println(name.toLowerCase());
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class Foo {
+                      public void process(@Nullable String name) {
+                          if (name == null) {
+                              return;
+                          }
+                          System.out.println(name.toLowerCase());
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @Nested
@@ -557,6 +588,31 @@ class AnnotateNullableParametersTest implements RewriteTest {
                               }
                           };
                           return true;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeWhenParameterDereferencedBeforeNullCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class Foo {
+                      public void processName(@Nullable String foo, String bar) {
+                          if (foo == null) {
+                              System.out.printf("Foo is null, but for some reason I'm also dereferencing bar for log purposes %s", bar.toLowerCase());
+                          }
+
+                          if (bar == null) {
+                              return;
+                          }
+                          System.out.println(bar);
                       }
                   }
                   """
@@ -864,7 +920,7 @@ class AnnotateNullableParametersTest implements RewriteTest {
 
     @Test
     void provideAdditionalNullCheckingMethods() {
-        List<String> additionalNullCheckingMethods = List.of("org.my.util.Text hasText(java.lang.String)", "org.my.util.Text isEmptyOrNull(java.lang.String)");
+        var additionalNullCheckingMethods = List.of("org.my.util.Text hasText(java.lang.String)", "org.my.util.Text isEmptyOrNull(java.lang.String)");
         rewriteRun(
           spec -> spec.recipe(new AnnotateNullableParameters(null, additionalNullCheckingMethods)),
           //language=java
@@ -901,6 +957,32 @@ class AnnotateNullableParametersTest implements RewriteTest {
                       }
                       if (!Text.isEmptyOrNull(lastName)) {
                           this.lastName = lastName.substring(0, 1).toUpperCase() + lastName.substring(1);
+                      }
+                      return this;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unchangedWhenParameterDereferencedBeforeNullCheckingMethod() {
+        var additionalNullCheckingMethods = List.of("org.my.util.Text isEmptyOrNull(java.lang.String)");
+        rewriteRun(
+          spec -> spec.recipe(new AnnotateNullableParameters(null, additionalNullCheckingMethods)),
+          //language=java
+          java(
+            """
+              import java.util.Map;
+              import org.my.util.Text;
+
+              public class PersonBuilder {
+                  private String name = "Unknown";
+
+                  public PersonBuilder setInfo(Map<String, String> infoMap) {
+                      if (!Text.isEmptyOrNull(infoMap.get("name"))) {
+                          this.name = infoMap.get("name");
                       }
                       return this;
                   }

@@ -70,7 +70,7 @@ public class VariableReferences {
             J.AssignmentOperation assignmentOperation = parent.getValue();
             if (assignmentOperation.getVariable() == tree.getValue()) {
                 Tree grandParent = parent.getParentTreeCursor().getValue();
-                return (grandParent instanceof Expression || grandParent instanceof J.Return);
+                return grandParent instanceof Expression || grandParent instanceof J.Return;
             }
         }
 

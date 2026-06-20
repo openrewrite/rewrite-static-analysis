@@ -56,7 +56,7 @@ public class MinimumSwitchCases extends Recipe {
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
                 // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
-                return block.withStatements(ListUtils.flatMap(block.getStatements(), (statement) -> {
+                return block.withStatements(ListUtils.flatMap(block.getStatements(), statement -> {
                     Statement visited = (Statement) visit(statement, ctx, getCursor());
                     if (!(visited instanceof J.Switch) || !visited.getMarkers().findFirst(DefaultOnly.class).isPresent()) {
                         return visited;
@@ -214,6 +214,17 @@ public class MinimumSwitchCases extends Recipe {
             private boolean doRewrite(J.Switch switch_) {
                 if (switch_.getCases().getStatements().size() > 2) {
                     return false;
+                }
+                // Don't transform switches that use Java 21 pattern matching (e.g. `case Foo.Bar b ->`),
+                // as those case labels are not simple expressions and cannot be converted to `==`/`equals` checks
+                for (Statement statement : switch_.getCases().getStatements()) {
+                    if (statement instanceof J.Case) {
+                        for (J label : ((J.Case) statement).getCaseLabels()) {
+                            if (!(label instanceof Expression)) {
+                                return false;
+                            }
+                        }
+                    }
                 }
                 // Don't transform if any case has an identifier pattern without type info
                 // (we can't properly qualify it in the if statement)

@@ -56,6 +56,17 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return visited;
                 }
 
+                // A cast nested inside another cast typically bridges an unchecked generic
+                // conversion (e.g. `(List<String>) (Object) values`); preserve it.
+                Cursor parentTreeCursor = getCursor().getParentTreeCursor();
+                while (parentTreeCursor.getValue() instanceof J.Parentheses ||
+                        parentTreeCursor.getValue() instanceof J.ControlParentheses) {
+                    parentTreeCursor = parentTreeCursor.getParentTreeCursor();
+                }
+                if (parentTreeCursor.getValue() instanceof J.TypeCast) {
+                    return visited;
+                }
+
                 Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.VariableDeclarations ||
                                                                   is instanceof J.Lambda ||
                                                                   is instanceof J.Return ||
@@ -70,6 +81,39 @@ public class RemoveRedundantTypeCast extends Recipe {
                 JavaType expressionType = visitedTypeCast.getExpression().getType();
                 JavaType castType = visitedTypeCast.getType();
 
+                // A cast on a generic method invocation pins the inferred return type so
+                // an overloaded outer call (e.g. `StringBuilder.append`) resolves unambiguously.
+                if (parentValue instanceof MethodCall) {
+                    JavaType.Method parentMethodType = ((MethodCall) parentValue).getMethodType();
+                    if ((parentMethodType == null || hasMethodOverloading(parentMethodType)) &&
+                            returnsDeclaredTypeParameter(typeCast.getExpression())) {
+                        return visited;
+                    }
+                }
+
+                // When the cast is an argument to an overloaded method, removing it can
+                // make resolution ambiguous (e.g. `log(String, Object...)` vs
+                // `log(String, Throwable)` selected by `(Object) value`). Bail out before
+                // any other branch decides the cast is redundant.
+                if (parentValue instanceof MethodCall) {
+                    JavaType.Method methodType = ((MethodCall) parentValue).getMethodType();
+                    if (methodType == null || hasMethodOverloading(methodType)) {
+                        return visited;
+                    }
+                }
+
+                // A raw cast on a parameterized expression (e.g. `(B) b` where `b` is `B<T>`,
+                // or `(Collection) set` where `set` is `Set<? extends G>`) is an intentional
+                // unchecked conversion; removing it changes overload and type-inference behavior
+                // on parameterized arguments, which can break compilation.
+                JavaType.Parameterized exprParameterized = TypeUtils.asParameterized(expressionType);
+                if (parentValue instanceof MethodCall && exprParameterized != null &&
+                        TypeUtils.asFullyQualified(castType) != null &&
+                        TypeUtils.asParameterized(castType) == null &&
+                        TypeUtils.isAssignableTo(castType, expressionType)) {
+                    return visited;
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
@@ -78,14 +122,19 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
-                    if (methodType == null || hasMethodOverloading(methodType)) {
-                        return visited;
-                    }
                     if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
                             if (arg == typeCast) {
+                                // A `null` literal cast at the last position of a (potential) varargs call
+                                // disambiguates between passing `null` as the array vs. a single null element.
+                                if (J.Literal.isLiteralValue(typeCast.getExpression(), null) &&
+                                        i == methodType.getParameterTypes().size() - 1 &&
+                                        i == arguments.size() - 1 &&
+                                        methodType.getParameterTypes().get(i) instanceof JavaType.Array) {
+                                    return visited;
+                                }
                                 targetType = getParameterType(methodType, i);
                                 break;
                             }
@@ -131,6 +180,12 @@ public class RemoveRedundantTypeCast extends Recipe {
                     }
                 }
 
+                // A cast inside a lambda body may pin the inferred return type of a generic method call
+                // so outer inference (e.g. Optional.map -> ifPresent) doesn't lose it to the type bound.
+                if (parentValue instanceof J.Lambda && returnsDeclaredTypeParameter(typeCast.getExpression())) {
+                    return visitedTypeCast;
+                }
+
                 if (!(targetType instanceof JavaType.Array) && TypeUtils.isOfClassType(targetType, "java.lang.Object") ||
                     TypeUtils.isOfType(targetType, expressionType) ||
                     TypeUtils.isAssignableTo(targetType, expressionType)) {
@@ -154,6 +209,26 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return parentheses.getTree().withPrefix(parentheses.getPrefix());
                 }
                 return parentheses;
+            }
+
+            private boolean returnsDeclaredTypeParameter(Expression expression) {
+                if (!(expression instanceof J.MethodInvocation)) {
+                    return false;
+                }
+                JavaType.Method invokedMethod = ((J.MethodInvocation) expression).getMethodType();
+                if (invokedMethod == null || invokedMethod.getDeclaringType() == null) {
+                    return false;
+                }
+                for (JavaType.Method declared : invokedMethod.getDeclaringType().getMethods()) {
+                    if (declared.getName().equals(invokedMethod.getName()) &&
+                            declared.getParameterTypes().size() == invokedMethod.getParameterTypes().size() &&
+                            declared.getReturnType() instanceof JavaType.GenericTypeVariable &&
+                            declared.getDeclaredFormalTypeNames().contains(
+                                    ((JavaType.GenericTypeVariable) declared.getReturnType()).getName())) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private JavaType getParameterType(JavaType.Method method, int arg) {

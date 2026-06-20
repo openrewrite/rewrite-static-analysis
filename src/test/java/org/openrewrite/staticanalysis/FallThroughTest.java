@@ -26,8 +26,9 @@ import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
+import java.util.List;
+import java.util.Set;
+
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"EnhancedSwitchMigration", "ConstantConditions", "StatementWithEmptyBody", "SwitchStatementWithTooFewBranches", "ReassignedVariable", "UnusedAssignment"})
@@ -202,10 +203,10 @@ class FallThroughTest implements RewriteTest {
     void checkLastCaseGroupAddsBreakToLastCase() {
         rewriteRun(
           spec -> spec.parser(JavaParser.fromJavaVersion().styles(
-            singletonList(
+            List.of(
               new NamedStyles(
-                Tree.randomId(), "test", "test", "test", emptySet(),
-                singletonList(new FallThroughStyle(true)))))
+                Tree.randomId(), "test", "test", "test", Set.of(),
+                List.of(new FallThroughStyle(true)))))
           ),
           //language=java
           java(

@@ -59,7 +59,7 @@ public class SimplifyTernary {
 
         @AfterTemplate
         boolean after(boolean expr) {
-            return !(expr);
+            return !expr;
         }
     }
 }

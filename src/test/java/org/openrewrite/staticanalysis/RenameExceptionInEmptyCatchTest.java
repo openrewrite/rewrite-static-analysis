@@ -17,10 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"EmptyTryBlock", "CatchMayIgnoreException"})
 class RenameExceptionInEmptyCatchTest implements RewriteTest {
@@ -146,6 +149,32 @@ class RenameExceptionInEmptyCatchTest implements RewriteTest {
                       }
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/701")
+    @Test
+    void kotlinImportOnly() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              import nebula.plugin.contacts.Contact
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/701")
+    @Test
+    void groovyTopLevelStatement() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              def file = new File("test")
               """
           )
         );

@@ -150,6 +150,151 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/892")
+    @SuppressWarnings("removal")
+    @Test
+    void diamondOperatorInAnonymousClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.security.AccessController;
+              import java.security.PrivilegedAction;
+
+              class Test {
+                  void test() {
+                      AccessController.doPrivileged(new PrivilegedAction<>() {
+                          @Override public Integer run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              import java.security.AccessController;
+              import java.security.PrivilegedAction;
+
+              class Test {
+                  void test() {
+                      AccessController.doPrivileged((PrivilegedAction<Object>) () -> 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/892")
+    @Test
+    void diamondOperatorWithMultipleTypeParameters() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface A<T, R> { R run(T t); }
+                  interface B<T, R> { R run(T t); }
+                  static <T, R> R x(A<T, R> a, T arg) { return a.run(arg); }
+                  static <T, R> R x(B<T, R> b, T arg) { return b.run(arg); }
+                  void test() {
+                      x(new A<>() {
+                          @Override public String run(Integer t) {
+                              return t.toString();
+                          }
+                      }, 1);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface A<T, R> { R run(T t); }
+                  interface B<T, R> { R run(T t); }
+                  static <T, R> R x(A<T, R> a, T arg) { return a.run(arg); }
+                  static <T, R> R x(B<T, R> b, T arg) { return b.run(arg); }
+                  void test() {
+                      x((A<Integer, Object>) t -> t.toString(), 1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/895")
+    @Test
+    void varLocalVariableReplacedWithInterfaceType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface Action {
+                      String run(String input);
+                  }
+
+                  void execute() {
+                      final var action = new Action() {
+                          @Override
+                          public String run(String input) {
+                              return input.toUpperCase();
+                          }
+                      };
+                      action.run("hello");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface Action {
+                      String run(String input);
+                  }
+
+                  void execute() {
+                      final Action action = input -> input.toUpperCase();
+                      action.run("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/895")
+    @Test
+    void varLocalVariableWithDiamondReplacedWithResolvedType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  void execute() {
+                      var f = new Function<String, Integer>() {
+                          @Override
+                          public Integer apply(String s) {
+                              return s.length();
+                          }
+                      };
+                      f.apply("hello");
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  void execute() {
+                      Function<String, Integer> f = s -> s.length();
+                      f.apply("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings({"Convert2Lambda", "TrivialFunctionalExpressionUsage"})
     @Test
     void usedAsStatementWithNonInferrableType() {
@@ -824,6 +969,74 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                               DATE_FORMAT.format(LocalDate.now());
                           }
                       };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/20")
+    @Test
+    void anonymousClassInsideParameterizedMethodCall() {
+        // given / when / then
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+              import java.util.concurrent.atomic.AtomicInteger;
+
+              class TypeLiteral<T> {
+              }
+
+              class Binder {
+                  <T> Binding<T> bind(TypeLiteral<T> typeLiteral) {
+                      return new Binding<>();
+                  }
+              }
+
+              class Binding<T> {
+                  void toInstance(T instance) {
+                  }
+              }
+
+              class Test {
+                  void test(Binder binder) {
+                      final AtomicInteger suffix = new AtomicInteger();
+                      binder.bind(new TypeLiteral<Supplier<String>>() {
+                      }).toInstance(new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              return suffix.getAndIncrement() + "";
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+              import java.util.concurrent.atomic.AtomicInteger;
+
+              class TypeLiteral<T> {
+              }
+
+              class Binder {
+                  <T> Binding<T> bind(TypeLiteral<T> typeLiteral) {
+                      return new Binding<>();
+                  }
+              }
+
+              class Binding<T> {
+                  void toInstance(T instance) {
+                  }
+              }
+
+              class Test {
+                  void test(Binder binder) {
+                      final AtomicInteger suffix = new AtomicInteger();
+                      binder.bind(new TypeLiteral<Supplier<String>>() {
+                      }).toInstance(() -> suffix.getAndIncrement() + "");
                   }
               }
               """

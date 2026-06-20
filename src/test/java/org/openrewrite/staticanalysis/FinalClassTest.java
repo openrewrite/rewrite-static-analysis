@@ -215,6 +215,40 @@ class FinalClassTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/729")
+    @Test
+    void doNotFinalizeSpringTestConfigurationClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.springframework.context.annotation;
+              public @interface Configuration {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              package org.springframework.boot.test.context;
+              import org.springframework.context.annotation.Configuration;
+              @Configuration
+              public @interface TestConfiguration {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              import org.springframework.boot.test.context.TestConfiguration;
+
+              @TestConfiguration
+              class MyTestConfig {
+                  private MyTestConfig() {}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/372")
     @Test
     void doNotFinalizeClassWithNestedStaticFinalSubclass() {
@@ -226,6 +260,25 @@ class FinalClassTest implements RewriteTest {
                   private Reproducer() {}
 
                   public static final class Sub extends Reproducer {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/885")
+    @Test
+    void doNotFinalizeClassWithAnonymousSubclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Factory {
+                  private Factory() {}
+
+                  static Factory create() {
+                      return new Factory() {};
                   }
               }
               """

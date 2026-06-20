@@ -222,9 +222,7 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
         );
     }
 
-    /**
-     * Tests that the code generation used for JavaTemplate behaves correctly given a parameterized type.
-     */
+    /// Tests that the code generation used for JavaTemplate behaves correctly given a parameterized type.
     @Test
     void doesNotFailWhenArgHasParameterizedType() {
         rewriteRun(
@@ -250,9 +248,7 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
         );
     }
 
-    /**
-     * Tests that the code generation used for JavaTemplate behaves correctly given a primitive type.
-     */
+    /// Tests that the code generation used for JavaTemplate behaves correctly given a primitive type.
     @Test
     void doesNotFailWhenArgHasPrimitiveType() {
         rewriteRun(
@@ -278,9 +274,7 @@ class ReplaceRedundantFormatWithPrintfTest implements RewriteTest {
         );
     }
 
-    /**
-     * Tests that the code generation used for JavaTemplate behaves correctly given a template parameter.
-     */
+    /// Tests that the code generation used for JavaTemplate behaves correctly given a template parameter.
     @Test
     void doesNotFailWhenArgHasTemplateParameter() {
         rewriteRun(

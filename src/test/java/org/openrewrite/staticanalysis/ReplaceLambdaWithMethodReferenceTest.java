@@ -397,6 +397,41 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+    @Test
+    void doNotChangeBiPredicateInstanceOf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.BiPredicate;
+
+              class Test {
+                  BiPredicate<String, Throwable> pred = (r, t) -> t instanceof IllegalArgumentException;
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/900")
+    @Test
+    void doNotChangeInstanceOfOnCapturedVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Predicate;
+
+              class Test {
+                  Object field;
+                  Predicate<String> pred = s -> field instanceof String;
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void nonStaticMethods() {
         rewriteRun(
@@ -790,6 +825,31 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/873")
+    @Test
+    void zeroArgNullCheckLambdaCannotBecomeObjectsNonNull() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.Callable;
+
+              public class Main {
+                  private Object importerSource;
+
+                  void awaitReady(final ConditionFactory await) {
+                      await.until(() -> importerSource != null);
+                  }
+
+                  interface ConditionFactory {
+                      void until(Callable<Boolean> condition);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("Convert2MethodRef")
     @Test
     void isEqualToNull() {
@@ -1058,6 +1118,37 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                       method(() -> new B(t -> false));  // OK
                       method((x) -> new B(t -> false)); // OK
                       // method(B::new);                // Error
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void multipleConstructorsOnGenericTypeWithDiamond() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class B<T> {
+                  B() {}
+                  B(boolean flag) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              import java.util.function.Supplier;
+
+              class A {
+                  void method(Supplier<B<?>> supplier) {}
+                  void method(Function<A, B<?>> function) {}
+
+                  void test() {
+                      method(() -> new B<>());
                   }
               }
               """
@@ -1781,6 +1872,83 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
                           .map(R.class::cast)
                           .collect(Collectors.toList());
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/906")
+    @Test
+    void useReceiverTypeWhenDeclaringTypeIsPackagePrivate() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.helloworld.internal;
+
+              import java.util.Optional;
+
+              abstract class Base {
+                  public Optional<String> getValue() {
+                      return Optional.empty();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.helloworld.internal;
+
+              public class Child extends Base {}
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.helloworld;
+
+              import com.helloworld.internal.Child;
+              import java.util.Optional;
+
+              public class Main {
+                  String get(final Optional<Child> opt) {
+                      return opt.flatMap(s -> s.getValue()).orElse("");
+                  }
+              }
+              """,
+            """
+              package com.helloworld;
+
+              import com.helloworld.internal.Child;
+              import java.util.Optional;
+
+              public class Main {
+                  String get(final Optional<Child> opt) {
+                      return opt.flatMap(Child::getValue).orElse("");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/20")
+    @Test
+    void castToTypeParameterInLambda() {
+        // given / when / then
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class SequenceFileReader<K, V> {
+                  interface Converter<T> {
+                      T convert(Object o);
+                  }
+
+                  private Converter<K> keyConverter = o -> (K) o;
+                  private Converter<V> valConverter = o -> (V) o;
               }
               """
           )

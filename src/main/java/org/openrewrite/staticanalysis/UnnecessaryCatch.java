@@ -111,6 +111,23 @@ public class UnnecessaryCatch extends Recipe {
                         }
                         return super.visitThrow(thrown, integer);
                     }
+
+                    @Override
+                    public J.Try visitTry(J.Try nestedTry, Integer integer) {
+                        if (nestedTry.getResources() != null) {
+                            for (J.Try.Resource resource : nestedTry.getResources()) {
+                                JavaType resourceType = resource.getVariableDeclarations().getType();
+                                if (resourceType instanceof JavaType.FullyQualified) {
+                                    for (JavaType.Method method : ((JavaType.FullyQualified) resourceType).getMethods()) {
+                                        if ("close".equals(method.getName()) && method.getParameterTypes().isEmpty()) {
+                                            thrownExceptions.addAll(method.getThrownExceptions());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return super.visitTry(nestedTry, integer);
+                    }
                 }.visit(t.getBody(), 0);
 
                 Set<JavaType> unnecessaryTypes = getUnnecessaryTypes(t, thrownExceptions);

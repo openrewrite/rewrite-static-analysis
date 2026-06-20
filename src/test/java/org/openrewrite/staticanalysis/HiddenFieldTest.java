@@ -26,11 +26,11 @@ import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("UnnecessaryLocalVariable")
@@ -69,10 +69,10 @@ class HiddenFieldTest implements RewriteTest {
 
     private static Consumer<RecipeSpec> hiddenFieldStyle(UnaryOperator<HiddenFieldStyle> with) {
         return spec -> spec.parser(JavaParser.fromJavaVersion().styles(
-          singletonList(
+          List.of(
             new NamedStyles(
-              Tree.randomId(), "test", "test", "test", emptySet(),
-              singletonList(with.apply(Checkstyle.hiddenFieldStyle())))))
+              Tree.randomId(), "test", "test", "test", Set.of(),
+              List.of(with.apply(Checkstyle.hiddenFieldStyle())))))
         );
     }
 

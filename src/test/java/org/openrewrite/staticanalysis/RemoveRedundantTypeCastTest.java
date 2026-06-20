@@ -280,6 +280,26 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/899")
+    @Test
+    void keepObjectCastDisambiguatingVarargsFromThrowableOverload() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void log(String format, Object... args) {}
+                  void log(String format, Throwable t) {}
+
+                  void run(Object value) {
+                      log("value: {}", (Object) value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void varargsCall() {
         rewriteRun(
@@ -300,6 +320,51 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   }
                   void foo() {
                       m("1", "2");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveNullCastWithAmbiguousOverloads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Provider<T> {
+              }
+              interface Property<T> extends Provider<T> {
+                  void set(T value);
+                  void set(Provider<? extends T> provider);
+              }
+              class Test {
+                  void foo(Property<Integer> property) {
+                      property.set((Integer) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveNullCastInVarargsPosition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.reflect.Method;
+
+              class Test {
+                  void invoke(Method method, Object resolver) throws Exception {
+                      method.invoke(resolver, (String) null);
+                  }
+                  void m(String... s) {
+                  }
+                  void foo() {
+                      m((String) null);
                   }
               }
               """
@@ -612,6 +677,55 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/871")
+    @Test
+    void doNotRemoveCastNeededForGenericMethodInferenceInLambda() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.file.Path;
+              import java.util.List;
+              import java.util.Optional;
+
+              interface SourceFile {
+                  <T extends SourceFile> T withSourcePath(Path path);
+              }
+
+              class Test {
+                  void foo(Optional<? extends SourceFile> opt, Path targetPath, List<SourceFile> generated) {
+                      opt
+                          .map(sourceFile -> (SourceFile) sourceFile.withSourcePath(targetPath))
+                          .ifPresent(generated::add);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/874")
+    @Test
+    void doNotRemoveObjectBridgeCastForUncheckedGenericCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Main {
+                  void accept(List<String> values) {}
+
+                  void call(List<Integer> values) {
+                      accept((List<String>) (Object) values);
+                      accept((List<String>) ((Object) values));
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/221")
     @Test
     void doNotRemoveCharacterCastInGenericContext() {
@@ -625,6 +739,81 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
               class Test {
                   List<Character> foo() {
                       return Arrays.asList((Character) '{', (Character) '}', (Character) '#');
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/901")
+    @Test
+    void doNotRemoveRawCastBridgingWildcardCapture() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface I<T> {
+                  void method(B<T> param);
+              }
+
+              class B<T> {}
+
+              class A<T> {
+                  void test(I<? extends T> i, B<T> b) {
+                      i.method((B) b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/914")
+    @Test
+    void doNotRemoveRawSupertypeCastBridgingWildcardCapture() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class G<T extends Number> {}
+
+              interface I {
+                  Set<? extends G> doSomething();
+              }
+
+              class A {
+                  void test(I i) {
+                      Set<? extends G> s = new HashSet<>();
+                      s.addAll((Collection) i.doSomething());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveObjectCastOnGenericMethodCallWithOverloads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Holder {
+                  <T> T getValue() {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  String render(Holder h) {
+                      StringBuilder sb = new StringBuilder();
+                      sb.append((Object) h.getValue());
+                      return sb.toString();
                   }
               }
               """

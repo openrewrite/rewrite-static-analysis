@@ -14,3 +14,5 @@ bin/
 docs
 Sonar.MD
 working-set*/
+
+.context/

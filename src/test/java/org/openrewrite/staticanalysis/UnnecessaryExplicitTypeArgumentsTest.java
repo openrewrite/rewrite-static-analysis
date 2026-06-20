@@ -71,7 +71,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
-    @ExpectedToFail("Not implemented yet")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/670")
     @Test
     void withinLambda() {
         rewriteRun(
@@ -216,6 +216,36 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void retainsWitnessWhenResultIsSelectOfMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class VarDec {
+                  List<String> getVariables() {
+                      return null;
+                  }
+              }
+
+              class Cursor {
+                  <T> T getValue() {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  String test(Cursor c) {
+                      return c.<VarDec>getValue().getVariables().get(0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class StaticMethods {
         static final SourceSpecs GENERIC_CLASS_SOURCE = java(
@@ -255,6 +285,33 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
                           final GenericClass<T> gc1 = GenericClass.<T>typedBuilder().type("thing").build();
                           var gc2 = GenericClass.<T>typedBuilder().type("thing").build();
                           var gcb1 = GenericClass.<T>typedBuilder();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/moderneinc/customer-requests/issues/2370")
+        @Test
+        void retainsExplicitTypeOnStaticMethodWithoutTypeBoundParameters() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.List;
+
+                  interface RowMapper<T> {}
+
+                  class ArgumentMatchers {
+                      public static <T> T any() { return null; }
+                  }
+
+                  class Test {
+                      <R> List<R> query(String sql, RowMapper<R> rowMapper) { return null; }
+
+                      void test() {
+                          List<String> result = query("sql", ArgumentMatchers.<RowMapper<String>>any());
                       }
                   }
                   """

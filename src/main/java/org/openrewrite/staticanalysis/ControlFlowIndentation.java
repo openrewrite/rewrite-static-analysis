@@ -121,7 +121,7 @@ public class ControlFlowIndentation extends Recipe {
                 }
                 Statement body = s.getBody();
                 if (body instanceof J.If) {
-                    return shouldReformat(((J.If) body));
+                    return shouldReformat((J.If) body);
                 }
                 return !(body instanceof J.Block);
             }

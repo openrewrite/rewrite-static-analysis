@@ -897,6 +897,57 @@ class FinalizePrivateFieldsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/861")
+    @Test
+    void fieldReadByLambdaInInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              public class Foo {
+                  private String name;
+                  protected Function<Throwable, Void> logAndAccept =
+                      throwable -> {
+                          System.out.println(name);
+                          return null;
+                      };
+
+                  public Foo(String name) {
+                      this.name = name;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/861")
+    @Test
+    void fieldReadByAnonymousClassInInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Foo {
+                  private String name;
+                  protected Runnable runner = new Runnable() {
+                      @Override
+                      public void run() {
+                          System.out.println(name);
+                      }
+                  };
+
+                  public Foo(String name) {
+                      this.name = name;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void keepIndentation() {
         rewriteRun(

@@ -42,7 +42,7 @@ public class ReorderAnnotations extends Recipe {
                 // If the annotation is a type use annotation, it should be ordered last
                 if (a.getType() instanceof JavaType.Class) {
                     for (JavaType.FullyQualified fq : ((JavaType.Class) a.getType()).getAnnotations()) {
-                        if (TypeUtils.isOfClassType(fq, "java.lang.annotation.Target")) {
+                        if (fq instanceof JavaType.Annotation && TypeUtils.isOfClassType(fq, "java.lang.annotation.Target")) {
                             for (JavaType.Annotation.ElementValue elementValue : ((JavaType.Annotation) fq).getValues()) {
                                 Object value = elementValue.getValue();
                                 if (value instanceof List) {

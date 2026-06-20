@@ -1160,4 +1160,31 @@ class MinimumSwitchCasesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite/issues/8039")
+    void sealedInterfacePatternSwitch() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              sealed interface LifecycleCommand permits LifecycleCommand.Sequential, LifecycleCommand.Parallel {
+                  record Sequential(List<String> args) implements LifecycleCommand {}
+                  record Parallel(List<String> steps) implements LifecycleCommand {}
+              }
+
+              class Test {
+                  void test(LifecycleCommand command) {
+                      switch (command) {
+                          case LifecycleCommand.Sequential s -> System.out.println(s.args());
+                          case LifecycleCommand.Parallel p -> System.out.println(p.steps());
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }

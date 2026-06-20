@@ -77,7 +77,11 @@ public class InstanceOfPatternMatch extends Recipe {
                 J result = super.postVisit(tree, ctx);
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
                 if (original != null && !original.isEmpty()) {
-                    return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow());
+                    Cursor methodCursor = getCursor().dropParentUntil(
+                            v -> v instanceof J.MethodDeclaration || v instanceof J.ClassDeclaration || v == Cursor.ROOT_VALUE);
+                    Set<String> introducedNames = methodCursor.computeMessageIfAbsent(
+                            "introducedPatternVarNames", k -> new HashSet<>());
+                    return UseInstanceOfPatternMatching.refactor(result, original, getCursor().getParentOrThrow(), introducedNames);
                 }
                 return result;
             }
@@ -449,13 +453,29 @@ public class InstanceOfPatternMatch extends Recipe {
         public @Nullable J processTypeCast(J.TypeCast typeCast, Cursor cursor) {
             J.InstanceOf instanceOf = replacements.get(typeCast);
             if (instanceOf != null && instanceOf.getPattern() != null) {
-                String name = ((J.Identifier) instanceOf.getPattern()).getSimpleName();
+                J.Identifier pattern = (J.Identifier) instanceOf.getPattern();
+                String name = pattern.getSimpleName();
                 TypedTree owner = cursor.firstEnclosing(J.MethodDeclaration.class);
                 owner = owner != null ? owner : cursor.firstEnclosingOrThrow(J.ClassDeclaration.class);
+                // A primitive (unboxing) cast nested inside another cast is load-bearing: in `(int) (long) o`
+                // the `(long)` cast cannot be dropped, since `(int) o` on the boxed pattern variable does not
+                // compile. Keep the cast and replace only its expression with the pattern variable.
+                if (typeCast.getType() instanceof JavaType.Primitive &&
+                        cursor.getParentTreeCursor().getValue() instanceof J.TypeCast) {
+                    JavaType.Variable innerType = new JavaType.Variable(null, Flag.Default.getBitMask(), name, owner.getType(), pattern.getType(), emptyList());
+                    return typeCast.withExpression(new J.Identifier(
+                            randomId(),
+                            typeCast.getExpression().getPrefix(),
+                            Markers.EMPTY,
+                            emptyList(),
+                            name,
+                            pattern.getType(),
+                            innerType));
+                }
                 JavaType.Variable fieldType = new JavaType.Variable(null, Flag.Default.getBitMask(), name, owner.getType(), typeCast.getType(), emptyList());
                 return new J.Identifier(
                         randomId(),
-                        typeCast.getPrefix(),
+                        keywordSafePrefix(typeCast.getPrefix(), cursor),
                         Markers.EMPTY,
                         emptyList(),
                         name,
@@ -463,6 +483,22 @@ public class InstanceOfPatternMatch extends Recipe {
                         fieldType);
             }
             return null;
+        }
+
+        /**
+         * A cast like {@code throw(Foo)e} starts with {@code (}, so it needs no whitespace separation
+         * from a preceding keyword. Replacing it with an identifier (e.g. {@code exception}) would fuse
+         * the tokens into {@code throwexception}, so ensure a separating space when the replaced
+         * expression directly follows a keyword (such as {@code throw}, {@code return} or {@code yield}).
+         */
+        private Space keywordSafePrefix(Space prefix, Cursor cursor) {
+            if (prefix.getWhitespace().isEmpty() && prefix.getComments().isEmpty()) {
+                Object parent = cursor.getParentTreeCursor().getValue();
+                if (parent instanceof J.Return || parent instanceof J.Throw || parent instanceof J.Yield) {
+                    return Space.SINGLE_SPACE;
+                }
+            }
+            return prefix;
         }
 
         public @Nullable J processVariableDeclarations(J.VariableDeclarations multiVariable) {
@@ -476,9 +512,10 @@ public class InstanceOfPatternMatch extends Recipe {
     private static class UseInstanceOfPatternMatching extends JavaVisitor<Integer> {
 
         private final InstanceOfPatternReplacements replacements;
+        private final Set<String> introducedNames;
 
-        static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor) {
-            return new UseInstanceOfPatternMatching(replacements).visit(tree, 0, cursor);
+        static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor, Set<String> introducedNames) {
+            return new UseInstanceOfPatternMatching(replacements, introducedNames).visit(tree, 0, cursor);
         }
 
         @Override
@@ -489,7 +526,7 @@ public class InstanceOfPatternMatch extends Recipe {
                 Cursor widenedCursor = updateCursor(b);
 
                 // Collect names from the left side if it's an instanceof with a pattern
-                Set<String> usedNames = new HashSet<>();
+                Set<String> usedNames = new HashSet<>(introducedNames);
                 if (b.getLeft() instanceof J.InstanceOf) {
                     J.InstanceOf leftInstanceOf = (J.InstanceOf) b.getLeft();
                     if (leftInstanceOf.getPattern() != null) {
@@ -499,11 +536,15 @@ public class InstanceOfPatternMatch extends Recipe {
 
                 Expression newRight;
                 if (binary.getRight() instanceof J.InstanceOf) {
-                    newRight = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor, usedNames);
+                    J.InstanceOf rightResult = replacements.processInstanceOf((J.InstanceOf) binary.getRight(), widenedCursor, usedNames);
+                    trackIntroducedName((J.InstanceOf) binary.getRight(), rightResult);
+                    newRight = rightResult;
                 } else if (binary.getRight() instanceof J.Parentheses &&
                         ((J.Parentheses<?>) binary.getRight()).getTree() instanceof J.InstanceOf) {
                     @SuppressWarnings("unchecked") J.Parentheses<J.InstanceOf> originalRight = (J.Parentheses<J.InstanceOf>) binary.getRight();
-                    newRight = originalRight.withTree(replacements.processInstanceOf(originalRight.getTree(), widenedCursor, usedNames));
+                    J.InstanceOf rightResult = replacements.processInstanceOf(originalRight.getTree(), widenedCursor, usedNames);
+                    trackIntroducedName(originalRight.getTree(), rightResult);
+                    newRight = originalRight.withTree(rightResult);
                 } else {
                     newRight = (Expression) visitNonNull(binary.getRight(), p, widenedCursor);
                 }
@@ -516,7 +557,15 @@ public class InstanceOfPatternMatch extends Recipe {
         @Override
         public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
             instanceOf = (J.InstanceOf) super.visitInstanceOf(instanceOf, p);
-            return replacements.processInstanceOf(instanceOf, getCursor(), new HashSet<>());
+            J.InstanceOf result = replacements.processInstanceOf(instanceOf, getCursor(), new HashSet<>(introducedNames));
+            trackIntroducedName(instanceOf, result);
+            return result;
+        }
+
+        private void trackIntroducedName(J.InstanceOf original, J.InstanceOf result) {
+            if (result.getPattern() != null && original.getPattern() == null) {
+                introducedNames.add(((J.Identifier) result.getPattern()).getSimpleName());
+            }
         }
 
         @Override
@@ -524,7 +573,7 @@ public class InstanceOfPatternMatch extends Recipe {
             if (parens.getTree() instanceof J.TypeCast) {
                 J replacement = replacements.processTypeCast((J.TypeCast) parens.getTree(), getCursor());
                 if (replacement != null) {
-                    return replacement.withPrefix(parens.getPrefix());
+                    return replacement.withPrefix(replacements.keywordSafePrefix(parens.getPrefix(), getCursor()));
                 }
             }
             return super.visitParentheses(parens, p);
