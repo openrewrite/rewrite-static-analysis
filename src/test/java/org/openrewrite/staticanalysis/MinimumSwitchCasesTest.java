@@ -1161,8 +1161,8 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite/issues/8039")
+    @Test
     void sealedInterfacePatternSwitch() {
         rewriteRun(
           //language=java
