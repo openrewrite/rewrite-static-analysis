@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.javascript.Assertions.javascript;
+import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class RemoveDuplicateConditionsTest implements RewriteTest {
@@ -233,12 +233,12 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
     }
 
     @Test
-    void removeDuplicateElseIfJavaScript() {
+    void removeDuplicateElseIfTypeScript() {
         rewriteRun(
-          //language=javascript
-          javascript(
+          //language=typescript
+          typescript(
             """
-              function test(x) {
+              function test(x: number) {
                   if (x > 0) {
                       f();
                   } else if (x > 0) {
@@ -249,7 +249,7 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
               }
               """,
             """
-              function test(x) {
+              function test(x: number) {
                   if (x > 0) {
                       f();
                   } else {

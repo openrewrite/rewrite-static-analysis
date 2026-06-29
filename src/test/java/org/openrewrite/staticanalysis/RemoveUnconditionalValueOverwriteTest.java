@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.javascript.Assertions.javascript;
+import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
@@ -238,18 +238,18 @@ class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
     }
 
     @Test
-    void removeOverwrittenMapSetJavaScript() {
+    void removeOverwrittenMapSetTypeScript() {
         rewriteRun(
-          //language=javascript
-          javascript(
+          //language=typescript
+          typescript(
             """
-              function test(map) {
+              function test(map: Map<string, number>) {
                   map.set("key", 1);
                   map.set("key", 2);
               }
               """,
             """
-              function test(map) {
+              function test(map: Map<string, number>) {
                   map.set("key", 2);
               }
               """

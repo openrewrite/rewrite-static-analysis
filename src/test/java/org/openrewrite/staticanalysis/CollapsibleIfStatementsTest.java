@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.javascript.Assertions.javascript;
+import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class CollapsibleIfStatementsTest implements RewriteTest {
@@ -296,12 +296,12 @@ class CollapsibleIfStatementsTest implements RewriteTest {
     }
 
     @Test
-    void mergeNestedIfsJavaScript() {
+    void mergeNestedIfsTypeScript() {
         rewriteRun(
-          //language=javascript
-          javascript(
+          //language=typescript
+          typescript(
             """
-              function test(a, b) {
+              function test(a: boolean, b: boolean) {
                   if (a) {
                       if (b) {
                           f();
@@ -310,7 +310,7 @@ class CollapsibleIfStatementsTest implements RewriteTest {
               }
               """,
             """
-              function test(a, b) {
+              function test(a: boolean, b: boolean) {
                   if (a && b) {
                       f();
                   }

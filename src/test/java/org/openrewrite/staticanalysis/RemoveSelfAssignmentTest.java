@@ -22,7 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.javascript.Assertions.javascript;
+import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("SelfAssignment")
@@ -198,17 +198,17 @@ class RemoveSelfAssignmentTest implements RewriteTest {
     }
 
     @Test
-    void removeSelfAssignmentJavaScript() {
+    void removeSelfAssignmentTypeScript() {
         rewriteRun(
-          //language=javascript
-          javascript(
+          //language=typescript
+          typescript(
             """
-              function test(x) {
+              function test(x: number) {
                   x = x;
               }
               """,
             """
-              function test(x) {
+              function test(x: number) {
               }
               """
           )
