@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
@@ -291,6 +292,25 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
             """
               boolean test(boolean a) {
                   return a
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLogicalAndJavaScript() {
+        rewriteRun(
+          //language=javascript
+          javascript(
+            """
+              function test(a) {
+                  return a && a;
+              }
+              """,
+            """
+              function test(a) {
+                  return a;
               }
               """
           )

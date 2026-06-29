@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
@@ -230,6 +231,26 @@ class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
               void test() {
                   Map<String, Integer> map = new HashMap<>()
                   map.put("key", 2)
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapSetJavaScript() {
+        rewriteRun(
+          //language=javascript
+          javascript(
+            """
+              function test(map) {
+                  map.set("key", 1);
+                  map.set("key", 2);
+              }
+              """,
+            """
+              function test(map) {
+                  map.set("key", 2);
               }
               """
           )

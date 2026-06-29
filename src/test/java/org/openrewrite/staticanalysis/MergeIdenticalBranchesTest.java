@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class MergeIdenticalBranchesTest implements RewriteTest {
@@ -259,6 +260,35 @@ class MergeIdenticalBranchesTest implements RewriteTest {
                       println("same")
                   } else {
                       println("different")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesJavaScript() {
+        rewriteRun(
+          //language=javascript
+          javascript(
+            """
+              function test(a, b) {
+                  if (a) {
+                      f();
+                  } else if (b) {
+                      f();
+                  } else {
+                      g();
+                  }
+              }
+              """,
+            """
+              function test(a, b) {
+                  if (a || b) {
+                      f();
+                  } else {
+                      g();
                   }
               }
               """

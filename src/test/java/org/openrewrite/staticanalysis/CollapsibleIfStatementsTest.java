@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class CollapsibleIfStatementsTest implements RewriteTest {
@@ -287,6 +288,31 @@ class CollapsibleIfStatementsTest implements RewriteTest {
               void test(boolean a, boolean b) {
                   if (a && b) {
                       println()
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeNestedIfsJavaScript() {
+        rewriteRun(
+          //language=javascript
+          javascript(
+            """
+              function test(a, b) {
+                  if (a) {
+                      if (b) {
+                          f();
+                      }
+                  }
+              }
+              """,
+            """
+              function test(a, b) {
+                  if (a && b) {
+                      f();
                   }
               }
               """
