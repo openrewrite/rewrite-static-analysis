@@ -20,7 +20,9 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class RemoveDuplicateConditionsTest implements RewriteTest {
 
@@ -164,6 +166,64 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
                       } else {
                           System.out.println("no");
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(x: Int) {
+                  if (x > 0) {
+                      println("positive")
+                  } else if (x > 0) {
+                      println("also positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """,
+            """
+              fun test(x: Int) {
+                  if (x > 0) {
+                      println("positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(int x) {
+                  if (x > 0) {
+                      println("positive")
+                  } else if (x > 0) {
+                      println("also positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """,
+            """
+              void test(int x) {
+                  if (x > 0) {
+                      println("positive")
+                  } else {
+                      println("non-positive")
                   }
               }
               """

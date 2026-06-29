@@ -20,7 +20,9 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class MergeIdenticalBranchesTest implements RewriteTest {
 
@@ -199,6 +201,64 @@ class MergeIdenticalBranchesTest implements RewriteTest {
                       } else {
                           System.out.println("no");
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(a: Boolean, b: Boolean) {
+                  if (a) {
+                      println("same")
+                  } else if (b) {
+                      println("same")
+                  } else {
+                      println("different")
+                  }
+              }
+              """,
+            """
+              fun test(a: Boolean, b: Boolean) {
+                  if (a || b) {
+                      println("same")
+                  } else {
+                      println("different")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(boolean a, boolean b) {
+                  if (a) {
+                      println("same")
+                  } else if (b) {
+                      println("same")
+                  } else {
+                      println("different")
+                  }
+              }
+              """,
+            """
+              void test(boolean a, boolean b) {
+                  if (a || b) {
+                      println("same")
+                  } else {
+                      println("different")
                   }
               }
               """

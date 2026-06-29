@@ -20,7 +20,9 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class CollapsibleIfStatementsTest implements RewriteTest {
 
@@ -235,6 +237,56 @@ class CollapsibleIfStatementsTest implements RewriteTest {
                       if (a && b && c) {
                           System.out.println();
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeNestedIfsKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(a: Boolean, b: Boolean) {
+                  if (a) {
+                      if (b) {
+                          println()
+                      }
+                  }
+              }
+              """,
+            """
+              fun test(a: Boolean, b: Boolean) {
+                  if (a && b) {
+                      println()
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeNestedIfsGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(boolean a, boolean b) {
+                  if (a) {
+                      if (b) {
+                          println()
+                      }
+                  }
+              }
+              """,
+            """
+              void test(boolean a, boolean b) {
+                  if (a && b) {
+                      println()
                   }
               }
               """
