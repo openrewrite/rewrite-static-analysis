@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 @SuppressWarnings("ALL")
 class RemoveRedundantTypeCastTest implements RewriteTest {
@@ -485,6 +486,50 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    void keepCastForLambdaAssignedToVar() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Example {
+                  void run() {
+                      var converter = (Function<Integer, String>) (i -> Integer.toString(i));
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(25))
+          )
+        );
+    }
+
+    @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    void keepCastForMethodReferenceAssignedToVar() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Example {
+                  static String make() {
+                      return "";
+                  }
+
+                  void run() {
+                      var supplier = (Supplier<String>) Example::make;
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(25))
           )
         );
     }

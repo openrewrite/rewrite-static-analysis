@@ -160,8 +160,16 @@ public class RemoveRedundantTypeCast extends Recipe {
                 if ((targetType instanceof JavaType.Primitive || castType instanceof JavaType.Primitive) && castType != expressionType) {
                     return visitedTypeCast;
                 }
-                if (typeCast.getExpression() instanceof J.Lambda || typeCast.getExpression() instanceof J.MemberReference) {
+                J castExpression = typeCast.getExpression();
+                while (castExpression instanceof J.Parentheses || castExpression instanceof J.ControlParentheses) {
+                    castExpression = castExpression instanceof J.Parentheses ?
+                            ((J.Parentheses<?>) castExpression).getTree() :
+                            ((J.ControlParentheses<?>) castExpression).getTree();
+                }
+                if (castExpression instanceof J.Lambda || castExpression instanceof J.MemberReference) {
                     // Not currently supported, this will be more accurate with dataflow analysis.
+                    // The cast supplies the target type for the lambda or method reference; removing it
+                    // can break compilation, e.g. when assigned to a `var` local.
                     return visitedTypeCast;
                 }
 
