@@ -275,20 +275,20 @@ class MergeIdenticalBranchesTest implements RewriteTest {
             """
               function test(a: boolean, b: boolean) {
                   if (a) {
-                      f();
+                      console.log("same");
                   } else if (b) {
-                      f();
+                      console.log("same");
                   } else {
-                      g();
+                      console.log("different");
                   }
               }
               """,
             """
               function test(a: boolean, b: boolean) {
                   if (a || b) {
-                      f();
+                      console.log("same");
                   } else {
-                      g();
+                      console.log("different");
                   }
               }
               """
