@@ -217,7 +217,6 @@ class RemoveUnreachableMultiCatchAlternativeTest implements RewriteTest {
               """,
             """
               import java.io.IOException;
-              import java.io.FileNotFoundException;
 
               class A {
                   void m() {
@@ -256,7 +255,6 @@ class RemoveUnreachableMultiCatchAlternativeTest implements RewriteTest {
               """,
             """
               import java.io.IOException;
-              import java.io.FileNotFoundException;
 
               class A {
                   void m() {
@@ -288,6 +286,32 @@ class RemoveUnreachableMultiCatchAlternativeTest implements RewriteTest {
                       } catch (FileNotFoundException e) {
                           System.out.println(e);
                       } catch (IOException e) {
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNothingWhenSpecificCatchesPrecedeCatchAllException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class A {
+                  void m() {
+                      try {
+                          throw new IOException();
+                      } catch (IOException e) {
+                          System.out.println(e);
+                      } catch (IllegalStateException e) {
+                          System.out.println(e);
+                      } catch (Exception e) {
                           System.out.println(e);
                       }
                   }

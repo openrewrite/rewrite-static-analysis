@@ -70,6 +70,7 @@ public class RemoveUnreachableMultiCatchAlternative extends Recipe {
                         List<NameTree> retained = new ArrayList<>(multiCatch.getAlternatives().size());
                         for (NameTree alt : multiCatch.getAlternatives()) {
                             if (alt.getType() == null || isCoveredBy(alt.getType(), covered)) {
+                                maybeRemoveImport(TypeUtils.asFullyQualified(alt.getType()));
                                 continue;
                             }
                             retained.add(alt);
@@ -103,6 +104,7 @@ public class RemoveUnreachableMultiCatchAlternative extends Recipe {
 
                     JavaType type = typeExpression.getType();
                     if (type != null && isCoveredBy(type, covered)) {
+                        maybeRemoveImport(TypeUtils.asFullyQualified(type));
                         return null;
                     }
                     if (type != null) {
