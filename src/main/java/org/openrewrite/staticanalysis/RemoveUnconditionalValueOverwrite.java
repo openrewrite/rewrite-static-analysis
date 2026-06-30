@@ -87,6 +87,10 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
             }
 
             private Expression extractMapPutKey(Statement stmt) {
+                // Python dict subscript assignment: `d[key] = value`
+                if (stmt instanceof J.Assignment && ((J.Assignment) stmt).getVariable() instanceof J.ArrayAccess) {
+                    return ((J.ArrayAccess) ((J.Assignment) stmt).getVariable()).getDimension().getIndex();
+                }
                 if (!(stmt instanceof J.MethodInvocation)) {
                     return null;
                 }
@@ -99,6 +103,10 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
             }
 
             private Expression extractMapPutReceiver(Statement stmt) {
+                // Python dict subscript assignment: `d[key] = value`
+                if (stmt instanceof J.Assignment && ((J.Assignment) stmt).getVariable() instanceof J.ArrayAccess) {
+                    return ((J.ArrayAccess) ((J.Assignment) stmt).getVariable()).getIndexed();
+                }
                 if (!(stmt instanceof J.MethodInvocation)) {
                     return null;
                 }

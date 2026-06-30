@@ -24,6 +24,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class CollapsibleIfStatementsTest implements RewriteTest {
 
@@ -315,6 +316,26 @@ class CollapsibleIfStatementsTest implements RewriteTest {
                       f();
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeNestedIfsPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test(a, b):
+                  if a:
+                      if b:
+                          print()
+              """,
+            """
+              def test(a, b):
+                  if a and b:
+                      print()
               """
           )
         );
