@@ -28,6 +28,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Comparator.comparing;
 
@@ -145,16 +146,32 @@ public class AnnotateRequiredParameters extends Recipe {
     }
 
     /**
-     * Gets all method parameters.
+     * Gets all method parameters, excluding those already annotated with `@Nullable`.
+     * A parameter explicitly marked `@Nullable` signals that the developer intends
+     * to allow nulls; any accompanying null check + throw is therefore intentional
+     * business logic and must not be removed.
      *
      * @param md the method declaration to analyze
-     * @return set of all parameter declarations
+     * @return set of candidate parameter identifiers
      */
     private Set<J.Identifier> getAllParameters(J.MethodDeclaration md) {
         Set<J.Identifier> allParams = new LinkedHashSet<>();
         for (Statement parameter : md.getParameters()) {
             if (parameter instanceof J.VariableDeclarations) {
-                allParams.add(((J.VariableDeclarations) parameter).getVariables().get(0).getName());
+                J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
+                boolean nullable = new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean f) {
+                        if ("Nullable".equals(annotation.getSimpleName())) {
+                            f.set(true);
+                        }
+                        return annotation;
+                    }
+                }.reduce(vd, new AtomicBoolean()).get();
+                if (nullable) {
+                    continue;
+                }
+                allParams.add(vd.getVariables().get(0).getName());
             }
         }
         return allParams;
@@ -188,9 +205,10 @@ public class AnnotateRequiredParameters extends Recipe {
             List<J.Identifier> nullCheckedParams = extractNullCheckedParameters(condition);
 
             if (!nullCheckedParams.isEmpty()) {
-                // Check if the then-body throws an exception
-                if (bodyThrowsException(iff.getThenPart())) {
-                    // Add all null-checked parameters as required
+                // Only treat the null check as redundant when the throw carries no information:
+                // a JDK exception type with no constructor arguments. A custom exception type or
+                // a non-empty message indicates intentional business logic that must be preserved.
+                if (throwsInformationlessException(iff.getThenPart())) {
                     for (J.Identifier param : nullCheckedParams) {
                         if (containsIdentifierByName(parameterIdentifiers, param)) {
                             analysis.requiredIdentifiers.add(param);
@@ -257,22 +275,39 @@ public class AnnotateRequiredParameters extends Recipe {
         }
 
         /**
-         * Checks if a statement block throws an exception.
+         * Returns true when the body throws a JDK exception constructed with no arguments —
+         * a purely defensive check that can be safely replaced by a `@NonNull` annotation.
+         * Custom exception types or non-empty messages are treated as intentional and preserved.
          */
-        private boolean bodyThrowsException(Statement body) {
-            if (body instanceof J.Throw) {
+        private boolean throwsInformationlessException(Statement body) {
+            J.Throw thr = findThrow(body);
+            if (thr == null || !(thr.getException() instanceof J.NewClass)) {
+                return false;
+            }
+            J.NewClass nc = (J.NewClass) thr.getException();
+            JavaType.FullyQualified fq = TypeUtils.asFullyQualified(nc.getType());
+            if (fq == null || !fq.getFullyQualifiedName().startsWith("java.")) {
+                return false;
+            }
+            List<Expression> args = nc.getArguments();
+            if (args == null || args.isEmpty()) {
                 return true;
             }
+            return args.size() == 1 && args.get(0) instanceof J.Empty;
+        }
+
+        private J.@Nullable Throw findThrow(Statement body) {
+            if (body instanceof J.Throw) {
+                return (J.Throw) body;
+            }
             if (body instanceof J.Block) {
-                J.Block block = (J.Block) body;
-                // Check if any statement in the block is a throw
-                for (Statement statement : block.getStatements()) {
-                    if (statement instanceof J.Throw) {
-                        return true;
+                for (Statement s : ((J.Block) body).getStatements()) {
+                    if (s instanceof J.Throw) {
+                        return (J.Throw) s;
                     }
                 }
             }
-            return false;
+            return null;
         }
     }
 
