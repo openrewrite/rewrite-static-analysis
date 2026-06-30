@@ -20,7 +20,10 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class AllBranchesIdenticalTest implements RewriteTest {
 
@@ -190,6 +193,75 @@ class AllBranchesIdenticalTest implements RewriteTest {
                           System.out.println("same");
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void collapseIdenticalBranchesKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(a: Boolean) {
+                  if (a) {
+                      println("hello")
+                  } else {
+                      println("hello")
+                  }
+              }
+              """,
+            """
+              fun test(a: Boolean) {
+                  println("hello")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void collapseIdenticalBranchesGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(boolean a) {
+                  if (a) {
+                      println("hello")
+                  } else {
+                      println("hello")
+                  }
+              }
+              """,
+            """
+              void test(boolean a) {
+                  println("hello")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void collapseIdenticalBranchesTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(a: boolean) {
+                  if (a) {
+                      console.log("hi");
+                  } else {
+                      console.log("hi");
+                  }
+              }
+              """,
+            """
+              function test(a: boolean) {
+                  console.log("hi");
               }
               """
           )

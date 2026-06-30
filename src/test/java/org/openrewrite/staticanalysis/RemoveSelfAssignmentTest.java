@@ -20,7 +20,10 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("SelfAssignment")
 class RemoveSelfAssignmentTest implements RewriteTest {
@@ -146,6 +149,66 @@ class RemoveSelfAssignmentTest implements RewriteTest {
                       System.out.println("before");
                       System.out.println("after");
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeSelfAssignmentKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(a: Int) {
+                  var x = a
+                  x = x
+              }
+              """,
+            """
+              fun test(a: Int) {
+                  var x = a
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeSelfAssignmentGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(int x) {
+                  println("before")
+                  x = x
+                  println("after")
+              }
+              """,
+            """
+              void test(int x) {
+                  println("before")
+                  println("after")
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeSelfAssignmentTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(x: number) {
+                  x = x;
+              }
+              """,
+            """
+              function test(x: number) {
               }
               """
           )

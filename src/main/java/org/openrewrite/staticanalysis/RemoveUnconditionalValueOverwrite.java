@@ -48,6 +48,7 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
 
     private static final MethodMatcher MAP_PUT = new MethodMatcher("java.util.Map put(..)", true);
     private static final MethodMatcher MAP_SET = new MethodMatcher("java.util.Map set(..)", true);
+    private static final MethodMatcher JS_MAP_SET = new MethodMatcher("Map set(..)", true);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -90,7 +91,7 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
                     return null;
                 }
                 J.MethodInvocation method = (J.MethodInvocation) stmt;
-                if ((MAP_PUT.matches(method) || MAP_SET.matches(method)) &&
+                if ((MAP_PUT.matches(method) || MAP_SET.matches(method) || JS_MAP_SET.matches(method)) &&
                     method.getArguments().size() >= 2) {
                     return method.getArguments().get(0);
                 }
@@ -102,7 +103,7 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
                     return null;
                 }
                 J.MethodInvocation method = (J.MethodInvocation) stmt;
-                if ((MAP_PUT.matches(method) || MAP_SET.matches(method)) &&
+                if ((MAP_PUT.matches(method) || MAP_SET.matches(method) || JS_MAP_SET.matches(method)) &&
                     method.getSelect() != null) {
                     return method.getSelect();
                 }
