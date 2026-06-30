@@ -24,6 +24,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class RemoveDuplicateConditionsTest implements RewriteTest {
 
@@ -256,6 +257,31 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
                       h();
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              items = []
+              if items:
+                  print("has items")
+              elif items:
+                  print("never reached")
+              else:
+                  print("empty")
+              """,
+            """
+              items = []
+              if items:
+                  print("has items")
+              else:
+                  print("empty")
               """
           )
         );

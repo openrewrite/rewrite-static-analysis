@@ -24,6 +24,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
 
@@ -252,6 +253,28 @@ class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
               function test(map: Map<string, number>) {
                   map.set("key", 2);
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenSubscriptPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test():
+                  d = {}
+                  d["key"] = 1
+                  d["key"] = 2
+                  print(d)
+              """,
+            """
+              def test():
+                  d = {}
+                  d["key"] = 2
+                  print(d)
               """
           )
         );

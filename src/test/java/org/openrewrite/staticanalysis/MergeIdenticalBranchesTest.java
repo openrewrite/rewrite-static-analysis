@@ -24,6 +24,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class MergeIdenticalBranchesTest implements RewriteTest {
 
@@ -291,6 +292,31 @@ class MergeIdenticalBranchesTest implements RewriteTest {
                       console.log("different");
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test(a, b):
+                  if a:
+                      print("same")
+                  elif b:
+                      print("same")
+                  else:
+                      print("different")
+              """,
+            """
+              def test(a, b):
+                  if a or b:
+                      print("same")
+                  else:
+                      print("different")
               """
           )
         );

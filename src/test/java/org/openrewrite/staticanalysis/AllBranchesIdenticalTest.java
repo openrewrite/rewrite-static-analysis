@@ -24,6 +24,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class AllBranchesIdenticalTest implements RewriteTest {
 
@@ -263,6 +264,26 @@ class AllBranchesIdenticalTest implements RewriteTest {
               function test(a: boolean) {
                   console.log("hi");
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void collapseIdenticalBranchesPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test(a):
+                  if a:
+                      print("hello")
+                  else:
+                      print("hello")
+              """,
+            """
+              def test(a):
+                  print("hello")
               """
           )
         );
