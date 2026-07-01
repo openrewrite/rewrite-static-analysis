@@ -26,11 +26,24 @@ import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.openrewrite.Tree.randomId;
 
 public class JavadocParagraph extends Recipe {
+
+    /**
+     * HTML elements that render as their own block; a {@code <p>} must not be injected before them,
+     * nor should paragraph detection run inside them (notably {@code <pre>}, which is verbatim).
+     */
+    private static final Set<String> BLOCK_LEVEL_HTML = new HashSet<>(Arrays.asList(
+            "address", "article", "aside", "blockquote", "dd", "details", "div", "dl", "dt",
+            "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5",
+            "h6", "header", "hr", "li", "main", "nav", "ol", "p", "pre", "section", "table",
+            "tbody", "td", "tfoot", "th", "thead", "tr", "ul"));
 
     @Getter
     final String displayName = "Add missing Javadoc paragraph tags";
@@ -53,14 +66,26 @@ public class JavadocParagraph extends Recipe {
                         Javadoc.DocComment docComment =
                                 (Javadoc.DocComment) super.visitDocComment(javadoc, ctx);
                         List<Javadoc> body = new ArrayList<>(docComment.getBody().size());
-                        boolean changed = false;
                         boolean seenParagraphContent = false;
                         boolean inBlockTags = false;
+                        boolean inPre = false;
                         int consecutiveLineBreaks = 0;
 
                         for (Javadoc element : docComment.getBody()) {
                             if (inBlockTags) {
                                 body.add(element);
+                                continue;
+                            }
+                            // Content inside a <pre> block is verbatim: pass it through untouched and
+                            // do not count its blank lines as paragraph boundaries.
+                            if (inPre) {
+                                body.add(element);
+                                if (element instanceof Javadoc.EndElement &&
+                                    "pre".equalsIgnoreCase(((Javadoc.EndElement) element).getName())) {
+                                    inPre = false;
+                                    seenParagraphContent = true;
+                                    consecutiveLineBreaks = 0;
+                                }
                                 continue;
                             }
                             if (isBlockTag(element)) {
@@ -79,22 +104,27 @@ public class JavadocParagraph extends Recipe {
                                 continue;
                             }
 
+                            // Block-level HTML elements render as their own block, so no <p> is added
+                            // before them (e.g. avoid producing "<p><pre>" or "<p><ul>").
                             boolean paragraphBoundary = seenParagraphContent && consecutiveLineBreaks >= 2;
-                            if (paragraphBoundary && !isParagraphTag(element)) {
+                            if (paragraphBoundary && !isParagraphTag(element) && !isBlockLevelHtml(element)) {
                                 if (element instanceof Javadoc.Text) {
                                     element = addParagraphTag((Javadoc.Text) element);
                                 } else {
                                     body.add(new Javadoc.Text(randomId(), Markers.EMPTY, "<p>"));
                                 }
-                                changed = true;
                             }
 
                             body.add(element);
                             seenParagraphContent = true;
                             consecutiveLineBreaks = 0;
+                            if (element instanceof Javadoc.StartElement &&
+                                "pre".equalsIgnoreCase(((Javadoc.StartElement) element).getName())) {
+                                inPre = true;
+                            }
                         }
 
-                        return changed ? docComment.withBody(body) : docComment;
+                        return docComment.withBody(body);
                     }
 
                     private Javadoc.Text addParagraphTag(Javadoc.Text text) {
@@ -117,6 +147,11 @@ public class JavadocParagraph extends Recipe {
                             return text.length() >= 3 && text.regionMatches(true, 0, "<p>", 0, 3);
                         }
                         return false;
+                    }
+
+                    private boolean isBlockLevelHtml(Javadoc element) {
+                        return element instanceof Javadoc.StartElement &&
+                               BLOCK_LEVEL_HTML.contains(((Javadoc.StartElement) element).getName().toLowerCase());
                     }
 
                     private boolean isBlockTag(Javadoc element) {
