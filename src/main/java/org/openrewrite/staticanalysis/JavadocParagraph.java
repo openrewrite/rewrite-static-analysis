@@ -20,15 +20,14 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.tree.Javadoc;
 import org.openrewrite.marker.Markers;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static org.openrewrite.Tree.randomId;
@@ -61,72 +60,65 @@ public class JavadocParagraph extends Recipe {
             @Override
             protected JavadocVisitor<ExecutionContext> getJavadocVisitor() {
                 return new JavadocVisitor<ExecutionContext>(this) {
+                    private boolean seenParagraphContent;
+                    private boolean inBlockTags;
+                    private boolean inPre;
+                    private int consecutiveLineBreaks;
+
                     @Override
                     public Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
                         Javadoc.DocComment docComment =
                                 (Javadoc.DocComment) super.visitDocComment(javadoc, ctx);
-                        List<Javadoc> body = new ArrayList<>(docComment.getBody().size());
-                        boolean changed = false;
-                        boolean seenParagraphContent = false;
-                        boolean inBlockTags = false;
-                        boolean inPre = false;
-                        int consecutiveLineBreaks = 0;
-
-                        for (Javadoc element : docComment.getBody()) {
+                        seenParagraphContent = false;
+                        inBlockTags = false;
+                        inPre = false;
+                        consecutiveLineBreaks = 0;
+                        return docComment.withBody(ListUtils.flatMap(docComment.getBody(), element -> {
                             if (inBlockTags) {
-                                body.add(element);
-                                continue;
+                                return element;
                             }
                             // Content inside a <pre> block is verbatim: pass it through untouched and
                             // do not count its blank lines as paragraph boundaries.
                             if (inPre) {
-                                body.add(element);
                                 if (element instanceof Javadoc.EndElement &&
                                     "pre".equalsIgnoreCase(((Javadoc.EndElement) element).getName())) {
                                     inPre = false;
                                     seenParagraphContent = true;
                                     consecutiveLineBreaks = 0;
                                 }
-                                continue;
+                                return element;
                             }
                             if (isBlockTag(element)) {
                                 inBlockTags = true;
-                                body.add(element);
-                                continue;
+                                return element;
                             }
                             if (element instanceof Javadoc.LineBreak) {
                                 consecutiveLineBreaks++;
-                                body.add(element);
-                                continue;
+                                return element;
                             }
                             if (element instanceof Javadoc.Text &&
                                 ((Javadoc.Text) element).getText().trim().isEmpty()) {
-                                body.add(element);
-                                continue;
+                                return element;
                             }
 
                             // Block-level HTML elements render as their own block, so no <p> is added
                             // before them (e.g. avoid producing "<p><pre>" or "<p><ul>").
                             boolean paragraphBoundary = seenParagraphContent && consecutiveLineBreaks >= 2;
+                            Object mapped = element;
                             if (paragraphBoundary && !isParagraphTag(element) && !isBlockLevelHtml(element)) {
-                                if (element instanceof Javadoc.Text) {
-                                    element = addParagraphTag((Javadoc.Text) element);
-                                } else {
-                                    body.add(new Javadoc.Text(randomId(), Markers.EMPTY, "<p>"));
-                                }
-                                changed = true;
+                                mapped = element instanceof Javadoc.Text ?
+                                        addParagraphTag((Javadoc.Text) element) :
+                                        Arrays.asList(new Javadoc.Text(randomId(), Markers.EMPTY, "<p>"), element);
                             }
 
-                            body.add(element);
                             seenParagraphContent = true;
                             consecutiveLineBreaks = 0;
                             if (element instanceof Javadoc.StartElement &&
                                 "pre".equalsIgnoreCase(((Javadoc.StartElement) element).getName())) {
                                 inPre = true;
                             }
-                        }
-
-                        return changed ? docComment.withBody(body) : docComment;
+                            return mapped;
+                        }));
                     }
 
                     private Javadoc.Text addParagraphTag(Javadoc.Text text) {
