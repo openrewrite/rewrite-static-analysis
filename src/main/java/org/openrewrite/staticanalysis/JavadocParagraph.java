@@ -66,6 +66,7 @@ public class JavadocParagraph extends Recipe {
                         Javadoc.DocComment docComment =
                                 (Javadoc.DocComment) super.visitDocComment(javadoc, ctx);
                         List<Javadoc> body = new ArrayList<>(docComment.getBody().size());
+                        boolean changed = false;
                         boolean seenParagraphContent = false;
                         boolean inBlockTags = false;
                         boolean inPre = false;
@@ -113,6 +114,7 @@ public class JavadocParagraph extends Recipe {
                                 } else {
                                     body.add(new Javadoc.Text(randomId(), Markers.EMPTY, "<p>"));
                                 }
+                                changed = true;
                             }
 
                             body.add(element);
@@ -124,7 +126,7 @@ public class JavadocParagraph extends Recipe {
                             }
                         }
 
-                        return docComment.withBody(body);
+                        return changed ? docComment.withBody(body) : docComment;
                     }
 
                     private Javadoc.Text addParagraphTag(Javadoc.Text text) {

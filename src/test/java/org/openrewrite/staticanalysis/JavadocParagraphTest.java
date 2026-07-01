@@ -215,4 +215,78 @@ class JavadocParagraphTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotInsertParagraphInsidePreBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              /**
+               * First.
+               *
+               * <pre>
+               * line one
+               *
+               * line two
+               * </pre>
+               */
+              class Test {}
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInsertParagraphBeforeBlockLevelHtml() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              /**
+               * First.
+               *
+               * <ul>
+               *   <li>one</li>
+               *   <li>two</li>
+               * </ul>
+               */
+              class Test {}
+              """
+          )
+        );
+    }
+
+    @Test
+    void addParagraphAfterPreBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              /**
+               * First.
+               *
+               * <pre>
+               * code
+               * </pre>
+               *
+               * Trailing prose.
+               */
+              class Test {}
+              """,
+            """
+              /**
+               * First.
+               *
+               * <pre>
+               * code
+               * </pre>
+               *
+               * <p>Trailing prose.
+               */
+              class Test {}
+              """
+          )
+        );
+    }
 }
