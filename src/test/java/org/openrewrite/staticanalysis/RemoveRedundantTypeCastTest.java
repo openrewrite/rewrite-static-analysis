@@ -490,8 +490,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    @Test
     void keepCastForLambdaAssignedToVar() {
         rewriteRun(
           //language=java
@@ -510,8 +510,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    @Test
     void keepCastForMethodReferenceAssignedToVar() {
         rewriteRun(
           //language=java

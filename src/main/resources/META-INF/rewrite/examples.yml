@@ -75,6 +75,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.AllBranchesIdentical
+examples:
+- description: '`AllBranchesIdenticalTest#collapseIfElseWithIdenticalBodies`'
+  sources:
+  - before: |
+      class Test {
+          void test(boolean a) {
+              if (a) {
+                  System.out.println("hello");
+              } else {
+                  System.out.println("hello");
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test(boolean a) {
+              System.out.println("hello");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.AnnotateNullableMethods
 examples:
 - description: '`AnnotateNullableMethodsTest#methodReturnsNullLiteral`'
@@ -451,6 +474,31 @@ examples:
               String op = "+";
               sb.append("A").append(op).append("B");
               sb.append(1).append(op).append(2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.CollapsibleIfStatements
+examples:
+- description: '`CollapsibleIfStatementsTest#mergeNestedIfs`'
+  sources:
+  - before: |
+      class Test {
+          void test(boolean a, boolean b) {
+              if (a) {
+                  if (b) {
+                      System.out.println();
+                  }
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test(boolean a, boolean b) {
+              if (a && b) {
+                  System.out.println();
+              }
           }
       }
     language: java
@@ -1751,6 +1799,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.MergeIdenticalBranches
+examples:
+- description: '`MergeIdenticalBranchesTest#mergeTwoBranchesWithIdenticalBodies`'
+  sources:
+  - before: |
+      class Test {
+          void test(boolean a, boolean b) {
+              if (a) {
+                  System.out.println("same");
+              } else if (b) {
+                  System.out.println("same");
+              } else {
+                  System.out.println("different");
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test(boolean a, boolean b) {
+              if (a || b) {
+                  System.out.println("same");
+              } else {
+                  System.out.println("different");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.MethodNameCasing
 examples:
 - description: '`MethodNameCasingTest#changeMethodDeclaration`'
@@ -2663,6 +2740,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveDuplicateConditions
+examples:
+- description: '`RemoveDuplicateConditionsTest#removeDuplicateElseIf`'
+  sources:
+  - before: |
+      class Test {
+          void test(int x) {
+              if (x > 0) {
+                  System.out.println("positive");
+              } else if (x > 0) {
+                  System.out.println("also positive");
+              } else {
+                  System.out.println("non-positive");
+              }
+          }
+      }
+    after: |
+      class Test {
+          void test(int x) {
+              if (x > 0) {
+                  System.out.println("positive");
+              } else {
+                  System.out.println("non-positive");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveEmptyJavaDocParameters
 examples:
 - description: '`RemoveEmptyJavaDocParametersTest#emptyParam`'
@@ -2870,6 +2976,24 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveSelfAssignment
+examples:
+- description: '`RemoveSelfAssignmentTest#removeSelfAssignment`'
+  sources:
+  - before: |
+      class Test {
+          void test(int x) {
+              x = x;
+          }
+      }
+    after: |
+      class Test {
+          void test(int x) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveSystemOutPrintln
 examples:
 - description: '`RemoveSystemOutPrintlnTest#removePrintln`'
@@ -2924,6 +3048,34 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnconditionalValueOverwrite
+examples:
+- description: '`RemoveUnconditionalValueOverwriteTest#removeOverwrittenMapPut`'
+  sources:
+  - before: |
+      import java.util.HashMap;
+      import java.util.Map;
+
+      class Test {
+          void test() {
+              Map<String, Integer> map = new HashMap<>();
+              map.put("key", 1);
+              map.put("key", 2);
+          }
+      }
+    after: |
+      import java.util.HashMap;
+      import java.util.Map;
+
+      class Test {
+          void test() {
+              Map<String, Integer> map = new HashMap<>();
+              map.put("key", 2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveUnneededAssertion
 examples:
 - description: '`RemoveUnneededAssertionTest#assertTrue`'
@@ -2962,6 +3114,43 @@ examples:
       public class A {
           void test() {
               System.out.println("hello!");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnreachableMultiCatchAlternative
+examples:
+- description: '`RemoveUnreachableMultiCatchAlternativeTest#dropAlternativeShadowedByEarlierCatch`'
+  sources:
+  - before: |
+      import java.io.IOException;
+      import java.io.FileNotFoundException;
+
+      class A {
+          void m() {
+              try {
+                  throw new FileNotFoundException();
+              } catch (FileNotFoundException e) {
+                  System.out.println(e);
+              } catch (FileNotFoundException | IOException e) {
+                  System.out.println(e);
+              }
+          }
+      }
+    after: |
+      import java.io.IOException;
+      import java.io.FileNotFoundException;
+
+      class A {
+          void m() {
+              try {
+                  throw new FileNotFoundException();
+              } catch (FileNotFoundException e) {
+                  System.out.println(e);
+              } catch (IOException e) {
+                  System.out.println(e);
+              }
           }
       }
     language: java
@@ -3979,6 +4168,25 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.SimplifyRedundantLogicalExpression
+examples:
+- description: '`SimplifyRedundantLogicalExpressionTest#simplifyLogicalAnd`'
+  sources:
+  - before: |
+      class Test {
+          boolean test(boolean a) {
+              return a && a;
+          }
+      }
+    after: |
+      class Test {
+          boolean test(boolean a) {
+              return a;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.SimplifyTernaryRecipes
 examples:
 - description: '`SimplifyTernaryTest#simplified`'
@@ -4823,6 +5031,29 @@ examples:
           Charset UTF_16 = StandardCharsets.UTF_16;
           Charset UTF_16BE = StandardCharsets.UTF_16BE;
           Charset UTF_16LE = StandardCharsets.UTF_16LE;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseStringCaseInsensitiveOrderRecipes
+examples:
+- description: '`UseStringCaseInsensitiveOrderTest#lambdaRewrites`'
+  sources:
+  - before: |
+      import java.util.List;
+
+      class Test {
+          void m(List<String> names) {
+              names.sort((a, b) -> a.compareToIgnoreCase(b));
+          }
+      }
+    after: |
+      import java.util.List;
+
+      class Test {
+          void m(List<String> names) {
+              names.sort(String.CASE_INSENSITIVE_ORDER);
+          }
       }
     language: java
 ---

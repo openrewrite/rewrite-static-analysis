@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -35,21 +36,17 @@ import java.util.List;
 
 public class RemoveUnreachableMultiCatchAlternative extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Remove unreachable `catch` alternatives shadowed by earlier `catch` clauses";
-    }
+    @Getter
+    final String displayName = "Remove unreachable `catch` alternatives shadowed by earlier `catch` clauses";
 
-    @Override
-    public String getDescription() {
-        return "When an earlier `catch` clause already covers a type, any later `catch` (including a " +
-                "multi-catch alternative) for the same type or a subtype is unreachable and is a Java " +
-                "compile error. This commonly appears after type-substitution migrations (for example, " +
-                "renaming an exception so that two `catch` clauses end up overlapping). This recipe drops " +
-                "the unreachable alternatives from later multi-catches, collapses a multi-catch to a " +
-                "regular `catch` when only one alternative remains, and removes the entire `catch` clause " +
-                "when all of its declared types are already covered.";
-    }
+    @Getter
+    final String description = "When an earlier `catch` clause already covers a type, any later `catch` (including a " +
+            "multi-catch alternative) for the same type or a subtype is unreachable and is a Java " +
+            "compile error. This commonly appears after type-substitution migrations (for example, " +
+            "renaming an exception so that two `catch` clauses end up overlapping). This recipe drops " +
+            "the unreachable alternatives from later multi-catches, collapses a multi-catch to a " +
+            "regular `catch` when only one alternative remains, and removes the entire `catch` clause " +
+            "when all of its declared types are already covered.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
