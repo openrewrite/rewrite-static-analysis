@@ -37,7 +37,7 @@ public class UseStringCaseInsensitiveOrder {
     public static class FromLambda {
         @BeforeTemplate
         Comparator<String> before() {
-            return String::compareToIgnoreCase;
+            return (a, b) -> a.compareToIgnoreCase(b);
         }
 
         @AfterTemplate
