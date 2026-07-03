@@ -677,6 +677,42 @@ class UseDiamondOperatorTest implements RewriteTest {
     }
 
     @Test
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/919")
+    void newClassArgBeyondVarargsParameter() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(17))),
+          //language=java
+          java(
+            """
+              class SqlParameterValue {
+                  SqlParameterValue(int sqlType, int scale, Object value) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Template {
+                  int update(String sql, Object... args) {
+                      return 0;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(Template template, String sql) {
+                      int rows = template.update(sql, 4, new SqlParameterValue(2, 2, 1.4142f));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void anonymousClassArgBeyondVarargsParameterWithoutVarargsFlag() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(17))),
