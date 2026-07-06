@@ -865,4 +865,42 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/934")
+    @Test
+    void doNotRemoveObjectCastOnPrimitiveArrayVarargs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Example {
+                  void run() {
+                      sink((Object) new int[] {1, 2, 3});
+                  }
+
+                  static void sink(Object... args) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/934")
+    @Test
+    void doNotRemoveObjectCastOnReferenceArrayVarargs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Example {
+                  void run(String[] arr) {
+                      sink((Object) arr);
+                  }
+
+                  static void sink(Object... args) {}
+              }
+              """
+          )
+        );
+    }
 }
