@@ -135,6 +135,17 @@ public class RemoveRedundantTypeCast extends Recipe {
                                         methodType.getParameterTypes().get(i) instanceof JavaType.Array) {
                                     return visited;
                                 }
+                                // A cast to a non-array type (e.g. `(Object)`) on an array-typed argument at the
+                                // varargs position marks the array as a single varargs element rather than being
+                                // spread, and silences Error Prone's `PrimitiveArrayPassedToVarargsMethod`.
+                                // Removing it changes argument semantics, so preserve the cast.
+                                if (i == methodType.getParameterTypes().size() - 1 &&
+                                        i == arguments.size() - 1 &&
+                                        methodType.getParameterTypes().get(i) instanceof JavaType.Array &&
+                                        typeCast.getExpression().getType() instanceof JavaType.Array &&
+                                        !(castType instanceof JavaType.Array)) {
+                                    return visited;
+                                }
                                 targetType = getParameterType(methodType, i);
                                 break;
                             }
