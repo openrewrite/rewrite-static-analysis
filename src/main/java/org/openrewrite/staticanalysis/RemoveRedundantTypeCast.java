@@ -127,23 +127,18 @@ public class RemoveRedundantTypeCast extends Recipe {
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
                             if (arg == typeCast) {
-                                // A `null` literal cast at the last position of a (potential) varargs call
-                                // disambiguates between passing `null` as the array vs. a single null element.
-                                if (J.Literal.isLiteralValue(typeCast.getExpression(), null) &&
-                                        i == methodType.getParameterTypes().size() - 1 &&
-                                        i == arguments.size() - 1 &&
-                                        methodType.getParameterTypes().get(i) instanceof JavaType.Array) {
-                                    return visited;
-                                }
-                                // A cast to a non-array type (e.g. `(Object)`) on an array-typed argument at the
-                                // varargs position marks the array as a single varargs element rather than being
-                                // spread, and silences Error Prone's `PrimitiveArrayPassedToVarargsMethod`.
-                                // Removing it changes argument semantics, so preserve the cast.
+                                // A cast at the last position of a (potential) varargs call can be
+                                // semantically significant, so preserve it: a `null` literal cast
+                                // disambiguates passing `null` as the array vs. a single null element, and a
+                                // cast to a non-array type (e.g. `(Object)`) on an array-typed argument marks
+                                // the array as a single element rather than being spread (also silencing
+                                // Error Prone's `PrimitiveArrayPassedToVarargsMethod`).
                                 if (i == methodType.getParameterTypes().size() - 1 &&
                                         i == arguments.size() - 1 &&
                                         methodType.getParameterTypes().get(i) instanceof JavaType.Array &&
-                                        typeCast.getExpression().getType() instanceof JavaType.Array &&
-                                        !(castType instanceof JavaType.Array)) {
+                                        (J.Literal.isLiteralValue(typeCast.getExpression(), null) ||
+                                                typeCast.getExpression().getType() instanceof JavaType.Array &&
+                                                        !(castType instanceof JavaType.Array))) {
                                     return visited;
                                 }
                                 targetType = getParameterType(methodType, i);
