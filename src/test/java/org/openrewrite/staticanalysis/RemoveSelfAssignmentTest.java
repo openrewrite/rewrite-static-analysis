@@ -24,6 +24,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings("SelfAssignment")
 class RemoveSelfAssignmentTest implements RewriteTest {
@@ -210,6 +211,24 @@ class RemoveSelfAssignmentTest implements RewriteTest {
             """
               function test(x: number) {
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeSelfAssignmentPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              x = 1
+              x = x
+              print(x)
+              """,
+            """
+              x = 1
+              print(x)
               """
           )
         );

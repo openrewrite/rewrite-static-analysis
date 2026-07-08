@@ -24,6 +24,7 @@ import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
 
@@ -312,6 +313,23 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
               function test(a: boolean) {
                   return a;
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLogicalAndPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              a = True
+              b = a and a
+              """,
+            """
+              a = True
+              b = a
               """
           )
         );
