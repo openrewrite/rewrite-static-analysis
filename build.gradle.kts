@@ -10,10 +10,6 @@ plugins {
 group = "org.openrewrite.recipe"
 description = "The first Static Analysis and REMEDIATION tool"
 
-rewriteRecipe {
-    rewriteVersion.set("latest.release")
-}
-
 val provided = configurations.named("provided")
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
 dependencies {
