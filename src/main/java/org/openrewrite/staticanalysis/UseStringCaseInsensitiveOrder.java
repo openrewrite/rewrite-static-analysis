@@ -29,37 +29,19 @@ import java.util.Comparator;
 )
 public class UseStringCaseInsensitiveOrder {
 
-    @RecipeDescriptor(
-            name = "Use `String.CASE_INSENSITIVE_ORDER` instead of a lambda",
-            description = "Replace `(a, b) -> a.compareToIgnoreCase(b)` with " +
-                          "`String.CASE_INSENSITIVE_ORDER` when used as a `Comparator<String>`."
-    )
-    public static class FromLambda {
-        @BeforeTemplate
-        Comparator<String> before() {
-            return String::compareToIgnoreCase;
-        }
-
-        @AfterTemplate
-        Comparator<String> after() {
-            return String.CASE_INSENSITIVE_ORDER;
-        }
+    @BeforeTemplate
+    Comparator<String> fromLambda() {
+        return (a, b) -> a.compareToIgnoreCase(b);
     }
 
-    @RecipeDescriptor(
-            name = "Use `String.CASE_INSENSITIVE_ORDER` instead of `String::compareToIgnoreCase`",
-            description = "Replace the method reference `String::compareToIgnoreCase` with " +
-                          "`String.CASE_INSENSITIVE_ORDER` when used as a `Comparator<String>`."
-    )
-    public static class FromMethodReference {
-        @BeforeTemplate
-        Comparator<String> before() {
-            return String::compareToIgnoreCase;
-        }
-
-        @AfterTemplate
-        Comparator<String> after() {
-            return String.CASE_INSENSITIVE_ORDER;
-        }
+    @BeforeTemplate
+    Comparator<String> fromMethodReference() {
+        return String::compareToIgnoreCase;
     }
+
+    @AfterTemplate
+    Comparator<String> after() {
+        return String.CASE_INSENSITIVE_ORDER;
+    }
+
 }

@@ -26,7 +26,7 @@ class UseStringCaseInsensitiveOrderTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new UseStringCaseInsensitiveOrderRecipes());
+        spec.recipe(new UseStringCaseInsensitiveOrderRecipe());
     }
 
     @DocumentExample
