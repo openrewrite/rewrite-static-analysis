@@ -19,7 +19,7 @@ import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 import org.openrewrite.python.rpc.PythonRewriteRpc;
 
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
 /**
  * Configures the shared Python parsing engine before any {@code python()} test starts it. The engine
@@ -39,11 +39,11 @@ public class PythonEngineTestListener implements LauncherSessionListener {
     @Override
     public void launcherSessionOpened(LauncherSession session) {
         PythonRewriteRpc.Builder builder = PythonRewriteRpc.builder()
-                .pipPackagesPath(Paths.get(".rewrite-python"));
+                .pipPackagesPath(Path.of(".rewrite-python"));
 
         String pythonPath = System.getenv("REWRITE_PYTHON_PATH");
         if (pythonPath != null && !pythonPath.isEmpty()) {
-            builder.pythonPath(Paths.get(pythonPath));
+            builder.pythonPath(Path.of(pythonPath));
         }
 
         PythonRewriteRpc.setFactory(builder);

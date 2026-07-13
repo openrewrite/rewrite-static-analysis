@@ -676,8 +676,8 @@ class UseDiamondOperatorTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/919")
+    @Test
     void newClassArgBeyondVarargsParameter() {
         rewriteRun(
           spec -> spec.allSources(s -> s.markers(javaVersion(17))),
