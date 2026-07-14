@@ -50,8 +50,13 @@ public class UnnecessaryThrows extends Recipe {
             " - The method declaration is `static` or `private`.\n" +
             " - The method overrides a method declaration in a super class " +
             "and the super class does not throw the exception.\n" +
-            " - The method is `public` or `protected` and the exception is not " +
+            " - The method is `public` and the exception is not " +
             "documented via a JavaDoc as a `@throws` tag.\n\n" +
+            "The `throws` declaration is retained on overridable methods " +
+            "(package-private and `protected` methods on non-`final` classes), and on `public` " +
+            "methods overridden within the same source file, so that a subclass override which " +
+            "does throw the exception keeps compiling. Overrides in other source files cannot be " +
+            "detected without a scanning recipe and are therefore not accounted for.\n\n" +
             "Declaring exceptions that are never thrown misleads callers into " +
             "writing unnecessary error-handling code and obscures the method's " +
             "true behavior.";
@@ -169,8 +174,10 @@ public class UnnecessaryThrows extends Recipe {
                     return emptySet();
                 }
 
-                // Do not change the API of methods that may be overridden
-                if (method.hasModifier(Protected) && !method.hasModifier(Final)) {
+                // Do not change the API of methods that may be overridden by a subclass
+                // (package-private and protected, non-final, on a non-final class)
+                if (!method.hasModifier(Private) && !method.hasModifier(Public) &&
+                        !method.hasModifier(Static) && !method.hasModifier(Final)) {
                     J.ClassDeclaration cd = getCursor().firstEnclosing(J.ClassDeclaration.class);
                     if (cd != null && !cd.hasModifier(Final)) {
                         return emptySet();
@@ -215,6 +222,27 @@ public class UnnecessaryThrows extends Recipe {
                         }
                     }
                 }
+
+                // Retain exceptions still declared by an override in the same compilation unit.
+                // Cross-file overrides can't be detected without a scanning recipe (see description).
+                J.CompilationUnit cu = getCursor().firstEnclosing(J.CompilationUnit.class);
+                JavaType.Method methodType = method.getMethodType();
+                if (cu != null && !candidates.isEmpty()) {
+                    new JavaIsoVisitor<Set<JavaType.FullyQualified>>() {
+                        @Override
+                        public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration md, Set<JavaType.FullyQualified> cs) {
+                            JavaType.Method omt = md.getMethodType();
+                            if (omt != null && omt != methodType &&
+                                    TypeUtils.findOverriddenMethod(omt).map(sm -> TypeUtils.isOfType(sm, methodType)).orElse(false)) {
+                                for (JavaType thrown : omt.getThrownExceptions()) {
+                                    cs.removeIf(t -> TypeUtils.isAssignableTo(t, thrown));
+                                }
+                            }
+                            return super.visitMethodDeclaration(md, cs);
+                        }
+                    }.visit(cu, candidates);
+                }
+
                 if (!candidates.isEmpty()) {
                     //Remove any candidates that are defined in Javadocs for the method.
                     new JavaVisitor<Set<JavaType.FullyQualified>>() {

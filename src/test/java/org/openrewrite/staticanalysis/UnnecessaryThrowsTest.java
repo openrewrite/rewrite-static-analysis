@@ -479,6 +479,55 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/939")
+    @Test
+    void retainThrowsOnPackagePrivateOverridableMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  void test() throws Exception {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  void test() throws Exception {
+                      throw new Exception("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsOnPublicMethodOverriddenInSameFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  public void test() throws Exception {
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  public void test() throws Exception {
+                      throw new Exception("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/605")
     @Test
     void removeUnnecessaryCatchAfterRemovingThrows() {
@@ -487,7 +536,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
             """
               class UnnecessaryThrowsTest {
 
-                  void methodThrowing() throws NoSuchMethodException { }
+                  private void methodThrowing() throws NoSuchMethodException { }
 
                   void methodCatching() {
                       try {
@@ -500,7 +549,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
             """
               class UnnecessaryThrowsTest {
 
-                  void methodThrowing() { }
+                  private void methodThrowing() { }
 
                   void methodCatching() {
                       methodThrowing();
