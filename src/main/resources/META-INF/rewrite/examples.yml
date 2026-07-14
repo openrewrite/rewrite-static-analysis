@@ -5035,7 +5035,7 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
-recipeName: org.openrewrite.staticanalysis.UseStringCaseInsensitiveOrderRecipes
+recipeName: org.openrewrite.staticanalysis.UseStringCaseInsensitiveOrderRecipe
 examples:
 - description: '`UseStringCaseInsensitiveOrderTest#lambdaRewrites`'
   sources:
