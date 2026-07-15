@@ -187,4 +187,24 @@ final class JavaElementFactory {
     public static J.Identifier newThis(JavaType type) {
         return new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "this", type, null);
     }
+
+    /**
+     * Create a qualified {@code this} expression such as {@code Outer.this}, used when referencing a
+     * member of an enclosing (outer) class from within an inner class.
+     */
+    public static J.FieldAccess newQualifiedThis(JavaType.FullyQualified type) {
+        String className = type.getClassName();
+        String simpleName = className.substring(className.lastIndexOf('.') + 1);
+        return new J.FieldAccess(
+                randomId(),
+                Space.EMPTY,
+                Markers.EMPTY,
+                new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), simpleName, type, null),
+                new JLeftPadded<>(
+                        Space.EMPTY,
+                        new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "this", type, null),
+                        Markers.EMPTY),
+                type
+        );
+    }
 }
