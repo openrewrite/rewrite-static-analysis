@@ -234,8 +234,14 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     Cursor owner = getCursor().dropParentUntil(is -> is instanceof J.ClassDeclaration ||
                             (is instanceof J.NewClass && ((J.NewClass) is).getBody() != null) ||
                             is instanceof J.Lambda);
+                    JavaType ownerType = owner.<TypedTree>getValue().getType();
+                    JavaType.FullyQualified declaringType = methodType.getDeclaringType();
+                    // When the method belongs to an enclosing (outer) class, qualify `this` as `Outer.this`
+                    Expression thisExpression = ownerType != null && !TypeUtils.isAssignableTo(declaringType, ownerType) ?
+                            JavaElementFactory.newQualifiedThis(declaringType) :
+                            JavaElementFactory.newThis(ownerType);
                     return JavaElementFactory.newInstanceMethodReference(
-                            JavaElementFactory.newThis(owner.<TypedTree>getValue().getType()),
+                            thisExpression,
                             methodType,
                             lambda.getType()
                     ).withPrefix(lambda.getPrefix());
