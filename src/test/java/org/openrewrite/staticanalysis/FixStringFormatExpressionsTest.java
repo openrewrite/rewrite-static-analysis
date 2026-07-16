@@ -140,6 +140,32 @@ class FixStringFormatExpressionsTest implements RewriteTest {
     }
 
     @Test
+    void trimUnusedArgumentsWithLiteralPercentAndRealSpecifier() {
+        // `%%` combined with a real, argument-consuming specifier (`%d`): the literal percent must
+        // still not be counted, while the real specifier's excess argument is still correctly
+        // trimmed -- covers the combination, not just each in isolation.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  static {
+                      String s = String.format("100%% done: %d", 1, 2);
+                  }
+              }
+              """,
+            """
+              class T {
+                  static {
+                      String s = String.format("100%% done: %d", 1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotStripArgsWithUnresolvedPlaceholdersAndLiteralPercent() {
         // `%%` (a literal percent sign), like `%n`, does not consume an argument. A format string
         // with only `%%` and `{}` tokens still has zero *argument-consuming* specifiers, so the
@@ -272,6 +298,44 @@ class FixStringFormatExpressionsTest implements RewriteTest {
               class T {
                   static void test(int original, int shadow) {
                       String s = String.format("expect {}%nactual {}", original, shadow);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void shadowClientMismatchReportingIsNotCorrupted() {
+        // Near-verbatim reproduction of the motivating production bug: a shadow-traffic comparator
+        // that logs a mismatch via a custom reportMismatch(...) helper, building the message with
+        // String#format but using SLF4J-style `{}` placeholders by mistake. Before this fix, the
+        // recipe deleted `original` and `shadow` from every one of these calls, silently degrading
+        // every mismatch report down to the literal, useless string "expect {}, actual {}".
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.concurrent.Future;
+
+              class ShadowStatement {
+                  void reportMismatch(String method, String reason) {}
+                  void reportMismatch(String method, String sql, String reason) {}
+
+                  int executeUpdate(String sql, Future<Integer> shadowFuture, int original) throws Exception {
+                      int shadow = shadowFuture.get();
+                      if (original != shadow) {
+                          reportMismatch("execute", sql, String.format("expect {}, actual {}", original, shadow));
+                      }
+                      return original;
+                  }
+
+                  boolean getMoreResults(Future<Boolean> shadowFuture, boolean original) throws Exception {
+                      boolean shadow = shadowFuture.get();
+                      if (original != shadow) {
+                          reportMismatch("getMoreResults", String.format("expect {}, actual {}", original, shadow));
+                      }
+                      return original;
                   }
               }
               """
