@@ -39,10 +39,6 @@ public class FixStringFormatExpressions extends Recipe {
     private static final Pattern FS_PATTERN = Pattern.compile("%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\n");
     private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\\\n");
-    // Matches SLF4J-style placeholder syntax (`{}`), as opposed to a `String#format` conversion
-    // specifier. Used to detect when a format string with zero real specifiers is more likely using
-    // the wrong templating convention than genuinely containing dead arguments -- see below.
-    private static final Pattern UNRESOLVED_PLACEHOLDER_PATTERN = Pattern.compile("\\{}");
 
     private static final MethodMatcher FORMAT_MATCHER = new MethodMatcher("java.lang.String format(..)");
     private static final MethodMatcher FORMATTED_MATCHER = new MethodMatcher("java.lang.String formatted(..)");
@@ -110,13 +106,15 @@ public class FixStringFormatExpressions extends Recipe {
                                     argIndex++;
                                 }
                             }
-                            if (argIndex == initialArgIndex && UNRESOLVED_PLACEHOLDER_PATTERN.matcher(val).find()) {
-                                // No `%` conversion specifiers matched, but the format string contains
-                                // `{}`-style tokens (e.g. SLF4J placeholder syntax mistakenly used with
-                                // String#format). This is almost certainly a pre-existing bug in the
-                                // calling code, not genuinely dead arguments -- removing them would
-                                // destroy the evidence needed to notice and fix the real mismatch, so
-                                // leave the call's arguments alone.
+                            if (argIndex == initialArgIndex) {
+                                // No `%` conversion specifiers matched at all. This recipe only trims
+                                // arguments it has positive evidence are unused -- i.e. trailing args
+                                // beyond what matched specifiers actually consume. Zero specifiers gives
+                                // no such evidence: the format string may be using some other templating
+                                // convention entirely (e.g. SLF4J-style `{}` placeholders mistakenly used
+                                // with String#format instead of a logger). Leave the call's arguments
+                                // alone rather than guessing they're dead code -- deleting them would
+                                // destroy the evidence needed to notice and fix the real bug.
                                 return mi;
                             }
                             int finalArgIndex = argIndex;
