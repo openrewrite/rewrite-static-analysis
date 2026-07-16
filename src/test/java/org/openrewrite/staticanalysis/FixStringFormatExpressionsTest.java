@@ -133,6 +133,76 @@ class FixStringFormatExpressionsTest implements RewriteTest {
     }
 
     @Test
+    void doNotStripArgsWithUnresolvedPlaceholders() {
+        // `{}` is SLF4J-style placeholder syntax, not a `String#format` conversion specifier. A
+        // format string using it has zero real `%` specifiers, so the naive fix treats `original`
+        // and `shadow` as dead code and deletes them -- but they're almost certainly meant to be
+        // substituted, just via the wrong API. Leaving the call alone keeps the underlying bug
+        // (wrong templating syntax) visible instead of erasing the evidence of it.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  static void reportMismatch(String label, String message) {}
+
+                  static void test(int original, int shadow) {
+                      if (original != shadow) {
+                          reportMismatch("check", String.format("expect {}, actual {}", original, shadow));
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotStripArgsWithUnresolvedPlaceholdersFormatted() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  static void reportMismatch(String label, String message) {}
+
+                  static void test(int original, int shadow) {
+                      if (original != shadow) {
+                          reportMismatch("check", "expect {}, actual {}".formatted(original, shadow));
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void newlineStillReplacedWhenArgsAreNotStripped() {
+        // The `{}`-unresolved-placeholder guard only skips the arg-trimming step; the unrelated
+        // newline-to-%n replacement above it must still apply.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  static void test(int original, int shadow) {
+                      String s = String.format("expect {}\\nactual {}", original, shadow);
+                  }
+              }
+              """,
+            """
+              class T {
+                  static void test(int original, int shadow) {
+                      String s = String.format("expect {}%nactual {}", original, shadow);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void textBlockWithNewlinesShouldNotBeModified() {
         // Text blocks contain actual newline characters in their value, not \n escape sequences.
         // The recipe should not modify these since changing actual newlines to %n in text blocks

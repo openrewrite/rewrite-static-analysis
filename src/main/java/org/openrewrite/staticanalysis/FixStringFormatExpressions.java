@@ -39,6 +39,10 @@ public class FixStringFormatExpressions extends Recipe {
     private static final Pattern FS_PATTERN = Pattern.compile("%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
     private static final Pattern NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\n");
     private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\\\n");
+    // Matches SLF4J-style placeholder syntax (`{}`), as opposed to a `String#format` conversion
+    // specifier. Used to detect when a format string with zero real specifiers is more likely using
+    // the wrong templating convention than genuinely containing dead arguments -- see below.
+    private static final Pattern UNRESOLVED_PLACEHOLDER_PATTERN = Pattern.compile("\\{}");
 
     private static final MethodMatcher FORMAT_MATCHER = new MethodMatcher("java.lang.String format(..)");
     private static final MethodMatcher FORMATTED_MATCHER = new MethodMatcher("java.lang.String formatted(..)");
@@ -89,12 +93,31 @@ public class FixStringFormatExpressions extends Recipe {
                             // Trim any extra args
                             String val = (String) fmtArg.getValue();
                             Matcher m = FS_PATTERN.matcher(val);
-                            int argIndex = isStringFormattedExpression ? 0 : 1;
+                            int initialArgIndex = isStringFormattedExpression ? 0 : 1;
+                            int argIndex = initialArgIndex;
                             while (m.find()) {
                                 if (m.group(1) != null || m.group(2).contains("<")) {
                                     return mi;
                                 }
-                                argIndex++;
+                                // `%n` and `%%` do not consume an argument from the list, unlike
+                                // every other conversion (`%s`, `%d`, etc.) -- do not count them,
+                                // or a format string mixing them with `{}` placeholders (e.g. after
+                                // this recipe's own newline-to-%n replacement above) would be
+                                // miscounted as having a real specifier on a later recipe cycle,
+                                // undermining the check below.
+                                String conversion = m.group(6);
+                                if (!"n".equals(conversion) && !"%".equals(conversion)) {
+                                    argIndex++;
+                                }
+                            }
+                            if (argIndex == initialArgIndex && UNRESOLVED_PLACEHOLDER_PATTERN.matcher(val).find()) {
+                                // No `%` conversion specifiers matched, but the format string contains
+                                // `{}`-style tokens (e.g. SLF4J placeholder syntax mistakenly used with
+                                // String#format). This is almost certainly a pre-existing bug in the
+                                // calling code, not genuinely dead arguments -- removing them would
+                                // destroy the evidence needed to notice and fix the real mismatch, so
+                                // leave the call's arguments alone.
+                                return mi;
                             }
                             int finalArgIndex = argIndex;
                             return mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {
