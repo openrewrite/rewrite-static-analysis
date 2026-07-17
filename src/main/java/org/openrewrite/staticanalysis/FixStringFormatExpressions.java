@@ -95,26 +95,15 @@ public class FixStringFormatExpressions extends Recipe {
                                 if (m.group(1) != null || m.group(2).contains("<")) {
                                     return mi;
                                 }
-                                // `%n` and `%%` do not consume an argument from the list, unlike
-                                // every other conversion (`%s`, `%d`, etc.) -- do not count them,
-                                // or a format string mixing them with `{}` placeholders (e.g. after
-                                // this recipe's own newline-to-%n replacement above) would be
-                                // miscounted as having a real specifier on a later recipe cycle,
-                                // undermining the check below.
+                                // `%n` and `%%` do not consume an argument, so don't count them
                                 String conversion = m.group(6);
                                 if (!"n".equals(conversion) && !"%".equals(conversion)) {
                                     argIndex++;
                                 }
                             }
                             if (argIndex == initialArgIndex) {
-                                // No `%` conversion specifiers matched at all. This recipe only trims
-                                // arguments it has positive evidence are unused -- i.e. trailing args
-                                // beyond what matched specifiers actually consume. Zero specifiers gives
-                                // no such evidence: the format string may be using some other templating
-                                // convention entirely (e.g. SLF4J-style `{}` placeholders mistakenly used
-                                // with String#format instead of a logger). Leave the call's arguments
-                                // alone rather than guessing they're dead code -- deleting them would
-                                // destroy the evidence needed to notice and fix the real bug.
+                                // No argument-consuming specifiers matched; without evidence an arg is
+                                // unused (e.g. SLF4J-style `{}` placeholders), leave the call alone
                                 return mi;
                             }
                             int finalArgIndex = argIndex;

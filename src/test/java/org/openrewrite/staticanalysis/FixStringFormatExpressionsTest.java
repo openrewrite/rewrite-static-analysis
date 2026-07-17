@@ -83,20 +83,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
 
     @Test
     void doNotStripArgsWithNoSpecifiersEvenWithoutPlaceholders() {
-        // This recipe only trims arguments it has positive evidence are unused -- trailing args
-        // beyond what matched `%` specifiers actually consume. With zero specifiers matched, there
-        // is no such evidence either way, so the call is left alone -- even though these args have
-        // no `{}` (or any other) placeholder syntax suggesting an alternative explanation. Previously
-        // this recipe trimmed to zero args in this case; that was true dead-code cleanup sometimes,
-        // but indistinguishable from cases where deleting was actively harmful (see the `{}` tests
-        // below), so this recipe no longer guesses either way when it has no real specifier evidence.
-        //
-        // This also happens to resolve a separate latent bug: for `.formatted()`, the trim step's
-        // `i == 0` keep-clause assumed index 0 of the argument list is always the format string --
-        // true for `String.format(fmt, args...)`, but false for `"fmt".formatted(args...)`, where
-        // index 0 is the first real argument. That previously forced one argument to survive even
-        // when zero should remain. Bailing out here whenever no specifier matched means that branch
-        // (finalArgIndex == 0, only reachable with zero matches) is never reached at all.
+        // With zero specifiers matched there is no evidence the args are unused, so leave the call
+        // alone. Also covers `.formatted()`, whose index 0 is the first arg, not the format string.
         rewriteRun(
           //language=java
           java(
@@ -114,10 +102,7 @@ class FixStringFormatExpressionsTest implements RewriteTest {
 
     @Test
     void stripArgsWhenRealSpecifierPresentDespiteUnresolvedPlaceholder() {
-        // Bailing out only applies when ZERO real specifiers matched. If a real specifier is
-        // present anywhere, the format string is far more likely a genuine (if imperfect) Java
-        // format call, so the normal trim behavior should still apply -- the `{}` here is
-        // ambiguous, not a strong enough signal on its own to block trimming.
+        // A real specifier is present, so trimming still applies despite the ambiguous `{}`.
         rewriteRun(
           //language=java
           java(
@@ -141,9 +126,7 @@ class FixStringFormatExpressionsTest implements RewriteTest {
 
     @Test
     void trimUnusedArgumentsWithLiteralPercentAndRealSpecifier() {
-        // `%%` combined with a real, argument-consuming specifier (`%d`): the literal percent must
-        // still not be counted, while the real specifier's excess argument is still correctly
-        // trimmed -- covers the combination, not just each in isolation.
+        // `%%` is not counted, but the real `%d` still trims its excess argument.
         rewriteRun(
           //language=java
           java(
@@ -167,9 +150,7 @@ class FixStringFormatExpressionsTest implements RewriteTest {
 
     @Test
     void doNotStripArgsWithUnresolvedPlaceholdersAndLiteralPercent() {
-        // `%%` (a literal percent sign), like `%n`, does not consume an argument. A format string
-        // with only `%%` and `{}` tokens still has zero *argument-consuming* specifiers, so the
-        // bailout must still fire and preserve the arguments.
+        // `%%`, like `%n`, consumes no argument, so `%%` plus `{}` still counts as zero specifiers.
         rewriteRun(
           //language=java
           java(
@@ -237,11 +218,7 @@ class FixStringFormatExpressionsTest implements RewriteTest {
 
     @Test
     void doNotStripArgsWithUnresolvedPlaceholders() {
-        // Real-world motivating case: `{}` is SLF4J-style placeholder syntax, not a `String#format`
-        // conversion specifier, so this format string has zero real `%` specifiers. Previously this
-        // recipe treated `original`/`shadow` as dead code and deleted them -- but they're almost
-        // certainly meant to be substituted, just via the wrong API. Leaving the call alone keeps
-        // the underlying bug (wrong templating syntax) visible instead of erasing the evidence of it.
+        // SLF4J-style `{}` is not a `String#format` specifier, so don't delete the args as dead code.
         rewriteRun(
           //language=java
           java(
@@ -282,8 +259,7 @@ class FixStringFormatExpressionsTest implements RewriteTest {
 
     @Test
     void newlineStillReplacedWhenArgsAreNotStripped() {
-        // The zero-specifiers-matched bailout only skips the arg-trimming step; the unrelated
-        // newline-to-%n replacement above it must still apply.
+        // The bailout only skips arg-trimming; newline-to-%n replacement must still apply.
         rewriteRun(
           //language=java
           java(
@@ -307,11 +283,8 @@ class FixStringFormatExpressionsTest implements RewriteTest {
 
     @Test
     void shadowClientMismatchReportingIsNotCorrupted() {
-        // Near-verbatim reproduction of the motivating production bug: a shadow-traffic comparator
-        // that logs a mismatch via a custom reportMismatch(...) helper, building the message with
-        // String#format but using SLF4J-style `{}` placeholders by mistake. Before this fix, the
-        // recipe deleted `original` and `shadow` from every one of these calls, silently degrading
-        // every mismatch report down to the literal, useless string "expect {}, actual {}".
+        // Motivating bug: mismatch reports built with String#format but SLF4J-style `{}` placeholders,
+        // where the recipe used to delete the args and reduce every report to "expect {}, actual {}".
         rewriteRun(
           //language=java
           java(
