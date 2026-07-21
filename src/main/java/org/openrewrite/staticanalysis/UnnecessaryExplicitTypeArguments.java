@@ -63,8 +63,8 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                             return m;
                         }
                     } else {
-                        // This invocation is an argument of the enclosing invocation.
-                        if (shouldRetainOnStaticMethod(methodType)) {
+                        // As above, retain unless inferable from this call's own arguments (static or not).
+                        if (!canInferTypeArgumentsFromArguments(methodType)) {
                             return m;
                         }
                         // Cannot remove type parameters if it would introduce ambiguity about which method should be called
@@ -151,13 +151,6 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     return null;
                 }
                 return samReturn;
-            }
-
-            private boolean shouldRetainOnStaticMethod(JavaType.Method methodType) {
-                // Without a target type, removing the explicit type arguments of a static method can break
-                // overload resolution in the enclosing call when the type variables are not inferable from
-                // the call's own arguments.
-                return methodType.hasFlags(Flag.Static) && !canInferTypeArgumentsFromArguments(methodType);
             }
 
             private boolean canInferTypeArgumentsFromArguments(JavaType.Method methodType) {
