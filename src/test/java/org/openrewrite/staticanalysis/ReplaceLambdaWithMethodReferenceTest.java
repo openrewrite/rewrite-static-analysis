@@ -908,8 +908,8 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/941")
+    @Test
     void qualifiedThisForOuterClassMethod() {
         rewriteRun(
           //language=java
