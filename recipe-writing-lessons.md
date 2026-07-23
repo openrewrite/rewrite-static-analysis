@@ -319,3 +319,37 @@ mark escape. Key learnings:
   the method type still declares the legacy type. With every reference re-typed, `maybeRemoveImport`
   removes the import with no downstream cleanup needed. `ReplaceSynchronizedType` is the shared base that
   implements this for `Hashtable`/`Vector`/`StringBuffer`.
+
+## Data flow / taint tracking (rewrite-analysis)
+
+### `Dataflow.findSinks` cannot track sources inside `catch` blocks
+`org.openrewrite.analysis.dataflow.Dataflow#findSinks` gates its results on control-flow
+*reachability*: it computes the control-flow graph of the enclosing method and prunes any
+flow whose nodes are not reachable on the normal control-flow path. A `catch` block is only
+entered via an exceptional edge, which the control-flow graph does not model, so every
+expression inside a `catch` is considered unreachable and the flow is pruned to empty —
+`findSinks` returns `Option.none()` even though `DataFlowNode.of(...)` and `spec.isSource(...)`
+both succeed.
+
+To taint-track a source that lives inside a `catch` block (e.g. connecting a caught exception
+to a newly thrown one), drive the flow engine directly and skip the reachability filter:
+```java
+DataFlowNode.of(cursor).forEach(node -> {
+    FlowGraph graph = ForwardFlow.findAllFlows(node, spec, FlowGraph.Factory.defaultFactory());
+    // BFS/DFS over graph.getEdges(); collect each node.getCursor().getValue() that is an Expression
+});
+```
+This yields the full forward taint graph (every expression the source flows into) without the
+control-flow reachability gate. See `FindNewExceptionWithoutCause`.
+
+### Matching a reference to a specific local/caught variable
+`JavaType.Variable.equals` is structural (compares `name` + `owner`), so a reference's
+`J.Identifier#getFieldType()` reliably equals the declaration's `NamedVariable#getVariableType()`.
+Fall back to simple-name comparison only when type attribution is missing.
+
+### `@Nullable` on a nested type is a type-use annotation
+Write `JavaType.@Nullable Variable`, not `@Nullable JavaType.Variable`. The latter annotates the
+scoping construct `JavaType` and fails to compile ("scoping construct cannot be annotated with
+type-use annotation"), which crashes the whole Lombok annotation-processing round and produces a
+misleading cascade of "does not override abstract method getDescription()" errors across every
+Lombok-annotated recipe.
