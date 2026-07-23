@@ -53,6 +53,11 @@ public class OperatorWrap extends Recipe {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
+                    // Kotlin treats a newline as an expression terminator, so a leading binary operator
+                    // becomes a unary operator on a new statement. Only reformat Java compilation units.
+                    if (!(tree instanceof J.CompilationUnit)) {
+                        return (J) tree;
+                    }
                     SourceFile cu = (SourceFile) tree;
                     operatorWrapStyle = Style.from(OperatorWrapStyle.class, cu, Checkstyle::operatorWrapStyle);
 
