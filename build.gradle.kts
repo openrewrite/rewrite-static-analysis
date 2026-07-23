@@ -1,4 +1,7 @@
 @file:Suppress("UnstableApiUsage")
+import java.io.File
+import org.gradle.api.file.RelativePath
+
 plugins {
     id("org.openrewrite.build.recipe-library") version "latest.release"
     id("org.openrewrite.build.moderne-source-available-license") version "latest.release"
@@ -25,6 +28,7 @@ dependencies {
     provided("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
     provided("org.openrewrite:rewrite-python:${rewriteVersion}")
+    provided("org.openrewrite:rewrite-go:${rewriteVersion}")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
@@ -47,8 +51,43 @@ dependencies {
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
 }
 
+val rewriteGoRpcClasspath = configurations.detachedConfiguration(
+    dependencies.create("org.openrewrite:rewrite-go:${rewriteVersion}")
+)
+val rewriteGoJar = rewriteGoRpcClasspath.elements.map { artifacts ->
+    artifacts.map { it.asFile }.single { it.name.startsWith("rewrite-go-") && it.extension == "jar" }
+}
+val rewriteGoSourceDir = layout.buildDirectory.dir("rewrite-go-src")
+val rewriteGoRpcDir = layout.buildDirectory.dir("rewrite-go-rpc")
+val rewriteGoRpcBinary = rewriteGoRpcDir.map { it.file("rewrite-go-rpc") }
+
+val installRewriteGoRpc by tasks.registering(Exec::class) {
+    inputs.file(rewriteGoJar)
+    outputs.file(rewriteGoRpcBinary)
+
+    doFirst {
+        delete(rewriteGoSourceDir)
+        copy {
+            from(zipTree(rewriteGoJar.get())) {
+                include("META-INF/rewrite-go/src/**")
+                eachFile {
+                    relativePath = RelativePath(true, *relativePath.segments.drop(3).toTypedArray())
+                }
+                includeEmptyDirs = false
+            }
+            into(rewriteGoSourceDir)
+        }
+        rewriteGoRpcDir.get().asFile.mkdirs()
+    }
+
+    workingDir(rewriteGoSourceDir)
+    commandLine("go", "build", "-o", rewriteGoRpcBinary.get().asFile.absolutePath, "./cmd/rpc")
+}
+
 tasks.withType<Test> {
     jvmArgs("-Xmx1g", "-Xms512m")
+    dependsOn(installRewriteGoRpc)
+    environment("PATH", rewriteGoRpcDir.get().asFile.absolutePath + File.pathSeparator + System.getenv("PATH"))
 }
 
 tasks.withType<JavaCompile> {

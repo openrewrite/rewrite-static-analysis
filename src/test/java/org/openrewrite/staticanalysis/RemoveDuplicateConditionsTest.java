@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -282,6 +283,37 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
                   print("has items")
               else:
                   print("empty")
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func deliveryStatus(paid bool, shipped bool) string {
+                  if paid {
+                      return "ready"
+                  } else if paid {
+                      return "duplicate"
+                  }
+                  return "waiting"
+              }
+              """,
+            """
+              package main
+
+              func deliveryStatus(paid bool, shipped bool) string {
+                  if paid {
+                      return "ready"
+                  }
+                  return "waiting"
+              }
               """
           )
         );
