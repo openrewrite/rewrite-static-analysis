@@ -282,3 +282,40 @@ Common collections:
 - `common-static-analysis.yml` - General static analysis fixes
 - `java-best-practices.yml` - Java-specific best practices
 - `static-analysis.yml` - Broader static analysis recipes
+
+## Data-flow-guarded local type replacement (ModernizeCollections)
+
+When replacing a legacy synchronized type with an unsynchronized one (`Hashtable`→`HashMap`,
+`Vector`→`ArrayList`, `Stack`→`Deque`, `StringBuffer`→`StringBuilder`), the transformation is only
+sound when the instance is a local variable that never escapes its method. Model this after
+`ReplaceStackWithDeque`: a `DataFlowSpec` whose source is the variable initializer and whose sinks
+mark escape. Key learnings:
+
+- **Escape = the reference itself leaves, not a derived value.** Check the sink node's *direct*
+  parent, not `firstEnclosing(J.Return.class)`. `return v.size()` puts `v` inside a `J.Return`, but
+  only `size()` is returned — `v` is the method-call receiver and does not escape. The escape sinks
+  that matter: `parent instanceof J.Return`, `v` in a `J.MethodInvocation`/`J.NewClass` argument list,
+  and `v` as the RHS of a `J.Assignment` whose target is a field.
+- **The rewrite-analysis flow models already handle closure capture precisely.** A buffer captured by
+  `items.forEach(x -> sb.append(x))` stays confined (converted), while `Runnable r = () -> sb.append(x);
+  new Thread(r).start()` is correctly detected as escaping (not converted). No hand-rolled lambda guard
+  is needed.
+- **Restrict to local variables.** Use `variable.getVariableType().getOwner() instanceof JavaType.Method`
+  to exclude fields (which are shared state). Also skip multi-variable declarations
+  (`Vector a = ..., b = ...`) — the shared type expression cannot be changed for just one variable.
+- **Guard type-specific methods.** `Hashtable` (`contains`/`elements`/`keys`) and `Vector`
+  (`addElement`/`elementAt`/…) expose methods absent from `HashMap`/`ArrayList`; skip when used.
+  `Vector(int, int)` has no `ArrayList` constructor. `StringBuilder`/`StringBuffer` APIs are identical.
+- **Fragment `ChangeType` leaves the old import; re-type the uses too.** Running `ChangeType` on just
+  the declaration (type expression + initializer) does not re-type the variable's *uses* (`v.add(...)`),
+  so those keep the old `JavaType`/method type, `typesInUse` still counts the legacy type, and
+  `maybeRemoveImport` cannot drop the import (`ReplaceStackWithDeque` has this wart). Blanket
+  `ChangeType` over the whole method is unsafe when the method references non-converted instances of the
+  same type (a field, an escaping local). The clean fix is precise per-variable re-typing: record the
+  declaration's `JavaType.Variable` in a `CompilationUnit`-scoped `IdentityHashMap`, then in
+  `visitIdentifier` re-type any identifier whose `getFieldType()` is that variable, and in
+  `visitMethodInvocation` re-map the `JavaType.Method` (declaring type **and return type**, so chained
+  calls like `sb.append(a).append(b)` resolve) whenever the receiver is already the replacement type but
+  the method type still declares the legacy type. With every reference re-typed, `maybeRemoveImport`
+  removes the import with no downstream cleanup needed. `ReplaceSynchronizedType` is the shared base that
+  implements this for `Hashtable`/`Vector`/`StringBuffer`.
