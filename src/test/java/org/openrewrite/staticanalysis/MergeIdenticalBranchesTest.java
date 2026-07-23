@@ -20,7 +20,11 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class MergeIdenticalBranchesTest implements RewriteTest {
 
@@ -201,6 +205,118 @@ class MergeIdenticalBranchesTest implements RewriteTest {
                       }
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(a: Boolean, b: Boolean) {
+                  if (a) {
+                      println("same")
+                  } else if (b) {
+                      println("same")
+                  } else {
+                      println("different")
+                  }
+              }
+              """,
+            """
+              fun test(a: Boolean, b: Boolean) {
+                  if (a || b) {
+                      println("same")
+                  } else {
+                      println("different")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(boolean a, boolean b) {
+                  if (a) {
+                      println("same")
+                  } else if (b) {
+                      println("same")
+                  } else {
+                      println("different")
+                  }
+              }
+              """,
+            """
+              void test(boolean a, boolean b) {
+                  if (a || b) {
+                      println("same")
+                  } else {
+                      println("different")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(a: boolean, b: boolean) {
+                  if (a) {
+                      console.log("same");
+                  } else if (b) {
+                      console.log("same");
+                  } else {
+                      console.log("different");
+                  }
+              }
+              """,
+            """
+              function test(a: boolean, b: boolean) {
+                  if (a || b) {
+                      console.log("same");
+                  } else {
+                      console.log("different");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test(a, b):
+                  if a:
+                      print("same")
+                  elif b:
+                      print("same")
+                  else:
+                      print("different")
+              """,
+            """
+              def test(a, b):
+                  if a or b:
+                      print("same")
+                  else:
+                      print("different")
               """
           )
         );

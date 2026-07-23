@@ -908,6 +908,42 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/941")
+    @Test
+    void qualifiedThisForOuterClassMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Outer {
+                  class Inner {
+                      void caller() {
+                          List.of("something").forEach((s) -> test(s));
+                      }
+                  }
+
+                  void test(String something) {}
+              }
+              """,
+            """
+              import java.util.List;
+
+              class Outer {
+                  class Inner {
+                      void caller() {
+                          List.of("something").forEach(Outer.this::test);
+                      }
+                  }
+
+                  void test(String something) {}
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void functionReference() {
         rewriteRun(

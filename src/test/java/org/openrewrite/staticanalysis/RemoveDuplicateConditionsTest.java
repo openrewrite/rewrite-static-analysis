@@ -20,7 +20,11 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class RemoveDuplicateConditionsTest implements RewriteTest {
 
@@ -166,6 +170,118 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
                       }
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(x: Int) {
+                  if (x > 0) {
+                      println("positive")
+                  } else if (x > 0) {
+                      println("also positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """,
+            """
+              fun test(x: Int) {
+                  if (x > 0) {
+                      println("positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(int x) {
+                  if (x > 0) {
+                      println("positive")
+                  } else if (x > 0) {
+                      println("also positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """,
+            """
+              void test(int x) {
+                  if (x > 0) {
+                      println("positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(x: number) {
+                  if (x > 0) {
+                      f();
+                  } else if (x > 0) {
+                      g();
+                  } else {
+                      h();
+                  }
+              }
+              """,
+            """
+              function test(x: number) {
+                  if (x > 0) {
+                      f();
+                  } else {
+                      h();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              items = []
+              if items:
+                  print("has items")
+              elif items:
+                  print("never reached")
+              else:
+                  print("empty")
+              """,
+            """
+              items = []
+              if items:
+                  print("has items")
+              else:
+                  print("empty")
               """
           )
         );

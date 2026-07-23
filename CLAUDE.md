@@ -197,7 +197,7 @@ Recipes are organized into YAML files in `src/main/resources/META-INF/rewrite/`:
 ## Important Notes
 
 - The project uses Gradle with build caching and parallel execution enabled
-- Build scans are available at https://ge.openrewrite.org/
+- Build scans are available at https://community.develocity.cloud/
 - Documentation for recipes is available at https://docs.openrewrite.org/recipes/staticanalysis
 - Contributions should follow the [OpenRewrite contributing guide](https://github.com/openrewrite/.github/blob/main/CONTRIBUTING.md)
 - **Recipe development documentation** is available in the `./docs` submodule - consult this for detailed guidance on writing recipes, using JavaTemplate, and testing patterns

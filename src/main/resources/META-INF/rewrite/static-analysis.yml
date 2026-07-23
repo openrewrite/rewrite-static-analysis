@@ -91,3 +91,19 @@ recipeList:
         - java.lang.*
 tags:
   - RSPEC-S1217
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.ModernizeCollections
+displayName: Modernize collections
+description: >-
+  Replace the legacy synchronized types `Hashtable`, `Vector`, `Stack`, and `StringBuffer` with their
+  modern unsynchronized counterparts `HashMap`, `ArrayList`, `Deque`/`ArrayDeque`, and `StringBuilder`.
+  Each replacement is only applied when data flow analysis can prove the instance is a local variable
+  that never escapes its method, so the synchronization it provided is redundant.
+tags:
+  - RSPEC-S1149
+recipeList:
+  - org.openrewrite.staticanalysis.ReplaceHashtableWithHashMap
+  - org.openrewrite.staticanalysis.ReplaceVectorWithArrayList
+  - org.openrewrite.staticanalysis.ReplaceStackWithDeque
+  - org.openrewrite.staticanalysis.ReplaceStringBufferWithStringBuilder

@@ -20,7 +20,11 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
 
@@ -252,6 +256,80 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
                       return x == x;
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLogicalAndKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(a: Boolean): Boolean {
+                  return a && a
+              }
+              """,
+            """
+              fun test(a: Boolean): Boolean {
+                  return a
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLogicalAndGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              boolean test(boolean a) {
+                  return a && a
+              }
+              """,
+            """
+              boolean test(boolean a) {
+                  return a
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLogicalAndTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(a: boolean) {
+                  return a && a;
+              }
+              """,
+            """
+              function test(a: boolean) {
+                  return a;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLogicalAndPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              a = True
+              b = a and a
+              """,
+            """
+              a = True
+              b = a
               """
           )
         );

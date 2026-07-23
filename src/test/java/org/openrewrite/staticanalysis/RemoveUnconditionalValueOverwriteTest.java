@@ -20,7 +20,11 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
 
@@ -187,6 +191,90 @@ class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
                       map.put("key", 3);
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapPutKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(map: java.util.Map<String, Int>) {
+                  map.put("key", 1)
+                  map.put("key", 2)
+              }
+              """,
+            """
+              fun test(map: java.util.Map<String, Int>) {
+                  map.put("key", 2)
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapPutGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test() {
+                  Map<String, Integer> map = new HashMap<>()
+                  map.put("key", 1)
+                  map.put("key", 2)
+              }
+              """,
+            """
+              void test() {
+                  Map<String, Integer> map = new HashMap<>()
+                  map.put("key", 2)
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapSetTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(map: Map<string, number>) {
+                  map.set("key", 1);
+                  map.set("key", 2);
+              }
+              """,
+            """
+              function test(map: Map<string, number>) {
+                  map.set("key", 2);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenSubscriptPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test():
+                  d = {}
+                  d["key"] = 1
+                  d["key"] = 2
+                  print(d)
+              """,
+            """
+              def test():
+                  d = {}
+                  d["key"] = 2
+                  print(d)
               """
           )
         );

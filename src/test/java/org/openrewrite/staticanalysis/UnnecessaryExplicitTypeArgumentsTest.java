@@ -246,6 +246,75 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void retainsWitnessOnInstanceMethodPassedAsArgumentToGenericMethod() {
+        // STATE_VALUE isn't inferable from source()'s (zero) args or from of()'s target type.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Transition {
+                  <STATE_VALUE> STATE_VALUE source();
+              }
+
+              class Pair<STATE_VALUE extends Enum<STATE_VALUE>> {
+                  static <STATE_VALUE extends Enum<STATE_VALUE>> Pair<STATE_VALUE> of(STATE_VALUE a, STATE_VALUE b) {
+                      return new Pair<>();
+                  }
+              }
+
+              class Test<STATE_VALUE extends Enum<STATE_VALUE>> {
+                  Pair<STATE_VALUE> test(Transition t, STATE_VALUE b) {
+                      return Pair.of(t.<STATE_VALUE>source(), b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWitnessOnInstanceMethodArgumentWhenInferableFromOwnArguments() {
+        // Unlike above, T is inferable from identity()'s own argument, so it's still removable.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Holder {
+                  <T> T identity(T value) {
+                      return value;
+                  }
+              }
+
+              class Test {
+                  void accept(Object o) {
+                  }
+
+                  void test(Holder h) {
+                      accept(h.<String>identity("x"));
+                  }
+              }
+              """,
+            """
+              class Holder {
+                  <T> T identity(T value) {
+                      return value;
+                  }
+              }
+
+              class Test {
+                  void accept(Object o) {
+                  }
+
+                  void test(Holder h) {
+                      accept(h.identity("x"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class StaticMethods {
         static final SourceSpecs GENERIC_CLASS_SOURCE = java(

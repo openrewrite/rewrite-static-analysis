@@ -36,6 +36,7 @@ dependencies {
     testImplementation("org.openrewrite:rewrite-test")
     testImplementation("org.jetbrains:annotations:24.+")
     testImplementation("org.junit-pioneer:junit-pioneer:2.+")
+    testImplementation("org.junit.platform:junit-platform-launcher")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.testng:testng:7.+")
     testImplementation("org.openrewrite:rewrite-javascript:${rewriteVersion}")

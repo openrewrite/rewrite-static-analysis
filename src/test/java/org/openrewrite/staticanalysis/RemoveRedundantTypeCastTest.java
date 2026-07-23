@@ -490,8 +490,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    @Test
     void keepCastForLambdaAssignedToVar() {
         rewriteRun(
           //language=java
@@ -510,8 +510,8 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
-    @Test
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    @Test
     void keepCastForMethodReferenceAssignedToVar() {
         rewriteRun(
           //language=java
@@ -860,6 +860,44 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                       sb.append((Object) h.getValue());
                       return sb.toString();
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/934")
+    @Test
+    void doNotRemoveObjectCastOnPrimitiveArrayVarargs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Example {
+                  void run() {
+                      sink((Object) new int[] {1, 2, 3});
+                  }
+
+                  static void sink(Object... args) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/934")
+    @Test
+    void doNotRemoveObjectCastOnReferenceArrayVarargs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Example {
+                  void run(String[] arr) {
+                      sink((Object) arr);
+                  }
+
+                  static void sink(Object... args) {}
               }
               """
           )
