@@ -415,6 +415,33 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         }
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/783")
+    @Test
+    void retainExplicitTypeArgumentForDependentTypeParameters() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              class Test {
+                  /**
+                   * A method with dependent type parameters where S extends T.
+                   * The explicit type argument on the Comparator is required so the compiler
+                   * can bind both T and S (S extends T) correctly.
+                   */
+                  static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
+                      return null;
+                  }
+
+                  static final Comparator<Iterable<Integer>> COMPARATOR =
+                      lexicographical(Comparator.<Integer>naturalOrder());
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class kotlinTest {
         @Test

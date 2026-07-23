@@ -102,6 +102,9 @@ recipeList:
 #  - org.openrewrite.staticanalysis.UseCollectionInterfaces
   - org.openrewrite.staticanalysis.UseDiamondOperator
   - org.openrewrite.staticanalysis.UseJavaStyleArrayDeclarations
+# Changes case-conversion semantics for locale-sensitive strings; opt-in only.
+# https://github.com/openrewrite/rewrite-static-analysis/issues/78
+#  - org.openrewrite.staticanalysis.UseLocaleWithCaseConversions
   - org.openrewrite.staticanalysis.UsePortableNewlines
 # https://github.com/openrewrite/rewrite-static-analysis/issues/10
 #  - org.openrewrite.staticanalysis.UseLambdaForFunctionalInterface

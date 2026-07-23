@@ -67,6 +67,15 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         if (!canInferTypeArgumentsFromArguments(methodType)) {
                             return m;
                         }
+                        // If the enclosing method has dependent type parameters (e.g., <T, S extends T>),
+                        // removing the explicit type argument from this call can prevent the compiler from
+                        // correctly inferring the dependent type parameters. For example:
+                        //   lexicographical(Comparator.<Integer>naturalOrder())
+                        // where lexicographical is declared as <T, S extends T>, the explicit <Integer>
+                        // is required so the compiler can bind both T and S correctly.
+                        if (hasDependentTypeParameters(enclosingMethod.getMethodType())) {
+                            return m;
+                        }
                         // Cannot remove type parameters if it would introduce ambiguity about which method should be called
                         if (enclosingMethod.getMethodType() == null) {
                             return m;
@@ -165,6 +174,73 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         .filter(t -> t instanceof JavaType.GenericTypeVariable)
                         .forEach(it -> formalTypeNames.remove(((JavaType.GenericTypeVariable) it).getName()));
                 return formalTypeNames.isEmpty();
+            }
+
+            /**
+             * Returns true if the given method has dependent type parameters — that is, at least one
+             * type parameter has a bound that references another type parameter declared by the same
+             * method (e.g., {@code <T, S extends T>}).
+             * <p>
+             * When such dependencies exist, removing explicit type arguments from an argument expression
+             * can prevent the compiler from resolving the dependent type parameters correctly.
+             */
+            private boolean hasDependentTypeParameters(JavaType.@Nullable Method enclosingMethodType) {
+                if (enclosingMethodType == null) {
+                    return false;
+                }
+                List<String> formalNames = enclosingMethodType.getDeclaredFormalTypeNames();
+                if (formalNames.size() < 2) {
+                    // Need at least two type parameters for one to bound another
+                    return false;
+                }
+                List<JavaType> typesToSearch = new ArrayList<>(enclosingMethodType.getParameterTypes());
+                if (enclosingMethodType.getReturnType() != null) {
+                    typesToSearch.add(enclosingMethodType.getReturnType());
+                }
+                return typesToSearch.stream()
+                        .anyMatch(t -> hasGenericWithFormalParamBound(t, formalNames));
+            }
+
+            /**
+             * Recursively searches {@code type} for a {@link JavaType.GenericTypeVariable} whose name
+             * is among {@code formalNames} AND whose bounds directly reference another name in
+             * {@code formalNames}. Such a variable represents a dependent type parameter.
+             */
+            private boolean hasGenericWithFormalParamBound(@Nullable JavaType type, List<String> formalNames) {
+                if (type instanceof JavaType.GenericTypeVariable) {
+                    JavaType.GenericTypeVariable gtv = (JavaType.GenericTypeVariable) type;
+                    if (formalNames.contains(gtv.getName())) {
+                        for (JavaType bound : gtv.getBounds()) {
+                            if (referencesAnyFormalName(bound, formalNames)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                }
+                if (type instanceof JavaType.Parameterized) {
+                    return ((JavaType.Parameterized) type).getTypeParameters().stream()
+                            .anyMatch(t -> hasGenericWithFormalParamBound(t, formalNames));
+                }
+                if (type instanceof JavaType.Array) {
+                    return hasGenericWithFormalParamBound(((JavaType.Array) type).getElemType(), formalNames);
+                }
+                return false;
+            }
+
+            /**
+             * Returns true if {@code type} is, or transitively contains, a
+             * {@link JavaType.GenericTypeVariable} whose name is in {@code formalNames}.
+             */
+            private boolean referencesAnyFormalName(@Nullable JavaType type, List<String> formalNames) {
+                if (type instanceof JavaType.GenericTypeVariable) {
+                    return formalNames.contains(((JavaType.GenericTypeVariable) type).getName());
+                }
+                if (type instanceof JavaType.Parameterized) {
+                    return ((JavaType.Parameterized) type).getTypeParameters().stream()
+                            .anyMatch(t -> referencesAnyFormalName(t, formalNames));
+                }
+                return false;
             }
         });
     }
