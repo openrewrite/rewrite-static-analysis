@@ -42,7 +42,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(String value) {
                       if (value == null) {
-                          throw new IllegalArgumentException("value cannot be null");
+                          throw new IllegalArgumentException();
                       }
                       System.out.println(value);
                   }
@@ -251,7 +251,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(String value) {
                       if (value == null) {
-                          throw new RuntimeException("Required parameter");
+                          throw new RuntimeException();
                       }
                       System.out.println(value);
                   }
@@ -365,7 +365,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(String first, String second, String third) {
                       if (first == null || second == null || third == null) {
-                          throw new IllegalArgumentException("All parameters are required");
+                          throw new IllegalArgumentException();
                       }
                       System.out.println(first + second + third);
                   }
@@ -424,7 +424,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(String value) {
                       if (value == null || otherCondition()) {
-                          throw new IllegalArgumentException("value cannot be null");
+                          throw new IllegalArgumentException();
                       }
                       System.out.println(value);
                   }
@@ -440,7 +440,7 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(@NonNull String value) {
                       if (otherCondition()) {
-                          throw new IllegalArgumentException("value cannot be null");
+                          throw new IllegalArgumentException();
                       }
                       System.out.println(value);
                   }
@@ -454,8 +454,9 @@ class AnnotateRequiredParametersTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite/issues/7741")
     @Test
-    void removeNullableAnnotationWhenAddingNonNull() {
+    void preserveNullableAnnotationAndNullCheck() {
         rewriteRun(
           //language=java
           java(
@@ -465,17 +466,8 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               class Test {
                   public void process(@Nullable String value) {
                       if (value == null) {
-                          throw new IllegalArgumentException();
+                          throw new IllegalArgumentException("my concrete business exception");
                       }
-                      System.out.println(value);
-                  }
-              }
-              """,
-            """
-              import org.jspecify.annotations.NonNull;
-
-              class Test {
-                  public void process(@NonNull String value) {
                       System.out.println(value);
                   }
               }
@@ -639,6 +631,51 @@ class AnnotateRequiredParametersTest implements RewriteTest {
                               }
                           }
                           System.out.println(second);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/7741")
+        @Test
+        void preserveThrowWithCustomMessage() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public byte[] generate(final String printMode, final String uiStateDto) {
+                          if (printMode == null) {
+                              throw new IllegalArgumentException("my concrete business exception");
+                          }
+                          if (uiStateDto == null) {
+                              throw new IllegalArgumentException("my concrete business exception");
+                          }
+                          return new byte[0];
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/7741")
+        @Test
+        void preserveThrowWithCustomExceptionType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      static class MyBusinessException extends RuntimeException {}
+
+                      public void process(String value) {
+                          if (value == null) {
+                              throw new MyBusinessException();
+                          }
+                          System.out.println(value);
                       }
                   }
                   """
