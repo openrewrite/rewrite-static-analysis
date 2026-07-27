@@ -32,8 +32,6 @@ import org.openrewrite.staticanalysis.table.MissingJavadocOnPublicMethods;
 
 import java.util.List;
 
-import static java.util.stream.Collectors.joining;
-
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class FindMissingJavadocOnPublicMethods extends Recipe {
@@ -73,24 +71,10 @@ public class FindMissingJavadocOnPublicMethods extends Recipe {
                         methodType.getDeclaringType().getFullyQualifiedName() :
                         enclosing.getType() != null ? enclosing.getType().getFullyQualifiedName() : "";
 
-                String parameterTypes;
-                if (methodType != null) {
-                    parameterTypes = methodType.getParameterTypes().stream()
-                            .map(String::valueOf)
-                            .collect(joining(", "));
-                } else {
-                    parameterTypes = md.getParameters().stream()
-                            .filter(J.VariableDeclarations.class::isInstance)
-                            .map(J.VariableDeclarations.class::cast)
-                            .map(v -> String.valueOf(v.getType()))
-                            .collect(joining(", "));
-                }
-
                 report.insertRow(ctx, new MissingJavadocOnPublicMethods.Row(
                         sourceFile == null ? "" : sourceFile.getSourcePath().toString(),
                         className,
-                        md.getSimpleName(),
-                        parameterTypes
+                        md.getSimpleName()
                 ));
 
                 return md.withName(SearchResult.found(md.getName()));
@@ -135,7 +119,12 @@ public class FindMissingJavadocOnPublicMethods extends Recipe {
             }
 
             private boolean isJavadoc(List<Comment> comments) {
-                return comments.stream().anyMatch(c -> c instanceof Javadoc.DocComment);
+                for (Comment c : comments) {
+                    if (c instanceof Javadoc.DocComment) {
+                        return true;
+                    }
+                }
+                return false;
             }
         });
     }

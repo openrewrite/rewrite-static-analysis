@@ -43,9 +43,5 @@ public class MissingJavadocOnPublicMethods extends DataTable<MissingJavadocOnPub
         @Column(displayName = "Method name",
                 description = "The name of the undocumented method.")
         String methodName;
-
-        @Column(displayName = "Parameter types",
-                description = "A comma-separated list of the method's parameter types, empty for no-arg methods.")
-        String parameterTypes;
     }
 }
