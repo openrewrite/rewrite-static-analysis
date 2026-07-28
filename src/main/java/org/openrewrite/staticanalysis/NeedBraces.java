@@ -104,7 +104,7 @@ public class NeedBraces extends Recipe {
                     if (last) {
                         blockParentCursor.putMessage("removeEndComments", true);
                     } else {
-                        blockParentCursor.<List<Integer>>computeMessageIfAbsent("replaced", k -> new ArrayList<>()).add(currentIndex);
+                        blockParentCursor.computeMessageIfAbsent("replaced", k -> new ArrayList<>()).add(currentIndex);
                     }
                 }
             }

@@ -244,7 +244,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     ternary.getMarkers(),
                     J.Case.Type.Rule,
                     JContainer.build(
-                            singletonList(JRightPadded.<J>build(compare.withPrefix(Space.SINGLE_SPACE))
+                            singletonList(JRightPadded.build(compare.withPrefix(Space.SINGLE_SPACE))
                                     .withAfter(Space.SINGLE_SPACE))
                     ),
                     JContainer.build(emptyList()),
@@ -259,7 +259,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     Space.EMPTY,
                     ternary.getMarkers(),
                     J.Case.Type.Rule,
-                    JContainer.build(singletonList(JRightPadded.<J>build(new J.Identifier(
+                    JContainer.build(singletonList(JRightPadded.build(new J.Identifier(
                             randomId(),
                             Space.EMPTY,
                             Markers.EMPTY,

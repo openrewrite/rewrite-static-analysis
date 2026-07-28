@@ -152,7 +152,7 @@ public class AnnotateNullableMethods extends Recipe {
         return Repeat.repeatUntilStable(javaIsoVisitor, 5);
     }
 
-    private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
+    private static final class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
 
         private static final List<MethodMatcher> KNOWN_NULLABLE_METHODS = Arrays.asList(
                 // These mostly return a nullable current or  previous value, which is more often null
