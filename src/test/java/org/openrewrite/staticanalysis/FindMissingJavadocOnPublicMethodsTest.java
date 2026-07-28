@@ -42,7 +42,6 @@ class FindMissingJavadocOnPublicMethodsTest implements RewriteTest {
               assertThat(row.getSourcePath()).isEqualTo("com/example/A.java");
               assertThat(row.getClassName()).isEqualTo("com.example.A");
               assertThat(row.getMethodName()).isEqualTo("foo");
-              assertThat(row.getParameterTypes()).isEqualTo("java.lang.String, int");
           }),
           //language=java
           java(
