@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -330,6 +331,29 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
             """
               a = True
               b = a
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyLogicalAndGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func shouldSend(enabled bool) bool {
+                  return enabled && enabled
+              }
+              """,
+            """
+              package main
+
+              func shouldSend(enabled bool) bool {
+                  return enabled
+              }
               """
           )
         );

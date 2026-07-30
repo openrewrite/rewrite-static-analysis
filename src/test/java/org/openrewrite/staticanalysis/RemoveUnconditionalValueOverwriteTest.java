@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -275,6 +276,36 @@ class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
                   d = {}
                   d["key"] = 2
                   print(d)
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapIndexGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func recordStatus(counts map[string]int) {
+                  counts["pending"] = 1
+                  counts["pending"] = 2
+                  publish(counts)
+              }
+
+              func publish(counts map[string]int) {}
+              """,
+            """
+              package main
+
+              func recordStatus(counts map[string]int) {
+                  counts["pending"] = 2
+                  publish(counts)
+              }
+
+              func publish(counts map[string]int) {}
               """
           )
         );
