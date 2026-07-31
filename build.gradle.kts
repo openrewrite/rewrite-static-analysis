@@ -1,4 +1,9 @@
 @file:Suppress("UnstableApiUsage")
+
+import java.io.InputStream
+import org.gradle.process.ExecOperations
+import org.gradle.kotlin.dsl.support.serviceOf
+
 plugins {
     id("org.openrewrite.build.recipe-library") version "latest.release"
     id("org.openrewrite.build.moderne-source-available-license") version "latest.release"
@@ -47,8 +52,41 @@ dependencies {
     testRuntimeOnly("com.google.code.findbugs:jsr305:latest.release")
 }
 
+// The TypeScript tests spawn `npx --package=@openrewrite/rewrite@<version> rewrite-rpc`, and the RPC
+// process is shut down between test classes. On a cold npx cache each of those starts its own install
+// into the same `~/.npm/_npx` directory, and the resulting overlap leaves the package half-written, so
+// the tests fail with "RPC process shut down early". Installing once up front keeps every spawn a
+// cache hit.
+val warmJavaScriptRpcCache by tasks.registering {
+    description = "Installs the npm package that the JavaScript RPC tests spawn, so they never race on a cold npx cache."
+    val rewriteJavaScriptJars = configurations.named("testRuntimeClasspath")
+        .map { classpath -> classpath.filter { it.name.startsWith("rewrite-javascript-") } }
+    val marker = layout.buildDirectory.file("tmp/warmJavaScriptRpcCache/version.txt")
+    val npx = if (System.getProperty("os.name").lowercase().contains("windows")) "npx.cmd" else "npx"
+    val execOperations = serviceOf<ExecOperations>()
+
+    inputs.files(rewriteJavaScriptJars)
+    outputs.file(marker)
+
+    doLast {
+        val jar = rewriteJavaScriptJars.get().singleOrNull() ?: return@doLast
+        val version = zipTree(jar).matching { include("META-INF/rewrite-javascript-version.txt") }
+            .singleFile.readText().trim()
+        val result = execOperations.exec {
+            commandLine(npx, "--yes", "--package=@openrewrite/rewrite@$version", "rewrite-rpc")
+            standardInput = InputStream.nullInputStream()
+            isIgnoreExitValue = true
+        }
+        if (result.exitValue != 0) {
+            logger.warn("Could not pre-install @openrewrite/rewrite@$version; JavaScript RPC tests may be flaky.")
+        }
+        marker.get().asFile.writeText(version)
+    }
+}
+
 tasks.withType<Test> {
     jvmArgs("-Xmx1g", "-Xms512m")
+    dependsOn(warmJavaScriptRpcCache)
 }
 
 tasks.withType<JavaCompile> {
