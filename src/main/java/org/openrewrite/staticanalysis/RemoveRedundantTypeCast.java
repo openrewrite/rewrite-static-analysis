@@ -114,6 +114,14 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return visited;
                 }
 
+                // A cast from a raw type to its parameterized form (e.g. `(Box<?>) raw`) re-enters the
+                // generic type system; without it every member accessed on the expression is erased.
+                JavaType.FullyQualified exprFullyQualified = TypeUtils.asFullyQualified(expressionType);
+                if (TypeUtils.asParameterized(castType) != null && exprParameterized == null &&
+                        exprFullyQualified != null && !exprFullyQualified.getTypeParameters().isEmpty()) {
+                    return visited;
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
