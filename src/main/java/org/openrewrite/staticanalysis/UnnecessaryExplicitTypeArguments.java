@@ -22,8 +22,9 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -95,13 +96,20 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     }
                     inferredType = ((NameTree) enclosing).getType();
                 } else if (enclosing instanceof J.Return) {
-                    Object e = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || Cursor.ROOT_VALUE.equals(p)).getValue();
+                    Cursor enclosingFnCursor = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || Cursor.ROOT_VALUE.equals(p));
+                    Object e = enclosingFnCursor.getValue();
                     if (e instanceof J.MethodDeclaration) {
                         J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) e;
                         if (methodDeclaration.getReturnTypeExpression() != null) {
                             inferredType = methodDeclaration.getReturnTypeExpression().getType();
                         }
                     } else if (e instanceof J.Lambda) {
+                        // A lambda passed as a call argument has the same inference circularity as the
+                        // select/argument branches above; guard it the same way.
+                        Object lambdaEnclosing = enclosingFnCursor.getParentTreeCursor().getValue();
+                        if (lambdaEnclosing instanceof J.MethodInvocation && !canInferTypeArgumentsFromArguments(methodType)) {
+                            return m;
+                        }
                         inferredType = getLambdaReturnType(((J.Lambda) e).getType());
                     }
                 }
@@ -158,13 +166,52 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 if (methodType.getParameterTypes().isEmpty()) {
                     return false;
                 }
-                List<String> formalTypeNames = new ArrayList<>(methodType.getDeclaredFormalTypeNames());
-                methodType.getParameterTypes().stream()
-                        .filter(p -> p instanceof JavaType.Parameterized)
-                        .flatMap(p -> ((JavaType.Parameterized) p).getTypeParameters().stream())
-                        .filter(t -> t instanceof JavaType.GenericTypeVariable)
-                        .forEach(it -> formalTypeNames.remove(((JavaType.GenericTypeVariable) it).getName()));
-                return formalTypeNames.isEmpty();
+                // methodType is already substituted (no GenericTypeVariable left) and
+                // getDeclaredFormalTypeNames() is unreliable; look up the real declared signature instead.
+                JavaType.Method declared = findDeclaredSignature(methodType);
+                if (declared == null) {
+                    return false;
+                }
+                Set<String> returnTypeVariables = new HashSet<>();
+                collectGenericTypeVariableNames(declared.getReturnType(), returnTypeVariables);
+                if (returnTypeVariables.isEmpty()) {
+                    return true;
+                }
+                Set<String> parameterTypeVariables = new HashSet<>();
+                for (JavaType paramType : declared.getParameterTypes()) {
+                    collectGenericTypeVariableNames(paramType, parameterTypeVariables);
+                }
+                return parameterTypeVariables.containsAll(returnTypeVariables);
+            }
+
+            private JavaType.@Nullable Method findDeclaredSignature(JavaType.Method methodType) {
+                if (!(methodType.getDeclaringType() instanceof JavaType.Class)) {
+                    return null;
+                }
+                JavaType.Class declaringClass = (JavaType.Class) methodType.getDeclaringType();
+                JavaType.Method match = null;
+                for (JavaType.Method candidate : declaringClass.getMethods()) {
+                    if (candidate.getName().equals(methodType.getName()) &&
+                            candidate.getParameterTypes().size() == methodType.getParameterTypes().size()) {
+                        if (match != null) {
+                            return null; // ambiguous same-arity overload
+                        }
+                        match = candidate;
+                    }
+                }
+                return match;
+            }
+
+            private void collectGenericTypeVariableNames(@Nullable JavaType type, Set<String> names) {
+                if (type instanceof JavaType.GenericTypeVariable) {
+                    names.add(((JavaType.GenericTypeVariable) type).getName());
+                } else if (type instanceof JavaType.Parameterized) {
+                    for (JavaType typeParameter : ((JavaType.Parameterized) type).getTypeParameters()) {
+                        collectGenericTypeVariableNames(typeParameter, names);
+                    }
+                } else if (type instanceof JavaType.Array) {
+                    collectGenericTypeVariableNames(((JavaType.Array) type).getElemType(), names);
+                }
             }
         });
     }
