@@ -217,6 +217,60 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
+    void retainsWitnessOnGenericInstanceMethodWithConcreteArgumentsAsSelect() {
+        // T is method-level but appears in neither argument, so it's not inferable from them.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+              import java.util.Optional;
+
+              class PayloadValue {}
+              class Datasource {}
+
+              class Handler {
+                  <T> Optional<T> getPayloadOptionalValue(Map<String, PayloadValue> map, Datasource datasource) {
+                      return Optional.empty();
+                  }
+
+                  String test(Map<String, PayloadValue> map, Datasource datasource) {
+                      return this.<String>getPayloadOptionalValue(map, datasource).orElse(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainsWitnessOnNoArgStaticMethodReturnedFromBlockBodiedLambdaArgument() {
+        // Optional.empty() takes no args, and the lambda itself is a .map() argument, so
+        // neither provides an independent target type to infer T from.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Optional;
+              import java.util.stream.Stream;
+
+              class Test {
+                  Stream<Optional<List<String>>> test(Stream<String> contents) {
+                      return contents.map(content -> {
+                          if (content == null) {
+                              return Optional.<List<String>>empty();
+                          }
+                          return Optional.of(List.of(content));
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void retainsWitnessWhenResultIsSelectOfMethodInvocation() {
         rewriteRun(
           //language=java
