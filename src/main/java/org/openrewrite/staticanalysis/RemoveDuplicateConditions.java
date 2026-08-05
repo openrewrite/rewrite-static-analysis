@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @Getter
 public class RemoveDuplicateConditions extends Recipe {
@@ -74,6 +75,14 @@ public class RemoveDuplicateConditions extends Recipe {
                     }
                     Statement elseBody = current.getElsePart().getBody();
                     current = elseBody instanceof J.If ? (J.If) elseBody : null;
+                }
+
+                // A later condition is only unreachable if every condition up to it evaluates the same way each
+                // time; a side effect anywhere in the chain can change that, so require them all to be pure
+                for (Expression condition : conditions) {
+                    if (mayHaveSideEffects(condition)) {
+                        return if__;
+                    }
                 }
 
                 // Find and remove branches with duplicate conditions

@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -252,6 +253,63 @@ class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
             """
               function test(map: Map<string, number>) {
                   map.set("key", 2);
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenOverwrittenValueHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  int calls = 0;
+
+                  int register() {
+                      return ++calls;
+                  }
+
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key", register());
+                      map.put("key", 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenKeyHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  int calls = 0;
+
+                  String key() {
+                      calls++;
+                      return "key";
+                  }
+
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put(key(), 1);
+                      map.put(key(), 2);
+                  }
               }
               """
           )

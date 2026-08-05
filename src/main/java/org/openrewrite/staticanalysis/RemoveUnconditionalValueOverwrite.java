@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @Getter
 public class RemoveUnconditionalValueOverwrite extends Recipe {
@@ -78,12 +79,35 @@ public class RemoveUnconditionalValueOverwrite extends Recipe {
                     }
 
                     if (SemanticallyEqual.areEqual(key, nextKey) &&
-                        SemanticallyEqual.areEqual(receiver, nextReceiver)) {
+                        SemanticallyEqual.areEqual(receiver, nextReceiver) &&
+                        !discardsSideEffects(stmt)) {
                         //noinspection DataFlowIssue
                         return null;
                     }
                     return stmt;
                 }));
+            }
+
+            /**
+             * The overwritten call is dead, but the expressions it evaluates on the way are not: dropping the
+             * statement also drops the receiver, the key and the value it would have computed.
+             */
+            private boolean discardsSideEffects(Statement stmt) {
+                if (stmt instanceof J.Assignment) {
+                    J.Assignment assignment = (J.Assignment) stmt;
+                    return mayHaveSideEffects(assignment.getVariable()) ||
+                           mayHaveSideEffects(assignment.getAssignment());
+                }
+                J.MethodInvocation method = (J.MethodInvocation) stmt;
+                if (mayHaveSideEffects(method.getSelect())) {
+                    return true;
+                }
+                for (Expression argument : method.getArguments()) {
+                    if (mayHaveSideEffects(argument)) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private Expression extractMapPutKey(Statement stmt) {

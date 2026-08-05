@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -282,6 +283,36 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
                   print("has items")
               else:
                   print("empty")
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenConditionHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int calls = 0;
+
+                  boolean advance() {
+                      return calls++ == 1;
+                  }
+
+                  void p(String s) {
+                  }
+
+                  void test() {
+                      if (advance()) {
+                          p("a");
+                      } else if (advance()) {
+                          p("b");
+                      }
+                  }
+              }
               """
           )
         );

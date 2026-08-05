@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -141,6 +142,24 @@ class AvoidBoxedBooleanExpressionsTest implements RewriteTest {
               class Test {
                   String whatToGet(Boolean forThing1) {
                       return Boolean.TRUE.equals(forThing1) ? "a fish" : "a bowl";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeUnaryOutsideControlExpression() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean test(Boolean b) {
+                      boolean x = !b;
+                      return x;
                   }
               }
               """

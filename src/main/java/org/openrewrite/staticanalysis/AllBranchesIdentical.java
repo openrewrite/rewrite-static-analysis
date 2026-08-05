@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @Getter
 public class AllBranchesIdentical extends Recipe {
@@ -56,10 +58,12 @@ public class AllBranchesIdentical extends Recipe {
                 }
 
                 List<Statement> bodies = new ArrayList<>();
+                List<Expression> conditions = new ArrayList<>();
                 J.If current = if__;
 
                 while (current != null) {
                     bodies.add(current.getThenPart());
+                    conditions.add(current.getIfCondition().getTree());
                     if (current.getElsePart() == null) {
                         return if__;
                     }
@@ -75,6 +79,13 @@ public class AllBranchesIdentical extends Recipe {
                 Statement first = bodies.get(0);
                 for (int i = 1; i < bodies.size(); i++) {
                     if (!SemanticallyEqual.areEqual(first, bodies.get(i))) {
+                        return if__;
+                    }
+                }
+
+                // Collapsing the chain stops evaluating the conditions, which is only safe when they are pure
+                for (Expression condition : conditions) {
+                    if (mayHaveSideEffects(condition)) {
                         return if__;
                     }
                 }
