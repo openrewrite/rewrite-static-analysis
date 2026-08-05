@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -284,6 +285,32 @@ class AllBranchesIdenticalTest implements RewriteTest {
             """
               def test(a):
                   print("hello")
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenConditionHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Iterator;
+
+              class Test {
+                  void p(String s) {
+                  }
+
+                  void test(Iterator<String> it) {
+                      if (it.next() != null) {
+                          p("x");
+                      } else {
+                          p("x");
+                      }
+                  }
+              }
               """
           )
         );
