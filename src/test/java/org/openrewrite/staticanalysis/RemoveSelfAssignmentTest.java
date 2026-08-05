@@ -17,6 +17,9 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -194,6 +197,50 @@ class RemoveSelfAssignmentTest implements RewriteTest {
                   println("after")
               }
               """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeFieldAssignedFromParameterGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class Test {
+                  private final boolean readOnly
+
+                  Test(boolean readOnly) {
+                      this.readOnly = readOnly
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeFieldAssignedFromParameterWithoutTypeAttribution() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private final int x;
+
+                  Test(int x) {
+                      this.x = x;
+                  }
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(cu -> (J.CompilationUnit) new JavaIsoVisitor<Integer>() {
+                @Override
+                public J.Identifier visitIdentifier(J.Identifier identifier, Integer p) {
+                    return identifier.withFieldType(null).withType(null);
+                }
+            }.visitNonNull(cu, 0))
           )
         );
     }
