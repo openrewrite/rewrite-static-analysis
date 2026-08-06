@@ -1373,6 +1373,37 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindNewExceptionWithoutCause
+examples:
+- description: '`FindNewExceptionWithoutCauseTest#throwsNewExceptionWithoutReferencingCaught`'
+  sources:
+  - before: |
+      import java.io.IOException;
+      class A {
+          void risky() throws IOException {}
+          void foo() {
+              try {
+                  risky();
+              } catch (IOException e) {
+                  throw new RuntimeException("Failed");
+              }
+          }
+      }
+    after: |
+      import java.io.IOException;
+      class A {
+          void risky() throws IOException {}
+          void foo() {
+              try {
+                  risky();
+              } catch (IOException e) {
+                  throw /*~~>*/new RuntimeException("Failed");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FixStringFormatExpressions
 examples:
 - description: '`FixStringFormatExpressionsTest#newLineFormat`'
@@ -3601,6 +3632,33 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceHashtableWithHashMap
+examples:
+- description: '`ReplaceHashtableWithHashMapTest#replaceConfinedHashtable`'
+  sources:
+  - before: |
+      import java.util.Hashtable;
+
+      class Test {
+          int test() {
+              Hashtable<String, Integer> table = new Hashtable<>();
+              table.put("a", 1);
+              return table.size();
+          }
+      }
+    after: |
+      import java.util.HashMap;
+
+      class Test {
+          int test() {
+              HashMap<String, Integer> table = new HashMap<>();
+              table.put("a", 1);
+              return table.size();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
 examples:
 - description: '`ReplaceLambdaWithMethodReferenceTest#functionMultiParamReference`'
@@ -3764,6 +3822,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceStringBufferWithStringBuilder
+examples:
+- description: '`ReplaceStringBufferWithStringBuilderTest#replaceConfinedStringBuffer`'
+  sources:
+  - before: |
+      class Test {
+          String test() {
+              StringBuffer sb = new StringBuffer();
+              sb.append("a").append("b");
+              return sb.toString();
+          }
+      }
+    after: |
+      class Test {
+          String test() {
+              StringBuilder sb = new StringBuilder();
+              sb.append("a").append("b");
+              return sb.toString();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
 examples:
 - description: '`ReplaceStringBuilderWithStringTest#replaceLiteralConcatenation`'
@@ -3864,6 +3945,35 @@ examples:
       class Test {
           void test(Object obj) {
               Objects.requireNonNull(obj, "Object should not be null");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.ReplaceVectorWithArrayList
+examples:
+- description: '`ReplaceVectorWithArrayListTest#replaceConfinedVector`'
+  sources:
+  - before: |
+      import java.util.Vector;
+
+      class Test {
+          int test() {
+              Vector<Integer> v = new Vector<>();
+              v.add(1);
+              v.add(2);
+              return v.size();
+          }
+      }
+    after: |
+      import java.util.ArrayList;
+
+      class Test {
+          int test() {
+              ArrayList<Integer> v = new ArrayList<>();
+              v.add(1);
+              v.add(2);
+              return v.size();
           }
       }
     language: java

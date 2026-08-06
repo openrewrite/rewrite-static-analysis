@@ -53,19 +53,13 @@ public class FindNewExceptionWithoutCause extends Recipe {
 
     transient ExceptionsWithoutCause report = new ExceptionsWithoutCause(this);
 
-    @Override
-    public String getDisplayName() {
-        return "Find new exceptions thrown without the caught exception";
-    }
+    String displayName = "Find new exceptions thrown without the caught exception";
 
-    @Override
-    public String getDescription() {
-        return "Finds `catch` blocks that throw a newly created exception without referencing the caught exception, " +
-               "which discards the original exception's stack trace and message. Data flow (taint) tracking is used " +
-               "to establish whether the caught exception—or any value derived from it—reaches the thrown exception, " +
-               "so indirect references through local variables and string concatenation are not falsely reported. " +
-               "This mirrors PMD's `PreserveStackTrace` rule.";
-    }
+    String description = "Finds `catch` blocks that throw a newly created exception without referencing the caught exception, " +
+            "which discards the original exception's stack trace and message. Data flow (taint) tracking is used " +
+            "to establish whether the caught exception—or any value derived from it—reaches the thrown exception, " +
+            "so indirect references through local variables and string concatenation are not falsely reported. " +
+            "This mirrors PMD's `PreserveStackTrace` rule.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.staticanalysis.table.MissingJavadocOnPublicMethods;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -33,6 +34,7 @@ class FindMissingJavadocOnPublicMethodsTest implements RewriteTest {
         spec.recipe(new FindMissingJavadocOnPublicMethods());
     }
 
+    @DocumentExample
     @Test
     void dataTableRecordsUndocumentedMethod() {
         rewriteRun(
