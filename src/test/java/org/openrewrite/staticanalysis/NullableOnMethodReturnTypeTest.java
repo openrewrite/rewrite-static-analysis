@@ -131,6 +131,58 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
     }
 
     @Test
+    void checkForNullOnMethodReturnType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import javax.annotation.CheckForNull;
+              class Test {
+                  @CheckForNull
+                  public String test() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              import javax.annotation.CheckForNull;
+              class Test {
+                  public @CheckForNull String test() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void notNullOnMethodReturnType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.jetbrains.annotations.NotNull;
+              class Test {
+                  @NotNull
+                  public String test() {
+                      return "";
+                  }
+              }
+              """,
+            """
+              import org.jetbrains.annotations.NotNull;
+              class Test {
+                  public @NotNull String test() {
+                      return "";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void moveNullableToArrayType() {
         rewriteRun(
           //language=java
