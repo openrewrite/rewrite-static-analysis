@@ -270,6 +270,38 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/964")
+    @Test
+    void retainsWitnessReturnedFromSwitchInsideBlockBodiedLambdaArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+              import java.util.List;
+              import java.util.Optional;
+              import java.util.stream.Collectors;
+
+              class Test {
+                  Collection<String> test(List<String> details) {
+                      return details.stream()
+                              .map(detail -> {
+                                  switch (detail.length()) {
+                                      case 0:
+                                          return Optional.ofNullable(detail);
+                                      default:
+                                          return Optional.<String>empty();
+                                  }
+                              })
+                              .flatMap(Optional::stream)
+                              .collect(Collectors.toSet());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void retainsWitnessWhenResultIsSelectOfMethodInvocation() {
         rewriteRun(
