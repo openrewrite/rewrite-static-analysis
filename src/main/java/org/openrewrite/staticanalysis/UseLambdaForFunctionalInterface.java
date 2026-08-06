@@ -130,6 +130,13 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     return false;
                 }
                 J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
+                // A lambda can only implement the single abstract method; overriding a `default` method is not equivalent.
+                JavaType.Method declaredMethod = methodDeclaration.getMethodType();
+                if (declaredMethod == null ||
+                    !sam.getName().equals(declaredMethod.getName()) ||
+                    sam.getParameterTypes().size() != declaredMethod.getParameterTypes().size()) {
+                    return false;
+                }
                 // If the functional interface method has type parameters, we can't replace it with a lambda.
                 return methodDeclaration.getTypeParameters() == null || methodDeclaration.getTypeParameters().isEmpty();
             }

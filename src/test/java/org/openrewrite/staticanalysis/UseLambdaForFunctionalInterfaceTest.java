@@ -826,7 +826,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       Object o = new MapDropdownChoice<String, Integer>(
                             new Supplier<Map<String, Integer>>() {
                                 @Override
-                                public Map<String, Integer> getObject() {
+                                public Map<String, Integer> get() {
                                     Map<String, Integer> choices = Map.of("id1", 1);
                                     return choices.entrySet().stream()
                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
@@ -835,7 +835,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       Object o2 = new MapDropdownChoice<String, Integer>(
                             new Supplier<Map<String, Integer>>() {
                                 @Override
-                                public Map<String, Integer> getObject() {
+                                public Map<String, Integer> get() {
                                     Map<String, Integer> choices = Map.of("id1", 2);
                                     return choices.entrySet().stream()
                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -1038,6 +1038,64 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       binder.bind(new TypeLiteral<Supplier<String>>() {
                       }).toInstance(() -> suffix.getAndIncrement() + "");
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/961")
+    @Test
+    void dontUseLambdaWhenOverridingDefaultMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              interface BusinessRule {
+                  default List<String> getConfigurationTexts() {
+                      return List.of();
+                  }
+              }
+
+              class Test {
+                  BusinessRule rule = new BusinessRule() {
+                      @Override
+                      public List<String> getConfigurationTexts() {
+                          return List.of("zero", "one", "two");
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/961")
+    @Test
+    void dontUseLambdaWhenOverridingDefaultMethodOfFunctionalInterface() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              interface BusinessRule {
+                  void apply();
+
+                  default List<String> getConfigurationTexts() {
+                      return List.of();
+                  }
+              }
+
+              class Test {
+                  BusinessRule rule = new BusinessRule() {
+                      @Override
+                      public List<String> getConfigurationTexts() {
+                          return List.of("zero", "one", "two");
+                      }
+                  };
               }
               """
           )
