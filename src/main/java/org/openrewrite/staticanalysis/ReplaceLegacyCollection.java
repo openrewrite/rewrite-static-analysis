@@ -154,8 +154,8 @@ abstract class ReplaceLegacyCollection extends Recipe {
                 if (getCursor().getMessage("replace", false)) {
                     mv = mv.withTypeExpression((TypeTree) new ChangeType(legacyType, replacementType, false)
                             .getVisitor().visit(mv.getTypeExpression(), ctx, getCursor().getParentOrThrow()));
-                    maybeAddImport(replacementType);
                     maybeRemoveImport(legacyType);
+                    maybeAddImport(replacementType);
                 }
                 return mv;
             }

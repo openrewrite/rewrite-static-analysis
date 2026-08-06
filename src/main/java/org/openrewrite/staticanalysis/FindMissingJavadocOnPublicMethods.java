@@ -38,16 +38,10 @@ public class FindMissingJavadocOnPublicMethods extends Recipe {
 
     transient MissingJavadocOnPublicMethods report = new MissingJavadocOnPublicMethods(this);
 
-    @Override
-    public String getDisplayName() {
-        return "Find public methods missing Javadoc";
-    }
+    String displayName = "Find public methods missing Javadoc";
 
-    @Override
-    public String getDescription() {
-        return "Locates `public` method declarations that are not documented with a Javadoc comment, " +
-               "marks them with a search result, and records them in a data table.";
-    }
+    String description = "Locates `public` method declarations that are not documented with a Javadoc comment, " +
+            "marks them with a search result, and records them in a data table.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
