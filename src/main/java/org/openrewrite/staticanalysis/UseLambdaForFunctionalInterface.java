@@ -25,10 +25,14 @@ import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -49,9 +53,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S1604");
 
+    transient AnonymousFunctionalInterfaceImplementations report = new AnonymousFunctionalInterfaceImplementations(this);
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Repeat.repeatUntilStable(new JavaVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> convert = Repeat.repeatUntilStable(new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 // Don't convert anonymous classes to lambdas when located in an enum class, to avoid `Accessing static field from enum constructor is not allowed` errors.
@@ -98,47 +104,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
 
             private boolean shouldConvertToLambda(J.NewClass n) {
-                if (n.getBody() == null ||
-                    n.getBody().getStatements().size() != 1 ||
-                    !(n.getBody().getStatements().get(0) instanceof J.MethodDeclaration) ||
-                    n.getClazz() == null) {
-                    return false;
-                }
-                JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
-                if (type == null || type.getKind() != JavaType.Class.Kind.Interface) {
-                    return false;
-                }
-                JavaType.Method sam = getSamCompatible(type);
-                if (sam == null) {
-                    return false;
-                }
-                if (usesThis(getCursor()) ||
-                    shadowsLocalVariable(getCursor()) ||
-                    usedAsStatement(getCursor()) ||
-                    fieldInitializerReferencingUninitializedField(getCursor())) {
-                    return false;
-                }
-                JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
-                if (anonymousClass == null) {
-                    return false;
-                }
-                JavaType.FullyQualified typedInterface = anonymousClass.getInterfaces().stream()
-                        .filter(i -> i.getFullyQualifiedName().equals(type.getFullyQualifiedName()))
-                        .findFirst()
-                        .orElse(null);
-                if (typedInterface == null) {
-                    return false;
-                }
-                J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) n.getBody().getStatements().get(0);
-                // A lambda can only implement the single abstract method; overriding a `default` method is not equivalent.
-                JavaType.Method declaredMethod = methodDeclaration.getMethodType();
-                if (declaredMethod == null ||
-                    !sam.getName().equals(declaredMethod.getName()) ||
-                    sam.getParameterTypes().size() != declaredMethod.getParameterTypes().size()) {
-                    return false;
-                }
-                // If the functional interface method has type parameters, we can't replace it with a lambda.
-                return methodDeclaration.getTypeParameters() == null || methodDeclaration.getTypeParameters().isEmpty();
+                return samMethod(n) != null && conversionBlocker(n, getCursor()) == null;
             }
 
             private J convertToLambda(J.NewClass n, ExecutionContext ctx) {
@@ -351,6 +317,225 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 return "null";
             }
         });
+
+        return new TreeVisitor<Tree, ExecutionContext>() {
+            @Override
+            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
+                return sourceFile instanceof JavaSourceFile;
+            }
+
+            @Override
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx) {
+                if (tree instanceof JavaSourceFile) {
+                    new ReportVisitor().visit(tree, ctx);
+                }
+                return convert.visit(tree, ctx);
+            }
+        };
+    }
+
+    /**
+     * Records every anonymous functional interface implementation, including the ones the recipe cannot
+     * rewrite — those are the sites a reader has to convert by hand, so they belong in the inventory.
+     */
+    private class ReportVisitor extends JavaIsoVisitor<ExecutionContext> {
+        @Override
+        public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+            if (newClass.getBody() != null && newClass.getClazz() != null) {
+                JavaType.FullyQualified type = TypeUtils.asFullyQualified(newClass.getClazz().getType());
+                JavaType.Method sam = samMethod(newClass);
+                if (sam != null) {
+                    String blocker = conversionBlocker(newClass, getCursor());
+                    insertRow(ctx, type.getFullyQualifiedName(), sam.getName(),
+                            blocker == null, blocker == null ? "" : blocker);
+                } else {
+                    String undecidable = undecidableReason(type);
+                    if (undecidable != null) {
+                        insertRow(ctx,
+                                type == null ? newClass.getClazz().printTrimmed(getCursor()) : type.getFullyQualifiedName(),
+                                "", false, undecidable);
+                    }
+                }
+            }
+            return super.visitNewClass(newClass, ctx);
+        }
+
+        private void insertRow(ExecutionContext ctx, String functionalInterface, String method,
+                               boolean convertible, String reason) {
+            JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
+            J.ClassDeclaration enclosing = getCursor().firstEnclosing(J.ClassDeclaration.class);
+            report.insertRow(ctx, new AnonymousFunctionalInterfaceImplementations.Row(
+                    sourceFile == null ? "" : sourceFile.getSourcePath().toString(),
+                    enclosing == null || enclosing.getType() == null ? "" :
+                            enclosing.getType().getFullyQualifiedName(),
+                    functionalInterface,
+                    method,
+                    convertible,
+                    reason));
+        }
+    }
+
+    /**
+     * The single abstract method of the interface this anonymous class implements, or {@code null} when the
+     * class is not an anonymous implementation of a functional interface at all.
+     */
+    private static JavaType.@Nullable Method samMethod(J.NewClass n) {
+        if (n.getBody() == null || n.getClazz() == null) {
+            return null;
+        }
+        JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
+        if (type == null || type.getKind() != JavaType.Class.Kind.Interface) {
+            return null;
+        }
+        return functionalInterfaceMethod(type);
+    }
+
+    /**
+     * Why an anonymous class could neither be confirmed nor ruled out as a functional interface
+     * implementation, or {@code null} when it is genuinely out of scope — extending a class, or
+     * implementing an interface with several abstract methods. Sites that are merely undecidable are
+     * recorded as unconvertible carrying this reason, so that a reader can tell "the recipe is blind
+     * here" apart from "there was nothing to convert".
+     */
+    private static @Nullable String undecidableReason(JavaType.@Nullable FullyQualified type) {
+        if (type == null) {
+            return "the supertype has no type attribution";
+        }
+        if (type.getKind() != JavaType.Class.Kind.Interface) {
+            return null;
+        }
+        Map<String, JavaType.Method> abstractMethods = new LinkedHashMap<>();
+        collectAbstractMethods(type, abstractMethods, new HashSet<>());
+        // Either a genuine marker interface or, far more often, an interface whose methods were not
+        // carried into the LST — indistinguishable from here, so say what was actually observed.
+        return abstractMethods.isEmpty() ?
+                "the interface has no abstract methods recorded in its type attribution" : null;
+    }
+
+    /**
+     * The abstract method that makes this interface functional, or {@code null} when it is not one.
+     * <p>
+     * Unlike {@link #getSamCompatible}, which only looks at methods the interface declares itself, this
+     * follows JLS 9.8: abstract methods inherited from superinterfaces count, and ones that redeclare a
+     * public {@code Object} method do not. That difference is what makes {@code Comparator} — which
+     * declares both {@code compare} and {@code equals} — recognisable as a functional interface.
+     */
+    private static JavaType.@Nullable Method functionalInterfaceMethod(JavaType.FullyQualified type) {
+        Map<String, JavaType.Method> abstractMethods = new LinkedHashMap<>();
+        collectAbstractMethods(type, abstractMethods, new HashSet<>());
+        return abstractMethods.size() == 1 ? abstractMethods.values().iterator().next() : null;
+    }
+
+    /**
+     * Sources of type information disagree about how they flag a default method: parsed sources mark it
+     * both {@link Flag#Abstract} and {@link Flag#Default}, while some type tables record neither. Neither
+     * flag alone identifies a default method under both conventions, so require both signals to agree —
+     * excluded by modifier, or not marked abstract by a type that marks abstract methods at all. Getting
+     * this wrong hides every interface that has a default method, {@code Comparator} included.
+     */
+    private static boolean isAbstract(JavaType.Method method, boolean marksAbstract) {
+        return !method.hasFlags(Flag.Default) && !method.hasFlags(Flag.Static) &&
+               !method.hasFlags(Flag.Private) &&
+               (!marksAbstract || method.hasFlags(Flag.Abstract));
+    }
+
+    private static void collectAbstractMethods(JavaType.FullyQualified type,
+                                               Map<String, JavaType.Method> abstractMethods,
+                                               Set<String> visited) {
+        if (!visited.add(type.getFullyQualifiedName())) {
+            return;
+        }
+        boolean marksAbstract = type.getMethods().stream().anyMatch(m -> m.hasFlags(Flag.Abstract));
+        for (JavaType.Method method : type.getMethods()) {
+            if (!isAbstract(method, marksAbstract) || overridesObjectMethod(method)) {
+                continue;
+            }
+            // Keyed by name and arity so a subinterface redeclaring an inherited method counts once.
+            abstractMethods.putIfAbsent(method.getName() + '/' + method.getParameterTypes().size(), method);
+        }
+        for (JavaType.FullyQualified superInterface : type.getInterfaces()) {
+            collectAbstractMethods(superInterface, abstractMethods, visited);
+        }
+    }
+
+    // JLS 9.8: an abstract method matching a public method of Object does not count toward SAM-ness.
+    private static boolean overridesObjectMethod(JavaType.Method method) {
+        int arity = method.getParameterTypes().size();
+        return arity == 0 && ("hashCode".equals(method.getName()) || "toString".equals(method.getName())) ||
+               arity == 1 && "equals".equals(method.getName());
+    }
+
+    /**
+     * Why this anonymous class cannot be rewritten to a lambda, or {@code null} when it can. Only call this
+     * for a site {@link #samMethod} has already accepted. Checks run in the order the conversion would hit
+     * them, so the reason reported is the one that actually stopped it.
+     */
+    private static @Nullable String conversionBlocker(J.NewClass n, Cursor cursor) {
+        J.Block body = n.getBody();
+        assert body != null && n.getClazz() != null;
+
+        if (enclosedByEnum(cursor)) {
+            return "declared inside an enum";
+        }
+        if (body.getStatements().size() != 1 || !(body.getStatements().get(0) instanceof J.MethodDeclaration)) {
+            return "declares more than the interface method";
+        }
+        JavaType.Method sam = getSamCompatible(TypeUtils.asFullyQualified(n.getClazz().getType()));
+        if (sam == null) {
+            // Reporting recognises inherited SAMs and interfaces that also redeclare an `Object` method,
+            // but the rewrite only handles a single abstract method declared on the interface itself.
+            return "the abstract method is inherited or declared alongside an `Object` method";
+        }
+        if (usesThis(cursor)) {
+            return "references `this`";
+        }
+        if (shadowsLocalVariable(cursor)) {
+            return "shadows a local variable";
+        }
+        if (usedAsStatement(cursor)) {
+            return "used as a statement";
+        }
+        if (fieldInitializerReferencingUninitializedField(cursor)) {
+            return "initializes a field from an uninitialized field";
+        }
+
+        JavaType.FullyQualified type = TypeUtils.asFullyQualified(n.getClazz().getType());
+        JavaType.FullyQualified anonymousClass = TypeUtils.asFullyQualified(n.getType());
+        if (anonymousClass == null || type == null ||
+            anonymousClass.getInterfaces().stream()
+                    .noneMatch(i -> i.getFullyQualifiedName().equals(type.getFullyQualifiedName()))) {
+            return "missing type information";
+        }
+
+        J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) body.getStatements().get(0);
+        JavaType.Method declaredMethod = methodDeclaration.getMethodType();
+        if (declaredMethod == null) {
+            return "missing type information";
+        }
+        // A lambda can only implement the single abstract method; overriding a `default` method is not equivalent.
+        if (!sam.getName().equals(declaredMethod.getName()) ||
+            sam.getParameterTypes().size() != declaredMethod.getParameterTypes().size()) {
+            return "overrides a `default` method rather than the abstract method";
+        }
+        if (methodDeclaration.getTypeParameters() != null && !methodDeclaration.getTypeParameters().isEmpty()) {
+            return "the interface method declares type parameters";
+        }
+        return null;
+    }
+
+    /**
+     * Conversion skips enum bodies entirely to avoid `Accessing static field from enum constructor is not
+     * allowed`, so anything nested under an enum declaration is reported but never rewritten.
+     */
+    private static boolean enclosedByEnum(Cursor cursor) {
+        for (Cursor c = cursor.getParent(); c != null; c = c.getParent()) {
+            Object v = c.getValue();
+            if (v instanceof J.ClassDeclaration &&
+                ((J.ClassDeclaration) v).getKind() == J.ClassDeclaration.Kind.Type.Enum) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean usesThis(Cursor cursor) {
