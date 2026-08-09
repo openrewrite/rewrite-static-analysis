@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -217,6 +218,286 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
               import org.openrewrite.internal.lang.Nullable;
               class Test {
                   public @Nullable String[] test() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForDeclarationOnlyAnnotationOnArrayType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package example;
+
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target(ElementType.METHOD)
+              public @interface Nullable {
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              package example;
+
+              class Test {
+                  @Nullable
+                  public String[] value() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForDeclarationOnlyAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package example;
+
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target(ElementType.METHOD)
+              public @interface Nullable {
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              package example;
+
+              class Test {
+                  @Nullable
+                  public String scalar() {
+                      return null;
+                  }
+
+                  @Nullable
+                  public String[][] multiDimensional() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForDeclarationOnlyAnnotationInModifierPosition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package example;
+
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target(ElementType.METHOD)
+              public @interface Nullable {
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              package example;
+
+              class Test {
+                  public @Nullable String[] afterAllModifiers() {
+                      return null;
+                  }
+
+                  public @Nullable static String[] betweenModifiers() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForConstructor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package example;
+
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target(ElementType.TYPE_USE)
+              public @interface Nullable {
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              package example;
+
+              class Test {
+                  @Nullable
+                  public Test() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    /**
+     * An unresolved annotation is not matched by the `*..Nullable` trait matcher today, so this
+     * currently passes without reaching the `@Target` check. It is kept because any change that
+     * widens the match, such as matching by simple name, makes that check the only thing that
+     * leaves an unattributed annotation alone.
+     */
+    @Test
+    void noChangeForUnknownAnnotationType() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              package example;
+
+              import com.unknown.Nullable;
+
+              class Test {
+                  @Nullable
+                  public String[] value() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForAnnotationWithoutTarget() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package example;
+
+              public @interface Nullable {
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              package example;
+
+              class Test {
+                  @Nullable
+                  public String[] value() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveTypeUseAnnotationToArrayType() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package example;
+
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target(ElementType.TYPE_USE)
+              public @interface Nullable {
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              package example;
+
+              class Test {
+                  @Nullable
+                  public String[] value() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              package example;
+
+              class Test {
+                  public String @Nullable[] value() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveAnnotationTargetingBothMethodAndTypeUse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package example;
+
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target({ElementType.METHOD, ElementType.TYPE_USE})
+              public @interface Nullable {
+              }
+              """,
+            SourceSpec::skip
+          ),
+          //language=java
+          java(
+            """
+              package example;
+
+              class Test {
+                  @Nullable
+                  public String[] value() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              package example;
+
+              class Test {
+                  public String @Nullable[] value() {
                       return null;
                   }
               }

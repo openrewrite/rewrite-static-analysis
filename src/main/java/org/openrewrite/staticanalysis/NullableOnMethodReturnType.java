@@ -22,8 +22,12 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
+
+import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
@@ -34,7 +38,9 @@ public class NullableOnMethodReturnType extends Recipe {
     final String displayName = "Move `@Nullable` method annotations to the return type";
 
     @Getter
-    final String description = "This is the way the cool kids do it.";
+    final String description = "This is the way the cool kids do it. " +
+            "Only annotations declared with `@Target(ElementType.TYPE_USE)` are moved, as the return type is a type context; " +
+            "declaration annotations such as `javax.annotation.Nullable` are left on the method.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -50,13 +56,16 @@ public class NullableOnMethodReturnType extends Recipe {
                         .lower(getCursor())
                         .findFirst()
                         .map(nullable -> {
-                            if (nullable.getCursor().getParentTreeCursor().getValue() != m) {
+                            if (nullable.getCursor().getParentTreeCursor().getValue() != m ||
+                                    // A constructor has no return type to move the annotation onto
+                                    m.getReturnTypeExpression() == null ||
+                                    !isApplicableToTypeUse(nullable.getTree())) {
                                 return m;
                             }
                             J.MethodDeclaration m2 = m;
                             m2 = m2.withLeadingAnnotations(ListUtils.map(m2.getLeadingAnnotations(),
                                     a -> a == nullable.getTree() ? null : a));
-                            if (m2 != m && m2.getReturnTypeExpression() != null) {
+                            if (m2 != m) {
                                 // For array types, annotate the array brackets, not the element type
                                 if (m2.getReturnTypeExpression() instanceof J.ArrayType) {
                                     // For type-use annotations on arrays (JSpecify style), the annotation should be on the outermost array dimension
@@ -82,5 +91,31 @@ public class NullableOnMethodReturnType extends Recipe {
             }
         };
         return Preconditions.check(new UsesType<>("*..Nullable", false), visitor);
+    }
+
+    /**
+     * The return type is a type context, so only an annotation declared with
+     * {@link java.lang.annotation.ElementType#TYPE_USE} may be moved there. A declaration-only
+     * annotation would no longer compile once attached to an array dimension, so anything that is
+     * not proven to be a type-use annotation, including an annotation whose declaration could not
+     * be resolved, is left where it is.
+     */
+    private static boolean isApplicableToTypeUse(J.Annotation annotation) {
+        JavaType.FullyQualified type = TypeUtils.asFullyQualified(annotation.getType());
+        if (type != null) {
+            for (JavaType.FullyQualified meta : type.getAnnotations()) {
+                if (meta instanceof JavaType.Annotation && TypeUtils.isOfClassType(meta, "java.lang.annotation.Target")) {
+                    for (JavaType.Annotation.ElementValue elementValue : ((JavaType.Annotation) meta).getValues()) {
+                        Object value = elementValue.getValue();
+                        for (Object target : value instanceof List ? (List<?>) value : singletonList(value)) {
+                            if (target instanceof JavaType.Variable && "TYPE_USE".equals(((JavaType.Variable) target).getName())) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 }
