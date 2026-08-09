@@ -88,8 +88,9 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
     }
 
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
     @Test
-    void removeRedundantNullCheckWithMethodInvocation() {
+    void doNotChangeWhenMethodInvocation() {
         rewriteRun(
           //language=java
           java(
@@ -105,17 +106,118 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
                       return "test";
                   }
               }
-              """,
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenMethodInvocationWithNullOnLeft() {
+        rewriteRun(
+          //language=java
+          java(
             """
               class A {
                   void foo() {
-                      if (getValue() instanceof String) {
+                      if (null != getValue() && getValue() instanceof String) {
                           System.out.println("String value");
                       }
                   }
 
                   String getValue() {
                       return "test";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeRedundantNullCheckInChainedCondition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(boolean enabled, Object obj) {
+                      if (enabled && obj != null && obj instanceof String) {
+                          System.out.println("String value");
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(boolean enabled, Object obj) {
+                      if (enabled && obj instanceof String) {
+                          System.out.println("String value");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenChainedConditionHasMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(boolean enabled) {
+                      if (enabled && getValue() != null && getValue() instanceof String) {
+                          System.out.println("String value");
+                      }
+                  }
+
+                  String getValue() {
+                      return "test";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenConstructorCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      if (new StringBuilder() != null && new StringBuilder() instanceof CharSequence) {
+                          System.out.println("CharSequence value");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenArrayIndexHasSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Object[] values = new Object[2];
+                  int i;
+
+                  void foo() {
+                      if (values[i++] != null && values[i++] instanceof String) {
+                          System.out.println("String value");
+                      }
                   }
               }
               """

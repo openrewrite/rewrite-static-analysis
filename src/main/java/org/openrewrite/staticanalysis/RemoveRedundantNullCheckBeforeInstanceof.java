@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -90,7 +91,11 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
             }
 
             private boolean isRedundantNullCheck(J.Binary nullCheck, J.InstanceOf instanceOf) {
-                if (nullCheck.getOperator() == J.Binary.Type.NotEqual) {
+                // Dropping the null check evaluates the expression once where it was evaluated twice, so it is only
+                // equivalent when evaluating it has no side effects; `SemanticallyEqual` proves the two occurrences
+                // mean the same thing, not that evaluating them twice is the same as evaluating them once
+                if (nullCheck.getOperator() == J.Binary.Type.NotEqual &&
+                        !mayHaveSideEffects(instanceOf.getExpression())) {
                     if (J.Literal.isLiteralValue(nullCheck.getLeft(), null)) {
                         return SemanticallyEqual.areEqual(nullCheck.getRight(), instanceOf.getExpression());
                     }
