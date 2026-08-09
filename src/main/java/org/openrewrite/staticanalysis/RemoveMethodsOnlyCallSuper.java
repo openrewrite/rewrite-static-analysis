@@ -23,6 +23,7 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
@@ -81,12 +82,14 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method has annotations other than @Override or @Deprecated
-                for (J.Annotation annotation : md.getLeadingAnnotations()) {
+                // Skip if method has annotations other than @Override. `@Deprecated` is metadata owned by this
+                // declaration, so removing the declaration also removes the deprecation signal from the subclass.
+                // Annotations written after a modifier keyword are held by the modifier rather than by the method,
+                // so also consult the annotations held by each modifier and by an annotated return-type expression.
+                // Parameter, individual type-parameter and nested type-use annotations are still not covered.
+                for (J.Annotation annotation : service(AnnotationService.class).getAllAnnotations(getCursor())) {
                     JavaType annotationType = annotation.getAnnotationType().getType();
-                    if (annotationType == null ||
-                        !TypeUtils.isOfClassType(annotationType, "java.lang.Override") &&
-                        !TypeUtils.isOfClassType(annotationType, "java.lang.Deprecated")) {
+                    if (annotationType == null || !TypeUtils.isOfClassType(annotationType, "java.lang.Override")) {
                         return md;
                     }
                 }
@@ -100,6 +103,12 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
 
                 // Skip if method is final (prevents further overriding)
                 if (methodType.hasFlags(Flag.Final)) {
+                    return md;
+                }
+
+                // Skip if method is synchronized; removing it would drop acquisition of the receiver monitor
+                // before dispatching to a super method that need not be synchronized itself
+                if (md.hasModifier(J.Modifier.Type.Synchronized)) {
                     return md;
                 }
 
