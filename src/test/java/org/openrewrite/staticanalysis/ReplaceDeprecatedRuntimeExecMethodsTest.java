@@ -73,7 +73,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void stringVariableAsInput() {
+    void repeatedDelimitersInRawString() {
         rewriteRun(
           version(
             //language=java
@@ -82,15 +82,11 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                 import java.io.File;
                 import java.io.IOException;
 
-                class B {
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        String command = "ls -al";
-                        String[] envp = { "E1=1", "E2=2"};
-                        File dir = new File("/tmp");
-                        Process process1 = runtime.exec(command);
-                        Process process2 = runtime.exec(command, envp);
-                        Process process3 = runtime.exec(command, envp, dir);
+                class A {
+                    void method(Runtime runtime, String[] envp, File dir) throws IOException {
+                        runtime.exec("printf  '%s'  value");
+                        runtime.exec("printf  '%s'  value", envp);
+                        runtime.exec("printf  '%s'  value", envp, dir);
                     }
                 }
                 """,
@@ -98,15 +94,11 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                 import java.io.File;
                 import java.io.IOException;
 
-                class B {
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        String command = "ls -al";
-                        String[] envp = { "E1=1", "E2=2"};
-                        File dir = new File("/tmp");
-                        Process process1 = runtime.exec(command.split(" "));
-                        Process process2 = runtime.exec(command.split(" "), envp);
-                        Process process3 = runtime.exec(command.split(" "), envp, dir);
+                class A {
+                    void method(Runtime runtime, String[] envp, File dir) throws IOException {
+                        runtime.exec(new String[]{"printf", "'%s'", "value"});
+                        runtime.exec(new String[]{"printf", "'%s'", "value"}, envp);
+                        runtime.exec(new String[]{"printf", "'%s'", "value"}, envp, dir);
                     }
                 }
                 """
@@ -115,7 +107,235 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void methodInvocationAsInput() {
+    void allTokenizerDelimitersInRawString() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(" \\tls\\n-a \\r\\r -l\\f-h ");
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"ls", "-a", "-l", "-h"});
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void quotesAndBackslashesInRawString() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("echo \\"a b\\" C:\\\\dir");
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"echo", "\\"a", "b\\"", "C:\\\\dir"});
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void controlCharactersInRawString() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("echo a\\u000bb \\u007f");
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"echo", "a\\u000bb", "\\u007f"});
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void templatePlaceholderInRawString() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("sed -e s/#{a}/b/ f.txt");
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"sed", "-e", "s/\\u0023{a}/b/", "f.txt"});
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void everyCallOfTheSameOverloadIsReplaced() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("ls -a");
+                        runtime.exec("ps -e");
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"ls", "-a"});
+                        runtime.exec(new String[]{"ps", "-e"});
+                    }
+                }
+                """
+            ), 18),
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class B {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("df -h");
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class B {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"df", "-h"});
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void rawStringWithSideEffectingEnvironmentAndDirectory() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.File;
+                import java.io.IOException;
+
+                class A {
+                    String[] envp() {
+                        return new String[]{"E1=1"};
+                    }
+                    File dir() {
+                        return new File("/tmp");
+                    }
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("ls -a", envp(), dir());
+                    }
+                }
+                """,
+              """
+                import java.io.File;
+                import java.io.IOException;
+
+                class A {
+                    String[] envp() {
+                        return new String[]{"E1=1"};
+                    }
+                    File dir() {
+                        return new File("/tmp");
+                    }
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"ls", "-a"}, envp(), dir());
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void doNotChangeStringVariableAsInput() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.File;
+                import java.io.IOException;
+
+                class B {
+                    void method(Runtime runtime, String command, String[] envp, File dir) throws IOException {
+                        Process process1 = runtime.exec(command);
+                        Process process2 = runtime.exec(command, envp);
+                        Process process3 = runtime.exec(command, envp, dir);
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void doNotChangeMethodInvocationAsInput() {
         rewriteRun(
           version(
             //language=java
@@ -127,22 +347,49 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                     String command() {
                         return "ls -al";
                     }
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
+                    void method(Runtime runtime) throws IOException {
                         Process process = runtime.exec(command());
                     }
                 }
-                """,
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void doNotChangeCommandsThatFailAtRuntime() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
               """
                 import java.io.IOException;
 
-                class B {
-                    String command() {
-                        return "ls -al";
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("");
+                        runtime.exec("   ");
+                        runtime.exec("\\t\\n\\r\\f");
+                        runtime.exec((String) null);
                     }
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        Process process = runtime.exec(command().split(" "));
+                }
+                """
+            ), 18)
+        );
+    }
+
+    @Test
+    void doNotChangeCommandWithSupplementaryCharacterEscape() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime) throws IOException {
+                        runtime.exec("echo \\ud83d\\ude00x");
                     }
                 }
                 """
@@ -181,7 +428,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void concatenatedObjectsAsInput() {
+    void doNotChangeConcatenatedObjectsAsInput() {
         rewriteRun(
           version(
             //language=java
@@ -191,20 +438,8 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
 
                 class B {
                     String options = "-a -l";
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
+                    void method(Runtime runtime) throws IOException {
                         Process process = runtime.exec("ls" + " " + options);
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-
-                class B {
-                    String options = "-a -l";
-                    void method() throws IOException {
-                        Runtime runtime = Runtime.getRuntime();
-                        Process process = runtime.exec(("ls" + " " + options).split(" "));
                     }
                 }
                 """
