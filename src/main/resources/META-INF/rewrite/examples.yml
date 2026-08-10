@@ -1373,6 +1373,25 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindMissingJavadocOnPublicMethods
+examples:
+- description: '`FindMissingJavadocOnPublicMethodsTest#dataTableRecordsUndocumentedMethod`'
+  sources:
+  - before: |
+      package com.example;
+      class A {
+          public void foo(String s, int i) {
+          }
+      }
+    after: |
+      package com.example;
+      class A {
+          public void /*~~>*/foo(String s, int i) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FindNewExceptionWithoutCause
 examples:
 - description: '`FindNewExceptionWithoutCauseTest#throwsNewExceptionWithoutReferencingCaught`'
