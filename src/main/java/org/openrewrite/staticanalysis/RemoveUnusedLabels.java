@@ -16,11 +16,15 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.ReflectionUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.kotlin.tree.K;
 
 import java.time.Duration;
 import java.util.Set;
@@ -31,9 +35,12 @@ import static java.util.Collections.singleton;
 @Getter
 public class RemoveUnusedLabels extends Recipe {
 
+    private static final boolean IS_KOTLIN_AVAILABLE = ReflectionUtils.isClassAvailable("org.openrewrite.kotlin.tree.K");
+
     final String displayName = "Remove unused labels";
 
-    final String description = "Remove labels that are not referenced by any `break` or `continue` statement.";
+    final String description = "Remove labels that are not referenced by any `break` or `continue` statement " +
+        "or by a Kotlin labeled `return` or `this` expression.";
 
     final Set<String> tags = singleton("RSPEC-S1065");
 
@@ -48,6 +55,23 @@ public class RemoveUnusedLabels extends Recipe {
                 String labelName = l.getLabel().getSimpleName();
 
                 boolean used = new JavaVisitor<AtomicBoolean>() {
+                    @Override
+                    public @Nullable J preVisit(J tree, AtomicBoolean u) {
+                        // Kotlin also references labels through `return@label` and `this@label`
+                        if (IS_KOTLIN_AVAILABLE) {
+                            J.Identifier kotlinLabel = null;
+                            if (tree instanceof K.Return) {
+                                kotlinLabel = ((K.Return) tree).getLabel();
+                            } else if (tree instanceof K.This) {
+                                kotlinLabel = ((K.This) tree).getLabel();
+                            }
+                            if (kotlinLabel != null && labelName.equals(kotlinLabel.getSimpleName())) {
+                                u.set(true);
+                            }
+                        }
+                        return tree;
+                    }
+
                     @Override
                     public J visitBreak(J.Break breakStatement, AtomicBoolean u) {
                         if (breakStatement.getLabel() != null &&
@@ -70,7 +94,9 @@ public class RemoveUnusedLabels extends Recipe {
                 if (used) {
                     return l;
                 }
-                return l.getStatement().withPrefix(l.getPrefix());
+                // The label is removed, so any comments attached to it move onto the statement it labeled
+                return l.getStatement().withPrefix(l.getPrefix().withComments(ListUtils.concatAll(l.getPrefix().getComments(),
+                    ListUtils.concatAll(l.getPadding().getLabel().getAfter().getComments(), l.getStatement().getComments()))));
             }
         };
     }

@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"UnusedLabel", "unused"})
 class RemoveUnusedLabelsTest implements RewriteTest {
@@ -157,6 +158,192 @@ class RemoveUnusedLabelsTest implements RewriteTest {
     }
 
     @Test
+    void preserveBlockCommentAfterLabel() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      label: /* why this loop exists */
+                      while (true) {
+                          break;
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      /* why this loop exists */
+                      while (true) {
+                          break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveCommentsAroundLabel() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      // before the label
+                      label: /* after the colon */ // end of line
+                      for (int i = 0; i < 10; i++) {
+                          System.out.println(i);
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      // before the label
+                      /* after the colon */ // end of line
+                      for (int i = 0; i < 10; i++) {
+                          System.out.println(i);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveCommentBeforeLabelColon() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      label /* an odd place */ : while (true) {
+                          break;
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      /* an odd place */ while (true) {
+                          break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveCommentsOnEveryLabeledStatementShape() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(int i) {
+                      block: /* a block */ {
+                          System.out.println("hello");
+                      }
+                      loop: /* a do while */ do {
+                          System.out.println("hello");
+                      } while (true);
+                      choice: /* a switch */ switch (i) {
+                          default:
+                              break;
+                      }
+                      statement: /* an expression */ System.out.println("hello");
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(int i) {
+                      /* a block */ {
+                          System.out.println("hello");
+                      }
+                      /* a do while */ do {
+                          System.out.println("hello");
+                      } while (true);
+                      /* a switch */ switch (i) {
+                          default:
+                              break;
+                      }
+                      /* an expression */ System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeUnusedNestedLabelsKeepingComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      outer: /* outer loop */
+                      for (int i = 0; i < 10; i++) {
+                          inner: /* inner loop */
+                          for (int j = 0; j < 10; j++) {
+                              System.out.println(j);
+                          }
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo() {
+                      /* outer loop */
+                      for (int i = 0; i < 10; i++) {
+                          /* inner loop */
+                          for (int j = 0; j < 10; j++) {
+                              System.out.println(j);
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeUsedLabelWithComment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo() {
+                      outer: /* why this loop exists */
+                      for (int i = 0; i < 10; i++) {
+                          for (int j = 0; j < 10; j++) {
+                              if (j == 5) continue outer;
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void unusedLabelOnBlock() {
         rewriteRun(
           //language=java
@@ -175,6 +362,121 @@ class RemoveUnusedLabelsTest implements RewriteTest {
                   void foo() {
                       {
                           System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlinLabelUsedByLabeledReturn() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun foo(items: List<Int>) {
+                      items.forEach lit@{
+                          if (it == 0) return@lit
+                          println(it)
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlinLabelUsedByQualifiedThis() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun render(): String {
+                      val f = outer@ fun StringBuilder.(): Unit {
+                          this@outer.append("x")
+                      }
+                      return StringBuilder().apply(f).toString()
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlinLabelWhenNestedLambdaLabelHasSameName() {
+        // `return@lit` binds to the inner lambda label, so the outer loop label is technically
+        // unused; the name-based check conservatively keeps both rather than reason about scoping
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun foo(items: List<Int>) {
+                      lit@ for (i in items) {
+                          items.forEach lit@{
+                              if (it == 0) return@lit
+                              println(it)
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeUnusedKotlinLabel() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun foo() {
+                      unused@ while (true) {
+                          break
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  fun foo() {
+                      while (true) {
+                          break
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeUnusedKotlinLabelOnLambda() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun foo(items: List<Int>) {
+                      items.forEach lit@{
+                          println(it)
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  fun foo(items: List<Int>) {
+                      items.forEach {
+                          println(it)
                       }
                   }
               }
