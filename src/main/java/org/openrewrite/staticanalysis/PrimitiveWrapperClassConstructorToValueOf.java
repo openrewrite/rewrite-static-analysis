@@ -91,16 +91,19 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
                             valueOf = JavaTemplate.builder("Short.valueOf(#{any(short)})");
                             break;
                         case "java.lang.Float":
-                            if (arg instanceof J.Literal && JavaType.Primitive.Double == ((J.Literal) arg).getType()) {
-                                arg = ((J.Literal) arg).withType(JavaType.Primitive.String);
-                                arg = ((J.Literal) arg).withValueSource("\"" + ((J.Literal) arg).getValue() + "\"");
-                            }
-
                             JavaType argType = arg.getType();
                             if (TypeUtils.isOfClassType(argType, "java.lang.Double")) {
                                 valueOf = JavaTemplate.builder("Float.valueOf(#{any(java.lang.Double)}.floatValue())");
-                            } else if (JavaType.Primitive.Double == arg.getType()) {
-                                valueOf = JavaTemplate.builder("Float.valueOf((float) #{any(double)})");
+                            } else if (JavaType.Primitive.Double == argType) {
+                                // A cast binds tighter than these operators, so without parentheses it would cover
+                                // only the first operand. Depending on the argument that either fails to compile
+                                // (`Float.valueOf((float) a + b)` passes a `double`; `(float) d = 2.0` is not an
+                                // assignment target) or silently rounds to `float` one step too early
+                                // (`(float) d * 2`).
+                                valueOf = JavaTemplate.builder(arg instanceof J.Binary || arg instanceof J.Ternary ||
+                                        arg instanceof J.Assignment || arg instanceof J.AssignmentOperation ?
+                                        "Float.valueOf((float) (#{any(double)}))" :
+                                        "Float.valueOf((float) #{any(double)})");
                             } else {
                                 valueOf = JavaTemplate.builder("Float.valueOf(#{any(float)})");
                             }
