@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import static java.util.Collections.singleton;
 
@@ -47,7 +48,10 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     String displayName = "Replace deprecated `Runtime#exec()` methods";
 
     String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
-            "since Java 18 and is no longer recommended for use by the Java documentation.";
+            "since Java 18 and is no longer recommended for use by the Java documentation. Only commands made up entirely of " +
+            "string literals are replaced, because only then is it known at compile time which arguments " +
+            "`Runtime#exec(String)` would build; any other command is left unchanged rather than launched with " +
+            "different arguments.";
 
     Set<String> tags = singleton("RSPEC-S1874");
 
@@ -80,7 +84,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     StringBuilder sb = new StringBuilder();
                     if (flattenAble) {
                         for (Expression e : commands) {
-                            if (e instanceof J.Literal && ((J.Literal) e).getType() == JavaType.Primitive.String) {
+                            if (e instanceof J.Literal && ((J.Literal) e).getType() == JavaType.Primitive.String &&
+                                    isDecoded((J.Literal) e)) {
                                 sb.append(((J.Literal) e).getValue());
                             } else {
                                 flattenAble = false;
@@ -89,29 +94,33 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
                     }
 
+                    // Only a command made up entirely of string literals can be converted, because `String#split(" ")`
+                    // does not reproduce `Runtime#exec(String)`, which tokenizes on any of ' ', '\t', '\n', '\r' and
+                    // '\f' and collapses runs of them. Anything else is left alone rather than launching a different
+                    // process.
+                    if (!flattenAble) {
+                        return m;
+                    }
+
+                    List<String> cmds = new ArrayList<>();
+                    for (StringTokenizer tokenizer = new StringTokenizer(sb.toString()); tokenizer.hasMoreTokens(); ) {
+                        cmds.add(tokenizer.nextToken());
+                    }
+                    // `exec("")` throws `IllegalArgumentException("Empty command")` where `exec(new String[]{})`
+                    // throws `IndexOutOfBoundsException`, so a command that tokenizes to nothing is left alone.
+                    JavaType.Method methodType = m.getMethodType();
+                    if (cmds.isEmpty() || methodType == null) {
+                        return m;
+                    }
+
                     updateCursor(m);
                     Expression arg0 = m.getArguments().get(0);
                     Cursor cursor = new Cursor(getCursor(), arg0);
-                    Expression newArg0;
-                    if (flattenAble) {
-                        String[] cmds = sb.toString().split(" ");
-                        String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
-                        newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
-                    } else {
-                        // replace argument to 'command.split(" ")'
-                        boolean needWrap = !(arg0 instanceof J.Identifier) &&
-                                           !(arg0 instanceof J.Literal) &&
-                                           !(arg0 instanceof J.MethodInvocation);
-                        String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
-                        newArg0 = JavaTemplate.builder(code).contextSensitive().build()
-                                .apply(cursor, arg0.getCoordinates().replace(), arg0);
-                    }
-
-                    if (m.getMethodType() != null) {
-                        return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
-                                .withMethodType(m.getMethodType().withParameterTypes(ListUtils.mapFirst(
-                                        m.getMethodType().getParameterTypes(), t -> JavaType.ShallowClass.build("java.lang.String[]"))));
-                    }
+                    String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
+                    Expression newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
+                    return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
+                            .withMethodType(methodType.withParameterTypes(ListUtils.mapFirst(methodType.getParameterTypes(),
+                                    t -> new JavaType.Array(null, JavaType.ShallowClass.build("java.lang.String"), null))));
                 }
 
                 return m;
@@ -119,16 +128,39 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
         });
     }
 
-    private static String toStringArguments(String[] cmds) {
+    /**
+     * The source of a string literal is its value plus at least the two quotes around it. Where that does not hold the
+     * parser did not decode the literal, which happens for a unicode escape of a supplementary character, and the value
+     * read back is not the command that would be executed.
+     */
+    private static boolean isDecoded(J.Literal literal) {
+        Object value = literal.getValue();
+        String valueSource = literal.getValueSource();
+        return value != null && valueSource != null && String.valueOf(value).length() + 2 <= valueSource.length();
+    }
+
+    private static String toStringArguments(List<String> cmds) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < cmds.length; i++) {
-            String token = cmds[i];
-            if (i != 0) {
+        for (String token : cmds) {
+            if (sb.length() != 0) {
                 sb.append(", ");
             }
-            sb.append("\"")
-                    .append(token)
-                    .append("\"");
+            sb.append('"');
+            for (int i = 0; i < token.length(); i++) {
+                char c = token.charAt(i);
+                if (c == '"' || c == '\\') {
+                    sb.append('\\').append(c);
+                } else if (c < ' ' || (c >= 0x7f && c <= 0x9f) ||
+                        (c == '#' && i + 1 < token.length() && token.charAt(i + 1) == '{')) {
+                    // Control characters are escaped so that they stay legible rather than becoming invisible
+                    // bytes. `#{` has to be escaped because this text is also `JavaTemplate` source, where `#{`
+                    // opens a parameter placeholder.
+                    sb.append(String.format("\\u%04x", (int) c));
+                } else {
+                    sb.append(c);
+                }
+            }
+            sb.append('"');
         }
         return sb.toString();
     }
