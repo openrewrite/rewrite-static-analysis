@@ -301,6 +301,37 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
+    void retainsWitnessOnVarargsMethodWithBoundedTypeVariableAsSelect() {
+        // Mirrors JavaTemplate.apply(); without the witness J2 resolves to its bound, which lacks withName(..).
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Tree {}
+
+              class MethodCall extends Tree {
+                  MethodCall withName(String name) {
+                      return this;
+                  }
+              }
+
+              class Template {
+                  <J2 extends Tree> J2 apply(Object... parameters) {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  MethodCall test(Template t) {
+                      return t.<MethodCall>apply("x").withName("y");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void retainsWitnessOnInstanceMethodPassedAsArgumentToGenericMethod() {
         // STATE_VALUE isn't inferable from source()'s (zero) args or from of()'s target type.
         rewriteRun(
