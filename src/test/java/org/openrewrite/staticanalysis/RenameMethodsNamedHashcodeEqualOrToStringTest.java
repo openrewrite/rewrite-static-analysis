@@ -21,8 +21,9 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.version;
 
-@SuppressWarnings({"MethodMayBeStatic", "MisspelledEquals", "BooleanMethodNameMustStartWithQuestion"})
+@SuppressWarnings({"MethodMayBeStatic", "MisspelledEquals", "BooleanMethodNameMustStartWithQuestion", "unused"})
 class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
 
     @Override
@@ -107,6 +108,244 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
               class Test {
                   public int hashcode(int a, int b) {
                       return a + b;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameWhenTargetIsAlreadyDeclared() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int hashcode() {
+                      return 1;
+                  }
+
+                  public int hashCode() {
+                      return 2;
+                  }
+
+                  boolean equal(Object value) {
+                      return false;
+                  }
+
+                  public boolean equals(Object value) {
+                      return true;
+                  }
+
+                  String tostring() {
+                      return "near";
+                  }
+
+                  public String toString() {
+                      return "proper";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameWhenInterfaceAlreadyDeclaresTarget() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface ITest {
+                  int hashcode();
+
+                  int hashCode();
+
+                  boolean equal(Object obj);
+
+                  boolean equals(Object obj);
+
+                  String tostring();
+
+                  String toString();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameWhenEnumAlreadyDeclaresTarget() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              enum Test {
+                  A;
+
+                  String tostring() {
+                      return "near";
+                  }
+
+                  @Override
+                  public String toString() {
+                      return "proper";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameWhenRecordAlreadyDeclaresTarget() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                record Test(int value) {
+                    int hashcode() {
+                        return 1;
+                    }
+
+                    @Override
+                    public int hashCode() {
+                        return 2;
+                    }
+                }
+                """
+            ), 17)
+        );
+    }
+
+    @Test
+    void renameWhenRecordDoesNotExplicitlyDeclareTarget() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                record Test(int value) {
+                    public int hashcode() {
+                        return 1;
+                    }
+                }
+                """,
+              """
+                record Test(int value) {
+                    public int hashCode() {
+                        return 1;
+                    }
+                }
+                """
+            ), 17)
+        );
+    }
+
+    @Test
+    void doNotRenameWhenInheritedTargetIsFinal() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base {
+                  @Override
+                  public final int hashCode() {
+                      return 1;
+                  }
+              }
+
+              class Test extends Base {
+                  int hashcode() {
+                      return 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void renameWhenExistingMethodIsAnOverloadWithDifferentParameters() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public boolean equal(Object obj) {
+                      return false;
+                  }
+
+                  public boolean equals(String other) {
+                      return true;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  public boolean equals(Object obj) {
+                      return false;
+                  }
+
+                  public boolean equals(String other) {
+                      return true;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void renameUpdatesCallSitesWhenThereIsNoCollision() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  public String tostring() {
+                      return "";
+                  }
+
+                  String local() {
+                      return tostring();
+                  }
+
+                  Supplier<String> reference() {
+                      return this::tostring;
+                  }
+              }
+
+              class Caller {
+                  String call(Test test) {
+                      return test.tostring();
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  public String toString() {
+                      return "";
+                  }
+
+                  String local() {
+                      return toString();
+                  }
+
+                  Supplier<String> reference() {
+                      return this::toString;
+                  }
+              }
+
+              class Caller {
+                  String call(Test test) {
+                      return test.toString();
                   }
               }
               """

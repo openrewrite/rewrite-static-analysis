@@ -24,8 +24,10 @@ import org.openrewrite.java.ChangeMethodName;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
@@ -63,15 +65,44 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
                     String sn = method.getSimpleName();
                     JavaType rte = method.getReturnTypeExpression().getType();
                     JavaType.Method t = method.getMethodType();
-                    if (equalsIgnoreCaseExclusive(sn, "hashCode") && JavaType.Primitive.Int == rte && NO_ARGS.matches(t)) {
+                    if (equalsIgnoreCaseExclusive(sn, "hashCode") && JavaType.Primitive.Int == rte && NO_ARGS.matches(t) && canRenameTo(t, "hashCode", NO_ARGS)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "hashCode", true, false).getVisitor());
-                    } else if ("equal".equalsIgnoreCase(sn) && JavaType.Primitive.Boolean == rte && OBJECT_ARG.matches(t)) {
+                    } else if ("equal".equalsIgnoreCase(sn) && JavaType.Primitive.Boolean == rte && OBJECT_ARG.matches(t) && canRenameTo(t, "equals", OBJECT_ARG)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "equals", true, false).getVisitor());
-                    } else if (equalsIgnoreCaseExclusive(sn, "toString") && TypeUtils.isString(rte) && NO_ARGS.matches(t)) {
+                    } else if (equalsIgnoreCaseExclusive(sn, "toString") && TypeUtils.isString(rte) && NO_ARGS.matches(t) && canRenameTo(t, "toString", NO_ARGS)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "toString", true, false).getVisitor());
                     }
                 }
                 return super.visitMethodDeclaration(method, ctx);
+            }
+
+            /**
+             * Java method names are case sensitive, so a type may legally declare both the near-miss method and the
+             * correctly named one, each with its own behavior. Renaming would then emit a duplicate declaration, and
+             * renaming onto an inherited `final` method would emit an illegal override, so leave both cases alone
+             * rather than deleting or merging either implementation.
+             * <p>
+             * Explicit declarations are read from the enclosing type's body in the LST rather than from the type
+             * model, because for records and annotation-processed classes (such as Lombok's `@Data`) the type model
+             * also contains generated `equals`/`hashCode`/`toString` members that an explicit declaration would
+             * replace rather than collide with.
+             */
+            private boolean canRenameTo(JavaType.Method methodType, String targetName, MethodMatcher signature) {
+                J.Block body = getCursor().firstEnclosing(J.Block.class);
+                if (body != null) {
+                    for (Statement statement : body.getStatements()) {
+                        if (statement instanceof J.MethodDeclaration) {
+                            J.MethodDeclaration sibling = (J.MethodDeclaration) statement;
+                            if (targetName.equals(sibling.getSimpleName()) &&
+                                    sibling.getMethodType() != null && signature.matches(sibling.getMethodType())) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return !TypeUtils.findDeclaredMethod(methodType.getDeclaringType().getSupertype(), targetName, methodType.getParameterTypes())
+                        .filter(m -> m.getFlags().contains(Flag.Final))
+                        .isPresent();
             }
 
             private boolean equalsIgnoreCaseExclusive(String inputToCheck, String targetToCheck) {
