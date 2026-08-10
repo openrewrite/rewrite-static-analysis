@@ -24,6 +24,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -31,6 +32,7 @@ import org.openrewrite.java.tree.JavaType;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 
 public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher HASHCODE_MATCHER = new MethodMatcher("java.lang.Object hashCode()");
@@ -60,11 +62,17 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
             if (HASHCODE_MATCHER.matches(mi)) {
                 Expression select = mi.getSelect();
                 if (select != null && select.getType() instanceof JavaType.Array) {
-                    maybeAddImport("java.util.Arrays");
-                    return JavaTemplate.builder("Arrays.hashCode(#{anyArray(java.lang.Object)})")
-                            .imports("java.util.Arrays")
+                    // Emit a fully qualified reference and let the import service shorten it back to the simple
+                    // name when no type named `Arrays` is declared anywhere in this compilation unit or brought
+                    // in by one of its imports. A type named `Arrays` that is only inherited from a supertype,
+                    // and a field or variable named `Arrays`, are not detected; those shapes produced the wrong
+                    // reference before this change and still do. The shortener is scoped to the `java.util.Arrays`
+                    // select this template introduced, never to the user's argument expression.
+                    J.MethodInvocation replacement = JavaTemplate.builder("java.util.Arrays.hashCode(#{anyArray(java.lang.Object)})")
                             .build()
                             .apply(getCursor(), mi.getCoordinates().replace(), select);
+                    doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(requireNonNull(replacement.getSelect())));
+                    return replacement;
                 }
             }
 

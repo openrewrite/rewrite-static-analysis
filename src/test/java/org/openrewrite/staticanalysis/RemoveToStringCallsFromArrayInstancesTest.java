@@ -58,6 +58,165 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
+    void qualifyArraysWhenMemberTypeShadowsIt() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.Objects;
+
+              class Test {
+                  static class Arrays {
+                  }
+
+                  void render(String[] values) {
+                      String direct = values.toString();
+                      String valueOf = String.valueOf(values);
+                      String objects = Objects.toString(values);
+                      System.out.println(values);
+                      String concat = "values=" + values;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  static class Arrays {
+                  }
+
+                  void render(String[] values) {
+                      String direct = java.util.Arrays.toString(values);
+                      String valueOf = java.util.Arrays.toString(values);
+                      String objects = java.util.Arrays.toString(values);
+                      System.out.println(java.util.Arrays.toString(values));
+                      String concat = "values=" + java.util.Arrays.toString(values);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void qualifyArraysWhenAnotherArraysTypeIsImported() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package other;
+
+              public class Arrays {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import other.Arrays;
+
+              class Test {
+                  Arrays arrays;
+
+                  String render(String[] values) {
+                      return values.toString();
+                  }
+              }
+              """,
+            """
+              import other.Arrays;
+
+              class Test {
+                  Arrays arrays;
+
+                  String render(String[] values) {
+                      return java.util.Arrays.toString(values);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotShortenQualifiedNamesTheUserWroteInsideTheArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Base {
+                  public static class Holder {
+                      public static String[] ARR = {"base"};
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package other;
+
+              public class Holder {
+                  public static String[] ARR = {"other"};
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              class Test extends Base {
+                  static class Arrays {
+                  }
+
+                  String render() {
+                      return other.Holder.ARR.toString();
+                  }
+              }
+              """,
+            """
+              package com.example;
+
+              class Test extends Base {
+                  static class Arrays {
+                  }
+
+                  String render() {
+                      return java.util.Arrays.toString(other.Holder.ARR);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeToStringOnNonArrayWhenArraysIsShadowed() {
+        //language=java
+        rewriteRun(
+          java(
+            """
+              import java.util.Objects;
+
+              class Test {
+                  static class Arrays {
+                  }
+
+                  void render(Object value) {
+                      String direct = value.toString();
+                      String valueOf = String.valueOf(value);
+                      String objects = Objects.toString(value);
+                      System.out.println(value);
+                      String concat = "value=" + value;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doesNotRunOnNonArrayInstances() {
         //language=java
         rewriteRun(

@@ -20,8 +20,10 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypedTree;
 
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 public class RemoveToStringCallsFromArrayInstances extends Recipe {
@@ -109,11 +112,23 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
                 return mi;
             }
 
-            maybeAddImport("java.util.Arrays");
-            return JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
-                    .imports("java.util.Arrays")
+            return arraysToString(mi.getCoordinates().replace(), select);
+        }
+
+        /**
+         * Emits a fully qualified {@code java.util.Arrays.toString(..)} call and lets the import service shorten it
+         * back to the simple name when no type named {@code Arrays} is declared anywhere in this compilation unit
+         * or brought in by one of its imports. A type named {@code Arrays} that is only inherited from a supertype,
+         * and a field or variable named {@code Arrays}, are not detected; those shapes produced the wrong reference
+         * before this change and still do. The shortener is scoped to the {@code java.util.Arrays} select this
+         * template introduced, never to the user's argument expression.
+         */
+        private J arraysToString(JavaCoordinates coordinates, Expression array) {
+            J.MethodInvocation replacement = JavaTemplate.builder("java.util.Arrays.toString(#{anyArray(java.lang.Object)})")
                     .build()
-                    .apply(getCursor(), mi.getCoordinates().replace(), select);
+                    .apply(getCursor(), coordinates, array);
+            doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(requireNonNull(replacement.getSelect())));
+            return replacement;
         }
 
         @Override
@@ -122,11 +137,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             if (e instanceof TypedTree && e.getType() instanceof JavaType.Array) {
                 Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
                 if (c.getMessage("METHOD_KEY") != null || c.getMessage("BINARY_FOUND") != null) {
-                    maybeAddImport("java.util.Arrays");
-                    return JavaTemplate.builder("Arrays.toString(#{anyArray(java.lang.Object)})")
-                            .imports("java.util.Arrays")
-                            .build()
-                            .apply(getCursor(), e.getCoordinates().replace(), e);
+                    return (Expression) arraysToString(e.getCoordinates().replace(), e);
                 }
             }
 
