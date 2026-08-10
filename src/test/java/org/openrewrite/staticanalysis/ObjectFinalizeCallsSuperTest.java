@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -73,6 +74,238 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
                   protected void finalize() throws Throwable {
                       o = null;
                       super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsThrowsThrowableWhenOverrideDeclaresNoThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class F {
+                  @Override
+                  protected void finalize() {
+                      cleanup();
+                  }
+
+                  void cleanup() {
+                  }
+              }
+              """,
+            """
+              class F {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      cleanup();
+                      super.finalize();
+                  }
+
+                  void cleanup() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsThrowsThrowableToEmptyBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class F {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class F {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsThrowsThrowableRetainingComments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class F {
+                  Object o = new Object();
+
+                  @Override
+                  protected void finalize() {
+                      // release the reference
+                      o = null;
+                  }
+              }
+              """,
+            """
+              class F {
+                  Object o = new Object();
+
+                  @Override
+                  protected void finalize() throws Throwable {
+                      // release the reference
+                      o = null;
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsThrowsThrowableWhenSuperclassDeclaresThrowable() {
+        rewriteRun(
+          // `JavaTemplate` does not attribute the `super` of the generated call when the superclass is
+          // declared in the same compilation unit
+          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
+          //language=java
+          java(
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsSuperFinalizeWithoutThrowsWhenSuperclassDeclaresNoThrows() {
+        rewriteRun(
+          // `JavaTemplate` does not attribute the `super` of the generated call when the superclass is
+          // declared in the same compilation unit
+          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
+          //language=java
+          java(
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() {
+                      try {
+                          super.finalize();
+                      } catch (Throwable ignored) {
+                      }
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                      cleanup();
+                  }
+
+                  void cleanup() {
+                  }
+              }
+              """,
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() {
+                      try {
+                          super.finalize();
+                      } catch (Throwable ignored) {
+                      }
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                      cleanup();
+                      super.finalize();
+                  }
+
+                  void cleanup() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenSuperclassNarrowsThrowsToAnotherException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                      cleanup();
+                  }
+
+                  void cleanup() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenThrowsClauseDoesNotCoverThrowable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class F {
+                  @Override
+                  protected void finalize() throws Exception {
+                      cleanup();
+                  }
+
+                  void cleanup() {
                   }
               }
               """
