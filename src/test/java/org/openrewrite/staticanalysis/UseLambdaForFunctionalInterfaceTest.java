@@ -479,6 +479,232 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void dontUseLambdaWhenImplicitGetClass() {
+        // An anonymous class introduces its own `this`, so an unqualified `getClass()` returns the
+        // anonymous implementation class; a lambda would return the enclosing class instead.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Class<?>> supplier() {
+                      return new Supplier<Class<?>>() {
+                          @Override
+                          public Class<?> get() {
+                              return getClass();
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenImplicitGetClassIsNested() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> supplier(boolean b) {
+                      return new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              Supplier<Class<?>> nested = () -> getClass();
+                              return b ? String.valueOf(nested.get()) : "";
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenSuperGetClass() {
+        // Bare `super` inside the anonymous class is the `Object` part of its own `this`, so
+        // `super.getClass()` returns the anonymous implementation class. In this static method a
+        // lambda's `super` would not even compile.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  static Supplier<Class<?>> supplier() {
+                      return new Supplier<Class<?>>() {
+                          @Override
+                          public Class<?> get() {
+                              return super.getClass();
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenSuperGetClassMethodReference() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Supplier<Class<?>>> supplier() {
+                      return new Supplier<Supplier<Class<?>>>() {
+                          @Override
+                          public Supplier<Class<?>> get() {
+                              return super::getClass;
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenEnclosingExpressionOfQualifiedNewCallsGetClass() {
+        // The nested anonymous body keeps its own `this`, but the enclosing expression of the
+        // qualified `new` is evaluated in the outer anonymous class's scope.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  class Inner {
+                  }
+
+                  Test tag(Class<?> c) {
+                      return this;
+                  }
+
+                  Supplier<Object> supplier() {
+                      return new Supplier<Object>() {
+                          @Override
+                          public Object get() {
+                              return tag(getClass()).new Inner() {
+                              };
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenGetClassCannotBeAttributed() {
+        // Without a method type the receiver cannot be proven, so the site is left alone rather than
+        // converted on the assumption that a `getClass` reaching this far is somebody else's method.
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> s = new Supplier<String>() {
+                      @Override
+                      public String get() {
+                          return getClass(unknown);
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenGetClassIsCalledOnAnotherObject() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  Function<Object, Class<?>> f = new Function<Object, Class<?>>() {
+                      @Override
+                      public Class<?> apply(Object o) {
+                          return o.getClass();
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test {
+                  Function<Object, Class<?>> f = o -> o.getClass();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenOnlyANestedAnonymousClassCallsGetClass() {
+        // The nested anonymous class keeps its own `this` either way, so the outer one is safe to convert.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Supplier<Class<?>>> supplier() {
+                      return new Supplier<Supplier<Class<?>>>() {
+                          @Override
+                          public Supplier<Class<?>> get() {
+                              return new Supplier<Class<?>>() {
+                                  @Override
+                                  public Class<?> get() {
+                                      return getClass();
+                                  }
+                              };
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Supplier<Class<?>>> supplier() {
+                      return () -> new Supplier<Class<?>>() {
+                          @Override
+                          public Class<?> get() {
+                              return getClass();
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void dontUseLambdaWhenShadowsLocalVariable() {
@@ -1168,6 +1394,31 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       @Override
                       public Integer apply(Integer n) {
                           return this.n;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsImplicitGetClass() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason()).isEqualTo("calls `getClass()` on the anonymous instance");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+              class Test {
+                  Supplier<Class<?>> s = new Supplier<Class<?>>() {
+                      @Override
+                      public Class<?> get() {
+                          return getClass();
                       }
                   };
               }

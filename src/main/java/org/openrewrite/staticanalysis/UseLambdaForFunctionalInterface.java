@@ -21,6 +21,7 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
@@ -42,6 +43,8 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class UseLambdaForFunctionalInterface extends Recipe {
+    private static final MethodMatcher OBJECT_GET_CLASS = new MethodMatcher("java.lang.Object getClass()");
+
     @Getter
     final String displayName = "Use lambda expressions instead of anonymous classes";
 
@@ -489,6 +492,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         if (usesThis(cursor)) {
             return "references `this`";
         }
+        if (usesImplicitGetClass(cursor)) {
+            return "calls `getClass()` on the anonymous instance";
+        }
         if (shadowsLocalVariable(cursor)) {
             return "shadows a local variable";
         }
@@ -552,6 +558,71 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
         }.visit(n.getBody(), 0, cursor);
         return hasThis.get();
+    }
+
+    /**
+     * An unqualified {@code getClass()} is dispatched on the anonymous class's own {@code this}, which a lambda
+     * does not have: the same call in a lambda reports the enclosing class instead. There is no {@code this}
+     * token for {@link #usesThis} to see, so the call has to be recognised by what it resolves to. Bare
+     * {@code super.getClass()} and {@code super::getClass} name the superclass part of the same {@code this}
+     * (and in a static enclosing method a lambda's {@code super} does not even compile), so they are treated
+     * identically; an outer-qualified {@code Test.super.getClass()} keeps its receiver either way, so it is
+     * deliberately not blocked and still converts; {@code Test.this.getClass()} also keeps its receiver but is
+     * already blocked by {@link #usesThis}. A call that lost its type attribution is also blocked, because its
+     * receiver cannot be proven either.
+     */
+    private static boolean usesImplicitGetClass(Cursor cursor) {
+        J.NewClass n = cursor.getValue();
+        assert n.getBody() != null;
+        AtomicBoolean hasImplicitGetClass = new AtomicBoolean(false);
+        new JavaVisitor<Integer>() {
+            @Override
+            public J visitClassDeclaration(J.ClassDeclaration classDecl, Integer integer) {
+                // A local or member class declares its own `this`, so calls inside it keep their receiver.
+                return classDecl;
+            }
+
+            @Override
+            public J visitNewClass(J.NewClass newClass, Integer integer) {
+                if (newClass.getBody() == null) {
+                    return super.visitNewClass(newClass, integer);
+                }
+                // Same for a nested anonymous class, but its enclosing expression (of a qualified `new`)
+                // and its arguments are still evaluated in this scope.
+                if (newClass.getEnclosing() != null) {
+                    visit(newClass.getEnclosing(), integer);
+                }
+                for (Expression argument : newClass.getArguments()) {
+                    visit(argument, integer);
+                }
+                return newClass;
+            }
+
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, Integer integer) {
+                if ((method.getSelect() == null || isBareSuper(method.getSelect())) &&
+                    "getClass".equals(method.getSimpleName()) &&
+                    (method.getMethodType() == null || OBJECT_GET_CLASS.matches(method))) {
+                    hasImplicitGetClass.set(true);
+                }
+                return super.visitMethodInvocation(method, integer);
+            }
+
+            @Override
+            public J visitMemberReference(J.MemberReference memberRef, Integer integer) {
+                if (isBareSuper(memberRef.getContaining()) &&
+                    "getClass".equals(memberRef.getReference().getSimpleName()) &&
+                    (memberRef.getMethodType() == null || OBJECT_GET_CLASS.matches(memberRef))) {
+                    hasImplicitGetClass.set(true);
+                }
+                return super.visitMemberReference(memberRef, integer);
+            }
+
+            private boolean isBareSuper(@Nullable Expression expression) {
+                return expression instanceof J.Identifier && "super".equals(((J.Identifier) expression).getSimpleName());
+            }
+        }.visit(n.getBody(), 0, cursor);
+        return hasImplicitGetClass.get();
     }
 
     private static List<String> parameterNames(J.MethodDeclaration method) {
