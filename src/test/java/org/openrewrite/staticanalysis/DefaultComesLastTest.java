@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 @SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches", "DefaultNotLastCaseInSwitch"})
 class DefaultComesLastTest implements RewriteTest {
@@ -772,6 +773,26 @@ class DefaultComesLastTest implements RewriteTest {
                       System.out.println();
                   }
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeNonJavaLanguages() {
+        rewriteRun(
+          typescript(
+            """
+              function test(n) {
+                  switch (n) {
+                      default:
+                          console.log("default");
+                          break;
+                      case 1:
+                          console.log("one");
+                          break;
+                  }
               }
               """
           )
