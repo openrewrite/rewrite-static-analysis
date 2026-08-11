@@ -116,14 +116,10 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
         }
 
         /**
-         * Emits a fully qualified {@code java.util.Arrays.toString(..)} call and lets the import service shorten it
-         * back to the simple name when no type named {@code Arrays} is declared anywhere in this compilation unit
-         * or brought in by one of its imports. A type named {@code Arrays} that is only inherited from a supertype,
-         * and a field or variable named {@code Arrays}, are not detected; those shapes produced the wrong reference
-         * before this change and still do. The shortener is scoped to the {@code java.util.Arrays} select this
-         * template introduced, never to the user's argument expression.
+         * Emits {@code java.util.Arrays} fully qualified and shortens only the select the template introduced,
+         * so that a competing {@code Arrays} in scope keeps the qualified form rather than binding wrongly.
          */
-        private J arraysToString(JavaCoordinates coordinates, Expression array) {
+        private J.MethodInvocation arraysToString(JavaCoordinates coordinates, Expression array) {
             J.MethodInvocation replacement = JavaTemplate.builder("java.util.Arrays.toString(#{anyArray(java.lang.Object)})")
                     .build()
                     .apply(getCursor(), coordinates, array);
@@ -137,7 +133,7 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
             if (e instanceof TypedTree && e.getType() instanceof JavaType.Array) {
                 Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
                 if (c.getMessage("METHOD_KEY") != null || c.getMessage("BINARY_FOUND") != null) {
-                    return (Expression) arraysToString(e.getCoordinates().replace(), e);
+                    return arraysToString(e.getCoordinates().replace(), e);
                 }
             }
 
