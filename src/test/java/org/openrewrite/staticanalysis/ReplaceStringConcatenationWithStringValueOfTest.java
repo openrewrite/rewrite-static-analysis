@@ -363,6 +363,22 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
         }
 
         @Test
+        void doNotChangeParenthesizedNullConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void method() {
+                          String s = "" + (null);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void doNotChangeNonEmptyStringConcatenation() {
             rewriteRun(
               //language=java

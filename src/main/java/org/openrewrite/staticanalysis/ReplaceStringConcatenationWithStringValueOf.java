@@ -24,6 +24,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.MethodCall;
@@ -73,21 +74,25 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
+                Expression right = binary.getRight();
+                while (right instanceof J.Parentheses && ((J.Parentheses<?>) right).getTree() instanceof Expression) {
+                    right = (Expression) ((J.Parentheses<?>) right).getTree();
+                }
                 JavaType.Array arrayType = TypeUtils.asArray(binary.getRight().getType());
                 if (J.Literal.isLiteralValue(binary.getLeft(), "") &&
                         binary.getOperator() == J.Binary.Type.Addition &&
                         !TypeUtils.isString(binary.getRight().getType()) &&
-                        !J.Literal.isLiteralValue(binary.getRight(), null) &&
-                        // Concatenation renders a `char[]` like any other `Object`, while `String.valueOf(chars)`
-                        // would select the `char[]` overload, rendering the contents or throwing for a null array
+                        // `String.valueOf(null)` selects the `char[]` overload and throws, while `"" + null` yields "null"
+                        !J.Literal.isLiteralValue(right, null) &&
+                        // Concatenation renders a `char[]` like any other `Object`, while `String.valueOf(char[])`
+                        // renders its contents, or throws when the array is null
                         (arrayType == null || arrayType.getElemType() != JavaType.Primitive.Char) &&
                         // Groovy's `+` renders an array's elements; `String.valueOf(Object)` renders its type and hash
                         !(arrayType != null && inGroovySource()) &&
                         // Avoid breaking symmetry in chained String concatenations
                         !(binary.getRight() instanceof J.Binary) &&
                         !(getCursor().getParentTreeCursor().getValue() instanceof J.Binary)) {
-                    return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), binary.getCoordinates().replace(), binary.getRight() instanceof J.Parentheses ?
-                            ((J.Parentheses<?>) binary.getRight()).getTree() : binary.getRight())
+                    return JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), binary.getCoordinates().replace(), right)
                             .withPrefix(binary.getPrefix());
                 }
                 return super.visitBinary(binary, ctx);
