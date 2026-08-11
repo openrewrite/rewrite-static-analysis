@@ -122,7 +122,7 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
           java(
             """
               class Test {
-                  int hashcode() {
+                  public int hashcode() {
                       return 1;
                   }
 
@@ -130,7 +130,7 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
                       return 2;
                   }
 
-                  boolean equal(Object value) {
+                  public boolean equal(Object value) {
                       return false;
                   }
 
@@ -138,7 +138,7 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
                       return true;
                   }
 
-                  String tostring() {
+                  public String tostring() {
                       return "near";
                   }
 
@@ -184,7 +184,7 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
               enum Test {
                   A;
 
-                  String tostring() {
+                  public String tostring() {
                       return "near";
                   }
 
@@ -206,7 +206,7 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
             java(
               """
                 record Test(int value) {
-                    int hashcode() {
+                    public int hashcode() {
                         return 1;
                     }
 
@@ -258,8 +258,76 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
               }
 
               class Test extends Base {
-                  int hashcode() {
+                  public int hashcode() {
                       return 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameWhenSubclassAlreadyDeclaresTarget() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Base {
+                  public int hashcode() {
+                      return 1;
+                  }
+              }
+
+              class Sub extends Base {
+                  @Override
+                  public int hashcode() {
+                      return 2;
+                  }
+
+                  @Override
+                  public int hashCode() {
+                      return 3;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameNonPublicMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int hashcode() {
+                      return 1;
+                  }
+
+                  private String tostring() {
+                      return "";
+                  }
+
+                  protected boolean equal(Object value) {
+                      return false;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRenameStaticMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public static int hashcode() {
+                      return 1;
                   }
               }
               """

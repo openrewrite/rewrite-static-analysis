@@ -26,13 +26,14 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -78,31 +79,39 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
 
             /**
              * Java method names are case sensitive, so a type may legally declare both the near-miss method and the
-             * correctly named one, each with its own behavior. Renaming would then emit a duplicate declaration, and
-             * renaming onto an inherited `final` method would emit an illegal override, so leave both cases alone
-             * rather than deleting or merging either implementation.
+             * correctly named one, each with its own behavior; renaming would then emit a duplicate declaration.
+             * The rename also applies to overrides, so any subtype declared in the same source file has to be free
+             * of the target method as well. Renaming onto an inherited `final` method, or renaming a non-public or
+             * static method onto one of `Object`'s public instance methods, would emit an illegal override.
              * <p>
-             * Explicit declarations are read from the enclosing type's body in the LST rather than from the type
-             * model, because for records and annotation-processed classes (such as Lombok's `@Data`) the type model
-             * also contains generated `equals`/`hashCode`/`toString` members that an explicit declaration would
-             * replace rather than collide with.
+             * Explicit declarations are read from the method declarations in the LST rather than from the type model,
+             * because for records and annotation-processed classes (such as Lombok's `@Data`) the type model also
+             * contains generated `equals`/`hashCode`/`toString` members that an explicit declaration would replace
+             * rather than collide with.
              */
             private boolean canRenameTo(JavaType.Method methodType, String targetName, MethodMatcher signature) {
-                J.Block body = getCursor().firstEnclosing(J.Block.class);
-                if (body != null) {
-                    for (Statement statement : body.getStatements()) {
-                        if (statement instanceof J.MethodDeclaration) {
-                            J.MethodDeclaration sibling = (J.MethodDeclaration) statement;
-                            if (targetName.equals(sibling.getSimpleName()) &&
-                                    sibling.getMethodType() != null && signature.matches(sibling.getMethodType())) {
-                                return false;
-                            }
-                        }
-                    }
+                Set<Flag> flags = methodType.getFlags();
+                if (!flags.contains(Flag.Public) || flags.contains(Flag.Static)) {
+                    return false;
                 }
-                return !TypeUtils.findDeclaredMethod(methodType.getDeclaringType().getSupertype(), targetName, methodType.getParameterTypes())
-                        .filter(m -> m.getFlags().contains(Flag.Final))
-                        .isPresent();
+                JavaType.FullyQualified declaringType = methodType.getDeclaringType();
+                AtomicBoolean targetAlreadyDeclared = new AtomicBoolean();
+                new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration existing, AtomicBoolean declared) {
+                        JavaType.Method existingType = existing.getMethodType();
+                        if (existingType != null && targetName.equals(existing.getSimpleName()) &&
+                                signature.matches(existingType) &&
+                                TypeUtils.isAssignableTo(declaringType, existingType.getDeclaringType())) {
+                            declared.set(true);
+                        }
+                        return super.visitMethodDeclaration(existing, declared);
+                    }
+                }.visit(getCursor().firstEnclosingOrThrow(JavaSourceFile.class), targetAlreadyDeclared);
+                return !targetAlreadyDeclared.get() &&
+                        !TypeUtils.findDeclaredMethod(declaringType.getSupertype(), targetName, methodType.getParameterTypes())
+                                .filter(m -> m.getFlags().contains(Flag.Final))
+                                .isPresent();
             }
 
             private boolean equalsIgnoreCaseExclusive(String inputToCheck, String targetToCheck) {
