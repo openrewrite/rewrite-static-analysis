@@ -266,6 +266,57 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     }
 
     @Test
+    void addsSuperFinalizeWhenThrowsClauseCoversSuperclassThrows() {
+        rewriteRun(
+          // `JavaTemplate` does not attribute the `super` of the generated call when the superclass is
+          // declared in the same compilation unit
+          spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                      cleanup();
+                  }
+
+                  void cleanup() {
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                      cleanup();
+                      super.finalize();
+                  }
+
+                  void cleanup() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeWhenSuperclassNarrowsThrowsToAnotherException() {
         rewriteRun(
           //language=java

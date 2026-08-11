@@ -63,32 +63,30 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     return md;
                 }
 
-                // `Object#finalize()` is declared to throw `Throwable`. That is a checked exception in Java, but
-                // not in the other JVM languages this recipe runs on, so only a Java override has to declare it
-                // for the added call to compile.
+                // `Object#finalize()` is declared to throw `Throwable`, which is checked in Java but not in the
+                // other JVM languages this recipe runs on, so only a Java override has to declare it.
                 List<NameTree> throwz = md.getThrows();
                 boolean declaresThrowable = throwz != null &&
                         throwz.stream().anyMatch(t -> TypeUtils.isOfClassType(t.getType(), "java.lang.Throwable"));
                 if (!declaresThrowable && getCursor().firstEnclosing(J.CompilationUnit.class) != null) {
-                    // An override may only declare what the method it overrides declares. When the overridden
-                    // `finalize()` declares `Throwable`, add it; when it declares nothing, the call needs no
-                    // throws clause; anything else has no legal way to add the call without inventing
-                    // exception handling, so leave those methods alone.
                     List<JavaType> superThrown = superFinalizeThrownExceptions(methodType);
                     if (superThrown == null) {
-                        // Missing or unreliable type attribution.
                         return md;
                     }
-                    if (!superThrown.isEmpty()) {
-                        if (throwz != null || superThrown.stream().noneMatch(t -> TypeUtils.isOfClassType(t, "java.lang.Throwable"))) {
+                    // An override may only declare what the method it overrides declares, so a throws clause that
+                    // does not already cover the super's has no legal way to take the added call.
+                    if (throwz != null) {
+                        if (superThrown.stream().anyMatch(thrown ->
+                                throwz.stream().noneMatch(t -> TypeUtils.isAssignableTo(t.getType(), thrown)))) {
+                            return md;
+                        }
+                    } else if (!superThrown.isEmpty()) {
+                        if (superThrown.stream().noneMatch(t -> TypeUtils.isOfClassType(t, "java.lang.Throwable"))) {
                             return md;
                         }
                         md = JavaTemplate.builder("Throwable")
                                 .build()
                                 .apply(updateCursor(md), md.getCoordinates().replaceThrows());
-                        JavaType.Method declaresThrowableType = methodType.withThrownExceptions(singletonList(THROWABLE));
-                        md = md.withMethodType(declaresThrowableType)
-                                .withName(md.getName().withType(declaresThrowableType));
                     }
                 }
 
