@@ -481,8 +481,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void dontUseLambdaWhenImplicitGetClass() {
-        // An anonymous class introduces its own `this`, so an unqualified `getClass()` returns the
-        // anonymous implementation class; a lambda would return the enclosing class instead.
+        // The anonymous class's own `this` makes `getClass()` return the implementation class, not the enclosing one
         rewriteRun(
           //language=java
           java(
@@ -530,9 +529,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void dontUseLambdaWhenSuperGetClass() {
-        // Bare `super` inside the anonymous class is the `Object` part of its own `this`, so
-        // `super.getClass()` returns the anonymous implementation class. In this static method a
-        // lambda's `super` would not even compile.
+        // Bare `super` is the `Object` part of the anonymous instance; in a static method a lambda's would not compile
         rewriteRun(
           //language=java
           java(
@@ -579,8 +576,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void dontUseLambdaWhenEnclosingExpressionOfQualifiedNewCallsGetClass() {
-        // The nested anonymous body keeps its own `this`, but the enclosing expression of the
-        // qualified `new` is evaluated in the outer anonymous class's scope.
+        // The qualified `new`'s enclosing expression is evaluated in the outer anonymous class's scope
         rewriteRun(
           //language=java
           java(
@@ -612,8 +608,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void dontUseLambdaWhenGetClassCannotBeAttributed() {
-        // Without a method type the receiver cannot be proven, so the site is left alone rather than
-        // converted on the assumption that a `getClass` reaching this far is somebody else's method.
+        // Without a method type the receiver cannot be proven, so the site is left alone
         rewriteRun(
           spec -> spec.typeValidationOptions(TypeValidation.none()),
           //language=java
@@ -664,7 +659,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void useLambdaWhenOnlyANestedAnonymousClassCallsGetClass() {
-        // The nested anonymous class keeps its own `this` either way, so the outer one is safe to convert.
+        // The nested anonymous class keeps its own `this` either way
         rewriteRun(
           //language=java
           java(
@@ -707,8 +702,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void dontUseLambdaWhenImplicitObjectMethodOtherThanGetClass() {
-        // `hashCode()` is `this.hashCode()` on the anonymous instance; in a lambda it would be the
-        // enclosing instance's, so the value silently changes.
+        // `hashCode()` is the anonymous instance's; in a lambda it would silently become the enclosing instance's
         rewriteRun(
           //language=java
           java(
@@ -732,8 +726,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void dontUseLambdaWhenSuperMethodReferenceOtherThanGetClass() {
-        // Bare `super` names the `Object` part of the anonymous instance; in this static method a
-        // lambda's `super` would not even compile.
+        // Bare `super` names the `Object` part of the anonymous instance
         rewriteRun(
           //language=java
           java(
@@ -757,8 +750,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void dontUseLambdaWhenTheInterfaceMethodCallsItself() {
-        // The recursive `get()` is dispatched on the anonymous instance; a lambda has no name to
-        // recurse through, so the call would not resolve at all.
+        // A lambda has no name to recurse through, so the call would not resolve at all
         rewriteRun(
           //language=java
           java(
@@ -782,7 +774,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
 
     @Test
     void useLambdaWhenCallingAMethodOfTheEnclosingClass() {
-        // An unqualified call that resolves to the enclosing class keeps its receiver in a lambda.
+        // A call resolving to the enclosing class keeps its receiver in a lambda
         rewriteRun(
           //language=java
           java(

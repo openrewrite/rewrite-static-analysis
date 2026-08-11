@@ -562,16 +562,10 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     /**
-     * An unqualified call that resolves to a method the anonymous class inherits or declares is dispatched on that
-     * class's own {@code this}, which a lambda does not have: in a lambda the same call names a member of the
-     * enclosing class, so it reports a different receiver or does not compile at all. There is no {@code this}
-     * token for {@link #usesThis} to see, so the call is recognised by what it resolves to: the receiver is the
-     * anonymous instance exactly when its type is a subtype of the declaring type.
-     * <p>
-     * Bare {@code super.m()} and {@code super::m} name the superclass part of that same {@code this}, so they are
-     * always blocked; an outer-qualified {@code Test.super.m()} keeps its receiver either way and still converts.
-     * A call that lost its type attribution is blocked only when it is named after an {@code Object} method, the
-     * one case where no enclosing class could have supplied it.
+     * An unqualified call resolving to a method the anonymous class inherits or declares is dispatched on that
+     * class's own {@code this}, which a lambda does not have. There is no {@code this} token for {@link #usesThis}
+     * to see, so it is recognised by what it resolves to. Unattributed calls are blocked only when named after an
+     * {@code Object} method, the one case no enclosing class could have supplied.
      */
     private static boolean callsMethodOnAnonymousInstance(J.NewClass n, Cursor cursor) {
         assert n.getBody() != null;
@@ -580,7 +574,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         new JavaVisitor<Integer>() {
             @Override
             public J visitClassDeclaration(J.ClassDeclaration classDecl, Integer integer) {
-                // A local or member class declares its own `this`, so calls inside it keep their receiver.
+                // A local or member class declares its own `this`
                 return classDecl;
             }
 
@@ -589,8 +583,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 if (newClass.getBody() == null) {
                     return super.visitNewClass(newClass, integer);
                 }
-                // Same for a nested anonymous class, but its enclosing expression (of a qualified `new`)
-                // and its arguments are still evaluated in this scope.
+                // Same for a nested anonymous class, but a qualified `new`'s enclosing expression and its
+                // arguments are still evaluated in this scope
                 if (newClass.getEnclosing() != null) {
                     visit(newClass.getEnclosing(), integer);
                 }
