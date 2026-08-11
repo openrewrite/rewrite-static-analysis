@@ -62,8 +62,8 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
             if (HASHCODE_MATCHER.matches(mi)) {
                 Expression select = mi.getSelect();
                 if (select != null && select.getType() instanceof JavaType.Array) {
-                    // Emit `java.util.Arrays` fully qualified and shorten only the select the template introduced,
-                    // so that a competing `Arrays` in scope keeps the qualified form rather than binding wrongly.
+                    // Shorten only the select the template introduced, so a competing `Arrays` in scope keeps the
+                    // qualified form rather than binding wrongly
                     J.MethodInvocation replacement = JavaTemplate.builder("java.util.Arrays.hashCode(#{anyArray(java.lang.Object)})")
                             .build()
                             .apply(getCursor(), mi.getCoordinates().replace(), select);

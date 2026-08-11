@@ -116,8 +116,8 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
         }
 
         /**
-         * Emits {@code java.util.Arrays} fully qualified and shortens only the select the template introduced,
-         * so that a competing {@code Arrays} in scope keeps the qualified form rather than binding wrongly.
+         * Shortens only the select the template introduced, so a competing {@code Arrays} in scope keeps the
+         * qualified form rather than binding wrongly.
          */
         private J.MethodInvocation arraysToString(JavaCoordinates coordinates, Expression array) {
             J.MethodInvocation replacement = JavaTemplate.builder("java.util.Arrays.toString(#{anyArray(java.lang.Object)})")
