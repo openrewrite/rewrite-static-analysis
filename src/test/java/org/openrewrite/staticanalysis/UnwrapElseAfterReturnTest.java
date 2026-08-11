@@ -1069,6 +1069,22 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       }
                       System.out.println(value());
                   }
+
+                  void labelUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      } else {
+                          String value = "1";
+                          System.out.println(value);
+                      }
+                      value:
+                      for (int i = 0; i < 2; i++) {
+                          if (i == 1) {
+                              break value;
+                          }
+                          continue value;
+                      }
+                  }
               }
               """,
             """
@@ -1095,6 +1111,21 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                       String value = "1";
                       System.out.println(value);
                       System.out.println(value());
+                  }
+
+                  void labelUse(boolean stop) {
+                      if (stop) {
+                          return;
+                      }
+                      String value = "1";
+                      System.out.println(value);
+                      value:
+                      for (int i = 0; i < 2; i++) {
+                          if (i == 1) {
+                              break value;
+                          }
+                          continue value;
+                      }
                   }
               }
               """
