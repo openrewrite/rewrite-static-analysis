@@ -78,16 +78,13 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
             }
 
             /**
-             * Java method names are case sensitive, so a type may legally declare both the near-miss method and the
-             * correctly named one, each with its own behavior; renaming would then emit a duplicate declaration.
-             * The rename also applies to overrides, so any subtype declared in the same source file has to be free
-             * of the target method as well. Renaming onto an inherited `final` method, or renaming a non-public or
-             * static method onto one of `Object`'s public instance methods, would emit an illegal override.
+             * Method names are case sensitive, so a type may legally declare both the near-miss and the correctly
+             * named method; renaming would emit a duplicate. The rename reaches overrides too, so subtypes in the
+             * same file must be free of the target as well, and renaming onto an inherited `final` method or onto
+             * one of `Object`'s public instance methods would emit an illegal override.
              * <p>
-             * Explicit declarations are read from the method declarations in the LST rather than from the type model,
-             * because for records and annotation-processed classes (such as Lombok's `@Data`) the type model also
-             * contains generated `equals`/`hashCode`/`toString` members that an explicit declaration would replace
-             * rather than collide with.
+             * Declarations come from the LST rather than the type model, which for records and Lombok `@Data`
+             * classes also carries generated members an explicit declaration would replace rather than collide with.
              */
             private boolean canRenameTo(JavaType.Method methodType, String targetName, MethodMatcher signature) {
                 Set<Flag> flags = methodType.getFlags();
