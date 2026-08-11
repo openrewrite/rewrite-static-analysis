@@ -98,7 +98,9 @@ public class AnnotateNullableMethods extends Recipe {
                 if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor(), nullableAnnotationClass)) {
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@" + fullyQualifiedName)
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(
-                                    String.format("package %s;public @interface %s {}", fullyQualifiedPackage, simpleName)))
+                                    String.format("package %s;%spublic @interface %s {}", fullyQualifiedPackage,
+                                            isTypeUseAnnotation ? "@java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE_USE)" : "",
+                                            simpleName)))
                             .build()
                             .apply(getCursor(), md.getCoordinates().addAnnotation(Comparator.comparing(J.Annotation::getSimpleName)));
                     doAfterVisit(ShortenFullyQualifiedTypeReferences.modifyOnly(annotatedMethod));
