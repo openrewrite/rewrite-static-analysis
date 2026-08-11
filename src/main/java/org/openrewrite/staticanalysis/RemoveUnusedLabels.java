@@ -40,7 +40,7 @@ public class RemoveUnusedLabels extends Recipe {
     final String displayName = "Remove unused labels";
 
     final String description = "Remove labels that are not referenced by any `break` or `continue` statement " +
-        "or by a Kotlin labeled `return` or `this` expression.";
+            "or by a Kotlin labeled `return` or `this` expression.";
 
     final Set<String> tags = singleton("RSPEC-S1065");
 
@@ -96,7 +96,7 @@ public class RemoveUnusedLabels extends Recipe {
                 }
                 // The label is removed, so any comments attached to it move onto the statement it labeled
                 return l.getStatement().withPrefix(l.getPrefix().withComments(ListUtils.concatAll(l.getPrefix().getComments(),
-                    ListUtils.concatAll(l.getPadding().getLabel().getAfter().getComments(), l.getStatement().getComments()))));
+                        ListUtils.concatAll(l.getPadding().getLabel().getAfter().getComments(), l.getStatement().getComments()))));
             }
         };
     }
