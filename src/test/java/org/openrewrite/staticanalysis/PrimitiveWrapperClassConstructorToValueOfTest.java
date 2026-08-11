@@ -219,9 +219,8 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
 
     @Test
     void doubleLiteralToFloatKeepsBinary64Rounding() {
-        // `new Float(double)` is defined as `(float) value`, so the literal rounds to binary64 first and
-        // yields bits 0x3f800000; `Float.valueOf("1.0000000596046448")` rounds the decimal straight to
-        // binary32 and yields 0x3f800001, one ulp higher.
+        // `new Float(double)` is `(float) value`, rounding through binary64 to 0x3f800000, where
+        // `Float.valueOf(String)` rounds the decimal straight to binary32 and yields 0x3f800001
         rewriteRun(
           //language=java
           java(
