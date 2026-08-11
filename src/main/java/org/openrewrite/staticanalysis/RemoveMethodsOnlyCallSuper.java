@@ -102,8 +102,9 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method is synchronized (the super method need not be synchronized itself)
-                if (md.hasModifier(J.Modifier.Type.Synchronized)) {
+                // Skip if method is synchronized, unless the super method is synchronized too
+                if (md.hasModifier(J.Modifier.Type.Synchronized) &&
+                    (superCall.getMethodType() == null || !superCall.getMethodType().hasFlags(Flag.Synchronized))) {
                     return md;
                 }
 

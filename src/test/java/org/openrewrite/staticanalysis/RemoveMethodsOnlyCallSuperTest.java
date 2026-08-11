@@ -286,6 +286,36 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
     }
 
     @Test
+    void removeSynchronizedMethodWhenSuperIsSynchronizedToo() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  synchronized void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  synchronized void foo() {
+                      super.foo();
+                  }
+              }
+              """,
+            """
+              class Child extends Parent {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeMethodWithJavadoc() {
         rewriteRun(
           //language=java
