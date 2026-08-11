@@ -558,7 +558,7 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeObjectAppendHoldingCharArray() {
+    void doNotWrapObjectAppendHoldingCharArray() {
         rewriteRun(
           //language=java
           java(
