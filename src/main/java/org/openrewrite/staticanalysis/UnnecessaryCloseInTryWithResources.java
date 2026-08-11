@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.singleton;
 
 public class UnnecessaryCloseInTryWithResources extends Recipe {
+    // `AutoCloseable#close()` may have visible side effects when called twice; `Closeable#close()` may not
     private static final MethodMatcher CLOSEABLE_CLOSE_METHOD_MATCHER = new MethodMatcher("java.io.Closeable close()", true);
 
     @Getter
@@ -72,8 +73,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
                     return tr;
                 }
 
-                // Resources are closed in reverse order of declaration, so dropping a close of any but the last declared
-                // resource would reorder closes.
+                // Resources close in reverse order of declaration, so dropping any but the last would reorder closes
                 J lastResource = tr.getResources().get(tr.getResources().size() - 1).getVariableDeclarations();
                 J.Identifier lastResourceName;
                 if (lastResource instanceof J.VariableDeclarations) {
@@ -89,8 +89,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
                     return tr;
                 }
 
-                // Anything following an explicit close can observe the resource in its closed state, so only trailing
-                // closes are redundant.
+                // Anything after an explicit close can observe the closed resource, so only trailing closes are redundant
                 List<Statement> statements = body.getStatements();
                 int keep = statements.size();
                 while (keep > 0 && statements.get(keep - 1) instanceof J.MethodInvocation) {
