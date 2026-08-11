@@ -85,10 +85,9 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
                     }
 
-                    // Only a command made up entirely of string literals can be converted, because `String#split(" ")`
-                    // does not reproduce `Runtime#exec(String)`, which tokenizes on any of ' ', '\t', '\n', '\r' and
-                    // '\f' and collapses runs of them. Anything else is left alone rather than launching a different
-                    // process.
+                    // Only a command made up entirely of string literals can be tokenized the way
+                    // `Runtime#exec(String)` does, on any of ' ', '\t', '\n', '\r' and '\f', collapsing runs of them.
+                    // Anything else is left alone rather than launching a different process.
                     if (!flattenAble) {
                         return m;
                     }
@@ -125,14 +124,12 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     }
 
     /**
-     * The source of a string literal is its value plus at least the two quotes around it. Where that does not hold the
-     * parser did not decode the literal, which happens for a unicode escape of a supplementary character, and the value
-     * read back is not the command that would be executed.
+     * When the parser records unicode escapes it stores the undecoded source in the value as well, so the value read
+     * back is not the command that would be executed.
      */
     private static boolean isDecoded(J.Literal literal) {
-        Object value = literal.getValue();
-        String valueSource = literal.getValueSource();
-        return value != null && valueSource != null && String.valueOf(value).length() + 2 <= valueSource.length();
+        List<J.Literal.UnicodeEscape> unicodeEscapes = literal.getUnicodeEscapes();
+        return literal.getValue() != null && (unicodeEscapes == null || unicodeEscapes.isEmpty());
     }
 
     private static String toStringArguments(List<String> cmds) {
