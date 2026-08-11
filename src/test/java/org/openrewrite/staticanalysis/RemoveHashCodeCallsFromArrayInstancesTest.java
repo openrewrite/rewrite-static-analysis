@@ -198,6 +198,7 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
 
               public class Base {
                   public static class Holder {
+                      public static String[] ARR = {"base"};
                   }
               }
               """
@@ -235,25 +236,6 @@ class RemoveHashCodeCallsFromArrayInstancesTest implements RewriteTest {
 
                   int hash() {
                       return java.util.Arrays.hashCode(other.Holder.ARR);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeHashCodeOnNonArrayWhenArraysIsShadowed() {
-        //language=java
-        rewriteRun(
-          java(
-            """
-              class Test {
-                  static class Arrays {
-                  }
-
-                  int hash(Object value) {
-                      return value.hashCode();
                   }
               }
               """

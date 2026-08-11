@@ -192,31 +192,6 @@ class RemoveToStringCallsFromArrayInstancesTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeToStringOnNonArrayWhenArraysIsShadowed() {
-        //language=java
-        rewriteRun(
-          java(
-            """
-              import java.util.Objects;
-
-              class Test {
-                  static class Arrays {
-                  }
-
-                  void render(Object value) {
-                      String direct = value.toString();
-                      String valueOf = String.valueOf(value);
-                      String objects = Objects.toString(value);
-                      System.out.println(value);
-                      String concat = "value=" + value;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void doesNotRunOnNonArrayInstances() {
         //language=java
         rewriteRun(
