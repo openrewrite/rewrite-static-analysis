@@ -99,9 +99,8 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
                 if (checked == null || !SemanticallyEqual.areEqual(checked, instanceOf.getExpression())) {
                     return false;
                 }
-                // The rewrite evaluates the expression once where it was evaluated twice, so both occurrences must be
-                // side-effect free; they can differ, as `SemanticallyEqual` matches a static field access against its
-                // qualified form without comparing the qualifier.
+                // The rewrite evaluates once what was evaluated twice, so both occurrences must be side-effect
+                // free; they can differ, as `SemanticallyEqual` matches a static field access against its qualified form
                 return !mayHaveSideEffects(checked) && !mayHaveSideEffects(instanceOf.getExpression());
             }
         });
