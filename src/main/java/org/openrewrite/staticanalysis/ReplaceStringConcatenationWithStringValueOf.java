@@ -58,8 +58,8 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        // The equivalence of `"" + x` and `String.valueOf(x)` relies on Java's string conversion; Groovy, for
-        // example, renders an `int[]` as `[1, 2]` through `+` but as a type-hash string through `String.valueOf`.
+        // The equivalence relies on Java's string conversion; Groovy renders an `int[]` as `[1, 2]` through `+`
+        // but as a type-hash string through `String.valueOf`
         return Preconditions.check(new JavaFileChecker<>(), new JavaVisitor<ExecutionContext>() {
             @Override
             public <T extends J> J visitParentheses(J.Parentheses<T> parens, ExecutionContext ctx) {
@@ -85,8 +85,8 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
                         !TypeUtils.isString(binary.getRight().getType()) &&
                         // `String.valueOf(null)` selects the `char[]` overload and throws, while `"" + null` yields "null"
                         !J.Literal.isLiteralValue(right, null) &&
-                        // Concatenation renders a `char[]` like any other `Object`, while `String.valueOf(char[])`
-                        // renders its contents, or throws when the array is null
+                        // Concatenation renders a `char[]` like any `Object`; `String.valueOf(char[])` renders its
+                        // contents, or throws on null
                         (arrayType == null || arrayType.getElemType() != JavaType.Primitive.Char) &&
                         // Avoid breaking symmetry in chained String concatenations
                         !(binary.getRight() instanceof J.Binary) &&
