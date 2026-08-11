@@ -25,14 +25,12 @@ import org.openrewrite.java.tree.JavaType;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Whether evaluating an expression might do something observable beyond producing its value. Recipes that
- * delete an expression, or that stop evaluating one, are only correct when the answer is {@code false}.
- * <p>
- * Deliberately conservative: any method invocation, constructor call, assignment or increment counts, since
- * whether those are pure cannot be decided from the LST alone. A read of a field attributed as volatile counts
- * too: it produces no side effect of its own, but it is a synchronization action that must not be elided.
- * {@link org.openrewrite.java.tree.Expression#getSideEffects()} is not used here because it reports only the
- * side effects of the expression's own node type, and so misses those nested inside a ternary or a lambda.
+ * Whether evaluating an expression might do something observable beyond producing its value; recipes deleting an
+ * expression, or evaluating one fewer times, are only correct when this is {@code false}. Deliberately
+ * conservative: any invocation, constructor call, assignment or increment counts, as does a {@code volatile} read,
+ * which is a synchronization action rather than a side effect. Not {@link
+ * org.openrewrite.java.tree.Expression#getSideEffects()}, which reports only the expression's own node type and so
+ * misses anything nested inside a ternary or a lambda.
  */
 final class SideEffects {
 
