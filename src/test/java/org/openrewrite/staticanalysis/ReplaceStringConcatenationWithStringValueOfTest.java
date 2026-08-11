@@ -17,9 +17,11 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
@@ -317,6 +319,41 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
                   class Test {
                       void method() {
                           String s = 123 + "";
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @ExpectedToFail("visitParentheses unwraps pre-existing (String.valueOf(..)) even when no concatenation was rewritten")
+        @Test
+        void doNotChangeParenthesizedValueOfWithoutConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      String method(Object o) {
+                          return (String.valueOf(o));
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @ExpectedToFail("Operand without type attribution is still rewritten; not value-preserving if it is really a char[]")
+        @Test
+        void doNotChangeWhenOperandTypeIsMissing() {
+            rewriteRun(
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  class Test {
+                      String method(Unresolved holder) {
+                          return "" + holder.chars();
                       }
                   }
                   """
