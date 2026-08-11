@@ -104,9 +104,8 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
                 Expression nullChecked = J.Literal.isLiteralValue(nullCheck.getLeft(), null) ? nullCheck.getRight() :
                         J.Literal.isLiteralValue(nullCheck.getRight(), null) ? nullCheck.getLeft() : null;
 
-                // The rewrite evaluates the expression once where it was evaluated twice, so it is only equivalent
-                // when evaluating it is free of side effects; `SemanticallyEqual` proves the two occurrences mean the
-                // same thing, not that evaluating them twice is the same as evaluating them once.
+                // The rewrite evaluates once what was evaluated twice; `SemanticallyEqual` proves the occurrences
+                // mean the same thing, not that evaluating them twice is the same as once
                 return nullChecked != null &&
                         SemanticallyEqual.areEqual(nullChecked, equalsArg) &&
                         !mayHaveSideEffects(equalsArg);
