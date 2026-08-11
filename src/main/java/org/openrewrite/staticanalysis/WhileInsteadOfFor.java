@@ -22,7 +22,9 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Statement;
 
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -48,8 +50,13 @@ public class WhileInsteadOfFor extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
-                if (forLoop.getControl().getInit().get(0) instanceof J.Empty &&
-                    forLoop.getControl().getUpdate().get(0) instanceof J.Empty &&
+                List<Statement> init = forLoop.getControl().getInit();
+                List<Statement> update = forLoop.getControl().getUpdate();
+                // A language whose loops have no init/update clause at all (Go's `for cond {}`) leaves these
+                // lists empty rather than holding the `J.Empty` sentinel the Java parser inserts. Such a loop
+                // is already that language's `while`, so only the sentinel form is rewritten here.
+                if (!init.isEmpty() && init.get(0) instanceof J.Empty &&
+                    !update.isEmpty() && update.get(0) instanceof J.Empty &&
                     !(forLoop.getControl().getCondition() instanceof J.Empty)
                 ) {
                     J.WhileLoop w = JavaTemplate.apply("while(#{any(boolean)}) {}", getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());

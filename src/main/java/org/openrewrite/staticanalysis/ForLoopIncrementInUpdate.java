@@ -56,9 +56,9 @@ public class ForLoopIncrementInUpdate extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
-                Statement init = forLoop.getControl().getInit().get(0);
-                if (init instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations initVars = (J.VariableDeclarations) init;
+                List<Statement> init = forLoop.getControl().getInit();
+                if (!init.isEmpty() && init.get(0) instanceof J.VariableDeclarations) {
+                    J.VariableDeclarations initVars = (J.VariableDeclarations) init.get(0);
 
                     Statement body = forLoop.getBody();
                     Statement lastStatement;

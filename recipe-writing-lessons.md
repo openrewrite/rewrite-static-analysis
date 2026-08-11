@@ -353,3 +353,28 @@ scoping construct `JavaType` and fails to compile ("scoping construct cannot be 
 type-use annotation"), which crashes the whole Lombok annotation-processing round and produces a
 misleading cascade of "does not override abstract method getDescription()" errors across every
 Lombok-annotated recipe.
+
+## Cross-language LST invariants
+
+### `J` collections the Java parser guarantees non-empty can be empty in other languages
+`JavaVisitor` recipes run against every `J`-based LST, not just Java, and non-Java parsers do not
+always insert the placeholder elements the Java parser does. Two shapes seen in production:
+
+* `J.ForLoop.Control#getInit()` / `#getUpdate()` — Java inserts a `J.Empty` sentinel for an omitted
+  clause, so `for (; cond ;)` still has one element in each list. Go has no `while`, so its
+  condition-only `for cond {}` maps to a `J.ForLoop` whose init and update lists are genuinely
+  **empty**, and any `.get(0)` throws `IndexOutOfBoundsException`.
+* `J.Case#getCaseLabels()` — Java models `default:` as a single `J.Identifier` named `"default"`.
+  Go emits a `J.Case` with **no** labels at all, so `.get(0)` throws.
+
+Guard with `isEmpty()` rather than assuming the Java shape. Note that "no crash" and "should
+transform" are different questions: `WhileInsteadOfFor` deliberately keys on the `J.Empty` sentinel
+rather than treating an empty list as equivalent, because rewriting Go's `for cond {}` would emit a
+`J.WhileLoop` that Go cannot represent.
+
+### Fields the Java parser always populates can be null elsewhere
+`J.ForLoop#getBody()` dereferences its `JRightPadded` without a null check. The Groovy parser maps an
+empty for-loop body (`for (; port < 1024; port = next());`) to a right-padded element of `null`, which
+`JavaVisitor#visitRightPadded` then collapses to a null `body`, so `super.visitForLoop(...)` returns a
+loop whose `getBody()` throws `NullPointerException`. That one is a parser bug rather than a recipe
+bug — the fix belongs in `GroovyParserVisitor`, which should emit `J.Empty` the way the Java parser does.

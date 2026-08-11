@@ -19,10 +19,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
 import org.openrewrite.Tree;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.style.DefaultComesLastStyle;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JContainer;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.marker.Markers;
 import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -31,6 +37,8 @@ import org.openrewrite.test.SourceSpec;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ConstantConditions", "EnhancedSwitchMigration", "SwitchStatementWithTooFewBranches", "DefaultNotLastCaseInSwitch"})
@@ -776,5 +784,40 @@ class DefaultComesLastTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void doNotChangeCasesWithoutLabels() {
+        // Go models `default:` as a J.Case with no labels at all, where the Java parser inserts a `default`
+        // identifier. Such a tree cannot be printed by the Java printer, so drive the visitor directly.
+        J.CompilationUnit cu = JavaParser.fromJavaVersion().build()
+          .parse(
+            //language=java
+            """
+              class A {
+                  void test(int state) {
+                      switch (state) {
+                          default:
+                              System.out.println();
+                          case 1:
+                              System.out.println();
+                      }
+                  }
+              }
+              """
+          )
+          .map(J.CompilationUnit.class::cast)
+          .findFirst()
+          .orElseThrow();
+
+        J withoutCaseLabels = new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.Case visitCase(J.Case case_, Integer p) {
+                return case_.getPadding().withCaseLabels(JContainer.build(Space.EMPTY, emptyList(), Markers.EMPTY));
+            }
+        }.visit(cu, 0);
+
+        assertThat(new DefaultComesLast().getVisitor().visit(withoutCaseLabels, new InMemoryExecutionContext()))
+          .isSameAs(withoutCaseLabels);
     }
 }

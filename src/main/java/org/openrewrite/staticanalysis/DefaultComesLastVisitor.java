@@ -234,8 +234,12 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     private boolean isDefaultCase(J.Case case_) {
-        J elem = case_.getCaseLabels().get(0);
-        return elem instanceof J.Identifier && "default".equals(((J.Identifier) elem).getSimpleName());
+        // Go models `default:` as a case with no labels at all rather than with the `default` identifier the
+        // Java parser inserts; treating that as "not the default case" leaves such a switch untouched, which is
+        // what we want since the reordering below is written against Java's fallthrough semantics.
+        List<J> caseLabels = case_.getCaseLabels();
+        return !caseLabels.isEmpty() && caseLabels.get(0) instanceof J.Identifier &&
+                "default".equals(((J.Identifier) caseLabels.get(0)).getSimpleName());
     }
 
 }
