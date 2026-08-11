@@ -57,7 +57,6 @@ public class NullableOnMethodReturnType extends Recipe {
                         .findFirst()
                         .map(nullable -> {
                             if (nullable.getCursor().getParentTreeCursor().getValue() != m ||
-                                    // A constructor has no return type to move the annotation onto
                                     m.getReturnTypeExpression() == null ||
                                     !isApplicableToTypeUse(nullable.getTree())) {
                                 return m;
@@ -93,13 +92,6 @@ public class NullableOnMethodReturnType extends Recipe {
         return Preconditions.check(new UsesType<>("*..Nullable", false), visitor);
     }
 
-    /**
-     * The return type is a type context, so only an annotation declared with
-     * {@link java.lang.annotation.ElementType#TYPE_USE} may be moved there. A declaration-only
-     * annotation would no longer compile once attached to an array dimension, so anything that is
-     * not proven to be a type-use annotation, including an annotation whose declaration could not
-     * be resolved, is left where it is.
-     */
     private static boolean isApplicableToTypeUse(J.Annotation annotation) {
         JavaType.FullyQualified type = TypeUtils.asFullyQualified(annotation.getType());
         if (type != null) {

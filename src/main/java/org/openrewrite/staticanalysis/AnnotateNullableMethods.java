@@ -98,12 +98,8 @@ public class AnnotateNullableMethods extends Recipe {
                 if (FindNullableReturnStatements.find(md.getBody(), getCursor().getParentTreeCursor(), nullableAnnotationClass)) {
                     J.MethodDeclaration annotatedMethod = JavaTemplate.builder("@" + fullyQualifiedName)
                             .javaParser(JavaParser.fromJavaVersion().dependsOn(
-                                    // This minimal stub is the only source of type attribution for the annotation
-                                    // being added, so it has to carry the one fact NullableOnMethodReturnType reads
-                                    // below: whether the annotation is applicable to TYPE_USE. The stub reproduces
-                                    // this recipe's own TYPE_USE_NULLABLE_ANNOTATIONS classification, which is an
-                                    // allow list of fully qualified names rather than the real declaration, so that
-                                    // delegating to NullableOnMethodReturnType leaves this recipe's output unchanged.
+                                    // The stub is the only source of type attribution, and NullableOnMethodReturnType
+                                    // below only moves annotations applicable to TYPE_USE
                                     String.format("package %s;%spublic @interface %s {}", fullyQualifiedPackage,
                                             isTypeUseAnnotation ? "@java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE_USE)" : "",
                                             simpleName)))
