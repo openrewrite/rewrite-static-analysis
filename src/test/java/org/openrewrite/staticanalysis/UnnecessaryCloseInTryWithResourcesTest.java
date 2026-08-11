@@ -191,8 +191,10 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
           //language=java
           java(
             """
+              import java.io.Closeable;
+
               class Test {
-                  static class Resource implements AutoCloseable {
+                  static class Resource implements Closeable {
                       boolean closed;
 
                       @Override
@@ -308,6 +310,27 @@ class UnnecessaryCloseInTryWithResourcesTest implements RewriteTest {
                           boolean hasNext = scanner.hasNext();
                           // release the scanner before the block exits
                           scanner.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCloseWithCommentInsideTheCall() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Scanner;
+
+              class A {
+                  public void doSomething() {
+                      try (Scanner scanner = new Scanner("abc")) {
+                          boolean hasNext = scanner.hasNext();
+                          scanner./* release early */close(/* no arguments */);
                       }
                   }
               }
