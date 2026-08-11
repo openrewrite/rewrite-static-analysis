@@ -82,11 +82,7 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method has annotations other than @Override. `@Deprecated` is metadata owned by this
-                // declaration, so removing the declaration also removes the deprecation signal from the subclass.
-                // Annotations written after a modifier keyword are held by the modifier rather than by the method,
-                // so also consult the annotations held by each modifier and by an annotated return-type expression.
-                // Parameter, individual type-parameter and nested type-use annotations are still not covered.
+                // Skip if method has annotations other than @Override
                 for (J.Annotation annotation : service(AnnotationService.class).getAllAnnotations(getCursor())) {
                     JavaType annotationType = annotation.getAnnotationType().getType();
                     if (annotationType == null || !TypeUtils.isOfClassType(annotationType, "java.lang.Override")) {
@@ -106,8 +102,7 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method is synchronized; removing it would drop acquisition of the receiver monitor
-                // before dispatching to a super method that need not be synchronized itself
+                // Skip if method is synchronized (the super method need not be synchronized itself)
                 if (md.hasModifier(J.Modifier.Type.Synchronized)) {
                     return md;
                 }

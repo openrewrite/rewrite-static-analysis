@@ -261,7 +261,6 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
 
     @Test
     void doNotChangeDeprecatedMethodWithAnnotationAfterModifier() {
-        // An annotation written after a modifier keyword is held by the modifier, not by the method declaration
         rewriteRun(
           //language=java
           java(
