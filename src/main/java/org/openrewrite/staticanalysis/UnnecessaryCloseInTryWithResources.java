@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -33,6 +34,7 @@ import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -65,9 +67,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
     }
 
     private static class UnnecessaryAutoCloseableVisitor extends JavaIsoVisitor<ExecutionContext> {
-        // `AutoCloseable#close()` is explicitly allowed to have visible side effects when called twice, so removing an
-        // explicit call would change how often the resource is closed. `java.io.Closeable#close()` is the stronger
-        // contract: "If the stream is already closed then invoking this method has no effect."
+        // `AutoCloseable#close()` may have visible side effects when called twice; `java.io.Closeable#close()` may not.
         private static final MethodMatcher CLOSEABLE_CLOSE_METHOD_MATCHER = new MethodMatcher("java.io.Closeable close()", true);
 
         @Override
@@ -77,8 +77,8 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
                 return tr;
             }
 
-            // Resources are closed in reverse order of declaration, so only the last declared resource is closed at the
-            // very position the explicit call occupies; dropping the call for any other resource would reorder closes.
+            // Resources are closed in reverse order of declaration, so dropping a close of any but the last declared
+            // resource would reorder closes.
             J lastResource = tr.getResources().get(tr.getResources().size() - 1).getVariableDeclarations();
             J.Identifier lastResourceName;
             if (lastResource instanceof J.VariableDeclarations) {
@@ -91,13 +91,11 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
 
             J.Block body = tr.getBody();
             if (!body.getEnd().getComments().isEmpty()) {
-                // A comment sitting between the last statement and the closing brace would be stranded.
                 return tr;
             }
 
-            // Only statements at the very end of the body are redundant; anything following an explicit close can
-            // observe the resource in its closed state. Every trailing close is dropped in this one pass, so a
-            // repeated close does not need another cycle.
+            // Anything following an explicit close can observe the resource in its closed state, so only trailing
+            // closes are redundant.
             List<Statement> statements = body.getStatements();
             int keep = statements.size();
             while (keep > 0 && statements.get(keep - 1) instanceof J.MethodInvocation) {
@@ -105,8 +103,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
                 if (!CLOSEABLE_CLOSE_METHOD_MATCHER.matches(mi) ||
                         !(mi.getSelect() instanceof J.Identifier) ||
                         !SemanticallyEqual.areEqual(lastResourceName, mi.getSelect()) ||
-                        // A comment attached to the call would be stranded by its removal.
-                        !mi.getComments().isEmpty()) {
+                        containsComment(mi)) {
                     break;
                 }
                 keep--;
@@ -114,6 +111,18 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
 
             int firstRemoved = keep;
             return tr.withBody(body.withStatements(ListUtils.map(statements, (i, statement) -> i < firstRemoved ? statement : null)));
+        }
+
+        private static boolean containsComment(J tree) {
+            return new JavaIsoVisitor<AtomicBoolean>() {
+                @Override
+                public Space visitSpace(Space space, Space.Location loc, AtomicBoolean found) {
+                    if (!space.getComments().isEmpty()) {
+                        found.set(true);
+                    }
+                    return space;
+                }
+            }.reduce(tree, new AtomicBoolean()).get();
         }
     }
 }
