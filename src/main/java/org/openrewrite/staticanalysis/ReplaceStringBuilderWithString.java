@@ -34,6 +34,7 @@ import static org.openrewrite.Tree.randomId;
 
 public class ReplaceStringBuilderWithString extends Recipe {
     private static final MethodMatcher STRING_BUILDER_APPEND = new MethodMatcher("java.lang.StringBuilder append(..)");
+    private static final MethodMatcher STRING_BUILDER_APPEND_CHAR_ARRAY = new MethodMatcher("java.lang.StringBuilder append(char[])");
     private static final MethodMatcher STRING_BUILDER_TO_STRING = new MethodMatcher("java.lang.StringBuilder toString()");
 
     @Getter
@@ -157,12 +158,16 @@ public class ReplaceStringBuilderWithString extends Recipe {
                     if (args.size() != 1) {
                         return false;
                     }
+                    Expression arg = args.get(0);
                     JRightPadded<Expression> jrp = selectMethod.getPadding().getSelect();
-                    if (jrp == null) {
-                        arguments.add(args.get(0));
-                    } else {
-                        arguments.add(args.get(0).withPrefix(jrp.getAfter()));
+                    Space prefix = jrp == null ? arg.getPrefix() : jrp.getAfter();
+                    if (STRING_BUILDER_APPEND_CHAR_ARRAY.matches(selectMethod)) {
+                        // `append(char[])` appends the characters of the array, whereas string concatenation would
+                        // render the array's identity instead. `String.valueOf(char[])` is selected here, which keeps
+                        // the rendered text and the `NullPointerException` thrown for a null array.
+                        arg = JavaTemplate.apply("String.valueOf(#{any()})", getCursor(), method.getCoordinates().replace(), arg.withPrefix(Space.EMPTY));
                     }
+                    arguments.add(arg.withPrefix(prefix));
                 }
 
                 if (select instanceof J.NewClass &&
