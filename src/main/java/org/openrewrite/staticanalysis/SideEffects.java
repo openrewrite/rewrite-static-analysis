@@ -18,7 +18,9 @@ package org.openrewrite.staticanalysis;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,9 +29,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * delete an expression, or that stop evaluating one, are only correct when the answer is {@code false}.
  * <p>
  * Deliberately conservative: any method invocation, constructor call, assignment or increment counts, since
- * whether those are pure cannot be decided from the LST alone. {@link org.openrewrite.java.tree.Expression#getSideEffects()}
- * is not used here because it reports only the side effects of the expression's own node type, and so misses
- * those nested inside a ternary or a lambda.
+ * whether those are pure cannot be decided from the LST alone. A read of a field attributed as volatile counts
+ * too: it produces no side effect of its own, but it is a synchronization action that must not be elided.
+ * {@link org.openrewrite.java.tree.Expression#getSideEffects()} is not used here because it reports only the
+ * side effects of the expression's own node type, and so misses those nested inside a ternary or a lambda.
  */
 final class SideEffects {
 
@@ -77,6 +80,15 @@ final class SideEffects {
             public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean result) {
                 result.set(true);
                 return newClass;
+            }
+
+            @Override
+            public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean result) {
+                JavaType.Variable fieldType = identifier.getFieldType();
+                if (fieldType != null && fieldType.hasFlags(Flag.Volatile)) {
+                    result.set(true);
+                }
+                return identifier;
             }
 
             @Override
