@@ -95,11 +95,9 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
                             if (TypeUtils.isOfClassType(argType, "java.lang.Double")) {
                                 valueOf = JavaTemplate.builder("Float.valueOf(#{any(java.lang.Double)}.floatValue())");
                             } else if (JavaType.Primitive.Double == argType) {
-                                // A cast binds tighter than these operators, so without parentheses it would cover
-                                // only the first operand. Depending on the argument that either fails to compile
-                                // (`Float.valueOf((float) a + b)` passes a `double`; `(float) d = 2.0` is not an
-                                // assignment target) or silently rounds to `float` one step too early
-                                // (`(float) d * 2`).
+                                // A cast binds tighter than these operators, so without parentheses it would cover only
+                                // the first operand, either failing to compile (`Float.valueOf((float) a + b)` passes
+                                // a `double`) or rounding to `float` one step too early (`(float) d * 2`).
                                 valueOf = JavaTemplate.builder(arg instanceof J.Binary || arg instanceof J.Ternary ||
                                         arg instanceof J.Assignment || arg instanceof J.AssignmentOperation ?
                                         "Float.valueOf((float) (#{any(double)}))" :
