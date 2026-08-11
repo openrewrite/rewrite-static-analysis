@@ -115,26 +115,18 @@ public class UnwrapElseAfterReturn extends Recipe {
             }
 
             /**
-             * Statements hoisted out of the else block move into the enclosing block, where the names they
-             * declare stay in scope until the end of that block. Unwrapping is therefore skipped when that
-             * larger scope could change how a name in the statements after the {@code if} resolves:
-             * <ul>
-             * <li>A hoisted name that is declared again in a later statement, at any nesting depth, would
-             * usually no longer compile, since Java does not allow local variables or local classes of a
-             * method to shadow each other; that covers later locals, loop variables, catch parameters,
-             * resources, lambda parameters, pattern variables and local types.</li>
-             * <li>A later unqualified use of a hoisted name currently resolves to something else, such as
-             * a field or a statically imported member, and would be captured by the hoisted declaration,
-             * silently changing semantics or breaking compilation. Uses whose resolution cannot be
-             * affected by a local variable or local class coming into scope, such as method invocation
-             * names, qualified field accesses and labels, are exempt.</li>
-             * </ul>
-             * The names a hoisted statement introduces are its declared variables and local types, plus
-             * every {@code instanceof} pattern variable anywhere inside it: flow scoping (JLS 6.3.2) can
-             * extend a pattern variable past its statement once that statement sits directly in the
-             * enclosing block, e.g. {@code if (!(o instanceof String s)) return;} leaves {@code s} in
-             * scope for the rest of the block. Not every pattern variable escapes its statement, so this
-             * errs on the side of keeping the else block.
+             * Statements hoisted out of the else block move into the enclosing block, where the names they declare
+             * stay in scope until the end of that block. Unwrapping is skipped when that larger scope could change
+             * how a name in the statements after the {@code if} resolves: a later redeclaration no longer compiles
+             * (JLS 6.4 forbids local variables and local classes of a method shadowing each other), and a later
+             * unqualified use that resolves to a field or a statically imported member would be captured by the
+             * hoisted declaration instead. Uses a local cannot capture, such as method invocation names, qualified
+             * field accesses and labels, are exempt.
+             * <p>
+             * Every {@code instanceof} pattern variable inside a hoisted statement counts as a hoisted name, because
+             * flow scoping (JLS 6.3.2) can extend one past its statement once that statement sits directly in the
+             * enclosing block, as in {@code if (!(o instanceof String s)) return;}. Not every pattern variable
+             * escapes, so this errs on the side of keeping the else block.
              */
             private boolean collidesWithLaterScope(Statement elseBody, List<Statement> laterStatements) {
                 if (laterStatements.isEmpty()) {
@@ -179,8 +171,8 @@ public class UnwrapElseAfterReturn extends Recipe {
                     @Override
                     public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean found) {
                         if (hoistedNames.contains(identifier.getSimpleName())) {
-                            // Both declarations and unqualified uses appear as identifiers; only identifiers
-                            // that resolve in another namespace or through a qualifier are unaffected
+                            // Declarations and unqualified uses both appear as identifiers; only those resolving in
+                            // another namespace or through a qualifier are unaffected
                             Object parent = getCursor().getParentTreeCursor().getValue();
                             boolean unaffected = parent instanceof J.MethodInvocation && identifier == ((J.MethodInvocation) parent).getName() ||
                                     parent instanceof J.FieldAccess && identifier == ((J.FieldAccess) parent).getName() ||
