@@ -410,8 +410,7 @@ class RemoveUnusedLabelsTest implements RewriteTest {
 
     @Test
     void doNotChangeKotlinLabelWhenNestedLambdaLabelHasSameName() {
-        // `return@lit` binds to the inner lambda label, so the outer loop label is technically
-        // unused; the name-based check conservatively keeps both rather than reason about scoping
+        // `return@lit` binds to the inner lambda label, so the name-based check keeps both rather than scope them
         rewriteRun(
           //language=kotlin
           kotlin(

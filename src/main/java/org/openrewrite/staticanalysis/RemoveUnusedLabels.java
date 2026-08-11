@@ -94,7 +94,7 @@ public class RemoveUnusedLabels extends Recipe {
                 if (used) {
                     return l;
                 }
-                // The label is removed, so any comments attached to it move onto the statement it labeled
+                // Comments attached to the removed label move onto the statement it labeled
                 return l.getStatement().withPrefix(l.getPrefix().withComments(ListUtils.concatAll(l.getPrefix().getComments(),
                         ListUtils.concatAll(l.getPadding().getLabel().getAfter().getComments(), l.getStatement().getComments()))));
             }
