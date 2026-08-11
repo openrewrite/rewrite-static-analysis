@@ -22,6 +22,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
@@ -36,6 +37,8 @@ import static java.util.Collections.singleton;
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class RemoveMethodsOnlyCallSuper extends Recipe {
+
+    private static final AnnotationMatcher OVERRIDE = new AnnotationMatcher("@java.lang.Override");
 
     String displayName = "Remove methods that only call super";
 
@@ -84,8 +87,7 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
 
                 // Skip if method has annotations other than @Override
                 for (J.Annotation annotation : service(AnnotationService.class).getAllAnnotations(getCursor())) {
-                    JavaType annotationType = annotation.getAnnotationType().getType();
-                    if (annotationType == null || !TypeUtils.isOfClassType(annotationType, "java.lang.Override")) {
+                    if (!OVERRIDE.matches(annotation)) {
                         return md;
                     }
                 }
