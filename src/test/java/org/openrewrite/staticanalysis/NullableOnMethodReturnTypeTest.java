@@ -227,39 +227,6 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
     }
 
     @Test
-    void noChangeForDeclarationOnlyAnnotationOnArrayType() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              package example;
-
-              import java.lang.annotation.ElementType;
-              import java.lang.annotation.Target;
-
-              @Target(ElementType.METHOD)
-              public @interface Nullable {
-              }
-              """,
-            SourceSpec::skip
-          ),
-          //language=java
-          java(
-            """
-              package example;
-
-              class Test {
-                  @Nullable
-                  public String[] value() {
-                      return null;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void noChangeForDeclarationOnlyAnnotation() {
         rewriteRun(
           //language=java
@@ -288,6 +255,11 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
                   }
 
                   @Nullable
+                  public String[] array() {
+                      return null;
+                  }
+
+                  @Nullable
                   public String[][] multiDimensional() {
                       return null;
                   }
@@ -298,7 +270,7 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
     }
 
     @Test
-    void noChangeForDeclarationOnlyAnnotationInModifierPosition() {
+    void noChangeForAnnotationInModifierPosition() {
         rewriteRun(
           //language=java
           java(
@@ -498,6 +470,32 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
 
               class Test {
                   public String @Nullable[] value() {
+                      return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void declarationOnlyAnnotationDoesNotBlockTypeUseAnnotation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  @javax.annotation.Nullable
+                  @org.jspecify.annotations.Nullable
+                  public String test() {
+                      return null;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  @javax.annotation.Nullable
+                  public @org.jspecify.annotations.Nullable String test() {
                       return null;
                   }
               }

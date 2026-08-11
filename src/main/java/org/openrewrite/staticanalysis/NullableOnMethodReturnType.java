@@ -49,18 +49,15 @@ public class NullableOnMethodReturnType extends Recipe {
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
                 // For package-private methods, the annotation is on the method, not the return type
-                if (m.getModifiers().isEmpty()) {
+                if (m.getModifiers().isEmpty() || m.getReturnTypeExpression() == null) {
                     return m;
                 }
                 return requireNonNull(new Annotated.Matcher("*..Nullable")
                         .lower(getCursor())
+                        .filter(nullable -> nullable.getCursor().getParentTreeCursor().getValue() == m &&
+                                isApplicableToTypeUse(nullable.getTree()))
                         .findFirst()
                         .map(nullable -> {
-                            if (nullable.getCursor().getParentTreeCursor().getValue() != m ||
-                                    m.getReturnTypeExpression() == null ||
-                                    !isApplicableToTypeUse(nullable.getTree())) {
-                                return m;
-                            }
                             J.MethodDeclaration m2 = m;
                             m2 = m2.withLeadingAnnotations(ListUtils.map(m2.getLeadingAnnotations(),
                                     a -> a == nullable.getTree() ? null : a));
