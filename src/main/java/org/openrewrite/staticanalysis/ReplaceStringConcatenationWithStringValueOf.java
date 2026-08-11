@@ -84,8 +84,8 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
                         !TypeUtils.isString(binary.getRight().getType()) &&
                         // `String.valueOf(null)` selects the `char[]` overload and throws, while `"" + null` yields "null"
                         !J.Literal.isLiteralValue(right, null) &&
-                        // Concatenation renders a `char[]` like any other `Object`, while `String.valueOf(char[])`
-                        // renders its contents, or throws when the array is null
+                        // Concatenation renders a `char[]` like any `Object`; `String.valueOf(char[])` renders its
+                        // contents, or throws on null
                         (arrayType == null || arrayType.getElemType() != JavaType.Primitive.Char) &&
                         // Groovy's `+` renders an array's elements; `String.valueOf(Object)` renders its type and hash
                         !(arrayType != null && inGroovySource()) &&
