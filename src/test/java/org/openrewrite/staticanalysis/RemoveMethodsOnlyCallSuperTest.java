@@ -123,7 +123,91 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
     }
 
     @Test
-    void removeDeprecatedMethodOnlyCallingSuper() {
+    void removePlainOverrideAlongsideSynchronizedAndDeprecatedOverrides() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  void foo() {
+                  }
+                  void bar() {
+                  }
+                  void baz() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  synchronized void foo() {
+                      super.foo();
+                  }
+
+                  @Deprecated
+                  @Override
+                  void bar() {
+                      super.bar();
+                  }
+
+                  @Override
+                  void baz() {
+                      super.baz();
+                  }
+              }
+              """,
+            """
+              class Child extends Parent {
+                  @Override
+                  synchronized void foo() {
+                      super.foo();
+                  }
+
+                  @Deprecated
+                  @Override
+                  void bar() {
+                      super.bar();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeMethodWithOverrideAnnotationAfterModifier() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  public void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  public @Override void foo() {
+                      super.foo();
+                  }
+              }
+              """,
+            """
+              class Child extends Parent {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeDeprecatedMethod() {
         rewriteRun(
           //language=java
           java(
@@ -141,6 +225,84 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
                   @Deprecated
                   @Override
                   void foo() {
+                      super.foo();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeSynchronizedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  synchronized void foo() {
+                      super.foo();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeDeprecatedMethodWithAnnotationAfterModifier() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  public void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  public @Deprecated void foo() {
+                      super.foo();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeSynchronizedMethodWhenSuperIsSynchronizedToo() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  synchronized void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  synchronized void foo() {
                       super.foo();
                   }
               }

@@ -22,7 +22,9 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
@@ -35,6 +37,8 @@ import static java.util.Collections.singleton;
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class RemoveMethodsOnlyCallSuper extends Recipe {
+
+    private static final AnnotationMatcher OVERRIDE = new AnnotationMatcher("@java.lang.Override");
 
     String displayName = "Remove methods that only call super";
 
@@ -81,12 +85,9 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method has annotations other than @Override or @Deprecated
-                for (J.Annotation annotation : md.getLeadingAnnotations()) {
-                    JavaType annotationType = annotation.getAnnotationType().getType();
-                    if (annotationType == null ||
-                        !TypeUtils.isOfClassType(annotationType, "java.lang.Override") &&
-                        !TypeUtils.isOfClassType(annotationType, "java.lang.Deprecated")) {
+                // Skip if method has annotations other than @Override
+                for (J.Annotation annotation : service(AnnotationService.class).getAllAnnotations(getCursor())) {
+                    if (!OVERRIDE.matches(annotation)) {
                         return md;
                     }
                 }
@@ -100,6 +101,12 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
 
                 // Skip if method is final (prevents further overriding)
                 if (methodType.hasFlags(Flag.Final)) {
+                    return md;
+                }
+
+                // Skip if method is synchronized, unless the super method is synchronized too
+                if (md.hasModifier(J.Modifier.Type.Synchronized) &&
+                    (superCall.getMethodType() == null || !superCall.getMethodType().hasFlags(Flag.Synchronized))) {
                     return md;
                 }
 
