@@ -225,6 +225,31 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenOnlyTheNullCheckedOperandHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  static Integer count = 1;
+
+                  A getInstance() {
+                      return this;
+                  }
+
+                  void foo() {
+                      if (getInstance().count != null && count instanceof Integer) {
+                          System.out.println("Integer value");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void removeRedundantNullCheckWithFieldAccess() {
         rewriteRun(

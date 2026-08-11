@@ -91,19 +91,18 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
             }
 
             private boolean isRedundantNullCheck(J.Binary nullCheck, J.InstanceOf instanceOf) {
-                // Dropping the null check evaluates the expression once where it was evaluated twice, so it is only
-                // equivalent when evaluating it has no side effects; `SemanticallyEqual` proves the two occurrences
-                // mean the same thing, not that evaluating them twice is the same as evaluating them once
-                if (nullCheck.getOperator() == J.Binary.Type.NotEqual &&
-                        !mayHaveSideEffects(instanceOf.getExpression())) {
-                    if (J.Literal.isLiteralValue(nullCheck.getLeft(), null)) {
-                        return SemanticallyEqual.areEqual(nullCheck.getRight(), instanceOf.getExpression());
-                    }
-                    if (J.Literal.isLiteralValue(nullCheck.getRight(), null)) {
-                        return SemanticallyEqual.areEqual(nullCheck.getLeft(), instanceOf.getExpression());
-                    }
+                if (nullCheck.getOperator() != J.Binary.Type.NotEqual) {
+                    return false;
                 }
-                return false;
+                Expression checked = J.Literal.isLiteralValue(nullCheck.getLeft(), null) ? nullCheck.getRight() :
+                        J.Literal.isLiteralValue(nullCheck.getRight(), null) ? nullCheck.getLeft() : null;
+                if (checked == null || !SemanticallyEqual.areEqual(checked, instanceOf.getExpression())) {
+                    return false;
+                }
+                // The rewrite evaluates the expression once where it was evaluated twice, so both occurrences must be
+                // side-effect free; they can differ, as `SemanticallyEqual` matches a static field access against its
+                // qualified form without comparing the qualifier.
+                return !mayHaveSideEffects(checked) && !mayHaveSideEffects(instanceOf.getExpression());
             }
         });
     }
