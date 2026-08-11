@@ -172,8 +172,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     @Test
     void addsThrowsThrowableWhenSuperclassDeclaresThrowable() {
         rewriteRun(
-          // `JavaTemplate` does not attribute the `super` of the generated call when the superclass is
-          // declared in the same compilation unit
+          // `JavaTemplate` leaves the generated `super` unattributed when the superclass is in the same file
           spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
           //language=java
           java(
@@ -213,8 +212,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     @Test
     void addsSuperFinalizeWithoutThrowsWhenSuperclassDeclaresNoThrows() {
         rewriteRun(
-          // `JavaTemplate` does not attribute the `super` of the generated call when the superclass is
-          // declared in the same compilation unit
+          // `JavaTemplate` leaves the generated `super` unattributed when the superclass is in the same file
           spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
           //language=java
           java(
@@ -268,8 +266,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     @Test
     void addsSuperFinalizeWhenThrowsClauseCoversSuperclassThrows() {
         rewriteRun(
-          // `JavaTemplate` does not attribute the `super` of the generated call when the superclass is
-          // declared in the same compilation unit
+          // `JavaTemplate` leaves the generated `super` unattributed when the superclass is in the same file
           spec -> spec.typeValidationOptions(TypeValidation.builder().identifiers(false).build()),
           //language=java
           java(

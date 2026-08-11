@@ -63,8 +63,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     return md;
                 }
 
-                // `Object#finalize()` is declared to throw `Throwable`, which is checked in Java but not in the
-                // other JVM languages this recipe runs on, so only a Java override has to declare it.
+                // `Throwable` is checked in Java but not in the other JVM languages this recipe runs on
                 List<NameTree> throwz = md.getThrows();
                 boolean declaresThrowable = throwz != null &&
                         throwz.stream().anyMatch(t -> TypeUtils.isOfClassType(t.getType(), "java.lang.Throwable"));
@@ -73,8 +72,8 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     if (superThrown == null) {
                         return md;
                     }
-                    // An override may only declare what the method it overrides declares, so a throws clause that
-                    // does not already cover the super's has no legal way to take the added call.
+                    // An override may only declare what it overrides declares, so a narrower throws clause has no
+                    // legal way to take the added call
                     if (throwz != null) {
                         if (superThrown.stream().anyMatch(thrown ->
                                 throwz.stream().noneMatch(t -> TypeUtils.isAssignableTo(t.getType(), thrown)))) {
@@ -107,7 +106,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                         }
                     }
                 }
-                // Missing or unreliable type attribution.
+                // Missing or unreliable type attribution
                 return null;
             }
 
@@ -117,8 +116,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean exists) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, exists);
-                        // A `super.finalize()` added by an earlier cycle is not always type attributed, so also
-                        // match it syntactically to keep the recipe from adding the call a second time.
+                        // A call added by an earlier cycle is not always attributed, so match it syntactically too
                         if (FINALIZE_METHOD_MATCHER.matches(mi) ||
                                 mi.getSelect() instanceof J.Identifier &&
                                         "super".equals(((J.Identifier) mi.getSelect()).getSimpleName()) &&
