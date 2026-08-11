@@ -337,12 +337,6 @@ class NullableOnMethodReturnTypeTest implements RewriteTest {
         );
     }
 
-    /**
-     * An unresolved annotation is not matched by the `*..Nullable` trait matcher today, so this
-     * currently passes without reaching the `@Target` check. It is kept because any change that
-     * widens the match, such as matching by simple name, makes that check the only thing that
-     * leaves an unattributed annotation alone.
-     */
     @Test
     void noChangeForUnknownAnnotationType() {
         rewriteRun(
