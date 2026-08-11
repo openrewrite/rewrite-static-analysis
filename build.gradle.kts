@@ -67,20 +67,42 @@ val warmJavaScriptRpcCache by tasks.registering {
 
     inputs.files(rewriteJavaScriptJars)
     outputs.file(marker)
+    // The marker records an install that succeeded. Gradle counts a declared output that was absent
+    // last time and is absent now as up to date, so without asking explicitly, an install that failed
+    // once is never retried.
+    outputs.upToDateWhen { marker.get().asFile.isFile }
 
     doLast {
+        val markerFile = marker.get().asFile
+        markerFile.delete()
         val jar = rewriteJavaScriptJars.get().singleOrNull() ?: return@doLast
         val version = zipTree(jar).matching { include("META-INF/rewrite-javascript-version.txt") }
             .singleFile.readText().trim()
-        val result = execOperations.exec {
-            commandLine(npx, "--yes", "--package=@openrewrite/rewrite@$version", "rewrite-rpc")
-            standardInput = InputStream.nullInputStream()
-            isIgnoreExitValue = true
+        if (version.endsWith("-SNAPSHOT")) {
+            // A locally built rewrite-javascript, resolved from mavenLocal, spawns an `npm link`ed
+            // rewrite-rpc from its working copy rather than a published package. Nothing to install.
+            markerFile.parentFile.mkdirs()
+            markerFile.writeText(version)
+            return@doLast
         }
-        if (result.exitValue != 0) {
+        val exitValue = try {
+            execOperations.exec {
+                commandLine(npx, "--yes", "--package=@openrewrite/rewrite@$version", "rewrite-rpc")
+                standardInput = InputStream.nullInputStream()
+                isIgnoreExitValue = true
+            }.exitValue
+        } catch (e: Exception) {
+            // isIgnoreExitValue covers a process that exits non-zero, not one that never starts,
+            // which is what an absent npx looks like. Running the Java tests should not require Node.
+            logger.warn("Could not run $npx (${e.message}); JavaScript RPC tests may be flaky.")
+            return@doLast
+        }
+        if (exitValue != 0) {
             logger.warn("Could not pre-install @openrewrite/rewrite@$version; JavaScript RPC tests may be flaky.")
+            return@doLast
         }
-        marker.get().asFile.writeText(version)
+        markerFile.parentFile.mkdirs()
+        markerFile.writeText(version)
     }
 }
 
