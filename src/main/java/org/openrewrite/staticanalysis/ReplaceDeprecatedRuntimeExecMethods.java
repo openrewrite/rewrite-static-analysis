@@ -94,9 +94,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         }
                     }
 
-                    // Only a command made up entirely of string literals can be tokenized the way
-                    // `Runtime#exec(String)` does, on any of ' ', '\t', '\n', '\r' and '\f', collapsing runs of them.
-                    // Anything else is left alone rather than launching a different process.
+                    // Only an all-literal command can be tokenized the way `Runtime#exec(String)` does, on any of
+                    // ' ', '\t', '\n', '\r' and '\f', collapsing runs; anything else would launch a different process
                     if (!flattenAble) {
                         return m;
                     }
@@ -105,8 +104,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     for (StringTokenizer tokenizer = new StringTokenizer(sb.toString()); tokenizer.hasMoreTokens(); ) {
                         cmds.add(tokenizer.nextToken());
                     }
-                    // `exec("")` throws `IllegalArgumentException("Empty command")` where `exec(new String[]{})`
-                    // throws `IndexOutOfBoundsException`, so a command that tokenizes to nothing is left alone.
+                    // `exec("")` throws `IllegalArgumentException` where `exec(new String[]{})` throws
+                    // `IndexOutOfBoundsException`, so a command tokenizing to nothing is left alone
                     JavaType.Method methodType = m.getMethodType();
                     if (cmds.isEmpty() || methodType == null) {
                         return m;
@@ -149,9 +148,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     sb.append('\\').append(c);
                 } else if (c < ' ' || (c >= 0x7f && c <= 0x9f) ||
                         (c == '#' && i + 1 < token.length() && token.charAt(i + 1) == '{')) {
-                    // Control characters are escaped so that they stay legible rather than becoming invisible
-                    // bytes. `#{` has to be escaped because this text is also `JavaTemplate` source, where `#{`
-                    // opens a parameter placeholder.
+                    // Control characters stay legible rather than becoming invisible bytes, and `#{` needs escaping
+                    // because this text is also `JavaTemplate` source
                     sb.append(String.format("\\u%04x", (int) c));
                 } else {
                     sb.append(c);
