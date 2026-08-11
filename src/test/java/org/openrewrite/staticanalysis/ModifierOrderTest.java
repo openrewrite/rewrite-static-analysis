@@ -24,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
 
 @Issue("https://github.com/openrewrite/rewrite/issues/466")
 @SuppressWarnings("UnnecessaryModifier")
@@ -144,6 +145,22 @@ class ModifierOrderTest implements RewriteTest {
                       public override fun draw() {
                       }
                   }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class PythonTest {
+        @Test
+        void dontChangeAsyncDef() {
+            rewriteRun(
+              python(
+                """
+                  class Foo:
+                      async def bar(self):
+                          pass
                   """
               )
             );
