@@ -21,18 +21,14 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
@@ -89,11 +85,7 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
             }
 
             private boolean isRedundantNullCheck(J.Binary nullCheck, J.MethodInvocation equalsCall) {
-                if (nullCheck.getOperator() != J.Binary.Type.NotEqual) {
-                    return false;
-                }
-
-                if (!EQUALS_MATCHER.matches(equalsCall)) {
+                if (nullCheck.getOperator() != J.Binary.Type.NotEqual || !EQUALS_MATCHER.matches(equalsCall)) {
                     return false;
                 }
 
@@ -107,35 +99,15 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
                 }
                 Expression equalsArg = equalsCall.getArguments().get(0);
 
-                // Dropping the null check evaluates the expression once where it was evaluated twice, so it is only
-                // equivalent when evaluating it has no side effects; `SemanticallyEqual` proves the two occurrences
-                // mean the same thing, not that evaluating them twice is the same as evaluating them once. A read of
-                // a field attributed as volatile is checked separately: it has no side effect of its own, which puts
-                // it outside what `SideEffects` reports, but it is a synchronization action that must not be elided.
-                if (mayHaveSideEffects(equalsArg) || readsVolatileField(equalsArg)) {
-                    return false;
-                }
+                Expression nullChecked = J.Literal.isLiteralValue(nullCheck.getLeft(), null) ? nullCheck.getRight() :
+                        J.Literal.isLiteralValue(nullCheck.getRight(), null) ? nullCheck.getLeft() : null;
 
-                if (J.Literal.isLiteralValue(nullCheck.getLeft(), null)) {
-                    return SemanticallyEqual.areEqual(nullCheck.getRight(), equalsArg);
-                }
-                if (J.Literal.isLiteralValue(nullCheck.getRight(), null)) {
-                    return SemanticallyEqual.areEqual(nullCheck.getLeft(), equalsArg);
-                }
-                return false;
-            }
-
-            private boolean readsVolatileField(Expression expression) {
-                return new JavaIsoVisitor<AtomicBoolean>() {
-                    @Override
-                    public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean result) {
-                        JavaType.Variable fieldType = identifier.getFieldType();
-                        if (fieldType != null && fieldType.hasFlags(Flag.Volatile)) {
-                            result.set(true);
-                        }
-                        return identifier;
-                    }
-                }.reduce(expression, new AtomicBoolean(false)).get();
+                // The rewrite evaluates the expression once where it was evaluated twice, so it is only equivalent
+                // when evaluating it is free of side effects; `SemanticallyEqual` proves the two occurrences mean the
+                // same thing, not that evaluating them twice is the same as evaluating them once.
+                return nullChecked != null &&
+                        SemanticallyEqual.areEqual(nullChecked, equalsArg) &&
+                        !mayHaveSideEffects(equalsArg);
             }
         });
     }
