@@ -21,7 +21,6 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
@@ -37,13 +36,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class UseLambdaForFunctionalInterface extends Recipe {
-    private static final MethodMatcher OBJECT_GET_CLASS = new MethodMatcher("java.lang.Object getClass()");
+    private static final Set<String> OBJECT_METHOD_NAMES = new HashSet<>(asList(
+            "clone", "equals", "finalize", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait"));
 
     @Getter
     final String displayName = "Use lambda expressions instead of anonymous classes";
@@ -492,8 +493,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         if (usesThis(cursor)) {
             return "references `this`";
         }
-        if (usesImplicitGetClass(cursor)) {
-            return "calls `getClass()` on the anonymous instance";
+        if (callsMethodOnAnonymousInstance(n, cursor)) {
+            return "calls a method on the anonymous instance";
         }
         if (shadowsLocalVariable(cursor)) {
             return "shadows a local variable";
@@ -561,20 +562,21 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     /**
-     * An unqualified {@code getClass()} is dispatched on the anonymous class's own {@code this}, which a lambda
-     * does not have: the same call in a lambda reports the enclosing class instead. There is no {@code this}
-     * token for {@link #usesThis} to see, so the call has to be recognised by what it resolves to. Bare
-     * {@code super.getClass()} and {@code super::getClass} name the superclass part of the same {@code this}
-     * (and in a static enclosing method a lambda's {@code super} does not even compile), so they are treated
-     * identically; an outer-qualified {@code Test.super.getClass()} keeps its receiver either way, so it is
-     * deliberately not blocked and still converts; {@code Test.this.getClass()} also keeps its receiver but is
-     * already blocked by {@link #usesThis}. A call that lost its type attribution is also blocked, because its
-     * receiver cannot be proven either.
+     * An unqualified call that resolves to a method the anonymous class inherits or declares is dispatched on that
+     * class's own {@code this}, which a lambda does not have: in a lambda the same call names a member of the
+     * enclosing class, so it reports a different receiver or does not compile at all. There is no {@code this}
+     * token for {@link #usesThis} to see, so the call is recognised by what it resolves to: the receiver is the
+     * anonymous instance exactly when its type is a subtype of the declaring type.
+     * <p>
+     * Bare {@code super.m()} and {@code super::m} name the superclass part of that same {@code this}, so they are
+     * always blocked; an outer-qualified {@code Test.super.m()} keeps its receiver either way and still converts.
+     * A call that lost its type attribution is blocked only when it is named after an {@code Object} method, the
+     * one case where no enclosing class could have supplied it.
      */
-    private static boolean usesImplicitGetClass(Cursor cursor) {
-        J.NewClass n = cursor.getValue();
+    private static boolean callsMethodOnAnonymousInstance(J.NewClass n, Cursor cursor) {
         assert n.getBody() != null;
-        AtomicBoolean hasImplicitGetClass = new AtomicBoolean(false);
+        JavaType anonymousType = n.getType();
+        AtomicBoolean callsAnonymousInstance = new AtomicBoolean(false);
         new JavaVisitor<Integer>() {
             @Override
             public J visitClassDeclaration(J.ClassDeclaration classDecl, Integer integer) {
@@ -600,29 +602,32 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, Integer integer) {
-                if ((method.getSelect() == null || isBareSuper(method.getSelect())) &&
-                    "getClass".equals(method.getSimpleName()) &&
-                    (method.getMethodType() == null || OBJECT_GET_CLASS.matches(method))) {
-                    hasImplicitGetClass.set(true);
+                if (isBareSuper(method.getSelect()) ||
+                    method.getSelect() == null && dispatchedOnThis(method.getMethodType(), method.getSimpleName())) {
+                    callsAnonymousInstance.set(true);
                 }
                 return super.visitMethodInvocation(method, integer);
             }
 
             @Override
             public J visitMemberReference(J.MemberReference memberRef, Integer integer) {
-                if (isBareSuper(memberRef.getContaining()) &&
-                    "getClass".equals(memberRef.getReference().getSimpleName()) &&
-                    (memberRef.getMethodType() == null || OBJECT_GET_CLASS.matches(memberRef))) {
-                    hasImplicitGetClass.set(true);
+                if (isBareSuper(memberRef.getContaining())) {
+                    callsAnonymousInstance.set(true);
                 }
                 return super.visitMemberReference(memberRef, integer);
+            }
+
+            private boolean dispatchedOnThis(JavaType.@Nullable Method methodType, String name) {
+                return methodType == null ?
+                        OBJECT_METHOD_NAMES.contains(name) :
+                        TypeUtils.isAssignableTo(methodType.getDeclaringType(), anonymousType);
             }
 
             private boolean isBareSuper(@Nullable Expression expression) {
                 return expression instanceof J.Identifier && "super".equals(((J.Identifier) expression).getSimpleName());
             }
         }.visit(n.getBody(), 0, cursor);
-        return hasImplicitGetClass.get();
+        return callsAnonymousInstance.get();
     }
 
     private static List<String> parameterNames(J.MethodDeclaration method) {

@@ -705,6 +705,122 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void dontUseLambdaWhenImplicitObjectMethodOtherThanGetClass() {
+        // `hashCode()` is `this.hashCode()` on the anonymous instance; in a lambda it would be the
+        // enclosing instance's, so the value silently changes.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<Integer> supplier() {
+                      return new Supplier<Integer>() {
+                          @Override
+                          public Integer get() {
+                              return hashCode();
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenSuperMethodReferenceOtherThanGetClass() {
+        // Bare `super` names the `Object` part of the anonymous instance; in this static method a
+        // lambda's `super` would not even compile.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  static Supplier<Supplier<String>> supplier() {
+                      return new Supplier<Supplier<String>>() {
+                          @Override
+                          public Supplier<String> get() {
+                              return super::toString;
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dontUseLambdaWhenTheInterfaceMethodCallsItself() {
+        // The recursive `get()` is dispatched on the anonymous instance; a lambda has no name to
+        // recurse through, so the call would not resolve at all.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  Supplier<String> supplier(boolean b) {
+                      return new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              return b ? get() : "x";
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenCallingAMethodOfTheEnclosingClass() {
+        // An unqualified call that resolves to the enclosing class keeps its receiver in a lambda.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  String name() {
+                      return "x";
+                  }
+
+                  Supplier<String> supplier() {
+                      return new Supplier<String>() {
+                          @Override
+                          public String get() {
+                              return name();
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              class Test {
+                  String name() {
+                      return "x";
+                  }
+
+                  Supplier<String> supplier() {
+                      return () -> name();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @SuppressWarnings("UnnecessaryLocalVariable")
     @Test
     void dontUseLambdaWhenShadowsLocalVariable() {
@@ -1408,7 +1524,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
           spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
               assertThat(rows).hasSize(1);
               assertThat(rows.getFirst().isConvertible()).isFalse();
-              assertThat(rows.getFirst().getReason()).isEqualTo("calls `getClass()` on the anonymous instance");
+              assertThat(rows.getFirst().getReason()).isEqualTo("calls a method on the anonymous instance");
           }),
           //language=java
           java(
