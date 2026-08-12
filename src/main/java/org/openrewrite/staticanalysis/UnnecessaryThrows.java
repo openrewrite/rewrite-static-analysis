@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -28,13 +29,12 @@ import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
 
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import static java.util.Collections.emptySet;
+import static java.util.Collections.reverse;
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class UnnecessaryThrows extends Recipe {
@@ -57,6 +57,9 @@ public class UnnecessaryThrows extends Recipe {
             "methods overridden within the same source file, so that a subclass override which " +
             "does throw the exception keeps compiling. Overrides in other source files cannot be " +
             "detected without a scanning recipe and are therefore not accounted for.\n\n" +
+            "When a `throws` declaration is removed, any `@throws` or `@exception` " +
+            "JavaDoc tag documenting that exception is removed along with it, so that " +
+            "the documentation does not describe an exception the method no longer declares.\n\n" +
             "Declaring exceptions that are never thrown misleads callers into " +
             "writing unnecessary error-handling code and obscures the method's " +
             "true behavior.";
@@ -130,7 +133,7 @@ public class UnnecessaryThrows extends Recipe {
                                 }
                             }
                         }
-                    }.visit(m, ctx, getCursor().getParent());
+                    }.visit(m, ctx, requireNonNull(getCursor().getParent()));
 
                     if (!unusedThrows.isEmpty()) {
                         MethodMatcher originalMethodMatcher = new MethodMatcher(m);
@@ -150,6 +153,10 @@ public class UnnecessaryThrows extends Recipe {
                                 .withMethodType(replacementMethodType)
                                 .withName(m.getName().withType(replacementMethodType));
 
+                        // The `@throws` tags documenting the now-removed exceptions would otherwise
+                        // be left behind describing exceptions the method no longer declares.
+                        m = removeJavadocThrows(m, unusedThrows, ctx);
+
                         // Remove the thrown exceptions from the method type, such that UnnecessaryCatch can continue
                         doAfterVisit(new JavaIsoVisitor<ExecutionContext>() {
                             @Override
@@ -166,6 +173,24 @@ public class UnnecessaryThrows extends Recipe {
                 }
 
                 return m;
+            }
+
+            /**
+             * Drop the `@throws`/`@exception` tags documenting exceptions that were just removed from
+             * the `throws` clause. Only reachable for methods whose javadoc does not guard removal in
+             * the first place, i.e. `private`, `static` and `final` methods.
+             */
+            private J.MethodDeclaration removeJavadocThrows(J.MethodDeclaration m, Set<JavaType.FullyQualified> removed, ExecutionContext ctx) {
+                if (m.getComments().stream().noneMatch(Javadoc.DocComment.class::isInstance)) {
+                    return m;
+                }
+                Cursor parent = getCursor().getParentTreeCursor();
+                return m.withComments(ListUtils.map(m.getComments(), c -> {
+                    if (c instanceof Javadoc.DocComment) {
+                        return (Comment) new RemoveThrowsTagVisitor(removed).visitNonNull((Javadoc.DocComment) c, ctx, parent);
+                    }
+                    return c;
+                }));
             }
 
             private Set<JavaType.FullyQualified> findExceptionCandidates(J.@Nullable MethodDeclaration method) {
@@ -268,4 +293,93 @@ public class UnnecessaryThrows extends Recipe {
         };
     }
 
+    private static class RemoveThrowsTagVisitor extends JavadocVisitor<ExecutionContext> {
+        private final Set<JavaType.FullyQualified> removed;
+
+        RemoveThrowsTagVisitor(Set<JavaType.FullyQualified> removed) {
+            super(new JavaIsoVisitor<>());
+            this.removed = removed;
+        }
+
+        @Override
+        public Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
+            List<Javadoc> body = javadoc.getBody();
+            List<Javadoc> newBody = new ArrayList<>(body.size());
+            boolean changed = false;
+
+            // Walk backwards so that the line break and margin preceding a removed tag, along with
+            // any continuation lines belonging to its description, are dropped with it.
+            boolean dropUntilLineBreak = false;
+            for (int i = body.size() - 1; i >= 0; i--) {
+                Javadoc doc = body.get(i);
+                if (dropUntilLineBreak) {
+                    if (doc instanceof Javadoc.LineBreak) {
+                        dropUntilLineBreak = false;
+                    }
+                } else if (doc instanceof Javadoc.Throws && isRemoved((Javadoc.Throws) doc)) {
+                    changed = true;
+                    dropUntilLineBreak = true;
+                } else {
+                    newBody.add(doc);
+                }
+            }
+
+            if (!changed) {
+                return javadoc;
+            }
+            reverse(newBody);
+            // Removing the last tag can strand the blank line that separated the description from
+            // the tag block, so collapse any trailing empty lines back onto the closing delimiter.
+            trimTrailingBlankLines(newBody);
+            if (newBody.isEmpty() || RemoveJavaDocAuthorTag.isBlank(getCursor(), newBody)) {
+                //noinspection DataFlowIssue
+                return null;
+            }
+            return javadoc.withBody(newBody);
+        }
+
+        private void trimTrailingBlankLines(List<Javadoc> body) {
+            Javadoc.LineBreak lastLineBreak = null;
+            while (!body.isEmpty()) {
+                Javadoc last = body.get(body.size() - 1);
+                if (last instanceof Javadoc.LineBreak) {
+                    if (lastLineBreak == null) {
+                        lastLineBreak = (Javadoc.LineBreak) last;
+                    }
+                } else if (!(last instanceof Javadoc.Text) || !((Javadoc.Text) last).getText().trim().isEmpty()) {
+                    break;
+                }
+                body.remove(body.size() - 1);
+            }
+            if (!body.isEmpty() && lastLineBreak != null) {
+                // The margin carries the leading `*` of the line that followed; the closing `*/`
+                // supplies its own, so drop it to avoid printing a stray asterisk.
+                String margin = lastLineBreak.getMargin();
+                body.add(margin.endsWith("*") ?
+                        lastLineBreak.withMargin(margin.substring(0, margin.length() - 1)) :
+                        lastLineBreak);
+            }
+        }
+
+        private boolean isRemoved(Javadoc.Throws aThrows) {
+            if (aThrows.getExceptionName() instanceof TypeTree) {
+                TypeTree exceptionName = (TypeTree) aThrows.getExceptionName();
+                JavaType.FullyQualified type = TypeUtils.asFullyQualified(exceptionName.getType());
+                if (type != null) {
+                    return removed.contains(type);
+                }
+                // The tag may name an exception the compiler could not attribute; fall back to the
+                // simple name so an unattributed tag is not left behind.
+                if (exceptionName instanceof J.Identifier) {
+                    String simpleName = ((J.Identifier) exceptionName).getSimpleName();
+                    for (JavaType.FullyQualified fq : removed) {
+                        if (fq.getClassName().equals(simpleName)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+    }
 }
