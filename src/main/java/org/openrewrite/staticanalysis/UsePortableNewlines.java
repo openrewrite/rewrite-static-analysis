@@ -30,7 +30,6 @@ import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -95,7 +94,7 @@ public class UsePortableNewlines extends Recipe {
         }
         J.Literal literal = (J.Literal) maybeLiteral;
         String source = literal.getValueSource();
-        if (!(literal.getValue() instanceof String) || source == null || !source.contains("\\n")) {
+        if (!(literal.getValue() instanceof String) || source == null) {
             return literal;
         }
         String value = (String) literal.getValue();
@@ -104,50 +103,98 @@ public class UsePortableNewlines extends Recipe {
             return literal;
         }
 
-        // Every '\n' in the value comes, in order, from either a \n escape or a raw text block line break
-        StringBuilder newSource = new StringBuilder(source.length());
-        List<Boolean> replacedNewlines = new ArrayList<>();
-        boolean textBlockOpeningLine = source.startsWith("\"\"\"");
-        for (int i = 0; i < source.length(); i++) {
-            char c = source.charAt(i);
-            if (c == '\\' && i + 1 < source.length()) {
-                char escaped = source.charAt(++i);
-                if (escaped == 'n') {
-                    newSource.append("%n");
-                    replacedNewlines.add(true);
-                    continue;
+        StringBuilder translatedSource = new StringBuilder(source.length());
+        List<Integer> rawStarts = new ArrayList<>();
+        List<Integer> rawEnds = new ArrayList<>();
+        int translatedBackslashes = 0;
+        for (int i = 0; i < source.length();) {
+            int rawStart = i;
+            char translated = source.charAt(i++);
+            if (translated == '\\') {
+                int unicode = i;
+                while (unicode < source.length() && source.charAt(unicode) == 'u') {
+                    unicode++;
                 }
-                newSource.append(c).append(escaped);
-                if (escaped == '\r' && i + 1 < source.length() && source.charAt(i + 1) == '\n') {
-                    newSource.append(source.charAt(++i));
+                if (translatedBackslashes % 2 == 0 && unicode > i && unicode + 4 <= source.length()) {
+                    try {
+                        translated = (char) Integer.parseInt(source.substring(unicode, unicode + 4), 16);
+                        i = unicode + 4;
+                    } catch (NumberFormatException ignored) {
+                        // Keep the raw backslash; an invalid Unicode escape is not valid Java source.
+                    }
                 }
+            }
+            translatedSource.append(translated);
+            translatedBackslashes = translated == '\\' ? translatedBackslashes + 1 : 0;
+            rawStarts.add(rawStart);
+            rawEnds.add(i);
+        }
+
+        List<int[]> replacements = new ArrayList<>();
+        List<Integer> replacedNewlines = new ArrayList<>();
+        boolean textBlock = translatedSource.toString().startsWith("\"\"\"");
+        boolean openingTextBlockLine = textBlock;
+        int newlineIndex = 0;
+        int consecutiveBackslashes = 0;
+        for (int i = textBlock ? 3 : 1; i < translatedSource.length(); i++) {
+            char current = translatedSource.charAt(i);
+            if (current == '\\') {
+                consecutiveBackslashes++;
                 continue;
             }
-            newSource.append(c);
-            if (c == '\r' && i + 1 < source.length() && source.charAt(i + 1) == '\n') {
-                newSource.append(source.charAt(++i));
-            }
-            if (c == '\r' || c == '\n') {
-                if (textBlockOpeningLine) {
-                    textBlockOpeningLine = false;
-                } else {
-                    replacedNewlines.add(false);
+            if (current == 'n' && consecutiveBackslashes % 2 == 1) {
+                replacements.add(new int[]{rawStarts.get(i - 1), rawEnds.get(i)});
+                replacedNewlines.add(newlineIndex++);
+            } else if (consecutiveBackslashes % 2 == 1 && current >= '0' && current <= '7') {
+                int octal = current - '0';
+                int maxDigits = current <= '3' ? 3 : 2;
+                int digits = 1;
+                while (digits < maxDigits && i + 1 < translatedSource.length()) {
+                    char next = translatedSource.charAt(i + 1);
+                    if (next < '0' || next > '7') {
+                        break;
+                    }
+                    octal = octal * 8 + next - '0';
+                    digits++;
+                    i++;
+                }
+                if (octal == '\n') {
+                    newlineIndex++;
+                }
+            } else if (textBlock && (current == '\n' || current == '\r')) {
+                boolean crlf = current == '\r' && i + 1 < translatedSource.length() &&
+                        translatedSource.charAt(i + 1) == '\n';
+                if (openingTextBlockLine) {
+                    openingTextBlockLine = false;
+                } else if (consecutiveBackslashes % 2 == 0) {
+                    newlineIndex++;
+                }
+                if (crlf) {
+                    i++;
                 }
             }
+            consecutiveBackslashes = 0;
         }
-        if (!replacedNewlines.contains(true) || value.chars().filter(ch -> ch == '\n').count() != replacedNewlines.size()) {
+        // A newline count that disagrees with the value means the parse missed a newline source, so value and source could drift
+        if (replacedNewlines.isEmpty() || value.chars().filter(ch -> ch == '\n').count() != newlineIndex) {
             return literal;
         }
 
-        StringBuilder newValue = new StringBuilder(value.length());
-        Iterator<Boolean> replaced = replacedNewlines.iterator();
-        for (char c : value.toCharArray()) {
-            if (c == '\n' && replaced.next()) {
-                newValue.append("%n");
+        StringBuilder transformedSource = new StringBuilder(source);
+        for (int i = replacements.size() - 1; i >= 0; i--) {
+            int[] replacement = replacements.get(i);
+            transformedSource.replace(replacement[0], replacement[1], "%n");
+        }
+        StringBuilder transformedValue = new StringBuilder(value.length());
+        newlineIndex = 0;
+        for (int i = 0; i < value.length(); i++) {
+            char current = value.charAt(i);
+            if (current == '\n' && replacedNewlines.contains(newlineIndex++)) {
+                transformedValue.append("%n");
             } else {
-                newValue.append(c);
+                transformedValue.append(current);
             }
         }
-        return literal.withValue(newValue.toString()).withValueSource(newSource.toString());
+        return literal.withValue(transformedValue.toString()).withValueSource(transformedSource.toString());
     }
 }
