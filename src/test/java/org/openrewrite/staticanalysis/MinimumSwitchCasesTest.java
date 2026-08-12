@@ -17,10 +17,19 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.InMemoryExecutionContext;
 import org.openrewrite.Issue;
+import org.openrewrite.SourceFile;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.internal.ListUtils.map;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration"})
@@ -1186,5 +1195,23 @@ class MinimumSwitchCasesTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void switchWithClausesThatAreNotCases() {
+        // Simulate Go's `select`, whose clauses are not J.Case
+        ExecutionContext ctx = new InMemoryExecutionContext(Throwable::printStackTrace);
+        SourceFile before = (SourceFile) requireNonNull(new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.Switch visitSwitch(J.Switch switch_, Integer p) {
+                return switch_.withCases(switch_.getCases().withStatements(
+                  map(switch_.getCases().getStatements(), s -> new J.Empty(s.getId(), s.getPrefix(), s.getMarkers()))));
+            }
+        }.visit(JavaParser.fromJavaVersion().build()
+          .parse(ctx, "class A { void m(int i) { switch (i) { case 1: System.out.println(1); break; } } }")
+          .findFirst().orElseThrow(), 0));
+
+        SourceFile after = (SourceFile) requireNonNull(new MinimumSwitchCases().getVisitor().visit(before, ctx));
+        assertThat(after.printAll()).isEqualTo(before.printAll());
     }
 }

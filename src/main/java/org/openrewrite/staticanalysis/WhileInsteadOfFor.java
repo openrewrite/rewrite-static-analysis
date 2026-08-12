@@ -48,11 +48,13 @@ public class WhileInsteadOfFor extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
-                if (forLoop.getControl().getInit().get(0) instanceof J.Empty &&
-                    forLoop.getControl().getUpdate().get(0) instanceof J.Empty &&
-                    !(forLoop.getControl().getCondition() instanceof J.Empty)
+                // Go for loops have no init or update elements at all, and are already while loops
+                J.ForLoop.Control control = forLoop.getControl();
+                if (!control.getInit().isEmpty() && control.getInit().get(0) instanceof J.Empty &&
+                    !control.getUpdate().isEmpty() && control.getUpdate().get(0) instanceof J.Empty &&
+                    !(control.getCondition() instanceof J.Empty)
                 ) {
-                    J.WhileLoop w = JavaTemplate.apply("while(#{any(boolean)}) {}", getCursor(), forLoop.getCoordinates().replace(), forLoop.getControl().getCondition());
+                    J.WhileLoop w = JavaTemplate.apply("while(#{any(boolean)}) {}", getCursor(), forLoop.getCoordinates().replace(), control.getCondition());
                     return w.withBody(forLoop.getBody());
                 }
                 return super.visitForLoop(forLoop, ctx);

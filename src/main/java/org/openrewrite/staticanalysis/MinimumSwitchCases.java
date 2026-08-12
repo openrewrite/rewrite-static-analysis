@@ -215,14 +215,16 @@ public class MinimumSwitchCases extends Recipe {
                 if (switch_.getCases().getStatements().size() > 2) {
                     return false;
                 }
-                // Don't transform switches that use Java 21 pattern matching (e.g. `case Foo.Bar b ->`),
-                // as those case labels are not simple expressions and cannot be converted to `==`/`equals` checks
                 for (Statement statement : switch_.getCases().getStatements()) {
-                    if (statement instanceof J.Case) {
-                        for (J label : ((J.Case) statement).getCaseLabels()) {
-                            if (!(label instanceof Expression)) {
-                                return false;
-                            }
+                    // Go's `select` holds clauses that are not J.Case
+                    if (!(statement instanceof J.Case)) {
+                        return false;
+                    }
+                    // Don't transform switches that use Java 21 pattern matching (e.g. `case Foo.Bar b ->`),
+                    // as those case labels are not simple expressions and cannot be converted to `==`/`equals` checks
+                    for (J label : ((J.Case) statement).getCaseLabels()) {
+                        if (!(label instanceof Expression)) {
+                            return false;
                         }
                     }
                 }
