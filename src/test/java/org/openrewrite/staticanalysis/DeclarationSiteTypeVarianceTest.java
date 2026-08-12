@@ -235,4 +235,220 @@ class DeclarationSiteTypeVarianceTest implements RewriteTest {
           )
         );
     }
+    @Test
+    void doesNotAddVarianceToParameterStoredInvariantly() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class FieldTest<Input, Output> {
+                  private final Function<Input, Output> mapper;
+
+                  FieldTest(Function<Input, Output> mapper) {
+                      this.mapper = mapper;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class LocalTest<Input, Output> {
+                  void test(Function<Input, Output> mapper) {
+                      Function<Input, Output> stored = mapper;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsVarianceWhenFieldAcceptsIt() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  private final Function<? super Input, ? extends Output> mapper;
+
+                  Test(Function<Input, Output> mapper) {
+                      this.mapper = mapper;
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  private final Function<? super Input, ? extends Output> mapper;
+
+                  Test(Function<? super Input, ? extends Output> mapper) {
+                      this.mapper = mapper;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsVarianceWhenInvariantFieldStoresAdapter() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  private Function<Input, Output> mapper;
+
+                  void set(Function<Input, Output> mapper) {
+                      this.mapper = input -> mapper.apply(input);
+                  }
+
+                  void forward(Function<Input, Output> mapper) {
+                      set(mapper);
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  private Function<Input, Output> mapper;
+
+                  void set(Function<? super Input, ? extends Output> mapper) {
+                      this.mapper = input -> mapper.apply(input);
+                  }
+
+                  void forward(Function<? super Input, ? extends Output> mapper) {
+                      set(mapper);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsVarianceWhenParameterIsNormalizedInPlace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Objects;
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  void use(Function<Input, Output> mapper) {
+                      mapper = Objects.requireNonNull(mapper);
+                  }
+
+                  void forward(Function<Input, Output> mapper) {
+                      use(mapper);
+                  }
+              }
+              """,
+            """
+              import java.util.Objects;
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  void use(Function<? super Input, ? extends Output> mapper) {
+                      mapper = Objects.requireNonNull(mapper);
+                  }
+
+                  void forward(Function<? super Input, ? extends Output> mapper) {
+                      use(mapper);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsVarianceWhenParameterIsStoredInVar() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  void use(Function<Input, Output> mapper) {
+                      var stored = mapper;
+                  }
+
+                  void forward(Function<Input, Output> mapper) {
+                      use(mapper);
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  void use(Function<? super Input, ? extends Output> mapper) {
+                      var stored = mapper;
+                  }
+
+                  void forward(Function<? super Input, ? extends Output> mapper) {
+                      use(mapper);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsVarianceWhenInvariantLocalStoresAdapterResult() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  Function<Input, Output> adapt(Function<? super Input, ? extends Output> mapper) {
+                      return input -> mapper.apply(input);
+                  }
+
+                  void use(Function<Input, Output> mapper) {
+                      Function<Input, Output> stored = adapt(mapper);
+                  }
+
+                  void forward(Function<Input, Output> mapper) {
+                      use(mapper);
+                  }
+              }
+              """,
+            """
+              import java.util.function.Function;
+
+              class Test<Input, Output> {
+                  Function<Input, Output> adapt(Function<? super Input, ? extends Output> mapper) {
+                      return input -> mapper.apply(input);
+                  }
+
+                  void use(Function<? super Input, ? extends Output> mapper) {
+                      Function<Input, Output> stored = adapt(mapper);
+                  }
+
+                  void forward(Function<? super Input, ? extends Output> mapper) {
+                      use(mapper);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
