@@ -23,6 +23,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
@@ -31,9 +32,7 @@ import org.openrewrite.java.tree.*;
 
 import java.util.*;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.reverse;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
@@ -302,7 +301,7 @@ public class UnnecessaryThrows extends Recipe {
         }
 
         @Override
-        public Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
+        public @Nullable Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
             List<Javadoc> body = javadoc.getBody();
             List<Javadoc> newBody = new ArrayList<>(body.size());
             boolean changed = false;
@@ -346,7 +345,7 @@ public class UnnecessaryThrows extends Recipe {
                     if (lastLineBreak == null) {
                         lastLineBreak = (Javadoc.LineBreak) last;
                     }
-                } else if (!(last instanceof Javadoc.Text) || !((Javadoc.Text) last).getText().trim().isEmpty()) {
+                } else if (!(last instanceof Javadoc.Text) || !StringUtils.isBlank(((Javadoc.Text) last).getText())) {
                     break;
                 }
                 body.remove(body.size() - 1);
