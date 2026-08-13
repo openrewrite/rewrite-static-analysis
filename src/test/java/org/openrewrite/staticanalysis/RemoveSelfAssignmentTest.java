@@ -246,6 +246,7 @@ class RemoveSelfAssignmentTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void removeSelfAssignmentTypeScript() {
         rewriteRun(
           //language=typescript

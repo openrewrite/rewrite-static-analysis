@@ -248,6 +248,7 @@ class AllBranchesIdenticalTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void collapseIdenticalBranchesTypeScript() {
         rewriteRun(
           //language=typescript

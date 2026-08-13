@@ -666,6 +666,7 @@ class AnnotateNullableMethodsTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void typescriptCode() {
         rewriteRun(
           //language=typescript
