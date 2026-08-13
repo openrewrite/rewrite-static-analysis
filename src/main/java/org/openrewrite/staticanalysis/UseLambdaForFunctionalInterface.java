@@ -422,15 +422,15 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     /**
      * Sources of type information disagree about how they flag a default method: parsed sources mark it
-     * both {@link Flag#Abstract} and {@link Flag#Default}, while some type tables record neither. Neither
-     * flag alone identifies a default method under both conventions, so require both signals to agree —
-     * excluded by modifier, or not marked abstract by a type that marks abstract methods at all. Getting
-     * this wrong hides every interface that has a default method, {@code Comparator} included.
+     * both {@link Flag#Abstract} and {@link Flag#Default}, while sources derived from bytecode — where
+     * {@code default} is not an access flag — mark it with neither. Both conventions do mark genuinely abstract
+     * methods {@link Flag#Abstract}, so require that positive signal rather than inferring abstractness
+     * from the absence of {@link Flag#Default}: an interface whose methods are all {@code default} is not
+     * functional, and a lambda in its place does not compile.
      */
-    private static boolean isAbstract(JavaType.Method method, boolean marksAbstract) {
-        return !method.hasFlags(Flag.Default) && !method.hasFlags(Flag.Static) &&
-               !method.hasFlags(Flag.Private) &&
-               (!marksAbstract || method.hasFlags(Flag.Abstract));
+    private static boolean isConcrete(JavaType.Method method) {
+        return !method.hasFlags(Flag.Abstract) || method.hasFlags(Flag.Default) ||
+                method.hasFlags(Flag.Static) || method.hasFlags(Flag.Private);
     }
 
     private static void collectAbstractMethods(JavaType.FullyQualified type,
@@ -439,9 +439,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         if (!visited.add(type.getFullyQualifiedName())) {
             return;
         }
-        boolean marksAbstract = type.getMethods().stream().anyMatch(m -> m.hasFlags(Flag.Abstract));
         for (JavaType.Method method : type.getMethods()) {
-            if (!isAbstract(method, marksAbstract) || overridesObjectMethod(method)) {
+            if (isConcrete(method) || overridesObjectMethod(method)) {
                 continue;
             }
             // Keyed by name and arity so a subinterface redeclaring an inherited method counts once.
@@ -720,7 +719,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             return null;
         }
         for (JavaType.Method method : fullyQualified.getMethods()) {
-            if (method.hasFlags(Flag.Default) || method.hasFlags(Flag.Static)) {
+            if (isConcrete(method)) {
                 continue;
             }
             if (sam != null) {
