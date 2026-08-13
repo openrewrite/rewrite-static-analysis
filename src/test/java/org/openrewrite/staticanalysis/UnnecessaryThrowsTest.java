@@ -332,6 +332,163 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void retainJavadocThrowsForRetainedException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * @throws FileNotFoundException never actually thrown
+                   * @throws InterruptedException when interrupted while sleeping
+                   */
+                  private void changed() throws FileNotFoundException, InterruptedException {
+                      Thread.sleep(1);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * @throws InterruptedException when interrupted while sleeping
+                   */
+                  private void changed() throws InterruptedException {
+                      Thread.sleep(1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocExceptionTag() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @exception FileNotFoundException when the file is missing
+                   */
+                  static void changed() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * Does a thing.
+                   */
+                  static void changed() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocThrowsWithMultiLineDescription() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @param name the name
+                   * @throws FileNotFoundException when the file is missing,
+                   *         which cannot actually happen here
+                   */
+                  private void changed(String name) throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @param name the name
+                   */
+                  private void changed(String name) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocEntirelyWhenOnlyThrowsRemains() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * @throws FileNotFoundException when the file is missing
+                   */
+                  private void changed() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  private void changed() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocThrowsOnAnnotatedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @throws FileNotFoundException when the file is missing
+                   */
+                  @Deprecated
+                  private void changed() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * Does a thing.
+                   */
+                  @Deprecated
+                  private void changed() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1298")
     @Test
     void doNotRemoveExceptionCoveringOtherExceptions() {
