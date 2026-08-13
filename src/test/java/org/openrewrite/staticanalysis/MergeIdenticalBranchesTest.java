@@ -269,6 +269,7 @@ class MergeIdenticalBranchesTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void mergeIdenticalBranchesTypeScript() {
         rewriteRun(
           //language=typescript

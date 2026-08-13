@@ -780,6 +780,7 @@ class DefaultComesLastTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void doNotChangeNonJavaLanguages() {
         rewriteRun(
           typescript(

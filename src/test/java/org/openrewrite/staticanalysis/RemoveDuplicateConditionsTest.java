@@ -235,6 +235,7 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void removeDuplicateElseIfTypeScript() {
         rewriteRun(
           //language=typescript

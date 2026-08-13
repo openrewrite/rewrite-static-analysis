@@ -297,6 +297,7 @@ class CollapsibleIfStatementsTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void mergeNestedIfsTypeScript() {
         rewriteRun(
           //language=typescript

@@ -300,6 +300,7 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
     }
 
     @Test
+    @RequiresJavaScriptRpc
     void simplifyLogicalAndTypeScript() {
         rewriteRun(
           //language=typescript
