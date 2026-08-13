@@ -186,7 +186,7 @@ public class UnnecessaryThrows extends Recipe {
                 Cursor parent = getCursor().getParentTreeCursor();
                 return m.withComments(ListUtils.map(m.getComments(), c -> {
                     if (c instanceof Javadoc.DocComment) {
-                        return (Comment) new RemoveThrowsTagVisitor(removed).visitNonNull((Javadoc.DocComment) c, ctx, parent);
+                        return (Comment) new RemoveThrowsTagVisitor(removed).visit((Javadoc.DocComment) c, ctx, parent);
                     }
                     return c;
                 }));
