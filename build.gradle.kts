@@ -1,7 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
 import java.io.InputStream
-import org.gradle.process.CommandLineArgumentProvider
 import org.gradle.process.ExecOperations
 import org.gradle.kotlin.dsl.support.serviceOf
 
@@ -58,16 +57,11 @@ dependencies {
 // into the same `~/.npm/_npx` directory, and the resulting overlap leaves the package half-written, so
 // the tests fail with "RPC process shut down early". Installing once up front keeps every spawn a
 // cache hit.
-//
-// The marker is present once that install succeeded and the tests can spawn the package, and absent
-// when it did not happen, whether for a missing npx or a version npm does not have.
-val javaScriptRpcMarker = layout.buildDirectory.file("tmp/warmJavaScriptRpcCache/version.txt")
-
 val warmJavaScriptRpcCache by tasks.registering {
     description = "Installs the npm package that the JavaScript RPC tests spawn, so they never race on a cold npx cache."
     val rewriteJavaScriptJars = configurations.named("testRuntimeClasspath")
         .map { classpath -> classpath.filter { it.name.startsWith("rewrite-javascript-") } }
-    val marker = javaScriptRpcMarker
+    val marker = layout.buildDirectory.file("tmp/warmJavaScriptRpcCache/version.txt")
     val npx = if (System.getProperty("os.name").lowercase().contains("windows")) "npx.cmd" else "npx"
     val execOperations = serviceOf<ExecOperations>()
 
@@ -115,13 +109,6 @@ val warmJavaScriptRpcCache by tasks.registering {
 tasks.withType<Test> {
     jvmArgs("-Xmx1g", "-Xms512m")
     dependsOn(warmJavaScriptRpcCache)
-    // A published rewrite-javascript snapshot pins an exact @openrewrite/rewrite version, and the npm
-    // release of that version can lag the Maven one, leaving nothing for the RPC process to run. Tests
-    // annotated with @RequiresJavaScriptRpc skip rather than fail the build over that gap upstream.
-    val marker = javaScriptRpcMarker
-    jvmArgumentProviders.add(CommandLineArgumentProvider {
-        listOf("-DjavaScriptRpcAvailable=${marker.get().asFile.isFile}")
-    })
 }
 
 tasks.withType<JavaCompile> {

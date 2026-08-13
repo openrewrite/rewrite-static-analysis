@@ -240,7 +240,6 @@ class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
     }
 
     @Test
-    @RequiresJavaScriptRpc
     void removeOverwrittenMapSetTypeScript() {
         rewriteRun(
           //language=typescript
