@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 class WhileInsteadOfForTest implements RewriteTest {
@@ -67,6 +68,28 @@ class WhileInsteadOfForTest implements RewriteTest {
                   int m() {
                       for (;;) {
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void replaceWithWhileInLanguagesThatHaveWhile() {
+        rewriteRun(
+          groovy(
+            """
+              def test() {
+                  for (; 1 == 2 ;) {
+                      println("i'm going to say hi a lot")
+                  }
+              }
+              """,
+            """
+              def test() {
+                  while (1 == 2) {
+                      println("i'm going to say hi a lot")
                   }
               }
               """

@@ -17,11 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.staticanalysis.go.GoFileChecker;
 
 import java.util.Set;
 
@@ -45,7 +47,7 @@ public class WhileInsteadOfFor extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new GoFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
                 if (forLoop.getControl().getInit().get(0) instanceof J.Empty &&
@@ -57,6 +59,6 @@ public class WhileInsteadOfFor extends Recipe {
                 }
                 return super.visitForLoop(forLoop, ctx);
             }
-        };
+        });
     }
 }
