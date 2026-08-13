@@ -1373,7 +1373,6 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
     }
 
     @Nested
-    @RequiresJavaScriptRpc
     class Typescript {
         @Test
         void noChange() {
