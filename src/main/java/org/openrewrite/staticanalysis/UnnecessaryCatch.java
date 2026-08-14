@@ -203,10 +203,13 @@ public class UnnecessaryCatch extends Recipe {
                 // For example, if IOException is thrown, don't remove catch for ZipException
                 Set<JavaType> toKeep = new HashSet<>();
                 for (JavaType caughtException : unnecessaryExceptions) {
-                    if (isGenericTypeRemovableByOption(caughtException)) {
-                        continue;
-                    }
+                    // `Exception` and `Throwable` are only removable by option because they also cover
+                    // unchecked exceptions; any checked exception they cover still has to be caught.
+                    boolean checkedOnly = isGenericTypeRemovableByOption(caughtException);
                     for (JavaType thrownException : thrownExceptions) {
+                        if (checkedOnly && !requiresCatching(thrownException)) {
+                            continue;
+                        }
                         if (TypeUtils.isAssignableTo(thrownException, caughtException) ||
                                 TypeUtils.isAssignableTo(caughtException, thrownException)) {
                             toKeep.add(caughtException);
@@ -217,6 +220,16 @@ public class UnnecessaryCatch extends Recipe {
                 unnecessaryExceptions.removeAll(toKeep);
 
                 return unnecessaryExceptions;
+            }
+
+            /**
+             * Unlike {@link #isCheckedException(JavaType)} this also covers {@code Exception} and
+             * {@code Throwable} themselves, as those too have to be caught or declared when thrown.
+             */
+            private boolean requiresCatching(JavaType type) {
+                return TypeUtils.isAssignableTo(JAVA_LANG_THROWABLE, type) &&
+                        !TypeUtils.isAssignableTo(JAVA_LANG_RUNTIME_EXCEPTION, type) &&
+                        !TypeUtils.isAssignableTo(JAVA_LANG_ERROR, type);
             }
 
             private boolean isGenericTypeRemovableByOption(JavaType type) {

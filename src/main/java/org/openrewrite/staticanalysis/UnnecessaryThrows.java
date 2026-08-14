@@ -167,7 +167,9 @@ public class UnnecessaryThrows extends Recipe {
                                 return super.visitMethodInvocation(invocation, ctx);
                             }
                         });
-                        doAfterVisit(new UnnecessaryCatch(true, false).getVisitor());
+                        // Only catches that no longer compile are removed; `catch (Exception e)` and
+                        // `catch (Throwable t)` remain valid, and removing those would alter behavior.
+                        doAfterVisit(new UnnecessaryCatch(false, false).getVisitor());
                     }
                 }
 
