@@ -716,4 +716,83 @@ class UnnecessaryThrowsTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void retainCatchOfExceptionInUnrelatedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;
+              import java.io.IOException;
+
+              class A {
+                  private void handleException() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() throws IOException {
+                  }
+              }
+              """,
+            """
+              import java.io.FileInputStream;
+
+              class A {
+                  private void handleException() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void retainCatchOfExceptionAroundUncheckedExceptions() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class A {
+                  private void handleException() {
+                      try {
+                          throw new IllegalStateException();
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() throws IOException {
+                  }
+              }
+              """,
+            """
+              class A {
+                  private void handleException() {
+                      try {
+                          throw new IllegalStateException();
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() {
+                  }
+              }
+              """
+          )
+        );
+    }
 }
