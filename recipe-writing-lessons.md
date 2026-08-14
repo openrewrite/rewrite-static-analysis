@@ -216,6 +216,7 @@ public Set<String> getTags() {
 
 ### Accurate time estimates
 Provide realistic time estimates for manual fixes. When implementing SonarQube rules, use the same time estimate that is on the SonarQube definition.
+Leave the estimate off entirely when it is the framework default of 5 minutes; there is no reason to restate it.
 ```java
 @Override
 public Duration getEstimatedEffortPerOccurrence() {
@@ -353,3 +354,44 @@ scoping construct `JavaType` and fails to compile ("scoping construct cannot be 
 type-use annotation"), which crashes the whole Lombok annotation-processing round and produces a
 misleading cascade of "does not override abstract method getDescription()" errors across every
 Lombok-annotated recipe.
+
+## Rewriting a loop into a differently-shaped loop (UseMapEntrySetIteration)
+
+Converting `for (K key : map.keySet())` into `for (Map.Entry<K, V> entry : map.entrySet())` means replacing
+the loop variable with two accessor calls. A few things made this tractable:
+
+- **Let a generated template body supply the typed prototypes.** Rather than hand-building a
+  `JavaType.Method` for `getKey()`/`getValue()`, build the replacement loop with a template whose body is
+  `entry.getKey(); entry.getValue();` and lift those two `J.MethodInvocation`s out of the generated block.
+  They come back fully attributed from the real parser, ready to be dropped into the original body, which is
+  then re-attached with `withBody(..)` so its formatting survives untouched.
+- **Give a prototype a new id at every use.** Reusing one node in several places puts duplicate ids in the
+  tree; `new RandomizeIdVisitor<>().visit(prototype, 0)` per site avoids it.
+- **JavaTemplate only resolves type names it can see on the classpath.** A simple name that resolves through
+  the file's own package (or a wildcard import) comes back as `JavaType.Unknown`, which trips
+  `LST contains missing or invalid type information` in tests. Build the template from fully qualified names,
+  then swap the resulting type arguments back to the `TypeTree`s the source already uses (the loop variable's
+  type expression, the declared type of `V v = map.get(k)`, or any naming of the type elsewhere in the same
+  method). That keeps the types correct and the printed name as short as the surrounding code —
+  `ShortenFullyQualifiedTypeReferences` shortens imported types but leaves same-package and
+  wildcard-imported ones fully qualified.
+- **Derive `K` and `V` from the invocations, not the map's declared type.** `keySet()`'s return type is
+  `Set<K>` and `get(..)`'s method type returns `V` as the compiler resolved them, so a subtype like
+  `class Config extends HashMap<String, String>` is handled without walking supertypes, and a raw map falls
+  out as "types could not be determined" instead of silently becoming `Object`.
+- **Visit nested loops first (`super.visitForEachLoop` before rewriting).** The inner loop then claims
+  `entry`, and the outer one sees that name taken when it scans its own (already rewritten) body, so
+  `VariableNameUtils.generateVariableName` plus a scan of the body yields `entry` / `entry1` rather than a
+  collision.
+- **Data tables only accept rows in the first cycle** (`DataTable#allowWritingInThisCycle`), so a recipe that
+  reports both the sites it changed and the sites it declined needs no bookkeeping to avoid duplicate rows
+  when a later cycle revisits an unchanged site.
+
+## Making a new recipe visible to the Moderne CLI
+
+`mod run --recipe <name>` resolves against the marketplace built from the recipe JAR's
+`META-INF/rewrite/recipes.csv`, not from a classpath scan. A recipe that `Environment.builder().scanRuntimeClasspath(..)`
+finds will still fail with `Unable to find recipe` until `./gradlew recipeCsvGenerate` adds it to that file
+(run it on its own; it conflicts with `publishToMavenLocal` in the same invocation). Publish under a version
+of your own (`-Prelease.version=2.99.1-SNAPSHOT`) so the CLI resolves the local jar rather than the CI
+snapshot of the same coordinates, then `mod config recipes jar install org.openrewrite.recipe:rewrite-static-analysis:<that version>`.
