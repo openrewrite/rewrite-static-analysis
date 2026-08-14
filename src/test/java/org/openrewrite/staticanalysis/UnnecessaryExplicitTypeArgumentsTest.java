@@ -358,6 +358,57 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/783")
+    @Test
+    void retainsWitnessOnNoArgArgumentToMethodWithDependentTypeParameters() {
+        // naturalOrder() takes no arguments, so T is only inferable from lexicographical's target type.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              class Test {
+                  static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
+                      return null;
+                  }
+
+                  static final Comparator<Iterable<Integer>> COMPARATOR =
+                      lexicographical(Comparator.<Integer>naturalOrder());
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/783")
+    @Test
+    void retainsWitnessWhenEnclosingMethodHasDependentTypeParameters() {
+        // S depends on T, so lexicographical resolves both jointly against its target type. Without the
+        // witness, U infers as Comparable rather than Integer and the enclosing call no longer compiles.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              class Test {
+                  static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
+                      return null;
+                  }
+
+                  static <U> Comparator<U> reverse(Comparator<U> comparator) {
+                      return null;
+                  }
+
+                  static final Comparator<Iterable<Integer>> COMPARATOR =
+                      lexicographical(Test.<Integer>reverse(Comparator.naturalOrder()));
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void removesWitnessOnInstanceMethodArgumentWhenInferableFromOwnArguments() {
         // Unlike above, T is inferable from identity()'s own argument, so it's still removable.

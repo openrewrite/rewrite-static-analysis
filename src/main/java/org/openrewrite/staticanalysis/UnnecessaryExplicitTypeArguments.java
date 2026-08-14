@@ -22,8 +22,10 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
@@ -70,6 +72,13 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                         }
                         // Cannot remove type parameters if it would introduce ambiguity about which method should be called
                         if (enclosingMethod.getMethodType() == null) {
+                            return m;
+                        }
+                        // The enclosing method's type parameters may be interdependent (e.g. `<T, S extends T>`).
+                        // Inference then resolves them jointly against the target type, so this argument's witness
+                        // can be load-bearing even though this call's own type variables are inferable from its
+                        // arguments. Retain it rather than reason about the enclosing method's inference.
+                        if (hasInterdependentTypeParameters(enclosingMethod.getMethodType())) {
                             return m;
                         }
                         if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
@@ -172,16 +181,44 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 if (declared == null) {
                     return false;
                 }
-                Set<String> returnTypeVariables = new HashSet<>();
-                collectGenericTypeVariableNames(declared.getReturnType(), returnTypeVariables);
+                Map<String, JavaType.GenericTypeVariable> returnTypeVariables = new HashMap<>();
+                collectGenericTypeVariables(declared.getReturnType(), returnTypeVariables);
                 if (returnTypeVariables.isEmpty()) {
                     return true;
                 }
-                Set<String> parameterTypeVariables = new HashSet<>();
+                Map<String, JavaType.GenericTypeVariable> parameterTypeVariables = new HashMap<>();
                 for (JavaType paramType : declared.getParameterTypes()) {
-                    collectGenericTypeVariableNames(paramType, parameterTypeVariables);
+                    collectGenericTypeVariables(paramType, parameterTypeVariables);
                 }
-                return parameterTypeVariables.containsAll(returnTypeVariables);
+                return parameterTypeVariables.keySet().containsAll(returnTypeVariables.keySet());
+            }
+
+            private boolean hasInterdependentTypeParameters(JavaType.Method methodType) {
+                JavaType.Method declared = findDeclaredSignature(methodType);
+                if (declared == null) {
+                    return false;
+                }
+                Map<String, JavaType.GenericTypeVariable> typeVariables = new HashMap<>();
+                collectGenericTypeVariables(declared.getReturnType(), typeVariables);
+                for (JavaType paramType : declared.getParameterTypes()) {
+                    collectGenericTypeVariables(paramType, typeVariables);
+                }
+                for (Map.Entry<String, JavaType.GenericTypeVariable> typeVariable : typeVariables.entrySet()) {
+                    Set<String> boundNames = new HashSet<>();
+                    for (JavaType bound : typeVariable.getValue().getBounds()) {
+                        Map<String, JavaType.GenericTypeVariable> inBound = new HashMap<>();
+                        collectGenericTypeVariables(bound, inBound);
+                        boundNames.addAll(inBound.keySet());
+                    }
+                    // A self-referential F-bound such as `<E extends Enum<E>>` is not a dependency on
+                    // another type parameter, and is far too common to retain witnesses for.
+                    boundNames.remove(typeVariable.getKey());
+                    boundNames.retainAll(typeVariables.keySet());
+                    if (!boundNames.isEmpty()) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private JavaType.@Nullable Method findDeclaredSignature(JavaType.Method methodType) {
@@ -202,15 +239,15 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 return match;
             }
 
-            private void collectGenericTypeVariableNames(@Nullable JavaType type, Set<String> names) {
+            private void collectGenericTypeVariables(@Nullable JavaType type, Map<String, JavaType.GenericTypeVariable> into) {
                 if (type instanceof JavaType.GenericTypeVariable) {
-                    names.add(((JavaType.GenericTypeVariable) type).getName());
+                    into.putIfAbsent(((JavaType.GenericTypeVariable) type).getName(), (JavaType.GenericTypeVariable) type);
                 } else if (type instanceof JavaType.Parameterized) {
                     for (JavaType typeParameter : ((JavaType.Parameterized) type).getTypeParameters()) {
-                        collectGenericTypeVariableNames(typeParameter, names);
+                        collectGenericTypeVariables(typeParameter, into);
                     }
                 } else if (type instanceof JavaType.Array) {
-                    collectGenericTypeVariableNames(((JavaType.Array) type).getElemType(), names);
+                    collectGenericTypeVariables(((JavaType.Array) type).getElemType(), into);
                 }
             }
         });
