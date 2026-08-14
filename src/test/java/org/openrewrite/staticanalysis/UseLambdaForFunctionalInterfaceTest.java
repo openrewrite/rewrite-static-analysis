@@ -30,7 +30,6 @@ import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
 import java.util.EnumSet;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
@@ -1662,11 +1661,9 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    /**
-     * Rewrite the type attribution the way a source derived from bytecode records it: `default` is not an
-     * access flag, so a default method arrives carrying neither {@link Flag#Default} nor {@link Flag#Abstract},
-     * where javac marks it with both.
-     */
+    /// Rewrite the type attribution the way a source derived from bytecode records it: `default` is not an
+    /// access flag, so a default method arrives carrying neither [Flag#Default] nor [Flag#Abstract],
+    /// where javac marks it with both.
     private static J.CompilationUnit asBytecodeAttribution(J.CompilationUnit cu) {
         return (J.CompilationUnit) new JavaIsoVisitor<Integer>() {
             @Override
@@ -1675,7 +1672,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                 if (type != null) {
                     for (JavaType.Method method : type.getMethods()) {
                         if (method.hasFlags(Flag.Default)) {
-                            Set<Flag> flags = EnumSet.copyOf(method.getFlags());
+                            var flags = EnumSet.copyOf(method.getFlags());
                             flags.removeAll(EnumSet.of(Flag.Default, Flag.Abstract));
                             // Mutated in place because every reference to the interface shares this instance.
                             method.unsafeSet(method.getName(), Flag.flagsToBitMap(flags),

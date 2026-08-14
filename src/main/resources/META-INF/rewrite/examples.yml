@@ -2790,6 +2790,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveDuplicateAnnotations
+examples:
+- description: '`RemoveDuplicateAnnotationsTest#removeDuplicateAnnotationOnMethodParameter`'
+  parameters:
+  - org.jspecify.annotations.*
+  sources:
+  - before: |
+      import org.jspecify.annotations.Nullable;
+
+      class Foo {
+          public void add(@Nullable @org.jspecify.annotations.Nullable final String bar) {
+          }
+      }
+    after: |
+      import org.jspecify.annotations.Nullable;
+
+      class Foo {
+          public void add(@Nullable final String bar) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveDuplicateConditions
 examples:
 - description: '`RemoveDuplicateConditionsTest#removeDuplicateElseIf`'
