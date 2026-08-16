@@ -45,6 +45,11 @@ public class UsePortableNewlines extends Recipe {
     private static final int UNICODE_ESCAPE_HEX_DIGITS = 4;
     private static final int HEX_RADIX = 16;
     private static final int OCTAL_RADIX = 8;
+    private static final char BACKSLASH = '\\';
+    private static final char UNICODE_ESCAPE_MARKER = 'u';
+    private static final char NEWLINE_ESCAPE_LETTER = 'n';
+    private static final char LINE_FEED = '\n';
+    private static final char CARRIAGE_RETURN = '\r';
 
     private static final MethodMatcher STRING_FORMATTED = new MethodMatcher("java.lang.String formatted(..)");
 
@@ -109,9 +114,9 @@ public class UsePortableNewlines extends Recipe {
                 for (int i = 0; i < source.length();) {
                     int rawStart = i;
                     char translated = source.charAt(i++);
-                    if (translated == '\\') {
+                    if (translated == BACKSLASH) {
                         int hexStart = i;
-                        while (hexStart < source.length() && source.charAt(hexStart) == 'u') {
+                        while (hexStart < source.length() && source.charAt(hexStart) == UNICODE_ESCAPE_MARKER) {
                             hexStart++;
                         }
                         // JLS 3.3: a backslash starts a Unicode escape only when preceded by an even number of backslashes
@@ -125,7 +130,7 @@ public class UsePortableNewlines extends Recipe {
                         }
                     }
                     translatedSource.append(translated);
-                    translatedBackslashes = translated == '\\' ? translatedBackslashes + 1 : 0;
+                    translatedBackslashes = translated == BACKSLASH ? translatedBackslashes + 1 : 0;
                     rawStarts.add(rawStart);
                     rawEnds.add(i);
                 }
@@ -138,13 +143,13 @@ public class UsePortableNewlines extends Recipe {
                 int consecutiveBackslashes = 0;
                 for (int i = (textBlock ? TEXT_BLOCK_DELIMITER : STRING_DELIMITER).length(); i < translatedSource.length(); i++) {
                     char current = translatedSource.charAt(i);
-                    if (current == '\\') {
+                    if (current == BACKSLASH) {
                         consecutiveBackslashes++;
                         continue;
                     }
                     // An odd run of preceding backslashes means the current character is escaped
                     boolean escaped = consecutiveBackslashes % 2 == 1;
-                    if (current == 'n' && escaped) {
+                    if (current == NEWLINE_ESCAPE_LETTER && escaped) {
                         replacements.add(new int[]{rawStarts.get(i - 1), rawEnds.get(i)});
                         replacedNewlines.add(newlineIndex++);
                     } else if (escaped && isOctalDigit(current)) {
@@ -160,12 +165,12 @@ public class UsePortableNewlines extends Recipe {
                             digits++;
                             i++;
                         }
-                        if (octal == '\n') {
+                        if (octal == LINE_FEED) {
                             newlineIndex++;
                         }
-                    } else if (textBlock && (current == '\n' || current == '\r')) {
-                        boolean crlf = current == '\r' && i + 1 < translatedSource.length() &&
-                                translatedSource.charAt(i + 1) == '\n';
+                    } else if (textBlock && (current == LINE_FEED || current == CARRIAGE_RETURN)) {
+                        boolean crlf = current == CARRIAGE_RETURN && i + 1 < translatedSource.length() &&
+                                translatedSource.charAt(i + 1) == LINE_FEED;
                         if (openingTextBlockLine) {
                             openingTextBlockLine = false;
                         } else if (!escaped) {
@@ -188,7 +193,7 @@ public class UsePortableNewlines extends Recipe {
                     newlineIndex = 0;
                     for (int i = 0; i < value.length(); i++) {
                         char current = value.charAt(i);
-                        if (current == '\n' && replacedNewlines.contains(newlineIndex++)) {
+                        if (current == LINE_FEED && replacedNewlines.contains(newlineIndex++)) {
                             transformedValue.append(PORTABLE_NEWLINE);
                         } else {
                             transformedValue.append(current);
