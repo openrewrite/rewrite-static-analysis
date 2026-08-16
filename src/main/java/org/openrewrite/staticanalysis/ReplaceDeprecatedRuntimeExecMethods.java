@@ -128,6 +128,8 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
         return literal.getValue() != null && (unicodeEscapes == null || unicodeEscapes.isEmpty());
     }
 
+    private static final String TEMPLATE_INTERPOLATION_START = "#{";
+
     private static String toStringArguments(List<String> cmds) {
         StringBuilder sb = new StringBuilder();
         for (String token : cmds) {
@@ -138,9 +140,10 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
             for (int i = 0; i < token.length(); i++) {
                 char character = token.charAt(i);
                 if (character == '"' || character == '\\') {
+                    // Prefix a backslash so the character survives inside the generated string literal
                     sb.append('\\').append(character);
                 } else if (Character.isISOControl(character) ||
-                        (character == '#' && i + 1 < token.length() && token.charAt(i + 1) == '{')) {
+                        token.startsWith(TEMPLATE_INTERPOLATION_START, i)) {
                     // Control characters stay legible rather than becoming invisible bytes, and `#{` needs escaping
                     // because this text is also `JavaTemplate` source
                     sb.append(unicodeEscape(character));
