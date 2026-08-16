@@ -122,10 +122,7 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
         });
     }
 
-    /**
-     * When the parser records unicode escapes it stores the undecoded source in the value as well, so the value read
-     * back is not the command that would be executed.
-     */
+    // getValue() is not fully decoded when the literal contains Unicode escapes.
     private static boolean isDecoded(J.Literal literal) {
         List<J.Literal.UnicodeEscape> unicodeEscapes = literal.getUnicodeEscapes();
         return literal.getValue() != null && (unicodeEscapes == null || unicodeEscapes.isEmpty());
@@ -139,16 +136,16 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
             }
             sb.append('"');
             for (int i = 0; i < token.length(); i++) {
-                char c = token.charAt(i);
-                if (c == '"' || c == '\\') {
-                    sb.append('\\').append(c);
-                } else if (c < ' ' || (c >= 0x7f && c <= 0x9f) ||
-                        (c == '#' && i + 1 < token.length() && token.charAt(i + 1) == '{')) {
+                char character = token.charAt(i);
+                if (character == '"' || character == '\\') {
+                    sb.append('\\').append(character);
+                } else if (character < ' ' || (character >= 0x7f && character <= 0x9f) ||
+                        (character == '#' && i + 1 < token.length() && token.charAt(i + 1) == '{')) {
                     // Control characters stay legible rather than becoming invisible bytes, and `#{` needs escaping
                     // because this text is also `JavaTemplate` source
-                    sb.append(String.format("\\u%04x", (int) c));
+                    sb.append(String.format("\\u%04x", (int) character));
                 } else {
-                    sb.append(c);
+                    sb.append(character);
                 }
             }
             sb.append('"');

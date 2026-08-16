@@ -107,7 +107,7 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     }
 
     @Test
-    void allTokenizerDelimitersInRawString() {
+    void tokenizeRawStrings() {
         rewriteRun(
           version(
             //language=java
@@ -118,89 +118,8 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                 class A {
                     void method(Runtime runtime) throws IOException {
                         runtime.exec(" \\tls\\n-a \\r\\r -l\\f-h ");
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-
-                class A {
-                    void method(Runtime runtime) throws IOException {
-                        runtime.exec(new String[]{"ls", "-a", "-l", "-h"});
-                    }
-                }
-                """
-            ), 18)
-        );
-    }
-
-    @Test
-    void quotesAndBackslashesInRawString() {
-        rewriteRun(
-          version(
-            //language=java
-            java(
-              """
-                import java.io.IOException;
-
-                class A {
-                    void method(Runtime runtime) throws IOException {
                         runtime.exec("echo \\"a b\\" C:\\\\dir");
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-
-                class A {
-                    void method(Runtime runtime) throws IOException {
-                        runtime.exec(new String[]{"echo", "\\"a", "b\\"", "C:\\\\dir"});
-                    }
-                }
-                """
-            ), 18)
-        );
-    }
-
-    @Test
-    void controlCharactersInRawString() {
-        rewriteRun(
-          version(
-            //language=java
-            java(
-              """
-                import java.io.IOException;
-
-                class A {
-                    void method(Runtime runtime) throws IOException {
                         runtime.exec("echo a\\u000bb \\u007f");
-                    }
-                }
-                """,
-              """
-                import java.io.IOException;
-
-                class A {
-                    void method(Runtime runtime) throws IOException {
-                        runtime.exec(new String[]{"echo", "a\\u000bb", "\\u007f"});
-                    }
-                }
-                """
-            ), 18)
-        );
-    }
-
-    @Test
-    void templatePlaceholderInRawString() {
-        rewriteRun(
-          version(
-            //language=java
-            java(
-              """
-                import java.io.IOException;
-
-                class A {
-                    void method(Runtime runtime) throws IOException {
                         runtime.exec("sed -e s/#{a}/b/ f.txt");
                     }
                 }
@@ -210,6 +129,9 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
 
                 class A {
                     void method(Runtime runtime) throws IOException {
+                        runtime.exec(new String[]{"ls", "-a", "-l", "-h"});
+                        runtime.exec(new String[]{"echo", "\\"a", "b\\"", "C:\\\\dir"});
+                        runtime.exec(new String[]{"echo", "a\\u000bb", "\\u007f"});
                         runtime.exec(new String[]{"sed", "-e", "s/\\u0023{a}/b/", "f.txt"});
                     }
                 }
