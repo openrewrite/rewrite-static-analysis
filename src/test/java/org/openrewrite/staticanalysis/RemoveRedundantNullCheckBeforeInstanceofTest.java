@@ -87,40 +87,25 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
         );
     }
 
-
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
     @Test
-    void doNotChangeWhenMethodInvocation() {
+    void doNotChangeWhenNullCheckedExpressionIsMethodInvocation() {
         rewriteRun(
           //language=java
           java(
             """
               class A {
-                  void foo() {
+                  void direct() {
                       if (getValue() != null && getValue() instanceof String) {
+                          System.out.println("String value");
+                      }
+                      if (null != getValue() && getValue() instanceof String) {
                           System.out.println("String value");
                       }
                   }
 
-                  String getValue() {
-                      return "test";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
-    @Test
-    void doNotChangeWhenMethodInvocationWithNullOnLeft() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void foo() {
-                      if (null != getValue() && getValue() instanceof String) {
+                  void chained(boolean enabled) {
+                      if (enabled && getValue() != null && getValue() instanceof String) {
                           System.out.println("String value");
                       }
                   }
@@ -154,29 +139,6 @@ class RemoveRedundantNullCheckBeforeInstanceofTest implements RewriteTest {
                       if (enabled && obj instanceof String) {
                           System.out.println("String value");
                       }
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
-    @Test
-    void doNotChangeWhenChainedConditionHasMethodInvocation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  void foo(boolean enabled) {
-                      if (enabled && getValue() != null && getValue() instanceof String) {
-                          System.out.println("String value");
-                      }
-                  }
-
-                  String getValue() {
-                      return "test";
                   }
               }
               """
