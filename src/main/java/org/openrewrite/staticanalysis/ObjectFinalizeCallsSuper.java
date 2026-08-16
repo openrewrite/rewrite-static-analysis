@@ -121,7 +121,7 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                                 mi.getSelect() instanceof J.Identifier &&
                                         "super".equals(((J.Identifier) mi.getSelect()).getSimpleName()) &&
                                         "finalize".equals(mi.getSimpleName()) &&
-                                        mi.getArguments().size() == 1 && mi.getArguments().get(0) instanceof J.Empty) {
+                                        hasNoArguments(mi)) {
                             exists.set(Boolean.TRUE);
                         }
                         return mi;
@@ -130,5 +130,10 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                 return hasSuperFinalize.get();
             }
         });
+    }
+
+    // An invocation with no arguments holds a single J.Empty element
+    private static boolean hasNoArguments(J.MethodInvocation mi) {
+        return mi.getArguments().size() == 1 && mi.getArguments().get(0) instanceof J.Empty;
     }
 }
