@@ -67,7 +67,7 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
     }
 
     private static class UnnecessaryAutoCloseableVisitor extends JavaIsoVisitor<ExecutionContext> {
-        // `AutoCloseable#close()` may have visible side effects when called twice; `Closeable#close()` may not
+        // Closeable requires close() to be idempotent; AutoCloseable does not make that guarantee.
         private static final MethodMatcher CLOSEABLE_CLOSE_METHOD_MATCHER = new MethodMatcher("java.io.Closeable close()", true);
 
         @Override
