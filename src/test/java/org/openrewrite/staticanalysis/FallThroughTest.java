@@ -452,6 +452,116 @@ class FallThroughTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/460")
+    @Test
+    void doNotAddBreakAfterGuardedEarlyExit() {
+        // Reduced from quarkus JavadocToAsciidocTransformer.appendEscapedAsciiDoc; the `]` case
+        // deliberately falls through to the shared escaping branch when not in inline macro mode.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void escape(String text, boolean inlineMacroMode) {
+                      StringBuilder sb = new StringBuilder();
+                      boolean escaping = false;
+                      for (int i = 0; i < text.length(); i++) {
+                          char ch = text.charAt(i);
+                          switch (ch) {
+                              case ']':
+                                  if (inlineMacroMode) {
+                                      sb.append("&#93;");
+                                      break;
+                                  }
+                              case '#':
+                              case '*':
+                                  if (!escaping) {
+                                      sb.append("++");
+                                      escaping = true;
+                                  }
+                                  sb.append(ch);
+                                  break;
+                              default:
+                                  sb.append(ch);
+                          }
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/460")
+    @Test
+    void doNotAddBreakAfterGuardedEarlyExitInsideBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void n(int i, boolean b) {
+                      switch (i) {
+                          case 0: {
+                              if (b) {
+                                  System.out.println("zero");
+                                  break;
+                              }
+                          }
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/460")
+    @Test
+    void addBreakWhenCodeFollowsGuardedEarlyExit() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class A {
+                  public void n(int i, boolean b) {
+                      switch (i) {
+                          case 0:
+                              if (b) {
+                                  break;
+                              }
+                              System.out.println("zero");
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """,
+            """
+              public class A {
+                  public void n(int i, boolean b) {
+                      switch (i) {
+                          case 0:
+                              if (b) {
+                                  break;
+                              }
+                              System.out.println("zero");
+                              break;
+                          case 1:
+                              System.out.println("one");
+                              break;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void addBreaksFallthroughCasesComprehensive() {
         rewriteRun(
