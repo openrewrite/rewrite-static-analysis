@@ -139,7 +139,7 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                 char character = token.charAt(i);
                 if (character == '"' || character == '\\') {
                     sb.append('\\').append(character);
-                } else if (character < ' ' || (character >= 0x7f && character <= 0x9f) ||
+                } else if (Character.isISOControl(character) ||
                         (character == '#' && i + 1 < token.length() && token.charAt(i + 1) == '{')) {
                     // Control characters stay legible rather than becoming invisible bytes, and `#{` needs escaping
                     // because this text is also `JavaTemplate` source
