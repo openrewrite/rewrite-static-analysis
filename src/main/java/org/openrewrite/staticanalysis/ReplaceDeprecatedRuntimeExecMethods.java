@@ -143,7 +143,7 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                         (character == '#' && i + 1 < token.length() && token.charAt(i + 1) == '{')) {
                     // Control characters stay legible rather than becoming invisible bytes, and `#{` needs escaping
                     // because this text is also `JavaTemplate` source
-                    sb.append(String.format("\\u%04x", (int) character));
+                    sb.append(unicodeEscape(character));
                 } else {
                     sb.append(character);
                 }
@@ -151,5 +151,10 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
             sb.append('"');
         }
         return sb.toString();
+    }
+
+    // Formats the character as a Java Unicode escape, `\u0007` for the bell character
+    private static String unicodeEscape(char character) {
+        return String.format("\\u%04x", (int) character);
     }
 }
