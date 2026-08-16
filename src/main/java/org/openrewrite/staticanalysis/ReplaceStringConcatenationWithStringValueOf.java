@@ -79,10 +79,12 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
                 while (right instanceof J.Parentheses && ((J.Parentheses<?>) right).getTree() instanceof Expression) {
                     right = (Expression) ((J.Parentheses<?>) right).getTree();
                 }
-                JavaType.Array arrayType = TypeUtils.asArray(binary.getRight().getType());
+                JavaType rightType = right.getType();
+                JavaType.Array arrayType = TypeUtils.asArray(rightType);
                 if (J.Literal.isLiteralValue(binary.getLeft(), "") &&
                         binary.getOperator() == J.Binary.Type.Addition &&
-                        !TypeUtils.isString(binary.getRight().getType()) &&
+                        rightType != null &&
+                        !TypeUtils.isString(rightType) &&
                         // `String.valueOf(null)` selects the `char[]` overload and throws, while `"" + null` yields "null"
                         !J.Literal.isLiteralValue(right, null) &&
                         // Concatenation renders a `char[]` like any `Object`; `String.valueOf(char[])` renders its

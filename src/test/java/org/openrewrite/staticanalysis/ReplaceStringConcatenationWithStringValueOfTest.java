@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
@@ -389,6 +390,23 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
                           String d = "" + (char[]) o;
                           String e = "" + (b ? field : other);
                           String f = "" + (other);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeWhenOperandTypeIsMissing() {
+            rewriteRun(
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  class Test {
+                      String method(Unresolved holder) {
+                          return "" + holder.chars();
                       }
                   }
                   """
