@@ -30,6 +30,7 @@ dependencies {
     provided("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
     provided("org.openrewrite:rewrite-python:${rewriteVersion}")
+    provided("org.openrewrite:rewrite-go:${rewriteVersion}")
 
     annotationProcessor("org.openrewrite:rewrite-templating:${rewriteVersion}")
     implementation("org.openrewrite:rewrite-templating:${rewriteVersion}")
