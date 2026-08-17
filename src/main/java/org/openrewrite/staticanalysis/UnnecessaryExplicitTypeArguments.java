@@ -22,11 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 

@@ -330,7 +330,9 @@ public class UseMapEntrySetIteration extends Recipe {
         private final JavaType.Variable loopVar;
 
         final List<J.MethodInvocation> getCalls = new ArrayList<>();
+
         @Nullable TypeTree valueTypeExpression;
+
         boolean getWithOtherKey;
         boolean mapModified;
         boolean loopVarReassigned;

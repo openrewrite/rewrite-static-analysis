@@ -5138,6 +5138,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseMapEntrySetIteration
+examples:
+- description: '`UseMapEntrySetIterationTest#keySetIterationWithGet`'
+  sources:
+  - before: |
+      import java.util.Map;
+
+      class Test {
+          void test(Map<String, Integer> map) {
+              for (String key : map.keySet()) {
+                  Integer w = map.get(key);
+                  System.out.println(key + "=" + w);
+              }
+          }
+      }
+    after: |
+      import java.util.Map;
+
+      class Test {
+          void test(Map<String, Integer> map) {
+              for (Map.Entry<String, Integer> entry : map.entrySet()) {
+                  Integer w = entry.getValue();
+                  System.out.println(entry.getKey() + "=" + w);
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UsePortableNewlines
 examples:
 - description: '`UsePortableNewlinesTest#replaceNewlineInPrintfWithPrintStream`'
