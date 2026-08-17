@@ -23,6 +23,7 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.AnnotationMatcher;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
@@ -135,10 +136,9 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
             }
 
             private boolean hasSemanticAnnotation(J.MethodDeclaration method) {
-                AtomicBoolean found = new AtomicBoolean();
-                new JavaVisitor<AtomicBoolean>() {
+                return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
-                    public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean ignored) {
+                    public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean found) {
                         if (!OVERRIDE.matches(annotation)) {
                             found.set(true);
                         }
@@ -146,11 +146,10 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     }
 
                     @Override
-                    public J.Block visitBlock(J.Block block, AtomicBoolean ignored) {
+                    public J.Block visitBlock(J.Block block, AtomicBoolean found) {
                         return block;
                     }
-                }.visit(method, found);
-                return found.get();
+                }.reduce(method, new AtomicBoolean()).get();
             }
 
             private boolean argumentsMatchParameters(List<Statement> parameters, List<Expression> arguments) {

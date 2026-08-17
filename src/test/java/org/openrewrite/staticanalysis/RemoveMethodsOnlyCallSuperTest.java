@@ -419,29 +419,47 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
     }
 
     @Test
-    void handlesStrictfpAccordingToTheSuperMethod() {
+    void doNotChangeStrictfpMethod() {
         rewriteRun(
           //language=java
           java(
             """
-              class OrdinaryParent {
+              class Parent {
                   void foo() {
                   }
               }
-
-              class OrdinaryChild extends OrdinaryParent {
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
                   @Override
                   strictfp void foo() {
                       super.foo();
                   }
               }
+              """
+          )
+        );
+    }
 
-              class StrictParent {
+    @Test
+    void removeStrictfpMethodWhenSuperIsStrictfpToo() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
                   strictfp void foo() {
                   }
               }
-
-              class StrictChild extends StrictParent {
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
                   @Override
                   strictfp void foo() {
                       super.foo();
@@ -449,24 +467,7 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
               }
               """,
             """
-              class OrdinaryParent {
-                  void foo() {
-                  }
-              }
-
-              class OrdinaryChild extends OrdinaryParent {
-                  @Override
-                  strictfp void foo() {
-                      super.foo();
-                  }
-              }
-
-              class StrictParent {
-                  strictfp void foo() {
-                  }
-              }
-
-              class StrictChild extends StrictParent {
+              class Child extends Parent {
               }
               """
           )
