@@ -382,6 +382,99 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
     }
 
     @Test
+    void doNotChangeMethodsWithSignatureAnnotations() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.annotation.ElementType;
+              import java.lang.annotation.Target;
+
+              @Target({ElementType.PARAMETER, ElementType.TYPE_USE})
+              @interface Nullable {}
+
+              class Parent {
+                  void foo(String s) {
+                  }
+
+                  String[] bar() {
+                      return new String[0];
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  void foo(@Nullable String s) {
+                      super.foo(s);
+                  }
+
+                  @Override
+                  String @Nullable [] bar() {
+                      return super.bar();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeStrictfpMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  strictfp void foo() {
+                      super.foo();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeStrictfpMethodWhenSuperIsStrictfpToo() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  strictfp void foo() {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  strictfp void foo() {
+                      super.foo();
+                  }
+              }
+              """,
+            """
+              class Child extends Parent {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeMethodThatWidensVisibility() {
         rewriteRun(
           //language=java
