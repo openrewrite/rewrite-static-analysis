@@ -228,7 +228,9 @@ public class UseDiamondOperator extends Recipe {
             if (paramTypes != null && (java9 || newClass.getBody() == null) && newClass.getClazz() instanceof J.ParameterizedType) {
                 J.ParameterizedType newClassType = (J.ParameterizedType) newClass.getClazz();
                 if (newClassType.getTypeParameters() != null) {
-                    if (paramTypes.size() != newClassType.getTypeParameters().size() || hasAnnotations(newClassType)) {
+                    if (paramTypes.size() != newClassType.getTypeParameters().size() ||
+                            hasAnnotations(newClassType) ||
+                            breaksNestedTypeInference(newClass)) {
                         return newClass;
                     }
                     for (int i = 0; i < paramTypes.size(); i++) {
@@ -243,6 +245,71 @@ public class UseDiamondOperator extends Recipe {
                 }
             }
             return newClass;
+        }
+
+        /**
+         * A recursively bounded type parameter (such as {@code T extends Comparable<T>}) imposes an equality
+         * constraint that javac cannot solve when a constructor argument is itself an expression awaiting
+         * inference, as both would have to be inferred in the same round.
+         */
+        private static boolean breaksNestedTypeInference(J.NewClass newClass) {
+            JavaType.Parameterized type = TypeUtils.asParameterized(newClass.getType());
+            if (type == null) {
+                return false;
+            }
+            boolean recursivelyBounded = false;
+            for (JavaType declared : type.getType().getTypeParameters()) {
+                if (declared instanceof JavaType.GenericTypeVariable) {
+                    JavaType.GenericTypeVariable generic = (JavaType.GenericTypeVariable) declared;
+                    for (JavaType bound : generic.getBounds()) {
+                        if (mentionsTypeVariable(bound, generic.getName(), 0)) {
+                            recursivelyBounded = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!recursivelyBounded) {
+                return false;
+            }
+            for (Expression argument : newClass.getArguments()) {
+                if (argument instanceof J.MethodInvocation) {
+                    JavaType.Method methodType = ((J.MethodInvocation) argument).getMethodType();
+                    if (methodType != null) {
+                        Optional<JavaType.Method> declared = findDeclaredMethod(
+                                methodType.getDeclaringType(), methodType.getName(), methodType.getParameterTypes());
+                        // An absent declaration means the parameter types were themselves inferred
+                        if (!declared.isPresent() || mentionsTypeVariable(declared.get().getReturnType(), null, 0)) {
+                            return true;
+                        }
+                    }
+                }
+                if (argument instanceof J.NewClass && ((J.NewClass) argument).getClazz() instanceof J.ParameterizedType) {
+                    List<Expression> typeParameters = ((J.ParameterizedType) ((J.NewClass) argument).getClazz()).getTypeParameters();
+                    if (typeParameters != null && typeParameters.size() == 1 && typeParameters.get(0) instanceof J.Empty) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static boolean mentionsTypeVariable(JavaType type, @Nullable String name, int depth) {
+            if (depth > 4) {
+                return false;
+            }
+            if (type instanceof JavaType.GenericTypeVariable) {
+                return name == null || name.equals(((JavaType.GenericTypeVariable) type).getName());
+            }
+            JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
+            if (parameterized != null) {
+                for (JavaType typeParameter : parameterized.getTypeParameters()) {
+                    if (mentionsTypeVariable(typeParameter, name, depth + 1)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         private static boolean hasAnnotations(J type) {

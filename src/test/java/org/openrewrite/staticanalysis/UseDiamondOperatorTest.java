@@ -712,6 +712,161 @@ class UseDiamondOperatorTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void doNotChangeRecursivelyBoundTypeParameterWithNestedDiamondArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T extends Number & Comparable<T>> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  void test() {
+                      Container<Integer> panel = new Container<Integer>("id", new Wrapper<>(null, "key"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void doNotChangeRecursivelyBoundTypeParameterWithGenericMethodArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T extends Comparable<T>> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  static <X> Wrapper<X> wrapper() {
+                      return null;
+                  }
+
+                  void test() {
+                      Container<Integer> panel = new Container<Integer>("id", wrapper());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void nestedDiamondArgumentWithoutRecursiveBound() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  void test() {
+                      Container<Integer> panel = new Container<Integer>("id", new Wrapper<>(null, "key"));
+                  }
+              }
+              """,
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  void test() {
+                      Container<Integer> panel = new Container<>("id", new Wrapper<>(null, "key"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void doNotChangeEnumMapWithNestedDiamondArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              enum Day { MONDAY }
+
+              class Test {
+                  void test() {
+                      EnumMap<Day, String> map = new EnumMap<Day, String>(new HashMap<>());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void enumMapWithNonGenericMethodArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              enum Day { MONDAY }
+
+              class Test {
+                  static Map<Day, String> source() {
+                      return null;
+                  }
+
+                  void test() {
+                      EnumMap<Day, String> map = new EnumMap<Day, String>(source());
+                  }
+              }
+              """,
+            """
+              import java.util.*;
+
+              enum Day { MONDAY }
+
+              class Test {
+                  static Map<Day, String> source() {
+                      return null;
+                  }
+
+                  void test() {
+                      EnumMap<Day, String> map = new EnumMap<>(source());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void anonymousClassArgBeyondVarargsParameterWithoutVarargsFlag() {
         rewriteRun(
