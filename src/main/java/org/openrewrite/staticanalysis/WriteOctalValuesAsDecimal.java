@@ -25,6 +25,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static java.util.Collections.singleton;
 
@@ -42,24 +43,17 @@ public class WriteOctalValuesAsDecimal extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S1314");
 
+    private static final Pattern OCTAL_LITERAL = Pattern.compile("0[0-7_]*[0-7][lL]?");
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 String src = literal.getValueSource();
-                if (src != null && src.startsWith("0")) {
-                    if (src.length() >= 2 &&
-                        src.charAt(1) != 'x' && src.charAt(1) != 'X' &&
-                        src.charAt(1) != 'b' && src.charAt(1) != 'B' &&
-                        src.charAt(1) != '.' &&
-                        src.charAt(src.length() - 1) != 'L' && src.charAt(src.length() - 1) != 'l' &&
-                        src.charAt(src.length() - 1) != 'F' && src.charAt(src.length() - 1) != 'f' &&
-                        src.charAt(src.length() - 1) != 'D' && src.charAt(src.length() - 1) != 'd' &&
-                        !src.contains(".")) {
-                        assert literal.getValue() != null;
-                        return literal.withValueSource(literal.getValue().toString());
-                    }
+                if (src != null && literal.getValue() != null && OCTAL_LITERAL.matcher(src).matches()) {
+                    String suffix = src.endsWith("l") || src.endsWith("L") ? src.substring(src.length() - 1) : "";
+                    return literal.withValueSource(literal.getValue() + suffix);
                 }
                 return super.visitLiteral(literal, ctx);
             }

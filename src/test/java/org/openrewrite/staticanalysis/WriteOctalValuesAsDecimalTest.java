@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings("OctalInteger")
 class WriteOctalValuesAsDecimalTest implements RewriteTest {
@@ -64,6 +65,71 @@ class WriteOctalValuesAsDecimalTest implements RewriteTest {
                       double t = 0.01;
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void octalLongPreservesSuffix() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  long a = 010L;
+                  long b = 010l;
+              }
+              """,
+            """
+              class Test {
+                  long a = 8L;
+                  long b = 8l;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeFloatingPointWithLeadingZero() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  float a = 010f;
+                  float b = 010F;
+                  double c = 010d;
+                  double d = 010D;
+                  double e = 0.010;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void pythonComplexLiteral() {
+        rewriteRun(
+          //language=py
+          python(
+            """
+              def f(parameter: complex = 0j):
+                  pass
+              """
+          )
+        );
+    }
+
+    @Test
+    void pythonExplicitOctalUnchanged() {
+        rewriteRun(
+          //language=py
+          python(
+            """
+              a = 0o755
+              b = 0
               """
           )
         );
