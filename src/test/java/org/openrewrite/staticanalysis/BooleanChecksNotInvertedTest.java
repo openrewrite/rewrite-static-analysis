@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings("DoubleNegation")
 class BooleanChecksNotInvertedTest implements RewriteTest {
@@ -81,6 +82,20 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
                       return b;
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangePythonChainedComparison() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test(value):
+                  if not (1 <= value <= 6):
+                      pass
               """
           )
         );
