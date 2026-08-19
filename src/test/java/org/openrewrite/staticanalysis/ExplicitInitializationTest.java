@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -23,6 +24,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 class ExplicitInitializationTest implements RewriteTest {
 
@@ -273,5 +275,23 @@ class ExplicitInitializationTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Javascript {
+        @Test
+        void doNotRemoveExplicitInitializationInTypescript() {
+            rewriteRun(
+              typescript(
+                """
+                  class Test {
+                    private isShuttingDown = false;
+                    private count = 0;
+                    private name = null;
+                  }
+                  """
+              )
+            );
+        }
     }
 }
