@@ -20,6 +20,8 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
@@ -89,6 +91,24 @@ class WhileInsteadOfForTest implements RewriteTest {
             """
               def test() {
                   while (1 == 2) {
+                      println("i'm going to say hi a lot")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeGo() {
+        assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
+        rewriteRun(
+          go(
+            """
+              package main
+
+              func test() {
+                  for ; 1 == 2; {
                       println("i'm going to say hi a lot")
                   }
               }
