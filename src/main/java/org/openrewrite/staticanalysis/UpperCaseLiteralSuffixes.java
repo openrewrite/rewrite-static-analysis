@@ -16,7 +16,6 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -28,6 +27,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -38,7 +38,9 @@ public class UpperCaseLiteralSuffixes extends Recipe {
 
     @Getter
     final String description = "Using upper case literal suffixes for declaring literals is less ambiguous, e.g., `1l` versus `1L`. " +
-            "A lowercase `l` is easily mistaken for the digit `1` in many fonts, which can lead to incorrect assumptions about the value.";
+            "A lowercase `l` is easily mistaken for the digit `1` in many fonts, which can lead to incorrect assumptions about the value. " +
+            "Hexadecimal digits are upper cased as well, e.g., `0Xabc` versus `0xABC`, " +
+            "such that they stand out from the lower case `0x` prefix and `p` exponent.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S818");
@@ -52,6 +54,8 @@ public class UpperCaseLiteralSuffixes extends Recipe {
                 Preconditions.and(
                         new JavaFileChecker<>(),
                         Preconditions.or(
+                                new UsesType<>("int", false),
+                                new UsesType<>("java.lang.Integer", false),
                                 new UsesType<>("long", false),
                                 new UsesType<>("java.lang.Long", false),
                                 new UsesType<>("double", false),
@@ -61,27 +65,28 @@ public class UpperCaseLiteralSuffixes extends Recipe {
                         )
                 ), new JavaIsoVisitor<ExecutionContext>() {
                     @Override
-                    public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
-                        J.VariableDeclarations.NamedVariable nv = super.visitVariable(variable, ctx);
-                        if (nv.getInitializer() instanceof J.Literal && nv.getInitializer().getType() != null) {
-                            J.Literal initializer = (J.Literal) nv.getInitializer();
-                            if (initializer.getType() == JavaType.Primitive.Double ||
-                                initializer.getType() == JavaType.Primitive.Float ||
-                                initializer.getType() == JavaType.Primitive.Long) {
-                                String upperValueSource = upperCaseSuffix(initializer.getValueSource());
-                                if (upperValueSource != null && !upperValueSource.equals(initializer.getValueSource())) {
-                                    nv = nv.withInitializer(initializer.withValueSource(upperValueSource));
-                                }
-                            }
+                    public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
+                        String valueSource = literal.getValueSource();
+                        if (valueSource == null || valueSource.length() < 2 ||
+                            (literal.getType() != JavaType.Primitive.Int &&
+                             literal.getType() != JavaType.Primitive.Long &&
+                             literal.getType() != JavaType.Primitive.Double &&
+                             literal.getType() != JavaType.Primitive.Float)) {
+                            return literal;
                         }
-                        return nv;
-                    }
 
-                    private @Nullable String upperCaseSuffix(@Nullable String valueSource) {
-                        if (valueSource == null || valueSource.length() < 2) {
-                            return valueSource;
+                        String upperValueSource;
+                        if (valueSource.length() > 2 && valueSource.charAt(0) == '0' &&
+                            (valueSource.charAt(1) == 'x' || valueSource.charAt(1) == 'X')) {
+                            upperValueSource = "0x" + valueSource.substring(2).toUpperCase(Locale.ROOT).replace('P', 'p');
+                        } else {
+                            upperValueSource = valueSource.substring(0, valueSource.length() - 1) +
+                                               valueSource.substring(valueSource.length() - 1).toUpperCase(Locale.ROOT);
                         }
-                        return valueSource.substring(0, valueSource.length() - 1) + valueSource.substring(valueSource.length() - 1).toUpperCase();
+                        if (upperValueSource.equals(valueSource)) {
+                            return literal;
+                        }
+                        return literal.withValueSource(upperValueSource);
                     }
                 });
     }
