@@ -21,6 +21,7 @@ import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -311,6 +312,37 @@ class AllBranchesIdenticalTest implements RewriteTest {
                       }
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void collapseIdenticalBranchesGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func applyPromotion(eligible bool) {
+                  if eligible {
+                      applyDiscount()
+                  } else {
+                      applyDiscount()
+                  }
+              }
+
+              func applyDiscount() {}
+              """,
+            """
+              package main
+
+              func applyPromotion(eligible bool) {
+                  applyDiscount()
+              }
+
+              func applyDiscount() {}
               """
           )
         );
