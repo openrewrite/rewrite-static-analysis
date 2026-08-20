@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -308,6 +309,48 @@ class AllBranchesIdenticalTest implements RewriteTest {
                           p("x");
                       } else {
                           p("x");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("SideEffects.mayHaveSideEffects treats array access as effect-free, so the collapse deletes an access that may throw ArrayIndexOutOfBoundsException")
+    @Test
+    void doNotChangeWhenConditionContainsArrayAccess() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(boolean[] flags) {
+                      if (flags[5]) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("SideEffects.mayHaveSideEffects treats casts as effect-free, so the collapse deletes a cast that may throw ClassCastException, and with it the unboxing that may throw NullPointerException")
+    @Test
+    void doNotChangeWhenConditionContainsCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(Object o) {
+                      if ((Boolean) o) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
                       }
                   }
               }
