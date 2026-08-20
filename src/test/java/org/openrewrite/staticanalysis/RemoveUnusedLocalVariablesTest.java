@@ -22,6 +22,8 @@ import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -1381,6 +1383,28 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                 """
                   class Foo {
                     bar: string;
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class Go {
+        @Test
+        void doNotChangeStructFields() {
+            assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
+            rewriteRun(
+              go(
+                """
+                  package main
+
+                  import "sync"
+
+                  type BaseCache struct {
+                      CacheName    string
+                      KvStoreItems sync.Map
                   }
                   """
               )
