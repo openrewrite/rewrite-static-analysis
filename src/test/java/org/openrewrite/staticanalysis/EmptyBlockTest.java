@@ -26,7 +26,9 @@ import org.openrewrite.test.RewriteTest;
 
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.openrewrite.Tree.randomId;
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SynchronizationOnLocalVariableOrMethodParameter", "CatchMayIgnoreException", "EmptyFinallyBlock", "InfiniteLoopStatement", "UnnecessaryContinue", "EmptyClassInitializer", "EmptyTryBlock", "resource", "RedundantFileCreation", "ExpressionComparedToItself"})
@@ -452,6 +454,34 @@ class EmptyBlockTest implements RewriteTest {
               }
             }
             """
+          )
+        );
+    }
+
+    @Test
+    void invertIfWithEmptyThenInGo() {
+        assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
+        rewriteRun(
+          go(
+            """
+              package main
+
+              func test() {
+                  if err := doSomething(); err == nil {
+                  } else {
+                      handle(err)
+                  }
+              }
+              """,
+            """
+              package main
+
+              func test() {
+                  if err := doSomething(); err != nil {
+                      handle(err)
+                  }
+              }
+              """
           )
         );
     }
