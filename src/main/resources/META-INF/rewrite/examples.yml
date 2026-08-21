@@ -2972,6 +2972,30 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveNoArgumentSuperConstructorCall
+examples:
+- description: '`RemoveNoArgumentSuperConstructorCallTest#removeNoArgumentSuperConstructorCall`'
+  sources:
+  - before: |
+      class A {
+          private final String name;
+
+          A(String name) {
+              super();
+              this.name = name;
+          }
+      }
+    after: |
+      class A {
+          private final String name;
+
+          A(String name) {
+              this.name = name;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
 examples:
 - description: '`RemoveRedundantNullCheckBeforeInstanceofTest#removeRedundantNullCheck`'
