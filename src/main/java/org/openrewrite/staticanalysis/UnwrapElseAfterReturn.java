@@ -93,10 +93,17 @@ public class UnwrapElseAfterReturn extends Recipe {
                     J.Block elseBlock = (J.Block) tailElse;
                     endWhitespace.set(elseBlock.getEnd());
                     return ListUtils.concat(ifWithoutElse, ListUtils.mapFirst(elseBlock.getStatements(), elseStmt -> {
+                        List<Comment> elsePartComments = tailIf.getElsePart().getPrefix().getComments();
                         List<Comment> elseComments = elseBlock.getPrefix().getComments();
                         List<Comment> stmtComments = elseStmt.getPrefix().getComments();
-                        if (!elseComments.isEmpty() || !stmtComments.isEmpty()) {
-                            return elseStmt.withComments(ListUtils.concatAll(elseComments, stmtComments));
+                        if (!elsePartComments.isEmpty() || !elseComments.isEmpty() || !stmtComments.isEmpty()) {
+                            return elseStmt.withPrefix(elseStmt.getPrefix()
+                                    .withWhitespace(elsePartComments.isEmpty() ?
+                                            elseStmt.getPrefix().getWhitespace() :
+                                            tailIf.getElsePart().getPrefix().getWhitespace())
+                                    .withComments(ListUtils.concatAll(
+                                            elsePartComments,
+                                            ListUtils.concatAll(elseComments, stmtComments))));
                         }
                         String whitespace = tailIf.getElsePart().getPrefix().getWhitespace();
                         return elseStmt.withPrefix(elseStmt.getPrefix().withWhitespace(whitespace));
