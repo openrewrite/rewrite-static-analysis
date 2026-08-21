@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RewriteTest;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({"UnnecessaryContinue", "UnnecessaryReturnStatement"})
@@ -58,6 +60,27 @@ class NoRedundantJumpStatementsTest implements RewriteTest {
                           }
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveGoReturnWithExpression() {
+        assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
+        rewriteRun(
+          spec -> spec.recipe(new NoRedundantJumpStatements()),
+          go(
+            """
+              package main
+
+              func doWork() {
+                  println("work")
+              }
+
+              func wrapper() {
+                  return doWork()
               }
               """
           )
