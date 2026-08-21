@@ -64,11 +64,38 @@ public class NoValueOfOnStringType extends Recipe {
                 J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
                 if (VALUE_OF.matches(mi) && mi.getArguments().size() == 1) {
                     Expression argument = mi.getArguments().get(0);
-                    if ((TypeUtils.isString(argument.getType()) && !(argument instanceof J.MethodInvocation)) || removeValueOfForStringConcatenation(argument)) {
+                    if ((TypeUtils.isString(argument.getType()) && isNeverNull(argument)) || removeValueOfForStringConcatenation(argument)) {
                         return maybeParenthesize(argument.withPrefix(mi.getPrefix()), updateCursor(mi));
                     }
                 }
                 return mi;
+            }
+
+            /**
+             * {@code String.valueOf(s)} only equals {@code s} when {@code s} is not null; for a null {@code String}
+             * it yields {@code "null"} instead. Removing the call is therefore only safe for arguments that cannot
+             * be null. Method invocations were already excluded for this reason; identifiers, field accesses and
+             * casts are no safer, so require the argument to be demonstrably non-null instead.
+             *
+             * @param argument The argument of the valueOf method.
+             * @return True if the argument can never be null.
+             */
+            private boolean isNeverNull(Expression argument) {
+                Expression e = argument;
+                while (e instanceof J.Parentheses) {
+                    J tree = ((J.Parentheses<?>) e).getTree();
+                    if (!(tree instanceof Expression)) {
+                        return false;
+                    }
+                    e = (Expression) tree;
+                }
+                if (e instanceof J.Literal) {
+                    return ((J.Literal) e).getValue() != null;
+                }
+                // String concatenation always produces a non-null String.
+                return e instanceof J.Binary &&
+                        ((J.Binary) e).getOperator() == J.Binary.Type.Addition &&
+                        TypeUtils.isString(e.getType());
             }
 
             /**
@@ -79,7 +106,9 @@ public class NoValueOfOnStringType extends Recipe {
              * @return True if the method can be removed.
              */
             private boolean removeValueOfForStringConcatenation(Expression argument) {
-                if (TypeUtils.asPrimitive(argument.getType()) != null) {
+                // A String argument is safe here too: concatenation renders a null operand as "null",
+                // exactly as String#valueOf would.
+                if (TypeUtils.asPrimitive(argument.getType()) != null || TypeUtils.isString(argument.getType())) {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
                     if (parent instanceof J.Binary) {
                         J.Binary b = (J.Binary) parent;
