@@ -16,7 +16,9 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -52,6 +54,45 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
                   @Override
                   protected void finalize() throws Throwable {
                       o = null;
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Widens neither throws clause, and the second cycle inserts a duplicate super.finalize() into the subclass; needs hierarchy-aware handling")
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/pull/969")
+    @Test
+    void addsSuperFinalizeAndWidensThrowsAcrossClassHierarchy() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+
+              class B extends A {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class A {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+
+              class B extends A {
+                  @Override
+                  protected void finalize() throws Throwable {
                       super.finalize();
                   }
               }
