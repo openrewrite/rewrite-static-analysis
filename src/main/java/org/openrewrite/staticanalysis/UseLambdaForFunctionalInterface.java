@@ -30,12 +30,16 @@ import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplemen
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class UseLambdaForFunctionalInterface extends Recipe {
+    private static final Set<String> OBJECT_METHOD_NAMES = new HashSet<>(asList(
+            "clone", "equals", "finalize", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait"));
+
     @Getter
     final String displayName = "Use lambda expressions instead of anonymous classes";
 
@@ -482,6 +486,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         if (usesThis(cursor)) {
             return "references `this`";
         }
+        if (callsMethodOnAnonymousInstance(n, cursor)) {
+            return "calls a method on the anonymous instance";
+        }
         if (shadowsLocalVariable(cursor)) {
             return "shadows a local variable";
         }
@@ -545,6 +552,69 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
         }.visit(n.getBody(), 0, cursor);
         return hasThis.get();
+    }
+
+    /**
+     * An unqualified call resolving to a method the anonymous class inherits or declares is dispatched on that
+     * class's own {@code this}, which a lambda does not have. There is no {@code this} token for {@link #usesThis}
+     * to see, so it is recognised by what it resolves to. Unattributed calls are blocked only when named after an
+     * {@code Object} method, the one case no enclosing class could have supplied.
+     */
+    private static boolean callsMethodOnAnonymousInstance(J.NewClass n, Cursor cursor) {
+        assert n.getBody() != null;
+        JavaType anonymousType = n.getType();
+        AtomicBoolean callsAnonymousInstance = new AtomicBoolean(false);
+        new JavaVisitor<Integer>() {
+            @Override
+            public J visitClassDeclaration(J.ClassDeclaration classDecl, Integer integer) {
+                // A local or member class declares its own `this`
+                return classDecl;
+            }
+
+            @Override
+            public J visitNewClass(J.NewClass newClass, Integer integer) {
+                if (newClass.getBody() == null) {
+                    return super.visitNewClass(newClass, integer);
+                }
+                // Same for a nested anonymous class, but a qualified `new`'s enclosing expression and its
+                // arguments are still evaluated in this scope
+                if (newClass.getEnclosing() != null) {
+                    visit(newClass.getEnclosing(), integer);
+                }
+                for (Expression argument : newClass.getArguments()) {
+                    visit(argument, integer);
+                }
+                return newClass;
+            }
+
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, Integer integer) {
+                if (isBareSuper(method.getSelect()) ||
+                    method.getSelect() == null && dispatchedOnThis(method.getMethodType(), method.getSimpleName())) {
+                    callsAnonymousInstance.set(true);
+                }
+                return super.visitMethodInvocation(method, integer);
+            }
+
+            @Override
+            public J visitMemberReference(J.MemberReference memberRef, Integer integer) {
+                if (isBareSuper(memberRef.getContaining())) {
+                    callsAnonymousInstance.set(true);
+                }
+                return super.visitMemberReference(memberRef, integer);
+            }
+
+            private boolean dispatchedOnThis(JavaType.@Nullable Method methodType, String name) {
+                return methodType == null ?
+                        OBJECT_METHOD_NAMES.contains(name) :
+                        TypeUtils.isAssignableTo(methodType.getDeclaringType(), anonymousType);
+            }
+
+            private boolean isBareSuper(@Nullable Expression expression) {
+                return expression instanceof J.Identifier && "super".equals(((J.Identifier) expression).getSimpleName());
+            }
+        }.visit(n.getBody(), 0, cursor);
+        return callsAnonymousInstance.get();
     }
 
     private static List<String> parameterNames(J.MethodDeclaration method) {
