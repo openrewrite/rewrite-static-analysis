@@ -82,19 +82,19 @@ public class SimplifyBooleanReturn extends Recipe {
                             return i;
                         }
 
-                        Expression ifCondition = i.getIfCondition().getTree();
+                        Expression ifCondition = i.getIfCondition().getTree().withPrefix(return_.getExpression().getPrefix());
 
                         if (isLiteralTrue(return_.getExpression())) {
                             if (singleFollowingStatement.map(this::isLiteralFalse).orElse(false) && i.getElsePart() == null) {
                                 doAfterVisit(new DeleteStatement<>(followingStatements().get(0)));
-                                return maybeAutoFormat(return_, return_.withExpression(ifCondition), ctx, parent);
+                                return maybeAutoFormat(return_, return_.withPrefix(i.getPrefix()).withExpression(ifCondition), ctx, parent);
                             }
                             if (!singleFollowingStatement.isPresent() &&
                                     getReturnExprIfOnlyStatementInElseThen(i).map(this::isLiteralFalse).orElse(false)) {
                                 if (i.getElsePart() != null) {
                                     doAfterVisit(new DeleteStatement<>(i.getElsePart().getBody()));
                                 }
-                                return maybeAutoFormat(return_, return_.withExpression(ifCondition), ctx, parent);
+                                return maybeAutoFormat(return_, return_.withPrefix(i.getPrefix()).withExpression(ifCondition), ctx, parent);
                             }
                         } else if (isLiteralFalse(return_.getExpression())) {
                             boolean returnThenPart = false;
