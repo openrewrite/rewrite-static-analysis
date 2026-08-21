@@ -24,13 +24,16 @@ import org.openrewrite.java.ChangeMethodName;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -63,15 +66,49 @@ public class RenameMethodsNamedHashcodeEqualOrToString extends Recipe {
                     String sn = method.getSimpleName();
                     JavaType rte = method.getReturnTypeExpression().getType();
                     JavaType.Method t = method.getMethodType();
-                    if (equalsIgnoreCaseExclusive(sn, "hashCode") && JavaType.Primitive.Int == rte && NO_ARGS.matches(t)) {
+                    if (equalsIgnoreCaseExclusive(sn, "hashCode") && JavaType.Primitive.Int == rte && NO_ARGS.matches(t) && canRenameTo(t, "hashCode", NO_ARGS)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "hashCode", true, false).getVisitor());
-                    } else if ("equal".equalsIgnoreCase(sn) && JavaType.Primitive.Boolean == rte && OBJECT_ARG.matches(t)) {
+                    } else if ("equal".equalsIgnoreCase(sn) && JavaType.Primitive.Boolean == rte && OBJECT_ARG.matches(t) && canRenameTo(t, "equals", OBJECT_ARG)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "equals", true, false).getVisitor());
-                    } else if (equalsIgnoreCaseExclusive(sn, "toString") && TypeUtils.isString(rte) && NO_ARGS.matches(t)) {
+                    } else if (equalsIgnoreCaseExclusive(sn, "toString") && TypeUtils.isString(rte) && NO_ARGS.matches(t) && canRenameTo(t, "toString", NO_ARGS)) {
                         doAfterVisit(new ChangeMethodName(MethodMatcher.methodPattern(method), "toString", true, false).getVisitor());
                     }
                 }
                 return super.visitMethodDeclaration(method, ctx);
+            }
+
+            /**
+             * Method names are case sensitive, so a type may legally declare both the near-miss and the correctly
+             * named method; renaming would emit a duplicate. The rename reaches overrides too, so subtypes in the
+             * same file must be free of the target as well, and renaming onto an inherited `final` method or onto
+             * one of `Object`'s public instance methods would emit an illegal override.
+             * <p>
+             * Declarations come from the LST rather than the type model, which for records and Lombok `@Data`
+             * classes also carries generated members an explicit declaration would replace rather than collide with.
+             */
+            private boolean canRenameTo(JavaType.Method methodType, String targetName, MethodMatcher signature) {
+                Set<Flag> flags = methodType.getFlags();
+                if (!flags.contains(Flag.Public) || flags.contains(Flag.Static)) {
+                    return false;
+                }
+                JavaType.FullyQualified declaringType = methodType.getDeclaringType();
+                AtomicBoolean targetAlreadyDeclared = new AtomicBoolean();
+                new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration existing, AtomicBoolean declared) {
+                        JavaType.Method existingType = existing.getMethodType();
+                        if (existingType != null && targetName.equals(existing.getSimpleName()) &&
+                                signature.matches(existingType) &&
+                                TypeUtils.isAssignableTo(declaringType, existingType.getDeclaringType())) {
+                            declared.set(true);
+                        }
+                        return super.visitMethodDeclaration(existing, declared);
+                    }
+                }.visit(getCursor().firstEnclosingOrThrow(JavaSourceFile.class), targetAlreadyDeclared);
+                return !targetAlreadyDeclared.get() &&
+                        !TypeUtils.findDeclaredMethod(declaringType.getSupertype(), targetName, methodType.getParameterTypes())
+                                .filter(m -> m.getFlags().contains(Flag.Final))
+                                .isPresent();
             }
 
             private boolean equalsIgnoreCaseExclusive(String inputToCheck, String targetToCheck) {
