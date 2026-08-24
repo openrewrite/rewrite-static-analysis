@@ -930,4 +930,46 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1024")
+    @Test
+    void doNotRemoveCastOnMethodHandleInvoke() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.invoke.MethodHandle;
+
+              class Example {
+                  String hello(MethodHandle handle) throws Throwable {
+                      return (String) handle.invoke();
+                  }
+
+                  void assign(MethodHandle handle) throws Throwable {
+                      String s = (String) handle.invokeExact();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1024")
+    @Test
+    void doNotRemoveCastOnVarHandleAccessor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.invoke.VarHandle;
+
+              class Example {
+                  String read(VarHandle handle, Object target) {
+                      return (String) handle.get(target);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
