@@ -20,6 +20,8 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.python.Assertions.python;
 
@@ -130,6 +132,59 @@ class WriteOctalValuesAsDecimalTest implements RewriteTest {
             """
               a = 0o755
               b = 0
+              """
+          )
+        );
+    }
+
+    @Test
+    void goConvertsPlainOctal() {
+        assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
+        rewriteRun(
+          go(
+            """
+              package main
+
+              func f(n int) {}
+
+              func test() {
+                  f(010)
+              }
+              """,
+            """
+              package main
+
+              func f(n int) {}
+
+              func test() {
+                  f(8)
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void goDoNotChangeFilePermissions() {
+        assumeTrue(GoEngineTestListener.isAvailable(), "rewrite-go-rpc engine unavailable");
+        rewriteRun(
+          go(
+            """
+              package main
+
+              import "os"
+
+              func mode(perm os.FileMode) {}
+
+              func test() {
+                  os.OpenFile("f", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+                  os.WriteFile("f", nil, 0640)
+                  os.Mkdir("d", 0755)
+                  mode(0755)
+                  var m os.FileMode = 0644
+                  m = os.FileMode(0600)
+                  _ = m
+              }
               """
           )
         );
