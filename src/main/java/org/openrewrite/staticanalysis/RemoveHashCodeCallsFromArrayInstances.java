@@ -24,6 +24,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
+import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -31,6 +32,7 @@ import org.openrewrite.java.tree.JavaType;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 
 public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
     private static final MethodMatcher HASHCODE_MATCHER = new MethodMatcher("java.lang.Object hashCode()");
@@ -60,11 +62,13 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
             if (HASHCODE_MATCHER.matches(mi)) {
                 Expression select = mi.getSelect();
                 if (select != null && select.getType() instanceof JavaType.Array) {
-                    maybeAddImport("java.util.Arrays");
-                    return JavaTemplate.builder("Arrays.hashCode(#{anyArray(java.lang.Object)})")
-                            .imports("java.util.Arrays")
+                    // Shorten only the select the template introduced, so a competing `Arrays` in scope keeps the
+                    // qualified form rather than binding wrongly
+                    J.MethodInvocation replacement = JavaTemplate.builder("java.util.Arrays.hashCode(#{anyArray(java.lang.Object)})")
                             .build()
                             .apply(getCursor(), mi.getCoordinates().replace(), select);
+                    doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(requireNonNull(replacement.getSelect())));
+                    return replacement;
                 }
             }
 
