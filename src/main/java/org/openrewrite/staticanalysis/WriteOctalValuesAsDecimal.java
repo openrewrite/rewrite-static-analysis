@@ -23,6 +23,7 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
@@ -69,13 +70,16 @@ public class WriteOctalValuesAsDecimal extends Recipe {
 
     private static boolean isGoFileMode(J.Literal literal, Cursor cursor) {
         Object parent = cursor.getParentTreeCursor().getValue();
+        // os.FileMode(0600) conversion, however the engine models it (call, cast, ...)
+        if (parent instanceof Expression && isGoFileModeType(((Expression) parent).getType())) {
+            return true;
+        }
         if (parent instanceof J.MethodInvocation) {
             J.MethodInvocation mi = (J.MethodInvocation) parent;
             int i = mi.getArguments().indexOf(literal);
             if (i < 0) {
                 return false;
             }
-            // os.FileMode(0600) conversion, which carries no attributed method type
             if ("FileMode".equals(mi.getSimpleName())) {
                 return true;
             }
