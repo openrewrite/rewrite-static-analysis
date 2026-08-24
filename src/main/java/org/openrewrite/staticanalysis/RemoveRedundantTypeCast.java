@@ -67,9 +67,6 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return visited;
                 }
 
-                // A signature-polymorphic method (JLS 15.12.3) has no fixed return type at the call
-                // site; the enclosing cast is what gives it one, so removing the cast reverts the
-                // call to `Object` and breaks compilation.
                 if (isSignaturePolymorphic(typeCast.getExpression())) {
                     return visited;
                 }
@@ -237,11 +234,9 @@ public class RemoveRedundantTypeCast extends Recipe {
                 return parentheses;
             }
 
+            /// Signature-polymorphic methods (JLS 15.12.3) take their return type from the enclosing cast, so removing it breaks compilation.
             private boolean isSignaturePolymorphic(Expression expression) {
-                Expression expr = expression;
-                while (expr instanceof J.Parentheses) {
-                    expr = (Expression) ((J.Parentheses<?>) expr).getTree();
-                }
+                Expression expr = expression.unwrap();
                 if (!(expr instanceof J.MethodInvocation)) {
                     return false;
                 }
