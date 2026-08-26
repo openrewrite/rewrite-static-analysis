@@ -99,15 +99,15 @@ public class NoValueOfOnStringType extends Recipe {
             }
 
             /**
-             * If the String#valueOf method is within a binary expression and the argument is a primitive, the valueOf
-             * can be removed if the binary expression's type is a String.
+             * If the String#valueOf method is within a binary expression and the argument is a primitive or a String,
+             * the valueOf can be removed if the binary expression's type is a String. A String argument is safe here
+             * even when it is null, because concatenation renders a null operand as {@code "null"} exactly as
+             * String#valueOf would.
              *
              * @param argument The argument of the valueOf method.
              * @return True if the method can be removed.
              */
             private boolean removeValueOfForStringConcatenation(Expression argument) {
-                // A String argument is safe here too: concatenation renders a null operand as "null",
-                // exactly as String#valueOf would.
                 if (TypeUtils.asPrimitive(argument.getType()) != null || TypeUtils.isString(argument.getType())) {
                     J parent = getCursor().getParent() != null ? getCursor().getParent().firstEnclosing(J.class) : null;
                     if (parent instanceof J.Binary) {
