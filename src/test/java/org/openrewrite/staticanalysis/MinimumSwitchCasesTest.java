@@ -1044,6 +1044,132 @@ class MinimumSwitchCasesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void doNotRewriteWhenSelectorTypeIsUnresolved() {
+        // Unresolved selector type: case labels may really be an unrelated same-named symbol (here, a statically imported constant), so the recipe must not transform it.
+        rewriteRun(
+          spec -> spec.typeValidationOptions(org.openrewrite.test.TypeValidation.none()),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Constants {
+                  public static final String RED = "red";
+                  public static final String BLUE = "blue";
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              import static com.example.Constants.RED;
+              import static com.example.Constants.BLUE;
+
+              class Test {
+                  void test(Unresolved u) {
+                      switch (u.getColor()) {
+                          case RED:
+                              doSomething();
+                              break;
+                          case BLUE:
+                              doSomethingElse();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void rewritesWhenSelectorTypeIsResolvedDespiteShadowingStaticImport() {
+        // Same shadowing shape as doNotRewriteWhenSelectorTypeIsUnresolved, but with a resolvable selector type: the recipe should still transform and correctly qualify the enum constants.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Constants {
+                  public static final String RED = "red";
+                  public static final String BLUE = "blue";
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              public class Widget {
+                  public enum Color {
+                      RED,
+                      BLUE
+                  }
+
+                  private final Color color;
+
+                  public Widget(Color color) {
+                      this.color = color;
+                  }
+
+                  public Color getColor() {
+                      return color;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example;
+
+              import static com.example.Constants.RED;
+              import static com.example.Constants.BLUE;
+
+              class Test {
+                  void test(Widget w) {
+                      switch (w.getColor()) {
+                          case RED:
+                              doSomething();
+                              break;
+                          case BLUE:
+                              doSomethingElse();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """,
+            """
+              package com.example;
+
+              import static com.example.Constants.RED;
+              import static com.example.Constants.BLUE;
+
+              class Test {
+                  void test(Widget w) {
+                      if (w.getColor() == Widget.Color.RED) {
+                          doSomething();
+                      } else if (w.getColor() == Widget.Color.BLUE) {
+                          doSomethingElse();
+                      }
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/6")
     @Test
     void preserveDefaultCaseComments() {

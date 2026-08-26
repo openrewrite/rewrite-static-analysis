@@ -236,6 +236,8 @@ public class MinimumSwitchCases extends Recipe {
             }
 
             private boolean hasUnresolvableIdentifierCasePattern(J.Switch switch_) {
+                // Enum case labels resolve specially (JLS 14.11.1); that lookup doesn't apply once spliced outside the switch, so an unresolved selector type makes any label untrustworthy.
+                boolean selectorTypeUnresolved = isUnresolved(switch_.getSelector().getTree().getType());
                 for (Statement statement : switch_.getCases().getStatements()) {
                     if (statement instanceof J.Case) {
                         J.Case aCase = (J.Case) statement;
@@ -243,16 +245,18 @@ public class MinimumSwitchCases extends Recipe {
                             Expression pattern = aCase.getPattern();
                             // Identifiers (like enum constants or static fields) need type info
                             // to be properly qualified in an if statement
-                            if (pattern instanceof J.Identifier) {
-                                JavaType patternType = pattern.getType();
-                                if (patternType == null || patternType instanceof JavaType.Unknown) {
-                                    return true;
-                                }
+                            if (pattern instanceof J.Identifier &&
+                                    (selectorTypeUnresolved || isUnresolved(pattern.getType()))) {
+                                return true;
                             }
                         }
                     }
                 }
                 return false;
+            }
+
+            private boolean isUnresolved(@Nullable JavaType type) {
+                return type == null || type instanceof JavaType.Unknown;
             }
 
             private List<Statement> getStatements(J.Case aCase) {
