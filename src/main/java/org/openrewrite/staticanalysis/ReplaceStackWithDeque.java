@@ -55,6 +55,16 @@ public class ReplaceStackWithDeque extends Recipe {
             @Override
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 J.VariableDeclarations.NamedVariable v = super.visitVariable(variable, ctx);
+                if (v.getInitializer() == null) {
+                    return v;
+                }
+
+                Expression initializer = (Expression) new ChangeType("java.util.Stack", "java.util.ArrayDeque", false)
+                        .getVisitor().visitNonNull(v.getInitializer(), ctx, getCursor().getParentOrThrow());
+                if (initializer == v.getInitializer()) {
+                    // Not a `Stack`, so skip the data flow analysis below, which is costly on every variable in the file
+                    return v;
+                }
 
                 DataFlowSpec returned = new DataFlowSpec() {
                     @Override
@@ -68,9 +78,8 @@ public class ReplaceStackWithDeque extends Recipe {
                     }
                 };
 
-                if (v.getInitializer() != null && FindLocalFlowPaths.noneMatch(getCursor(), returned)) {
-                    v = v.withInitializer((Expression) new ChangeType("java.util.Stack", "java.util.ArrayDeque", false)
-                            .getVisitor().visitNonNull(v.getInitializer(), ctx, getCursor().getParentOrThrow()));
+                if (FindLocalFlowPaths.noneMatch(getCursor(), returned)) {
+                    v = v.withInitializer(initializer);
                     getCursor().putMessageOnFirstEnclosing(J.VariableDeclarations.class, "replace", true);
                 }
 
