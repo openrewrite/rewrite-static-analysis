@@ -226,16 +226,16 @@ public class MinimumSwitchCases extends Recipe {
                         }
                     }
                 }
-                // Don't transform if any case has an identifier pattern without type info
-                // (we can't properly qualify it in the if statement)
-                if (hasUnresolvableIdentifierCasePattern(switch_)) {
+                if (hasUnresolvableCasePattern(switch_)) {
                     return false;
                 }
                 return switch_.getCases().getStatements().stream()
                                .reduce(0, (a, b) -> a + ((J.Case) b).getCaseLabels().size(), Integer::sum) < 3;
             }
 
-            private boolean hasUnresolvableIdentifierCasePattern(J.Switch switch_) {
+            private boolean hasUnresolvableCasePattern(J.Switch switch_) {
+                // Enum case labels resolve specially (JLS 14.11.1); that lookup doesn't apply once spliced outside the switch, so an unresolved selector type makes any label untrustworthy.
+                boolean selectorTypeUnresolved = isUnresolved(switch_.getSelector().getTree().getType());
                 for (Statement statement : switch_.getCases().getStatements()) {
                     if (statement instanceof J.Case) {
                         J.Case aCase = (J.Case) statement;
@@ -244,15 +244,22 @@ public class MinimumSwitchCases extends Recipe {
                             // Identifiers (like enum constants or static fields) need type info
                             // to be properly qualified in an if statement
                             if (pattern instanceof J.Identifier) {
-                                JavaType patternType = pattern.getType();
-                                if (patternType == null || patternType instanceof JavaType.Unknown) {
+                                if (selectorTypeUnresolved || isUnresolved(pattern.getType())) {
                                     return true;
                                 }
+                            } else if (selectorTypeUnresolved && pattern instanceof J.Literal &&
+                                    ((J.Literal) pattern).getValue() instanceof String) {
+                                // Without a resolved selector type we would emit `==` rather than `equals()`
+                                return true;
                             }
                         }
                     }
                 }
                 return false;
+            }
+
+            private boolean isUnresolved(@Nullable JavaType type) {
+                return type == null || type instanceof JavaType.Unknown;
             }
 
             private List<Statement> getStatements(J.Case aCase) {
