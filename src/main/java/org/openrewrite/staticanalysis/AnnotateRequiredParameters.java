@@ -80,7 +80,7 @@ public class AnnotateRequiredParameters extends Recipe {
                 }
 
                 // Analyze all parameters to find required ones and statements to remove
-                RequiredParameterAnalysis analysis = new RequiredParameterVisitor(getAllParameters(md))
+                RequiredParameterAnalysis analysis = new RequiredParameterVisitor(getCandidateParameters(md))
                         .reduce(md.getBody(), new RequiredParameterAnalysis());
 
                 if (analysis.requiredIdentifiers.isEmpty()) {
@@ -146,16 +146,13 @@ public class AnnotateRequiredParameters extends Recipe {
     }
 
     /**
-     * Gets all method parameters, excluding those already annotated with `@Nullable`.
+     * Gets the method parameters eligible for `@NonNull`, excluding those already annotated with `@Nullable`.
      * A parameter explicitly marked `@Nullable` signals that the developer intends
      * to allow nulls; any accompanying null check + throw is therefore intentional
      * business logic and must not be removed.
-     *
-     * @param md the method declaration to analyze
-     * @return set of candidate parameter identifiers
      */
-    private Set<J.Identifier> getAllParameters(J.MethodDeclaration md) {
-        Set<J.Identifier> allParams = new LinkedHashSet<>();
+    private Set<J.Identifier> getCandidateParameters(J.MethodDeclaration md) {
+        Set<J.Identifier> candidates = new LinkedHashSet<>();
         for (Statement parameter : md.getParameters()) {
             if (parameter instanceof J.VariableDeclarations) {
                 J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
@@ -171,10 +168,10 @@ public class AnnotateRequiredParameters extends Recipe {
                 if (nullable) {
                     continue;
                 }
-                allParams.add(vd.getVariables().get(0).getName());
+                candidates.add(vd.getVariables().get(0).getName());
             }
         }
-        return allParams;
+        return candidates;
     }
 
     /**
