@@ -311,6 +311,54 @@ class UnnecessaryCatchTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void doNotRemoveJavaLangExceptionCoveringCheckedException() {
+        rewriteRun(
+          spec -> spec.recipe(new UnnecessaryCatch(true, false)),
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;
+
+              class Scratch {
+                  void method() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Exception e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void doNotRemoveJavaLangThrowableCoveringCheckedException() {
+        rewriteRun(
+          spec -> spec.recipe(new UnnecessaryCatch(false, true)),
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;
+
+              class Scratch {
+                  void method() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Throwable t) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotRemoveJavaLangThrowable() {
         rewriteRun(

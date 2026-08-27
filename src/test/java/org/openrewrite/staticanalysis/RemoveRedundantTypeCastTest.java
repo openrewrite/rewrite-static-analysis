@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 
 @SuppressWarnings("ALL")
 class RemoveRedundantTypeCastTest implements RewriteTest {
@@ -280,6 +281,26 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/899")
+    @Test
+    void keepObjectCastDisambiguatingVarargsFromThrowableOverload() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void log(String format, Object... args) {}
+                  void log(String format, Throwable t) {}
+
+                  void run(Object value) {
+                      log("value: {}", (Object) value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void varargsCall() {
         rewriteRun(
@@ -465,6 +486,50 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    @Test
+    void keepCastForLambdaAssignedToVar() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+
+              class Example {
+                  void run() {
+                      var converter = (Function<Integer, String>) (i -> Integer.toString(i));
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(25))
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/924")
+    @Test
+    void keepCastForMethodReferenceAssignedToVar() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              class Example {
+                  static String make() {
+                      return "";
+                  }
+
+                  void run() {
+                      var supplier = (Supplier<String>) Example::make;
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(25))
           )
         );
     }
@@ -726,6 +791,84 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/901")
+    @Test
+    void doNotRemoveRawCastBridgingWildcardCapture() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface I<T> {
+                  void method(B<T> param);
+              }
+
+              class B<T> {}
+
+              class A<T> {
+                  void test(I<? extends T> i, B<T> b) {
+                      i.method((B) b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/914")
+    @Test
+    void doNotRemoveRawSupertypeCastBridgingWildcardCapture() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              class G<T extends Number> {}
+
+              interface I {
+                  Set<? extends G> doSomething();
+              }
+
+              class A {
+                  void test(I i) {
+                      Set<? extends G> s = new HashSet<>();
+                      s.addAll((Collection) i.doSomething());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/952")
+    @Test
+    void doNotRemoveCastFromRawToWildcard() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class Box<T> {
+                  List<String> items() {
+                      return List.of();
+                  }
+              }
+
+              class Test {
+                  @SuppressWarnings("rawtypes")
+                  void test(Box raw) {
+                      var typed = (Box<?>) raw;
+                      typed.items().forEach(s -> s.trim());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotRemoveObjectCastOnGenericMethodCallWithOverloads() {
         rewriteRun(
@@ -743,6 +886,86 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                       StringBuilder sb = new StringBuilder();
                       sb.append((Object) h.getValue());
                       return sb.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/934")
+    @Test
+    void doNotRemoveObjectCastOnPrimitiveArrayVarargs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Example {
+                  void run() {
+                      sink((Object) new int[] {1, 2, 3});
+                  }
+
+                  static void sink(Object... args) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/934")
+    @Test
+    void doNotRemoveObjectCastOnReferenceArrayVarargs() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Example {
+                  void run(String[] arr) {
+                      sink((Object) arr);
+                  }
+
+                  static void sink(Object... args) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1024")
+    @Test
+    void doNotRemoveCastOnMethodHandleInvoke() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.invoke.MethodHandle;
+
+              class Example {
+                  String hello(MethodHandle handle) throws Throwable {
+                      return (String) handle.invoke();
+                  }
+
+                  void assign(MethodHandle handle) throws Throwable {
+                      String s = (String) handle.invokeExact();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1024")
+    @Test
+    void doNotRemoveCastOnVarHandleAccessor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.invoke.VarHandle;
+
+              class Example {
+                  String read(VarHandle handle, Object target) {
+                      return (String) handle.get(target);
                   }
               }
               """

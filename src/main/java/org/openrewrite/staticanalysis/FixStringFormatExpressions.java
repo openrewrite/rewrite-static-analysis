@@ -89,12 +89,22 @@ public class FixStringFormatExpressions extends Recipe {
                             // Trim any extra args
                             String val = (String) fmtArg.getValue();
                             Matcher m = FS_PATTERN.matcher(val);
-                            int argIndex = isStringFormattedExpression ? 0 : 1;
+                            int initialArgIndex = isStringFormattedExpression ? 0 : 1;
+                            int argIndex = initialArgIndex;
                             while (m.find()) {
                                 if (m.group(1) != null || m.group(2).contains("<")) {
                                     return mi;
                                 }
-                                argIndex++;
+                                // `%n` and `%%` do not consume an argument, so don't count them
+                                String conversion = m.group(6);
+                                if (!"n".equals(conversion) && !"%".equals(conversion)) {
+                                    argIndex++;
+                                }
+                            }
+                            if (argIndex == initialArgIndex) {
+                                // No argument-consuming specifiers matched; without evidence an arg is
+                                // unused (e.g. SLF4J-style `{}` placeholders), leave the call alone
+                                return mi;
                             }
                             int finalArgIndex = argIndex;
                             return mi.withArguments(ListUtils.map(mi.getArguments(), (i, arg) -> {

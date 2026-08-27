@@ -216,6 +216,7 @@ public Set<String> getTags() {
 
 ### Accurate time estimates
 Provide realistic time estimates for manual fixes. When implementing SonarQube rules, use the same time estimate that is on the SonarQube definition.
+Leave the estimate off entirely when it is the framework default of 5 minutes; there is no reason to restate it.
 ```java
 @Override
 public Duration getEstimatedEffortPerOccurrence() {
@@ -282,3 +283,115 @@ Common collections:
 - `common-static-analysis.yml` - General static analysis fixes
 - `java-best-practices.yml` - Java-specific best practices
 - `static-analysis.yml` - Broader static analysis recipes
+
+## Data-flow-guarded local type replacement (ModernizeCollections)
+
+When replacing a legacy synchronized type with an unsynchronized one (`Hashtable`→`HashMap`,
+`Vector`→`ArrayList`, `Stack`→`Deque`, `StringBuffer`→`StringBuilder`), the transformation is only
+sound when the instance is a local variable that never escapes its method. Model this after
+`ReplaceStackWithDeque`: a `DataFlowSpec` whose source is the variable initializer and whose sinks
+mark escape. Key learnings:
+
+- **Escape = the reference itself leaves, not a derived value.** Check the sink node's *direct*
+  parent, not `firstEnclosing(J.Return.class)`. `return v.size()` puts `v` inside a `J.Return`, but
+  only `size()` is returned — `v` is the method-call receiver and does not escape. The escape sinks
+  that matter: `parent instanceof J.Return`, `v` in a `J.MethodInvocation`/`J.NewClass` argument list,
+  and `v` as the RHS of a `J.Assignment` whose target is a field.
+- **The rewrite-analysis flow models already handle closure capture precisely.** A buffer captured by
+  `items.forEach(x -> sb.append(x))` stays confined (converted), while `Runnable r = () -> sb.append(x);
+  new Thread(r).start()` is correctly detected as escaping (not converted). No hand-rolled lambda guard
+  is needed.
+- **Restrict to local variables.** Use `variable.getVariableType().getOwner() instanceof JavaType.Method`
+  to exclude fields (which are shared state). Also skip multi-variable declarations
+  (`Vector a = ..., b = ...`) — the shared type expression cannot be changed for just one variable.
+- **Guard type-specific methods.** `Hashtable` (`contains`/`elements`/`keys`) and `Vector`
+  (`addElement`/`elementAt`/…) expose methods absent from `HashMap`/`ArrayList`; skip when used.
+  `Vector(int, int)` has no `ArrayList` constructor. `StringBuilder`/`StringBuffer` APIs are identical.
+- **Fragment `ChangeType` leaves the old import; re-type the uses too.** Running `ChangeType` on just
+  the declaration (type expression + initializer) does not re-type the variable's *uses* (`v.add(...)`),
+  so those keep the old `JavaType`/method type, `typesInUse` still counts the legacy type, and
+  `maybeRemoveImport` cannot drop the import (`ReplaceStackWithDeque` has this wart). Blanket
+  `ChangeType` over the whole method is unsafe when the method references non-converted instances of the
+  same type (a field, an escaping local). The clean fix is precise per-variable re-typing: record the
+  declaration's `JavaType.Variable` in a `CompilationUnit`-scoped `IdentityHashMap`, then in
+  `visitIdentifier` re-type any identifier whose `getFieldType()` is that variable, and in
+  `visitMethodInvocation` re-map the `JavaType.Method` (declaring type **and return type**, so chained
+  calls like `sb.append(a).append(b)` resolve) whenever the receiver is already the replacement type but
+  the method type still declares the legacy type. With every reference re-typed, `maybeRemoveImport`
+  removes the import with no downstream cleanup needed. `ReplaceSynchronizedType` is the shared base that
+  implements this for `Hashtable`/`Vector`/`StringBuffer`.
+
+## Data flow / taint tracking (rewrite-analysis)
+
+### `Dataflow.findSinks` cannot track sources inside `catch` blocks
+`org.openrewrite.analysis.dataflow.Dataflow#findSinks` gates its results on control-flow
+*reachability*: it computes the control-flow graph of the enclosing method and prunes any
+flow whose nodes are not reachable on the normal control-flow path. A `catch` block is only
+entered via an exceptional edge, which the control-flow graph does not model, so every
+expression inside a `catch` is considered unreachable and the flow is pruned to empty —
+`findSinks` returns `Option.none()` even though `DataFlowNode.of(...)` and `spec.isSource(...)`
+both succeed.
+
+To taint-track a source that lives inside a `catch` block (e.g. connecting a caught exception
+to a newly thrown one), drive the flow engine directly and skip the reachability filter:
+```java
+DataFlowNode.of(cursor).forEach(node -> {
+    FlowGraph graph = ForwardFlow.findAllFlows(node, spec, FlowGraph.Factory.defaultFactory());
+    // BFS/DFS over graph.getEdges(); collect each node.getCursor().getValue() that is an Expression
+});
+```
+This yields the full forward taint graph (every expression the source flows into) without the
+control-flow reachability gate. See `FindNewExceptionWithoutCause`.
+
+### Matching a reference to a specific local/caught variable
+`JavaType.Variable.equals` is structural (compares `name` + `owner`), so a reference's
+`J.Identifier#getFieldType()` reliably equals the declaration's `NamedVariable#getVariableType()`.
+Fall back to simple-name comparison only when type attribution is missing.
+
+### `@Nullable` on a nested type is a type-use annotation
+Write `JavaType.@Nullable Variable`, not `@Nullable JavaType.Variable`. The latter annotates the
+scoping construct `JavaType` and fails to compile ("scoping construct cannot be annotated with
+type-use annotation"), which crashes the whole Lombok annotation-processing round and produces a
+misleading cascade of "does not override abstract method getDescription()" errors across every
+Lombok-annotated recipe.
+
+## Rewriting a loop into a differently-shaped loop (UseMapEntrySetIteration)
+
+Converting `for (K key : map.keySet())` into `for (Map.Entry<K, V> entry : map.entrySet())` means replacing
+the loop variable with two accessor calls. A few things made this tractable:
+
+- **Let a generated template body supply the typed prototypes.** Rather than hand-building a
+  `JavaType.Method` for `getKey()`/`getValue()`, build the replacement loop with a template whose body is
+  `entry.getKey(); entry.getValue();` and lift those two `J.MethodInvocation`s out of the generated block.
+  They come back fully attributed from the real parser, ready to be dropped into the original body, which is
+  then re-attached with `withBody(..)` so its formatting survives untouched.
+- **Give a prototype a new id at every use.** Reusing one node in several places puts duplicate ids in the
+  tree; `new RandomizeIdVisitor<>().visit(prototype, 0)` per site avoids it.
+- **JavaTemplate only resolves type names it can see on the classpath.** A simple name that resolves through
+  the file's own package (or a wildcard import) comes back as `JavaType.Unknown`, which trips
+  `LST contains missing or invalid type information` in tests. Build the template from fully qualified names,
+  then swap the resulting type arguments back to the `TypeTree`s the source already uses (the loop variable's
+  type expression, the declared type of `V v = map.get(k)`, or any naming of the type elsewhere in the same
+  method). That keeps the types correct and the printed name as short as the surrounding code —
+  `ShortenFullyQualifiedTypeReferences` shortens imported types but leaves same-package and
+  wildcard-imported ones fully qualified.
+- **Derive `K` and `V` from the invocations, not the map's declared type.** `keySet()`'s return type is
+  `Set<K>` and `get(..)`'s method type returns `V` as the compiler resolved them, so a subtype like
+  `class Config extends HashMap<String, String>` is handled without walking supertypes, and a raw map falls
+  out as "types could not be determined" instead of silently becoming `Object`.
+- **Visit nested loops first (`super.visitForEachLoop` before rewriting).** The inner loop then claims
+  `entry`, and the outer one sees that name taken when it scans its own (already rewritten) body, so
+  `VariableNameUtils.generateVariableName` plus a scan of the body yields `entry` / `entry1` rather than a
+  collision.
+- **Data tables only accept rows in the first cycle** (`DataTable#allowWritingInThisCycle`), so a recipe that
+  reports both the sites it changed and the sites it declined needs no bookkeeping to avoid duplicate rows
+  when a later cycle revisits an unchanged site.
+
+## Making a new recipe visible to the Moderne CLI
+
+`mod run --recipe <name>` resolves against the marketplace built from the recipe JAR's
+`META-INF/rewrite/recipes.csv`, not from a classpath scan. A recipe that `Environment.builder().scanRuntimeClasspath(..)`
+finds will still fail with `Unable to find recipe` until `./gradlew recipeCsvGenerate` adds it to that file
+(run it on its own; it conflicts with `publishToMavenLocal` in the same invocation). Publish under a version
+of your own (`-Prelease.version=2.99.1-SNAPSHOT`) so the CLI resolves the local jar rather than the CI
+snapshot of the same coordinates, then `mod config recipes jar install org.openrewrite.recipe:rewrite-static-analysis:<that version>`.

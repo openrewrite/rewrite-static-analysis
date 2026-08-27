@@ -49,26 +49,24 @@ public class RemoveHashCodeCallsFromArrayInstances extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(HASHCODE_MATCHER), new RemoveHashCodeCallsFromArrayInstancesVisitor());
-    }
+        return Preconditions.check(new UsesMethod<>(HASHCODE_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, ExecutionContext ctx) {
+                J.MethodInvocation mi = super.visitMethodInvocation(methodInvocation, ctx);
 
-    private static class RemoveHashCodeCallsFromArrayInstancesVisitor extends JavaIsoVisitor<ExecutionContext> {
-        @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation methodInvocation, ExecutionContext ctx) {
-            J.MethodInvocation mi = super.visitMethodInvocation(methodInvocation, ctx);
-
-            if (HASHCODE_MATCHER.matches(mi)) {
-                Expression select = mi.getSelect();
-                if (select != null && select.getType() instanceof JavaType.Array) {
-                    maybeAddImport("java.util.Arrays");
-                    return JavaTemplate.builder("Arrays.hashCode(#{anyArray(java.lang.Object)})")
-                            .imports("java.util.Arrays")
-                            .build()
-                            .apply(getCursor(), mi.getCoordinates().replace(), select);
+                if (HASHCODE_MATCHER.matches(mi)) {
+                    Expression select = mi.getSelect();
+                    if (select != null && select.getType() instanceof JavaType.Array) {
+                        maybeAddImport("java.util.Arrays");
+                        return JavaTemplate.builder("Arrays.hashCode(#{anyArray(java.lang.Object)})")
+                                .imports("java.util.Arrays")
+                                .build()
+                                .apply(getCursor(), mi.getCoordinates().replace(), select);
+                    }
                 }
-            }
 
-            return mi;
-        }
+                return mi;
+            }
+        });
     }
 }

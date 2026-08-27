@@ -209,4 +209,45 @@ class ReplaceStackWithDequeTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-analysis/issues/113")
+    @Test
+    void doNotFailOnDataFlowThroughNestedMethodInvocations() {
+        // Regression: dataflow was run for every initialized variable in the file, not just the `Stack`.
+        // On `Optional.ofNullable(a).orElse(opt.get())` the flow engine ping-ponged between the
+        // "argument to select" and "select to argument" steps until the stack overflowed.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.Stack;
+
+              class Test {
+                  String test(Optional<String> opt) {
+                      Stack<Integer> stack = new Stack<>();
+                      stack.push(1);
+                      String a = "x";
+                      return Optional.ofNullable(a).orElse(opt.get());
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayDeque;
+              import java.util.Deque;
+              import java.util.Optional;
+              import java.util.Stack;
+
+              class Test {
+                  String test(Optional<String> opt) {
+                      Deque<Integer> stack = new ArrayDeque<>();
+                      stack.push(1);
+                      String a = "x";
+                      return Optional.ofNullable(a).orElse(opt.get());
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

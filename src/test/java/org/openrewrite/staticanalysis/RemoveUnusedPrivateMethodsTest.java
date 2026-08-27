@@ -144,6 +144,58 @@ class RemoveUnusedPrivateMethodsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/877")
+    @Test
+    void privateMethodCalledWithRawCollectionArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+              import java.util.Map;
+              import java.util.Set;
+
+              class Main {
+                  Main(Map templates) {
+                      compileTemplates(templates.keySet(), templates.values());
+                  }
+
+                  private Set<String> compileTemplates(
+                          final Set<String> compiledParam, final Collection<String> toCheck) {
+                      return compiledParam;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/877")
+    @Test
+    void privateMethodCalledWithParameterizedMapArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Collection;
+              import java.util.Map;
+              import java.util.Set;
+
+              class Main {
+                  Main(Map<String, String> templates) {
+                      compileTemplates(templates.keySet(), templates.values());
+                  }
+
+                  private Set<String> compileTemplates(
+                          final Set<String> compiledParam, final Collection<String> toCheck) {
+                      return compiledParam;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1536")
     @Test
     void privateMethodWithBoundedGenericTypes() {

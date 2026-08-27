@@ -91,21 +91,13 @@ public class RemoveUnusedPrivateMethods extends Recipe {
 
                     JavaSourceFile cu = getCursor().firstEnclosingOrThrow(JavaSourceFile.class);
                     for (JavaType.Method usedMethodType : cu.getTypesInUse().getUsedMethods()) {
-                        if (methodType.getName().equals(usedMethodType.getName()) && methodType.equals(usedMethodType)) {
+                        if (TypeUtils.isOfTypeIgnoringGenerics(methodType, usedMethodType)) {
                             return m;
                         }
                     }
 
                     for (JavaType javaType : cu.getTypesInUse().getTypesInUse()) {
                         if (TypeUtils.isOfClassType(javaType, "org.junit.jupiter.params.provider.MethodSource")) {
-                            return m;
-                        }
-                    }
-
-                    // Temporary stop-gap until we have data flow analysis.
-                    // Do not remove method declarations with generic types since the method invocation in `cu.getTypesInUse` will be bounded with a type.
-                    for (JavaType.Method usedMethodType : cu.getTypesInUse().getDeclaredMethods()) {
-                        if (methodType.getName().equals(usedMethodType.getName()) && methodType.equals(usedMethodType) && m.toString().contains("Generic{")) {
                             return m;
                         }
                     }

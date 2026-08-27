@@ -1,0 +1,371 @@
+/*
+ * Copyright 2026 the original author or authors.
+ * <p>
+ * Licensed under the Moderne Source Available License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * https://docs.moderne.io/licensing/moderne-source-available-license
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.openrewrite.staticanalysis;
+
+import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
+import org.openrewrite.test.RecipeSpec;
+import org.openrewrite.test.RewriteTest;
+
+import static org.openrewrite.golang.Assertions.go;
+import static org.openrewrite.groovy.Assertions.groovy;
+import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
+
+class RemoveUnconditionalValueOverwriteTest implements RewriteTest {
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new RemoveUnconditionalValueOverwrite());
+    }
+
+    @DocumentExample
+    @Test
+    void removeOverwrittenMapPut() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key", 1);
+                      map.put("key", 2);
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key", 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenWithVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test(String key) {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put(key, 1);
+                      map.put(key, 2);
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test(String key) {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put(key, 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeDifferentKeys() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key1", 1);
+                      map.put("key2", 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeDifferentMaps() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test() {
+                      Map<String, Integer> map1 = new HashMap<>();
+                      Map<String, Integer> map2 = new HashMap<>();
+                      map1.put("key", 1);
+                      map2.put("key", 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeNonConsecutivePuts() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key", 1);
+                      System.out.println("between");
+                      map.put("key", 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeMultipleOverwrites() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key", 1);
+                      map.put("key", 2);
+                      map.put("key", 3);
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key", 3);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapPutKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(map: java.util.Map<String, Int>) {
+                  map.put("key", 1)
+                  map.put("key", 2)
+              }
+              """,
+            """
+              fun test(map: java.util.Map<String, Int>) {
+                  map.put("key", 2)
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapPutGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test() {
+                  Map<String, Integer> map = new HashMap<>()
+                  map.put("key", 1)
+                  map.put("key", 2)
+              }
+              """,
+            """
+              void test() {
+                  Map<String, Integer> map = new HashMap<>()
+                  map.put("key", 2)
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapSetTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(map: Map<string, number>) {
+                  map.set("key", 1);
+                  map.set("key", 2);
+              }
+              """,
+            """
+              function test(map: Map<string, number>) {
+                  map.set("key", 2);
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenOverwrittenValueHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  int calls = 0;
+
+                  int register() {
+                      return ++calls;
+                  }
+
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put("key", register());
+                      map.put("key", 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenKeyHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class Test {
+                  int calls = 0;
+
+                  String key() {
+                      calls++;
+                      return "key";
+                  }
+
+                  void test() {
+                      Map<String, Integer> map = new HashMap<>();
+                      map.put(key(), 1);
+                      map.put(key(), 2);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenSubscriptPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def test():
+                  d = {}
+                  d["key"] = 1
+                  d["key"] = 2
+                  print(d)
+              """,
+            """
+              def test():
+                  d = {}
+                  d["key"] = 2
+                  print(d)
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeOverwrittenMapIndexGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func recordStatus(counts map[string]int) {
+                  counts["pending"] = 1
+                  counts["pending"] = 2
+                  publish(counts)
+              }
+
+              func publish(counts map[string]int) {}
+              """,
+            """
+              package main
+
+              func recordStatus(counts map[string]int) {
+                  counts["pending"] = 2
+                  publish(counts)
+              }
+
+              func publish(counts map[string]int) {}
+              """
+          )
+        );
+    }
+}

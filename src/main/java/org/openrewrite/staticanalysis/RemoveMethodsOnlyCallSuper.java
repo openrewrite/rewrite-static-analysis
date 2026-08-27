@@ -22,6 +22,8 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.AnnotationMatcher;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
@@ -29,12 +31,15 @@ import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class RemoveMethodsOnlyCallSuper extends Recipe {
+
+    private static final AnnotationMatcher OVERRIDE = new AnnotationMatcher("@java.lang.Override");
 
     String displayName = "Remove methods that only call super";
 
@@ -81,14 +86,8 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                // Skip if method has annotations other than @Override or @Deprecated
-                for (J.Annotation annotation : md.getLeadingAnnotations()) {
-                    JavaType annotationType = annotation.getAnnotationType().getType();
-                    if (annotationType == null ||
-                        !TypeUtils.isOfClassType(annotationType, "java.lang.Override") &&
-                        !TypeUtils.isOfClassType(annotationType, "java.lang.Deprecated")) {
-                        return md;
-                    }
+                if (hasSemanticAnnotation(md)) {
+                    return md;
                 }
 
                 // Skip if method has Javadoc comments
@@ -100,6 +99,17 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
 
                 // Skip if method is final (prevents further overriding)
                 if (methodType.hasFlags(Flag.Final)) {
+                    return md;
+                }
+
+                // Skip if method is synchronized, unless the super method is synchronized too
+                if (md.hasModifier(J.Modifier.Type.Synchronized) &&
+                    (superCall.getMethodType() == null || !superCall.getMethodType().hasFlags(Flag.Synchronized))) {
+                    return md;
+                }
+
+                if (md.hasModifier(J.Modifier.Type.Strictfp) &&
+                    (superCall.getMethodType() == null || !superCall.getMethodType().hasFlags(Flag.Strictfp))) {
                     return md;
                 }
 
@@ -123,6 +133,23 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     }
                 }
                 return null;
+            }
+
+            private boolean hasSemanticAnnotation(J.MethodDeclaration method) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean found) {
+                        if (!OVERRIDE.matches(annotation)) {
+                            found.set(true);
+                        }
+                        return annotation;
+                    }
+
+                    @Override
+                    public J.Block visitBlock(J.Block block, AtomicBoolean found) {
+                        return block;
+                    }
+                }.reduce(method, new AtomicBoolean()).get();
             }
 
             private boolean argumentsMatchParameters(List<Statement> parameters, List<Expression> arguments) {

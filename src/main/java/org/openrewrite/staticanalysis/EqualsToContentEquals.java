@@ -30,6 +30,9 @@ import org.openrewrite.java.tree.TypeUtils;
 import static java.util.Collections.singletonList;
 
 public class EqualsToContentEquals extends Recipe {
+    private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("String equals(Object)");
+    private static final MethodMatcher TOSTRING_MATCHER = new MethodMatcher("java.lang.* toString()");
+
     private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
             new UsesType<>("java.lang.CharSequence", false),
             new UsesType<>("java.lang.StringBuffer", false),
@@ -44,31 +47,26 @@ public class EqualsToContentEquals extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(PRECONDITION, new EqualsToContentEqualsVisitor());
-    }
-
-    private static class EqualsToContentEqualsVisitor extends JavaIsoVisitor<ExecutionContext> {
-        private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("String equals(Object)");
-        private static final MethodMatcher TOSTRING_MATCHER = new MethodMatcher("java.lang.* toString()");
-
-        @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
-            J.MethodInvocation m = super.visitMethodInvocation(mi, ctx);
-            if (!EQUALS_MATCHER.matches(m)) {
-                return m;
+        return Preconditions.check(PRECONDITION, new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                J.MethodInvocation m = super.visitMethodInvocation(mi, ctx);
+                if (!EQUALS_MATCHER.matches(m)) {
+                    return m;
+                }
+                Expression equalsArgument = m.getArguments().get(0);
+                if (!TOSTRING_MATCHER.matches(equalsArgument)) {
+                    return m;
+                }
+                J.MethodInvocation inv = (J.MethodInvocation) equalsArgument;
+                Expression toStringSelect = inv.getSelect();
+                if (toStringSelect == null || !TypeUtils.isAssignableTo("java.lang.CharSequence", toStringSelect.getType())) {
+                    return m;
+                }
+                // Strip out the toString() on the argument and replace with contentEquals
+                return m.withArguments(singletonList(toStringSelect))
+                        .withName(m.getName().withSimpleName("contentEquals"));
             }
-            Expression equalsArgument = m.getArguments().get(0);
-            if (!TOSTRING_MATCHER.matches(equalsArgument)) {
-                return m;
-            }
-            J.MethodInvocation inv = (J.MethodInvocation) equalsArgument;
-            Expression toStringSelect = inv.getSelect();
-            if (toStringSelect == null || !TypeUtils.isAssignableTo("java.lang.CharSequence", toStringSelect.getType())) {
-                return m;
-            }
-            // Strip out the toString() on the argument and replace with contentEquals
-            return m.withArguments(singletonList(toStringSelect))
-                    .withName(m.getName().withSimpleName("contentEquals"));
-        }
+        });
     }
 }

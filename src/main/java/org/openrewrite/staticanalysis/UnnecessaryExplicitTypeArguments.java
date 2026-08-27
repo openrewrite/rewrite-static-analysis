@@ -22,8 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class UnnecessaryExplicitTypeArguments extends Recipe {
 
@@ -53,24 +52,42 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
 
                 JavaType inferredType = null;
                 if (enclosing instanceof J.MethodInvocation) {
-                    if (shouldRetainOnStaticMethod(methodType)) {
-                        return m;
-                    }
-                    // Cannot remove type parameters if it would introduce ambiguity about which method should be called
                     J.MethodInvocation enclosingMethod = (J.MethodInvocation) enclosing;
-                    if (enclosingMethod.getMethodType() == null) {
-                        return m;
-                    }
-                    if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
-                        return m;
-                    }
-                    JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
-                    // If there's another method on the class with the same name, skip removing type parameters
-                    // More nuanced detection of ambiguity introduction is possible
-                    if (declaringClass.getMethods().stream()
-                            .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
-                            .count() > 1) {
-                        return m;
+                    if (enclosingMethod.getSelect() == method) {
+                        // This invocation is the select (receiver) of the enclosing invocation, so the
+                        // enclosing call provides no target type to drive inference of this call's type
+                        // variables. Retain the witness unless those type variables can be inferred from
+                        // this call's own arguments.
+                        if (!canInferTypeArgumentsFromArguments(methodType)) {
+                            return m;
+                        }
+                    } else {
+                        // As above, retain unless inferable from this call's own arguments (static or not).
+                        if (!canInferTypeArgumentsFromArguments(methodType)) {
+                            return m;
+                        }
+                        // Cannot remove type parameters if it would introduce ambiguity about which method should be called
+                        if (enclosingMethod.getMethodType() == null) {
+                            return m;
+                        }
+                        // The enclosing method's type parameters may be interdependent (e.g. `<T, S extends T>`).
+                        // Inference then resolves them jointly against the target type, so this argument's witness
+                        // can be load-bearing even though this call's own type variables are inferable from its
+                        // arguments. Retain it rather than reason about the enclosing method's inference.
+                        if (hasInterdependentTypeParameters(enclosingMethod.getMethodType())) {
+                            return m;
+                        }
+                        if (!(enclosingMethod.getMethodType().getDeclaringType() instanceof JavaType.Class)) {
+                            return m;
+                        }
+                        JavaType.Class declaringClass = (JavaType.Class) enclosingMethod.getMethodType().getDeclaringType();
+                        // If there's another method on the class with the same name, skip removing type parameters
+                        // More nuanced detection of ambiguity introduction is possible
+                        if (declaringClass.getMethods().stream()
+                                .filter(it -> it.getName().equals(enclosingMethod.getSimpleName()))
+                                .count() > 1) {
+                            return m;
+                        }
                     }
                     inferredType = methodType.getReturnType();
                 } else if (enclosing instanceof Expression) {
@@ -84,13 +101,20 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                     }
                     inferredType = ((NameTree) enclosing).getType();
                 } else if (enclosing instanceof J.Return) {
-                    Object e = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || Cursor.ROOT_VALUE.equals(p)).getValue();
+                    Cursor enclosingFnCursor = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || Cursor.ROOT_VALUE.equals(p));
+                    Object e = enclosingFnCursor.getValue();
                     if (e instanceof J.MethodDeclaration) {
                         J.MethodDeclaration methodDeclaration = (J.MethodDeclaration) e;
                         if (methodDeclaration.getReturnTypeExpression() != null) {
                             inferredType = methodDeclaration.getReturnTypeExpression().getType();
                         }
                     } else if (e instanceof J.Lambda) {
+                        // A lambda passed as a call argument has the same inference circularity as the
+                        // select/argument branches above; guard it the same way.
+                        Object lambdaEnclosing = enclosingFnCursor.getParentTreeCursor().getValue();
+                        if (lambdaEnclosing instanceof J.MethodInvocation && !canInferTypeArgumentsFromArguments(methodType)) {
+                            return m;
+                        }
                         inferredType = getLambdaReturnType(((J.Lambda) e).getType());
                     }
                 }
@@ -142,22 +166,85 @@ public class UnnecessaryExplicitTypeArguments extends Recipe {
                 return samReturn;
             }
 
-            private boolean shouldRetainOnStaticMethod(JavaType.Method methodType) {
-                if (!methodType.hasFlags(Flag.Static)) {
+            private boolean canInferTypeArgumentsFromArguments(JavaType.Method methodType) {
+                // Without arguments, the type parameters cannot be inferred from call-site arguments.
+                if (methodType.getParameterTypes().isEmpty()) {
                     return false;
                 }
-                // Without arguments, the type parameter cannot be inferred from call-site parameters.
-                // Removing the explicit type arguments can break overload resolution in the enclosing call.
-                if (methodType.getParameterTypes().isEmpty()) {
+                // methodType is already substituted (no GenericTypeVariable left) and
+                // getDeclaredFormalTypeNames() is unreliable; look up the real declared signature instead.
+                JavaType.Method declared = findDeclaredSignature(methodType);
+                if (declared == null) {
+                    return false;
+                }
+                Map<String, JavaType.GenericTypeVariable> returnTypeVariables = new HashMap<>();
+                collectGenericTypeVariables(declared.getReturnType(), returnTypeVariables);
+                if (returnTypeVariables.isEmpty()) {
                     return true;
                 }
-                List<String> formalTypeNames = new ArrayList<>(methodType.getDeclaredFormalTypeNames());
-                methodType.getParameterTypes().stream()
-                        .filter(p -> p instanceof JavaType.Parameterized)
-                        .flatMap(p -> ((JavaType.Parameterized) p).getTypeParameters().stream())
-                        .filter(t -> t instanceof JavaType.GenericTypeVariable)
-                        .forEach(it -> formalTypeNames.remove(((JavaType.GenericTypeVariable) it).getName()));
-                return !formalTypeNames.isEmpty();
+                Map<String, JavaType.GenericTypeVariable> parameterTypeVariables = new HashMap<>();
+                for (JavaType paramType : declared.getParameterTypes()) {
+                    collectGenericTypeVariables(paramType, parameterTypeVariables);
+                }
+                return parameterTypeVariables.keySet().containsAll(returnTypeVariables.keySet());
+            }
+
+            private boolean hasInterdependentTypeParameters(JavaType.Method methodType) {
+                JavaType.Method declared = findDeclaredSignature(methodType);
+                if (declared == null) {
+                    return false;
+                }
+                Map<String, JavaType.GenericTypeVariable> typeVariables = new HashMap<>();
+                collectGenericTypeVariables(declared.getReturnType(), typeVariables);
+                for (JavaType paramType : declared.getParameterTypes()) {
+                    collectGenericTypeVariables(paramType, typeVariables);
+                }
+                for (Map.Entry<String, JavaType.GenericTypeVariable> typeVariable : typeVariables.entrySet()) {
+                    Set<String> boundNames = new HashSet<>();
+                    for (JavaType bound : typeVariable.getValue().getBounds()) {
+                        Map<String, JavaType.GenericTypeVariable> inBound = new HashMap<>();
+                        collectGenericTypeVariables(bound, inBound);
+                        boundNames.addAll(inBound.keySet());
+                    }
+                    // A self-referential F-bound such as `<E extends Enum<E>>` is not a dependency on
+                    // another type parameter, and is far too common to retain witnesses for.
+                    boundNames.remove(typeVariable.getKey());
+                    boundNames.retainAll(typeVariables.keySet());
+                    if (!boundNames.isEmpty()) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private JavaType.@Nullable Method findDeclaredSignature(JavaType.Method methodType) {
+                if (!(methodType.getDeclaringType() instanceof JavaType.Class)) {
+                    return null;
+                }
+                JavaType.Class declaringClass = (JavaType.Class) methodType.getDeclaringType();
+                JavaType.Method match = null;
+                for (JavaType.Method candidate : declaringClass.getMethods()) {
+                    if (candidate.getName().equals(methodType.getName()) &&
+                            candidate.getParameterTypes().size() == methodType.getParameterTypes().size()) {
+                        if (match != null) {
+                            return null; // ambiguous same-arity overload
+                        }
+                        match = candidate;
+                    }
+                }
+                return match;
+            }
+
+            private void collectGenericTypeVariables(@Nullable JavaType type, Map<String, JavaType.GenericTypeVariable> into) {
+                if (type instanceof JavaType.GenericTypeVariable) {
+                    into.putIfAbsent(((JavaType.GenericTypeVariable) type).getName(), (JavaType.GenericTypeVariable) type);
+                } else if (type instanceof JavaType.Parameterized) {
+                    for (JavaType typeParameter : ((JavaType.Parameterized) type).getTypeParameters()) {
+                        collectGenericTypeVariables(typeParameter, into);
+                    }
+                } else if (type instanceof JavaType.Array) {
+                    collectGenericTypeVariables(((JavaType.Array) type).getElemType(), into);
+                }
             }
         });
     }

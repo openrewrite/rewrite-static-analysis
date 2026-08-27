@@ -67,6 +67,10 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return visited;
                 }
 
+                if (isSignaturePolymorphic(typeCast.getExpression())) {
+                    return visited;
+                }
+
                 Cursor parent = getCursor().dropParentUntil(is -> is instanceof J.VariableDeclarations ||
                                                                   is instanceof J.Lambda ||
                                                                   is instanceof J.Return ||
@@ -91,6 +95,37 @@ public class RemoveRedundantTypeCast extends Recipe {
                     }
                 }
 
+                // When the cast is an argument to an overloaded method, removing it can
+                // make resolution ambiguous (e.g. `log(String, Object...)` vs
+                // `log(String, Throwable)` selected by `(Object) value`). Bail out before
+                // any other branch decides the cast is redundant.
+                if (parentValue instanceof MethodCall) {
+                    JavaType.Method methodType = ((MethodCall) parentValue).getMethodType();
+                    if (methodType == null || hasMethodOverloading(methodType)) {
+                        return visited;
+                    }
+                }
+
+                // A raw cast on a parameterized expression (e.g. `(B) b` where `b` is `B<T>`,
+                // or `(Collection) set` where `set` is `Set<? extends G>`) is an intentional
+                // unchecked conversion; removing it changes overload and type-inference behavior
+                // on parameterized arguments, which can break compilation.
+                JavaType.Parameterized exprParameterized = TypeUtils.asParameterized(expressionType);
+                if (parentValue instanceof MethodCall && exprParameterized != null &&
+                        TypeUtils.asFullyQualified(castType) != null &&
+                        TypeUtils.asParameterized(castType) == null &&
+                        TypeUtils.isAssignableTo(castType, expressionType)) {
+                    return visited;
+                }
+
+                // A cast from a raw type to its parameterized form (e.g. `(Box<?>) raw`) re-enters the
+                // generic type system; without it every member accessed on the expression is erased.
+                JavaType.FullyQualified exprFullyQualified = TypeUtils.asFullyQualified(expressionType);
+                if (TypeUtils.asParameterized(castType) != null && exprParameterized == null &&
+                        exprFullyQualified != null && !exprFullyQualified.getTypeParameters().isEmpty()) {
+                    return visited;
+                }
+
                 JavaType targetType = null;
                 if (castType.equals(expressionType)) {
                     targetType = castType;
@@ -99,20 +134,20 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
-                    if (methodType == null || hasMethodOverloading(methodType)) {
-                        return visited;
-                    }
                     if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
                             if (arg == typeCast) {
-                                // A `null` literal cast at the last position of a (potential) varargs call
-                                // disambiguates between passing `null` as the array vs. a single null element.
-                                if (J.Literal.isLiteralValue(typeCast.getExpression(), null) &&
-                                        i == methodType.getParameterTypes().size() - 1 &&
+                                // Preserve a semantically significant cast at the varargs position: a `null`
+                                // literal (array vs. single null element) or an array cast to a non-array type
+                                // (e.g. `(Object)`, marking the array as a single element rather than spread).
+                                if (i == methodType.getParameterTypes().size() - 1 &&
                                         i == arguments.size() - 1 &&
-                                        methodType.getParameterTypes().get(i) instanceof JavaType.Array) {
+                                        methodType.getParameterTypes().get(i) instanceof JavaType.Array &&
+                                        (J.Literal.isLiteralValue(typeCast.getExpression(), null) ||
+                                                typeCast.getExpression().getType() instanceof JavaType.Array &&
+                                                        !(castType instanceof JavaType.Array))) {
                                     return visited;
                                 }
                                 targetType = getParameterType(methodType, i);
@@ -140,8 +175,16 @@ public class RemoveRedundantTypeCast extends Recipe {
                 if ((targetType instanceof JavaType.Primitive || castType instanceof JavaType.Primitive) && castType != expressionType) {
                     return visitedTypeCast;
                 }
-                if (typeCast.getExpression() instanceof J.Lambda || typeCast.getExpression() instanceof J.MemberReference) {
+                J castExpression = typeCast.getExpression();
+                while (castExpression instanceof J.Parentheses || castExpression instanceof J.ControlParentheses) {
+                    castExpression = castExpression instanceof J.Parentheses ?
+                            ((J.Parentheses<?>) castExpression).getTree() :
+                            ((J.ControlParentheses<?>) castExpression).getTree();
+                }
+                if (castExpression instanceof J.Lambda || castExpression instanceof J.MemberReference) {
                     // Not currently supported, this will be more accurate with dataflow analysis.
+                    // The cast supplies the target type for the lambda or method reference; removing it
+                    // can break compilation, e.g. when assigned to a `var` local.
                     return visitedTypeCast;
                 }
 
@@ -189,6 +232,18 @@ public class RemoveRedundantTypeCast extends Recipe {
                     return parentheses.getTree().withPrefix(parentheses.getPrefix());
                 }
                 return parentheses;
+            }
+
+            /// Signature-polymorphic methods (JLS 15.12.3) take their return type from the enclosing cast, so removing it breaks compilation.
+            private boolean isSignaturePolymorphic(Expression expression) {
+                Expression expr = expression.unwrap();
+                if (!(expr instanceof J.MethodInvocation)) {
+                    return false;
+                }
+                JavaType.Method methodType = ((J.MethodInvocation) expr).getMethodType();
+                return methodType != null &&
+                        (TypeUtils.isOfClassType(methodType.getDeclaringType(), "java.lang.invoke.MethodHandle") ||
+                                TypeUtils.isOfClassType(methodType.getDeclaringType(), "java.lang.invoke.VarHandle"));
             }
 
             private boolean returnsDeclaredTypeParameter(Expression expression) {

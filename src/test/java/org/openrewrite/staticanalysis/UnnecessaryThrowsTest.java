@@ -332,6 +332,163 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void retainJavadocThrowsForRetainedException() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * @throws FileNotFoundException never actually thrown
+                   * @throws InterruptedException when interrupted while sleeping
+                   */
+                  private void changed() throws FileNotFoundException, InterruptedException {
+                      Thread.sleep(1);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * @throws InterruptedException when interrupted while sleeping
+                   */
+                  private void changed() throws InterruptedException {
+                      Thread.sleep(1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocExceptionTag() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @exception FileNotFoundException when the file is missing
+                   */
+                  static void changed() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * Does a thing.
+                   */
+                  static void changed() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocThrowsWithMultiLineDescription() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @param name the name
+                   * @throws FileNotFoundException when the file is missing,
+                   *         which cannot actually happen here
+                   */
+                  private void changed(String name) throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @param name the name
+                   */
+                  private void changed(String name) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocEntirelyWhenOnlyThrowsRemains() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * @throws FileNotFoundException when the file is missing
+                   */
+                  private void changed() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  private void changed() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeJavadocThrowsOnAnnotatedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileNotFoundException;
+
+              class Test {
+                  /**
+                   * Does a thing.
+                   *
+                   * @throws FileNotFoundException when the file is missing
+                   */
+                  @Deprecated
+                  private void changed() throws FileNotFoundException {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  /**
+                   * Does a thing.
+                   */
+                  @Deprecated
+                  private void changed() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite/issues/1298")
     @Test
     void doNotRemoveExceptionCoveringOtherExceptions() {
@@ -479,6 +636,55 @@ class UnnecessaryThrowsTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/939")
+    @Test
+    void retainThrowsOnPackagePrivateOverridableMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  void test() throws Exception {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  void test() throws Exception {
+                      throw new Exception("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainThrowsOnPublicMethodOverriddenInSameFile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  public void test() throws Exception {
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  public void test() throws Exception {
+                      throw new Exception("test");
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/605")
     @Test
     void removeUnnecessaryCatchAfterRemovingThrows() {
@@ -487,7 +693,7 @@ class UnnecessaryThrowsTest implements RewriteTest {
             """
               class UnnecessaryThrowsTest {
 
-                  void methodThrowing() throws NoSuchMethodException { }
+                  private void methodThrowing() throws NoSuchMethodException { }
 
                   void methodCatching() {
                       try {
@@ -500,10 +706,89 @@ class UnnecessaryThrowsTest implements RewriteTest {
             """
               class UnnecessaryThrowsTest {
 
-                  void methodThrowing() { }
+                  private void methodThrowing() { }
 
                   void methodCatching() {
                       methodThrowing();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void retainCatchOfExceptionInUnrelatedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;
+              import java.io.IOException;
+
+              class A {
+                  private void handleException() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() throws IOException {
+                  }
+              }
+              """,
+            """
+              import java.io.FileInputStream;
+
+              class A {
+                  private void handleException() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void retainCatchOfExceptionAroundUncheckedExceptions() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class A {
+                  private void handleException() {
+                      try {
+                          throw new IllegalStateException();
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() throws IOException {
+                  }
+              }
+              """,
+            """
+              class A {
+                  private void handleException() {
+                      try {
+                          throw new IllegalStateException();
+                      } catch (Exception e) {
+                      }
+                  }
+
+                  private void doSomething() {
                   }
               }
               """

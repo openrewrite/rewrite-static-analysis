@@ -59,225 +59,223 @@ public class NeedBraces extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new NeedBracesVisitor();
-    }
+        return new JavaIsoVisitor<ExecutionContext>() {
 
-    private static class NeedBracesVisitor extends JavaIsoVisitor<ExecutionContext> {
+            @SuppressWarnings("NotNullFieldNotInitialized")
+            NeedBracesStyle needBracesStyle;
 
-        @SuppressWarnings("NotNullFieldNotInitialized")
-        NeedBracesStyle needBracesStyle;
-
-        /**
-         * A {@link J.Block} implies the section of code is implicitly surrounded in braces.
-         * We can use that to our advantage by saying if you aren't a block (e.g. a single {@link Statement}, etc.),
-         * then we're going to make this into a block. That's how we'll get the code bodies surrounded in braces.
-         */
-        private <T extends Statement> J.Block buildBlock(T element) {
-            J rootElement = null;
-            Space end = Space.EMPTY;
-
-            Cursor currentCursor = getCursor();
-            while (
-                    currentCursor != null &&
-                            currentCursor.getParent() != null &&
-                            !(currentCursor.getParent().getValue() instanceof J.Block)
-            ) {
-                currentCursor = currentCursor.getParent();
-            }
-
-            if (currentCursor != null && currentCursor.getValue() instanceof JRightPadded) {
-                JRightPadded<J> paddedIf = currentCursor.getValue();
-                rootElement = paddedIf.getElement();
-            }
-
-            // Move comments
-            if (rootElement instanceof Statement && !(rootElement instanceof J.DoWhileLoop)) {
-                Cursor blockParentCursor = currentCursor.getParent();
-                J.Block block = blockParentCursor.getValue();
-                List<Statement> statements = block.getStatements();
-                int currentIndex = statements.indexOf(rootElement);
-                boolean last = currentIndex == statements.size() - 1;
-                Space trailingComment = last ? block.getEnd() : statements.get(currentIndex + 1).getPrefix();
-
-                if (!trailingComment.isEmpty() && !trailingComment.getWhitespace().contains("\n")) {
-                    end = trailingComment;
-                    if (last) {
-                        blockParentCursor.putMessage("removeEndComments", true);
-                    } else {
-                        blockParentCursor.<List<Integer>>computeMessageIfAbsent("replaced", k -> new ArrayList<>()).add(currentIndex);
-                    }
-                }
-            }
-
-            return new J.Block(
-                    Tree.randomId(),
-                    Space.EMPTY,
-                    Markers.EMPTY,
-                    JRightPadded.build(false),
-                    element instanceof J.Empty ? emptyList() : singletonList(JRightPadded.build(element)),
-                    end
-            );
-        }
-
-        @Override
-        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof SourceFile) {
-                SourceFile cu = (SourceFile) requireNonNull(tree);
-                // Python don't need none of your curly braces
-                if (cu.getSourcePath().toString().endsWith(".py")) {
-                    return (J) tree;
-                }
-                needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);
-            }
-            return super.visit(tree, ctx);
-        }
-
-        @Override
-        public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-            J.Block bl = super.visitBlock(block, ctx);
-            if (Boolean.TRUE.equals(getCursor().pollMessage("removeEndComments"))) {
-                bl = bl.withEnd(bl.getEnd().withComments(emptyList()));
-                bl = maybeAutoFormat(block, bl, ctx);
-            }
-            List<Integer> indexes = getCursor().pollMessage("replaced");
-            if (indexes != null) {
-                for (int index : indexes) {
-                    boolean last = index == bl.getPadding().getStatements().size() - 1;
-                    if (!last) {
-                        bl = bl.withStatements(ListUtils.map(bl.getStatements(), (i, stmt) -> {
-                            if (i == index + 1) {
-                                return stmt.withPrefix(Space.EMPTY);
-                            }
-                            return stmt;
-                        }));
-                    } else {
-                        bl = bl.withEnd(bl.getEnd().withComments(emptyList()));
-                    }
-                }
-                bl = maybeAutoFormat(block, bl, ctx);
-            }
-            return bl;
-        }
-
-        @Override
-        public J.If visitIf(J.If iff, ExecutionContext ctx) {
-            if (usedAsExpression()) {
-                // Kotlin has no dedicated ternary operator
-                return iff;
-            }
-            J.If elem = super.visitIf(iff, ctx);
-            boolean hasAllowableBodyType = elem.getThenPart() instanceof J.Block;
-            if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b;
-                if (elem.getElsePart() != null && !elem.getElsePart().getPrefix().getComments().isEmpty()) {
-                    Space end = elem.getElsePart().getPrefix();
-                    elem = elem.withElsePart(elem.getElsePart().withPrefix(Space.EMPTY));
-                    b = buildBlock(elem.getThenPart()).withEnd(end);
-                } else {
-                    b = buildBlock(elem.getThenPart());
-                }
-
-                elem = maybeAutoFormat(elem, elem.withThenPart(b), ctx);
-            }
-            return elem;
-        }
-
-        private boolean usedAsExpression() {
-            return getCursor().getParentOrThrow().getValue() instanceof K.StatementExpression;
-        }
-
-        @Override
-        public J.If.Else visitElse(J.If.Else else_, ExecutionContext ctx) {
-            J.If.Else elem = super.visitElse(else_, ctx);
-            boolean hasAllowableBodyType = elem.getBody() instanceof J.Block || elem.getBody() instanceof J.If;
-            if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                Space prefix = elem.getPrefix();
-                Statement body = elem.getBody();
-
-                if (!prefix.getComments().isEmpty() && prefix.getWhitespace().contains("\n")) {
-                    body = body.withPrefix(prefix);
-                    elem = elem.withPrefix(Space.EMPTY);
-                }
-
-                J.Block b = buildBlock(body);
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            }
-            return elem;
-        }
-
-        @Override
-        public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, ExecutionContext ctx) {
-            J.WhileLoop elem = super.visitWhileLoop(whileLoop, ctx);
-            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
-                    elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
-                    elem.getBody() instanceof J.Block;
-            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
-                J.Block b = buildBlock(elem.getBody());
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem.getBody());
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            }
-            return elem;
-        }
-
-        @Override
-        public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, ExecutionContext ctx) {
-            J.DoWhileLoop elem = super.visitDoWhileLoop(doWhileLoop, ctx);
-            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
-                    elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
-                    elem.getBody() instanceof J.Block;
-            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
-                J.Block b = buildBlock(elem.getBody());
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                // The trailing comment between the body and the `while` keyword lives in the
-                // `before` space of the `whileCondition`. When wrapping the body in a block,
-                // move a same-line trailing comment into the new block's end so it stays with
-                // the body statement rather than drifting onto the closing brace.
-                JLeftPadded<J.ControlParentheses<Expression>> whileCondition = elem.getPadding().getWhileCondition();
-                Space whileBefore = whileCondition.getBefore();
+            /**
+             * A {@link J.Block} implies the section of code is implicitly surrounded in braces.
+             * We can use that to our advantage by saying if you aren't a block (e.g. a single {@link Statement}, etc.),
+             * then we're going to make this into a block. That's how we'll get the code bodies surrounded in braces.
+             */
+            private <T extends Statement> J.Block buildBlock(T element) {
+                J rootElement = null;
                 Space end = Space.EMPTY;
-                if (!whileBefore.getComments().isEmpty() && !whileBefore.getWhitespace().contains("\n")) {
-                    end = whileBefore;
-                    elem = elem.getPadding().withWhileCondition(whileCondition.withBefore(Space.SINGLE_SPACE));
+
+                Cursor currentCursor = getCursor();
+                while (
+                        currentCursor != null &&
+                                currentCursor.getParent() != null &&
+                                !(currentCursor.getParent().getValue() instanceof J.Block)
+                ) {
+                    currentCursor = currentCursor.getParent();
                 }
-                J.Block b = buildBlock(elem.getBody()).withEnd(end);
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            }
-            return elem;
-        }
 
-        @Override
-        public J.ForLoop visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
-            J.ForLoop elem = super.visitForLoop(forLoop, ctx);
-            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
-                    elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
-                    elem.getBody() instanceof J.Block;
-            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
-                J.Block b = buildBlock(elem.getBody());
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem.getBody());
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            }
-            return elem;
-        }
+                if (currentCursor != null && currentCursor.getValue() instanceof JRightPadded) {
+                    JRightPadded<J> paddedIf = currentCursor.getValue();
+                    rootElement = paddedIf.getElement();
+                }
 
-        @Override
-        public J.ForEachLoop visitForEachLoop(J.ForEachLoop forEachLoop, ExecutionContext ctx) {
-            J.ForEachLoop elem = super.visitForEachLoop(forEachLoop, ctx);
-            boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
-                    elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
-                    elem.getBody() instanceof J.Block;
-            if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
-                J.Block b = buildBlock(elem.getBody());
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
-            } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
-                J.Block b = buildBlock(elem.getBody());
-                elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                // Move comments
+                if (rootElement instanceof Statement && !(rootElement instanceof J.DoWhileLoop)) {
+                    Cursor blockParentCursor = currentCursor.getParent();
+                    J.Block block = blockParentCursor.getValue();
+                    List<Statement> statements = block.getStatements();
+                    int currentIndex = statements.indexOf(rootElement);
+                    boolean last = currentIndex == statements.size() - 1;
+                    Space trailingComment = last ? block.getEnd() : statements.get(currentIndex + 1).getPrefix();
+
+                    if (!trailingComment.isEmpty() && !trailingComment.getWhitespace().contains("\n")) {
+                        end = trailingComment;
+                        if (last) {
+                            blockParentCursor.putMessage("removeEndComments", true);
+                        } else {
+                            blockParentCursor.<List<Integer>>computeMessageIfAbsent("replaced", k -> new ArrayList<>()).add(currentIndex);
+                        }
+                    }
+                }
+
+                return new J.Block(
+                        Tree.randomId(),
+                        Space.EMPTY,
+                        Markers.EMPTY,
+                        JRightPadded.build(false),
+                        element instanceof J.Empty ? emptyList() : singletonList(JRightPadded.build(element)),
+                        end
+                );
             }
-            return elem;
-        }
+
+            @Override
+            public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+                if (tree instanceof SourceFile) {
+                    SourceFile cu = (SourceFile) requireNonNull(tree);
+                    // Python don't need none of your curly braces
+                    if (cu.getSourcePath().toString().endsWith(".py")) {
+                        return (J) tree;
+                    }
+                    needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);
+                }
+                return super.visit(tree, ctx);
+            }
+
+            @Override
+            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block bl = super.visitBlock(block, ctx);
+                if (Boolean.TRUE.equals(getCursor().pollMessage("removeEndComments"))) {
+                    bl = bl.withEnd(bl.getEnd().withComments(emptyList()));
+                    bl = maybeAutoFormat(block, bl, ctx);
+                }
+                List<Integer> indexes = getCursor().pollMessage("replaced");
+                if (indexes != null) {
+                    for (int index : indexes) {
+                        boolean last = index == bl.getPadding().getStatements().size() - 1;
+                        if (!last) {
+                            bl = bl.withStatements(ListUtils.map(bl.getStatements(), (i, stmt) -> {
+                                if (i == index + 1) {
+                                    return stmt.withPrefix(Space.EMPTY);
+                                }
+                                return stmt;
+                            }));
+                        } else {
+                            bl = bl.withEnd(bl.getEnd().withComments(emptyList()));
+                        }
+                    }
+                    bl = maybeAutoFormat(block, bl, ctx);
+                }
+                return bl;
+            }
+
+            @Override
+            public J.If visitIf(J.If iff, ExecutionContext ctx) {
+                if (usedAsExpression()) {
+                    // Kotlin has no dedicated ternary operator
+                    return iff;
+                }
+                J.If elem = super.visitIf(iff, ctx);
+                boolean hasAllowableBodyType = elem.getThenPart() instanceof J.Block;
+                if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                    J.Block b;
+                    if (elem.getElsePart() != null && !elem.getElsePart().getPrefix().getComments().isEmpty()) {
+                        Space end = elem.getElsePart().getPrefix();
+                        elem = elem.withElsePart(elem.getElsePart().withPrefix(Space.EMPTY));
+                        b = buildBlock(elem.getThenPart()).withEnd(end);
+                    } else {
+                        b = buildBlock(elem.getThenPart());
+                    }
+
+                    elem = maybeAutoFormat(elem, elem.withThenPart(b), ctx);
+                }
+                return elem;
+            }
+
+            private boolean usedAsExpression() {
+                return getCursor().getParentOrThrow().getValue() instanceof K.StatementExpression;
+            }
+
+            @Override
+            public J.If.Else visitElse(J.If.Else else_, ExecutionContext ctx) {
+                J.If.Else elem = super.visitElse(else_, ctx);
+                boolean hasAllowableBodyType = elem.getBody() instanceof J.Block || elem.getBody() instanceof J.If;
+                if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                    Space prefix = elem.getPrefix();
+                    Statement body = elem.getBody();
+
+                    if (!prefix.getComments().isEmpty() && prefix.getWhitespace().contains("\n")) {
+                        body = body.withPrefix(prefix);
+                        elem = elem.withPrefix(Space.EMPTY);
+                    }
+
+                    J.Block b = buildBlock(body);
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                }
+                return elem;
+            }
+
+            @Override
+            public J.WhileLoop visitWhileLoop(J.WhileLoop whileLoop, ExecutionContext ctx) {
+                J.WhileLoop elem = super.visitWhileLoop(whileLoop, ctx);
+                boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                        elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                        elem.getBody() instanceof J.Block;
+                if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                    J.Block b = buildBlock(elem.getBody());
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                    J.Block b = buildBlock(elem.getBody());
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                }
+                return elem;
+            }
+
+            @Override
+            public J.DoWhileLoop visitDoWhileLoop(J.DoWhileLoop doWhileLoop, ExecutionContext ctx) {
+                J.DoWhileLoop elem = super.visitDoWhileLoop(doWhileLoop, ctx);
+                boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                        elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                        elem.getBody() instanceof J.Block;
+                if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                    J.Block b = buildBlock(elem.getBody());
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                    // The trailing comment between the body and the `while` keyword lives in the
+                    // `before` space of the `whileCondition`. When wrapping the body in a block,
+                    // move a same-line trailing comment into the new block's end so it stays with
+                    // the body statement rather than drifting onto the closing brace.
+                    JLeftPadded<J.ControlParentheses<Expression>> whileCondition = elem.getPadding().getWhileCondition();
+                    Space whileBefore = whileCondition.getBefore();
+                    Space end = Space.EMPTY;
+                    if (!whileBefore.getComments().isEmpty() && !whileBefore.getWhitespace().contains("\n")) {
+                        end = whileBefore;
+                        elem = elem.getPadding().withWhileCondition(whileCondition.withBefore(Space.SINGLE_SPACE));
+                    }
+                    J.Block b = buildBlock(elem.getBody()).withEnd(end);
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                }
+                return elem;
+            }
+
+            @Override
+            public J.ForLoop visitForLoop(J.ForLoop forLoop, ExecutionContext ctx) {
+                J.ForLoop elem = super.visitForLoop(forLoop, ctx);
+                boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                        elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                        elem.getBody() instanceof J.Block;
+                if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                    J.Block b = buildBlock(elem.getBody());
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                    J.Block b = buildBlock(elem.getBody());
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                }
+                return elem;
+            }
+
+            @Override
+            public J.ForEachLoop visitForEachLoop(J.ForEachLoop forEachLoop, ExecutionContext ctx) {
+                J.ForEachLoop elem = super.visitForEachLoop(forEachLoop, ctx);
+                boolean hasAllowableBodyType = needBracesStyle.getAllowEmptyLoopBody() ?
+                        elem.getBody() instanceof J.Block || elem.getBody() instanceof J.Empty :
+                        elem.getBody() instanceof J.Block;
+                if (!needBracesStyle.getAllowEmptyLoopBody() && elem.getBody() instanceof J.Empty) {
+                    J.Block b = buildBlock(elem.getBody());
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                } else if (!needBracesStyle.getAllowSingleLineStatement() && !hasAllowableBodyType) {
+                    J.Block b = buildBlock(elem.getBody());
+                    elem = maybeAutoFormat(elem, elem.withBody(b), ctx);
+                }
+                return elem;
+            }
+        };
     }
 }

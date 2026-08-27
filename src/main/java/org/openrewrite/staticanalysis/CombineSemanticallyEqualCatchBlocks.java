@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,7 +51,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new CombineSemanticallyEqualCatchBlocksVisitor();
+        return Preconditions.check(Preconditions.not(new PythonFileChecker<>()), new CombineSemanticallyEqualCatchBlocksVisitor());
     }
 
     private static class CombineSemanticallyEqualCatchBlocksVisitor extends JavaVisitor<ExecutionContext> {

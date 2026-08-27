@@ -1,0 +1,352 @@
+/*
+ * Copyright 2026 the original author or authors.
+ * <p>
+ * Licensed under the Moderne Source Available License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * https://docs.moderne.io/licensing/moderne-source-available-license
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.openrewrite.staticanalysis;
+
+import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
+import org.openrewrite.test.RecipeSpec;
+import org.openrewrite.test.RewriteTest;
+
+import static org.openrewrite.golang.Assertions.go;
+import static org.openrewrite.groovy.Assertions.groovy;
+import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
+import static org.openrewrite.python.Assertions.python;
+
+class RemoveDuplicateConditionsTest implements RewriteTest {
+
+    @Override
+    public void defaults(RecipeSpec spec) {
+        spec.recipe(new RemoveDuplicateConditions());
+    }
+
+    @DocumentExample
+    @Test
+    void removeDuplicateElseIf() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int x) {
+                      if (x > 0) {
+                          System.out.println("positive");
+                      } else if (x > 0) {
+                          System.out.println("also positive");
+                      } else {
+                          System.out.println("non-positive");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int x) {
+                      if (x > 0) {
+                          System.out.println("positive");
+                      } else {
+                          System.out.println("non-positive");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateInThreeBranchChain() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int x) {
+                      if (x > 0) {
+                          System.out.println("first");
+                      } else if (x < 0) {
+                          System.out.println("second");
+                      } else if (x > 0) {
+                          System.out.println("duplicate");
+                      } else {
+                          System.out.println("default");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int x) {
+                      if (x > 0) {
+                          System.out.println("first");
+                      } else if (x < 0) {
+                          System.out.println("second");
+                      } else {
+                          System.out.println("default");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateWithoutFinalElse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int x) {
+                      if (x > 0) {
+                          System.out.println("first");
+                      } else if (x > 0) {
+                          System.out.println("duplicate");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int x) {
+                      if (x > 0) {
+                          System.out.println("first");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeDifferentConditions() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int x) {
+                      if (x > 0) {
+                          System.out.println("positive");
+                      } else if (x < 0) {
+                          System.out.println("negative");
+                      } else {
+                          System.out.println("zero");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeSimpleIfElse() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(boolean a) {
+                      if (a) {
+                          System.out.println("yes");
+                      } else {
+                          System.out.println("no");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun test(x: Int) {
+                  if (x > 0) {
+                      println("positive")
+                  } else if (x > 0) {
+                      println("also positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """,
+            """
+              fun test(x: Int) {
+                  if (x > 0) {
+                      println("positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              void test(int x) {
+                  if (x > 0) {
+                      println("positive")
+                  } else if (x > 0) {
+                      println("also positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """,
+            """
+              void test(int x) {
+                  if (x > 0) {
+                      println("positive")
+                  } else {
+                      println("non-positive")
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfTypeScript() {
+        rewriteRun(
+          //language=typescript
+          typescript(
+            """
+              function test(x: number) {
+                  if (x > 0) {
+                      f();
+                  } else if (x > 0) {
+                      g();
+                  } else {
+                      h();
+                  }
+              }
+              """,
+            """
+              function test(x: number) {
+                  if (x > 0) {
+                      f();
+                  } else {
+                      h();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              items = []
+              if items:
+                  print("has items")
+              elif items:
+                  print("never reached")
+              else:
+                  print("empty")
+              """,
+            """
+              items = []
+              if items:
+                  print("has items")
+              else:
+                  print("empty")
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenConditionHasSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int calls = 0;
+
+                  boolean advance() {
+                      return calls++ == 1;
+                  }
+
+                  void p(String s) {
+                  }
+
+                  void test() {
+                      if (advance()) {
+                          p("a");
+                      } else if (advance()) {
+                          p("b");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeDuplicateElseIfGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func deliveryStatus(paid bool, shipped bool) string {
+                  if paid {
+                      return "ready"
+                  } else if paid {
+                      return "duplicate"
+                  }
+                  return "waiting"
+              }
+              """,
+            """
+              package main
+
+              func deliveryStatus(paid bool, shipped bool) string {
+                  if paid {
+                      return "ready"
+                  }
+                  return "waiting"
+              }
+              """
+          )
+        );
+    }
+}

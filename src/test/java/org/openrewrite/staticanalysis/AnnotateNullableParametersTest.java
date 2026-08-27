@@ -358,6 +358,37 @@ class AnnotateNullableParametersTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void annotateWhenDereferencedAfterGuardClause() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  public class Foo {
+                      public void process(String name) {
+                          if (name == null) {
+                              return;
+                          }
+                          System.out.println(name.toLowerCase());
+                      }
+                  }
+                  """,
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class Foo {
+                      public void process(@Nullable String name) {
+                          if (name == null) {
+                              return;
+                          }
+                          System.out.println(name.toLowerCase());
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     @Nested
@@ -557,6 +588,31 @@ class AnnotateNullableParametersTest implements RewriteTest {
                               }
                           };
                           return true;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeWhenParameterDereferencedBeforeNullCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.jspecify.annotations.Nullable;
+
+                  public class Foo {
+                      public void processName(@Nullable String foo, String bar) {
+                          if (foo == null) {
+                              System.out.printf("Foo is null, but for some reason I'm also dereferencing bar for log purposes %s", bar.toLowerCase());
+                          }
+
+                          if (bar == null) {
+                              return;
+                          }
+                          System.out.println(bar);
                       }
                   }
                   """

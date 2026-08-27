@@ -17,12 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.*;
-import org.openrewrite.analysis.InvocationMatcher;
-import org.openrewrite.analysis.search.UsesInvocation;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.MethodCall;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.marker.Markers;
 
@@ -50,20 +51,23 @@ public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                new UsesInvocation<>(ReplaceCollectionToArrayArgWithEmptyArrayVisitor.COLLECTION_TO_ARRAY),
+                new UsesMethod<>(ReplaceCollectionToArrayArgWithEmptyArrayVisitor.COLLECTION_TO_ARRAY),
                 new ReplaceCollectionToArrayArgWithEmptyArrayVisitor<>()
         );
     }
 
     private static class ReplaceCollectionToArrayArgWithEmptyArrayVisitor<P> extends JavaIsoVisitor<P> {
-        private static final InvocationMatcher COLLECTION_TO_ARRAY =
-                InvocationMatcher.fromMethodMatcher("java.util.Collection toArray(..)");
+        private static final MethodMatcher COLLECTION_TO_ARRAY =
+                new MethodMatcher("java.util.Collection toArray(..)");
 
         @Override
         public J.NewArray visitNewArray(J.NewArray newArray, P p) {
             boolean isInitializerEmpty = newArray.getInitializer() == null ||
                     (newArray.getInitializer().size() == 1 && newArray.getInitializer().get(0) instanceof J.Empty);
-            if (COLLECTION_TO_ARRAY.advanced().isFirstArgument(getCursor()) && isInitializerEmpty) {
+            Tree parent = getCursor().getParentTreeCursor().getValue();
+            MethodCall call = parent instanceof MethodCall ? (MethodCall) parent : null;
+            if (isInitializerEmpty && call != null && !call.getArguments().isEmpty() &&
+                    call.getArguments().get(0) == newArray && COLLECTION_TO_ARRAY.matches(call)) {
                 J.NewArray newArrayZero = newArray.withDimensions(ListUtils.mapFirst(newArray.getDimensions(), d -> {
                     if (d.getIndex() instanceof J.Literal && Integer.valueOf(0).equals(((J.Literal) d.getIndex()).getValue())) {
                         return d;

@@ -17,8 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.Set;
 
@@ -38,6 +40,6 @@ public class DefaultComesLast extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new DefaultComesLastVisitor<>();
+        return Preconditions.check(new JavaFileChecker<>(), new DefaultComesLastVisitor<>());
     }
 }

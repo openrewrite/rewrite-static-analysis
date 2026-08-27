@@ -216,6 +216,241 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void retainsWitnessOnGenericInstanceMethodWithConcreteArgumentsAsSelect() {
+        // T is method-level but appears in neither argument, so it's not inferable from them.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+              import java.util.Optional;
+
+              class PayloadValue {}
+              class Datasource {}
+
+              class Handler {
+                  <T> Optional<T> getPayloadOptionalValue(Map<String, PayloadValue> map, Datasource datasource) {
+                      return Optional.empty();
+                  }
+
+                  String test(Map<String, PayloadValue> map, Datasource datasource) {
+                      return this.<String>getPayloadOptionalValue(map, datasource).orElse(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainsWitnessOnNoArgStaticMethodReturnedFromBlockBodiedLambdaArgument() {
+        // Optional.empty() takes no args, and the lambda itself is a .map() argument, so
+        // neither provides an independent target type to infer T from.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+              import java.util.Optional;
+              import java.util.stream.Stream;
+
+              class Test {
+                  Stream<Optional<List<String>>> test(Stream<String> contents) {
+                      return contents.map(content -> {
+                          if (content == null) {
+                              return Optional.<List<String>>empty();
+                          }
+                          return Optional.of(List.of(content));
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainsWitnessWhenResultIsSelectOfMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              class VarDec {
+                  List<String> getVariables() {
+                      return null;
+                  }
+              }
+
+              class Cursor {
+                  <T> T getValue() {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  String test(Cursor c) {
+                      return c.<VarDec>getValue().getVariables().get(0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainsWitnessOnVarargsMethodWithBoundedTypeVariableAsSelect() {
+        // Mirrors JavaTemplate.apply(); without the witness J2 resolves to its bound, which lacks withName(..).
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Tree {}
+
+              class MethodCall extends Tree {
+                  MethodCall withName(String name) {
+                      return this;
+                  }
+              }
+
+              class Template {
+                  <J2 extends Tree> J2 apply(Object... parameters) {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  MethodCall test(Template t) {
+                      return t.<MethodCall>apply("x").withName("y");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainsWitnessOnInstanceMethodPassedAsArgumentToGenericMethod() {
+        // STATE_VALUE isn't inferable from source()'s (zero) args or from of()'s target type.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Transition {
+                  <STATE_VALUE> STATE_VALUE source();
+              }
+
+              class Pair<STATE_VALUE extends Enum<STATE_VALUE>> {
+                  static <STATE_VALUE extends Enum<STATE_VALUE>> Pair<STATE_VALUE> of(STATE_VALUE a, STATE_VALUE b) {
+                      return new Pair<>();
+                  }
+              }
+
+              class Test<STATE_VALUE extends Enum<STATE_VALUE>> {
+                  Pair<STATE_VALUE> test(Transition t, STATE_VALUE b) {
+                      return Pair.of(t.<STATE_VALUE>source(), b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/783")
+    @Test
+    void retainsWitnessOnNoArgArgumentToMethodWithDependentTypeParameters() {
+        // naturalOrder() takes no arguments, so T is only inferable from lexicographical's target type.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              class Test {
+                  static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
+                      return null;
+                  }
+
+                  static final Comparator<Iterable<Integer>> COMPARATOR =
+                      lexicographical(Comparator.<Integer>naturalOrder());
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/783")
+    @Test
+    void retainsWitnessWhenEnclosingMethodHasDependentTypeParameters() {
+        // S depends on T, so lexicographical resolves both jointly against its target type. Without the
+        // witness, U infers as Comparable rather than Integer and the enclosing call no longer compiles.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              class Test {
+                  static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
+                      return null;
+                  }
+
+                  static <U> Comparator<U> reverse(Comparator<U> comparator) {
+                      return null;
+                  }
+
+                  static final Comparator<Iterable<Integer>> COMPARATOR =
+                      lexicographical(Test.<Integer>reverse(Comparator.naturalOrder()));
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removesWitnessOnInstanceMethodArgumentWhenInferableFromOwnArguments() {
+        // Unlike above, T is inferable from identity()'s own argument, so it's still removable.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Holder {
+                  <T> T identity(T value) {
+                      return value;
+                  }
+              }
+
+              class Test {
+                  void accept(Object o) {
+                  }
+
+                  void test(Holder h) {
+                      accept(h.<String>identity("x"));
+                  }
+              }
+              """,
+            """
+              class Holder {
+                  <T> T identity(T value) {
+                      return value;
+                  }
+              }
+
+              class Test {
+                  void accept(Object o) {
+                  }
+
+                  void test(Holder h) {
+                      accept(h.identity("x"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class StaticMethods {
         static final SourceSpecs GENERIC_CLASS_SOURCE = java(

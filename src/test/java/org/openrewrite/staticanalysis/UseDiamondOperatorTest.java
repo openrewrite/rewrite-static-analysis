@@ -27,7 +27,7 @@ import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.javaVersion;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 
-@SuppressWarnings({"Convert2Diamond", "unchecked", "rawtypes"})
+@SuppressWarnings({"Convert2Diamond", "unchecked", "rawtypes", "ClassEscapesDefinedScope", "CodeBlock2Expr", "Convert2Lambda"})
 class UseDiamondOperatorTest implements RewriteTest {
 
     @Override
@@ -670,6 +670,222 @@ class UseDiamondOperatorTest implements RewriteTest {
                   List<@Nullable String> list1 = new ArrayList<@Nullable String>();
                   Map<@Nonnull String, @Nullable Integer> map = new HashMap<@Nonnull String, @Nullable Integer>();
                   List<String> list2 = new ArrayList<>(); // This should use diamond operator
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/919")
+    @Test
+    void newClassArgBeyondVarargsParameter() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(17))),
+          //language=java
+          java(
+            """
+              class SqlParameterValue {
+                  SqlParameterValue(int sqlType, int scale, Object value) {}
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Template {
+                  int update(String sql, Object... args) {
+                      return 0;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(Template template, String sql) {
+                      int rows = template.update(sql, 4, new SqlParameterValue(2, 2, 1.4142f));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void doNotChangeRecursivelyBoundTypeParameterWithNestedDiamondArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T extends Number & Comparable<T>> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  void test() {
+                      Container<Integer> panel = new Container<Integer>("id", new Wrapper<>(null, "key"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void doNotChangeRecursivelyBoundTypeParameterWithGenericMethodArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T extends Comparable<T>> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  static <X> Wrapper<X> wrapper() {
+                      return null;
+                  }
+
+                  void test() {
+                      Container<Integer> panel = new Container<Integer>("id", wrapper());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void nestedDiamondArgumentWithoutRecursiveBound() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  void test() {
+                      Container<Integer> panel = new Container<Integer>("id", new Wrapper<>(null, "key"));
+                  }
+              }
+              """,
+            """
+              class Wrapper<T> {
+                  Wrapper(Object target, String key) {}
+              }
+
+              class Container<T> {
+                  Container(String id, Wrapper<T> wrapper) {}
+              }
+
+              class Test {
+                  void test() {
+                      Container<Integer> panel = new Container<>("id", new Wrapper<>(null, "key"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void doNotChangeEnumMapWithNestedDiamondArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              enum Day { MONDAY }
+
+              class Test {
+                  void test() {
+                      EnumMap<Day, String> map = new EnumMap<Day, String>(new HashMap<>());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1012")
+    @Test
+    void enumMapWithNonGenericMethodArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.*;
+
+              enum Day { MONDAY }
+
+              class Test {
+                  static Map<Day, String> source() {
+                      return null;
+                  }
+
+                  void test() {
+                      EnumMap<Day, String> map = new EnumMap<Day, String>(source());
+                  }
+              }
+              """,
+            """
+              import java.util.*;
+
+              enum Day { MONDAY }
+
+              class Test {
+                  static Map<Day, String> source() {
+                      return null;
+                  }
+
+                  void test() {
+                      EnumMap<Day, String> map = new EnumMap<>(source());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void anonymousClassArgBeyondVarargsParameterWithoutVarargsFlag() {
+        rewriteRun(
+          spec -> spec.allSources(s -> s.markers(javaVersion(17))),
+          //language=java
+          java(
+            """
+              import java.lang.reflect.Method;
+              import java.util.function.Supplier;
+
+              class Test {
+                  void test(Method m, Object target) throws Exception {
+                      m.invoke(target, "arg", new Supplier<Object>() {
+                          @Override
+                          public Object get() {
+                              return null;
+                          }
+                      });
+                  }
               }
               """
           )

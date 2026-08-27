@@ -25,6 +25,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
@@ -69,6 +70,10 @@ public class UseTryWithResources extends Recipe {
                     public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
                         J.Block b = super.visitBlock(block, ctx);
                         List<Statement> stmts = b.getStatements();
+                        boolean unnamedAvailable = getCursor().firstEnclosingOrThrow(JavaSourceFile.class)
+                                .getMarkers().findFirst(JavaVersion.class)
+                                .filter(v -> v.getMajorVersion() >= 21)
+                                .isPresent();
                         return b.withStatements(ListUtils.map(stmts, (i, stmt) -> {
                             if (stmt instanceof J.Try) {
                                 J.Try tryStmt = (J.Try) stmt;
@@ -81,7 +86,7 @@ public class UseTryWithResources extends Recipe {
                                         if (usedAfter) {
                                             return transformJava9(prevDecl, tryStmt);
                                         }
-                                        return transform(prevDecl, tryStmt);
+                                        return transform(prevDecl, tryStmt, unnamedAvailable);
                                     }
                                 }
 
@@ -157,9 +162,11 @@ public class UseTryWithResources extends Recipe {
             return false;
         }
 
-        // Variable must not be closed in catch blocks
+        // Variable must not be referenced in catch blocks. The scope of a resource declared in
+        // the resource specification is the try block only (JLS 14.20.3), so any reference from a
+        // catch clause would become out of scope once the declaration moves into the header.
         for (J.Try.Catch aCatch : tryStmt.getCatches()) {
-            if (containsClose(varName, aCatch.getBody())) {
+            if (isReferenced(varName, aCatch.getBody())) {
                 return false;
             }
         }
@@ -167,10 +174,22 @@ public class UseTryWithResources extends Recipe {
         return true;
     }
 
-    private static J.Try transform(J.VariableDeclarations varDecl, J.Try tryStmt) {
-        return addResource(varDecl.withPrefix(Space.EMPTY),
-                varDecl.getVariables().get(0).getSimpleName(),
-                tryStmt.withPrefix(varDecl.getPrefix()));
+    private static J.Try transform(J.VariableDeclarations varDecl, J.Try tryStmt, boolean unnamedAvailable) {
+        String varName = varDecl.getVariables().get(0).getSimpleName();
+        J.VariableDeclarations resourceDecl = varDecl.withPrefix(Space.EMPTY);
+        // When the resource is never read inside the try body, name it with the unnamed variable `_`
+        // (JEP 443 preview in Java 21, finalized as JEP 456 in Java 22) so the rewritten code does
+        // not emit an unused-variable warning that would fail `-Werror` builds.
+        if (unnamedAvailable && !isReferenced(varName, tryStmt.getBody())) {
+            J.VariableDeclarations.NamedVariable namedVar = resourceDecl.getVariables().get(0);
+            JavaType.Variable renamedType = namedVar.getVariableType() != null ?
+                    namedVar.getVariableType().withName("_") : null;
+            J.Identifier renamedName = namedVar.getName().withSimpleName("_")
+                    .withFieldType(renamedType);
+            resourceDecl = resourceDecl.withVariables(singletonList(
+                    namedVar.withName(renamedName).withVariableType(renamedType)));
+        }
+        return addResource(resourceDecl, varName, tryStmt.withPrefix(varDecl.getPrefix()));
     }
 
     private static J.Try transformJava9(J.VariableDeclarations varDecl, J.Try tryStmt) {
@@ -457,14 +476,14 @@ public class UseTryWithResources extends Recipe {
         }.reduce(tree, new AtomicBoolean()).get();
     }
 
-    private static boolean containsClose(String varName, J tree) {
+    private static boolean isReferenced(String varName, J tree) {
         return new JavaIsoVisitor<AtomicBoolean>() {
             @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, AtomicBoolean f) {
-                if (isCloseInvocation(mi, varName)) {
+            public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean f) {
+                if (identifier.getSimpleName().equals(varName)) {
                     f.set(true);
                 }
-                return super.visitMethodInvocation(mi, f);
+                return super.visitIdentifier(identifier, f);
             }
         }.reduce(tree, new AtomicBoolean()).get();
     }

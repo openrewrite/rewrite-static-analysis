@@ -23,6 +23,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
@@ -69,35 +70,39 @@ public class RemoveUnneededBlock extends Recipe {
                 return block;
             }
 
-            // Else perform the flattening on this block.
+            // Inline at the padding level so each statement keeps its `JRightPadded`: the JS/TS
+            // `Semicolon` marker lives on the padding, not the statement, and is otherwise dropped.
             Statement lastStatement = statements.get(statements.size() - 1);
-            J.Block flattened = block.withStatements(ListUtils.flatMap(statements, (i, stmt) -> {
+            List<JRightPadded<Statement>> padded = block.getPadding().getStatements();
+            J.Block flattened = block.getPadding().withStatements(ListUtils.flatMap(padded, (i, rp) -> {
+                Statement stmt = rp.getElement();
                 J.Block nested;
                 if (stmt instanceof J.Try) {
                     J.Try _try = (J.Try) stmt;
                     if (_try.getResources() != null || !_try.getCatches().isEmpty() || _try.getFinally() == null || !_try.getFinally().getStatements().isEmpty()) {
-                        return stmt;
+                        return rp;
                     }
                     nested = _try.getBody();
                 } else if (stmt instanceof J.Block) {
                     nested = (J.Block) stmt;
                 } else {
-                    return stmt;
+                    return rp;
                 }
 
                 // blocks are relevant for scoping, so don't flatten them if they contain variable declarations unless they also have returns
-                if (i < statements.size() - 1 &&
+                if (i < padded.size() - 1 &&
                         nested.getStatements().stream().anyMatch(J.VariableDeclarations.class::isInstance) &&
                         nested.getStatements().stream().noneMatch(J.Return.class::isInstance)) {
-                    return stmt;
+                    return rp;
                 }
 
-                return ListUtils.map(nested.getStatements(), (j, inlinedStmt) -> {
+                return ListUtils.map(nested.getPadding().getStatements(), (j, innerRp) -> {
+                    Statement inlinedStmt = innerRp.getElement();
                     if (j == 0) {
                         inlinedStmt = inlinedStmt.withPrefix(inlinedStmt.getPrefix()
                                 .withComments(ListUtils.concatAll(nested.getComments(), inlinedStmt.getComments())));
                     }
-                    return autoFormat(inlinedStmt, ctx, getCursor());
+                    return innerRp.withElement(autoFormat(inlinedStmt, ctx, getCursor()));
                 });
             }));
 

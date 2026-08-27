@@ -1,5 +1,6 @@
 build/
 .gradle/
+.rewrite-python/
 .idea/*
 !.idea/icon.png
 .boot-releases
@@ -14,3 +15,5 @@ bin/
 docs
 Sonar.MD
 working-set*/
+
+.context/

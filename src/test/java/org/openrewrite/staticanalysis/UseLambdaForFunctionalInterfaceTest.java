@@ -19,13 +19,22 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.tree.Flag;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
+import java.util.EnumSet;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef", "CodeBlock2Expr", "WriteOnlyObject", "Convert2Diamond"})
+@SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef", "WriteOnlyObject", "Convert2Diamond", "Convert2MethodRef", "ResultOfMethodCallIgnored", "StatementWithEmptyBody", "ConstantValue", "NonFinalFieldInEnum", "LoopConditionNotUpdatedInsideLoop"})
 class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
@@ -610,7 +619,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @SuppressWarnings("DataFlowIssue")
     @Test
     void noReplaceOnReferenceToUninitializedFinalField() {
         rewriteRun(
@@ -826,7 +834,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       Object o = new MapDropdownChoice<String, Integer>(
                             new Supplier<Map<String, Integer>>() {
                                 @Override
-                                public Map<String, Integer> getObject() {
+                                public Map<String, Integer> get() {
                                     Map<String, Integer> choices = Map.of("id1", 1);
                                     return choices.entrySet().stream()
                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
@@ -835,7 +843,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       Object o2 = new MapDropdownChoice<String, Integer>(
                             new Supplier<Map<String, Integer>>() {
                                 @Override
-                                public Map<String, Integer> getObject() {
+                                public Map<String, Integer> get() {
                                     Map<String, Integer> choices = Map.of("id1", 2);
                                     return choices.entrySet().stream()
                                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -1042,5 +1050,644 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/961")
+    @Test
+    void dontUseLambdaWhenOverridingDefaultMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              interface BusinessRule {
+                  default List<String> getConfigurationTexts() {
+                      return List.of();
+                  }
+              }
+
+              class Test {
+                  BusinessRule rule = new BusinessRule() {
+                      @Override
+                      public List<String> getConfigurationTexts() {
+                          return List.of("zero", "one", "two");
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/961")
+    @Test
+    void dontUseLambdaWhenOverridingDefaultMethodOfFunctionalInterface() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("BusinessRule");
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason())
+                .isEqualTo("overrides a `default` method rather than the abstract method");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.List;
+
+              interface BusinessRule {
+                  void apply();
+
+                  default List<String> getConfigurationTexts() {
+                      return List.of();
+                  }
+              }
+
+              class Test {
+                  BusinessRule rule = new BusinessRule() {
+                      @Override
+                      public List<String> getConfigurationTexts() {
+                          return List.of("zero", "one", "two");
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsConvertibleSite() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              AnonymousFunctionalInterfaceImplementations.Row row = rows.getFirst();
+              assertThat(row.getSourcePath()).isEqualTo("Test.java");
+              assertThat(row.getEnclosingClass()).isEqualTo("Test");
+              assertThat(row.getFunctionalInterface()).isEqualTo("java.util.function.Function");
+              assertThat(row.getMethod()).isEqualTo("apply");
+              assertThat(row.isConvertible()).isTrue();
+              assertThat(row.getReason()).isEmpty();
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
+                      @Override
+                      public Integer apply(Integer n) {
+                          return n + 1;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+              class Test {
+                  Function<Integer, Integer> f = n -> n + 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsSiteThatCannotBeConverted() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              AnonymousFunctionalInterfaceImplementations.Row row = rows.getFirst();
+              assertThat(row.getFunctionalInterface()).isEqualTo("java.util.function.Function");
+              assertThat(row.isConvertible()).isFalse();
+              assertThat(row.getReason()).isEqualTo("references `this`");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              class Test {
+                  int n;
+                  Function<Integer, Integer> f = new Function<Integer, Integer>() {
+                      @Override
+                      public Integer apply(Integer n) {
+                          return this.n;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsAnonymousClassDeclaringMoreThanTheInterfaceMethod() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason()).isEqualTo("declares more than the interface method");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+              class Test {
+                  Supplier<Integer> s = new Supplier<Integer>() {
+                      private int calls;
+
+                      @Override
+                      public Integer get() {
+                          return ++calls;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsSiteInsideEnum() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason()).isEqualTo("declared inside an enum");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+              enum Test {
+                  INSTANCE;
+
+                  Supplier<String> s = new Supplier<String>() {
+                      @Override
+                      public String get() {
+                          return "";
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableDoesNotDuplicateUnconvertedSitesWhenTheFileChanges() {
+        // `Repeat` re-visits the site it left alone on every cycle, so a row emitted inline would
+        // appear once per cycle rather than once per site.
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(2);
+              assertThat(rows).extracting("convertible").containsExactly(true, false);
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Function;
+              import java.util.function.Supplier;
+              class Test {
+                  int n;
+                  Function<Integer, Integer> converted = new Function<Integer, Integer>() {
+                      @Override
+                      public Integer apply(Integer i) {
+                          return i + 1;
+                      }
+                  };
+                  Supplier<Integer> untouched = new Supplier<Integer>() {
+                      @Override
+                      public Integer get() {
+                          return this.n;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Function;
+              import java.util.function.Supplier;
+              class Test {
+                  int n;
+                  Function<Integer, Integer> converted = i -> i + 1;
+                  Supplier<Integer> untouched = new Supplier<Integer>() {
+                      @Override
+                      public Integer get() {
+                          return this.n;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsInterfaceThatAlsoRedeclaresAnObjectMethod() {
+        // Comparator declares both `compare` and `equals`; only `compare` counts toward SAM-ness (JLS 9.8).
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("java.util.Comparator");
+              assertThat(rows.getFirst().getMethod()).isEqualTo("compare");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+              class Test {
+                  Comparator<String> c = new Comparator<String>() {
+                      @Override
+                      public int compare(String a, String b) {
+                          return 0;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void dataTableRecordsInheritedSingleAbstractMethod() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("Task");
+              assertThat(rows.getFirst().getMethod()).isEqualTo("run");
+          }),
+          //language=java
+          java(
+            """
+              interface Task extends Runnable {
+              }
+              class Test {
+                  Task t = new Task() {
+                      @Override
+                      public void run() {
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unresolvedSupertypeIsRecordedAsUnconvertible() {
+        // Missing type attribution is why a type-aware search can go quiet, so the site is reported with
+        // the gap as its reason rather than silently dropped.
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("Matcher");
+              assertThat(rows.getFirst().getEnclosingClass()).isEqualTo("Test");
+              assertThat(rows.getFirst().getMethod()).isEmpty();
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason()).isEqualTo("the supertype has no type attribution");
+          }).typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import com.nowhere.Matcher;
+              class Test {
+                  Object m = new Matcher() {
+                      @Override
+                      public boolean matches(Object o) {
+                          return true;
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void defaultMethodsDoNotCountTowardsAbstractMethods() {
+        // Some type tables record `Abstract` on interface methods but omit `Default` from the others,
+        // which made every interface carrying a default method look like it had several abstract ones.
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("WithDefaults");
+              assertThat(rows.getFirst().getMethod()).isEqualTo("act");
+          }),
+          //language=java
+          java(
+            """
+              interface WithDefaults {
+                  void act();
+                  default void before() {
+                  }
+                  default void after() {
+                  }
+              }
+              class Test {
+                  WithDefaults w = new WithDefaults() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """,
+            """
+              interface WithDefaults {
+                  void act();
+                  default void before() {
+                  }
+                  default void after() {
+                  }
+              }
+              class Test {
+                  WithDefaults w = () -> {
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void markerInterfaceIsRecordedAsUnconvertible() {
+        // An interface with no abstract methods is either a genuine marker or one whose methods never made
+        // it into the LST; the two are indistinguishable here, so report what was observed.
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("Marker");
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason())
+                .isEqualTo("the interface has no abstract methods recorded in its type attribution");
+          }),
+          //language=java
+          java(
+            """
+              interface Marker {
+              }
+              class Test {
+                  Marker m = new Marker() {
+                      void helper() {
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void anonymousSubclassOfAbstractClassIsNotReported() {
+        // Genuinely out of scope rather than undecidable, so it stays out of the inventory entirely.
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("java.util.function.Supplier");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              abstract class Base {
+                  abstract void run();
+              }
+              class Test {
+                  Base b = new Base() {
+                      @Override
+                      void run() {
+                      }
+                  };
+                  Supplier<Integer> s = new Supplier<Integer>() {
+                      @Override
+                      public Integer get() {
+                          return 1;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              abstract class Base {
+                  abstract void run();
+              }
+              class Test {
+                  Base b = new Base() {
+                      @Override
+                      void run() {
+                      }
+                  };
+                  Supplier<Integer> s = () -> 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void interfaceWithTwoAbstractMethodsIsNotReported() {
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getFunctionalInterface()).isEqualTo("java.util.function.Supplier");
+          }),
+          //language=java
+          java(
+            """
+              import java.util.function.Supplier;
+
+              interface TwoMethods {
+                  void first();
+                  void second();
+              }
+              class Test {
+                  TwoMethods t = new TwoMethods() {
+                      @Override
+                      public void first() {
+                      }
+
+                      @Override
+                      public void second() {
+                      }
+                  };
+                  Supplier<Integer> s = new Supplier<Integer>() {
+                      @Override
+                      public Integer get() {
+                          return 1;
+                      }
+                  };
+              }
+              """,
+            """
+              import java.util.function.Supplier;
+
+              interface TwoMethods {
+                  void first();
+                  void second();
+              }
+              class Test {
+                  TwoMethods t = new TwoMethods() {
+                      @Override
+                      public void first() {
+                      }
+
+                      @Override
+                      public void second() {
+                      }
+                  };
+                  Supplier<Integer> s = () -> 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUseLambdaForInterfaceWithOnlyDefaultMethods() {
+        // An interface whose only method is `default` is not functional, so a lambda would not compile.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface OnlyDefault {
+                  default void act() {
+                  }
+              }
+              class Test {
+                  OnlyDefault o = new OnlyDefault() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUseLambdaWhenSubinterfaceDefaultsTheInheritedAbstractMethod() {
+        // `NoOp` implements the inherited abstract method with a `default`, leaving it with no abstract
+        // method at all — not a functional interface.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Task {
+                  void act();
+              }
+              interface NoOp extends Task {
+                  @Override
+                  default void act() {
+                  }
+              }
+              class Test {
+                  NoOp o = new NoOp() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUseLambdaForAllDefaultInterfaceAttributedFromBytecode() {
+        // Without a `Default` flag to go on, the sole default method has to be recognised as non-abstract
+        // from the absence of `Abstract`; treating it as the SAM produced a lambda that did not compile.
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason())
+                .isEqualTo("the interface has no abstract methods recorded in its type attribution");
+          }),
+          //language=java
+          java(
+            """
+              interface OnlyDefault {
+                  default void act() {
+                  }
+              }
+              class Test {
+                  OnlyDefault o = new OnlyDefault() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(UseLambdaForFunctionalInterfaceTest::asBytecodeAttribution)
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenAbstractMethodSitsAlongsideDefaultAttributedFromBytecode() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface WithDefault {
+                  void act();
+                  default void before() {
+                  }
+              }
+              class Test {
+                  WithDefault w = new WithDefault() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """,
+            """
+              interface WithDefault {
+                  void act();
+                  default void before() {
+                  }
+              }
+              class Test {
+                  WithDefault w = () -> {
+                  };
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(UseLambdaForFunctionalInterfaceTest::asBytecodeAttribution)
+          )
+        );
+    }
+
+    /// Rewrite the type attribution the way a source derived from bytecode records it: `default` is not an
+    /// access flag, so a default method arrives carrying neither [Flag#Default] nor [Flag#Abstract],
+    /// where javac marks it with both.
+    private static J.CompilationUnit asBytecodeAttribution(J.CompilationUnit cu) {
+        return (J.CompilationUnit) new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, Integer p) {
+                JavaType.FullyQualified type = classDecl.getType();
+                if (type != null) {
+                    for (JavaType.Method method : type.getMethods()) {
+                        if (method.hasFlags(Flag.Default)) {
+                            var flags = EnumSet.copyOf(method.getFlags());
+                            flags.removeAll(EnumSet.of(Flag.Default, Flag.Abstract));
+                            // Mutated in place because every reference to the interface shares this instance.
+                            method.unsafeSet(method.getName(), Flag.flagsToBitMap(flags),
+                              method.getDeclaringType(), method.getReturnType(),
+                              method.getParameterNames().toArray(new String[0]),
+                              method.getParameterTypes().toArray(new JavaType[0]),
+                              method.getThrownExceptions().toArray(new JavaType[0]),
+                              method.getAnnotations().toArray(new JavaType.FullyQualified[0]),
+                              method.getDefaultValue(),
+                              method.getDeclaredFormalTypeNames().toArray(new String[0]));
+                        }
+                    }
+                }
+                return super.visitClassDeclaration(classDecl, p);
+            }
+        }.visitNonNull(cu, 0);
     }
 }
