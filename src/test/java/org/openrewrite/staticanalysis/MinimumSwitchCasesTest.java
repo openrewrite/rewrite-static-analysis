@@ -1089,6 +1089,73 @@ class MinimumSwitchCasesTest implements RewriteTest {
     }
 
     @Test
+    void doNotRewriteStringLiteralCasesWhenSelectorTypeIsUnresolved() {
+        // An unresolved selector type reads as not-a-String, which would produce `==` instead of `equals()`.
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodDeclarations(false)),
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(Unresolved u) {
+                      switch (u.getColor()) {
+                          case "red":
+                              doSomething();
+                              break;
+                          case "blue":
+                              doSomethingElse();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void rewritesNonStringLiteralCasesWhenSelectorTypeIsUnresolved() {
+        // `==` is correct for any integral selector, so an unresolved type is no reason to skip these.
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.all().identifiers(false).methodDeclarations(false)),
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(Unresolved u) {
+                      switch (u.getCode()) {
+                          case 1:
+                              doSomething();
+                              break;
+                          case 2:
+                              doSomethingElse();
+                              break;
+                      }
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """,
+            """
+              class Test {
+                  void test(Unresolved u) {
+                      if (u.getCode() == 1) {
+                          doSomething();
+                      } else if (u.getCode() == 2) {
+                          doSomethingElse();
+                      }
+                  }
+                  void doSomething() {}
+                  void doSomethingElse() {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void rewritesWhenSelectorTypeIsResolvedDespiteShadowingStaticImport() {
         // Same shadowing shape as doNotRewriteWhenSelectorTypeIsUnresolved, but with a resolvable selector type: the recipe should still transform and correctly qualify the enum constants.
         rewriteRun(
