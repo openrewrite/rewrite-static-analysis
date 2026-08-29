@@ -281,6 +281,145 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepCastOnNullArgumentToOverloadInheritedFromSupertype() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package org.example;
+
+                public enum Platform {
+                    ANY
+                }
+                """,
+              """
+                package org.example;
+
+                public class Capabilities {
+                    public void setCapability(String key, String value) {}
+                }
+                """,
+              """
+                package org.example;
+
+                public class MutableCapabilities extends Capabilities {
+                    public void setCapability(String key, Platform value) {}
+                }
+                """
+            )
+          ),
+          //language=java
+          java(
+            """
+              import org.example.MutableCapabilities;
+              import org.example.Platform;
+
+              class Test {
+                  void method(MutableCapabilities cap) {
+                      cap.setCapability("platform", (Platform) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCastOnNullArgumentToOverloadDeclaredOnSubtype() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package org.example;
+
+                public class Handler {
+                    public void handle(String key, Object value) {}
+                }
+                """,
+              """
+                package org.example;
+
+                public class LoggingHandler extends Handler {
+                    public void handle(String key, String value) {}
+                }
+                """
+            )
+          ),
+          //language=java
+          java(
+            """
+              import org.example.LoggingHandler;
+
+              class Test {
+                  void method(LoggingHandler handler) {
+                      handler.handle("key", (Object) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCastOnNullArgumentToAnonymousClassConstructor() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package org.example;
+
+                public class StringEntity {
+                    public StringEntity(String body, String contentType) {}
+                    public StringEntity(String body, Runnable onClose) {}
+                }
+                """
+            )
+          ),
+          //language=java
+          java(
+            """
+              import org.example.StringEntity;
+
+              class Test {
+                  Object entity = new StringEntity("data", (Runnable) null) {
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeCastOnNullArgumentWhenNotOverloaded() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void accept(Object o) {
+                  }
+                  void method() {
+                      accept((String) null);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void accept(Object o) {
+                  }
+                  void method() {
+                      accept(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/899")
     @Test
     void keepObjectCastDisambiguatingVarargsFromThrowableOverload() {
