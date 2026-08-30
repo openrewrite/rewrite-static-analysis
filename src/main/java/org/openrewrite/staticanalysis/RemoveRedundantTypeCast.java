@@ -16,12 +16,14 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -100,8 +102,16 @@ public class RemoveRedundantTypeCast extends Recipe {
                 // `log(String, Throwable)` selected by `(Object) value`). Bail out before
                 // any other branch decides the cast is redundant.
                 if (parentValue instanceof MethodCall) {
-                    JavaType.Method methodType = ((MethodCall) parentValue).getMethodType();
+                    MethodCall methodCall = (MethodCall) parentValue;
+                    JavaType.Method methodType = methodCall.getMethodType();
                     if (methodType == null || hasMethodOverloading(methodType)) {
+                        return visited;
+                    }
+                    // `null` is applicable to every reference parameter, so a cast on `null` is what picks
+                    // the overload. `hasMethodOverloading` only sees the declaring type, which misses
+                    // overloads inherited from a supertype or declared on the receiver's own type.
+                    if (J.Literal.isLiteralValue(typeCast.getExpression(), null) &&
+                            selectsOverload(methodCall, methodType, typeCast)) {
                         return visited;
                     }
                 }
@@ -244,6 +254,63 @@ public class RemoveRedundantTypeCast extends Recipe {
                 return methodType != null &&
                         (TypeUtils.isOfClassType(methodType.getDeclaringType(), "java.lang.invoke.MethodHandle") ||
                                 TypeUtils.isOfClassType(methodType.getDeclaringType(), "java.lang.invoke.VarHandle"));
+            }
+
+            /// Whether some other method visible at the call site accepts `null` at the same argument
+            /// position with a different type, which is what the cast is there to disambiguate.
+            private boolean selectsOverload(MethodCall call, JavaType.Method methodType, J.TypeCast typeCast) {
+                int index = -1;
+                List<Expression> arguments = call.getArguments();
+                for (int i = 0; i < arguments.size(); i++) {
+                    if (arguments.get(i) == typeCast) {
+                        index = i;
+                        break;
+                    }
+                }
+                if (index < 0 || index >= methodType.getParameterTypes().size()) {
+                    return false;
+                }
+                // Resolution starts at the type named at the call site, not at the declaring type: an
+                // anonymous class delegates to its supertype's constructors, and a subtype can declare
+                // overloads of a method it inherits.
+                JavaType.FullyQualified searchFrom = null;
+                if (call instanceof J.NewClass && ((J.NewClass) call).getClazz() != null) {
+                    searchFrom = TypeUtils.asFullyQualified(((J.NewClass) call).getClazz().getType());
+                } else if (call instanceof J.MethodInvocation && ((J.MethodInvocation) call).getSelect() != null) {
+                    searchFrom = TypeUtils.asFullyQualified(((J.MethodInvocation) call).getSelect().getType());
+                }
+                return declaresCompetingOverload(searchFrom == null ? methodType.getDeclaringType() : searchFrom,
+                        methodType, index, new HashSet<>());
+            }
+
+            private boolean declaresCompetingOverload(JavaType.@Nullable FullyQualified type, JavaType.Method methodType,
+                                                      int index, Set<String> seen) {
+                if (type == null || !seen.add(type.getFullyQualifiedName())) {
+                    return false;
+                }
+                JavaType parameterType = methodType.getParameterTypes().get(index);
+                for (JavaType.Method candidate : type.getMethods()) {
+                    if (candidate.getName().equals(methodType.getName()) &&
+                            candidate.getParameterTypes().size() == methodType.getParameterTypes().size()) {
+                        JavaType candidateType = candidate.getParameterTypes().get(index);
+                        // A primitive parameter is not a candidate for `null`; an identical one is an override.
+                        if (!(candidateType instanceof JavaType.Primitive) && !TypeUtils.isOfType(candidateType, parameterType)) {
+                            return true;
+                        }
+                    }
+                }
+                if (methodType.isConstructor()) {
+                    return false;
+                }
+                if (declaresCompetingOverload(type.getSupertype(), methodType, index, seen)) {
+                    return true;
+                }
+                for (JavaType.FullyQualified anInterface : type.getInterfaces()) {
+                    if (declaresCompetingOverload(anInterface, methodType, index, seen)) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             private boolean returnsDeclaredTypeParameter(Expression expression) {
