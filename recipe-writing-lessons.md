@@ -395,3 +395,37 @@ finds will still fail with `Unable to find recipe` until `./gradlew recipeCsvGen
 (run it on its own; it conflicts with `publishToMavenLocal` in the same invocation). Publish under a version
 of your own (`-Prelease.version=2.99.1-SNAPSHOT`) so the CLI resolves the local jar rather than the CI
 snapshot of the same coordinates, then `mod config recipes jar install org.openrewrite.recipe:rewrite-static-analysis:<that version>`.
+
+`./gradlew build` enforces this: `recipeCsvValidateCompleteness` fails with "Recipe exists in environment but is
+not listed in CSV" for anything missing, so a new recipe of any kind — including one declared only in YAML —
+breaks the build until `recipeCsvGenerate` runs. Editing a recipe's display name or description changes its CSV
+row too, so regenerate after rewording as well.
+
+## Rewriting XML (PMD rulesets)
+
+- **`rewrite-xml` is not on this project's classpath by default.** Add it to the `provided` configuration
+  alongside the language modules, which keeps it off downstream consumers' compile classpaths while making it
+  available to `compileJava` and to tests. Without it, `org.openrewrite.xml.Assertions.xml` does not resolve.
+- **Guard on the root tag, not a path glob.** PMD rulesets are not named consistently (`ruleset.xml`,
+  `pmd-rules.xml`, ...), and elements as generic as `<rule>` and `<exclude>` appear in unrelated XML. Returning
+  `document` unchanged from `visitDocument` when the root tag is not `<ruleset>` scopes a recipe far more
+  reliably than `FindSourceFiles`.
+- **`RemoveContentVisitor` is the way to delete a tag**, via
+  `doAfterVisit(new RemoveContentVisitor<>(tag, removeEmptyAncestors, removePrecedingComment))`. It fixes up the
+  following sibling's prefix so indentation survives, and takes the preceding comment with it. Pass
+  `removeEmptyAncestors = false` unless a container really is meaningless once empty — an emptied
+  `<ruleset name="..">` should still be there.
+- **`AddToTagVisitor` appends a child and infers its formatting** from the parent's existing children, so
+  `doAfterVisit(new AddToTagVisitor<>(root, Xml.Tag.build("<rule ref=\"..\"/>")))` lands a new `<rule>` at the
+  end of a `<ruleset>` correctly indented, even when the ruleset had no `<rule>` children yet.
+- **A whole-file reference is a different thing from a rule reference.** `<rule ref="category/java/errorprone.xml">`
+  pulls in every rule in that file, so a recipe that adds a rule has to check for the file-level `ref` too:
+  the rule may already be active, or held out by a single `<exclude>` that is what actually needs removing.
+- **Reject ambiguous options with `validate()`** rather than silently no-op'ing. Removing or replacing a rule can
+  work off a bare rule name, but adding one cannot — there is no ruleset file to resolve it against — so
+  `Validated.test("rule", .., r -> r.indexOf('/') != -1)` surfaces the mistake at recipe instantiation.
+- **A child tag's cursor parent is the parent `Xml.Tag` directly**, with no padding in between, so
+  `getCursor().getParentTreeCursor().getValue()` reads the enclosing element. That matters for `<exclude>`,
+  whose meaning depends on the `ref` of the `<rule>` it sits in.
+- **`Xml.Attribute` values nest one level:** `attribute.withValue(attribute.getValue().withValue(newValue))`.
+  `getValueAsString()` reads it back without the quotes.

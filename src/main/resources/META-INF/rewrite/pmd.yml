@@ -1,0 +1,248 @@
+#
+# Copyright 2026 the original author or authors.
+# <p>
+# Licensed under the Moderne Source Available License (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# <p>
+# https://docs.moderne.io/licensing/moderne-source-available-license
+# <p>
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.pmd.ModernizePmd
+displayName: Modernize a PMD ruleset
+description: >-
+  Bring a PMD ruleset XML file up to date with current PMD, by updating the `<rule>` references and `<exclude>` elements
+  to name each rule as PMD knows it today. This runs both the PMD 6 to 7 migration, which replaces the rules PMD 7
+  deleted and drops the ones deleted without a successor, and the PMD 7 rule renames, which adopt the current name of
+  each rule PMD renamed within the PMD 7 line. Rules whose replacement requires a judgement call, either because PMD
+  split one rule across several successors or because the successor reports something different, are left alone. The
+  result requires PMD 7.27.0 or later; an earlier PMD 7 fails to load a name that its version does not know yet.
+recipeList:
+  - org.openrewrite.staticanalysis.pmd.Pmd6to7Migration
+  - org.openrewrite.staticanalysis.pmd.Pmd7RuleRenames
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.pmd.Pmd6to7Migration
+displayName: Migrate a PMD 6 ruleset to PMD 7
+description: >-
+  PMD 7 deleted the rules that had been deprecated throughout the PMD 6 line, and PMD refuses to load a ruleset that
+  references a rule it does not know. Update the `<rule>` references and `<exclude>` elements in PMD ruleset XML files
+  to name each deleted rule's successor, and drop the references to rules that were deleted without one. Rules whose
+  behaviour PMD split across several successors, such as `VariableNamingConventions` and the primitive wrapper
+  `*Instantiation` rules, are left alone because picking a single replacement for them requires a judgement call.
+recipeList:
+  # Rules PMD 7 deleted in favor of a single successor
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/PositionLiteralsFirstInCaseInsensitiveComparisons
+      newRule: LiteralsFirstInComparisons
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/PositionLiteralsFirstInComparisons
+      newRule: LiteralsFirstInComparisons
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/UnusedImports
+      newRule: category/java/codestyle.xml/UnnecessaryImport
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/UseAssertEqualsInsteadOfAssertTrue
+      newRule: SimplifiableTestAssertion
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/UseAssertNullInsteadOfAssertEquals
+      newRule: SimplifiableTestAssertion
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/UseAssertSameInsteadOfAssertEquals
+      newRule: SimplifiableTestAssertion
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/UseAssertTrueInsteadOfAssertEquals
+      newRule: SimplifiableTestAssertion
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/AbstractNaming
+      newRule: ClassNamingConventions
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/AvoidPrefixingMethodParameters
+      newRule: FormalParameterNamingConventions
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/DefaultPackage
+      newRule: CommentDefaultAccessModifier
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/DontImportJavaLang
+      newRule: UnnecessaryImport
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/DuplicateImports
+      newRule: UnnecessaryImport
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/ForLoopsMustUseBraces
+      newRule: ControlStatementBraces
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/IfElseStmtsMustUseBraces
+      newRule: ControlStatementBraces
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/IfStmtsMustUseBraces
+      newRule: ControlStatementBraces
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/WhileLoopsMustUseBraces
+      newRule: ControlStatementBraces
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/codestyle.xml/SuspiciousConstantFieldName
+      newRule: FieldNamingConventions
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/ExcessiveClassLength
+      newRule: NcssCount
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/ExcessiveMethodLength
+      newRule: NcssCount
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/ModifiedCyclomaticComplexity
+      newRule: CyclomaticComplexity
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/StdCyclomaticComplexity
+      newRule: CyclomaticComplexity
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/NcssConstructorCount
+      newRule: NcssCount
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/NcssMethodCount
+      newRule: NcssCount
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/NcssTypeCount
+      newRule: NcssCount
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/SimplifyBooleanAssertion
+      newRule: category/java/bestpractices.xml/SimplifiableTestAssertion
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/BadComparison
+      newRule: ComparisonWithNaN
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/BeanMembersShouldSerialize
+      newRule: NonSerializableClass
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/DataflowAnomalyAnalysis
+      newRule: category/java/bestpractices.xml/UnusedAssignment
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/DoNotCallSystemExit
+      newRule: DoNotTerminateVM
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptyFinallyBlock
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptyIfStmt
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptyInitializer
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptyStatementBlock
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptySwitchStatements
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptySynchronizedBlock
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptyTryBlock
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptyWhileStmt
+      newRule: category/java/codestyle.xml/EmptyControlStatement
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/EmptyStatementNotInLoop
+      newRule: category/java/codestyle.xml/UnnecessarySemicolon
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/ImportFromSamePackage
+      newRule: category/java/codestyle.xml/UnnecessaryImport
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/InvalidSlf4jMessageFormat
+      newRule: InvalidLogMessageFormat
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/LoggerIsNotStaticFinal
+      newRule: ProperLogger
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/MissingBreakInSwitch
+      newRule: ImplicitSwitchFallThrough
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/ReturnEmptyArrayRatherThanNull
+      newRule: ReturnEmptyCollectionRatherThanNull
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/multithreading.xml/UnsynchronizedStaticDateFormatter
+      newRule: UnsynchronizedStaticFormatter
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/performance.xml/UnnecessaryWrapperObjectCreation
+      newRule: category/java/codestyle.xml/UnnecessaryBoxing
+  # Rules PMD 7 deleted without a replacement; a ruleset that still references them fails to load
+  - org.openrewrite.staticanalysis.pmd.RemovePmdRule:
+      rule: category/java/codestyle.xml/AvoidFinalLocalVariable
+  - org.openrewrite.staticanalysis.pmd.RemovePmdRule:
+      rule: category/java/errorprone.xml/CloneThrowsCloneNotSupportedException
+  - org.openrewrite.staticanalysis.pmd.RemovePmdRule:
+      rule: category/java/performance.xml/AvoidUsingShortType
+  - org.openrewrite.staticanalysis.pmd.RemovePmdRule:
+      rule: category/java/performance.xml/SimplifyStartsWith
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.staticanalysis.pmd.Pmd7RuleRenames
+displayName: Rename PMD rules that were renamed within the PMD 7 line
+description: >-
+  PMD renamed a number of rules during the PMD 7 line, keeping the old name as a deprecated alias that PMD still loads
+  but warns about. Update the `<rule>` references and `<exclude>` elements in PMD ruleset XML files to name each rule's
+  current name, so the ruleset stops emitting deprecation warnings and keeps loading once PMD 8 drops the aliases. Only
+  true renames are applied, meaning the cases where PMD kept the old name as an alias pointing at the new one. Rules PMD
+  deprecated in favour of a *different* rule, such as `AvoidCatchingNPE` in favour of the configurable
+  `AvoidCatchingGenericException`, `GenericsNaming` in favour of `TypeParameterNamingConventions`,
+  `UnnecessaryLocalBeforeReturn` in favour of `VariableCanBeInlined`, `UseObjectForClearerAPI` in favour of
+  `ExcessiveParameterList`, and `CheckSkipResult`, `AvoidLosingExceptionInformation` and `UselessOperationOnImmutable` in
+  favour of `UnusedReturnValue`, are left alone, because the successor reports different things and adopting it is a
+  judgement call rather than a rename. The new names require PMD 7.27.0 or later; a ruleset for an earlier PMD 7 fails to
+  load a name that its version does not know yet.
+recipeList:
+  # Renamed in PMD 7.7.0
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/DefaultLabelNotLastInSwitchStmt
+      newRule: DefaultLabelNotLastInSwitch
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/JUnit4TestShouldUseAfterAnnotation
+      newRule: UnitTestShouldUseAfterAnnotation
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/JUnit4TestShouldUseBeforeAnnotation
+      newRule: UnitTestShouldUseBeforeAnnotation
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/JUnit4TestShouldUseTestAnnotation
+      newRule: UnitTestShouldUseTestAnnotation
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/JUnitAssertionsShouldIncludeMessage
+      newRule: UnitTestAssertionsShouldIncludeMessage
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts
+      newRule: UnitTestContainsTooManyAsserts
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/JUnitTestsShouldIncludeAssert
+      newRule: UnitTestShouldIncludeAssert
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/SwitchStmtsShouldHaveDefault
+      newRule: NonExhaustiveSwitch
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/errorprone.xml/NonCaseLabelInSwitchStatement
+      newRule: NonCaseLabelInSwitch
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/performance.xml/TooFewBranchesForASwitchStatement
+      newRule: TooFewBranchesForSwitch
+  # Moved to another category in PMD 7.18.0
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/AvoidCatchingGenericException
+      newRule: category/java/errorprone.xml/AvoidCatchingGenericException
+  # Renamed in PMD 7.25.0
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/bestpractices.xml/JUnit5TestShouldBePackagePrivate
+      newRule: JUnitJupiterTestShouldBePackagePrivate
+  # Renamed in PMD 7.27.0
+  - org.openrewrite.staticanalysis.pmd.ReplacePmdRule:
+      oldRule: category/java/design.xml/UseUtilityClass
+      newRule: InstantiableUtilityClass
