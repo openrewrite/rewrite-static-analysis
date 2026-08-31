@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 @SuppressWarnings({
   "ComparatorCombinators",
@@ -694,6 +695,23 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
                       a.forEach((A it) -> { });
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotFailOnTypeScriptArrowFunction() {
+        rewriteRun(
+          typescript(
+            """
+              namespace com.example {
+                export class Foo {}
+              }
+              function run(cb: (x: com.example.Foo) => void) {}
+              run(x => {
+                console.log(x);
+              });
               """
           )
         );
