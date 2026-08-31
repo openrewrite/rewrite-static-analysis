@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
@@ -25,6 +26,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +49,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
             public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
@@ -233,7 +235,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 }
                 return JContainer.build(Space.EMPTY, typeExpressions, Markers.EMPTY);
             }
-        };
+        });
     }
 
 }
