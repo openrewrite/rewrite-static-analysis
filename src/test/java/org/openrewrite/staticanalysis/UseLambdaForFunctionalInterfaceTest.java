@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -33,6 +34,7 @@ import java.util.EnumSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 
 @SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef", "WriteOnlyObject", "Convert2Diamond", "Convert2MethodRef", "ResultOfMethodCallIgnored", "StatementWithEmptyBody", "ConstantValue", "NonFinalFieldInEnum", "LoopConditionNotUpdatedInsideLoop"})
 class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
@@ -1659,6 +1661,26 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
             spec -> spec.mapBeforeRecipe(UseLambdaForFunctionalInterfaceTest::asBytecodeAttribution)
           )
         );
+    }
+
+    @Nested
+    class JavaScript {
+        @Test
+        void doNotCrashOnOptionalCatchBinding() {
+            rewriteRun(
+              javascript(
+                """
+                  function load() {
+                    try {
+                      doWork();
+                    } catch {
+                      return null;
+                    }
+                  }
+                  """
+              )
+            );
+        }
     }
 
     /// Rewrite the type attribution the way a source derived from bytecode records it: `default` is not an
