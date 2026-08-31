@@ -22,6 +22,8 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
+import static org.openrewrite.golang.Assertions.go;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 class FinalizeMethodArgumentsTest implements RewriteTest {
@@ -274,6 +276,43 @@ class FinalizeMethodArgumentsTest implements RewriteTest {
                   accumulator += add;
                   return accumulator;
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void finalizeGroovyParameters() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class Test {
+                  void greet(String name) {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void greet(final String name) {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              func RandomString(n int) string {
+                  return ""
               }
               """
           )
