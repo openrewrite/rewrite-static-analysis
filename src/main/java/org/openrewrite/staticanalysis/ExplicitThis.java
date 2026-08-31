@@ -95,7 +95,7 @@ public class ExplicitThis extends Recipe {
                     return id;
                 }
 
-                if (isPartOfDeclaration()) {
+                if (isPartOfDeclaration() || isMethodInvocationName()) {
                     return id;
                 }
 
@@ -172,6 +172,15 @@ public class ExplicitThis extends Recipe {
                 }
                 J.VariableDeclarations.NamedVariable namedVar = parent.getValue();
                 return namedVar.getName() == getCursor().getValue();
+            }
+
+            private boolean isMethodInvocationName() {
+                Cursor parent = getCursor().getParent();
+                if (parent == null || !(parent.getValue() instanceof J.MethodInvocation)) {
+                    return false;
+                }
+                J.MethodInvocation methodInvocation = parent.getValue();
+                return methodInvocation.getName() == getCursor().getValue();
             }
 
             private ExplicitThis.@Nullable ClassContext getCurrentClassContext() {
