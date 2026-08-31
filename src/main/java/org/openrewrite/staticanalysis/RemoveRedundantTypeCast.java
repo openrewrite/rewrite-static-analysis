@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.*;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -50,7 +50,7 @@ public class RemoveRedundantTypeCast extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new JavaFileChecker<>(), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                 J visited = super.visitTypeCast(typeCast, ctx);
