@@ -19,6 +19,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
@@ -29,6 +30,8 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +52,7 @@ public class FinalizeMethodArguments extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration methodDeclaration, ExecutionContext ctx) {
                 J.MethodDeclaration declarations = super.visitMethodDeclaration(methodDeclaration, ctx);
@@ -86,7 +89,7 @@ public class FinalizeMethodArguments extends Recipe {
                     }
                 }
             }
-        };
+        });
     }
 
     private static boolean isWrongKind(final J.MethodDeclaration methodDeclaration) {
