@@ -77,6 +77,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     }
                 }
                 J.VariableDeclarations result = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, ctx);
+                if (result.getVariables().isEmpty()) {
+                    return result;
+                }
                 Expression newInitializer = result.getVariables().get(0).getInitializer();
                 if (replacementType != null && newInitializer instanceof J.Lambda) {
                     TypeTree resolved = resolveDiamond(replacementType, (J.Lambda) newInitializer);
