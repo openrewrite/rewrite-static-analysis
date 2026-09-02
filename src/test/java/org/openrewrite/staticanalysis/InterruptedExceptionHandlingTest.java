@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"EmptyCatchBlock", "CatchMayIgnoreException", "InterruptedExceptionSwallowed"})
 class InterruptedExceptionHandlingTest implements RewriteTest {
@@ -224,6 +225,42 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
                           }
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinClassWithPrimaryConstructorAndSupertype() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class Test(val name: String) : Runnable {
+                  override fun run() {
+                      execute {
+                          try {
+                              Thread.sleep(1000)
+                          } catch (e: InterruptedException) {
+                          }
+                      }
+                  }
+                  fun execute(block: () -> Unit) = block()
+              }
+              """,
+            """
+              class Test(val name: String) : Runnable {
+                  override fun run() {
+                      execute {
+                          try {
+                              Thread.sleep(1000)
+                          } catch (e: InterruptedException) {
+                              Thread.currentThread().interrupt()
+                          }
+                      }
+                  }
+                  fun execute(block: () -> Unit) = block()
               }
               """
           )
