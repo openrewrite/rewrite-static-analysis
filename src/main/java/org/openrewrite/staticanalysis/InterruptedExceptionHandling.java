@@ -58,12 +58,10 @@ public class InterruptedExceptionHandling extends Recipe {
                     if (isMultiCatch) {
                         J.Identifier varId = c.getParameter().getTree().getVariables().get(0).getName();
                         return JavaTemplate.builder("if (#{any()} instanceof InterruptedException) { Thread.currentThread().interrupt(); }")
-                                .contextSensitive()
                                 .build()
                                 .apply(updateCursor(c), c.getBody().getCoordinates().firstStatement(), varId);
                     }
                     return JavaTemplate.builder("Thread.currentThread().interrupt();")
-                            .contextSensitive()
                             .build()
                             .apply(updateCursor(c), c.getBody().getCoordinates().firstStatement());
                 }
