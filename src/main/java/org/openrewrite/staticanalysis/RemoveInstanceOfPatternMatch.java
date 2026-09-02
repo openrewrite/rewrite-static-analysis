@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 
 import java.time.Duration;
@@ -65,14 +66,19 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
         private VariableUsage variableUsage;
 
         @Override
-        public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-            // Analyze variable usage in the whole compilation unit and
-            // run the compilation unit transformation.
-            // Maybe it's better to use messages instead of the private field
-            variableUsage = VariableUsageAnalyzer.analyze(cu);
-            J.CompilationUnit result = (J.CompilationUnit) super.visitCompilationUnit(cu, ctx);
-            variableUsage = null;
-            return result;
+        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            // Only J.CompilationUnit carries `instanceof` pattern matching; other
+            // source files (e.g. Kotlin's K.CompilationUnit) start from an empty
+            // usage so the visitor never dereferences a null field.
+            if (tree instanceof JavaSourceFile) {
+                variableUsage = tree instanceof J.CompilationUnit ?
+                        VariableUsageAnalyzer.analyze((J.CompilationUnit) tree) :
+                        new VariableUsage();
+                J result = super.visit(tree, ctx);
+                variableUsage = null;
+                return result;
+            }
+            return super.visit(tree, ctx);
         }
 
         @Override
