@@ -116,6 +116,68 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
+    @Test
+    void varargsArgumentAfterFixedArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(Object... args) {}
+                  void test(Object first) {
+                      of(first, new I() {
+                          @Override public int run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(Object... args) {}
+                  void test(Object first) {
+                      of(first, (I) () -> 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void functionalInterfaceVarargsNeedsNoCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(I... args) {}
+                  void test() {
+                      of(new I() {
+                          @Override public int run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(I... args) {}
+                  void test() {
+                      of(() -> 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/194")
     @SuppressWarnings("ConstantConditions")
     @Test
