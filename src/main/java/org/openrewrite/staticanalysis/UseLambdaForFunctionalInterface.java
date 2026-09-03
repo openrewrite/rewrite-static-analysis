@@ -246,7 +246,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 if (methodType == null) {
                     return false;
                 }
-                if (!TypeUtils.isOfClassType(methodType.getParameterTypes().get(argumentIndex), lambdaFqn)) {
+                JavaType parameterType = parameterTypeAt(methodType, argumentIndex);
+                if (parameterType == null) {
+                    return false;
+                }
+                if (!TypeUtils.isOfClassType(parameterType, lambdaFqn)) {
                     return true;
                 }
 
@@ -256,8 +260,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     if (methodType.getName().equals(maybeAmbiguous.getName()) &&
                         methodType.getParameterTypes().size() == maybeAmbiguous.getParameterTypes().size()) {
                         if (areMethodsAmbiguous(
-                                getSamCompatible(methodType.getParameterTypes().get(argumentIndex)),
-                                getSamCompatible(maybeAmbiguous.getParameterTypes().get(argumentIndex)))) {
+                                getSamCompatible(parameterType),
+                                getSamCompatible(parameterTypeAt(maybeAmbiguous, argumentIndex)))) {
                             count++;
                         }
                     }
@@ -267,6 +271,22 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
 
                 return hasGenerics(lambda);
+            }
+
+            private @Nullable JavaType parameterTypeAt(JavaType.Method methodType, int argumentIndex) {
+                List<JavaType> parameterTypes = methodType.getParameterTypes();
+                if (parameterTypes.isEmpty()) {
+                    return null;
+                }
+                int index = Math.min(argumentIndex, parameterTypes.size() - 1);
+                JavaType parameterType = parameterTypes.get(index);
+                if (index == parameterTypes.size() - 1) {
+                    JavaType.Array array = TypeUtils.asArray(parameterType);
+                    if (array != null) {
+                        return array.getElemType();
+                    }
+                }
+                return parameterType;
             }
 
             private boolean areMethodsAmbiguous(JavaType.@Nullable Method m1, JavaType.@Nullable Method m2) {
