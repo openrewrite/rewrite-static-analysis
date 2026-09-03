@@ -29,6 +29,8 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -80,7 +82,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 // if the type expression is null, it implies the types on the lambda arguments are implicit.
                 if (multiVariable.getTypeExpression() == null) {
                     J.VariableDeclarations.NamedVariable nv = multiVariable.getVariables().get(0);
-                    TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY);
+                    TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY, newRecursionGuard());
                     if (typeExpression != null) {
                         // "? extends Foo" is not a valid type definition on its own. Unwrap wildcard and replace with its bound
                         if (typeExpression instanceof J.Wildcard) {
@@ -88,7 +90,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                             if (wildcard.getBoundedType() == null) {
                                 return multiVariable;
                             }
-                            typeExpression = buildTypeTree(wildcard.getBoundedType().getType(), Space.EMPTY);
+                            typeExpression = buildTypeTree(wildcard.getBoundedType().getType(), Space.EMPTY, newRecursionGuard());
                         }
                         multiVariable = multiVariable.withTypeExpression(typeExpression);
                         multiVariable = multiVariable.withVariables(ListUtils.map(multiVariable.getVariables(), (index, variable) -> {
@@ -102,10 +104,25 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 return multiVariable;
             }
 
-            private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
+            private Set<JavaType> newRecursionGuard() {
+                return Collections.newSetFromMap(new IdentityHashMap<>());
+            }
+
+            private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space, Set<JavaType> recursionGuard) {
                 if (type == null || type instanceof JavaType.Unknown) {
                     return null;
                 }
+                if (!recursionGuard.add(type)) {
+                    return null;
+                }
+                try {
+                    return buildTypeTree0(type, space, recursionGuard);
+                } finally {
+                    recursionGuard.remove(type);
+                }
+            }
+
+            private @Nullable TypeTree buildTypeTree0(JavaType type, Space space, Set<JavaType> recursionGuard) {
                 if (type instanceof JavaType.Primitive) {
                     return new J.Primitive(
                             Tree.randomId(),
@@ -128,7 +145,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     );
 
                     if (!fq.getTypeParameters().isEmpty()) {
-                        JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters());
+                        JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters(), recursionGuard);
                         if (typeParameters == null) {
                             //If there is a problem resolving one of the type parameters, then do not return a type
                             //expression for the fully-qualified type.
@@ -156,7 +173,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     }
 
                     // Build the base type expression
-                    TypeTree result = buildTypeTree(elemType, space);
+                    TypeTree result = buildTypeTree(elemType, space, recursionGuard);
                     if (result == null) {
                         return null;
                     }
@@ -178,7 +195,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     return result;
                 }
                 if (type instanceof JavaType.Variable) {
-                    return buildTypeTree(((JavaType.Variable) type).getType(), space);
+                    return buildTypeTree(((JavaType.Variable) type).getType(), space, recursionGuard);
                 }
                 if (type instanceof JavaType.GenericTypeVariable) {
                     JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
@@ -202,7 +219,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     }
 
                     if (!genericType.getBounds().isEmpty()) {
-                        boundedType = buildTypeTree(genericType.getBounds().get(0), Space.format(" "));
+                        boundedType = buildTypeTree(genericType.getBounds().get(0), Space.format(" "), recursionGuard);
                         if (boundedType == null) {
                             return null;
                         }
@@ -219,11 +236,11 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 return null;
             }
 
-            private @Nullable JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters) {
+            private @Nullable JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters, Set<JavaType> recursionGuard) {
                 List<JRightPadded<Expression>> typeExpressions = new ArrayList<>();
 
                 for (JavaType type : typeParameters) {
-                    Expression typeParameterExpression = (Expression) buildTypeTree(type, Space.EMPTY);
+                    Expression typeParameterExpression = (Expression) buildTypeTree(type, Space.EMPTY, recursionGuard);
                     if (typeParameterExpression == null) {
                         return null;
                     }
