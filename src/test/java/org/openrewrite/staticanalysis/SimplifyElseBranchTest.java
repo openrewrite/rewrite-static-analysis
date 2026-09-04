@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.python.Assertions.python;
 
 class SimplifyElseBranchTest implements RewriteTest {
 
@@ -344,4 +345,71 @@ class SimplifyElseBranchTest implements RewriteTest {
               """
           )
         );
-    }}
+    }
+
+    @Test
+    void simplifyElseBranchPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def a(password):
+                  if len(password) < 6:
+                      print("Password is too short.")
+                  else:
+                      if len(password) > 12:
+                          print("Password is too long.")
+              """,
+            """
+              def a(password):
+                  if len(password) < 6:
+                      print("Password is too short.")
+                  elif len(password) > 12:
+                      print("Password is too long.")
+              """
+          )
+        );
+    }
+
+    @Test
+    void simplifyElseBranchPythonWithComments() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def a(password):
+                  if len(password) < 6:
+                      print("Password is too short.")
+                  else:
+                      # Comment 1
+                      if len(password) > 12:
+                          print("Password is too long.")
+              """,
+            """
+              def a(password):
+                  if len(password) < 6:
+                      print("Password is too short.")
+                  # Comment 1
+                  elif len(password) > 12:
+                      print("Password is too long.")
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeExistingElifPython() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def a(password):
+                  if len(password) < 6:
+                      print("Password is too short.")
+                  elif len(password) > 12:
+                      print("Password is too long.")
+              """
+          )
+        );
+    }
+}
