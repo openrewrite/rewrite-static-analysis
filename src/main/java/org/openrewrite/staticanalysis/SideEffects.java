@@ -18,18 +18,19 @@ package org.openrewrite.staticanalysis;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Whether evaluating an expression might do something observable beyond producing its value. Recipes that
- * delete an expression, or that stop evaluating one, are only correct when the answer is {@code false}.
- * <p>
- * Deliberately conservative: any method invocation, constructor call, assignment or increment counts, since
- * whether those are pure cannot be decided from the LST alone. {@link org.openrewrite.java.tree.Expression#getSideEffects()}
- * is not used here because it reports only the side effects of the expression's own node type, and so misses
- * those nested inside a ternary or a lambda.
+ * Whether evaluating an expression might do something observable beyond producing its value; recipes deleting an
+ * expression, or evaluating one fewer times, are only correct when this is {@code false}. Deliberately
+ * conservative: any invocation, constructor call, assignment or increment counts, as does a {@code volatile} read,
+ * which is a synchronization action rather than a side effect. Not {@link
+ * org.openrewrite.java.tree.Expression#getSideEffects()}, which reports only the expression's own node type and so
+ * misses anything nested inside a ternary or a lambda.
  */
 final class SideEffects {
 
@@ -77,6 +78,15 @@ final class SideEffects {
             public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean result) {
                 result.set(true);
                 return newClass;
+            }
+
+            @Override
+            public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean result) {
+                JavaType.Variable fieldType = identifier.getFieldType();
+                if (fieldType != null && fieldType.hasFlags(Flag.Volatile)) {
+                    result.set(true);
+                }
+                return identifier;
             }
 
             @Override

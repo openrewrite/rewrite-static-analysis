@@ -263,6 +263,25 @@ class SimplifyRedundantLogicalExpressionTest implements RewriteTest {
     }
 
     @Test
+    void doNotChangeVolatileFieldRead() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  volatile boolean flag;
+
+                  @SuppressWarnings("all")
+                  boolean test() {
+                      return flag && flag;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void simplifyLogicalAndKotlin() {
         rewriteRun(
           //language=kotlin
