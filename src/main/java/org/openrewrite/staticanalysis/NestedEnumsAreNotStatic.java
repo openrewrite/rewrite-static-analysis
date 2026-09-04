@@ -66,6 +66,7 @@ public class NestedEnumsAreNotStatic extends Recipe {
                 return cd.getKind() == J.ClassDeclaration.Kind.Type.Enum &&
                         cd.getType() != null &&
                         cd.getType().getOwningClass() != null &&
+                        cd.getBody() != null &&
                         J.Modifier.hasModifier(cd.getModifiers(), Static);
             }
         });
