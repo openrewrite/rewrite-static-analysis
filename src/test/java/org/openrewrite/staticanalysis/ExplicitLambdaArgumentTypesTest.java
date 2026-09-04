@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
@@ -693,6 +694,35 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
               class A {
                   void foo(List<? extends A> a) {
                       a.forEach((A it) -> { });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotStackOverflowOnRecursiveGenericType() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("assertj-core"))
+            .typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import org.assertj.core.api.AbstractStringAssert;
+
+              class Test {
+                  static <C> void inject(C carrier, Setter<C> setter) {
+                  }
+
+                  interface Setter<C> {
+                      void set(C carrier);
+                  }
+
+                  static void method(AbstractStringAssert<?> assertion) {
+                      inject(assertion, a -> {
+                          a.isNotNull();
+                      });
                   }
               }
               """
