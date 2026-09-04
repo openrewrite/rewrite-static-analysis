@@ -27,6 +27,7 @@ import org.openrewrite.marker.Markers;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.stream.Collectors.toList;
 import static org.openrewrite.java.tree.J.Wildcard.Bound.Extends;
@@ -95,7 +96,7 @@ public class DeclarationSiteTypeVariance extends Recipe {
                         if (varParam.getTypeExpression() instanceof J.ParameterizedType) {
                             J.ParameterizedType pt = (J.ParameterizedType) varParam.getTypeExpression();
                             for (VariantTypeSpec variantTypeSpec : variantTypeSpecs) {
-                                if (variantTypeSpec.hasType(pt)) {
+                                if (variantTypeSpec.hasType(pt) && !isStoredInvariantly(m, varParam)) {
                                     return varParam.withTypeExpression(useDeclarationSiteVariance(pt, variantTypeSpec));
                                 }
                             }
@@ -104,6 +105,72 @@ public class DeclarationSiteTypeVariance extends Recipe {
                     }
                     return param;
                 }));
+            }
+
+            private boolean isStoredInvariantly(J.MethodDeclaration method, J.VariableDeclarations parameter) {
+                if (method.getBody() == null || parameter.getVariables().size() != 1) {
+                    return false;
+                }
+                JavaType.Variable parameterType = parameter.getVariables().get(0).getVariableType();
+                if (parameterType == null) {
+                    return false;
+                }
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean stored) {
+                        J.Assignment visitedAssignment = super.visitAssignment(assignment, stored);
+                        if (TypeUtils.isOfType(visitedAssignment.getVariable().getType(), parameterType.getType()) &&
+                            !references(visitedAssignment.getVariable(), parameterType) &&
+                            directlyReferences(visitedAssignment.getAssignment(), parameterType)) {
+                            stored.set(true);
+                        }
+                        return visitedAssignment;
+                    }
+
+                    @Override
+                    public J.VariableDeclarations.NamedVariable visitVariable(
+                            J.VariableDeclarations.NamedVariable variable, AtomicBoolean stored) {
+                        J.VariableDeclarations.NamedVariable visitedVariable = super.visitVariable(variable, stored);
+                        J.VariableDeclarations declarations = getCursor().firstEnclosing(J.VariableDeclarations.class);
+                        boolean explicitlyTyped = declarations != null &&
+                                !(declarations.getTypeExpression() instanceof J.Identifier &&
+                                  "var".equals(((J.Identifier) declarations.getTypeExpression()).getSimpleName()));
+                        if (explicitlyTyped && visitedVariable.getInitializer() != null &&
+                            TypeUtils.isOfType(visitedVariable.getType(), parameterType.getType()) &&
+                            directlyReferences(visitedVariable.getInitializer(), parameterType)) {
+                            stored.set(true);
+                        }
+                        return visitedVariable;
+                    }
+                }.reduce(method.getBody(), new AtomicBoolean()).get();
+            }
+
+            private boolean references(Expression expression, JavaType.Variable parameterType) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean found) {
+                        return lambda;
+                    }
+
+                    @Override
+                    public J.MemberReference visitMemberReference(J.MemberReference memberRef, AtomicBoolean found) {
+                        return memberRef;
+                    }
+
+                    @Override
+                    public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean found) {
+                        if (parameterType.equals(identifier.getFieldType())) {
+                            found.set(true);
+                        }
+                        return identifier;
+                    }
+                }.reduce(expression, new AtomicBoolean()).get();
+            }
+
+            private boolean directlyReferences(Expression expression, JavaType.Variable parameterType) {
+                Expression unwrapped = expression.unwrap();
+                return unwrapped instanceof J.Identifier &&
+                       parameterType.equals(((J.Identifier) unwrapped).getFieldType());
             }
 
             private J.ParameterizedType useDeclarationSiteVariance(J.ParameterizedType pt, VariantTypeSpec spec) {
