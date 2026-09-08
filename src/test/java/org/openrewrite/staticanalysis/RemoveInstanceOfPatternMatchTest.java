@@ -1026,6 +1026,33 @@ class RemoveInstanceOfPatternMatchTest implements RewriteTest {
     }
 
     @Test
+    void methodNameMatchingPatternVariableName() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+              package com.example;
+
+              class Example {
+                  int test(Object obj) {
+                      return obj instanceof String length ? length.length() : 0;
+                  }
+              }
+              """,
+              """
+              package com.example;
+
+              class Example {
+                  int test(Object obj) {
+                      return obj instanceof String ? ((String) obj).length() : 0;
+                  }
+              }
+              """),
+            14));
+    }
+
+    @Test
     void doNotChangeKotlin() {
         rewriteRun(
           version(

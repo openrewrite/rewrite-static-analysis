@@ -102,13 +102,16 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             // if (obj instanceof String str && str.isEmpty())
             // is replaced by:
             // if (obj instanceof String str && ((String) obj).isEmpty())
+            Object parent = getCursor().getParentTreeCursor().getValue();
+            if (parent instanceof J.MethodInvocation && ((J.MethodInvocation) parent).getName() == identifier) {
+                return identifier;
+            }
             J.InstanceOf instanceOf = variableUsage.conditions.get(identifier);
             if (instanceOf != null) {
                 J result = autoFormat(
                         typeCast((TypeTree) instanceOf.getClazz(), instanceOf.getExpression()),
                         ctx);
                 // If a parent expression is a method invocation, enclose type cast in parentheses
-                Object parent = getCursor().getParentTreeCursor().getValue();
                 if (parent instanceof J.MethodInvocation) {
                     result = parentheses(result);
                 }
