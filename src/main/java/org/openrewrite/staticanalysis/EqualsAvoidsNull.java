@@ -155,7 +155,7 @@ public class EqualsAvoidsNull extends Recipe {
                     private J.MethodInvocation literalsFirstInComparisons(J.MethodInvocation m,
                                                                           Expression firstArgument) {
                         if (!(firstArgument instanceof J.Literal) && !(m.getSelect() instanceof J.Literal)) {
-                            if (firstArgument.toString().compareTo(m.getSelect().toString()) > 0) {
+                            if (firstArgument.print().compareTo(m.getSelect().print()) > 0) {
                                 // Don't swap the order to avoid thrashing.
                                 // toString() is a somewhat arbitrary criterion, but at least it's deterministic.
                                 return m;

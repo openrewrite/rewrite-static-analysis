@@ -121,7 +121,7 @@ public class NeedBraces extends Recipe {
                 if (tree instanceof SourceFile) {
                     SourceFile cu = (SourceFile) requireNonNull(tree);
                     // Python don't need none of your curly braces
-                    if (cu.getSourcePath().toString().endsWith(".py")) {
+                    if (cu.getSourcePath().print().endsWith(".py")) {
                         return (J) tree;
                     }
                     needBracesStyle = Style.from(NeedBracesStyle.class, cu, Checkstyle::needBracesStyle);

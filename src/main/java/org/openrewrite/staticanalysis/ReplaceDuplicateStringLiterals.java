@@ -178,7 +178,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                         prevIsLower = Character.isLowerCase(c);
                     }
                 }
-                String newNameString = newName.toString();
+                String newNameString = newName.print();
                 while (newNameString.length() > maxVariableLength){
                     int indexOf = newNameString.lastIndexOf("_");
                     newNameString = newNameString.substring(0, indexOf > -1 ? indexOf : maxVariableLength);
@@ -220,7 +220,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             (parentScope.getValue() instanceof J.MethodDeclaration || parentScope.getValue() instanceof J.ClassDeclaration) &&
                             !(privateStaticFinalVariable && ((J.Literal) v.getInitializer()).getValue() instanceof String) &&
                             !(((J.Literal) v.getInitializer()).getValue() == null)) {
-                        String value = ((J.Literal) v.getInitializer()).getValue().toString();
+                        String value = ((J.Literal) v.getInitializer()).getValue().print();
                         result.existingFieldValueToFieldName.put(v.getSimpleName(), value);
                     }
                     if (parentScope.getValue() instanceof J.ClassDeclaration &&

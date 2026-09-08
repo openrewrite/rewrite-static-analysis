@@ -82,7 +82,7 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
                     updateCursor(m);
                     if (flattenAble) {
-                        String[] cmds = sb.toString().split(" ");
+                        String[] cmds = sb.print().split(" ");
                         String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
                         JavaTemplate template = JavaTemplate.builder(templateCode).build();
 
@@ -140,6 +140,6 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     .append(token)
                     .append("\"");
         }
-        return sb.toString();
+        return sb.print();
     }
 }

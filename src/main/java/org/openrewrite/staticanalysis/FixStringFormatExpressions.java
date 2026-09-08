@@ -126,7 +126,7 @@ public class FixStringFormatExpressions extends Recipe {
                                 if (!newValueSource.equals(fmt.getValueSource())) {
                                     fmt = fmt.withValueSource(newValueSource);
                                     if (fmt.getValue() != null) {
-                                        fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().toString()).replaceAll("%n"));
+                                        fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().print()).replaceAll("%n"));
                                     }
                                 }
                             }

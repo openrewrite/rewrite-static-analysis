@@ -73,8 +73,8 @@ public class ReplaceWeekYearWithYear extends Recipe {
                             Cursor c = getCursor().dropParentWhile(is -> is instanceof J.Parentheses || !(is instanceof Tree));
                             if (c.getMessage("KEY") != null) {
                                 Object value = li.getValue();
-                                String newValue = replaceY(value.toString());
-                                if (!newValue.equals(value.toString())) {
+                                String newValue = replaceY(value.print());
+                                if (!newValue.equals(value.print())) {
                                     return li.withValueSource("\"" + newValue + "\"").withValue(newValue);
                                 }
                             }
@@ -100,7 +100,7 @@ public class ReplaceWeekYearWithYear extends Recipe {
                             }
                         }
 
-                        return output.toString();
+                        return output.print();
                     }
                 }
         );

@@ -143,7 +143,7 @@ public class FindNewExceptionWithoutCause extends Recipe {
 
                 JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
                 report.insertRow(ctx, new ExceptionsWithoutCause.Row(
-                        sourceFile == null ? "" : sourceFile.getSourcePath().toString(),
+                        sourceFile == null ? "" : sourceFile.getSourcePath().print(),
                         String.valueOf(caughtType == null ? caughtVar.getType() : caughtType.getType()),
                         String.valueOf(newException.getType())
                 ));

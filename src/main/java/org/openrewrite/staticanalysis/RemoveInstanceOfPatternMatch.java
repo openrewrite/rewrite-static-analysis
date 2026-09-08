@@ -192,9 +192,9 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                     .builder("#{} #{} = (#{}) #{any()};")
                     .contextSensitive()
                     .build();
-            return template.apply(blockCursor, block.getCoordinates().firstStatement(), instanceOf.getClazz().toString(),
+            return template.apply(blockCursor, block.getCoordinates().firstStatement(), instanceOf.getClazz().print(),
                     ((J.Identifier) Objects.requireNonNull(instanceOf.getPattern())).getSimpleName(),
-                    instanceOf.getClazz().toString(),
+                    instanceOf.getClazz().print(),
                     visit(instanceOf.getExpression(), ctx));
         }
 

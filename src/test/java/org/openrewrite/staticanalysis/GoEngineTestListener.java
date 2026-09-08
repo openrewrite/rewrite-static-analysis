@@ -70,7 +70,7 @@ public class GoEngineTestListener implements LauncherSessionListener {
             GoRpcSourceExtractor.extractTo(source);
             Path binary = work.resolve(executableName);
 
-            Process process = new ProcessBuilder("go", "build", "-o", binary.toString(), "./cmd/rpc")
+            Process process = new ProcessBuilder("go", "build", "-o", binary.print(), "./cmd/rpc")
                     .directory(source.toFile())
                     .redirectErrorStream(true)
                     .start();

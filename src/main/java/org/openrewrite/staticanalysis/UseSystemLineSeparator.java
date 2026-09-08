@@ -55,7 +55,7 @@ public class UseSystemLineSeparator extends Recipe {
                         if (value == null) {
                             return method;
                         }
-                        param = value.toString();
+                        param = value.print();
                     }
                     if (!LINE_SEPARATOR.equals(param)) {
                         return invocation;

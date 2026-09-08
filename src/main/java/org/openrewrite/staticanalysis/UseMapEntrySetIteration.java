@@ -209,7 +209,7 @@ public class UseMapEntrySetIteration extends Recipe {
                         JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
                         J.ClassDeclaration enclosing = getCursor().firstEnclosing(J.ClassDeclaration.class);
                         report.insertRow(ctx, new MapKeySetIterations.Row(
-                                sourceFile == null ? "" : sourceFile.getSourcePath().toString(),
+                                sourceFile == null ? "" : sourceFile.getSourcePath().print(),
                                 enclosing == null || enclosing.getType() == null ? "" :
                                         enclosing.getType().getFullyQualifiedName(),
                                 map.printTrimmed(getCursor()),

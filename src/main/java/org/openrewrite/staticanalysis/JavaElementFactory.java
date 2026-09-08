@@ -77,7 +77,7 @@ final class JavaElementFactory {
         if (type instanceof JavaType.FullyQualified) {
             qualifiedName = qualified ? ((JavaType.FullyQualified) type).getFullyQualifiedName() : ((JavaType.FullyQualified) type).getClassName();
         } else {
-            qualifiedName = type.toString();
+            qualifiedName = type.print();
         }
 
         // Check if this is a local class (contains $<digit>)

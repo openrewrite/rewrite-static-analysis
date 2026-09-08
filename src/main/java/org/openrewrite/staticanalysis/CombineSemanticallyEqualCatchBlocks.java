@@ -1382,7 +1382,7 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
                     J.Package compareTo = (J.Package) j;
                     if (pkg.getAnnotations().size() != compareTo.getAnnotations().size() ||
-                            !pkg.getExpression().toString().equals(compareTo.getExpression().toString())) {
+                            !pkg.getExpression().print().equals(compareTo.getExpression().print())) {
                         isEqual.set(false);
                         return pkg;
                     }

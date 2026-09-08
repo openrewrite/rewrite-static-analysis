@@ -113,7 +113,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                             J.VariableDeclarations.NamedVariable fieldToRemove = entry.getKey();
                             cd = (J.ClassDeclaration) new RemoveUnusedField(fieldToRemove).visitNonNull(cd, declarationDeleted);
                             if (fieldToRemove.getType() != null) {
-                                maybeRemoveImport(fieldToRemove.getType().toString());
+                                maybeRemoveImport(fieldToRemove.getType().print());
                             }
                             // Maybe remove next statement comment if variable declarations is removed
                             if (declarationDeleted.get()) {
@@ -148,7 +148,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                 if (variable.getVariableType() != null) {
                     found.computeIfAbsent(variable, k -> new ArrayList<>());
                     // Note: Using a variable type signature is only safe to find uses of class fields.
-                    signatureMap.put(variable.getVariableType().toString(), variable);
+                    signatureMap.put(variable.getVariableType().print(), variable);
                     // Also map by name for fallback matching
                     nameMap.put(variable.getSimpleName(), variable);
                 }
@@ -164,7 +164,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
                                 J.VariableDeclarations.NamedVariable match = null;
 
                                 // First try exact type signature match
-                                String fieldTypeSignature = identifier.getFieldType().toString();
+                                String fieldTypeSignature = identifier.getFieldType().print();
                                 if (signatureMap.containsKey(fieldTypeSignature)) {
                                     match = signatureMap.get(fieldTypeSignature);
                                 } else if (identifier.getFieldType().getOwner() != null) {

@@ -141,7 +141,7 @@ abstract class ReplaceLegacyCollection extends Recipe {
                 JavaSourceFile cu = getCursor().firstEnclosing(JavaSourceFile.class);
                 J.ClassDeclaration clazz = getCursor().firstEnclosing(J.ClassDeclaration.class);
                 notMigrated.insertRow(ctx, new LegacySynchronizedTypesNotMigrated.Row(
-                        cu == null ? "" : cu.getSourcePath().toString(),
+                        cu == null ? "" : cu.getSourcePath().print(),
                         clazz != null && clazz.getType() != null ? clazz.getType().getFullyQualifiedName() : "",
                         legacyType,
                         reason));

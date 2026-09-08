@@ -642,7 +642,7 @@ public class InstanceOfPatternMatch extends Recipe {
                                 builder.append(Character.toLowerCase(c));
                             }
                         }
-                        baseName = builder.length() > 0 ? builder.toString() : "o";
+                        baseName = builder.length() > 0 ? builder.print() : "o";
                         break;
                     case NORMAL:
                         Set<String> namesInScope = contextScopes.stream()

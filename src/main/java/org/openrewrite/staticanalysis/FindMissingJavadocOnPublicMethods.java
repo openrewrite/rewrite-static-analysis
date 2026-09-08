@@ -66,7 +66,7 @@ public class FindMissingJavadocOnPublicMethods extends Recipe {
                         enclosing.getType() != null ? enclosing.getType().getFullyQualifiedName() : "";
 
                 report.insertRow(ctx, new MissingJavadocOnPublicMethods.Row(
-                        sourceFile == null ? "" : sourceFile.getSourcePath().toString(),
+                        sourceFile == null ? "" : sourceFile.getSourcePath().print(),
                         className,
                         md.getSimpleName()
                 ));
