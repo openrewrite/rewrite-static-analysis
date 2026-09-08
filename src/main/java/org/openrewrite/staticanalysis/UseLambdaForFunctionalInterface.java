@@ -130,7 +130,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 templateBuilder.append('}');
 
-                J.Lambda lambda = JavaTemplate.builder(templateBuilder.toString())
+                J.Lambda lambda = JavaTemplate.builder(templateBuilder.print())
                         .contextSensitive()
                         .build()
                         .apply(getCursor(), n.getCoordinates().replace());
@@ -382,7 +382,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
             J.ClassDeclaration enclosing = getCursor().firstEnclosing(J.ClassDeclaration.class);
             report.insertRow(ctx, new AnonymousFunctionalInterfaceImplementations.Row(
-                    sourceFile == null ? "" : sourceFile.getSourcePath().toString(),
+                    sourceFile == null ? "" : sourceFile.getSourcePath().print(),
                     enclosing == null || enclosing.getType() == null ? "" :
                             enclosing.getType().getFullyQualifiedName(),
                     functionalInterface,

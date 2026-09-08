@@ -45,7 +45,7 @@ public class URLEqualsHashCode {
 
         @AfterTemplate
         boolean after(URL a, URL b) {
-            return URI.create(a.toString()).equals(URI.create(b.toString()));
+            return URI.create(a.print()).equals(URI.create(b.print()));
         }
     }
 
@@ -63,7 +63,7 @@ public class URLEqualsHashCode {
 
         @AfterTemplate
         int after(URL a) {
-            return URI.create(a.toString()).hashCode();
+            return URI.create(a.print()).hashCode();
         }
     }
 }
