@@ -139,7 +139,8 @@ public class AddSerialVersionUidToSerializable extends Recipe {
                         return typeParametersSerializable;
                     }
                     //All other parameterized types fall through
-                } else if (type instanceof JavaType.FullyQualified) {
+                }
+                if (type instanceof JavaType.FullyQualified) {
                     JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
                     if (fq.getKind() == JavaType.Class.Kind.Enum) {
                         return false;
