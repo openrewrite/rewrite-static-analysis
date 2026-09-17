@@ -19,6 +19,7 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
@@ -29,6 +30,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
 
@@ -56,6 +58,8 @@ public class UnnecessaryThrows extends Recipe {
             "methods overridden within the same source file, so that a subclass override which " +
             "does throw the exception keeps compiling. Overrides in other source files cannot be " +
             "detected without a scanning recipe and are therefore not accounted for.\n\n" +
+            "A `throws` declaration is also retained when the method body contains a call " +
+            "whose type does not fully resolve, because such a call may throw the exception.\n\n" +
             "When a `throws` declaration is removed, any `@throws` or `@exception` " +
             "JavaDoc tag documenting that exception is removed along with it, so that " +
             "the documentation does not describe an exception the method no longer declares.\n\n" +
@@ -68,7 +72,9 @@ public class UnnecessaryThrows extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        // Sound only where the compiler enforces catch-or-declare: elsewhere a checked exception can be thrown
+        // without any callee declaring it, so an undeclared exception is no evidence that the `throws` is unused.
+        return Preconditions.check(new JavaFileChecker<>(), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
@@ -88,17 +94,14 @@ public class UnnecessaryThrows extends Recipe {
 
                         @Override
                         public J.Try.Resource visitTryResource(J.Try.Resource tryResource, ExecutionContext ctx) {
-                            TypedTree resource = tryResource.getVariableDeclarations();
-
-                            JavaType.FullyQualified resourceType = TypeUtils.asFullyQualified(resource.getType());
-                            if (resourceType != null) {
-                                // Find the close() method on the resource type to get its actual thrown exceptions
-                                for (JavaType.Method method : resourceType.getMethods()) {
-                                    if ("close".equals(method.getName()) && method.getParameterTypes().isEmpty()) {
-                                        removeThrownTypes(method);
-                                        break;
-                                    }
-                                }
+                            // A resource is closed implicitly at the end of the block, so its close() is a call
+                            // site. It is commonly inherited, so it has to be looked up through the supertypes.
+                            JavaType.FullyQualified resourceType = TypeUtils.asFullyQualified(tryResource.getVariableDeclarations().getType());
+                            Optional<JavaType.Method> close = TypeUtils.findDeclaredMethod(resourceType, "close", emptyList());
+                            if (close.isPresent()) {
+                                removeThrownTypes(close.get());
+                            } else {
+                                unusedThrows.clear();
                             }
 
                             return super.visitTryResource(tryResource, ctx);
@@ -106,11 +109,13 @@ public class UnnecessaryThrows extends Recipe {
 
                         @Override
                         public J.Throw visitThrow(J.Throw thrown, ExecutionContext ctx) {
-                            JavaType.FullyQualified type = TypeUtils.asFullyQualified(thrown.getException().getType());
-                            if (type != null) {
-                                unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, type));
+                            JavaType type = thrown.getException().getType();
+                            if (!TypeUtils.isWellFormedType(type)) {
+                                unusedThrows.clear();
+                                return thrown;
                             }
-                            return thrown;
+                            unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, type));
+                            return super.visitThrow(thrown, ctx);
                         }
 
                         @Override
@@ -125,11 +130,20 @@ public class UnnecessaryThrows extends Recipe {
                             return super.visitNewClass(newClass, ctx);
                         }
 
+                        // A call site that does not fully resolve is indistinguishable from one that throws
+                        // nothing, so it counts as possibly throwing every candidate. `isWellFormedType` does
+                        // not reach a method's thrown exceptions, which are checked here.
                         private void removeThrownTypes(JavaType.@Nullable Method type) {
-                            if (type != null) {
-                                for (JavaType thrownException : type.getThrownExceptions()) {
-                                    unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, thrownException));
+                            if (!TypeUtils.isWellFormedType(type)) {
+                                unusedThrows.clear();
+                                return;
+                            }
+                            for (JavaType thrownException : type.getThrownExceptions()) {
+                                if (!TypeUtils.isWellFormedType(thrownException)) {
+                                    unusedThrows.clear();
+                                    return;
                                 }
+                                unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, thrownException));
                             }
                         }
                     }.visit(m, ctx, requireNonNull(getCursor().getParent()));
@@ -291,7 +305,7 @@ public class UnnecessaryThrows extends Recipe {
                 }
                 return candidates;
             }
-        };
+        });
     }
 
     private static class RemoveThrowsTagVisitor extends JavadocVisitor<ExecutionContext> {
