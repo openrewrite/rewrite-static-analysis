@@ -112,9 +112,6 @@ public class UnnecessaryFinalInTryWithResources extends Recipe {
         return Space.build(first.getWhitespace(), comments);
     }
 
-    /**
-     * Drops the whitespace that `final` used to occupy while leaving any comments in place.
-     */
     private static Space reflow(Space space, boolean leadsDeclaration) {
         return Space.build(leadsDeclaration ? "" : tighten(space.getWhitespace()), space.getComments());
     }
