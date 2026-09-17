@@ -16,14 +16,15 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.FindRepeatableAnnotations;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 
 public class UnwrapRepeatableAnnotations extends Recipe {
     @Getter
@@ -82,20 +84,49 @@ public class UnwrapRepeatableAnnotations extends Recipe {
 
             private List<J.Annotation> unwrap(List<J.Annotation> annotations) {
                 return ListUtils.flatMap(annotations, a -> {
-                    List<J.Annotation> unwrapped = new ArrayList<>(1);
-
-                    new JavaVisitor<Integer>() {
-                        @Override
-                        public J visitAnnotation(J.Annotation annotation, Integer p) {
-                            if (annotation != a && FindRepeatableAnnotations.isRepeatable(annotation.getType())) {
-                                unwrapped.add(annotation);
-                            }
-                            return super.visitAnnotation(annotation, p);
-                        }
-                    }.visit(a, 0);
-
-                    return unwrapped.isEmpty() ? a : unwrapped;
+                    List<J.Annotation> unwrapped = repeatablesWrappedBy(a);
+                    return unwrapped == null ? a : unwrapped;
                 });
+            }
+
+            /**
+             * A container annotation holds nothing but the repeatable annotations it wraps, as in
+             * {@code @Annotations({@Annotation, @Annotation})}. An annotation that merely happens to take a
+             * repeatable annotation as one of several elements, such as
+             * {@code @CollectionTable(name = "T", joinColumns = @JoinColumn(name = "id"))}, is not a container,
+             * and replacing it with the annotation nested inside would discard its remaining elements.
+             *
+             * @param annotation The annotation to inspect.
+             * @return The wrapped repeatable annotations, or {@code null} if this is not a container annotation.
+             */
+            private @Nullable List<J.Annotation> repeatablesWrappedBy(J.Annotation annotation) {
+                List<Expression> arguments = annotation.getArguments();
+                if (arguments == null || arguments.size() != 1) {
+                    return null;
+                }
+                Expression argument = arguments.get(0);
+                if (argument instanceof J.Assignment) {
+                    J.Assignment assignment = (J.Assignment) argument;
+                    if (!(assignment.getVariable() instanceof J.Identifier) ||
+                            !"value".equals(((J.Identifier) assignment.getVariable()).getSimpleName())) {
+                        return null;
+                    }
+                    argument = assignment.getAssignment();
+                }
+                List<Expression> elements = argument instanceof J.NewArray ?
+                        ((J.NewArray) argument).getInitializer() : singletonList(argument);
+                if (elements == null || elements.isEmpty()) {
+                    return null;
+                }
+                List<J.Annotation> repeatables = new ArrayList<>(elements.size());
+                for (Expression element : elements) {
+                    if (!(element instanceof J.Annotation) ||
+                            !FindRepeatableAnnotations.isRepeatable(element.getType())) {
+                        return null;
+                    }
+                    repeatables.add((J.Annotation) element);
+                }
+                return repeatables;
             }
         });
     }
