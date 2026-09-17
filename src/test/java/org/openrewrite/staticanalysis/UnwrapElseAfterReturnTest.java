@@ -267,6 +267,64 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
     }
 
     @Test
+    void preserveCommentBeforeElseKeyword() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class MultilineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      else {
+                          return 2;
+                      }
+                  }
+              }
+              """,
+            """
+              class MultilineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      return 2;
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class InlineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      else { return 2; }
+                  }
+              }
+              """,
+            """
+              class InlineElseTest {
+                  int foo(boolean condition) {
+                      if (condition) {
+                          return 1;
+                      }
+                      // Handle false condition
+                      return 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void complexElseBlock() {
         rewriteRun(
           java(
