@@ -21,45 +21,54 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
+import org.openrewrite.PrintOutputCapture;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.analysis.dataflow.DataFlowNode;
-import org.openrewrite.analysis.dataflow.TaintFlowSpec;
-import org.openrewrite.analysis.dataflow.analysis.FlowGraph;
-import org.openrewrite.analysis.dataflow.analysis.ForwardFlow;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.NameTree;
+import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.staticanalysis.table.ExceptionsWithoutCause;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.UnaryOperator;
+
+import static java.util.Objects.requireNonNull;
+import static org.openrewrite.Tree.randomId;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class FindNewExceptionWithoutCause extends Recipe {
 
-    private static final String TAINTED_KEY = "caughtExceptionTaintedExpressions";
-    private static final String CAUGHT_KEY = "caughtExceptionVariable";
+    private static final String TAINTED_KEY = "caughtExceptionTaint";
+    private static final String POSITIONS_KEY = "throwPositions";
+    private static final int SNIPPET_LENGTH = 120;
 
     transient ExceptionsWithoutCause report = new ExceptionsWithoutCause(this);
 
     String displayName = "Find new exceptions thrown without the caught exception";
 
     String description = "Finds `catch` blocks that throw a newly created exception without referencing the caught exception, " +
-            "which discards the original exception's stack trace and message. Data flow (taint) tracking is used " +
-            "to establish whether the caught exception—or any value derived from it—reaches the thrown exception, " +
-            "so indirect references through local variables and string concatenation are not falsely reported. " +
-            "This mirrors PMD's `PreserveStackTrace` rule.";
+            "which discards the original exception's stack trace and message. Taint tracking over the local variables of " +
+            "the `catch` block establishes whether the caught exception—or any value derived from it—reaches the thrown " +
+            "exception, so indirect references through local variables, helper calls and string concatenation are not " +
+            "falsely reported. This mirrors PMD's `PreserveStackTrace` rule.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -71,44 +80,31 @@ public class FindNewExceptionWithoutCause extends Recipe {
 
             @Override
             public J.Try.Catch visitCatch(J.Try.Catch aCatch, ExecutionContext ctx) {
-                J.VariableDeclarations.NamedVariable caughtVar = aCatch.getParameter().getTree().getVariables().get(0);
-                JavaType.Variable caughtType = caughtVar.getVariableType();
-                String caughtName = caughtVar.getSimpleName();
+                // A nested `catch` inherits the enclosing taint, because a `throw` inside it can still preserve an
+                // exception caught further out.
+                Taint taint = new Taint(getCursor().getNearestMessage(TAINTED_KEY));
+                J.VariableDeclarations.NamedVariable caught = aCatch.getParameter().getTree().getVariables().get(0);
+                taint.add(caught.getVariableType(), caught.getSimpleName());
+                propagate(aCatch.getBody(), taint);
 
-                // Seed a taint analysis from every reference to the caught exception (and every value read off of it,
-                // e.g. `e.getMessage()`) and collect all expressions the caught exception flows into.
-                Set<Expression> tainted = new HashSet<>();
-                ExceptionTaintSpec spec = new ExceptionTaintSpec(caughtType, caughtName);
-                new JavaIsoVisitor<Set<Expression>>() {
-                    @Override
-                    public J.Identifier visitIdentifier(J.Identifier identifier, Set<Expression> set) {
-                        if (referencesCaught(identifier, caughtType, caughtName)) {
-                            seedFlow(getCursor(), spec, set);
-                        }
-                        return identifier;
-                    }
-
-                    @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Set<Expression> set) {
-                        if (rootReferencesCaught(method.getSelect(), caughtType, caughtName)) {
-                            seedFlow(getCursor(), spec, set);
-                        }
-                        return super.visitMethodInvocation(method, set);
-                    }
-                }.visit(aCatch.getBody(), tainted, getCursor());
-
-                getCursor().putMessage(TAINTED_KEY, tainted);
-                getCursor().putMessage(CAUGHT_KEY, caughtVar);
+                getCursor().putMessage(TAINTED_KEY, taint);
                 return super.visitCatch(aCatch, ctx);
             }
 
             @Override
             public J.Throw visitThrow(J.Throw thrown, ExecutionContext ctx) {
                 J.Throw t = super.visitThrow(thrown, ctx);
-                if (!(t.getException() instanceof J.NewClass)) {
+
+                // A builder chain such as `new ServiceError().withMessage(...)` throws the exception at the chain root.
+                Expression exception = t.getException();
+                Expression root = exception;
+                while (root instanceof J.MethodInvocation) {
+                    root = ((J.MethodInvocation) root).getSelect();
+                }
+                if (!(root instanceof J.NewClass)) {
                     return t;
                 }
-                J.NewClass newException = (J.NewClass) t.getException();
+                J.NewClass newException = (J.NewClass) root;
 
                 // Find the `catch` clause that directly governs this `throw`, bailing out if a `try` body, lambda,
                 // or other execution boundary sits between them.
@@ -129,117 +125,255 @@ public class FindNewExceptionWithoutCause extends Recipe {
                     return t;
                 }
 
-                J.VariableDeclarations.NamedVariable caughtVar = governing.getMessage(CAUGHT_KEY);
-                Set<Expression> tainted = governing.getMessage(TAINTED_KEY);
-                if (caughtVar == null || tainted == null) {
+                Taint taint = governing.getMessage(TAINTED_KEY);
+                if (taint == null || containsTainted(exception, taint)) {
                     return t;
                 }
 
-                JavaType.Variable caughtType = caughtVar.getVariableType();
-                String caughtName = caughtVar.getSimpleName();
-                if (referencesCaughtException(newException, caughtType, caughtName, tainted)) {
-                    return t;
+                J.VariableDeclarations parameter = ((J.Try.Catch) governing.getValue()).getParameter().getTree();
+                String caughtType = caughtTypeName(parameter);
+                String thrownType = fullyQualifiedName(exception.getType());
+                boolean typeResolved = caughtType != null && thrownType != null;
+                if (caughtType == null) {
+                    caughtType = parameter.getTypeExpression() == null ? "" :
+                            parameter.getTypeExpression().printTrimmed(getCursor());
+                }
+                if (thrownType == null) {
+                    thrownType = newException.getClazz() == null ? "" :
+                            newException.getClazz().printTrimmed(getCursor());
                 }
 
                 JavaSourceFile sourceFile = getCursor().firstEnclosing(JavaSourceFile.class);
+                int[] position = {0, 0};
+                if (sourceFile != null) {
+                    // The root cursor is shared by every source file in a cycle, so the cache hangs off this file's.
+                    position = getCursor().dropParentUntil(JavaSourceFile.class::isInstance)
+                            .<Map<UUID, int[]>>computeMessageIfAbsent(POSITIONS_KEY, k -> throwPositions(sourceFile))
+                            .getOrDefault(thrown.getId(), position);
+                }
+                String snippet = thrown.printTrimmed(getCursor()).replaceAll("\\s+", " ");
+                if (snippet.length() > SNIPPET_LENGTH) {
+                    snippet = snippet.substring(0, SNIPPET_LENGTH - 3) + "...";
+                }
+
                 report.insertRow(ctx, new ExceptionsWithoutCause.Row(
                         sourceFile == null ? "" : sourceFile.getSourcePath().toString(),
-                        String.valueOf(caughtType == null ? caughtVar.getType() : caughtType.getType()),
-                        String.valueOf(newException.getType())
+                        caughtType,
+                        thrownType,
+                        typeResolved,
+                        position[0],
+                        position[1],
+                        snippet
                 ));
-                return t.withException(SearchResult.found(newException));
-            }
-
-            private void seedFlow(Cursor cursor, ExceptionTaintSpec spec, Set<Expression> tainted) {
-                // Dataflow#findSinks gates on control-flow reachability, but a `catch` block is only reached via
-                // an exceptional edge that the control-flow graph does not model, so its expressions are considered
-                // unreachable and pruned. Drive ForwardFlow directly to obtain the taint graph without that gate.
-                DataFlowNode.of(cursor).forEach(node -> {
-                    FlowGraph graph = ForwardFlow.findAllFlows(node, spec, FlowGraph.Factory.defaultFactory());
-                    Deque<FlowGraph> worklist = new ArrayDeque<>();
-                    worklist.add(graph);
-                    while (!worklist.isEmpty()) {
-                        FlowGraph current = worklist.poll();
-                        Object value = current.getNode().getCursor().getValue();
-                        if (value instanceof Expression) {
-                            tainted.add((Expression) value);
-                        }
-                        worklist.addAll(current.getEdges());
-                    }
-                });
-            }
-
-            private boolean referencesCaughtException(J newException, JavaType.@Nullable Variable caughtType,
-                                                      String caughtName, Set<Expression> tainted) {
-                AtomicBoolean referenced = new AtomicBoolean(false);
-                new JavaIsoVisitor<AtomicBoolean>() {
-                    @Override
-                    public Expression visitExpression(Expression expression, AtomicBoolean found) {
-                        if (found.get()) {
-                            return expression;
-                        }
-                        if (tainted.contains(expression) ||
-                            (expression instanceof J.Identifier &&
-                             referencesCaught((J.Identifier) expression, caughtType, caughtName))) {
-                            found.set(true);
-                            return expression;
-                        }
-                        return super.visitExpression(expression, found);
-                    }
-                }.visit(newException, referenced);
-                return referenced.get();
+                return t.withException(SearchResult.found(exception));
             }
         });
     }
 
-    private static boolean referencesCaught(J.Identifier identifier, JavaType.@Nullable Variable caughtType,
-                                            String caughtName) {
-        JavaType.Variable fieldType = identifier.getFieldType();
-        if (caughtType != null && fieldType != null) {
-            return caughtType.equals(fieldType);
+    /**
+     * Taints every local derived from an already tainted one, to a fixpoint, so that a chain such as
+     * `r = e.getLastAttempt(); cause = r.getFailureCause()` taints both `r` and `cause`.
+     */
+    private static void propagate(J.Block body, Taint taint) {
+        List<Flow> flows = new ArrayList<>();
+        new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, Integer p) {
+                if (variable.getInitializer() != null) {
+                    flows.add(new Flow(variable.getVariableType(), variable.getSimpleName(), variable.getInitializer()));
+                }
+                return super.visitVariable(variable, p);
+            }
+
+            @Override
+            public J.Assignment visitAssignment(J.Assignment assignment, Integer p) {
+                if (assignment.getVariable() instanceof J.Identifier) {
+                    J.Identifier target = (J.Identifier) assignment.getVariable();
+                    flows.add(new Flow(target.getFieldType(), target.getSimpleName(), assignment.getAssignment()));
+                }
+                return super.visitAssignment(assignment, p);
+            }
+
+            @Override
+            public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, Integer p) {
+                if (instanceOf.getPattern() instanceof J.Identifier) {
+                    J.Identifier binding = (J.Identifier) instanceOf.getPattern();
+                    flows.add(new Flow(binding.getFieldType(), binding.getSimpleName(), instanceOf.getExpression()));
+                }
+                return super.visitInstanceOf(instanceOf, p);
+            }
+        }.visit(body, 0);
+
+        for (boolean grew = true; grew; ) {
+            grew = false;
+            for (Flow flow : flows) {
+                if (containsTainted(flow.getValue(), taint)) {
+                    grew |= taint.add(flow.getType(), flow.getName());
+                }
+            }
         }
-        return caughtName.equals(identifier.getSimpleName());
     }
 
-    private static boolean rootReferencesCaught(@Nullable Expression select, JavaType.@Nullable Variable caughtType,
-                                                String caughtName) {
-        Expression e = select;
-        while (e != null) {
-            if (e instanceof J.Identifier) {
-                return referencesCaught((J.Identifier) e, caughtType, caughtName);
+    private static boolean containsTainted(Expression value, Taint taint) {
+        AtomicBoolean found = new AtomicBoolean(false);
+        new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean f) {
+                // An accessor named like a tainted local, `cfg.message()`, reads nothing from that local.
+                visit(method.getSelect(), f);
+                for (Expression argument : method.getArguments()) {
+                    visit(argument, f);
+                }
+                return method;
             }
-            if (e instanceof J.MethodInvocation) {
-                e = ((J.MethodInvocation) e).getSelect();
-            } else if (e instanceof J.FieldAccess) {
-                e = ((J.FieldAccess) e).getTarget();
-            } else {
-                return false;
+
+            @Override
+            public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean f) {
+                if (taint.contains(identifier)) {
+                    f.set(true);
+                }
+                return identifier;
+            }
+        }.visit(value, found);
+        return found.get();
+    }
+
+    /**
+     * A multi-catch parameter is typed as the least upper bound of its alternatives, which names none of the types
+     * actually caught, so the alternatives are joined as written.
+     */
+    private static @Nullable String caughtTypeName(J.VariableDeclarations parameter) {
+        if (parameter.getTypeExpression() instanceof J.MultiCatch) {
+            StringJoiner alternatives = new StringJoiner(" | ");
+            for (NameTree alternative : ((J.MultiCatch) parameter.getTypeExpression()).getAlternatives()) {
+                String name = fullyQualifiedName(alternative.getType());
+                if (name == null) {
+                    return null;
+                }
+                alternatives.add(name);
+            }
+            return alternatives.toString();
+        }
+        return fullyQualifiedName(parameter.getVariables().get(0).getType());
+    }
+
+    private static @Nullable String fullyQualifiedName(@Nullable JavaType type) {
+        JavaType.FullyQualified fullyQualified = TypeUtils.asFullyQualified(type);
+        return fullyQualified == null ? null : fullyQualified.getFullyQualifiedName();
+    }
+
+    /**
+     * A marker on each `J.Throw` is what gives the capture its hook: a printer consults the marker printer only for
+     * markers a node actually carries.
+     */
+    private static Map<UUID, int[]> throwPositions(JavaSourceFile sourceFile) {
+        JavaSourceFile marked = (JavaSourceFile) requireNonNull(new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.Throw visitThrow(J.Throw thrown, Integer p) {
+                return super.visitThrow(thrown, p).withMarkers(thrown.getMarkers().add(new ThrowPosition(randomId())));
+            }
+        }.visit(sourceFile, 0));
+
+        PositionCapture capture = new PositionCapture();
+        marked.<Integer>printer(new Cursor(null, Cursor.ROOT_VALUE)).visit(marked, capture);
+        return capture.positions;
+    }
+
+    /**
+     * The locals a caught exception has reached. Types identify a variable precisely; names are the fallback for source
+     * whose types did not resolve, and cost only an occasional unreported `throw`.
+     */
+    private static class Taint {
+        private final List<JavaType.Variable> variables = new ArrayList<>();
+        private final Set<String> names = new HashSet<>();
+
+        Taint(@Nullable Taint enclosing) {
+            if (enclosing != null) {
+                variables.addAll(enclosing.variables);
+                names.addAll(enclosing.names);
             }
         }
-        return false;
+
+        boolean add(JavaType.@Nullable Variable type, String name) {
+            boolean grew = names.add(name);
+            if (type != null && !variables.contains(type)) {
+                variables.add(type);
+                grew = true;
+            }
+            return grew;
+        }
+
+        boolean contains(J.Identifier identifier) {
+            JavaType.Variable fieldType = identifier.getFieldType();
+            return fieldType == null ? names.contains(identifier.getSimpleName()) : variables.contains(fieldType);
+        }
     }
 
     @Value
-    @EqualsAndHashCode(callSuper = false)
-    private static class ExceptionTaintSpec extends TaintFlowSpec {
-        JavaType.@Nullable Variable caughtType;
-        String caughtName;
+    private static class Flow {
+        JavaType.@Nullable Variable type;
+        String name;
+        Expression value;
+    }
+
+    @Value
+    private static class ThrowPosition implements Marker {
+        UUID id;
 
         @Override
-        public boolean isSource(DataFlowNode srcNode) {
-            Object v = srcNode.getCursor().getValue();
-            if (v instanceof J.Identifier) {
-                return referencesCaught((J.Identifier) v, caughtType, caughtName);
+        public ThrowPosition withId(UUID id) {
+            return new ThrowPosition(id);
+        }
+    }
+
+    /**
+     * Counts lines and columns of what the printer emits. The marker printer emits nothing, so the counts are
+     * positions in the source as written.
+     */
+    private static class PositionCapture extends PrintOutputCapture<Integer> {
+        final Map<UUID, int[]> positions = new HashMap<>();
+
+        private final MarkerPrinter positionRecorder = new MarkerPrinter() {
+            @Override
+            public String beforeSyntax(Marker marker, Cursor cursor, UnaryOperator<String> commentWrapper) {
+                if (marker instanceof ThrowPosition) {
+                    positions.put(((J) cursor.getParentTreeCursor().getValue()).getId(), new int[]{line, column});
+                }
+                return "";
             }
-            if (v instanceof J.MethodInvocation) {
-                return rootReferencesCaught(((J.MethodInvocation) v).getSelect(), caughtType, caughtName);
-            }
-            return false;
+        };
+
+        private int line = 1;
+        private int column;
+
+        PositionCapture() {
+            super(0);
         }
 
         @Override
-        public boolean isSink(DataFlowNode sinkNode) {
-            return true;
+        public MarkerPrinter getMarkerPrinter() {
+            return positionRecorder;
+        }
+
+        @Override
+        public PrintOutputCapture<Integer> append(@Nullable String text) {
+            if (text != null) {
+                for (int i = 0; i < text.length(); i++) {
+                    append(text.charAt(i));
+                }
+            }
+            return this;
+        }
+
+        @Override
+        public PrintOutputCapture<Integer> append(char c) {
+            if (c == '\n') {
+                line++;
+                column = 0;
+            } else {
+                column++;
+            }
+            return this;
         }
     }
 }
