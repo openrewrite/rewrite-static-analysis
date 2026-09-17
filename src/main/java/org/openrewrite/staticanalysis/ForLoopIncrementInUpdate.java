@@ -22,8 +22,10 @@ import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Loop;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 
@@ -31,6 +33,7 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -72,7 +75,7 @@ public class ForLoopIncrementInUpdate extends Recipe {
                         return super.visitForLoop(forLoop, ctx);
                     }
 
-                    if (lastStatement instanceof J.Unary) {
+                    if (lastStatement instanceof J.Unary && !hasContinueTargeting(body)) {
                         J.Unary unary = (J.Unary) lastStatement;
                         if (unary.getExpression() instanceof J.Identifier) {
                             String unaryTarget = ((J.Identifier) unary.getExpression()).getSimpleName();
@@ -98,6 +101,25 @@ public class ForLoopIncrementInUpdate extends Recipe {
                 }
 
                 return super.visitForLoop(forLoop, ctx);
+            }
+
+            /**
+             * A {@code continue} targeting this loop skips the trailing increment, so moving it to the update would change behavior.
+             */
+            private boolean hasContinueTargeting(Statement body) {
+                Object parent = getCursor().getParentTreeCursor().getValue();
+                String label = parent instanceof J.Label ? ((J.Label) parent).getLabel().getSimpleName() : null;
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean found) {
+                        if (continueStatement.getLabel() == null ?
+                                getCursor().firstEnclosing(Loop.class) == null :
+                                continueStatement.getLabel().getSimpleName().equals(label)) {
+                            found.set(true);
+                        }
+                        return continueStatement;
+                    }
+                }.reduce(body, new AtomicBoolean()).get();
             }
         };
     }
