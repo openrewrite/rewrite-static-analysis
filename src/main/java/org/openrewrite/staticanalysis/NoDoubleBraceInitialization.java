@@ -149,6 +149,17 @@ public class NoDoubleBraceInitialization extends Recipe {
             private final J.Identifier identifier;
 
             @Override
+            public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                // Don't descend into an anonymous class body, such as a nested double brace initialization.
+                // A method invocation without a select in there resolves against that instance, not against
+                // the variable being initialized here.
+                if (newClass.getBody() != null) {
+                    return newClass;
+                }
+                return super.visitNewClass(newClass, ctx);
+            }
+
+            @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
                 if (mi.getSelect() == null || (mi.getSelect() instanceof J.Identifier && "this".equals(((J.Identifier) mi.getSelect()).getSimpleName()))) {
