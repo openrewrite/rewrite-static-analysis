@@ -156,9 +156,32 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 return trees.stream()
                         .reduce((s1, s2) -> s2) // last statement
                         .map(s -> breaks(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
+                                guardsWithEarlyExit(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/460
                                 s.getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT) ||
                                 s instanceof J.Block && ((J.Block) s).getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
                         ).orElse(false);
+            }
+
+            /**
+             * An {@code if} without an {@code else} whose then part completes abruptly guards the statements
+             * after it, so a fall-through past it is deliberate rather than an omission and adding a
+             * {@code break} would change behavior. Only blocks and labels are unwrapped; constructs such as
+             * {@code try} and {@code switch} are deliberately not, because they can complete normally even
+             * when every {@code if} they contain completes abruptly.
+             */
+            private static boolean guardsWithEarlyExit(Statement s) {
+                if (s instanceof J.Block) {
+                    List<Statement> statements = ((J.Block) s).getStatements();
+                    return !statements.isEmpty() && guardsWithEarlyExit(statements.get(statements.size() - 1));
+                }
+                if (s instanceof J.Label) {
+                    return guardsWithEarlyExit(((J.Label) s).getStatement());
+                }
+                if (s instanceof J.If) {
+                    J.If iff = (J.If) s;
+                    return iff.getElsePart() == null && breaks(iff.getThenPart());
+                }
+                return false;
             }
 
             private static boolean breaks(Statement s) {
