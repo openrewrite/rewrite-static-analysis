@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -31,6 +32,7 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
 
@@ -78,6 +80,12 @@ public class ForLoopIncrementInUpdate extends Recipe {
                             String unaryTarget = ((J.Identifier) unary.getExpression()).getSimpleName();
                             for (J.VariableDeclarations.NamedVariable initVar : initVars.getVariables()) {
                                 if (initVar.getSimpleName().equals(unaryTarget)) {
+                                    // A `continue` skips the trailing increment but not the update clause, so
+                                    // hoisting it would run the increment on iterations that currently skip it.
+                                    // https://github.com/openrewrite/rewrite-static-analysis/issues/1061
+                                    if (continuesThisLoop(forLoop)) {
+                                        return super.visitForLoop(forLoop, ctx);
+                                    }
                                     J.ForLoop f = forLoop.withControl(forLoop.getControl().withUpdate(ListUtils.insertInOrder(
                                             ListUtils.map(forLoop.getControl().getUpdate(), u -> u instanceof J.Empty ? null : u),
                                             unary.withPrefix(Space.format(" ")),
@@ -98,6 +106,35 @@ public class ForLoopIncrementInUpdate extends Recipe {
                 }
 
                 return super.visitForLoop(forLoop, ctx);
+            }
+
+            private boolean continuesThisLoop(J.ForLoop forLoop) {
+                Object parent = getCursor().getParentTreeCursor().getValue();
+                String label = parent instanceof J.Label ? ((J.Label) parent).getLabel().getSimpleName() : null;
+                return new JavaVisitor<AtomicBoolean>() {
+                    @Override
+                    public J visitContinue(J.Continue continueStatement, AtomicBoolean found) {
+                        if (continueStatement.getLabel() == null) {
+                            // An unlabeled continue targets the innermost loop, which is only this one if no
+                            // other loop sits between them.
+                            boolean nested = false;
+                            for (Cursor c = getCursor().getParent(); c != null; c = c.getParent()) {
+                                Object value = c.getValue();
+                                if (value instanceof J.ForLoop || value instanceof J.ForEachLoop ||
+                                        value instanceof J.WhileLoop || value instanceof J.DoWhileLoop) {
+                                    nested = true;
+                                    break;
+                                }
+                            }
+                            if (!nested) {
+                                found.set(true);
+                            }
+                        } else if (continueStatement.getLabel().getSimpleName().equals(label)) {
+                            found.set(true);
+                        }
+                        return super.visitContinue(continueStatement, found);
+                    }
+                }.reduce(forLoop.getBody(), new AtomicBoolean(false)).get();
             }
         };
     }
