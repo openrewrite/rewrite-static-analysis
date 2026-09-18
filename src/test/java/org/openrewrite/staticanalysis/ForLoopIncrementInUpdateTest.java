@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -50,6 +51,95 @@ class ForLoopIncrementInUpdateTest implements RewriteTest {
                   void test() {
                       int h, j;
                       for (int i = 0; i < 10; h++, i++, j++) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1061")
+    @Test
+    void doNotMoveIncrementSkippedByContinue() {
+        // The trailing `i++` runs only on iterations that reach it; in the update clause it would run on every one.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int count(String s) {
+                      int n = 0;
+                      for (int i = 0; i < s.length(); i++) {
+                          if (s.charAt(i) != '#') {
+                              continue;
+                          }
+                          n++;
+                          i++;
+                      }
+                      return n;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1061")
+    @Test
+    void doNotMoveIncrementSkippedByLabeledContinue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[][] grid) {
+                      outer:
+                      for (int i = 0; i < grid.length; i++) {
+                          for (int j = 0; j < grid[i].length; j++) {
+                              if (grid[i][j] == 0) {
+                                  continue outer;
+                              }
+                          }
+                          i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1061")
+    @Test
+    void moveIncrementWhenContinueBelongsToNestedLoop() {
+        // The unlabeled continue targets the inner loop, so the outer increment is still reached every iteration.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[][] grid) {
+                      for (int i = 0; i < grid.length; i++) {
+                          for (int j = 0; j < grid[i].length; j++) {
+                              if (grid[i][j] == 0) {
+                                  continue;
+                              }
+                          }
+                          i++;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int[][] grid) {
+                      for (int i = 0; i < grid.length; i++, i++) {
+                          for (int j = 0; j < grid[i].length; j++) {
+                              if (grid[i][j] == 0) {
+                                  continue;
+                              }
+                          }
                       }
                   }
               }
