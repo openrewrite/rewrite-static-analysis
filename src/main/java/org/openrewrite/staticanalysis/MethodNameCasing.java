@@ -21,16 +21,18 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.NamingService;
 import org.openrewrite.internal.StringUtils;
-import org.openrewrite.java.ChangeMethodName;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.marker.JavaSourceSet;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 
+import javax.lang.model.SourceVersion;
 import java.util.*;
 
 import static java.util.Collections.singleton;
@@ -104,11 +106,15 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                     if (!StringUtils.isBlank(toName) &&
                         !toName.equals(simpleName) &&
                         !StringUtils.isNumeric(toName) &&
+                        SourceVersion.isIdentifier(toName) &&
+                        !SourceVersion.isKeyword(toName) &&
                         !methodExists(method.getMethodType(), toName)) {
                         changes.add(new MethodNameChange(
                                 scope,
                                 method.hasModifier(J.Modifier.Type.Private),
-                                new ChangeMethodName(MethodMatcher.methodPattern(method), toName, false, false))
+                                simpleName,
+                                toName,
+                                new MethodMatcher(MethodMatcher.methodPattern(method), false))
                         );
                     }
                 }
@@ -131,24 +137,124 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
         return new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    JavaSourceFile cu = (JavaSourceFile) tree;
-                    for (MethodNameChange nameChange : changes) {
-                        if (!nameChange.isPrivateMethod() || tree.getId().equals(nameChange.getScope())) {
-                            cu = (JavaSourceFile) nameChange.getRecipe().getVisitor().visitNonNull(cu, ctx);
-                        }
-                    }
-                    return cu;
+                if (!(tree instanceof JavaSourceFile)) {
+                    return (J) tree;
                 }
-                return (J) tree;
+                UUID id = tree.getId();
+                Map<String, List<MethodNameChange>> byName = new HashMap<>();
+                for (MethodNameChange nameChange : changes) {
+                    if (!nameChange.isPrivateMethod() || id.equals(nameChange.getScope())) {
+                        byName.computeIfAbsent(nameChange.getFromName(), k -> new ArrayList<>()).add(nameChange);
+                    }
+                }
+                if (byName.isEmpty()) {
+                    return (J) tree;
+                }
+                return new RenameMethods(byName).visitNonNull(tree, ctx);
             }
         };
+    }
+
+    static class RenameMethods extends JavaIsoVisitor<ExecutionContext> {
+        private final Map<String, List<MethodNameChange>> byName;
+
+        RenameMethods(Map<String, List<MethodNameChange>> byName) {
+            this.byName = byName;
+        }
+
+        @Override
+        public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+            J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
+            List<MethodNameChange> candidates = byName.get(method.getSimpleName());
+            if (candidates != null) {
+                J.NewClass newClass = getCursor().firstEnclosing(J.NewClass.class);
+                J.ClassDeclaration classDecl = getCursor().firstEnclosing(J.ClassDeclaration.class);
+                for (MethodNameChange change : candidates) {
+                    MethodMatcher matcher = change.getMatcher();
+                    if (newClass != null && matcher.matches(method, newClass) ||
+                        classDecl != null && matcher.matches(method, classDecl)) {
+                        JavaType.Method type = m.getMethodType();
+                        if (type != null) {
+                            type = type.withName(change.getToName());
+                        }
+                        m = m.withName(m.getName().withSimpleName(change.getToName()).withType(type))
+                                .withMethodType(type);
+                        break;
+                    }
+                }
+            }
+            return m;
+        }
+
+        @Override
+        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+            J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
+            List<MethodNameChange> candidates = byName.get(method.getSimpleName());
+            if (candidates != null) {
+                for (MethodNameChange change : candidates) {
+                    if (change.getMatcher().matches(method) && !method.getSimpleName().equals(change.getToName())) {
+                        JavaType.Method type = m.getMethodType();
+                        if (type != null) {
+                            type = type.withName(change.getToName());
+                        }
+                        m = m.withName(m.getName().withSimpleName(change.getToName()).withType(type))
+                                .withMethodType(type);
+                        break;
+                    }
+                }
+            }
+            return m;
+        }
+
+        @Override
+        public J.MemberReference visitMemberReference(J.MemberReference memberRef, ExecutionContext ctx) {
+            J.MemberReference m = super.visitMemberReference(memberRef, ctx);
+            List<MethodNameChange> candidates = byName.get(m.getReference().getSimpleName());
+            if (candidates != null) {
+                for (MethodNameChange change : candidates) {
+                    if (change.getMatcher().matches(m.getMethodType()) && !m.getReference().getSimpleName().equals(change.getToName())) {
+                        JavaType.Method type = m.getMethodType();
+                        if (type != null) {
+                            type = type.withName(change.getToName());
+                        }
+                        m = m.withReference(m.getReference().withSimpleName(change.getToName())).withMethodType(type);
+                        break;
+                    }
+                }
+            }
+            return m;
+        }
+
+        /**
+         * The only time field access should be relevant to changing method names is static imports.
+         */
+        @Override
+        public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, ExecutionContext ctx) {
+            J.FieldAccess f = super.visitFieldAccess(fieldAccess, ctx);
+            List<MethodNameChange> candidates = byName.get(f.getSimpleName());
+            if (candidates != null && getCursor().getParentTreeCursor().getValue() instanceof J.Import) {
+                for (MethodNameChange change : candidates) {
+                    if (change.getMatcher().isFullyQualifiedClassReference(f)) {
+                        Expression target = f.getTarget();
+                        if (target instanceof J.FieldAccess) {
+                            String className = target.printTrimmed(getCursor());
+                            String fullyQualified = className + "." + change.getToName();
+                            return TypeTree.build(fullyQualified)
+                                    .withPrefix(f.getPrefix());
+                        }
+                    }
+                }
+            }
+            return f;
+        }
     }
 
     @Value
     public static class MethodNameChange {
         UUID scope;
         boolean privateMethod;
-        ChangeMethodName recipe;
+        String fromName;
+        String toName;
+        MethodMatcher matcher;
     }
 }
