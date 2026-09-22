@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
@@ -27,6 +28,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 class FinalizePrivateFieldsTest implements RewriteTest {
     @Override
@@ -976,5 +978,31 @@ class FinalizePrivateFieldsTest implements RewriteTest {
               }
               """
           ));
+    }
+
+    @Test
+    void doNotFinalizeTypeScriptPrivateFields() {
+        rewriteRun(
+          typescript(
+            """
+              class A {
+                  private name: string = "ABC";
+              }
+              """,
+            spec -> spec.afterRecipe(cu -> new JavaIsoVisitor<Integer>() {
+                @Override
+                public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, Integer p) {
+                    assertThat(multiVariable.getModifiers()).noneSatisfy(
+                            m -> assertThat(m.getType()).isEqualTo(J.Modifier.Type.Final));
+                    for (J.VariableDeclarations.NamedVariable variable : multiVariable.getVariables()) {
+                        if (variable.getVariableType() != null) {
+                            assertThat(variable.getVariableType().getFlags()).doesNotContain(Flag.Final);
+                        }
+                    }
+                    return super.visitVariableDeclarations(multiVariable, p);
+                }
+            }.visit(cu, 0))
+          )
+        );
     }
 }
