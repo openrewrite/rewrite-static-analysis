@@ -295,6 +295,86 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
     }
 
     @Test
+    void genericClassDirectlySerializable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              public class Example<T> implements Serializable {
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              public class Example<T> implements Serializable {
+                  private static final long serialVersionUID = 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void genericClassSerializableThroughSuperclass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              class Base implements Serializable {
+              }
+
+              public class Example<T> extends Base {
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              class Base implements Serializable {
+                  private static final long serialVersionUID = 1;
+              }
+
+              public class Example<T> extends Base {
+                  private static final long serialVersionUID = 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void genericClassNotSerializable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              public class Example<T> {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void genericCollectionSubclassUnchanged() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+              import java.util.ArrayList;
+
+              public class Example<T> extends ArrayList<String> implements Serializable {
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void serializableInnerClass() {
         rewriteRun(
           //language=java
