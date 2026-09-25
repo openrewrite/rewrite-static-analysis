@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SynchronizationOnLocalVariableOrMethodParameter", "CatchMayIgnoreException", "EmptyFinallyBlock", "InfiniteLoopStatement", "UnnecessaryContinue", "EmptyClassInitializer", "EmptyTryBlock", "resource", "RedundantFileCreation", "ExpressionComparedToItself"})
 class EmptyBlockTest implements RewriteTest {
@@ -480,6 +481,29 @@ class EmptyBlockTest implements RewriteTest {
                   if err := doSomething(); err != nil {
                       handle(err)
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaEmptyIfBlock() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(a: Boolean): Unit = {
+                  if (a) {
+                  }
+                }
+              }
+              """,
+            """
+              class A {
+                def foo(a: Boolean): Unit = {
+                }
               }
               """
           )
