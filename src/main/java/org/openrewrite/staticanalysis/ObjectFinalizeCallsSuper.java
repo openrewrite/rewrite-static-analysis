@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -25,14 +26,20 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.NameTree;
+import org.openrewrite.java.tree.TypeUtils;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 
 public class ObjectFinalizeCallsSuper extends Recipe {
     private static final MethodMatcher FINALIZE_METHOD_MATCHER = new MethodMatcher("java.lang.Object finalize()", true);
+    private static final JavaType.FullyQualified THROWABLE = JavaType.ShallowClass.build("java.lang.Throwable");
 
     @Getter
     final String displayName = "`finalize()` calls super";
@@ -50,15 +57,57 @@ public class ObjectFinalizeCallsSuper extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);
-                if (FINALIZE_METHOD_MATCHER.matches(md.getMethodType()) && !hasSuperFinalizeMethodInvocation(md)) {
-                    //noinspection ConstantConditions
-                    md = JavaTemplate.builder("super.finalize()")
-                            .contextSensitive()
-                            .build()
-                            .apply(updateCursor(md),
-                                    md.getBody().getCoordinates().lastStatement());
+                JavaType.Method methodType = md.getMethodType();
+                J.Block body = md.getBody();
+                if (methodType == null || body == null || !FINALIZE_METHOD_MATCHER.matches(methodType) || hasSuperFinalizeMethodInvocation(md)) {
+                    return md;
                 }
-                return md;
+
+                // `Throwable` is checked in Java but not in the other JVM languages this recipe runs on
+                List<NameTree> throwz = md.getThrows();
+                boolean declaresThrowable = throwz != null &&
+                        throwz.stream().anyMatch(t -> TypeUtils.isOfClassType(t.getType(), "java.lang.Throwable"));
+                if (!declaresThrowable && getCursor().firstEnclosing(J.CompilationUnit.class) != null) {
+                    List<JavaType> superThrown = superFinalizeThrownExceptions(methodType);
+                    if (superThrown == null) {
+                        return md;
+                    }
+                    // An override may only declare what it overrides declares, so a narrower throws clause has no
+                    // legal way to take the added call
+                    if (throwz != null) {
+                        if (superThrown.stream().anyMatch(thrown ->
+                                throwz.stream().noneMatch(t -> TypeUtils.isAssignableTo(t.getType(), thrown)))) {
+                            return md;
+                        }
+                    } else if (!superThrown.isEmpty()) {
+                        if (superThrown.stream().noneMatch(t -> TypeUtils.isOfClassType(t, "java.lang.Throwable"))) {
+                            return md;
+                        }
+                        md = JavaTemplate.builder("Throwable")
+                                .build()
+                                .apply(updateCursor(md), md.getCoordinates().replaceThrows());
+                    }
+                }
+
+                return JavaTemplate.builder("super.finalize()")
+                        .contextSensitive()
+                        .build()
+                        .apply(updateCursor(md), body.getCoordinates().lastStatement());
+            }
+
+            private @Nullable List<JavaType> superFinalizeThrownExceptions(JavaType.Method finalizeMethod) {
+                for (JavaType.FullyQualified type = finalizeMethod.getDeclaringType().getSupertype(); type != null; type = type.getSupertype()) {
+                    if ("java.lang.Object".equals(type.getFullyQualifiedName())) {
+                        return singletonList(THROWABLE);
+                    }
+                    for (JavaType.Method superMethod : type.getMethods()) {
+                        if ("finalize".equals(superMethod.getName()) && superMethod.getParameterTypes().isEmpty()) {
+                            return superMethod.getThrownExceptions();
+                        }
+                    }
+                }
+                // Missing or unreliable type attribution
+                return null;
             }
 
             private boolean hasSuperFinalizeMethodInvocation(J.MethodDeclaration md) {
@@ -67,7 +116,12 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean exists) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, exists);
-                        if (FINALIZE_METHOD_MATCHER.matches(mi)) {
+                        // A call added by an earlier cycle is not always attributed, so match it syntactically too
+                        if (FINALIZE_METHOD_MATCHER.matches(mi) ||
+                                mi.getSelect() instanceof J.Identifier &&
+                                        "super".equals(((J.Identifier) mi.getSelect()).getSimpleName()) &&
+                                        "finalize".equals(mi.getSimpleName()) &&
+                                        hasNoArguments(mi)) {
                             exists.set(Boolean.TRUE);
                         }
                         return mi;
@@ -76,5 +130,10 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                 return hasSuperFinalize.get();
             }
         });
+    }
+
+    // An invocation with no arguments holds a single J.Empty element
+    private static boolean hasNoArguments(J.MethodInvocation mi) {
+        return mi.getArguments().size() == 1 && mi.getArguments().get(0) instanceof J.Empty;
     }
 }
