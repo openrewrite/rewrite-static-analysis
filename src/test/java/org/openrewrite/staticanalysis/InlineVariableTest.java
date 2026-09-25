@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 class InlineVariableTest implements RewriteTest {
     @Override
@@ -672,6 +673,32 @@ class InlineVariableTest implements RewriteTest {
                       }
                       return result;
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaInlineReturnedLocal() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(): Int = {
+                  val x = compute()
+                  x
+                }
+                def compute(): Int = 1
+              }
+              """,
+            """
+              class A {
+                def foo(): Int = {
+                  compute()
+                }
+                def compute(): Int = 1
               }
               """
           )

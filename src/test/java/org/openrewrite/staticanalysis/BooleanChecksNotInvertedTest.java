@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.python.Assertions.python;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings("DoubleNegation")
 class BooleanChecksNotInvertedTest implements RewriteTest {
@@ -96,6 +97,25 @@ class BooleanChecksNotInvertedTest implements RewriteTest {
               def test(value):
                   if not (1 <= value <= 6):
                       pass
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaInvertedEquals() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(a: Int, b: Int): Boolean = !(a == b)
+              }
+              """,
+            """
+              class A {
+                def foo(a: Int, b: Int): Boolean = a != b
+              }
               """
           )
         );
