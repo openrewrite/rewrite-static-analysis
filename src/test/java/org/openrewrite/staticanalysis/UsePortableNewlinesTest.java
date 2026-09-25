@@ -291,4 +291,165 @@ class UsePortableNewlinesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doesNotCorruptEscapedBackslashNewlineInFormattedTextBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String script(String payload) {
+                      return \"""
+                          printf '%%s\\\\n' '%s'
+                          \""".formatted(payload);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void replaceNewlineWithoutChangingEscapedBackslashNewline() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String message(String value) {
+                      return String.format("line=%s\\nscript=printf '%%s\\\\n'", value);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String message(String value) {
+                      return String.format("line=%s%nscript=printf '%%s\\\\n'", value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void accountForUnicodeEscapedBackslash() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String message() {
+                      return String.format("\\u005c\\\\n");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String message() {
+                      return String.format("\\u005c\\%n");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void accountForCrLfTextBlockContinuation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String message() {
+                      return \"""
+                          foo\\
+                          bar\\n
+                          \""".formatted();
+                  }
+              }
+              """.replace("\n", "\r\n"),
+            """
+              class Test {
+                  String message() {
+                      return \"""
+                          foo\\
+                          bar%n
+                          \""".formatted();
+                  }
+              }
+              """.replace("\n", "\r\n")
+          )
+        );
+    }
+
+    @Test
+    void accountForOctalLineFeedBeforeNewlineEscape() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String message() {
+                      return String.format("\\12\\n");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String message() {
+                      return String.format("\\12%n");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void detectUnicodeEscapedTextBlockDelimiter() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String message() {
+                      return String.format(\\u0022\\u0022\\u0022
+                          first line
+                          second line\\n
+                          \\u0022\\u0022\\u0022);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String message() {
+                      return String.format(\\u0022\\u0022\\u0022
+                          first line
+                          second line%n
+                          \\u0022\\u0022\\u0022);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void accountForUnicodeEligibilityAfterTranslatedBackslashes() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String message() {
+                      return String.format("§u005c§§§u006e");
+                  }
+              }
+              """.replace("§", "\\")
+          )
+        );
+    }
 }
