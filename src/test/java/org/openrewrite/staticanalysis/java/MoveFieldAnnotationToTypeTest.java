@@ -314,9 +314,6 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
               class Test {
                   fun method(@NonNull entry: java.util.Map.Entry<String, String>) {
                   }
-                  fun typePosition(file: @NonNull java.io.File): @NonNull java.io.File {
-                      return file
-                  }
               }
               """
           )
