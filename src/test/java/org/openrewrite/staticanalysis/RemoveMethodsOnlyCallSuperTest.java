@@ -657,4 +657,56 @@ class RemoveMethodsOnlyCallSuperTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void removeImportOnlyUsedByRemovedMethod() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package com.example.holder;
+
+              public class Holder {
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example.base;
+
+              import com.example.holder.Holder;
+
+              public class Base {
+                  public void report(Holder holder) {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              package com.example.child;
+
+              import com.example.base.Base;
+              import com.example.holder.Holder;
+
+              public class Child extends Base {
+                  @Override
+                  public void report(Holder holder) {
+                      super.report(holder);
+                  }
+              }
+              """,
+            """
+              package com.example.child;
+
+              import com.example.base.Base;
+
+              public class Child extends Base {
+              }
+              """
+          )
+        );
+    }
 }
