@@ -28,6 +28,8 @@ import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
 
+import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
+
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
@@ -85,35 +87,28 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
             }
 
             private boolean isRedundantNullCheck(J.Binary nullCheck, J.MethodInvocation equalsCall) {
-                if (nullCheck.getOperator() != J.Binary.Type.NotEqual) {
+                if (nullCheck.getOperator() != J.Binary.Type.NotEqual || !EQUALS_MATCHER.matches(equalsCall)) {
                     return false;
                 }
 
-                // Check if the method call is equals() on a literal string
-                if (!EQUALS_MATCHER.matches(equalsCall)) {
-                    return false;
-                }
-
-                // Check if the receiver is a literal string
                 Expression receiver = equalsCall.getSelect();
                 if (!(receiver instanceof J.Literal) || !(((J.Literal) receiver).getValue() instanceof String)) {
                     return false;
                 }
 
-                // Get the argument passed to equals()
                 if (equalsCall.getArguments().size() != 1) {
                     return false;
                 }
                 Expression equalsArg = equalsCall.getArguments().get(0);
 
-                // Check if the null check is for the same variable as the equals argument
-                if (J.Literal.isLiteralValue(nullCheck.getLeft(), null)) {
-                    return SemanticallyEqual.areEqual(nullCheck.getRight(), equalsArg);
-                }
-                if (J.Literal.isLiteralValue(nullCheck.getRight(), null)) {
-                    return SemanticallyEqual.areEqual(nullCheck.getLeft(), equalsArg);
-                }
-                return false;
+                Expression nullChecked = J.Literal.isLiteralValue(nullCheck.getLeft(), null) ? nullCheck.getRight() :
+                        J.Literal.isLiteralValue(nullCheck.getRight(), null) ? nullCheck.getLeft() : null;
+
+                // The rewrite evaluates once what was evaluated twice; `SemanticallyEqual` proves the occurrences
+                // mean the same thing, not that evaluating them twice is the same as once
+                return nullChecked != null &&
+                        SemanticallyEqual.areEqual(nullChecked, equalsArg) &&
+                        !mayHaveSideEffects(equalsArg);
             }
         };
     }
