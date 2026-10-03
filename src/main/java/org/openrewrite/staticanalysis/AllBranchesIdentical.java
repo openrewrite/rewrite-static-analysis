@@ -50,6 +50,37 @@ public class AllBranchesIdentical extends Recipe {
         return new JavaVisitor<ExecutionContext>() {
 
             @Override
+            public J visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block bl = (J.Block) super.visitBlock(block, ctx);
+
+                List<Statement> statements = bl.getStatements();
+                List<Statement> hoisted = new ArrayList<>(statements.size());
+                boolean changed = false;
+                for (Statement statement : statements) {
+                    if (statement instanceof J.If) {
+                        J.If if_ = (J.If) statement;
+                        Expression condition = if_.getIfCondition().getTree();
+                        if (if_.getElsePart() != null &&
+                                !(if_.getElsePart().getBody() instanceof J.If) &&
+                                condition instanceof J.MethodInvocation &&
+                                SemanticallyEqual.areEqual(if_.getThenPart(), if_.getElsePart().getBody())) {
+                            hoisted.add(((Statement) condition).withPrefix(if_.getPrefix()));
+                            hoisted.add(if_.getThenPart().withPrefix(if_.getPrefix()));
+                            changed = true;
+                            continue;
+                        }
+                    }
+                    hoisted.add(statement);
+                }
+
+                if (changed) {
+                    doAfterVisit(new RemoveUnneededBlock().getVisitor());
+                    return bl.withStatements(hoisted);
+                }
+                return bl;
+            }
+
+            @Override
             public J visitIf(J.If if_, ExecutionContext ctx) {
                 J.If if__ = (J.If) super.visitIf(if_, ctx);
 
