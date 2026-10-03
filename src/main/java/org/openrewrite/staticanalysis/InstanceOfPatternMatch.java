@@ -75,6 +75,20 @@ public class InstanceOfPatternMatch extends Recipe {
             @Override
             public @Nullable J postVisit(J tree, ExecutionContext ctx) {
                 J result = super.postVisit(tree, ctx);
+                Expression variable = null;
+                if (tree instanceof J.Assignment) {
+                    variable = ((J.Assignment) tree).getVariable();
+                } else if (tree instanceof J.AssignmentOperation) {
+                    variable = ((J.AssignmentOperation) tree).getVariable();
+                }
+                if (variable != null) {
+                    for (Iterator<Cursor> it = getCursor().getPathAsCursors(); it.hasNext(); ) {
+                        InstanceOfPatternReplacements replacements = it.next().getMessage("flowTypeScope");
+                        if (replacements != null) {
+                            replacements.registerAssignment(variable, getCursor());
+                        }
+                    }
+                }
                 InstanceOfPatternReplacements original = getCursor().getMessage("flowTypeScope");
                 if (original != null && !original.isEmpty()) {
                     Cursor methodCursor = getCursor().dropParentUntil(
@@ -188,6 +202,54 @@ public class InstanceOfPatternMatch extends Recipe {
             if (!existing.isPresent()) {
                 instanceOfs.put(new ExpressionAndType(expression, type), instanceOf);
                 this.contexts.put(instanceOf, contexts);
+            }
+        }
+
+        public void registerAssignment(Expression variable, Cursor cursor) {
+            for (Iterator<Map.Entry<ExpressionAndType, J.InstanceOf>> it = instanceOfs.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<ExpressionAndType, J.InstanceOf> entry = it.next();
+                if (!SemanticallyEqual.areEqual(entry.getKey().getExpression(), variable)) {
+                    continue;
+                }
+
+                // The RHS is evaluated before the write, so earlier casts can still use the pattern variable.
+                // https://github.com/openrewrite/rewrite-static-analysis/issues/480
+                it.remove();
+                J.InstanceOf instanceOf = entry.getValue();
+                // Keeping later declarations can clash with the name of a previously registered alias.
+                boolean discardEarlierCasts = variablesToDelete.containsKey(instanceOf);
+                for (Iterator<?> path = cursor.getPath(); path.hasNext(); ) {
+                    Object next = path.next();
+                    if (next == root) {
+                        break;
+                    }
+                    if (next instanceof J.ForLoop || next instanceof J.ForEachLoop ||
+                        next instanceof J.WhileLoop || next instanceof J.DoWhileLoop ||
+                        next instanceof J.Lambda || next instanceof J.ClassDeclaration) {
+                        // A later iteration or invocation can reach earlier casts with a different value.
+                        discardEarlierCasts = true;
+                        break;
+                    }
+                }
+                for (Cursor scope : contextScopes.getOrDefault(instanceOf, emptySet())) {
+                    for (Iterator<?> path = scope.getPath(); path.hasNext(); ) {
+                        Object next = path.next();
+                        if (next == root) {
+                            break;
+                        }
+                        if (next instanceof J.Lambda || next instanceof J.ClassDeclaration) {
+                            // A previously visited lambda or local class may read the value after this write.
+                            discardEarlierCasts = true;
+                            break;
+                        }
+                    }
+                }
+                if (discardEarlierCasts) {
+                    replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
+                    variablesToDelete.remove(instanceOf);
+                    contextScopes.remove(instanceOf);
+                    contexts.remove(instanceOf);
+                }
             }
         }
 
