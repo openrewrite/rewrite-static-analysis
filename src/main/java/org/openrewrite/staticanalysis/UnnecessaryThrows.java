@@ -255,7 +255,6 @@ public class UnnecessaryThrows extends Recipe {
                 Optional<JavaType.Method> superMethod = TypeUtils.findOverriddenMethod(method.getMethodType());
                 if (superMethod.isPresent()) {
                     JavaType.Method baseMethod = superMethod.get();
-                    baseMethod.getThrownExceptions();
                     for (JavaType baseException : baseMethod.getThrownExceptions()) {
                         if (baseException instanceof JavaType.FullyQualified) {
                             candidates.remove(baseException);
