@@ -217,6 +217,26 @@ class SimplifyTernaryMethodInvocationTest implements RewriteTest {
     }
 
     @Test
+    void preservesCommentsAroundTernaryOperators() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String beforeQuestion(boolean condition, StringBuilder left, StringBuilder right) {
+                      return condition /* keep */ ? left.toString() : right.toString();
+                  }
+
+                  String beforeColon(boolean condition, StringBuilder left, StringBuilder right) {
+                      return condition ? left.toString() /* keep */ : right.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void leavesStaticGenericAndVarargsCallsAlone() {
         rewriteRun(
           //language=java

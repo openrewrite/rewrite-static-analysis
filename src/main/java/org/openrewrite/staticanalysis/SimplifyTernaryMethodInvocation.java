@@ -72,7 +72,7 @@ public class SimplifyTernaryMethodInvocation extends Recipe {
                         !TypeUtils.isOfType(t.getType(), whenTrue.getType()) ||
                         !TypeUtils.isOfType(t.getType(), whenFalse.getType()) ||
                         !sameArguments(trueArguments, falseArguments) ||
-                        hasComments(whenTrue) || hasComments(whenFalse)) {
+                        hasComments(t)) {
                     return t;
                 }
 
