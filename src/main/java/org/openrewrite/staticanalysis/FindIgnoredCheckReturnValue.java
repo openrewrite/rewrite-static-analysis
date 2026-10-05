@@ -19,14 +19,15 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
@@ -37,6 +38,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
 
     private static final MethodMatcher MOCKITO_STUBBING_OR_VERIFICATION = new MethodMatcher("org.mockito..* *(..)");
     private static final Pattern LOCAL_OR_ANONYMOUS_CLASS = Pattern.compile(".*\\$\\d.*");
+    private static final AnnotationMatcher SUPPRESS_CHECK_RETURN_VALUE = new AnnotationMatcher("@java.lang.SuppressWarnings(\"CheckReturnValue\")");
     private static final MethodMatcher FAIL = new MethodMatcher("*..* fail(..)");
     private static final List<String> EXPECTED_EXCEPTION_FUNCTIONAL_INTERFACES = asList(
             "org.junit.jupiter.api.function.Executable",
@@ -88,12 +90,26 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
     public TreeVisitor<?, ExecutionContext> getVisitor(Set<String> acc) {
         return Preconditions.check(new JavaFileChecker<>(), new JavaIsoVisitor<ExecutionContext>() {
             @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                return isSuppressed() ? classDecl : super.visitClassDeclaration(classDecl, ctx);
+            }
+
+            @Override
+            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                return isSuppressed() ? method : super.visitMethodDeclaration(method, ctx);
+            }
+
+            @Override
+            public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                return isSuppressed() ? multiVariable : super.visitVariableDeclarations(multiVariable, ctx);
+            }
+
+            @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 JavaType.Method type = m.getMethodType();
                 String message = type == null || type.isConstructor() ? null : ignoredResultMessage(type);
-                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect()) &&
-                        !isSuppressed()) {
+                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect())) {
                     return SearchResult.found(m, message);
                 }
                 return m;
@@ -103,7 +119,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = super.visitNewClass(newClass, ctx);
                 String message = ignoredResultMessage(n.getConstructorType());
-                if (message != null && isResultIgnored(getCursor()) && !isSuppressed()) {
+                if (message != null && isResultIgnored(getCursor())) {
                     return SearchResult.found(n, message);
                 }
                 return n;
@@ -113,7 +129,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             public J.MemberReference visitMemberReference(J.MemberReference memberRef, ExecutionContext ctx) {
                 J.MemberReference mr = super.visitMemberReference(memberRef, ctx);
                 String message = ignoredResultMessage(mr.getMethodType());
-                if (message != null && discardsResult(mr.getType()) && !isSuppressed()) {
+                if (message != null && discardsResult(mr.getType())) {
                     return SearchResult.found(mr, message);
                 }
                 return mr;
@@ -181,23 +197,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             }
 
             private boolean isSuppressed() {
-                return getCursor().getPathAsStream().anyMatch(tree -> {
-                    List<J.Annotation> annotations = tree instanceof J.MethodDeclaration ? ((J.MethodDeclaration) tree).getLeadingAnnotations() :
-                            tree instanceof J.ClassDeclaration ? ((J.ClassDeclaration) tree).getLeadingAnnotations() :
-                                    tree instanceof J.VariableDeclarations ? ((J.VariableDeclarations) tree).getLeadingAnnotations() :
-                                            Collections.emptyList();
-                    return annotations.stream()
-                            .filter(a -> TypeUtils.isOfClassType(a.getType(), "java.lang.SuppressWarnings"))
-                            .anyMatch(a -> new JavaIsoVisitor<AtomicBoolean>() {
-                                @Override
-                                public J.Literal visitLiteral(J.Literal literal, AtomicBoolean found) {
-                                    if (J.Literal.isLiteralValue(literal, "CheckReturnValue")) {
-                                        found.set(true);
-                                    }
-                                    return literal;
-                                }
-                            }.reduce(a, new AtomicBoolean()).get());
-                });
+                return service(AnnotationService.class).matches(getCursor(), SUPPRESS_CHECK_RETURN_VALUE);
             }
 
             private boolean isResultIgnored(Cursor cursor) {
