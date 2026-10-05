@@ -17,13 +17,17 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.groovy.GroovyParser;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.kotlin.KotlinParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import java.util.List;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"ResultOfMethodCallIgnored", "unused"})
 class FindIgnoredCheckReturnValueTest implements RewriteTest {
@@ -588,6 +592,39 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
               class Test {
                   void verification(Point p) {
                       verify(p).withX(1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void unchangedOnKotlinAndGroovy() {
+        rewriteRun(
+          spec -> spec
+            .parser(KotlinParser.builder().classpath("assertj-core"))
+            .parser(GroovyParser.builder().classpath("assertj-core")),
+          kotlin(
+            """
+              import org.assertj.core.api.Assertions.assertThat
+              class Test {
+                  fun check(s: String) {
+                      assertThat(s)
+                  }
+                  fun all(xs: List<String>) = xs.map { assertThat(it) }
+              }
+              """
+          ),
+          groovy(
+            """
+              import static org.assertj.core.api.Assertions.assertThat
+              class Test {
+                  void check(String s) {
+                      assertThat(s)
+                  }
+                  def all(List<String> xs) {
+                      xs.collect { assertThat(it) }
                   }
               }
               """

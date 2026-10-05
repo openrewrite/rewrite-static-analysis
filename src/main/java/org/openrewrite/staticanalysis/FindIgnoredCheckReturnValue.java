@@ -69,7 +69,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getScanner(Set<String> acc) {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new JavaFileChecker<>(), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.CompilationUnit visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
                 J.Package pkg = cu.getPackageDeclaration();
@@ -79,7 +79,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                 }
                 return cu;
             }
-        };
+        });
     }
 
     @Override
