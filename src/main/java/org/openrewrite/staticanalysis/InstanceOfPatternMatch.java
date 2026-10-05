@@ -140,6 +140,16 @@ public class InstanceOfPatternMatch extends Recipe {
             }
 
             @Override
+            public J visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
+                J.Assignment a = (J.Assignment) super.visitAssignment(assignment, ctx);
+                InstanceOfPatternReplacements replacements = getCursor().getNearestMessage("flowTypeScope");
+                if (replacements != null) {
+                    replacements.invalidate(a.getVariable());
+                }
+                return a;
+            }
+
+            @Override
             public J visitTypeCast(J.TypeCast typeCast, ExecutionContext ctx) {
                 J result = super.visitTypeCast(typeCast, ctx);
                 if (result instanceof J.TypeCast) {
@@ -294,6 +304,10 @@ public class InstanceOfPatternMatch extends Recipe {
 
         public boolean isEmpty() {
             return replacements.isEmpty() && variablesToDelete.isEmpty();
+        }
+
+        public void invalidate(Expression assignedTo) {
+            instanceOfs.entrySet().removeIf(e -> SemanticallyEqual.areEqual(e.getKey().getExpression(), assignedTo));
         }
 
         private boolean shouldDeleteVariableDeclaration(Cursor parent, J.InstanceOf instanceOf) {
