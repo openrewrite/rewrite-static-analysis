@@ -600,6 +600,58 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
     }
 
     @Test
+    void unchangedWhenSuppressed() {
+        rewriteRun(
+          java(
+            """
+              import com.example.Point;
+              import java.util.function.Consumer;
+              class Test {
+                  @SuppressWarnings("CheckReturnValue")
+                  void method(Point p) {
+                      p.withX(1);
+                  }
+                  @SuppressWarnings({"unused", "CheckReturnValue"})
+                  Consumer<Point> field = p -> p.withX(2);
+                  @SuppressWarnings(value = "CheckReturnValue")
+                  static class Nested {
+                      void use(Point p) {
+                          p.withX(3);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void intellijSuppressionIsNotHonored() {
+        rewriteRun(
+          java(
+            """
+              import com.example.Point;
+              class Test {
+                  @SuppressWarnings("ResultOfMethodCallIgnored")
+                  void method(Point p) {
+                      p.withX(1);
+                  }
+              }
+              """,
+            """
+              import com.example.Point;
+              class Test {
+                  @SuppressWarnings("ResultOfMethodCallIgnored")
+                  void method(Point p) {
+                      /*~~(Result of `withX` is ignored, but `@CheckReturnValue` on class `Point` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/p.withX(1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void unchangedOnKotlinAndGroovy() {
         rewriteRun(
           spec -> spec

@@ -26,6 +26,7 @@ import org.openrewrite.marker.SearchResult;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
@@ -60,7 +61,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             "and `@CanIgnoreReturnValue` opts a method or class back out. Ignoring such a result is usually a bug, " +
             "such as calling a method on an immutable object without using the returned copy. As with Error Prone, " +
             "calls that are expected to throw inside `assertThrows`-style lambdas or before a `fail()`, and " +
-            "invocations on Mockito `verify(..)` or `doReturn(..).when(..)` stubs, are not marked.";
+            "invocations on Mockito `verify(..)` or `doReturn(..).when(..)` stubs, are not marked, and neither is " +
+            "anything inside a declaration annotated with `@SuppressWarnings(\"CheckReturnValue\")`.";
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {
@@ -90,7 +92,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 JavaType.Method type = m.getMethodType();
                 String message = type == null || type.isConstructor() ? null : ignoredResultMessage(type);
-                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect())) {
+                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect()) &&
+                        !isSuppressed()) {
                     return SearchResult.found(m, message);
                 }
                 return m;
@@ -100,7 +103,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = super.visitNewClass(newClass, ctx);
                 String message = ignoredResultMessage(n.getConstructorType());
-                if (message != null && isResultIgnored(getCursor())) {
+                if (message != null && isResultIgnored(getCursor()) && !isSuppressed()) {
                     return SearchResult.found(n, message);
                 }
                 return n;
@@ -110,7 +113,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             public J.MemberReference visitMemberReference(J.MemberReference memberRef, ExecutionContext ctx) {
                 J.MemberReference mr = super.visitMemberReference(memberRef, ctx);
                 String message = ignoredResultMessage(mr.getMethodType());
-                if (message != null && discardsResult(mr.getType())) {
+                if (message != null && discardsResult(mr.getType()) && !isSuppressed()) {
                     return SearchResult.found(mr, message);
                 }
                 return mr;
@@ -175,6 +178,26 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                     }
                 }
                 return null;
+            }
+
+            private boolean isSuppressed() {
+                return getCursor().getPathAsStream().anyMatch(tree -> {
+                    List<J.Annotation> annotations = tree instanceof J.MethodDeclaration ? ((J.MethodDeclaration) tree).getLeadingAnnotations() :
+                            tree instanceof J.ClassDeclaration ? ((J.ClassDeclaration) tree).getLeadingAnnotations() :
+                                    tree instanceof J.VariableDeclarations ? ((J.VariableDeclarations) tree).getLeadingAnnotations() :
+                                            Collections.emptyList();
+                    return annotations.stream()
+                            .filter(a -> TypeUtils.isOfClassType(a.getType(), "java.lang.SuppressWarnings"))
+                            .anyMatch(a -> new JavaIsoVisitor<AtomicBoolean>() {
+                                @Override
+                                public J.Literal visitLiteral(J.Literal literal, AtomicBoolean found) {
+                                    if (J.Literal.isLiteralValue(literal, "CheckReturnValue")) {
+                                        found.set(true);
+                                    }
+                                    return literal;
+                                }
+                            }.reduce(a, new AtomicBoolean()).get());
+                });
             }
 
             private boolean isResultIgnored(Cursor cursor) {
