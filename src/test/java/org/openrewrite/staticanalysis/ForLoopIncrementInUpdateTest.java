@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -50,6 +51,91 @@ class ForLoopIncrementInUpdateTest implements RewriteTest {
                   void test() {
                       int h, j;
                       for (int i = 0; i < 10; h++, i++, j++) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1061")
+    @Test
+    void doNotMoveIncrementSkippedByContinue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int count(String s) {
+                      int n = 0;
+                      for (int i = 0; i < s.length(); i++) {
+                          if (s.charAt(i) != '#') {
+                              continue;
+                          }
+                          n++;
+                          i++;
+                      }
+                      return n;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotMoveIncrementSkippedByLabeledContinue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[] a) {
+                      outer:
+                      for (int i = 0; i < 10; ) {
+                          for (int x : a) {
+                              if (x == i) {
+                                  continue outer;
+                              }
+                          }
+                          i++;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void moveIncrementWhenContinueTargetsNestedLoop() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int[] a) {
+                      for (int i = 0; i < 10; ) {
+                          for (int x : a) {
+                              if (x == i) {
+                                  continue;
+                              }
+                          }
+                          i++;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int[] a) {
+                      for (int i = 0; i < 10; i++) {
+                          for (int x : a) {
+                              if (x == i) {
+                                  continue;
+                              }
+                          }
                       }
                   }
               }

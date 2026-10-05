@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2026 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,125 +21,116 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.scala.Assertions.scala;
 
-class NoToStringOnStringTypeTest implements RewriteTest {
+class FindSystemAndRuntimeExitCallsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new NoToStringOnStringType());
+        spec.recipe(new FindSystemAndRuntimeExitCalls());
     }
 
     @DocumentExample
-    @SuppressWarnings("StringOperationCanBeSimplified")
     @Test
-    void toStringOnString() {
+    void flagsSystemExit() {
         rewriteRun(
           //language=java
           java(
-            """
-              class Test {
-                  static String method() {
-                      return "hello".toString();
-                  }
-              }
-              """,
-            """
-              class Test {
-                  static String method() {
-                      return "hello";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void doNotChangeOnObject() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  static String method(Object obj) {
-                      return obj.toString();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @SuppressWarnings("StringOperationCanBeSimplified")
-    @Test
-    void toStringOnStringVariable() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  static String method(String str) {
-                      return str.toString();
-                  }
-              }
-              """,
-            """
-              class Test {
-                  static String method(String str) {
-                      return str;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @SuppressWarnings("StringOperationCanBeSimplified")
-    @Test
-    void toStringOnMethodInvocation() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Test {
-                  static void method1() {
-                      String str = method2().toString();
-                  }
-
-                  static String method2() {
-                      return "";
-                  }
-              }
-              """,
-            """
-              class Test {
-                  static void method1() {
-                      String str = method2();
-                  }
-
-                  static String method2() {
-                      return "";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void scalaToStringOnString() {
-        rewriteRun(
-          //language=scala
-          scala(
             """
               class A {
-                def foo(s: String): String = s.toString()
+                  void bail() {
+                      System.exit(1);
+                  }
               }
               """,
             """
               class A {
-                def foo(s: String): String = s
+                  void bail() {
+                      /*~~(JVM exit call; terminating from application code bypasses normal shutdown.)~~>*/System.exit(1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void flagsRuntimeExit() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void bail() {
+                      Runtime.getRuntime().exit(1);
+                  }
+              }
+              """,
+            """
+              class A {
+                  void bail() {
+                      /*~~(JVM exit call; terminating from application code bypasses normal shutdown.)~~>*/Runtime.getRuntime().exit(1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void flagsRuntimeHalt() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void bail() {
+                      Runtime.getRuntime().halt(1);
+                  }
+              }
+              """,
+            """
+              class A {
+                  void bail() {
+                      /*~~(JVM exit call; terminating from application code bypasses normal shutdown.)~~>*/Runtime.getRuntime().halt(1);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotFlagUnrelatedMethods() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  int exit() {
+                      return 0;
+                  }
+
+                  void run() {
+                      exit();
+                      System.gc();
+                      System.out.println("still running");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doesNotFlagOtherExitOverloads() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void notReallyExit() {
+                      new Thread().interrupt();
+                  }
               }
               """
           )

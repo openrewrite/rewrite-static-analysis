@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings({"ClassInitializerMayBeStatic", "StatementWithEmptyBody", "ConstantConditions", "SequencedCollectionMethodCanBeUsed"})
 class EqualsAvoidsNullTest implements RewriteTest {
@@ -182,6 +183,25 @@ class EqualsAvoidsNullTest implements RewriteTest {
                       if ("null".equals(s)) {
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaLiteralEqualsFlipped() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(x: String): Boolean = x.equals("test")
+              }
+              """,
+            """
+              class A {
+                def foo(x: String): Boolean = "test".equals(x)
               }
               """
           )

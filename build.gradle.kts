@@ -29,6 +29,7 @@ dependencies {
     provided("org.openrewrite:rewrite-javascript:${rewriteVersion}")
     provided("org.openrewrite:rewrite-kotlin:${rewriteVersion}")
     provided("org.openrewrite:rewrite-csharp:${rewriteVersion}")
+    provided("org.openrewrite:rewrite-scala:${rewriteVersion}")
     provided("org.openrewrite:rewrite-python:${rewriteVersion}")
     provided("org.openrewrite:rewrite-go:${rewriteVersion}")
 

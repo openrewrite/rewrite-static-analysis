@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -46,7 +47,7 @@ public class FinalizePrivateFields extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             private Set<JavaType.Variable> privateFieldsToBeFinalized = new HashSet<>();
 
             @Nullable
@@ -149,7 +150,7 @@ public class FinalizePrivateFields extends Recipe {
                         .flatMap(Collection::stream)
                         .collect(toList());
             }
-        };
+        });
     }
 
     private static int getConstructorCount(J.ClassDeclaration classDecl) {

@@ -34,6 +34,60 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           .allSources(sourceSpec -> version(sourceSpec, 17));
     }
 
+    @Test
+    void preserveCommentOnRemovedDeclaration() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void use(Object value) {}
+                  void test(Object value) {
+                      if (value instanceof Integer) { // integers need special handling
+                          Integer i = (Integer) value;
+                          use(i);
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void use(Object value) {}
+                  void test(Object value) {
+                      if (value instanceof Integer i) { // integers need special handling
+                          use(i);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveCommentWhenDeclarationIsLastStatement() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test(Object value) {
+                      if (value instanceof Integer) { // preserve even in an empty block
+                          Integer i = (Integer) value;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(Object value) {
+                      if (value instanceof Integer i) { // preserve even in an empty block
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/619")
     @Test

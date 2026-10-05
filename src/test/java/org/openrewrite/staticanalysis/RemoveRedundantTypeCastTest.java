@@ -888,6 +888,35 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/871")
+    @Test
+    void doNotRemoveCastNeededForGenericMethodInferenceInStreamMap() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("rewrite-core")),
+          //language=java
+          java(
+            """
+              import org.openrewrite.SourceFile;
+              import org.openrewrite.text.PlainTextParser;
+
+              import java.nio.file.Paths;
+              import java.util.Collection;
+
+              import static java.util.stream.Collectors.toList;
+
+              class Test {
+                  Collection<? extends SourceFile> generate() {
+                      return PlainTextParser.builder().build()
+                              .parse("")
+                              .map(it -> (SourceFile) it.withSourcePath(Paths.get("RELEASE.md")))
+                              .collect(toList());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/874")
     @Test
     void doNotRemoveObjectBridgeCastForUncheckedGenericCast() {

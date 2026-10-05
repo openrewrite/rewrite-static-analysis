@@ -519,6 +519,48 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         @Override
+        public J.Block visitBlock(J.Block block, Integer p) {
+            J.Block b = (J.Block) super.visitBlock(block, p);
+            if (b.getStatements().size() == block.getStatements().size()) {
+                return b;
+            }
+            List<Statement> statements = new ArrayList<>(b.getStatements());
+            int next = 0;
+            Space pending = null;
+            for (Statement original : block.getStatements()) {
+                if (next < statements.size() && original.getId().equals(statements.get(next).getId())) {
+                    if (pending != null) {
+                        Statement statement = statements.get(next);
+                        List<Comment> comments = new ArrayList<>(pending.getComments());
+                        comments.addAll(statement.getComments());
+                        statements.set(next, statement.withPrefix(pending.withComments(comments)));
+                        pending = null;
+                    }
+                    next++;
+                } else if (!original.getComments().isEmpty()) {
+                    if (pending == null) {
+                        pending = original.getPrefix();
+                    } else {
+                        List<Comment> comments = new ArrayList<>(pending.getComments());
+                        comments.addAll(original.getComments());
+                        pending = pending.withComments(comments);
+                    }
+                }
+            }
+            if (pending != null) {
+                List<Comment> comments = new ArrayList<>(pending.getComments());
+                if (b.getEnd().getComments().isEmpty()) {
+                    int last = comments.size() - 1;
+                    comments.set(last, comments.get(last).withSuffix(b.getEnd().getWhitespace()));
+                } else {
+                    comments.addAll(b.getEnd().getComments());
+                }
+                b = b.withEnd(pending.withComments(comments));
+            }
+            return b.withStatements(statements);
+        }
+
+        @Override
         public J visitBinary(J.Binary binary, Integer p) {
             J.Binary b = binary.withLeft((Expression) visitNonNull(binary.getLeft(), p));
             if (b.getLeft() != binary.getLeft()) {

@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -57,6 +58,90 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
                 """
             )
           );
+    }
+
+    @Test
+    void unwrapRepeatableWithExplicitValue() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import com.example.*;
+
+              @Annotations(value = {@Annotation, @Annotation})
+              class Test {
+              }
+              """,
+            """
+              import com.example.*;
+
+              @Annotation
+              @Annotation
+              class Test {
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/389")
+    @Test
+    void doNotUnwrapWhenRepeatableIsOneOfSeveralElements() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            .dependsOn(
+              //language=java
+              """
+                package com.example;
+
+                import java.lang.annotation.ElementType;
+                import java.lang.annotation.Target;
+
+                @Target(ElementType.TYPE)
+                public @interface CollectionTable {
+                    String name();
+                    JoinColumn[] joinColumns() default {};
+                }
+                """,
+              //language=java
+              """
+                package com.example;
+
+                import java.lang.annotation.ElementType;
+                import java.lang.annotation.Repeatable;
+                import java.lang.annotation.Target;
+
+                @Repeatable(JoinColumns.class)
+                @Target(ElementType.TYPE)
+                public @interface JoinColumn {
+                    String name();
+                }
+                """,
+              //language=java
+              """
+                package com.example;
+
+                import java.lang.annotation.ElementType;
+                import java.lang.annotation.Target;
+
+                @Target(ElementType.TYPE)
+                public @interface JoinColumns {
+                    JoinColumn[] value();
+                }
+                """
+            )),
+          //language=java
+          java(
+            """
+              import com.example.CollectionTable;
+              import com.example.JoinColumn;
+
+              @CollectionTable(name = "OBJECT_ENV", joinColumns = @JoinColumn(name = "id"))
+              public class DBObject {
+              }
+              """
+          )
+        );
     }
 
     @DocumentExample
