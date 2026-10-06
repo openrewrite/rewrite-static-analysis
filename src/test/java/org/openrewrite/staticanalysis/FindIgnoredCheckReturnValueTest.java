@@ -491,6 +491,100 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
     }
 
     @Test
+    void unchangedForCallOnCurrentInstanceInAssertJConstructor() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Map;
+              import org.assertj.core.api.AbstractMapAssert;
+              class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
+                  HeadersAssert(Map<String, String> actual) {
+                      super(actual, HeadersAssert.class);
+                      as("HTTP headers");
+                      this.describedAs("headers");
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import org.assertj.core.api.AbstractObjectAssert;
+              abstract class AbstractContentAssert<SELF extends AbstractContentAssert<SELF>> extends AbstractObjectAssert<SELF, String> {
+                  AbstractContentAssert(String actual, Class<?> selfType) {
+                      super(actual, selfType);
+                      as("content");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void callOnOtherInstanceOrOutsideAssertJConstructor() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Map;
+              import org.assertj.core.api.AbstractMapAssert;
+              class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
+                  HeadersAssert(Map<String, String> actual, HeadersAssert other) {
+                      super(actual, HeadersAssert.class);
+                      other.as("other");
+                  }
+                  HeadersAssert containsFoo() {
+                      as("foo");
+                      return containsKey("foo");
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+              import org.assertj.core.api.AbstractMapAssert;
+              class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
+                  HeadersAssert(Map<String, String> actual, HeadersAssert other) {
+                      super(actual, HeadersAssert.class);
+                      /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/other.as("other");
+                  }
+                  HeadersAssert containsFoo() {
+                      /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/as("foo");
+                      return containsKey("foo");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void callOnCurrentInstanceInOtherConstructor() {
+        rewriteRun(
+          java(
+            """
+              import com.google.errorprone.annotations.CheckReturnValue;
+              @CheckReturnValue
+              record Point(int x) {
+                  Point {
+                      withX(0);
+                  }
+                  Point withX(int x) { return new Point(x); }
+              }
+              """,
+            """
+              import com.google.errorprone.annotations.CheckReturnValue;
+              @CheckReturnValue
+              record Point(int x) {
+                  Point {
+                      /*~~(Result of `withX` is ignored, but `@CheckReturnValue` on class `Point` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/withX(0);
+                  }
+                  Point withX(int x) { return new Point(x); }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void packageInfoInRepository() {
         rewriteRun(
           java(

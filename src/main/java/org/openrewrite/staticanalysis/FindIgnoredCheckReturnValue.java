@@ -37,6 +37,7 @@ import static java.util.Arrays.asList;
 public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
 
     private static final MethodMatcher MOCKITO_STUBBING_OR_VERIFICATION = new MethodMatcher("org.mockito..* *(..)");
+    private static final MethodMatcher ASSERTJ_ASSERT_CONSTRUCTOR = new MethodMatcher("org.assertj.core.api.AbstractAssert <constructor>(..)", true);
     private static final Pattern LOCAL_OR_ANONYMOUS_CLASS = Pattern.compile(".*\\$\\d.*");
     private static final AnnotationMatcher SUPPRESS_CHECK_RETURN_VALUE = new AnnotationMatcher("@java.lang.SuppressWarnings(\"CheckReturnValue\")");
     private static final MethodMatcher FAIL = new MethodMatcher("*..* fail(..)");
@@ -59,12 +60,11 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
 
     String description = "Marks invocations whose result is discarded even though the method is annotated with " +
             "`@CheckReturnValue`, either directly or through its enclosing class or package. Any annotation " +
-            "named `CheckReturnValue` is recognized, as used by Error Prone, JSR-305, Lombok, Mockito and SpotBugs, " +
-            "and `@CanIgnoreReturnValue` opts a method or class back out. Ignoring such a result is usually a bug, " +
-            "such as calling a method on an immutable object without using the returned copy. As with Error Prone, " +
-            "calls that are expected to throw inside `assertThrows`-style lambdas or before a `fail()`, and " +
-            "invocations on Mockito `verify(..)` or `doReturn(..).when(..)` stubs, are not marked, and neither is " +
-            "anything inside a declaration annotated with `@SuppressWarnings(\"CheckReturnValue\")`.";
+            "named `CheckReturnValue` is recognized, and `@CanIgnoreReturnValue` opts a method or class back out. " +
+            "Ignoring such a result is usually a bug, such as calling a method on an immutable object without using " +
+            "the returned copy. Calls expected to throw, Mockito stubbing and verification, calls on the current " +
+            "instance in custom AssertJ assertion constructors, and code under " +
+            "`@SuppressWarnings(\"CheckReturnValue\")` are not marked.";
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {
@@ -109,7 +109,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 JavaType.Method type = m.getMethodType();
                 String message = type == null || type.isConstructor() ? null : ignoredResultMessage(type);
-                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect())) {
+                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect()) &&
+                        !isSelfCallInAssertJConstructor(m)) {
                     return SearchResult.found(m, message);
                 }
                 return m;
@@ -223,6 +224,16 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                     return discardsResult(((J.Lambda) parent).getType());
                 }
                 return false;
+            }
+
+            private boolean isSelfCallInAssertJConstructor(J.MethodInvocation method) {
+                Expression select = method.getSelect();
+                if (select != null && !(select instanceof J.Identifier &&
+                        asList("this", "super").contains(((J.Identifier) select).getSimpleName()))) {
+                    return false;
+                }
+                J.MethodDeclaration enclosing = getCursor().firstEnclosing(J.MethodDeclaration.class);
+                return enclosing != null && ASSERTJ_ASSERT_CONSTRUCTOR.matches(enclosing.getMethodType());
             }
 
             private boolean isExpectedToThrow(J.Block block, Cursor blockCursor) {
