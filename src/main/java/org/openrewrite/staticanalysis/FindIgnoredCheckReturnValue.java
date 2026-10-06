@@ -64,7 +64,9 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             "such as calling a method on an immutable object without using the returned copy. As with Error Prone, " +
             "calls that are expected to throw inside `assertThrows`-style lambdas or before a `fail()`, and " +
             "invocations on Mockito `verify(..)` or `doReturn(..).when(..)` stubs, are not marked, and neither is " +
-            "anything inside a declaration annotated with `@SuppressWarnings(\"CheckReturnValue\")`.";
+            "anything inside a declaration annotated with `@SuppressWarnings(\"CheckReturnValue\")`. Unlike Error Prone, " +
+            "self-typed calls on the current instance, such as `as(\"description\")` in the constructor of a custom " +
+            "AssertJ assertion, are not marked either, as they return the instance they were called on.";
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {
@@ -109,7 +111,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
                 JavaType.Method type = m.getMethodType();
                 String message = type == null || type.isConstructor() ? null : ignoredResultMessage(type);
-                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect())) {
+                if (message != null && isResultIgnored(getCursor()) && !MOCKITO_STUBBING_OR_VERIFICATION.matches(m.getSelect()) &&
+                        !returnsCurrentInstance(m, type)) {
                     return SearchResult.found(m, message);
                 }
                 return m;
@@ -221,6 +224,36 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                 }
                 if (parent instanceof J.Lambda) {
                     return discardsResult(((J.Lambda) parent).getType());
+                }
+                return false;
+            }
+
+            private boolean returnsCurrentInstance(J.MethodInvocation method, JavaType.Method type) {
+                Expression select = method.getSelect();
+                if (select != null && !(select instanceof J.Identifier &&
+                        asList("this", "super").contains(((J.Identifier) select).getSimpleName()))) {
+                    return false;
+                }
+                J.ClassDeclaration enclosing = getCursor().firstEnclosing(J.ClassDeclaration.class);
+                return enclosing != null && enclosing.getType() != null &&
+                        isSupertypeOf(type.getReturnType(), enclosing.getType()) && isSelfTyped(type);
+            }
+
+            private boolean isSupertypeOf(JavaType returnType, JavaType.FullyQualified enclosing) {
+                if (returnType instanceof JavaType.GenericTypeVariable) {
+                    return ((JavaType.GenericTypeVariable) returnType).getBounds().stream().anyMatch(bound -> isSupertypeOf(bound, enclosing));
+                }
+                JavaType.FullyQualified fq = TypeUtils.asFullyQualified(returnType);
+                return fq != null && TypeUtils.isAssignableTo(fq.getFullyQualifiedName(), enclosing);
+            }
+
+            private boolean isSelfTyped(JavaType.Method type) {
+                for (JavaType.Method declared : type.getDeclaringType().getMethods()) {
+                    if (declared.getName().equals(type.getName()) && declared.getParameterTypes().size() == type.getParameterTypes().size()) {
+                        JavaType returnType = declared.getReturnType();
+                        return returnType instanceof JavaType.GenericTypeVariable &&
+                                !declared.getDeclaredFormalTypeNames().contains(((JavaType.GenericTypeVariable) returnType).getName());
+                    }
                 }
                 return false;
             }

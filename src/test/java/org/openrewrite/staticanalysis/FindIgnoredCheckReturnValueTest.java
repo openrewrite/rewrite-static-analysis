@@ -491,6 +491,140 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
     }
 
     @Test
+    void unchangedForSelfTypedCallOnCurrentInstance() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Map;
+              import org.assertj.core.api.AbstractMapAssert;
+              class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
+                  HeadersAssert(Map<String, String> actual) {
+                      super(actual, HeadersAssert.class);
+                      as("HTTP headers");
+                      this.describedAs("headers");
+                  }
+                  HeadersAssert containsFoo() {
+                      super.as("foo");
+                      return containsKey("foo");
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import org.assertj.core.api.AbstractObjectAssert;
+              abstract class AbstractContentAssert<SELF extends AbstractContentAssert<SELF>> extends AbstractObjectAssert<SELF, String> {
+                  AbstractContentAssert(String actual, Class<?> selfType) {
+                      super(actual, selfType);
+                      as("content");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void selfTypedCallOnOtherInstance() {
+        rewriteRun(
+          java(
+            """
+              import java.util.Map;
+              import org.assertj.core.api.AbstractMapAssert;
+              import static org.assertj.core.api.Assertions.assertThat;
+              class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
+                  HeadersAssert(Map<String, String> actual) {
+                      super(actual, HeadersAssert.class);
+                  }
+                  void compare(HeadersAssert other, Map<String, String> expected) {
+                      other.as("other");
+                      assertThat(expected).as("expected");
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+              import org.assertj.core.api.AbstractMapAssert;
+              import static org.assertj.core.api.Assertions.assertThat;
+              class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
+                  HeadersAssert(Map<String, String> actual) {
+                      super(actual, HeadersAssert.class);
+                  }
+                  void compare(HeadersAssert other, Map<String, String> expected) {
+                      /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/other.as("other");
+                      /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/assertThat(expected).as("expected");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void concreteSelfReturnOnCurrentInstance() {
+        rewriteRun(
+          java(
+            """
+              import com.google.errorprone.annotations.CheckReturnValue;
+              @CheckReturnValue
+              record Point(int x) {
+                  Point withX(int x) { return new Point(x); }
+                  void reset() {
+                      this.withX(0);
+                  }
+              }
+              """,
+            """
+              import com.google.errorprone.annotations.CheckReturnValue;
+              @CheckReturnValue
+              record Point(int x) {
+                  Point withX(int x) { return new Point(x); }
+                  void reset() {
+                      /*~~(Result of `withX` is ignored, but `@CheckReturnValue` on class `Point` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/this.withX(0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typeVariableReturnOnCurrentInstance() {
+        rewriteRun(
+          java(
+            """
+              import com.google.errorprone.annotations.CheckReturnValue;
+              @CheckReturnValue
+              abstract class Box<T> {
+                  abstract T get();
+                  <S> S convert(Class<S> type) { return null; }
+              }
+              """
+          ),
+          java(
+            """
+              class StringBox extends Box<String> {
+                  String get() { return ""; }
+                  void touch() {
+                      super.get();
+                      convert(StringBox.class);
+                  }
+              }
+              """,
+            """
+              class StringBox extends Box<String> {
+                  String get() { return ""; }
+                  void touch() {
+                      /*~~(Result of `get` is ignored, but `@CheckReturnValue` on class `Box` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/super.get();
+                      /*~~(Result of `convert` is ignored, but `@CheckReturnValue` on class `Box` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/convert(StringBox.class);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void packageInfoInRepository() {
         rewriteRun(
           java(
