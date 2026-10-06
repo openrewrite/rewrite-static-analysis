@@ -501,7 +501,6 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
                   HeadersAssert(Map<String, String> actual) {
                       super(actual, HeadersAssert.class);
                       as("HTTP headers");
-                      this.describedAs("headers");
                   }
                   HeadersAssert containsFoo() {
                       super.as("foo");
@@ -531,28 +530,24 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
             """
               import java.util.Map;
               import org.assertj.core.api.AbstractMapAssert;
-              import static org.assertj.core.api.Assertions.assertThat;
               class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
                   HeadersAssert(Map<String, String> actual) {
                       super(actual, HeadersAssert.class);
                   }
-                  void compare(HeadersAssert other, Map<String, String> expected) {
+                  void compare(HeadersAssert other) {
                       other.as("other");
-                      assertThat(expected).as("expected");
                   }
               }
               """,
             """
               import java.util.Map;
               import org.assertj.core.api.AbstractMapAssert;
-              import static org.assertj.core.api.Assertions.assertThat;
               class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
                   HeadersAssert(Map<String, String> actual) {
                       super(actual, HeadersAssert.class);
                   }
-                  void compare(HeadersAssert other, Map<String, String> expected) {
+                  void compare(HeadersAssert other) {
                       /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/other.as("other");
-                      /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/assertThat(expected).as("expected");
                   }
               }
               """

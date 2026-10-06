@@ -59,14 +59,10 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
 
     String description = "Marks invocations whose result is discarded even though the method is annotated with " +
             "`@CheckReturnValue`, either directly or through its enclosing class or package. Any annotation " +
-            "named `CheckReturnValue` is recognized, as used by Error Prone, JSR-305, Lombok, Mockito and SpotBugs, " +
-            "and `@CanIgnoreReturnValue` opts a method or class back out. Ignoring such a result is usually a bug, " +
-            "such as calling a method on an immutable object without using the returned copy. As with Error Prone, " +
-            "calls that are expected to throw inside `assertThrows`-style lambdas or before a `fail()`, and " +
-            "invocations on Mockito `verify(..)` or `doReturn(..).when(..)` stubs, are not marked, and neither is " +
-            "anything inside a declaration annotated with `@SuppressWarnings(\"CheckReturnValue\")`. Unlike Error Prone, " +
-            "self-typed calls on the current instance, such as `as(\"description\")` in the constructor of a custom " +
-            "AssertJ assertion, are not marked either, as they return the instance they were called on.";
+            "named `CheckReturnValue` is recognized, and `@CanIgnoreReturnValue` opts a method or class back out. " +
+            "Ignoring such a result is usually a bug, such as calling a method on an immutable object without using " +
+            "the returned copy. Calls expected to throw, Mockito stubbing and verification, self-typed calls on the " +
+            "current instance, and code under `@SuppressWarnings(\"CheckReturnValue\")` are not marked.";
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {
@@ -235,19 +231,9 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                     return false;
                 }
                 J.ClassDeclaration enclosing = getCursor().firstEnclosing(J.ClassDeclaration.class);
-                return enclosing != null && enclosing.getType() != null &&
-                        isSupertypeOf(type.getReturnType(), enclosing.getType()) && isSelfTyped(type);
-            }
-
-            private boolean isSupertypeOf(JavaType returnType, JavaType.FullyQualified enclosing) {
-                if (returnType instanceof JavaType.GenericTypeVariable) {
-                    return ((JavaType.GenericTypeVariable) returnType).getBounds().stream().anyMatch(bound -> isSupertypeOf(bound, enclosing));
+                if (enclosing == null || enclosing.getType() == null || !isSupertypeOf(type.getReturnType(), enclosing.getType())) {
+                    return false;
                 }
-                JavaType.FullyQualified fq = TypeUtils.asFullyQualified(returnType);
-                return fq != null && TypeUtils.isAssignableTo(fq.getFullyQualifiedName(), enclosing);
-            }
-
-            private boolean isSelfTyped(JavaType.Method type) {
                 for (JavaType.Method declared : type.getDeclaringType().getMethods()) {
                     if (declared.getName().equals(type.getName()) && declared.getParameterTypes().size() == type.getParameterTypes().size()) {
                         JavaType returnType = declared.getReturnType();
@@ -256,6 +242,14 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
                     }
                 }
                 return false;
+            }
+
+            private boolean isSupertypeOf(JavaType returnType, JavaType.FullyQualified enclosing) {
+                if (returnType instanceof JavaType.GenericTypeVariable) {
+                    return ((JavaType.GenericTypeVariable) returnType).getBounds().stream().anyMatch(bound -> isSupertypeOf(bound, enclosing));
+                }
+                JavaType.FullyQualified fq = TypeUtils.asFullyQualified(returnType);
+                return fq != null && TypeUtils.isAssignableTo(fq.getFullyQualifiedName(), enclosing);
             }
 
             private boolean isExpectedToThrow(J.Block block, Cursor blockCursor) {
