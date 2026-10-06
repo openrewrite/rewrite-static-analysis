@@ -491,7 +491,7 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
     }
 
     @Test
-    void unchangedForSelfTypedCallOnCurrentInstance() {
+    void unchangedForCallOnCurrentInstanceInAssertJConstructor() {
         rewriteRun(
           java(
             """
@@ -501,10 +501,7 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
                   HeadersAssert(Map<String, String> actual) {
                       super(actual, HeadersAssert.class);
                       as("HTTP headers");
-                  }
-                  HeadersAssert containsFoo() {
-                      super.as("foo");
-                      return containsKey("foo");
+                      this.describedAs("headers");
                   }
               }
               """
@@ -524,58 +521,34 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
     }
 
     @Test
-    void selfTypedCallOnOtherInstance() {
+    void callOnOtherInstanceOrOutsideAssertJConstructor() {
         rewriteRun(
           java(
             """
               import java.util.Map;
               import org.assertj.core.api.AbstractMapAssert;
               class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
-                  HeadersAssert(Map<String, String> actual) {
+                  HeadersAssert(Map<String, String> actual, HeadersAssert other) {
                       super(actual, HeadersAssert.class);
-                  }
-                  void compare(HeadersAssert other) {
                       other.as("other");
                   }
+                  HeadersAssert containsFoo() {
+                      as("foo");
+                      return containsKey("foo");
+                  }
               }
               """,
             """
               import java.util.Map;
               import org.assertj.core.api.AbstractMapAssert;
               class HeadersAssert extends AbstractMapAssert<HeadersAssert, Map<String, String>, String, String> {
-                  HeadersAssert(Map<String, String> actual) {
+                  HeadersAssert(Map<String, String> actual, HeadersAssert other) {
                       super(actual, HeadersAssert.class);
-                  }
-                  void compare(HeadersAssert other) {
                       /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/other.as("other");
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void concreteSelfReturnOnCurrentInstance() {
-        rewriteRun(
-          java(
-            """
-              import com.google.errorprone.annotations.CheckReturnValue;
-              @CheckReturnValue
-              record Point(int x) {
-                  Point withX(int x) { return new Point(x); }
-                  void reset() {
-                      this.withX(0);
-                  }
-              }
-              """,
-            """
-              import com.google.errorprone.annotations.CheckReturnValue;
-              @CheckReturnValue
-              record Point(int x) {
-                  Point withX(int x) { return new Point(x); }
-                  void reset() {
-                      /*~~(Result of `withX` is ignored, but `@CheckReturnValue` on class `Point` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/this.withX(0);
+                  HeadersAssert containsFoo() {
+                      /*~~(Result of `as` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/as("foo");
+                      return containsKey("foo");
                   }
               }
               """
@@ -584,35 +557,27 @@ class FindIgnoredCheckReturnValueTest implements RewriteTest {
     }
 
     @Test
-    void typeVariableReturnOnCurrentInstance() {
+    void callOnCurrentInstanceInOtherConstructor() {
         rewriteRun(
           java(
             """
               import com.google.errorprone.annotations.CheckReturnValue;
               @CheckReturnValue
-              abstract class Box<T> {
-                  abstract T get();
-                  <S> S convert(Class<S> type) { return null; }
-              }
-              """
-          ),
-          java(
-            """
-              class StringBox extends Box<String> {
-                  String get() { return ""; }
-                  void touch() {
-                      super.get();
-                      convert(StringBox.class);
+              record Point(int x) {
+                  Point {
+                      withX(0);
                   }
+                  Point withX(int x) { return new Point(x); }
               }
               """,
             """
-              class StringBox extends Box<String> {
-                  String get() { return ""; }
-                  void touch() {
-                      /*~~(Result of `get` is ignored, but `@CheckReturnValue` on class `Box` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/super.get();
-                      /*~~(Result of `convert` is ignored, but `@CheckReturnValue` on class `Box` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/convert(StringBox.class);
+              import com.google.errorprone.annotations.CheckReturnValue;
+              @CheckReturnValue
+              record Point(int x) {
+                  Point {
+                      /*~~(Result of `withX` is ignored, but `@CheckReturnValue` on class `Point` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/withX(0);
                   }
+                  Point withX(int x) { return new Point(x); }
               }
               """
           )
