@@ -2181,4 +2181,43 @@ class InstanceOfPatternMatchTest implements RewriteTest {
           )
         );
     }
+
+
+@Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1075")
+@Test
+void doesNotReplaceCastAfterReassignment() {
+    rewriteRun(
+      //language=java
+      java(
+        """
+          public class A {
+              void test(Object value) {
+                  if (value instanceof String) {
+                      value = ((String) value).strip();
+                      if (((String) value).isEmpty()) {
+                          System.out.println("empty");
+                      } else {
+                          System.out.println("not empty");
+                      }
+                  }
+              }
+          }
+          """,
+        """
+          public class A {
+              void test(Object value) {
+                  if (value instanceof String string) {
+                      value = string.strip();
+                      if (((String) value).isEmpty()) {
+                          System.out.println("empty");
+                      } else {
+                          System.out.println("not empty");
+                      }
+                  }
+              }
+          }
+          """
+      )
+    );
+ }
 }
