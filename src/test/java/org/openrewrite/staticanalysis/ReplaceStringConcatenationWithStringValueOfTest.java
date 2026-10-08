@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
@@ -260,6 +261,35 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
     }
 
     @Test
+    void replaceOtherArrayConcatenations() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void method(char[][] grid, int[] ints, String[] strings, Object[] objects) {
+                      String a = "" + grid;
+                      String b = "" + ints;
+                      String c = "" + strings;
+                      String d = "" + objects;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method(char[][] grid, int[] ints, String[] strings, Object[] objects) {
+                      String a = String.valueOf(grid);
+                      String b = String.valueOf(ints);
+                      String c = String.valueOf(strings);
+                      String d = String.valueOf(objects);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void preserveComments() {
         rewriteRun(
           //language=java
@@ -334,6 +364,22 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
         }
 
         @Test
+        void doNotChangeParenthesizedNullConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void method() {
+                          String s = "" + (null);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void doNotChangeNonEmptyStringConcatenation() {
             rewriteRun(
               //language=java
@@ -342,6 +388,81 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
                   class Test {
                       void method() {
                           String s = "prefix: " + 123;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeCharArrayConcatenation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      String render(char[] chars) {
+                          return "" + chars;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeCharArrayConcatenationForAnyOperandShape() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      char[] field;
+
+                      char[] chars() {
+                          return field;
+                      }
+
+                      void method(Object o, boolean b, char[] other) {
+                          String a = "" + field;
+                          String c = "" + chars();
+                          String d = "" + (char[]) o;
+                          String e = "" + (b ? field : other);
+                          String f = "" + (other);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeWhenOperandTypeIsMissing() {
+            rewriteRun(
+              spec -> spec.typeValidationOptions(TypeValidation.none()),
+              //language=java
+              java(
+                """
+                  class Test {
+                      String method(Unresolved holder) {
+                          return "" + holder.chars();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotChangeGroovySources() {
+            rewriteRun(
+              groovy(
+                //language=groovy
+                """
+                  class Test {
+                      String render(int[] ints) {
+                          return "" + ints
                       }
                   }
                   """
