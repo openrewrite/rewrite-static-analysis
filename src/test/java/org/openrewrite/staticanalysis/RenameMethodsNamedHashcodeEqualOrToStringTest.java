@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -80,6 +81,42 @@ class RenameMethodsNamedHashcodeEqualOrToStringTest implements RewriteTest {
                   public String toString() {
                       return "";
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Both variants are renamed to hashCode(), producing two colliding declarations")
+    @Test
+    void doNotRenameWhenTwoMisspelledVariantsWouldCollide() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  public int hashcode() {
+                      return 1;
+                  }
+
+                  public int hashCODE() {
+                      return 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("An annotation type member may not carry the name of an Object method")
+    @Test
+    void doNotRenameAnnotationTypeMember() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              @interface Test {
+                  int hashcode();
               }
               """
           )
