@@ -26,6 +26,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Javadoc;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -48,7 +49,9 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesJavaVersion<>(18), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(
+                Preconditions.and(new UsesJavaVersion<>(18), new JavaFileChecker<>()),
+                new JavaIsoVisitor<ExecutionContext>() {
             @Override
             protected JavadocVisitor<ExecutionContext> getJavadocVisitor() {
                 return new JavadocVisitor<ExecutionContext>(this) {

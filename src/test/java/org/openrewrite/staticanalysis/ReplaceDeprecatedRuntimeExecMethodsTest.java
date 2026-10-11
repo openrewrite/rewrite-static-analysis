@@ -22,6 +22,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
     @Override
@@ -294,6 +295,23 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
                 }
                 """
             ), 17)
+        );
+    }
+
+    @Test
+    void doNotChangeKotlinFiles() {
+        rewriteRun(
+          version(
+            //language=kotlin
+            kotlin(
+              """
+                class A {
+                    fun method() {
+                        val process = Runtime.getRuntime().exec("ls -a")
+                    }
+                }
+                """
+            ), 18)
         );
     }
 
