@@ -15,11 +15,17 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings("ConstantConditions")
@@ -287,8 +293,80 @@ class UsePortableNewlinesTest implements RewriteTest {
                           \""", name);
                   }
               }
+              """,
+            spec -> spec.afterRecipe(cu -> assertThat(formatStringValue(cu))
+              .isEqualTo("Hello %s,%n\nWelcome to our application\nHave a nice day!\n"))
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeEscapedBackslashFollowedByN() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      String path = String.format("C:\\\\new %s", 1);
+                      String page = String.format("\\\\newpage %n");
+                  }
+              }
               """
           )
         );
+    }
+
+    @Test
+    void replaceOnlyNewlineEscapesNotPrecededByEscapedBackslash() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      String a = String.format("\\\\\\newpage %n");
+                      String b = String.format("aaa\\\\naaa\\\\\\\\naaa\\\\\\\\\\na");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test() {
+                      String a = String.format("\\\\%newpage %n");
+                      String b = String.format("aaa\\\\naaa\\\\\\\\naaa\\\\\\\\%na");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeExplicitCrLf() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  void test() {
+                      String header = String.format("HTTP/1.1 %d OK\\r\\nContent-Length: %d\\r\\n", 200, 0);
+                      String mixed = String.format("a\\r\\nb\\n");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    private static @Nullable String formatStringValue(J.CompilationUnit cu) {
+        AtomicReference<@Nullable String> value = new AtomicReference<>();
+        new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer p) {
+                if (method.getArguments().getFirst() instanceof J.Literal literal) {
+                    value.set((String) literal.getValue());
+                }
+                return method;
+            }
+        }.visit(cu, 0);
+        return value.get();
     }
 }
