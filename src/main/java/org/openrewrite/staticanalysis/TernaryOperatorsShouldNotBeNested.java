@@ -22,6 +22,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
@@ -29,6 +30,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.Collections.*;
@@ -76,58 +78,117 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         @Override
         public J visitLambda(final J.Lambda lambda, final ExecutionContext ctx) {
-            J result = rewriteNestedTernary(lambda, null);
-            if (result == lambda) {
+            if (!isNestedTernary(lambda.getBody()) || !keepsBranchValues((J.Ternary) lambda.getBody(), null)) {
                 return super.visitLambda(lambda, ctx);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
-            return autoFormat(lambda.withBody(result.withPrefix(Space.SINGLE_SPACE)), ctx);
+            Statement body = branchOf((J.Ternary) lambda.getBody(), TernaryOperatorsShouldNotBeNested::returnOf, true);
+            return autoFormat(lambda.withBody(body.withPrefix(Space.SINGLE_SPACE)), ctx);
         }
 
         @Override
         public J visitReturn(final J.Return retrn, final ExecutionContext ctx) {
             Object scope = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || p == Cursor.ROOT_VALUE).getValue();
             JavaType.Method method = scope instanceof J.MethodDeclaration ? ((J.MethodDeclaration) scope).getMethodType() : null;
-            J result = rewriteNestedTernary(retrn, method == null ? null : method.getReturnType());
-            if (result == retrn) {
+            if (!isNestedTernary(retrn.getExpression()) ||
+                    !keepsBranchValues((J.Ternary) retrn.getExpression(), method == null ? null : method.getReturnType())) {
                 return super.visitReturn(retrn, ctx);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
-            return autoFormat(result, ctx);
+            Statement result = branchOf((J.Ternary) retrn.getExpression(), TernaryOperatorsShouldNotBeNested::returnOf, true);
+            return autoFormat(result.withPrefix(retrn.getPrefix()), ctx);
         }
 
-        private Statement rewriteNestedTernary(final Statement parent, final @Nullable JavaType target) {
-            return findTernary(parent).map(ternary -> {
-                if (!isNestedTernary(ternary) || !keepsBranchValues(ternary, target)) {
-                    return parent;
+        @Override
+        public J visitBlock(final J.Block block, final ExecutionContext ctx) {
+            J.Block b = (J.Block) super.visitBlock(block, ctx);
+            Object parent = getCursor().getParentTreeCursor().getValue();
+            if (parent instanceof J.ClassDeclaration || parent instanceof J.NewClass) {
+                return b;
+            }
+            return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
+                Statement s = statement;
+                J.VariableDeclarations declaration = null;
+                if (statement instanceof J.VariableDeclarations) {
+                    J.VariableDeclarations declarations = (J.VariableDeclarations) statement;
+                    if (declarations.getVariables().size() != 1 ||
+                            declarations.getTypeExpression() == null ||
+                            declarations.getTypeExpression() instanceof J.Identifier &&
+                                    "var".equals(((J.Identifier) declarations.getTypeExpression()).getSimpleName()) ||
+                            !isNestedTernary(declarations.getVariables().get(0).getInitializer())) {
+                        return statement;
+                    }
+                    J.VariableDeclarations.NamedVariable variable = declarations.getVariables().get(0);
+                    declaration = declarations.withVariables(singletonList(variable.withInitializer(null)));
+                    s = new J.Assignment(
+                            randomId(),
+                            Space.format("\n"),
+                            Markers.EMPTY,
+                            variable.getName().withId(randomId()).withPrefix(Space.EMPTY),
+                            JLeftPadded.<Expression>build(variable.getInitializer()).withBefore(Space.SINGLE_SPACE),
+                            variable.getType()
+                    );
                 }
-                J.If iff = ifOf(ternary, target);
-                J.Return otherwise = returnOf(ternary.getFalsePart());
-                return blockOf(iff, rewriteNestedTernary(otherwise, target)).withPrefix(parent.getPrefix());
-            }).orElse(parent);
+                Expression target;
+                Expression value;
+                JavaType targetType = null;
+                Function<Expression, Statement> sink;
+                if (s instanceof J.Assignment) {
+                    J.Assignment assignment = ((J.Assignment) s).withPrefix(Space.EMPTY);
+                    target = assignment.getVariable();
+                    targetType = target.getType();
+                    value = assignment.getAssignment();
+                    sink = e -> assignment.withId(randomId()).withAssignment(e.withPrefix(Space.SINGLE_SPACE));
+                } else if (s instanceof J.AssignmentOperation) {
+                    J.AssignmentOperation assignment = ((J.AssignmentOperation) s).withPrefix(Space.EMPTY);
+                    target = assignment.getVariable();
+                    value = assignment.getAssignment();
+                    sink = e -> assignment.withId(randomId()).withAssignment(e.withPrefix(Space.SINGLE_SPACE));
+                } else {
+                    return statement;
+                }
+                if (!isSimpleVariable(target) || !isNestedTernary(value) || !keepsBranchValues((J.Ternary) value, targetType)) {
+                    return statement;
+                }
+                Statement iff = autoFormat(branchOf((J.Ternary) value, sink, false).withPrefix(s.getPrefix()), ctx, getCursor());
+                return declaration == null ? iff : Arrays.asList(declaration, iff);
+            }));
         }
 
+        private static boolean isSimpleVariable(final Expression variable) {
+            return variable instanceof J.Identifier ||
+                    variable instanceof J.FieldAccess && ((J.FieldAccess) variable).getTarget() instanceof J.Identifier;
+        }
 
-        private J.If ifOf(final J.Ternary ternary, final @Nullable JavaType target) {
-            return new J.If(
-                    Tree.randomId(),
+        private static Statement branchOf(final Expression part, final Function<Expression, Statement> sink, final boolean sinkReturns) {
+            if (!isNestedTernary(part)) {
+                return sink.apply(part);
+            }
+            J.Ternary ternary = (J.Ternary) part;
+            J.If iff = new J.If(
+                    randomId(),
                     ternary.getPrefix(),
                     Markers.EMPTY,
-                    new J.ControlParentheses<>(Tree.randomId(), Space.EMPTY, Markers.EMPTY,
+                    new J.ControlParentheses<>(randomId(), Space.EMPTY, Markers.EMPTY,
                             JRightPadded.build(ternary.getCondition())
                     ).withComments(ternary.getCondition().getComments()),
-                    JRightPadded.build(blockOf(rewriteNestedTernary(returnOf(ternary.getTruePart()
-                            .withComments(ternary.getTruePart().getComments())), target))),
+                    JRightPadded.build(blockOf(branchOf(ternary.getTruePart(), sink, sinkReturns))),
                     null
             );
+            Statement otherwise = branchOf(ternary.getFalsePart(), sink, sinkReturns);
+            if (sinkReturns) {
+                return blockOf(iff, otherwise);
+            }
+            return iff.withElsePart(new J.If.Else(randomId(), Space.EMPTY, Markers.EMPTY,
+                    JRightPadded.build(otherwise instanceof J.If ? otherwise.withPrefix(Space.SINGLE_SPACE) : blockOf(otherwise))));
         }
 
-        private static boolean isNestedTernary(final J possibleTernary) {
+        private static boolean isNestedTernary(final @Nullable J possibleTernary) {
             int result = determineNestingLevels(possibleTernary, 0);
             return result > 1;
         }
 
-        private static int determineNestingLevels(final J possibleTernary, final int level) {
+        private static int determineNestingLevels(final @Nullable J possibleTernary, final int level) {
             if (!(possibleTernary instanceof J.Ternary)) {
                 return level;
             }
@@ -135,19 +196,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             int truePath = determineNestingLevels(ternary.getTruePart(), level + 1);
             int falsePath = determineNestingLevels(ternary.getFalsePart(), level + 1);
             return Math.max(falsePath, truePath);
-        }
-
-        private static Optional<J.Ternary> findTernary(Statement parent) {
-            J possibleTernary = parent;
-            if (parent instanceof J.Return) {
-                possibleTernary = ((J.Return) parent).getExpression();
-            } else if (parent instanceof J.Lambda) {
-                possibleTernary = ((J.Lambda) parent).getBody();
-            }
-            if (possibleTernary instanceof J.Ternary) {
-                return Optional.of(possibleTernary).map(J.Ternary.class::cast);
-            }
-            return Optional.empty();
         }
 
     }
