@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -77,7 +78,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         @Override
         public J visitLambda(final J.Lambda lambda, final ExecutionContext ctx) {
-            if (!isNestedTernary(lambda.getBody())) {
+            if (!isNestedTernary(lambda.getBody()) || !keepsBranchValues((J.Ternary) lambda.getBody(), null)) {
                 return super.visitLambda(lambda, ctx);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
@@ -87,7 +88,10 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         @Override
         public J visitReturn(final J.Return retrn, final ExecutionContext ctx) {
-            if (!isNestedTernary(retrn.getExpression())) {
+            Object scope = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || p == Cursor.ROOT_VALUE).getValue();
+            JavaType.Method method = scope instanceof J.MethodDeclaration ? ((J.MethodDeclaration) scope).getMethodType() : null;
+            if (!isNestedTernary(retrn.getExpression()) ||
+                    !keepsBranchValues((J.Ternary) retrn.getExpression(), method == null ? null : method.getReturnType())) {
                 return super.visitReturn(retrn, ctx);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
@@ -127,10 +131,12 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 }
                 Expression target;
                 Expression value;
+                JavaType targetType = null;
                 Function<Expression, Statement> sink;
                 if (s instanceof J.Assignment) {
                     J.Assignment assignment = ((J.Assignment) s).withPrefix(Space.EMPTY);
                     target = assignment.getVariable();
+                    targetType = target.getType();
                     value = assignment.getAssignment();
                     sink = e -> assignment.withId(randomId()).withAssignment(e.withPrefix(Space.SINGLE_SPACE));
                 } else if (s instanceof J.AssignmentOperation) {
@@ -141,7 +147,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 } else {
                     return statement;
                 }
-                if (!isSimpleVariable(target) || !isNestedTernary(value)) {
+                if (!isSimpleVariable(target) || !isNestedTernary(value) || !keepsBranchValues((J.Ternary) value, targetType)) {
                     return statement;
                 }
                 Statement iff = autoFormat(branchOf((J.Ternary) value, sink, false).withPrefix(s.getPrefix()), ctx, getCursor());
@@ -201,7 +207,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         public J visitTernary(final J.Ternary ternary, final ExecutionContext ctx) {
             return findConditionIdentifier(ternary).map(switchVar -> {
                         List<J.Ternary> nestList = findNestedTernaries(ternary, switchVar);
-                        if (nestList.size() < 2) {
+                        if (nestList.size() < 2 || !keepsBranchValues(ternary, null)) {
                             return null;
                         }
                         return autoFormat(toSwitch(switchVar, nestList, ternary.getType()), ctx);
@@ -405,6 +411,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         private static boolean isEqualsBinary(J maybeEqualsBinary) {
             return maybeEqualsBinary instanceof J.Binary && ((J.Binary) maybeEqualsBinary).getOperator() == Equal;
         }
+    }
+
+    // Numeric and boolean conditionals convert every branch value to the ternary's type (JLS 15.25), splitting them loses that
+    private static boolean keepsBranchValues(J.Ternary ternary, @Nullable JavaType target) {
+        JavaType type = ternary.getType();
+        if (type == null || type instanceof JavaType.Unknown) {
+            return false;
+        }
+        boolean converts = type instanceof JavaType.Primitive && type != JavaType.Primitive.String && type != JavaType.Primitive.Null;
+        return (!converts || TypeUtils.isOfType(type, target) ||
+                TypeUtils.isOfType(ternary.getTruePart().getType(), type) && TypeUtils.isOfType(ternary.getFalsePart().getType(), type)) &&
+                Stream.of(ternary.getTruePart(), ternary.getFalsePart())
+                        .allMatch(part -> !(part instanceof J.Ternary) || keepsBranchValues((J.Ternary) part, target));
     }
 
     private static J.Return returnOf(Expression expression) {

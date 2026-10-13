@@ -513,6 +513,72 @@ class TernaryOperatorsShouldNotBeNestedTest {
         }
 
         @Test
+        void doReplaceMixedNumericTernaryAssignedToSamePrimitive() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      double doThing(boolean c, boolean d) {
+                          double result = c ? 1 : d ? 2.0 : 3;
+                          return result;
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      double doThing(boolean c, boolean d) {
+                          double result;
+                          if (c) {
+                              result = 1;
+                          } else {
+                              result = d ? 2.0 : 3;
+                          }
+                          return result;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryAssignedToObject() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      Object doThing(boolean c, boolean d, Integer n, Object previous) {
+                          Object declared = c ? 1 : d ? 2.0 : 3;
+                          previous = c ? n : d ? 1 : 2;
+                          return declared.equals(previous);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryInCompoundAssignment() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      String doThing(boolean c, boolean d, String s, int i) {
+                          s += c ? 'a' : d ? 1 : 2;
+                          i += c ? 1 : d ? 2.0 : 3;
+                          return s + i;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void doNotReplaceNonNestedOrTernaryInStream() {
             rewriteRun(
               //language=java
@@ -758,6 +824,113 @@ class TernaryOperatorsShouldNotBeNestedTest {
                         return "b".equals(b)
                                 ? "b"
                                 : null;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doReplaceMixedNumericTernaryReturningSamePrimitive() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    double determineSomething(boolean c, boolean d) {
+                      return c ? 1 : d ? 2.0 : 3;
+                    }
+                  }
+                  """,
+                """
+                  class Test {
+                    double determineSomething(boolean c, boolean d) {
+                        if (c) {
+                            return 1;
+                        }
+                        return d ? 2.0 : 3;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryReturningObject() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    Object determineSomething(boolean c, boolean d) {
+                      return c ? 1 : d ? 2.0 : 3;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceTernaryUnboxingIntoObject() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    Object determineSomething(boolean c, boolean d, Integer n) {
+                      return c ? n : d ? 1 : 2;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryInLambda() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Supplier;
+                  class Test {
+                    Supplier<Object> determineSomething(boolean c, boolean d) {
+                      return () -> c ? 'a' : d ? 1 : 2;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryNestedInReferenceTernary() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    Object determineSomething(boolean c, boolean d, boolean e) {
+                      return c ? "a" : d ? 1 : e ? 2.0 : 3;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void doNotReplaceMixedNumericTernaryWidenedToReturnType() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                    double determineSomething(boolean c, boolean d, boolean e) {
+                      return c ? 1.0 : d ? 16777217 : e ? 1f : 2;
                     }
                   }
                   """
@@ -1530,6 +1703,22 @@ class TernaryOperatorsShouldNotBeNestedTest {
                         public Set<String> makeASet() {
                            List<String> s = Arrays.asList("a","b","c","nope");
                            return s.stream().map(item -> item.startsWith("a") ? "a" : "nope").collect(Collectors.toSet());
+                        }
+                      }
+                      """
+                  )
+                );
+            }
+
+            @Test
+            void doNotReplaceMixedNumericTernaryReturningObjectWithSwitch() {
+                rewriteRun(
+                  //language=java
+                  java(
+                    """
+                      class Test {
+                        Object determineSomething(int x) {
+                          return x == 1 ? 1L : x == 2 ? 2 : 3L;
                         }
                       }
                       """
