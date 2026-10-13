@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
@@ -75,7 +76,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         @Override
         public J visitLambda(final J.Lambda lambda, final ExecutionContext ctx) {
-            J result = rewriteNestedTernary(lambda);
+            J result = rewriteNestedTernary(lambda, null);
             if (result == lambda) {
                 return super.visitLambda(lambda, ctx);
             }
@@ -85,7 +86,9 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
         @Override
         public J visitReturn(final J.Return retrn, final ExecutionContext ctx) {
-            J result = rewriteNestedTernary(retrn);
+            Object scope = getCursor().dropParentUntil(p -> p instanceof J.MethodDeclaration || p instanceof J.Lambda || p == Cursor.ROOT_VALUE).getValue();
+            JavaType.Method method = scope instanceof J.MethodDeclaration ? ((J.MethodDeclaration) scope).getMethodType() : null;
+            J result = rewriteNestedTernary(retrn, method == null ? null : method.getReturnType());
             if (result == retrn) {
                 return super.visitReturn(retrn, ctx);
             }
@@ -93,19 +96,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             return autoFormat(result, ctx);
         }
 
-        private Statement rewriteNestedTernary(final Statement parent) {
+        private Statement rewriteNestedTernary(final Statement parent, final @Nullable JavaType target) {
             return findTernary(parent).map(ternary -> {
-                if (!isNestedTernary(ternary)) {
+                if (!isNestedTernary(ternary) || !keepsBranchValues(ternary, target)) {
                     return parent;
                 }
-                J.If iff = ifOf(ternary);
+                J.If iff = ifOf(ternary, target);
                 J.Return otherwise = returnOf(ternary.getFalsePart());
-                return blockOf(iff, rewriteNestedTernary(otherwise)).withPrefix(parent.getPrefix());
+                return blockOf(iff, rewriteNestedTernary(otherwise, target)).withPrefix(parent.getPrefix());
             }).orElse(parent);
         }
 
 
-        private J.If ifOf(final J.Ternary ternary) {
+        private J.If ifOf(final J.Ternary ternary, final @Nullable JavaType target) {
             return new J.If(
                     Tree.randomId(),
                     ternary.getPrefix(),
@@ -114,7 +117,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                             JRightPadded.build(ternary.getCondition())
                     ).withComments(ternary.getCondition().getComments()),
                     JRightPadded.build(blockOf(rewriteNestedTernary(returnOf(ternary.getTruePart()
-                            .withComments(ternary.getTruePart().getComments()))))),
+                            .withComments(ternary.getTruePart().getComments())), target))),
                     null
             );
         }
@@ -156,7 +159,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         public J visitTernary(final J.Ternary ternary, final ExecutionContext ctx) {
             return findConditionIdentifier(ternary).map(switchVar -> {
                         List<J.Ternary> nestList = findNestedTernaries(ternary, switchVar);
-                        if (nestList.size() < 2) {
+                        if (nestList.size() < 2 || !keepsBranchValues(ternary, null)) {
                             return null;
                         }
                         return autoFormat(toSwitch(switchVar, nestList, ternary.getType()), ctx);
@@ -360,6 +363,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
         private static boolean isEqualsBinary(J maybeEqualsBinary) {
             return maybeEqualsBinary instanceof J.Binary && ((J.Binary) maybeEqualsBinary).getOperator() == Equal;
         }
+    }
+
+    // Numeric and boolean conditionals convert every branch value to the ternary's type (JLS 15.25), splitting them loses that
+    private static boolean keepsBranchValues(J.Ternary ternary, @Nullable JavaType target) {
+        JavaType type = ternary.getType();
+        if (type == null || type instanceof JavaType.Unknown) {
+            return false;
+        }
+        boolean converts = type instanceof JavaType.Primitive && type != JavaType.Primitive.String && type != JavaType.Primitive.Null;
+        return (!converts || TypeUtils.isOfType(type, target) ||
+                TypeUtils.isOfType(ternary.getTruePart().getType(), type) && TypeUtils.isOfType(ternary.getFalsePart().getType(), type)) &&
+                Stream.of(ternary.getTruePart(), ternary.getFalsePart())
+                        .allMatch(part -> !(part instanceof J.Ternary) || keepsBranchValues((J.Ternary) part, target));
     }
 
     private static J.Return returnOf(Expression expression) {
