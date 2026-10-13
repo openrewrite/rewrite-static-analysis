@@ -184,13 +184,10 @@ public class DefaultComesLastVisitor<P> extends JavaIsoVisitor<P> {
         if (!statements.isEmpty() && statements.get(statements.size() - 1) instanceof J.Block) {
             statements = ListUtils.mapLast(statements, s -> {
                 J.Block block = (J.Block) s;
-                //noinspection DataFlowIssue
-                List<Statement> blockStatements = block.getStatements();
-                blockStatements.add(breakStatement);
-                return block.withStatements(blockStatements);
+                return block.withStatements(ListUtils.concat(block.getStatements(), breakStatement));
             });
         } else {
-            statements.add(breakStatement);
+            statements = ListUtils.concat(statements, breakStatement);
         }
         return e.withStatements(statements);
     }

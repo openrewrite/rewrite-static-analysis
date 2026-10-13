@@ -33,7 +33,6 @@ import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -220,12 +219,9 @@ public class UseTryWithResources extends Recipe {
         if (existingResources.isEmpty()) {
             newResources = singletonList(JRightPadded.build(resource));
         } else {
-            newResources = new ArrayList<>(existingResources);
-            // Set semicolon on the previous last resource
-            int lastIdx = newResources.size() - 1;
-            JRightPadded<J.Try.Resource> prev = newResources.get(lastIdx);
-            newResources.set(lastIdx, prev.withElement(prev.getElement().withTerminatedWithSemicolon(true)));
-            newResources.add(JRightPadded.build(resource.withPrefix(Space.SINGLE_SPACE)));
+            newResources = ListUtils.concat(
+                    ListUtils.mapLast(existingResources, prev -> prev.withElement(prev.getElement().withTerminatedWithSemicolon(true))),
+                    JRightPadded.build(resource.withPrefix(Space.SINGLE_SPACE)));
         }
         J.Try result = tryStmt.getPadding()
                 .withResources(JContainer.build(

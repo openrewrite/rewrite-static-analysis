@@ -332,4 +332,35 @@ class ReplaceDeprecatedRuntimeExecMethodsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void multipleInvocationsOfSameOverload() {
+        rewriteRun(
+          version(
+            //language=java
+            java(
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime, String command) throws IOException {
+                        runtime.exec("ls -a");
+                        runtime.exec("ls -l");
+                        runtime.exec(command);
+                    }
+                }
+                """,
+              """
+                import java.io.IOException;
+
+                class A {
+                    void method(Runtime runtime, String command) throws IOException {
+                        runtime.exec(new String[]{"ls", "-a"});
+                        runtime.exec(new String[]{"ls", "-l"});
+                        runtime.exec(command.split(" "));
+                    }
+                }
+                """
+            ), 18)
+        );
+    }
 }

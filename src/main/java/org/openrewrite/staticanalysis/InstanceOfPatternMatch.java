@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.search.SemanticallyEqual;
@@ -545,9 +546,8 @@ public class InstanceOfPatternMatch extends Recipe {
                 if (next < statements.size() && original.getId().equals(statements.get(next).getId())) {
                     if (pending != null) {
                         Statement statement = statements.get(next);
-                        List<Comment> comments = new ArrayList<>(pending.getComments());
-                        comments.addAll(statement.getComments());
-                        statements.set(next, statement.withPrefix(pending.withComments(comments)));
+                        statements.set(next, statement.withPrefix(pending.withComments(
+                                ListUtils.concatAll(pending.getComments(), statement.getComments()))));
                         pending = null;
                     }
                     next++;
@@ -555,21 +555,15 @@ public class InstanceOfPatternMatch extends Recipe {
                     if (pending == null) {
                         pending = original.getPrefix();
                     } else {
-                        List<Comment> comments = new ArrayList<>(pending.getComments());
-                        comments.addAll(original.getComments());
-                        pending = pending.withComments(comments);
+                        pending = pending.withComments(ListUtils.concatAll(pending.getComments(), original.getComments()));
                     }
                 }
             }
             if (pending != null) {
-                List<Comment> comments = new ArrayList<>(pending.getComments());
-                if (b.getEnd().getComments().isEmpty()) {
-                    int last = comments.size() - 1;
-                    comments.set(last, comments.get(last).withSuffix(b.getEnd().getWhitespace()));
-                } else {
-                    comments.addAll(b.getEnd().getComments());
-                }
-                b = b.withEnd(pending.withComments(comments));
+                Space end = b.getEnd();
+                b = b.withEnd(pending.withComments(end.getComments().isEmpty() ?
+                        ListUtils.mapLast(pending.getComments(), c -> c.withSuffix(end.getWhitespace())) :
+                        ListUtils.concatAll(pending.getComments(), end.getComments())));
             }
             return b.withStatements(statements);
         }
