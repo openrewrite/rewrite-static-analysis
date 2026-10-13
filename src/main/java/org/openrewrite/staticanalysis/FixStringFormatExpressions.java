@@ -24,7 +24,6 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.util.Set;
@@ -37,8 +36,6 @@ public class FixStringFormatExpressions extends Recipe {
 
     // %[argument_index$][flags][width][.precision][t]conversion
     private static final Pattern FS_PATTERN = Pattern.compile("%(\\d+\\$)?([-#+ 0,(<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])");
-    private static final Pattern NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\n");
-    private static final Pattern ESCAPED_NEWLINE_PATTERN = Pattern.compile("(?<!\\\\)\\\\n");
 
     private static final MethodMatcher FORMAT_MATCHER = new MethodMatcher("java.lang.String format(..)");
     private static final MethodMatcher FORMATTED_MATCHER = new MethodMatcher("java.lang.String formatted(..)");
@@ -47,11 +44,9 @@ public class FixStringFormatExpressions extends Recipe {
     final String displayName = "Fix `String#format` and `String#formatted` expressions";
 
     @Getter
-    final String description = "Fix `String#format` and `String#formatted` expressions by replacing " +
-            "`\\n` newline characters with `%n` and removing any unused arguments. " +
+    final String description = "Fix `String#format` and `String#formatted` expressions by removing any unused arguments. " +
             "Note this recipe is scoped to only transform format expressions which " +
-            "do not specify the argument index. Using `%n` ensures the correct " +
-            "platform-specific line separator, and removing unused arguments " +
+            "do not specify the argument index. Removing unused arguments " +
             "eliminates dead code that may mask a mismatch between the format " +
             "string and its parameters.";
 
@@ -77,13 +72,6 @@ public class FixStringFormatExpressions extends Recipe {
 
                             if (fmtArg == null || fmtArg.getValue() == null || fmtArg.getValueSource() == null) {
                                 return mi;
-                            }
-
-                            // Replace any new line chars with %n
-                            if (isStringFormattedExpression) {
-                                mi = mi.withSelect(replaceNewLineChars(mi.getSelect()));
-                            } else {
-                                mi = mi.withArguments(ListUtils.mapFirst(mi.getArguments(), this::replaceNewLineChars));
                             }
 
                             // Trim any extra args
@@ -115,24 +103,6 @@ public class FixStringFormatExpressions extends Recipe {
                             }));
                         }
                         return mi;
-                    }
-
-                    private Expression replaceNewLineChars(Expression arg0) {
-                        if (arg0 instanceof J.Literal) {
-                            J.Literal fmt = (J.Literal) arg0;
-                            if (fmt.getValueSource() != null) {
-                                String newValueSource = ESCAPED_NEWLINE_PATTERN.matcher(fmt.getValueSource()).replaceAll("%n");
-                                // Only modify if the valueSource actually changed
-                                if (!newValueSource.equals(fmt.getValueSource())) {
-                                    fmt = fmt.withValueSource(newValueSource);
-                                    if (fmt.getValue() != null) {
-                                        fmt = fmt.withValue(NEWLINE_PATTERN.matcher(fmt.getValue().toString()).replaceAll("%n"));
-                                    }
-                                }
-                            }
-                            return fmt;
-                        }
-                        return arg0;
                     }
                 }
         );

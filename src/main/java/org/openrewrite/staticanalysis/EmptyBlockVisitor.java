@@ -35,7 +35,6 @@ import org.openrewrite.java.tree.Statement;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.style.Style;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -224,18 +223,8 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
         public J visitBlock(J.Block block, P p) {
             J.Block b = (J.Block) super.visitBlock(block, p);
             if (enclosingBlock.isScope(block)) {
-                List<Statement> statements = new ArrayList<>(b.getStatements().size());
-                for (Statement statement : b.getStatements()) {
-                    if (statement == toExtract) {
-                        for (J sideEffect : toExtract.getIfCondition().getTree().getSideEffects()) {
-                            sideEffect = autoFormat(sideEffect, p, getCursor());
-                            statements.add((Statement) sideEffect);
-                        }
-                    } else {
-                        statements.add(statement);
-                    }
-                }
-                b = b.withStatements(statements);
+                b = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> statement != toExtract ? statement :
+                        ListUtils.map(toExtract.getIfCondition().getTree().getSideEffects(), sideEffect -> autoFormat(sideEffect, p, getCursor()))));
             }
             return b;
         }

@@ -30,25 +30,17 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         spec.recipe(new FixStringFormatExpressions());
     }
 
-    @DocumentExample
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/16")
     @Test
-    void newLineFormat() {
+    void doNotReplaceNewlines() {
         rewriteRun(
           //language=java
           java(
             """
               class T {
-                  static {
-                      String s = String.format("hello world\\n%s", "again");
-                      String s2 = "hello world\\n%s".formatted("again");
-                  }
-              }
-              """,
-                """
-              class T {
-                  static {
-                      String s = String.format("hello world%n%s", "again");
-                      String s2 = "hello world%n%s".formatted("again");
+                  String configuration(String release) {
+                      String s = "hello world\\n%s".formatted("again");
+                      return String.format("<configuration>\\n   <release>%s</release>\\n</configuration>", release);
                   }
               }
               """
@@ -56,6 +48,7 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         );
     }
 
+    @DocumentExample
     @Test
     void trimUnusedArguments() {
         rewriteRun(
@@ -182,40 +175,6 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/260")
-    @Test
-    void escapedNewline() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class A {
-                  String foo(String bar) {
-                      return ""\"
-                              \\n
-                              \\\\n
-                              \\\\\\n
-                              \\\\\\\\n
-                              ""\".formatted(bar);
-                  }
-              }
-              """,
-            """
-              class A {
-                  String foo(String bar) {
-                      return ""\"
-                              %n
-                              \\\\n
-                              \\\\\\n
-                              \\\\\\\\n
-                              ""\".formatted(bar);
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @Test
     void doNotStripArgsWithUnresolvedPlaceholders() {
         // SLF4J-style `{}` is not a `String#format` specifier, so don't delete the args as dead code.
@@ -258,30 +217,6 @@ class FixStringFormatExpressionsTest implements RewriteTest {
     }
 
     @Test
-    void newlineStillReplacedWhenArgsAreNotStripped() {
-        // The bailout only skips arg-trimming; newline-to-%n replacement must still apply.
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class T {
-                  static void test(int original, int shadow) {
-                      String s = String.format("expect {}\\nactual {}", original, shadow);
-                  }
-              }
-              """,
-            """
-              class T {
-                  static void test(int original, int shadow) {
-                      String s = String.format("expect {}%nactual {}", original, shadow);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void shadowClientMismatchReportingIsNotCorrupted() {
         // Motivating bug: mismatch reports built with String#format but SLF4J-style `{}` placeholders,
         // where the recipe used to delete the args and reduce every report to "expect {}, actual {}".
@@ -309,28 +244,6 @@ class FixStringFormatExpressionsTest implements RewriteTest {
                           reportMismatch("getMoreResults", String.format("expect {}, actual {}", original, shadow));
                       }
                       return original;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void textBlockWithNewlinesShouldNotBeModified() {
-        // Text blocks contain actual newline characters in their value, not \n escape sequences.
-        // The recipe should not modify these since changing actual newlines to %n in text blocks
-        // would change the semantics and the valueSource wouldn't match the value.
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class T {
-                  static {
-                      String s = ""\"
-                          Hello
-                          World
-                          ""\".formatted();
                   }
               }
               """
