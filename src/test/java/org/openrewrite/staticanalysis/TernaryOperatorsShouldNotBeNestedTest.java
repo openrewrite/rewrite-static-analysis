@@ -302,7 +302,6 @@ class TernaryOperatorsShouldNotBeNestedTest {
             );
         }
 
-        @ExpectedToFail("only directly returned ternaries are taken into account")
         @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
         @Test
         void doReplaceNestedOrAssignmentTernaryWithIfElse() {
@@ -322,11 +321,189 @@ class TernaryOperatorsShouldNotBeNestedTest {
                       public void doThing(String a, String b) {
                           String result;
                           if ("a".equals(a)) {
-                            result = "a";
+                              result = "a";
+                          } else {
+                              result = "b".equals(b) ? "b" : "nope";
                           }
-                          else {
-                            result = "b".equals(b) ? "b" : "nope";
+                          System.out.println(result);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryInFinalVariableDeclaration() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void doThing(int a, int b) {
+                          final int result = a == 1 ? 1 : b == 2 ? 2 : 3;
+                          Runnable r = () -> System.out.println(result);
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      public void doThing(int a, int b) {
+                          final int result;
+                          if (a == 1) {
+                              result = 1;
+                          } else {
+                              result = b == 2 ? 2 : 3;
                           }
+                          Runnable r = () -> System.out.println(result);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryInAssignmentWithElseIfChain() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private String result;
+
+                      public void doThing(String a, String b, String c) {
+                          // pick one
+                          result = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "c".equals(c) ? "c" : "nope";
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      private String result;
+
+                      public void doThing(String a, String b, String c) {
+                          // pick one
+                          if ("a".equals(a)) {
+                              result = "a";
+                          } else if ("b".equals(b)) {
+                              result = "b";
+                          } else {
+                              result = "c".equals(c) ? "c" : "nope";
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryInTruePartOfAssignmentOperation() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public int doThing(boolean a, boolean b, boolean c) {
+                          int result = 0;
+                          result += a ? b ? 1 : c ? 2 : 3 : 4;
+                          return result;
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      public int doThing(boolean a, boolean b, boolean c) {
+                          int result = 0;
+                          if (a) {
+                              if (b) {
+                                  result += 1;
+                              } else {
+                                  result += c ? 2 : 3;
+                              }
+                          } else {
+                              result += 4;
+                          }
+                          return result;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doReplaceNestedTernaryAssignmentInLambdaBlock() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import java.util.function.Function;
+                  class Test {
+                      Function<String, String> f = s -> {
+                          String result = s.isEmpty() ? "empty" : s.length() == 1 ? "one" : "many";
+                          return result.toUpperCase();
+                      };
+                  }
+                  """,
+                """
+                  import java.util.function.Function;
+                  class Test {
+                      Function<String, String> f = s -> {
+                          String result;
+                          if (s.isEmpty()) {
+                              result = "empty";
+                          } else {
+                              result = s.length() == 1 ? "one" : "many";
+                          }
+                          return result.toUpperCase();
+                      };
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doNotReplaceNestedTernaryInFieldVarMultiVariableDeclarationOrComplexAssignmentTarget() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      private final String field = Math.random() > 0.5 ? "a" : Math.random() > 0.5 ? "b" : "c";
+
+                      public void doThing(String a, String b, String[] arr, int i) {
+                          arr[i++] = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                          var inferred = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                          String first = a, second = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope";
+                          for (String s = "a".equals(a) ? "a" : "b".equals(b) ? "b" : "nope"; s.isEmpty(); ) {
+                          }
+                          System.out.println(inferred + first + second);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/112")
+        @Test
+        void doNotReplaceNonNestedTernaryAssignment() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      public void doThing(String a) {
+                          String result = "a".equals(a) ? "a" : "nope";
+                          result = "a".equals(a) ? "a" : "nope";
                           System.out.println(result);
                       }
                   }
