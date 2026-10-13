@@ -395,3 +395,16 @@ finds will still fail with `Unable to find recipe` until `./gradlew recipeCsvGen
 (run it on its own; it conflicts with `publishToMavenLocal` in the same invocation). Publish under a version
 of your own (`-Prelease.version=2.99.1-SNAPSHOT`) so the CLI resolves the local jar rather than the CI
 snapshot of the same coordinates, then `mod config recipes jar install org.openrewrite.recipe:rewrite-static-analysis:<that version>`.
+
+## Kotlin-only recipes (ReplaceLambdaWithCallableReference)
+
+- **rewrite-kotlin is a `provided` dependency.** Never pass a `KotlinVisitor` subclass where a `TreeVisitor` is
+  expected inside the recipe class itself, e.g. `Preconditions.check(..., new MyKotlinVisitor())`. The JVM verifier
+  then has to load `KotlinVisitor` to link the recipe class. Without rewrite-kotlin on the classpath, the class
+  fails with `NoClassDefFoundError`, and `recipeCsvGenerate` silently leaves the recipe out of `recipes.csv`.
+  Create the visitor in a static factory on the visitor class that returns `TreeVisitor<?, ExecutionContext>`.
+- **Property references are not adapted to `Unit`.** kotlinc accepts `words.forEach(String::trim)`, but it
+  rejects `words.forEach(String::length)` ("inapplicable candidate(s)"). Only emit `Type::property` when the
+  expected type is `kotlin.FunctionN` with a non-`Unit` result. In the LST, `Unit` shows up as `JavaType.Primitive.Void`.
+- **Top-level functions** have `Flag.Static` on their `JavaType.Method` (openrewrite/rewrite#9165). Use that
+  rather than a `…Kt` facade class name to decide between `::f` and `this::f`.
