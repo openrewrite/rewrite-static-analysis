@@ -25,6 +25,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.*;
 import java.util.Locale;
@@ -151,7 +152,7 @@ public class AnnotateNullableMethods extends Recipe {
                 return ann.getSimpleName().toLowerCase(Locale.ROOT).contains("null");
             }
         };
-        return Repeat.repeatUntilStable(javaIsoVisitor, 5);
+        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), Repeat.repeatUntilStable(javaIsoVisitor, 5));
     }
 
     private static class FindNullableReturnStatements extends JavaIsoVisitor<AtomicBoolean> {
