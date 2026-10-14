@@ -31,9 +31,7 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import java.time.Duration;
 import java.util.*;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 import static java.util.stream.Collectors.toList;
 import static org.openrewrite.Tree.randomId;
 

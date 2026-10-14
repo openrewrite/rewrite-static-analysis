@@ -60,6 +60,31 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
           );
     }
 
+    @DocumentExample
+    @Test
+    void unwrapRepeatable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import com.example.*;
+
+              @Annotations({@Annotation, @Annotation})
+              class Test {
+              }
+              """,
+            """
+              import com.example.*;
+
+              @Annotation
+              @Annotation
+              class Test {
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void unwrapRepeatableWithExplicitValue() {
         rewriteRun(
@@ -138,31 +163,6 @@ class UnwrapRepeatableAnnotationsTest implements RewriteTest {
 
               @CollectionTable(name = "OBJECT_ENV", joinColumns = @JoinColumn(name = "id"))
               public class DBObject {
-              }
-              """
-          )
-        );
-    }
-
-    @DocumentExample
-    @Test
-    void unwrapRepeatable() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import com.example.*;
-
-              @Annotations({@Annotation, @Annotation})
-              class Test {
-              }
-              """,
-            """
-              import com.example.*;
-
-              @Annotation
-              @Annotation
-              class Test {
               }
               """
           )

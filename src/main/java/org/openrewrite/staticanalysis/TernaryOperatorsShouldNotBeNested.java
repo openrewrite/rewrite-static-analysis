@@ -95,7 +95,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 return super.visitReturn(retrn, ctx);
             }
             doAfterVisit(new RemoveUnneededBlock().getVisitor());
-            Statement result = branchOf((J.Ternary) retrn.getExpression(), TernaryOperatorsShouldNotBeNested::returnOf, true);
+            Statement result = branchOf(retrn.getExpression(), TernaryOperatorsShouldNotBeNested::returnOf, true);
             return autoFormat(result.withPrefix(retrn.getPrefix()), ctx);
         }
 
@@ -150,7 +150,7 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                 if (!isSimpleVariable(target) || !isNestedTernary(value) || !keepsBranchValues((J.Ternary) value, targetType)) {
                     return statement;
                 }
-                Statement iff = autoFormat(branchOf((J.Ternary) value, sink, false).withPrefix(s.getPrefix()), ctx, getCursor());
+                Statement iff = autoFormat(branchOf(value, sink, false).withPrefix(s.getPrefix()), ctx, getCursor());
                 return declaration == null ? iff : Arrays.asList(declaration, iff);
             }));
         }

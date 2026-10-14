@@ -357,7 +357,7 @@ class UsePortableNewlinesTest implements RewriteTest {
     }
 
     private static @Nullable String formatStringValue(J.CompilationUnit cu) {
-        AtomicReference<@Nullable String> value = new AtomicReference<>();
+        var value = new AtomicReference<@Nullable String>();
         new JavaIsoVisitor<Integer>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Integer p) {

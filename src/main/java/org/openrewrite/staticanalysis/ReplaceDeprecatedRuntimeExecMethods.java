@@ -91,8 +91,7 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     if (flattenAble) {
                         String[] cmds = sb.toString().split(" ");
                         String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
-                        newArg0 = JavaTemplate.builder(templateCode).build()
-                                .apply(cursor, arg0.getCoordinates().replace());
+                        newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
                     } else {
                         // replace argument to 'command.split(" ")'
                         boolean needWrap = !(arg0 instanceof J.Identifier) &&

@@ -30,24 +30,6 @@ class FixStringFormatExpressionsTest implements RewriteTest {
         spec.recipe(new FixStringFormatExpressions());
     }
 
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/16")
-    @Test
-    void doNotReplaceNewlines() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class T {
-                  String configuration(String release) {
-                      String s = "hello world\\n%s".formatted("again");
-                      return String.format("<configuration>\\n   <release>%s</release>\\n</configuration>", release);
-                  }
-              }
-              """
-          )
-        );
-    }
-
     @DocumentExample
     @Test
     void trimUnusedArguments() {
@@ -67,6 +49,24 @@ class FixStringFormatExpressionsTest implements RewriteTest {
                   static {
                       String s = String.format("count: %d, %d, %d, %d", 1, 3, 2, 4);
                       String f = "count: %d, %d, %d, %d".formatted(1, 3, 2, 4);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/16")
+    @Test
+    void doNotReplaceNewlines() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class T {
+                  String configuration(String release) {
+                      String s = "hello world\\n%s".formatted("again");
+                      return String.format("<configuration>\\n   <release>%s</release>\\n</configuration>", release);
                   }
               }
               """

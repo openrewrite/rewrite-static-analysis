@@ -38,14 +38,7 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.staticanalysis.table.ExceptionsWithoutCause;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 

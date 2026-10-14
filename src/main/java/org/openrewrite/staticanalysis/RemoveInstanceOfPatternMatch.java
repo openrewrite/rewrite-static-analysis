@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -25,7 +26,6 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
-import org.jspecify.annotations.Nullable;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 
 import java.time.Duration;

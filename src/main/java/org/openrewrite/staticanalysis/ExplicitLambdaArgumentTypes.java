@@ -28,14 +28,9 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 
 public class ExplicitLambdaArgumentTypes extends Recipe {
     @Getter
@@ -105,7 +100,7 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             }
 
             private Set<JavaType> newRecursionGuard() {
-                return Collections.newSetFromMap(new IdentityHashMap<>());
+                return newSetFromMap(new IdentityHashMap<>());
             }
 
             private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space, Set<JavaType> recursionGuard) {
