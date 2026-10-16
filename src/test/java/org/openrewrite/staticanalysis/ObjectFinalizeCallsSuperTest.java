@@ -20,7 +20,9 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class ObjectFinalizeCallsSuperTest implements RewriteTest {
 
@@ -73,6 +75,54 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
                   protected void finalize() throws Throwable {
                       o = null;
                       super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsSuperFinalizeInvocationInGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class F {
+                  Object o = new Object()
+
+                  @Override
+                  protected void finalize() throws Throwable {
+                      o = null
+                  }
+              }
+              """,
+            """
+              class F {
+                  Object o = new Object()
+
+                  @Override
+                  protected void finalize() throws Throwable {
+                      o = null
+                      super.finalize()
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class F {
+                  var o: Any? = Any()
+
+                  protected fun finalize() {
+                      o = null
                   }
               }
               """
