@@ -15,8 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -232,7 +233,7 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
         );
     }
 
-    @Tag("java25")
+    @EnabledForJreRange(min = JRE.JAVA_25)
     @Test
     void multiCatchWithUnnamedVariable() {
         rewriteRun(
@@ -273,7 +274,7 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
         );
     }
 
-    @Tag("java25")
+    @EnabledForJreRange(min = JRE.JAVA_25)
     @Test
     void multiCatchWithUnnamedVariableAvoidsNameClash() {
         rewriteRun(

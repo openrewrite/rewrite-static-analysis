@@ -114,23 +114,6 @@ tasks.withType<Test> {
     dependsOn(warmJavaScriptRpcCache)
 }
 
-tasks.named<Test>("test") {
-    useJUnitPlatform { excludeTags("java25") }
-}
-
-val testJava25 by tasks.registering(Test::class) {
-    description = "Runs the tests tagged `java25` on a Java 25 JVM, which parses sources with rewrite-java-25."
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) })
-    useJUnitPlatform { includeTags("java25") }
-}
-
-tasks.named("check") {
-    dependsOn(testJava25)
-}
-
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
 }
