@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -67,6 +68,8 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             "the returned copy. Calls expected to throw, Mockito stubbing and verification, calls on the current " +
             "instance in custom AssertJ assertion constructors, and code under " +
             "`@SuppressWarnings(\"CheckReturnValue\")` are not marked.";
+
+    Set<String> tags = singleton("RSPEC-S2970");
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {
