@@ -320,6 +320,37 @@ class RemoveDuplicateConditionsTest implements RewriteTest {
     }
 
     @Test
+    void doNotChangeDifferentRecordPatterns() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  record A(String s) {
+                  }
+
+                  record B(int n) {
+                  }
+
+                  void p(Object o) {
+                  }
+
+                  void test(Object o) {
+                      if (o instanceof String str) {
+                          p(str);
+                      } else if (o instanceof A(String s)) {
+                          p(s);
+                      } else if (o instanceof B(int n)) {
+                          p(n);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void removeDuplicateElseIfGo() {
         rewriteRun(
           //language=go
