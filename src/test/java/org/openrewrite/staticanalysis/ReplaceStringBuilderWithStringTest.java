@@ -16,6 +16,7 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -582,6 +583,30 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
         );
     }
 
+    @ExpectedToFail("Comment inside the append argument list is dropped when the chain is flattened")
+    @Test
+    void retainCommentInsideAppendArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String render(char[] chars) {
+                      return new StringBuilder().append("a").append(chars /* the array */).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String render(char[] chars) {
+                      return "a" + String.valueOf(chars /* the array */);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotChangeCharArrayRangeAppend() {
         rewriteRun(
@@ -591,6 +616,30 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
               class A {
                   String render(char[] chars) {
                       return new StringBuilder().append("a").append(chars, 0, 2).toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("append(char[], int, int) is not yet flattened to String.valueOf(char[], int, int); doNotChangeCharArrayRangeAppend pins the current conservative behavior")
+    @Test
+    void convertCharArrayRangeAppend() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String render(char[] chars) {
+                      return new StringBuilder().append("a").append(chars, 0, 2).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String render(char[] chars) {
+                      return "a" + String.valueOf(chars, 0, 2);
                   }
               }
               """
