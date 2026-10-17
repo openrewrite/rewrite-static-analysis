@@ -24,8 +24,6 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.service.ImportService;
 import org.openrewrite.java.tree.*;
-import org.openrewrite.kotlin.KotlinVisitor;
-import org.openrewrite.kotlin.tree.K;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -62,16 +60,9 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                 if (tree instanceof J.CompilationUnit) {
                     return new ReplaceLambdaWithMethodReferenceJavaVisitor().visit(tree, ctx);
                 }
-                if (tree instanceof K.CompilationUnit) {
-                    return new ReplaceLambdaWithMethodReferenceKotlinVisitor().visit(tree, ctx);
-                }
                 return tree;
             }
         };
-    }
-
-    private static class ReplaceLambdaWithMethodReferenceKotlinVisitor extends KotlinVisitor<ExecutionContext> {
-        // XXX Implement Me
     }
 
     private static class ReplaceLambdaWithMethodReferenceJavaVisitor extends JavaVisitor<ExecutionContext> {
