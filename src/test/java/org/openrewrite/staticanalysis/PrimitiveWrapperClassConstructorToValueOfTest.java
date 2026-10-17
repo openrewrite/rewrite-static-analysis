@@ -16,11 +16,13 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 
 @SuppressWarnings({
@@ -212,6 +214,46 @@ class PrimitiveWrapperClassConstructorToValueOfTest implements RewriteTest {
                       return Double.valueOf(2.0d);
                   }
               }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("Comments between `new` and the argument list are dropped when replacing the constructor")
+    @Test
+    void preserveCommentsWithinNewClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  Integer i = new /* keep me */ Integer(42);
+              }
+              """,
+            """
+              class A {
+                  Integer i = /* keep me */ Integer.valueOf(42);
+              }
+              """
+          )
+        );
+    }
+
+    @ExpectedToFail("The Groovy parser attributes a compound double argument as java.lang.Object, so no (float) cast is added")
+    @Test
+    void groovyCompoundDoubleToFloat() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              double d1 = 1.0d
+              double d2 = 2.0d
+              Float sum = new Float(d1 + d2)
+              """,
+            """
+              double d1 = 1.0d
+              double d2 = 2.0d
+              Float sum = Float.valueOf((float) (d1 + d2))
               """
           )
         );
