@@ -135,7 +135,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 J.Try generatedTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))
                         .imports(imports)
                         .build()
-                        .apply(new Cursor(getCursor(), surroundingTry), surroundingTry.getCoordinates().replace());
+                        .apply(getCursor(), surroundingTry.getCoordinates().replace());
                 return aCatch.withParameter(generatedTry.getCatches().get(0).getParameter());
             }
         };

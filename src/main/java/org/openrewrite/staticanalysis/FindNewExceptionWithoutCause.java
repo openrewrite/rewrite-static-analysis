@@ -144,7 +144,7 @@ public class FindNewExceptionWithoutCause extends Recipe {
                             .<Map<UUID, int[]>>computeMessageIfAbsent(POSITIONS_KEY, k -> throwPositions(sourceFile))
                             .getOrDefault(thrown.getId(), position);
                 }
-                String snippet = thrown.printTrimmed(getCursor()).replaceAll("\\s+", " ");
+                String snippet = thrown.printTrimmed(getCursor().getParentOrThrow()).replaceAll("\\s+", " ");
                 if (snippet.length() > SNIPPET_LENGTH) {
                     snippet = snippet.substring(0, SNIPPET_LENGTH - 3) + "...";
                 }
