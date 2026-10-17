@@ -70,8 +70,7 @@ public class RemoveSystemOutPrintln extends Recipe {
             public J.@Nullable MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 if (SYSTEM_OUT_PRINTLN.matches(method) &&
                         method.getSelect() instanceof J.FieldAccess &&
-                        (((J.FieldAccess) method.getSelect()).getTarget() instanceof J.Identifier &&
-                                TypeUtils.isAssignableTo("java.lang.System", ((J.FieldAccess) method.getSelect()).getTarget().getType()))) {
+                        TypeUtils.isAssignableTo("java.lang.System", ((J.FieldAccess) method.getSelect()).getTarget().getType())) {
                     return null;
                 }
                 return super.visitMethodInvocation(method, ctx);
