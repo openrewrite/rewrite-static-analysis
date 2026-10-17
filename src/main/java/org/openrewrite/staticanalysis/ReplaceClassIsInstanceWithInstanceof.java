@@ -28,7 +28,6 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.J.FieldAccess;
-import org.openrewrite.java.tree.J.Identifier;
 import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
@@ -91,10 +90,9 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
             private boolean isObjectClass(@Nullable Expression expression) {
                 if (expression instanceof J.FieldAccess) {
                     J.FieldAccess fieldAccess = (J.FieldAccess) expression;
-                    if ("class".equals(fieldAccess.getName().getSimpleName()) && fieldAccess.getTarget() instanceof Identifier) {
-                        Identifier identifier = (Identifier) fieldAccess.getTarget();
-                        return identifier.getType() instanceof JavaType.Class;
-                    }
+                    // the target is a simple or a fully qualified type name
+                    return "class".equals(fieldAccess.getName().getSimpleName()) &&
+                            fieldAccess.getTarget().getType() instanceof JavaType.Class;
                 }
                 return false;
             }
