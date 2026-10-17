@@ -109,7 +109,7 @@ public class ChainStringBuilderAppendCalls extends Recipe {
 
                     J.MethodInvocation chainedMethods = m.withArguments(singletonList(groups.get(0)));
                     for (int i = 1; i < groups.size(); i++) {
-                        chainedMethods = chainedMethods.withSelect(chainedMethods)
+                        chainedMethods = chainedMethods.withSelect(chainedMethods.withId(Tree.randomId()))
                                 .withArguments(singletonList(groups.get(i).unwrap()))
                                 .withPrefix(Space.EMPTY);
                     }
