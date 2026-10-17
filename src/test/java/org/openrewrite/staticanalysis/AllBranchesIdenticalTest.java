@@ -318,6 +318,133 @@ class AllBranchesIdenticalTest implements RewriteTest {
     }
 
     @Test
+    void hoistBareCallConditionWithSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume()) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hoistBareCallConditionWithoutBraces() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume())
+                          System.out.println("hello");
+                      else
+                          System.out.println("hello");
+                  }
+              }
+              """,
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      consume();
+                      System.out.println("hello");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotHoistNonBareCallCondition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume() {
+                      System.out.println("side effect");
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume() && false) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotHoistThreeBranchChainWithSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean consume(int x) {
+                      System.out.println(x);
+                      return true;
+                  }
+
+                  void test() {
+                      if (consume(1)) {
+                          System.out.println("hello");
+                      } else if (consume(2)) {
+                          System.out.println("hello");
+                      } else {
+                          System.out.println("hello");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void collapseIdenticalBranchesGo() {
         rewriteRun(
           //language=go
