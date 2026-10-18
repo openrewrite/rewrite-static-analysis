@@ -55,6 +55,28 @@ class NewStringBuilderBufferWithCharArgumentTest implements RewriteTest {
         );
     }
 
+    @SuppressWarnings("NewStringBufferWithCharArgument")
+    @Test
+    void quoteCharacters() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  StringBuilder doubleQuote = new StringBuilder('"');
+                  StringBuilder singleQuote = new StringBuilder('\\'');
+              }
+              """,
+            """
+              class A {
+                  StringBuilder doubleQuote = new StringBuilder("\\"");
+                  StringBuilder singleQuote = new StringBuilder("\\'");
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void validStringArg() {
         rewriteRun(
