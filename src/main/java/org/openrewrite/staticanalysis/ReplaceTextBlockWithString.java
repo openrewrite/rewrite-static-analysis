@@ -65,7 +65,7 @@ public class ReplaceTextBlockWithString extends Recipe {
                     boolean lastLineIsEmpty = lines[lines.length - 1].isEmpty();
                     int n = lastLineIsEmpty && lines.length == 1 ? 1 : lines.length - 1;
                     for (int i = 0; i < n; i++) {
-                        lines[i] += "\\n";
+                        lines[i] += "\n";
                     }
                     // Take all lines except the last one if it's empty
                     // If there is only one line and it's empty, take it as well
@@ -97,7 +97,8 @@ public class ReplaceTextBlockWithString extends Recipe {
             }
 
             private String quote(String str) {
-                return "\"" + str.replace("\"", "\\\"") + "\"";
+                return "\"" + str.replace("\\", "\\\\").replace("\"", "\\\"")
+                        .replace("\n", "\\n").replace("\r", "\\r") + "\"";
             }
         });
     }

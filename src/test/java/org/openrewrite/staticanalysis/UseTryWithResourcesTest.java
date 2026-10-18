@@ -651,7 +651,7 @@ class UseTryWithResourcesTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/927")
     @Test
-    void unusedResourceUsesUnnamedVariableOnJava21() {
+    void unusedResourceUsesUnnamedVariableOnJava22() {
         rewriteRun(
           //language=java
           java(
@@ -678,14 +678,14 @@ class UseTryWithResourcesTest implements RewriteTest {
                   }
               }
               """,
-            spec -> spec.markers(javaVersion(21))
+            spec -> spec.markers(javaVersion(22))
           )
         );
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/927")
     @Test
-    void unusedResourceKeepsNameBelowJava21() {
+    void unusedResourceKeepsNameBelowJava22() {
         rewriteRun(
           //language=java
           java(
@@ -711,14 +711,15 @@ class UseTryWithResourcesTest implements RewriteTest {
                       }
                   }
               }
-              """
+              """,
+            spec -> spec.markers(javaVersion(21))
           )
         );
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/927")
     @Test
-    void resourceUsedInBodyKeepsNameOnJava21() {
+    void resourceUsedInBodyKeepsNameOnJava22() {
         rewriteRun(
           //language=java
           java(
@@ -747,7 +748,7 @@ class UseTryWithResourcesTest implements RewriteTest {
                   }
               }
               """,
-            spec -> spec.markers(javaVersion(21))
+            spec -> spec.markers(javaVersion(22))
           )
         );
     }

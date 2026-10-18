@@ -434,6 +434,40 @@ class CombineSemanticallyEqualCatchBlocksTest implements RewriteTest {
     }
 
     @Test
+    void removeRedundantChildClassesOfMultiCatch() {
+        rewriteRun(
+          //language=java
+          java("class A extends BaseException {}"),
+          //language=java
+          java("class B extends BaseException {}"),
+          //language=java
+          java("class BaseException extends RuntimeException {}"),
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (A | B ex) {
+                      } catch (BaseException ex) {
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      try {
+                      } catch (BaseException ex) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void dontCombineCatchBlocksWithDifferentMethodInvocationParameters() {
         rewriteRun(
           //language=java

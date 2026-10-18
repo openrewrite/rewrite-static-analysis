@@ -71,7 +71,7 @@ public class UseTryWithResources extends Recipe {
                         List<Statement> stmts = b.getStatements();
                         boolean unnamedAvailable = getCursor().firstEnclosingOrThrow(JavaSourceFile.class)
                                 .getMarkers().findFirst(JavaVersion.class)
-                                .filter(v -> v.getMajorVersion() >= 21)
+                                .filter(v -> v.getMajorVersion() >= 22)
                                 .isPresent();
                         return b.withStatements(ListUtils.map(stmts, (i, stmt) -> {
                             if (stmt instanceof J.Try) {
@@ -177,7 +177,7 @@ public class UseTryWithResources extends Recipe {
         String varName = varDecl.getVariables().get(0).getSimpleName();
         J.VariableDeclarations resourceDecl = varDecl.withPrefix(Space.EMPTY);
         // When the resource is never read inside the try body, name it with the unnamed variable `_`
-        // (JEP 443 preview in Java 21, finalized as JEP 456 in Java 22) so the rewritten code does
+        // (JEP 456 in Java 22, a preview in Java 21 that needs --enable-preview) so the rewritten code does
         // not emit an unused-variable warning that would fail `-Werror` builds.
         if (unnamedAvailable && !isReferenced(varName, tryStmt.getBody())) {
             J.VariableDeclarations.NamedVariable namedVar = resourceDecl.getVariables().get(0);

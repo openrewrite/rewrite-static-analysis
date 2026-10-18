@@ -60,7 +60,7 @@ public class IndexOfShouldNotCompareGreaterThanZero extends Recipe {
                                 J.MethodInvocation mi = (J.MethodInvocation) b.getLeft();
                                 if (STRING_INDEX_MATCHER.matches(mi) || LIST_INDEX_MATCHER.matches(mi)) {
                                     if (b.getRight() instanceof J.Literal && "0".equals(((J.Literal) b.getRight()).getValueSource())) {
-                                        b = b.withRight(((J.Literal) b.getRight()).withValueSource("1")).withOperator(J.Binary.Type.GreaterThanOrEqual);
+                                        b = b.withRight(((J.Literal) b.getRight()).withValue(1).withValueSource("1")).withOperator(J.Binary.Type.GreaterThanOrEqual);
                                     }
                                 }
                             }

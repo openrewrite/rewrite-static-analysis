@@ -194,11 +194,41 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             JavaTemplate template = JavaTemplate
                     .builder("#{} #{} = (#{}) #{any()};")
                     .contextSensitive()
+                    .imports(typesNamedBy(instanceOf.getClazz()))
                     .build();
             return template.apply(blockCursor, block.getCoordinates().firstStatement(), instanceOf.getClazz().toString(),
                     ((J.Identifier) Objects.requireNonNull(instanceOf.getPattern())).getSimpleName(),
                     instanceOf.getClazz().toString(),
                     visit(instanceOf.getExpression(), ctx));
+        }
+
+        /**
+         * The fully qualified names of the top-level types a type tree names by their simple names.
+         *
+         * @param typeTree the type tree
+         * @return the names for the template to import
+         */
+        private static String[] typesNamedBy(J typeTree) {
+            Set<String> types = new LinkedHashSet<>();
+            new JavaIsoVisitor<Set<String>>() {
+                @Override
+                public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, Set<String> t) {
+                    // a qualified name is found through its first part
+                    visit(fieldAccess.getTarget(), t);
+                    return fieldAccess;
+                }
+
+                @Override
+                public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> t) {
+                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(identifier.getType());
+                    if (type != null && !type.getPackageName().isEmpty() &&
+                            identifier.getSimpleName().equals(type.getClassName())) {
+                        t.add(type.getFullyQualifiedName());
+                    }
+                    return identifier;
+                }
+            }.visit(typeTree, types);
+            return types.toArray(new String[0]);
         }
 
         /**
