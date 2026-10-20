@@ -612,7 +612,6 @@ class UseTryWithResourcesTest implements RewriteTest {
     @Test
     void multipleClosesInFinallyPicksMatchingVariable() {
         rewriteRun(
-          spec -> spec.expectedCyclesThatMakeChanges(2),
           //language=java
           java(
             """
