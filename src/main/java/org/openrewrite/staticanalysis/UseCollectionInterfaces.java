@@ -168,7 +168,13 @@ public class UseCollectionInterfaces extends Recipe {
                             maybeRemoveImport(originalType);
                             maybeAddImport(newType);
 
-                            m = m.withReturnTypeExpression(getTypeTree(m.getReturnTypeExpression(), newType));
+                            TypeTree returnTypeExpression = getTypeTree(m.getReturnTypeExpression(), newType);
+                            m = m.withReturnTypeExpression(returnTypeExpression);
+                            JavaType.Method methodType = m.getMethodType();
+                            if (methodType != null) {
+                                methodType = methodType.withReturnType(returnTypeExpression.getType());
+                                m = m.withMethodType(methodType).withName(m.getName().withType(methodType));
+                            }
                         }
                     }
                 }
