@@ -40,7 +40,7 @@ import static java.util.Collections.singleton;
 @Getter
 public class FindNonCaseLabelsInSwitch extends Recipe {
 
-    final String displayName = "`switch` statements should not contain non-case labels";
+    final String displayName = "Find non-`case` labels in `switch` statements";
 
     final String description = "Marks statement labels placed directly among the `case` labels of a `switch`. " +
             "Such a label is often a `case` with a missing keyword, which compiles but never matches, " +
@@ -69,7 +69,7 @@ public class FindNonCaseLabelsInSwitch extends Recipe {
                         ((J.Switch) switchTree).getSelector().getTree() :
                         ((J.SwitchExpression) switchTree).getSelector().getTree();
                 JavaType.Class selectorType = TypeUtils.asClass(selector.getType());
-                if (selectorType != null && selectorType.getKind() == JavaType.FullyQualified.Kind.Enum &&
+                if (selectorType != null &&
                         selectorType.getMembers().stream().anyMatch(m -> m.hasFlags(Flag.Enum) && m.getName().equals(name)) &&
                         !hasCase(caseCursor.getParentTreeCursor().getValue(), name) && !isReferenced(l.getStatement(), name)) {
                     return SearchResult.found(l, "`" + name + "` is a statement label, not a `case`, so `" + name +
@@ -93,35 +93,17 @@ public class FindNonCaseLabelsInSwitch extends Recipe {
             private boolean isReferenced(Statement labeled, String name) {
                 return new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
-                    public J.Break visitBreak(J.Break breakStatement, AtomicBoolean found) {
-                        if (breakStatement.getLabel() != null && name.equals(breakStatement.getLabel().getSimpleName())) {
+                    public J preVisit(J tree, AtomicBoolean found) {
+                        // A break or continue in these cannot target the label, which may reuse its name
+                        if (found.get() || tree instanceof J.Lambda || tree instanceof J.ClassDeclaration || tree instanceof J.NewClass) {
+                            stopAfterPreVisit();
+                        }
+                        J.Identifier target = tree instanceof J.Break ? ((J.Break) tree).getLabel() :
+                                tree instanceof J.Continue ? ((J.Continue) tree).getLabel() : null;
+                        if (target != null && name.equals(target.getSimpleName())) {
                             found.set(true);
                         }
-                        return breakStatement;
-                    }
-
-                    @Override
-                    public J.Continue visitContinue(J.Continue continueStatement, AtomicBoolean found) {
-                        if (continueStatement.getLabel() != null && name.equals(continueStatement.getLabel().getSimpleName())) {
-                            found.set(true);
-                        }
-                        return continueStatement;
-                    }
-
-                    // A break or continue in these cannot target the label, which may reuse its name
-                    @Override
-                    public J.Lambda visitLambda(J.Lambda lambda, AtomicBoolean found) {
-                        return lambda;
-                    }
-
-                    @Override
-                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, AtomicBoolean found) {
-                        return classDecl;
-                    }
-
-                    @Override
-                    public J.NewClass visitNewClass(J.NewClass newClass, AtomicBoolean found) {
-                        return newClass;
+                        return tree;
                     }
                 }.reduce(labeled, new AtomicBoolean()).get();
             }
