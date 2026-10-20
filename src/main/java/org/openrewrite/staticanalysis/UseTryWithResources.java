@@ -26,18 +26,19 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.marker.JavaVersion;
-import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesJavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.*;
+import static java.util.Objects.requireNonNull;
 
 public class UseTryWithResources extends Recipe {
 
@@ -73,117 +74,66 @@ public class UseTryWithResources extends Recipe {
                                 .getMarkers().findFirst(JavaVersion.class)
                                 .filter(v -> v.getMajorVersion() >= 22)
                                 .isPresent();
-                        return b.withStatements(ListUtils.map(stmts, (i, stmt) -> {
-                            if (stmt instanceof J.Try) {
-                                J.Try tryStmt = (J.Try) stmt;
-
-                                // Case 1: Consecutive — varDecl immediately before try
-                                if (i > 0 && stmts.get(i - 1) instanceof J.VariableDeclarations) {
-                                    J.VariableDeclarations prevDecl = (J.VariableDeclarations) stmts.get(i - 1);
-                                    if (canTransform(prevDecl, tryStmt)) {
-                                        boolean usedAfter = isUsedAfter(prevDecl.getVariables().get(0).getSimpleName(), stmts, i);
-                                        tryStmt = usedAfter ?
-                                                transformJava9(prevDecl, tryStmt) :
-                                                transform(prevDecl, tryStmt, unnamedAvailable);
-                                    }
+                        List<@Nullable Statement> result = new ArrayList<>(stmts);
+                        for (int i = 0; i < stmts.size(); i++) {
+                            if (!(stmts.get(i) instanceof J.Try)) {
+                                continue;
+                            }
+                            J.Try tryStmt = (J.Try) stmts.get(i);
+                            // Try-with-resources closes its resources in reverse order before the finally runs,
+                            // so each leading close of the finally becomes the new first resource. The merge stops
+                            // at the first close it can't merge, as a later close moved into the header would run before it.
+                            while (tryStmt.getFinally() != null && !tryStmt.getFinally().getStatements().isEmpty()) {
+                                List<Statement> finallyStmts = tryStmt.getFinally().getStatements();
+                                String closedVar = extractVarNameFromCloseStatement(finallyStmts.get(0));
+                                if (closedVar == null || !isCloseStatement(finallyStmts.get(0), closedVar)) {
+                                    break;
                                 }
-
-                                // Case 2: Non-consecutive — varDecl separated by intervening statements.
-                                // Each merge strips a close from the finally, so the loop ends.
-                                while (tryStmt.getFinally() != null) {
-                                    String closedVar = extractClosedVarName(tryStmt.getFinally());
-                                    if (closedVar == null) {
-                                        break;
-                                    }
-                                    int declIdx = findMatchingVarDecl(stmts, i, closedVar);
-                                    if (declIdx < 0 || declIdx >= i - 1) {
-                                        break;
-                                    }
-                                    J.VariableDeclarations varDecl = (J.VariableDeclarations) stmts.get(declIdx);
-                                    if (!canTransform(varDecl, tryStmt) || isReassignedBetween(closedVar, stmts, declIdx, i)) {
-                                        break;
-                                    }
+                                int declIdx = findMatchingVarDecl(stmts, i, closedVar);
+                                if (declIdx < 0 || isResource(closedVar, tryStmt) || isReassignedAfter(closedVar, stmts, declIdx) ||
+                                        // Catches run after the resources close
+                                        tryStmt.getCatches().stream().anyMatch(c -> isReferenced(closedVar, c.getBody()))) {
+                                    break;
+                                }
+                                J.VariableDeclarations varDecl = (J.VariableDeclarations) stmts.get(declIdx);
+                                // A declaration moved into the header is out of scope in the finally and after the try
+                                boolean declarationForm = declIdx == i - 1 && !isUsedAfter(closedVar, stmts, i) &&
+                                        finallyStmts.stream().skip(1).noneMatch(s -> isReferenced(closedVar, s));
+                                if (declarationForm) {
+                                    tryStmt = transform(varDecl, tryStmt, unnamedAvailable);
+                                    result.set(declIdx, null);
+                                } else {
                                     tryStmt = transformJava9(varDecl, tryStmt);
                                 }
-                                return tryStmt;
                             }
-                            // Remove varDecl that was merged into the following try-with-resources
-                            if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size() &&
-                                    stmts.get(i + 1) instanceof J.Try &&
-                                    canTransform((J.VariableDeclarations) stmt, (J.Try) stmts.get(i + 1)) &&
-                                    !isUsedAfter(((J.VariableDeclarations) stmt).getVariables().get(0).getSimpleName(), stmts, i + 1)) {
-                                return null;
-                            }
-                            return stmt;
-                        }));
+                            result.set(i, tryStmt);
+                        }
+                        return b.withStatements(ListUtils.map(stmts, (i, stmt) -> result.get(i)));
                     }
                 });
     }
 
-    private static boolean canTransform(J.VariableDeclarations varDecl, J.Try tryStmt) {
-        // Single variable only
-        if (varDecl.getVariables().size() != 1) {
-            return false;
-        }
-        J.VariableDeclarations.NamedVariable namedVar = varDecl.getVariables().get(0);
-        String varName = namedVar.getSimpleName();
-
-        // Must have a non-null initializer
-        Expression init = namedVar.getInitializer();
-        if (init == null || J.Literal.isLiteralValue(init, null)) {
-            return false;
-        }
-
-        // Must implement AutoCloseable
-        JavaType.FullyQualified type = TypeUtils.asFullyQualified(varDecl.getType());
-        if (type == null || !TypeUtils.isAssignableTo(AUTO_CLOSEABLE, type)) {
-            return false;
-        }
-
-        // Must have a finally block
-        if (tryStmt.getFinally() == null) {
-            return false;
-        }
-
-        // Must not already be a resource in the try
+    private static boolean isResource(String varName, J.Try tryStmt) {
         if (tryStmt.getResources() != null) {
-            J.VariableDeclarations normalized = varDecl.withPrefix(Space.EMPTY);
             for (J.Try.Resource res : tryStmt.getResources()) {
-                if (SemanticallyEqual.areEqual(res.getVariableDeclarations(), normalized)) {
-                    return false;
+                TypedTree resource = res.getVariableDeclarations();
+                if (resource instanceof J.Identifier && ((J.Identifier) resource).getSimpleName().equals(varName) ||
+                        resource instanceof J.VariableDeclarations &&
+                        ((J.VariableDeclarations) resource).getVariables().get(0).getSimpleName().equals(varName)) {
+                    return true;
                 }
             }
         }
-
-        // Finally block must contain a close for this variable
-        if (!finallyContainsClose(tryStmt.getFinally(), varName)) {
-            return false;
-        }
-
-        // Variable must not be reassigned in try body
-        if (isReassigned(varName, tryStmt.getBody())) {
-            return false;
-        }
-
-        // Variable must not be referenced in catch blocks. The scope of a resource declared in
-        // the resource specification is the try block only (JLS 14.20.3), so any reference from a
-        // catch clause would become out of scope once the declaration moves into the header.
-        for (J.Try.Catch aCatch : tryStmt.getCatches()) {
-            if (isReferenced(varName, aCatch.getBody())) {
-                return false;
-            }
-        }
-
-        return true;
+        return false;
     }
 
     private static J.Try transform(J.VariableDeclarations varDecl, J.Try tryStmt, boolean unnamedAvailable) {
         String varName = varDecl.getVariables().get(0).getSimpleName();
         J.VariableDeclarations resourceDecl = varDecl.withPrefix(Space.EMPTY);
-        // When the resource is never read inside the try body, name it with the unnamed variable `_`
+        // When only the close in the finally reads the resource, name it with the unnamed variable `_`
         // (JEP 456 in Java 22, a preview in Java 21 that needs --enable-preview) so the rewritten code does
         // not emit an unused-variable warning that would fail `-Werror` builds.
-        if (unnamedAvailable && !isReferenced(varName, tryStmt.getBody())) {
+        if (unnamedAvailable && !isReferenced(varName, tryStmt.withFinally(null))) {
             J.VariableDeclarations.NamedVariable namedVar = resourceDecl.getVariables().get(0);
             JavaType.Variable renamedType = namedVar.getVariableType() != null ?
                     namedVar.getVariableType().withName("_") : null;
@@ -192,7 +142,7 @@ public class UseTryWithResources extends Recipe {
             resourceDecl = resourceDecl.withVariables(singletonList(
                     namedVar.withName(renamedName).withVariableType(renamedType)));
         }
-        return addResource(resourceDecl, varName, tryStmt.withPrefix(varDecl.getPrefix()));
+        return addResource(resourceDecl, tryStmt.withPrefix(varDecl.getPrefix()));
     }
 
     private static J.Try transformJava9(J.VariableDeclarations varDecl, J.Try tryStmt) {
@@ -206,10 +156,14 @@ public class UseTryWithResources extends Recipe {
                 namedVar.getType(),
                 null
         );
-        return addResource(resourceRef, namedVar.getSimpleName(), tryStmt);
+        return addResource(resourceRef, tryStmt);
     }
 
-    private static J.Try addResource(TypedTree resourceExpr, String varName, J.Try tryStmt) {
+    /**
+     * Prepend the resource to the try's resources and remove the first statement of the finally,
+     * which is the resource's close. The finally is removed when that leaves it empty.
+     */
+    private static J.Try addResource(TypedTree resourceExpr, J.Try tryStmt) {
         J.Try.Resource resource = new J.Try.Resource(
                 Tree.randomId(),
                 Space.EMPTY,
@@ -224,8 +178,10 @@ public class UseTryWithResources extends Recipe {
             newResources = singletonList(JRightPadded.build(resource));
         } else {
             newResources = ListUtils.concat(
-                    ListUtils.mapLast(existingResources, prev -> prev.withElement(prev.getElement().withTerminatedWithSemicolon(true))),
-                    JRightPadded.build(resource.withPrefix(Space.SINGLE_SPACE)));
+                    JRightPadded.build(resource.withPrefix(existingResources.get(0).getElement().getPrefix())
+                            .withTerminatedWithSemicolon(true)),
+                    ListUtils.mapFirst(existingResources, first -> first.withElement(first.getElement().withPrefix(
+                            existingResources.size() > 1 ? existingResources.get(1).getElement().getPrefix() : Space.SINGLE_SPACE))));
         }
         J.Try result = tryStmt.getPadding()
                 .withResources(JContainer.build(
@@ -234,18 +190,10 @@ public class UseTryWithResources extends Recipe {
                         newResources,
                         Markers.EMPTY
                 ));
+        JLeftPadded<J.Block> finallyPadded = requireNonNull(result.getPadding().getFinally());
+        List<Statement> remaining = ListUtils.map(finallyPadded.getElement().getStatements(), (j, stmt) -> j == 0 ? null : stmt);
         return result.getPadding()
-                .withFinally(stripCloseFromFinally(result.getPadding().getFinally(), varName));
-    }
-
-    private static @Nullable String extractClosedVarName(J.Block finallyBlock) {
-        for (Statement stmt : finallyBlock.getStatements()) {
-            String name = extractVarNameFromCloseStatement(stmt);
-            if (name != null) {
-                return name;
-            }
-        }
-        return null;
+                .withFinally(remaining.isEmpty() ? null : finallyPadded.withElement(finallyPadded.getElement().withStatements(remaining)));
     }
 
     private static @Nullable String extractVarNameFromCloseStatement(Statement stmt) {
@@ -315,48 +263,14 @@ public class UseTryWithResources extends Recipe {
         return -1;
     }
 
-    private static boolean isReassignedBetween(String varName, List<Statement> stmts, int fromIndex, int toIndex) {
-        for (int i = fromIndex + 1; i < toIndex; i++) {
+    /** A resource must be final or effectively final (JLS 14.20.3). */
+    private static boolean isReassignedAfter(String varName, List<Statement> stmts, int declIndex) {
+        for (int i = declIndex + 1; i < stmts.size(); i++) {
             if (isReassigned(varName, stmts.get(i))) {
                 return true;
             }
         }
         return false;
-    }
-
-    private static boolean finallyContainsClose(J.Block finallyBlock, String varName) {
-        // The target close must be reachable without any non-close statements before it.
-        // Try-with-resources closes the resource before the finally block runs, so any
-        // statement that originally ran before the close in the finally would otherwise
-        // run after it. Other close statements (for variables that will also be merged
-        // into the try-with-resources) are tolerated.
-        for (Statement stmt : finallyBlock.getStatements()) {
-            if (isCloseStatement(stmt, varName)) {
-                return true;
-            }
-            if (extractVarNameFromCloseStatement(stmt) == null) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Remove the close statement from the finally block. Returns null if the finally block
-     * becomes empty (so it can be removed entirely), otherwise returns the pruned finally block.
-     */
-    @SuppressWarnings("DataFlowIssue")
-    private static JLeftPadded<J.Block> stripCloseFromFinally(@Nullable JLeftPadded<J.Block> finallyPadded, String varName) {
-        if (finallyPadded == null) {
-            return null;
-        }
-        J.Block finallyBlock = finallyPadded.getElement();
-        List<Statement> remaining = ListUtils.map(finallyBlock.getStatements(),
-                stmt -> isCloseStatement(stmt, varName) ? null : stmt);
-        if (remaining.isEmpty()) {
-            return null;
-        }
-        return finallyPadded.withElement(finallyBlock.withStatements(remaining));
     }
 
     private static boolean isCloseStatement(Statement stmt, String varName) {
