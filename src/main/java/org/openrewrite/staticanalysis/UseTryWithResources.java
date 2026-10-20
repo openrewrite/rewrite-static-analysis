@@ -82,26 +82,30 @@ public class UseTryWithResources extends Recipe {
                                     J.VariableDeclarations prevDecl = (J.VariableDeclarations) stmts.get(i - 1);
                                     if (canTransform(prevDecl, tryStmt)) {
                                         boolean usedAfter = isUsedAfter(prevDecl.getVariables().get(0).getSimpleName(), stmts, i);
-                                        if (usedAfter) {
-                                            return transformJava9(prevDecl, tryStmt);
-                                        }
-                                        return transform(prevDecl, tryStmt, unnamedAvailable);
+                                        tryStmt = usedAfter ?
+                                                transformJava9(prevDecl, tryStmt) :
+                                                transform(prevDecl, tryStmt, unnamedAvailable);
                                     }
                                 }
 
-                                // Case 2: Non-consecutive — varDecl separated by intervening statements
-                                if (tryStmt.getFinally() != null) {
+                                // Case 2: Non-consecutive — varDecl separated by intervening statements.
+                                // Each merge strips a close from the finally, so the loop ends.
+                                while (tryStmt.getFinally() != null) {
                                     String closedVar = extractClosedVarName(tryStmt.getFinally());
-                                    if (closedVar != null) {
-                                        int declIdx = findMatchingVarDecl(stmts, i, closedVar);
-                                        if (declIdx >= 0 && declIdx < i - 1) {
-                                            J.VariableDeclarations varDecl = (J.VariableDeclarations) stmts.get(declIdx);
-                                            if (canTransform(varDecl, tryStmt) && !isReassignedBetween(closedVar, stmts, declIdx, i)) {
-                                                return transformJava9(varDecl, tryStmt);
-                                            }
-                                        }
+                                    if (closedVar == null) {
+                                        break;
                                     }
+                                    int declIdx = findMatchingVarDecl(stmts, i, closedVar);
+                                    if (declIdx < 0 || declIdx >= i - 1) {
+                                        break;
+                                    }
+                                    J.VariableDeclarations varDecl = (J.VariableDeclarations) stmts.get(declIdx);
+                                    if (!canTransform(varDecl, tryStmt) || isReassignedBetween(closedVar, stmts, declIdx, i)) {
+                                        break;
+                                    }
+                                    tryStmt = transformJava9(varDecl, tryStmt);
                                 }
+                                return tryStmt;
                             }
                             // Remove varDecl that was merged into the following try-with-resources
                             if (stmt instanceof J.VariableDeclarations && i + 1 < stmts.size() &&
