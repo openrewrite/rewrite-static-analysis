@@ -209,8 +209,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
          * @return the names for the template to import
          */
         private static String[] typesNamedBy(J typeTree) {
-            Set<String> types = new LinkedHashSet<>();
-            new JavaIsoVisitor<Set<String>>() {
+            return new JavaIsoVisitor<Set<String>>() {
                 @Override
                 public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, Set<String> t) {
                     // a qualified name is found through its first part
@@ -227,8 +226,7 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
                     }
                     return identifier;
                 }
-            }.visit(typeTree, types);
-            return types.toArray(new String[0]);
+            }.reduce(typeTree, new LinkedHashSet<>()).toArray(new String[0]);
         }
 
         /**

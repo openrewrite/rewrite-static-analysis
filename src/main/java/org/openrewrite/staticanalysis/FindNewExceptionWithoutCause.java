@@ -208,8 +208,7 @@ public class FindNewExceptionWithoutCause extends Recipe {
     }
 
     private static boolean containsTainted(Expression value, Taint taint) {
-        AtomicBoolean found = new AtomicBoolean(false);
-        new JavaIsoVisitor<AtomicBoolean>() {
+        return new JavaIsoVisitor<AtomicBoolean>() {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean f) {
                 // An accessor named like a tainted local, `cfg.message()`, reads nothing from that local.
@@ -227,8 +226,7 @@ public class FindNewExceptionWithoutCause extends Recipe {
                 }
                 return identifier;
             }
-        }.visit(value, found);
-        return found.get();
+        }.reduce(value, new AtomicBoolean(false)).get();
     }
 
     /**

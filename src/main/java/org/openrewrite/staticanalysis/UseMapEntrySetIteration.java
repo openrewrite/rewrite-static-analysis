@@ -189,14 +189,13 @@ public class UseMapEntrySetIteration extends Recipe {
                      * declared or referenced inside the loop, which the enclosing scopes cannot see.
                      */
                     private String entryVariableName(J.ForEachLoop loop) {
-                        Set<String> namesInLoop = new HashSet<>();
-                        new JavaIsoVisitor<Set<String>>() {
+                        Set<String> namesInLoop = new JavaIsoVisitor<Set<String>>() {
                             @Override
                             public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> names) {
                                 names.add(identifier.getSimpleName());
                                 return identifier;
                             }
-                        }.visit(loop.getBody(), namesInLoop);
+                        }.reduce(loop.getBody(), new HashSet<>());
 
                         String name = VariableNameUtils.generateVariableName("entry", getCursor(), INCREMENT_NUMBER);
                         for (int i = 1; namesInLoop.contains(name); i++) {

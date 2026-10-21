@@ -94,8 +94,7 @@ public class MinimumSwitchCases extends Recipe {
                                     return super.visitSwitch(switch_, ctx);
                                 }
                             } else {
-                                List<Statement> breaks = new ArrayList<>();
-                                new BreakFinderVisitor().visit(aCase, breaks);
+                                List<Statement> breaks = new BreakFinderVisitor().reduce(aCase, new ArrayList<>());
                                 Statement lastStatement = aCase.getStatements().isEmpty() ? null : aCase.getStatements().get(aCase.getStatements().size() - 1);
                                 if (breaks.size() > 1) {
                                     return super.visitSwitch(switch_, ctx);

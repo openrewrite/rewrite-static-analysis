@@ -717,8 +717,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {
-        AtomicBoolean atomicBoolean = new AtomicBoolean();
-        new JavaVisitor<AtomicBoolean>() {
+        return new JavaVisitor<AtomicBoolean>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, AtomicBoolean atomicBoolean) {
                 if (method.getMethodType() != null &&
@@ -730,8 +729,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 return super.visitMethodInvocation(method, atomicBoolean);
             }
-        }.visit(lambda.getBody(), atomicBoolean);
-        return atomicBoolean.get();
+        }.reduce(lambda.getBody(), new AtomicBoolean()).get();
     }
 
     // TODO consider moving to TypeUtils

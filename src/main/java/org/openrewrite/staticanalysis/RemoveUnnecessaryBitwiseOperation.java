@@ -406,8 +406,7 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
     }
 
     private static Space comments(J tree) {
-        List<Space> spaces = new ArrayList<>();
-        new JavaVisitor<List<Space>>() {
+        List<Space> spaces = new JavaVisitor<List<Space>>() {
             @Override
             public Space visitSpace(@Nullable Space space, Space.Location loc, List<Space> s) {
                 if (space != null && !space.getComments().isEmpty()) {
@@ -415,7 +414,7 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
                 }
                 return super.visitSpace(space, loc, s);
             }
-        }.visit(tree, spaces);
+        }.reduce(tree, new ArrayList<>());
         return join(spaces);
     }
 }
