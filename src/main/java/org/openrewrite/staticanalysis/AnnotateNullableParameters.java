@@ -143,8 +143,8 @@ public class AnnotateNullableParameters extends Recipe {
                                     if (nullableAnnotation != null) {
                                         J.Annotation finalAnnotation = nullableAnnotation;
                                         J.ArrayType arrayType = (J.ArrayType) annotated.getTypeExpression();
-                                        annotated = annotated.withLeadingAnnotations(ListUtils.map(annotated.getLeadingAnnotations(),
-                                                a -> a == finalAnnotation ? null : a));
+                                        annotated = annotated.withLeadingAnnotations(ListUtils.filter(annotated.getLeadingAnnotations(),
+                                                a -> a != finalAnnotation));
                                         arrayType = arrayType.withAnnotations(singletonList(finalAnnotation.withPrefix(Space.SINGLE_SPACE)));
                                         if (annotated.getLeadingAnnotations().isEmpty()) {
                                             arrayType = arrayType.withPrefix(Space.EMPTY);

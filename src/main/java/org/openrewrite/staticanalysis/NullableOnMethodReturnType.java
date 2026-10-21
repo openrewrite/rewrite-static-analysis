@@ -59,8 +59,8 @@ public class NullableOnMethodReturnType extends Recipe {
                         .findFirst()
                         .map(nullable -> {
                             J.MethodDeclaration m2 = m;
-                            m2 = m2.withLeadingAnnotations(ListUtils.map(m2.getLeadingAnnotations(),
-                                    a -> a == nullable.getTree() ? null : a));
+                            m2 = m2.withLeadingAnnotations(ListUtils.filter(m2.getLeadingAnnotations(),
+                                    a -> a != nullable.getTree()));
                             if (m2 != m) {
                                 // For array types, annotate the array brackets, not the element type
                                 if (m2.getReturnTypeExpression() instanceof J.ArrayType) {

@@ -182,7 +182,7 @@ public class RemoveUnnecessaryBitwiseOperation extends Recipe {
             @Override
             public J visitForControl(J.ForLoop.Control control, ExecutionContext ctx) {
                 J.ForLoop.Control fc = (J.ForLoop.Control) super.visitForControl(control, ctx);
-                List<JRightPadded<Statement>> update = ListUtils.map(fc.getPadding().getUpdate(), s -> isRemovable(s, Space.EMPTY) ? null : s);
+                List<JRightPadded<Statement>> update = ListUtils.filter(fc.getPadding().getUpdate(), s -> !isRemovable(s, Space.EMPTY));
                 if (update == fc.getPadding().getUpdate()) {
                     return fc;
                 }

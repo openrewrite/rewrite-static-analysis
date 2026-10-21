@@ -70,7 +70,7 @@ public class UnnecessaryFinalInTryWithResources extends Recipe {
                 Space carried = accumulated;
 
                 J.VariableDeclarations updated = vd.withModifiers(
-                        ListUtils.map(vd.getModifiers(), m -> isBareFinal(m) ? null : m));
+                        ListUtils.filter(vd.getModifiers(), m -> !isBareFinal(m)));
 
                 // Hand the carried comments, and the gap `final` left behind, to the next token along.
                 if (updated.getTypeExpression() != null) {

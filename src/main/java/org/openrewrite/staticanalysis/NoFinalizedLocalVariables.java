@@ -83,8 +83,8 @@ public class NoFinalizedLocalVariables extends Recipe {
             }
 
             private J.VariableDeclarations removeFinal(J.VariableDeclarations mv) {
-                J.VariableDeclarations v = mv.withModifiers(ListUtils.map(mv.getModifiers(),
-                        m -> m.getType() == J.Modifier.Type.Final ? null : m));
+                J.VariableDeclarations v = mv.withModifiers(ListUtils.filter(mv.getModifiers(),
+                        m -> m.getType() != J.Modifier.Type.Final));
                 if (v.getModifiers().isEmpty() && v.getTypeExpression() != null) {
                     v = v.withTypeExpression(v.getTypeExpression().withPrefix(v.getTypeExpression().getPrefix()
                             .withWhitespace(v.getLeadingAnnotations().isEmpty() ? "" : " ")));
