@@ -1140,4 +1140,63 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
           )
         );
     }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1104")
+    @Test
+    void keepRawCastToBypassGenericInvarianceInMethodArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Reproducer {
+                  interface Container<T> {}
+                  static class SpecificContainer implements Container<String> {}
+                  static class Consumer {
+                      void accept(Container<Object> container) {}
+                  }
+
+                  void run(Consumer consumer, SpecificContainer specific) {
+                      consumer.accept((Container) specific);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1104")
+    @Test
+    void removeCastWhenParameterIsUnboundedWildcard() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Reproducer {
+                  interface Container<T> {}
+                  static class SpecificContainer implements Container<String> {}
+                  static class Consumer {
+                      void accept(Container<?> container) {}
+                  }
+
+                  void run(Consumer consumer, SpecificContainer specific) {
+                      consumer.accept((Container) specific);
+                  }
+              }
+              """,
+            """
+              class Reproducer {
+                  interface Container<T> {}
+                  static class SpecificContainer implements Container<String> {}
+                  static class Consumer {
+                      void accept(Container<?> container) {}
+                  }
+
+                  void run(Consumer consumer, SpecificContainer specific) {
+                      consumer.accept(specific);
+                  }
+              }
+              """
+          )
+        );
+    }
 }

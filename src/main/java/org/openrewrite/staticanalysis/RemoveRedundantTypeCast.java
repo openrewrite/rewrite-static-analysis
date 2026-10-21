@@ -144,6 +144,7 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
+                    boolean argFound = false;
                     if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
@@ -161,12 +162,19 @@ public class RemoveRedundantTypeCast extends Recipe {
                                     return visited;
                                 }
                                 targetType = getParameterType(methodType, i);
+                                argFound = true;
                                 break;
                             }
                         }
                     }
-                    if (TypeUtils.isAssignableTo(castType, expressionType)) {
+                    if (!argFound && TypeUtils.isAssignableTo(castType, expressionType)) {
+                        // typeCast is the receiver of this call (e.g. ((Bar) getChildBar()).getName()),
+                        // not an argument; use castType as the effective target.
                         targetType = castType;
+                    } else if (argFound && targetType != null && !TypeUtils.isAssignableTo(targetType, expressionType)) {
+                        // The expression type is not directly assignable to the declared parameter type.
+                        // The raw cast is load-bearing (bypasses generic invariance); keep it.
+                        return visited;
                     }
                 } else if (parentValue instanceof J.Return && expressionIsTypeCast((J.Return) parentValue, typeCast)) {
                     parent = parent.dropParentUntil(is -> is instanceof J.Lambda ||
