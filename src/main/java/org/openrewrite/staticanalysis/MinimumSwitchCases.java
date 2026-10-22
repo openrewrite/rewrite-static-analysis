@@ -30,9 +30,7 @@ import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
 import java.util.*;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 import static org.openrewrite.Tree.randomId;
 
 public class MinimumSwitchCases extends Recipe {

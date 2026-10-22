@@ -1471,6 +1471,41 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindNonCaseLabelsInSwitch
+examples:
+- description: '`FindNonCaseLabelsInSwitchTest#labelNamedLikeEnumConstantWithoutCase`'
+  sources:
+  - before: |
+      class Test {
+          enum Day { MONDAY, TUESDAY, WEDNESDAY }
+
+          void test(Day day) {
+              switch (day) {
+                  case MONDAY:
+                  case TUESDAY:
+                  WEDNESDAY:
+                      System.out.println(day);
+                      break;
+              }
+          }
+      }
+    after: |
+      class Test {
+          enum Day { MONDAY, TUESDAY, WEDNESDAY }
+
+          void test(Day day) {
+              switch (day) {
+                  case MONDAY:
+                  case TUESDAY:
+                  /*~~(`WEDNESDAY` is a statement label, not a `case`, so `WEDNESDAY` never matches. Add the missing `case` keyword.)~~>*/WEDNESDAY:
+                      System.out.println(day);
+                      break;
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FindSystemAndRuntimeExitCalls
 examples:
 - description: '`FindSystemAndRuntimeExitCallsTest#flagsSystemExit`'

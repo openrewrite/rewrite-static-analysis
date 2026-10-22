@@ -674,7 +674,7 @@ class MethodNameCasingTest implements RewriteTest {
         withOneChange.visitNonNull(file0, ctx);
 
         // then: the traversal cost does not grow with the number of collected changes
-        assertThat(changes).size().isGreaterThan(1);
+        assertThat(changes).hasSizeGreaterThan(1);
         assertThat(withAllChanges.declVisits).isEqualTo(withOneChange.declVisits);
         assertThat(withAllChanges.invVisits).isEqualTo(withOneChange.invVisits);
     }
