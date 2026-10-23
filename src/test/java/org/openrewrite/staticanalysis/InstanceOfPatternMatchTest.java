@@ -105,43 +105,10 @@ class InstanceOfPatternMatchTest implements RewriteTest {
               java(
                 """
                   class Test {
-                      public static void main(String[] args) {
-                          Object o = -3;
+                      Object abs(Object o) {
                           if (o instanceof Integer) {
                               o = Math.abs((int) o) * 10;
                               o = Math.max((int) o, 5);
-                          }
-                          System.out.println(o);
-                      }
-                  }
-                  """,
-                """
-                  class Test {
-                      public static void main(String[] args) {
-                          Object o = -3;
-                          if (o instanceof Integer integer) {
-                              o = Math.abs(integer) * 10;
-                              o = Math.max((int) o, 5);
-                          }
-                          System.out.println(o);
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/480")
-        @Test
-        void singleReassignment() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  class Test {
-                      Object trim(Object o) {
-                          if (o instanceof String) {
-                              o = ((String) o).trim();
                           }
                           return o;
                       }
@@ -149,9 +116,10 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                   """,
                 """
                   class Test {
-                      Object trim(Object o) {
-                          if (o instanceof String string) {
-                              o = string.trim();
+                      Object abs(Object o) {
+                          if (o instanceof Integer integer) {
+                              o = Math.abs(integer) * 10;
+                              o = Math.max((int) o, 5);
                           }
                           return o;
                       }
@@ -358,6 +326,77 @@ class InstanceOfPatternMatchTest implements RewriteTest {
                               if (!first) {
                                   String s = (String) o;
                                   System.out.println(s.length());
+                              }
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/480")
+        @Test
+        void doNotChangeAfterIndexReassignment() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      int length(Object[] array, int i) {
+                          if (array[i] instanceof String) {
+                              System.out.println(((String) array[i]).length());
+                              i++;
+                              return ((String) array[i]).length();
+                          }
+                          return 0;
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      int length(Object[] array, int i) {
+                          if (array[i] instanceof String string) {
+                              System.out.println(string.length());
+                              i++;
+                              return ((String) array[i]).length();
+                          }
+                          return 0;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/480")
+        @Test
+        void reassignmentInElseBranch() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void print(Object o) {
+                          if (o instanceof String) {
+                              String s = (String) o;
+                              System.out.println(s);
+                          } else {
+                              for (int i = 0; i < 2; i++) {
+                                  o = "default";
+                              }
+                          }
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      void print(Object o) {
+                          if (o instanceof String s) {
+                              System.out.println(s);
+                          } else {
+                              for (int i = 0; i < 2; i++) {
+                                  o = "default";
                               }
                           }
                       }

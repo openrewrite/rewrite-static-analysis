@@ -33,6 +33,8 @@ import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -80,6 +82,8 @@ public class InstanceOfPatternMatch extends Recipe {
                     variable = ((J.Assignment) tree).getVariable();
                 } else if (tree instanceof J.AssignmentOperation) {
                     variable = ((J.AssignmentOperation) tree).getVariable();
+                } else if (tree instanceof J.Unary && ((J.Unary) tree).getOperator().isModifying()) {
+                    variable = ((J.Unary) tree).getExpression();
                 }
                 if (variable != null) {
                     for (Iterator<Cursor> it = getCursor().getPathAsCursors(); it.hasNext(); ) {
@@ -206,51 +210,61 @@ public class InstanceOfPatternMatch extends Recipe {
         }
 
         public void registerAssignment(Expression variable, Cursor cursor) {
-            for (Iterator<Map.Entry<ExpressionAndType, J.InstanceOf>> it = instanceOfs.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<ExpressionAndType, J.InstanceOf> entry = it.next();
-                if (!SemanticallyEqual.areEqual(entry.getKey().getExpression(), variable)) {
+            for (Map.Entry<ExpressionAndType, J.InstanceOf> entry : new ArrayList<>(instanceOfs.entrySet())) {
+                J.InstanceOf instanceOf = entry.getValue();
+                if (!isBelowRoot(cursor, contexts.getOrDefault(instanceOf, emptySet())::contains) ||
+                    !dependsOn(entry.getKey().getExpression(), variable)) {
                     continue;
                 }
 
                 // The RHS is evaluated before the write, so earlier casts can still use the pattern variable.
-                // https://github.com/openrewrite/rewrite-static-analysis/issues/480
-                it.remove();
-                J.InstanceOf instanceOf = entry.getValue();
+                instanceOfs.remove(entry.getKey());
                 // Keeping later declarations can clash with the name of a previously registered alias.
-                boolean discardEarlierCasts = variablesToDelete.containsKey(instanceOf);
-                for (Iterator<?> path = cursor.getPath(); path.hasNext(); ) {
-                    Object next = path.next();
-                    if (next == root) {
-                        break;
-                    }
-                    if (next instanceof J.ForLoop || next instanceof J.ForEachLoop ||
-                        next instanceof J.WhileLoop || next instanceof J.DoWhileLoop ||
-                        next instanceof J.Lambda || next instanceof J.ClassDeclaration) {
-                        // A later iteration or invocation can reach earlier casts with a different value.
-                        discardEarlierCasts = true;
-                        break;
-                    }
-                }
-                for (Cursor scope : contextScopes.getOrDefault(instanceOf, emptySet())) {
-                    for (Iterator<?> path = scope.getPath(); path.hasNext(); ) {
-                        Object next = path.next();
-                        if (next == root) {
-                            break;
-                        }
-                        if (next instanceof J.Lambda || next instanceof J.ClassDeclaration) {
-                            // A previously visited lambda or local class may read the value after this write.
-                            discardEarlierCasts = true;
-                            break;
-                        }
-                    }
-                }
-                if (discardEarlierCasts) {
-                    replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
-                    variablesToDelete.remove(instanceOf);
-                    contextScopes.remove(instanceOf);
-                    contexts.remove(instanceOf);
+                // A later loop iteration, or a lambda or local class invoked after the write, can reach
+                // earlier casts with a different value.
+                if (variablesToDelete.containsKey(instanceOf) ||
+                    isBelowRoot(cursor, next -> next instanceof J.ForLoop || next instanceof J.ForEachLoop ||
+                                                next instanceof J.WhileLoop || next instanceof J.DoWhileLoop ||
+                                                next instanceof J.Lambda || next instanceof J.ClassDeclaration) ||
+                    contextScopes.getOrDefault(instanceOf, emptySet()).stream()
+                            .anyMatch(scope -> isBelowRoot(scope, next -> next instanceof J.Lambda || next instanceof J.ClassDeclaration))) {
+                    discard(instanceOf);
                 }
             }
+        }
+
+        private boolean isBelowRoot(Cursor cursor, Predicate<Object> predicate) {
+            for (Iterator<?> path = cursor.getPath(); path.hasNext(); ) {
+                Object next = path.next();
+                if (next == root) {
+                    return false;
+                }
+                if (predicate.test(next)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean dependsOn(Expression expression, Expression variable) {
+            return new JavaVisitor<AtomicBoolean>() {
+                @Override
+                public @Nullable J visit(@Nullable Tree tree, AtomicBoolean found) {
+                    if (found.get() || tree instanceof Expression && SemanticallyEqual.areEqual((J) tree, variable)) {
+                        found.set(true);
+                        return (J) tree;
+                    }
+                    return super.visit(tree, found);
+                }
+            }.reduce(expression, new AtomicBoolean()).get();
+        }
+
+        private void discard(J.InstanceOf instanceOf) {
+            replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
+            variablesToDelete.remove(instanceOf);
+            contextScopes.remove(instanceOf);
+            contexts.remove(instanceOf);
+            instanceOfs.entrySet().removeIf(e -> e.getValue() == instanceOf);
         }
 
         @SuppressWarnings("SuspiciousMethodCalls")
@@ -283,11 +297,7 @@ public class InstanceOfPatternMatch extends Recipe {
                             }
                             contextScopes.computeIfAbsent(instanceOf, k -> new HashSet<>()).add(cursor);
                         } else {
-                            replacements.entrySet().removeIf(e -> e.getValue() == instanceOf);
-                            variablesToDelete.remove(instanceOf);
-                            contextScopes.remove(instanceOf);
-                            contexts.remove(instanceOf);
-                            instanceOfs.entrySet().removeIf(e -> e.getValue() == instanceOf);
+                            discard(instanceOf);
                         }
                         break;
                     } else if (root == next) {
