@@ -161,7 +161,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
             """
               import java.util.ArrayDeque
               import java.util.Deque
-              import java.util.Stack
 
               fun isImperative(name: String?, stack: Deque<String> = ArrayDeque()): Boolean =
                   name == "Recipe" || (!stack.contains(name) && isImperative(name, stack.apply { push(name) }))
