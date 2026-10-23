@@ -144,12 +144,11 @@ public class RemoveRedundantTypeCast extends Recipe {
                 } else if (parentValue instanceof MethodCall) {
                     MethodCall methodCall = (MethodCall) parentValue;
                     JavaType.Method methodType = methodCall.getMethodType();
-                    boolean argFound = false;
                     if (!methodType.getParameterTypes().isEmpty()) {
                         List<Expression> arguments = methodCall.getArguments();
                         for (int i = 0; i < arguments.size(); i++) {
                             Expression arg = arguments.get(i);
-                            if (arg == typeCast) {
+                            if (arg.unwrap() == typeCast) {
                                 // Preserve a semantically significant cast at the varargs position: a `null`
                                 // literal (array vs. single null element) or an array cast to a non-array type
                                 // (e.g. `(Object)`, marking the array as a single element rather than spread).
@@ -161,20 +160,15 @@ public class RemoveRedundantTypeCast extends Recipe {
                                                         !(castType instanceof JavaType.Array))) {
                                     return visited;
                                 }
-                                targetType = getParameterType(methodType, i);
-                                argFound = true;
+                                targetType = getParameterType(methodType, i, castType);
                                 break;
                             }
                         }
                     }
-                    if (!argFound && TypeUtils.isAssignableTo(castType, expressionType)) {
-                        // typeCast is the receiver of this call (e.g. ((Bar) getChildBar()).getName()),
-                        // not an argument; use castType as the effective target.
+                    // Not an argument, so the cast selects the receiver type (e.g. `((Bar) getChildBar()).getName()`).
+                    // An argument keeps the declared parameter type, against which a raw cast can be load-bearing.
+                    if (targetType == null && TypeUtils.isAssignableTo(castType, expressionType)) {
                         targetType = castType;
-                    } else if (argFound && targetType != null && !TypeUtils.isAssignableTo(targetType, expressionType)) {
-                        // The expression type is not directly assignable to the declared parameter type.
-                        // The raw cast is load-bearing (bypasses generic invariance); keep it.
-                        return visited;
                     }
                 } else if (parentValue instanceof J.Return && expressionIsTypeCast((J.Return) parentValue, typeCast)) {
                     parent = parent.dropParentUntil(is -> is instanceof J.Lambda ||
@@ -341,14 +335,12 @@ public class RemoveRedundantTypeCast extends Recipe {
                 return false;
             }
 
-            private JavaType getParameterType(JavaType.Method method, int arg) {
+            private JavaType getParameterType(JavaType.Method method, int arg, JavaType argType) {
                 List<JavaType> parameterTypes = method.getParameterTypes();
-                if (parameterTypes.size() > arg) {
-                    return parameterTypes.get(arg);
-                }
-                // varargs?
-                JavaType type = parameterTypes.get(parameterTypes.size() - 1);
-                return type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
+                int last = parameterTypes.size() - 1;
+                JavaType type = parameterTypes.get(Math.min(arg, last));
+                boolean varargsElement = arg > last || arg == last && !(argType instanceof JavaType.Array);
+                return varargsElement && type instanceof JavaType.Array ? ((JavaType.Array) type).getElemType() : type;
             }
 
             private boolean expressionIsTypeCast(J.Return return_, J.TypeCast typeCast) {
