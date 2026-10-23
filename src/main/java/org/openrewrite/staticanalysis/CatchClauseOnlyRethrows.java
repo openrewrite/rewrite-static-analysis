@@ -75,6 +75,9 @@ public class CatchClauseOnlyRethrows extends Recipe {
                                 return aCatch;
                             }
                         }
+                        for (JavaType caught : getJavaTypes(aCatch)) {
+                            maybeRemoveImport(TypeUtils.asFullyQualified(caught));
+                        }
                         return null;
                     }
                     return aCatch;
