@@ -107,8 +107,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
             """
               import org.jspecify.annotations.NonNull;
 
-              import java.util.Objects;
-
               class Test {
                   public void process(@NonNull String value) {
                       System.out.println(value);
@@ -136,8 +134,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               """,
             """
               import org.jspecify.annotations.NonNull;
-
-              import java.util.Objects;
 
               class Test {
                   public void process(@NonNull String value) {
@@ -496,8 +492,6 @@ class AnnotateRequiredParametersTest implements RewriteTest {
               """,
             """
               import org.jspecify.annotations.NonNull;
-
-              import java.util.Objects;
 
               class Test {
                   private String field;

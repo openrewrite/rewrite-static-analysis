@@ -91,6 +91,7 @@ public class AnnotateRequiredParameters extends Recipe {
 
                 // Replace null checks on required parameters with false
                 md = md.withBody((J.Block) new ReplaceNullChecksWithFalse(analysis.requiredIdentifiers).visit(md.getBody(), ctx));
+                maybeRemoveImport("java.util.Objects");
 
                 // Simplify boolean expressions (e.g., "false || x" becomes "x")
                 doAfterVisit(new SimplifyBooleanExpression().getVisitor());
