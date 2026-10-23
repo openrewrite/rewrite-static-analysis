@@ -50,7 +50,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
             """
               import java.util.ArrayDeque;
               import java.util.Deque;
-              import java.util.Stack;
 
               class Test {
                   void test() {
@@ -193,7 +192,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
             """
               import java.util.ArrayDeque;
               import java.util.Deque;
-              import java.util.Stack;
 
               class Test {
                   void test(java.util.List<Test> result) {
@@ -235,7 +233,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
               import java.util.ArrayDeque;
               import java.util.Deque;
               import java.util.Optional;
-              import java.util.Stack;
 
               class Test {
                   String test(Optional<String> opt) {
