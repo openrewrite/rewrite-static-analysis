@@ -36,12 +36,14 @@ import java.util.Set;
 
 public class IsEmptyCallOnCollections extends Recipe {
     private static final MethodMatcher COLLECTION_SIZE = new MethodMatcher("java.util.Collection size()", true);
+    private static final MethodMatcher MAP_SIZE = new MethodMatcher("java.util.Map size()", true);
 
     @Getter
-    final String displayName = "Use `Collection#isEmpty()` instead of comparing `size()`";
+    final String displayName = "Use `Collection#isEmpty()` or `Map#isEmpty()` instead of comparing `size()`";
 
     @Getter
-    final String description = "Also check for _not_ `isEmpty()` when testing for not equal " +
+    final String description = "Replace collection and map size comparisons with `isEmpty()`. " +
+            "Also check for _not_ `isEmpty()` when testing for not equal " +
             "to zero size. Using `isEmpty()` communicates intent more clearly " +
             "than comparing `size()` to zero, and for some collection " +
             "implementations `isEmpty()` can be more efficient since `size()` " +
@@ -55,7 +57,7 @@ public class IsEmptyCallOnCollections extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(COLLECTION_SIZE), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(Preconditions.or(new UsesMethod<>(COLLECTION_SIZE), new UsesMethod<>(MAP_SIZE)), new JavaVisitor<ExecutionContext>() {
 
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
@@ -67,7 +69,8 @@ public class IsEmptyCallOnCollections extends Recipe {
                         J maybeSizeCall = zeroRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if ((COLLECTION_SIZE.matches(maybeSizeCallMethod) || MAP_SIZE.matches(maybeSizeCallMethod)) &&
+                                maybeSizeCallMethod.getMethodType() != null) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(), binary.getOperator() != J.Binary.Type.Equal)
                                         .withPrefix(binary.getPrefix());
                             }
@@ -82,7 +85,8 @@ public class IsEmptyCallOnCollections extends Recipe {
                         J maybeSizeCall = oneRight ? binary.getLeft() : binary.getRight();
                         if (maybeSizeCall instanceof J.MethodInvocation) {
                             J.MethodInvocation maybeSizeCallMethod = (J.MethodInvocation) maybeSizeCall;
-                            if (COLLECTION_SIZE.matches(maybeSizeCallMethod) && maybeSizeCallMethod.getMethodType() != null) {
+                            if ((COLLECTION_SIZE.matches(maybeSizeCallMethod) || MAP_SIZE.matches(maybeSizeCallMethod)) &&
+                                maybeSizeCallMethod.getMethodType() != null) {
                                 return newIsEmptyCall(maybeSizeCallMethod, binary.getCoordinates().replace(),
                                         binary.getOperator() == J.Binary.Type.GreaterThanOrEqual || binary.getOperator() == J.Binary.Type.LessThanOrEqual)
                                         .withPrefix(binary.getPrefix());
@@ -94,7 +98,8 @@ public class IsEmptyCallOnCollections extends Recipe {
             }
 
             private J newIsEmptyCall(J.MethodInvocation method, JavaCoordinates coordinates, boolean negate) {
-                JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(java.util.Collection)}.isEmpty()").build();
+                String receiverType = MAP_SIZE.matches(method) ? "java.util.Map" : "java.util.Collection";
+                JavaTemplate isEmpty = JavaTemplate.builder("#{}#{any(" + receiverType + ")}.isEmpty()").build();
                 if (method.getSelect() == null) {
                     assert method.getMethodType() != null;
                     J.Identifier this_ = JavaElementFactory.newThis(method.getMethodType().getDeclaringType());

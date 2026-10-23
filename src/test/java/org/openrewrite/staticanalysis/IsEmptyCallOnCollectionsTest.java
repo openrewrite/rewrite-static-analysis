@@ -16,6 +16,8 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
@@ -74,16 +76,15 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
         );
     }
 
-    @Test
-    void comparisonWithZero() {
+    @ParameterizedTest
+    @ValueSource(strings = {"java.util.List<String>", "java.util.Map<String, String>"})
+    void comparisonWithZero(String type) {
         rewriteRun(
           //language=java
           java(
             """
-              import java.util.List;
-
               class Test {
-                  static void method(List<String> l) {
+                  static void method(%s l) {
                       if (l.size() == 0 || 0 == l.size()) {
                           // empty body
                       } else if (l.size() != 0 || 0 != l.size()) {
@@ -95,12 +96,10 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
                       }
                   }
               }
-              """,
+              """.formatted(type),
             """
-              import java.util.List;
-
               class Test {
-                  static void method(List<String> l) {
+                  static void method(%s l) {
                       if (l.isEmpty() || l.isEmpty()) {
                           // empty body
                       } else if (!l.isEmpty() || !l.isEmpty()) {
@@ -112,21 +111,20 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
                       }
                   }
               }
-              """
+              """.formatted(type)
           )
         );
     }
 
-    @Test
-    void comparisonWithOne() {
+    @ParameterizedTest
+    @ValueSource(strings = {"java.util.List<String>", "java.util.Map<String, String>"})
+    void comparisonWithOne(String type) {
         rewriteRun(
           //language=java
           java(
             """
-              import java.util.List;
-
               class Test {
-                  static void method(List<String> l) {
+                  static void method(%s l) {
                       if (l.size() < 1 || 1 > l.size()) {
                           // empty body
                       } else if (l.size() > 1 || 1 < l.size()) {
@@ -138,12 +136,10 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
                       }
                   }
               }
-              """,
+              """.formatted(type),
             """
-              import java.util.List;
-
               class Test {
-                  static void method(List<String> l) {
+                  static void method(%s l) {
                       if (l.isEmpty() || l.isEmpty()) {
                           // empty body
                       } else if (l.size() > 1 || 1 < l.size()) {
@@ -155,7 +151,7 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
                       }
                   }
               }
-              """
+              """.formatted(type)
           )
         );
     }
@@ -232,6 +228,92 @@ class IsEmptyCallOnCollectionsTest implements RewriteTest {
                         lines.remove(0);
                     }
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mapWithNullGuard() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map == null || map.size() == 0;
+                  }
+              }
+              """,
+            """
+              import java.util.Map;
+
+              class Test {
+                  boolean empty(Map<String, String> map) {
+                      return map == null || map.isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void sizeOnMapImplementation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+
+              class Test extends HashMap<String, String> {
+                  boolean empty() {
+                      return size() == 0 && this.size() == 0;
+                  }
+
+                  boolean nonEmpty() {
+                      return size() != 0;
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+
+              class Test extends HashMap<String, String> {
+                  boolean empty() {
+                      return isEmpty() && this.isEmpty();
+                  }
+
+                  boolean nonEmpty() {
+                      return !isEmpty();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeUnrelatedSizeOrExactMapSize() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Map;
+
+              class Test {
+                  boolean test(Map<String, String> map, Other other) {
+                      return map.size() == 1 || map.size() == 2 || other.size() == 0;
+                  }
+              }
+
+              class Other {
+                  int size() {
+                      return 0;
+                  }
               }
               """
           )
