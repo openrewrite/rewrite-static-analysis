@@ -1157,6 +1157,7 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
 
                   void run(Consumer consumer, SpecificContainer specific) {
                       consumer.accept((Container) specific);
+                      consumer.accept(((Container) specific));
                   }
               }
               """
@@ -1193,29 +1194,6 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
 
                   void run(Consumer consumer, SpecificContainer specific) {
                       consumer.accept(specific);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1104")
-    @Test
-    void keepParenthesizedRawCastToBypassGenericInvarianceInMethodArgument() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              class Reproducer {
-                  interface Container<T> {}
-                  static class SpecificContainer implements Container<String> {}
-                  static class Consumer {
-                      void accept(Container<Object> container) {}
-                  }
-
-                  void run(Consumer consumer, SpecificContainer specific) {
-                      consumer.accept(((Container) specific));
                   }
               }
               """
