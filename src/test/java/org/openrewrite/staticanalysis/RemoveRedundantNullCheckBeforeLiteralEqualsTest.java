@@ -17,12 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
 
-@SuppressWarnings({"ConstantConditions", "ConditionCoveredByFurtherCondition"})
+@SuppressWarnings({"ConstantConditions", "ConditionCoveredByFurtherCondition", "NestedAssignment", "RedundantCast"})
 class RemoveRedundantNullCheckBeforeLiteralEqualsTest implements RewriteTest {
 
     @Override
@@ -86,33 +87,173 @@ class RemoveRedundantNullCheckBeforeLiteralEqualsTest implements RewriteTest {
     }
 
     @Test
-    void removeRedundantNullCheckWithMethodInvocation() {
+    void removeRedundantNullCheckWhenParenthesized() {
         rewriteRun(
           //language=java
           java(
             """
               class A {
-                  void foo() {
-                      if (getValue() != null && "expected".equals(getValue())) {
-                          System.out.println("Match");
+                  void foo(String s) {
+                      if ((s) != null && "test".equals(s)) {
+                          System.out.println("Parentheses around the null checked expression");
                       }
-                  }
-
-                  String getValue() {
-                      return "expected";
                   }
               }
               """,
             """
               class A {
+                  void foo(String s) {
+                      if ("test".equals(s)) {
+                          System.out.println("Parentheses around the null checked expression");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenNullCheckedExpressionIsMethodInvocation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String next() {
+                      return "";
+                  }
+
+                  boolean direct() {
+                      return next() != null && "ok".equals(next());
+                  }
+
+                  boolean chained(boolean enabled) {
+                      return enabled && next() != null && "ok".equals(next());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenNullCheckedFieldIsVolatile() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  volatile String value;
+                  static volatile String shared;
+
                   void foo() {
-                      if ("expected".equals(getValue())) {
-                          System.out.println("Match");
+                      if (value != null && "test".equals(value)) {
+                          System.out.println("Volatile read must not be elided");
                       }
                   }
 
-                  String getValue() {
-                      return "expected";
+                  void qualified() {
+                      if (A.shared != null && "test".equals(A.shared)) {
+                          System.out.println("Nor a qualified volatile read");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenNullCheckedExpressionIsAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void assignment(String s, String t) {
+                      if ((s = t) != null && "test".equals(s = t)) {
+                          System.out.println("Assignment");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/953")
+    @Test
+    void doNotChangeWhenArrayIndexHasSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String[] values = new String[2];
+                  int i;
+
+                  void foo() {
+                      if (values[i++] != null && "test".equals(values[i++])) {
+                          System.out.println("Array access with increment");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeRedundantNullCheckWithArrayAccess() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(String[] values) {
+                      if (values[0] != null && "test".equals(values[0])) {
+                          System.out.println("Array access");
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(String[] values) {
+                      if ("test".equals(values[0])) {
+                          System.out.println("Array access");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeRedundantNullCheckWithCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object o) {
+                      if ((String) o != null && "test".equals((String) o)) {
+                          System.out.println("Cast");
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Object o) {
+                      if ("test".equals((String) o)) {
+                          System.out.println("Cast");
+                      }
                   }
               }
               """
@@ -143,6 +284,69 @@ class RemoveRedundantNullCheckBeforeLiteralEqualsTest implements RewriteTest {
                   void foo() {
                       if ("constant".equals(this.field)) {
                           System.out.println("Field matches");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeRedundantNullCheckWithStaticFieldAccess() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  static String field;
+
+                  static class Inner {
+                      static String nested;
+                  }
+
+                  void foo() {
+                      if (A.field != null && "constant".equals(A.field)) {
+                          System.out.println("Static field matches");
+                      }
+                  }
+
+                  void nested() {
+                      if (A.Inner.nested != null && "constant".equals(A.Inner.nested)) {
+                          System.out.println("Nested class field matches");
+                      }
+                  }
+
+                  void fullyQualified() {
+                      if (java.io.File.separator != null && "/".equals(java.io.File.separator)) {
+                          System.out.println("Separator matches");
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  static String field;
+
+                  static class Inner {
+                      static String nested;
+                  }
+
+                  void foo() {
+                      if ("constant".equals(A.field)) {
+                          System.out.println("Static field matches");
+                      }
+                  }
+
+                  void nested() {
+                      if ("constant".equals(A.Inner.nested)) {
+                          System.out.println("Nested class field matches");
+                      }
+                  }
+
+                  void fullyQualified() {
+                      if ("/".equals(java.io.File.separator)) {
+                          System.out.println("Separator matches");
                       }
                   }
               }
