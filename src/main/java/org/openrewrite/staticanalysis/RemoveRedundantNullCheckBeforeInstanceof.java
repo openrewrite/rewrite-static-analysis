@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.staticanalysis.SideEffects.mayHaveSideEffects;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -90,15 +91,17 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
             }
 
             private boolean isRedundantNullCheck(J.Binary nullCheck, J.InstanceOf instanceOf) {
-                if (nullCheck.getOperator() == J.Binary.Type.NotEqual) {
-                    if (J.Literal.isLiteralValue(nullCheck.getLeft(), null)) {
-                        return SemanticallyEqual.areEqual(nullCheck.getRight(), instanceOf.getExpression());
-                    }
-                    if (J.Literal.isLiteralValue(nullCheck.getRight(), null)) {
-                        return SemanticallyEqual.areEqual(nullCheck.getLeft(), instanceOf.getExpression());
-                    }
+                if (nullCheck.getOperator() != J.Binary.Type.NotEqual) {
+                    return false;
                 }
-                return false;
+                Expression checked = J.Literal.isLiteralValue(nullCheck.getLeft(), null) ? nullCheck.getRight() :
+                        J.Literal.isLiteralValue(nullCheck.getRight(), null) ? nullCheck.getLeft() : null;
+                if (checked == null || !SemanticallyEqual.areEqual(checked, instanceOf.getExpression())) {
+                    return false;
+                }
+                // The rewrite evaluates once what was evaluated twice, so both occurrences must be side-effect
+                // free; they can differ, as `SemanticallyEqual` matches a static field access against its qualified form
+                return !mayHaveSideEffects(checked) && !mayHaveSideEffects(instanceOf.getExpression());
             }
         });
     }
