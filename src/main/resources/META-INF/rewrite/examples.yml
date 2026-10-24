@@ -1940,6 +1940,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.IsEmptyCallOnMaps
+examples:
+- description: '`IsEmptyCallOnMapsTest#mapWithNullGuard`'
+  sources:
+  - before: |
+      import java.util.Map;
+
+      class Test {
+          boolean empty(Map<String, String> map) {
+              return map == null || map.size() == 0;
+          }
+      }
+    after: |
+      import java.util.Map;
+
+      class Test {
+          boolean empty(Map<String, String> map) {
+              return map == null || map.isEmpty();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.LambdaBlockToExpression
 examples:
 - description: '`LambdaBlockToExpressionTest#simplifyLambdaBlockToExpression`'
