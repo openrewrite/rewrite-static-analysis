@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.javaVersion;
 import static org.openrewrite.java.Assertions.version;
 
 @SuppressWarnings({"RedundantCast", "DataFlowIssue", "ConstantValue", "ImplicitArrayToString", "PatternVariableCanBeUsed", "UnnecessaryLocalVariable", "SizeReplaceableByIsEmpty", "rawtypes", "ResultOfMethodCallIgnored", "ArraysAsListWithZeroOrOneArgument", "DuplicateCondition"})
@@ -31,7 +32,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new InstanceOfPatternMatch())
-          .allSources(sourceSpec -> version(sourceSpec, 17));
+          .allSources(s -> s.markers(javaVersion(17)));
     }
 
     @DocumentExample
