@@ -25,7 +25,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
-final class JavaElementFactory {
+public final class JavaElementFactory {
 
     static J.Binary newLogicalExpression(J.Binary.Type operator, Expression left, Expression right) {
         return new J.Binary(
@@ -45,7 +45,7 @@ final class JavaElementFactory {
         return newInstanceMethodReference(containing, method, type);
     }
 
-    static Expression className(JavaType type, boolean qualified) {
+    public static Expression className(JavaType type, boolean qualified) {
         Expression name = null;
         String qualifiedName;
         if (type instanceof JavaType.Parameterized) {
