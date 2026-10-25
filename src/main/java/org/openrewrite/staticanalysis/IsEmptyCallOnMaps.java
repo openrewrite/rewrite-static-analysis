@@ -38,9 +38,10 @@ public class IsEmptyCallOnMaps extends Recipe {
     final String displayName = "Use `Map#isEmpty()` instead of comparing `size()`";
 
     @Getter
-    final String description = "Replace map size comparisons with `isEmpty()` or `!isEmpty()`. " +
-            "Using `isEmpty()` communicates intent more clearly than comparing `size()` to zero, " +
-            "and for some map implementations it can be more efficient since `size()` may require traversal.";
+    final String description = "Replaces comparisons of `Map#size()` to zero with `isEmpty()`, or with `!isEmpty()` " +
+            "when testing for a non-zero size. Using `isEmpty()` communicates intent more clearly " +
+            "than comparing `size()` to zero, and for some map implementations `isEmpty()` " +
+            "can be more efficient since `size()` may require traversal.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
