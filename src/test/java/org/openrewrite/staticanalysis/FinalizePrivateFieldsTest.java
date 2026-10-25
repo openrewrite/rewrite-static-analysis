@@ -951,6 +951,101 @@ class FinalizePrivateFieldsTest implements RewriteTest {
     }
 
     @Test
+    void fieldReadByInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private int x;
+                  private int y = x + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """,
+            """
+              class A {
+                  private int x;
+                  private final int y = x + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void fieldReadByInitializerBlockBeforeAssignment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private int x;
+                  private int y;
+                  {
+                      System.out.println(this.x);
+                      y = 1;
+                  }
+                  private int z = y + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """,
+            """
+              class A {
+                  private int x;
+                  private final int y;
+                  {
+                      System.out.println(this.x);
+                      y = 1;
+                  }
+                  private final int z = y + 1;
+
+                  A() {
+                      x = 5;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticFieldReadByInstanceFieldInitializer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  private static int x;
+                  static {
+                      x = 5;
+                  }
+                  private int y = x + 1;
+              }
+              """,
+            """
+              class A {
+                  private static final int x;
+                  static {
+                      x = 5;
+                  }
+                  private final int y = x + 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void keepIndentation() {
         rewriteRun(
           //language=java

@@ -92,16 +92,17 @@ public class FinalizePrivateFields extends Recipe {
                         .map(Map.Entry::getKey)
                         .collect(toSet());
 
-                // Skip fields only assigned in the constructor body that are read inside a lambda or
-                // anonymous class in an instance initializer: finalizing them breaks javac's definite
-                // assignment analysis, since initializers run before the constructor body.
+                // Skip instance fields without an initializer that an instance initializer reads before
+                // assigning them, or reads inside a lambda or anonymous class: finalizing them breaks
+                // javac's definite assignment analysis, since initializers run before the constructor body.
                 Set<JavaType.Variable> uninitializedFinalizable = privateFields.stream()
-                        .filter(v -> v.getInitializer() == null && v.getVariableType() != null)
+                        .filter(v -> v.getInitializer() == null && v.getVariableType() != null &&
+                                !v.getVariableType().hasFlags(Flag.Static))
                         .map(J.VariableDeclarations.NamedVariable::getVariableType)
                         .filter(privateFieldsToBeFinalized::contains)
                         .collect(toSet());
                 if (!uninitializedFinalizable.isEmpty()) {
-                    privateFieldsToBeFinalized.removeAll(findFieldsReadInDeferredInitializer(classDecl, uninitializedFinalizable));
+                    privateFieldsToBeFinalized.removeAll(findFieldsReadBeforeAssignedInInitializer(classDecl, uninitializedFinalizable));
                 }
 
                 return super.visitClassDeclaration(classDecl, ctx);
@@ -171,9 +172,10 @@ public class FinalizePrivateFields extends Recipe {
         return classDecl.getType() != null && classDecl.getType().getOwningClass() != null;
     }
 
-    private static Set<JavaType.Variable> findFieldsReadInDeferredInitializer(J.ClassDeclaration classDecl, Set<JavaType.Variable> candidates) {
+    private static Set<JavaType.Variable> findFieldsReadBeforeAssignedInInitializer(J.ClassDeclaration classDecl, Set<JavaType.Variable> candidates) {
         Set<JavaType.Variable> found = new HashSet<>();
         JavaIsoVisitor<Set<JavaType.Variable>> reader = new JavaIsoVisitor<Set<JavaType.Variable>>() {
+            final Set<JavaType.Variable> assigned = new HashSet<>();
             int lambdaOrAnonDepth;
 
             @Override
@@ -198,9 +200,27 @@ public class FinalizePrivateFields extends Recipe {
             }
 
             @Override
+            public J.Assignment visitAssignment(J.Assignment assignment, Set<JavaType.Variable> set) {
+                Expression variable = assignment.getVariable();
+                if (variable instanceof J.FieldAccess) {
+                    visit(((J.FieldAccess) variable).getTarget(), set);
+                } else if (!(variable instanceof J.Identifier)) {
+                    visit(variable, set);
+                }
+                visit(assignment.getAssignment(), set);
+                J.Identifier name = variable instanceof J.FieldAccess ? ((J.FieldAccess) variable).getName() :
+                        variable instanceof J.Identifier ? (J.Identifier) variable : null;
+                if (lambdaOrAnonDepth == 0 && name != null && name.getFieldType() != null) {
+                    assigned.add(name.getFieldType());
+                }
+                return assignment;
+            }
+
+            @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, Set<JavaType.Variable> set) {
-                if (lambdaOrAnonDepth > 0 && candidates.contains(identifier.getFieldType())) {
-                    set.add(identifier.getFieldType());
+                JavaType.Variable fieldType = identifier.getFieldType();
+                if (candidates.contains(fieldType) && (lambdaOrAnonDepth > 0 || !assigned.contains(fieldType))) {
+                    set.add(fieldType);
                 }
                 return super.visitIdentifier(identifier, set);
             }
