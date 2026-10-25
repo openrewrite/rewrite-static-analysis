@@ -25,6 +25,7 @@ import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 
@@ -395,6 +396,67 @@ class ExplicitInitializationTest implements RewriteTest {
                     private isShuttingDown = false;
                     private count = 0;
                     private name = null;
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    @SuppressWarnings("GroovyUnusedAssignment")
+    class Groovy {
+        @Issue("https://github.com/openrewrite/rewrite/issues/1272")
+        @Test
+        void gTypes() {
+            rewriteRun(
+              groovy("int a = 0")
+            );
+        }
+
+        @Issue("https://github.com/openrewrite/rewrite/issues/1272")
+        @Test
+        void removeExplicitInitialization() {
+            rewriteRun(
+              groovy(
+                """
+                  class Test {
+                      private int a = 0
+                      private long b = 0L
+                      private short c = 0
+                      private int d = 1
+                      private long e = 2L
+                      private int f
+
+                      private boolean h = false
+                      private boolean i = true
+
+                      private Object j = new Object()
+                      private Object k = null
+
+                      int[] l = null
+
+                      private final Long n = null
+                  }
+                  """,
+                """
+                  class Test {
+                      private int a
+                      private long b
+                      private short c
+                      private int d = 1
+                      private long e = 2L
+                      private int f
+
+                      private boolean h
+                      private boolean i = true
+
+                      private Object j = new Object()
+                      private Object k
+
+                      int[] l
+
+                      private final Long n = null
                   }
                   """
               )

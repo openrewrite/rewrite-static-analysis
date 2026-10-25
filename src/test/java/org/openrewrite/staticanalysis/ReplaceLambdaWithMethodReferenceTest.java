@@ -15,7 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -26,7 +28,9 @@ import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"unchecked", "RedundantCast", "SimplifyStreamApiCallChains", "Convert2MethodRef", "CodeBlock2Expr", "RedundantOperationOnEmptyContainer", "ResultOfMethodCallIgnored", "rawtypes", "UnusedAssignment", "OptionalGetWithoutIsPresent"})
 class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
@@ -1989,5 +1993,92 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Kotlin {
+        @DocumentExample
+        @ExpectedToFail("The Kotlin visitor is an empty stub; see #1092")
+        @Test
+        void toQualifiedMethodReference() {
+            rewriteRun(
+              kotlin(
+                """
+                  interface Pet {
+                      fun move() {
+                      }
+                  }
+
+                  class Cat : Pet {
+                      override fun move() {
+                          println("Cat is moving")
+                      }
+                  }
+
+                  class Dog : Pet {
+                      override fun move() {
+                          println("Dog is moving")
+                      }
+                  }
+                  """
+              ),
+              kotlin(
+                """
+                  fun main() {
+                      val pets = listOf(Cat(), Dog())
+                      pets.forEach { it.move() }
+                  }
+                  """,
+                """
+                  fun main() {
+                      val pets = listOf(Cat(), Dog())
+                      pets.forEach ( Pet::move )
+                  }
+                  """
+              )
+            );
+        }
+
+        @ExpectedToFail("The Kotlin visitor is an empty stub; see #1092")
+        @Test
+        void toUnqualifiedMethodReference() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun isEven(number: Int): Boolean {
+                      return number % 2 == 0
+                  }
+                  """
+              ),
+              kotlin(
+                """
+                  val numbers = listOf(1, 2, 3, 4, 5)
+                  val evenNumbers = numbers.filter{isEven(it)}
+                  """
+                ,
+                """
+                  val numbers = listOf(1, 2, 3, 4, 5)
+                  val evenNumbers = numbers.filter(::isEven)
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class Groovy {
+        @Issue("https://github.com/openrewrite/rewrite/issues/2566")
+        @Test
+        void groovyLangClosure() {
+            rewriteRun(
+              groovy(
+                """
+                  repositories {
+                      mavenLocal()
+                  }
+                  """
+              )
+            );
+        }
     }
 }
