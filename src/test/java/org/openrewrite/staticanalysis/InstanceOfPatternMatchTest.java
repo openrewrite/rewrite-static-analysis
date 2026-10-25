@@ -2045,7 +2045,7 @@ class InstanceOfPatternMatchTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/customer-requests/issues/2202")
+    // A pattern variable from an if whose else returns stays in scope after the if, so the next one needs a distinct name
     @Test
     void flowScopedPatternVariableConflictWithElseReturn() {
         rewriteRun(

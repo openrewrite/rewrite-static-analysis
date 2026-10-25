@@ -406,7 +406,7 @@ class UseTryWithResourcesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/rewrite-java-application-server/issues/19")
+    // Try-with-resources would close the resource before the other statements in the finally block run
     @Test
     void doNotChangeWhenStatementsBeforeClose() {
         rewriteRun(
@@ -431,7 +431,7 @@ class UseTryWithResourcesTest implements RewriteTest {
         );
     }
 
-    @Issue("https://github.com/moderneinc/rewrite-java-application-server/issues/19")
+    // Try-with-resources would close the resource before the cleanup call in the finally block runs
     @Test
     void doNotChangeWhenCleanupBeforeClose() {
         rewriteRun(
