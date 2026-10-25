@@ -49,6 +49,7 @@ recipeList:
   - org.openrewrite.staticanalysis.IndexOfShouldNotCompareGreaterThanZero
   - org.openrewrite.staticanalysis.InlineVariable
   - org.openrewrite.staticanalysis.IsEmptyCallOnCollections
+  - org.openrewrite.staticanalysis.IsEmptyCallOnMaps
   - org.openrewrite.staticanalysis.LambdaBlockToExpression
 #  - org.openrewrite.staticanalysis.LowercasePackage # renames packages, which moves files and changes the public API
   - org.openrewrite.staticanalysis.MethodNameCasing
