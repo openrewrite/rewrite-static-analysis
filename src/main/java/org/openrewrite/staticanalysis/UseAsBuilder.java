@@ -198,6 +198,6 @@ public class UseAsBuilder extends Recipe {
             }
         };
 
-        return builderCreator == null ? v : Preconditions.check(new UsesMethod<>(builderCreator), v);
+        return Preconditions.check(new UsesMethod<>(builderCreator == null ? builderType + " *(..)" : builderCreator), v);
     }
 }

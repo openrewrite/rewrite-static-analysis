@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
@@ -65,7 +67,7 @@ public class UseStringReplace extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(REPLACE_ALL), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
@@ -119,6 +121,6 @@ public class UseStringReplace extends Recipe {
                         .replace("\\'", "'")
                         .replace("\\", "");
             }
-        };
+        });
     }
 }

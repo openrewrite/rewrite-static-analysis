@@ -25,6 +25,7 @@ import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
 
 import java.util.*;
@@ -335,20 +336,13 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             }
         });
 
-        return new TreeVisitor<Tree, ExecutionContext>() {
-            @Override
-            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
-                return sourceFile instanceof JavaSourceFile;
-            }
-
+        return Preconditions.check(new JavaFileChecker<>(), new TreeVisitor<Tree, ExecutionContext>() {
             @Override
             public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx) {
-                if (tree instanceof JavaSourceFile) {
-                    new ReportVisitor().visit(tree, ctx);
-                }
+                new ReportVisitor().visit(tree, ctx);
                 return convert.visit(tree, ctx);
             }
-        };
+        });
     }
 
     /**

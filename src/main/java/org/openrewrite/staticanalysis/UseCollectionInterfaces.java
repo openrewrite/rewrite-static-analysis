@@ -19,11 +19,11 @@ import lombok.Getter;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.groovy.tree.G;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 
 import java.time.Duration;
 import java.util.*;
@@ -92,13 +92,8 @@ public class UseCollectionInterfaces extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
-            @Override
-            public boolean isAcceptable(SourceFile sourceFile, ExecutionContext ctx) {
-                // TODO: proper Groovy support requires some extra work
-                return super.isAcceptable(sourceFile, ctx) && !(sourceFile instanceof G.CompilationUnit);
-            }
-
+        // TODO: proper Groovy support requires some extra work
+        return Preconditions.check(Preconditions.not(new GroovyFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J visit(@Nullable Tree tree, ExecutionContext ctx) {
                 if (tree instanceof JavaSourceFile) {
@@ -275,7 +270,7 @@ public class UseCollectionInterfaces extends Recipe {
                         .withType(javaType != null ? javaType.withType(newType) :
                                 new JavaType.Parameterized(null, newType, null));
             }
-        };
+        });
     }
 
     private static class InterfaceIncompatibleMethodDetector extends JavaIsoVisitor<AtomicBoolean> {

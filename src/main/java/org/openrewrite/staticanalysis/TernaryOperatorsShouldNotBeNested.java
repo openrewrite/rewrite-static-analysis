@@ -19,15 +19,16 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
 import java.util.function.Function;
@@ -56,22 +57,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new JavaFileChecker<>(), new TreeVisitor<Tree, ExecutionContext>() {
             @Override
-            public J.CompilationUnit visitCompilationUnit(
-                    final J.CompilationUnit cu,
-                    final ExecutionContext ctx
-            ) {
-                if (cu.getMarkers()
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx) {
+                Tree t = tree;
+                if (t != null && t.getMarkers()
                         .findFirst(JavaVersion.class)
                         .filter(javaVersion -> javaVersion.getMajorVersion() >= 14)
                         .isPresent()) {
-                    doAfterVisit(new UseSwitchExpressionVisitor());
+                    t = new UseSwitchExpressionVisitor().visit(t, ctx);
                 }
-                doAfterVisit(new UseIfVisitor());
-                return cu;
+                return new UseIfVisitor().visit(t, ctx);
             }
-        };
+        });
     }
 
     private static class UseIfVisitor extends JavaVisitor<ExecutionContext> {

@@ -22,7 +22,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
@@ -35,7 +35,7 @@ public class RedundantFileCreation extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.io.FileInputStream", true), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>("java.io.FileInputStream <constructor>(java.io.File)"), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                 J.NewClass n = super.visitNewClass(newClass, ctx);
