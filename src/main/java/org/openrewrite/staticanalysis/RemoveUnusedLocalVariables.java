@@ -193,11 +193,21 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
             @Override
             public Statement visitStatement(Statement statement, ExecutionContext ctx) {
-                List<Comment> comments = getCursor().pollNearestMessage("COMMENTS_KEY");
-                if (comments != null) {
-                    statement = statement.withComments(ListUtils.concatAll(statement.getComments(), comments));
+                Space removedPrefix = getCursor().pollNearestMessage("COMMENTS_KEY");
+                if (removedPrefix != null) {
+                    statement = statement.withPrefix(withCommentsOf(removedPrefix, statement.getPrefix()));
                 }
                 return super.visitStatement(statement, ctx);
+            }
+
+            @Override
+            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block b = super.visitBlock(block, ctx);
+                Space removedPrefix = getCursor().pollMessage("COMMENTS_KEY");
+                if (removedPrefix != null) {
+                    b = b.withEnd(withCommentsOf(removedPrefix, b.getEnd()));
+                }
+                return b;
             }
 
             @Override
@@ -209,11 +219,17 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 if (mv.getVariables().isEmpty()) {
                     if (!mv.getPrefix().getComments().isEmpty()) {
-                        getCursor().dropParentUntil(J.ClassDeclaration.class::isInstance).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
+                        getCursor().dropParentUntil(p -> p instanceof J.Block || p instanceof JavaSourceFile)
+                                .putMessage("COMMENTS_KEY", mv.getPrefix());
                     }
                     doAfterVisit(new DeleteStatement<>(mv));
                 }
                 return mv;
+            }
+
+            private Space withCommentsOf(Space removedPrefix, Space space) {
+                List<Comment> removedComments = ListUtils.mapLast(removedPrefix.getComments(), c -> c.withSuffix(space.getWhitespace()));
+                return Space.build(removedPrefix.getWhitespace(), ListUtils.concatAll(removedComments, space.getComments()));
             }
 
             private boolean mightSideEffect(Expression initializer) {
