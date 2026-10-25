@@ -119,10 +119,16 @@ public class FinalizePrivateFields extends Recipe {
                         .allMatch(privateFieldsToBeFinalized::contains);
 
                 if (canAllVariablesBeFinalized) {
-                    return mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
+                    mv = mv.withVariables(ListUtils.map(mv.getVariables(), v -> {
                         JavaType.Variable type = v.getVariableType();
                         return type != null ? v.withVariableType(type.withFlags(Flag.bitMapToFlags(type.getFlagsBitMap() | Flag.Final.getBitMask()))) : null;
-                    })).withModifiers(ListUtils.concat(mv.getModifiers(),
+                    }));
+                    if (mv.getModifiers().stream().anyMatch(FinalizePrivateFields::isKotlinVar)) {
+                        // Kotlin prints a `Final` modifier as `val`
+                        return mv.withModifiers(ListUtils.map(mv.getModifiers(), m -> isKotlinVar(m) ?
+                                m.withType(J.Modifier.Type.Final).withKeyword(null) : m));
+                    }
+                    return mv.withModifiers(ListUtils.concat(mv.getModifiers(),
                             new J.Modifier(Tree.randomId(), mv.getModifiers().isEmpty() ? Space.EMPTY : Space.SINGLE_SPACE, Markers.EMPTY, isInstanceOfCs(topLevel) ? "readonly" : "final",
                                     isInstanceOfCs(topLevel) ? J.Modifier.Type.LanguageExtension : J.Modifier.Type.Final, emptyList())));
                 }
@@ -149,7 +155,8 @@ public class FinalizePrivateFields extends Recipe {
                         .filter(mv -> mv.hasModifier(J.Modifier.Type.Private) &&
                                 !mv.hasModifier(J.Modifier.Type.Final) &&
                                 (!isInstanceOfCs(topLevel) || mv.getModifiers().stream().noneMatch(m -> "readonly".equals(m.getKeyword()) || "const".equals(m.getKeyword()))) &&
-                                !mv.hasModifier(J.Modifier.Type.Volatile))
+                                !mv.hasModifier(J.Modifier.Type.Volatile) &&
+                                mv.getModifiers().stream().noneMatch(m -> "lateinit".equals(m.getKeyword())))
                         .filter(mv -> !anyAnnotationApplied(new Cursor(bodyCursor, mv)))
                         .map(J.VariableDeclarations::getVariables)
                         .flatMap(Collection::stream)
@@ -170,6 +177,10 @@ public class FinalizePrivateFields extends Recipe {
 
     private static boolean isInnerClass(J.ClassDeclaration classDecl) {
         return classDecl.getType() != null && classDecl.getType().getOwningClass() != null;
+    }
+
+    private static boolean isKotlinVar(J.Modifier modifier) {
+        return modifier.getType() == J.Modifier.Type.LanguageExtension && "var".equals(modifier.getKeyword());
     }
 
     private static Set<JavaType.Variable> findFieldsReadBeforeAssignedInInitializer(J.ClassDeclaration classDecl, Set<JavaType.Variable> candidates) {

@@ -29,6 +29,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class FinalizePrivateFieldsTest implements RewriteTest {
     @Override
@@ -1039,6 +1040,61 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                       x = 5;
                   }
                   private final int y = x + 1;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinVarBecomesVal() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private var count = 0
+                  fun get() = count
+              }
+              """,
+            """
+              class A {
+                  private val count = 0
+                  fun get() = count
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinReassignedVarUnchanged() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private var count = 0
+                  fun inc() {
+                      count = count + 1
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinLateinitVarUnchanged() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  private lateinit var name: String
+                  init {
+                      name = "A"
+                  }
               }
               """
           )
