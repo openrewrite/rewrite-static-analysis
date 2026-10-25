@@ -356,6 +356,84 @@ class InlineVariableTest implements RewriteTest {
     }
 
     @Test
+    void removeOnlyTheDeclarationLeftUnusedByInlining() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int counter;
+
+                  void unrelated() {
+                      int unused = 42;
+                      int incremented = counter++;
+                  }
+
+                  int test(int a) {
+                      int r, other = 0;
+                      int kept = counter++;
+                      kept = 0;
+                      r = a * 2;
+                      return r;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int counter;
+
+                  void unrelated() {
+                      int unused = 42;
+                      int incremented = counter++;
+                  }
+
+                  int test(int a) {
+                      int other = 0;
+                      int kept = counter++;
+                      kept = 0;
+                      return a * 2;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepDeclarationStillReferencedAfterInlining() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String test(boolean condition) {
+                      String result;
+                      if (condition) {
+                          result = "a";
+                          System.out.println(result);
+                      }
+                      result = "b";
+                      return result;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String test(boolean condition) {
+                      String result;
+                      if (condition) {
+                          result = "a";
+                          System.out.println(result);
+                      }
+                      return "b";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotInlineFieldAssignment() {
         rewriteRun(
           //language=java
