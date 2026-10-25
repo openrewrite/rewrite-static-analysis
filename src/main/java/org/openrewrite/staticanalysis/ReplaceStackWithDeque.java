@@ -33,6 +33,7 @@ import org.openrewrite.java.tree.JavaSourceFile;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeTree;
 
+import java.time.Duration;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +54,9 @@ public class ReplaceStackWithDeque extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1149");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(20);
 
     /**
      * Source file cursor message mapping each variable redeclared as a {@code Deque} to its retyped form,

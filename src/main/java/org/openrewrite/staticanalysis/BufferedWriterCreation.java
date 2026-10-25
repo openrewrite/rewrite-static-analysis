@@ -27,13 +27,15 @@ import java.io.IOException;
         name = "Modernize `BufferedWriter` creation and prevent file descriptor leaks",
         description = "The code `new BufferedWriter(new FileWriter(f))` creates a `BufferedWriter` that does not close the underlying `FileWriter` when it is closed. " +
                       "This can lead to file descriptor leaks as per [CWE-755](https://cwe.mitre.org/data/definitions/755.html). " +
-                      "Use `Files.newBufferedWriter` to create a `BufferedWriter` that closes the underlying file descriptor when it is closed."
+                      "Use `Files.newBufferedWriter` to create a `BufferedWriter` that closes the underlying file descriptor when it is closed.",
+        tags = {"RSPEC-S1943"}
 )
 public class BufferedWriterCreation {
 
     @RecipeDescriptor(
             name = "Convert `new BufferedWriter(new FileWriter(File))` to `Files.newBufferedWriter(Path)`",
-            description = "Convert `new BufferedWriter(new FileWriter(f))` to `Files.newBufferedWriter(f.toPath())`."
+            description = "Convert `new BufferedWriter(new FileWriter(f))` to `Files.newBufferedWriter(f.toPath())`.",
+            tags = {"RSPEC-S1943"}
     )
     static class BufferedWriterFromNewFileWriterWithFileArgument {
         @BeforeTemplate
@@ -49,7 +51,8 @@ public class BufferedWriterCreation {
 
     @RecipeDescriptor(
             name = "Convert `new BufferedWriter(new FileWriter(String))` to `Files.newBufferedWriter(Path)`",
-            description = "Convert `new BufferedWriter(new FileWriter(s))` to `Files.newBufferedWriter(new java.io.File(s).toPath())`."
+            description = "Convert `new BufferedWriter(new FileWriter(s))` to `Files.newBufferedWriter(new java.io.File(s).toPath())`.",
+            tags = {"RSPEC-S1943"}
     )
     static class BufferedWriterFromNewFileWriterWithStringArgument {
         @BeforeTemplate
@@ -65,7 +68,8 @@ public class BufferedWriterCreation {
 
     @RecipeDescriptor(
             name = "Convert `new BufferedWriter(new FileWriter(File, boolean))` to `Files.newBufferedWriter(Path, StandardOpenOption)`",
-            description = "Convert `new BufferedWriter(new FileWriter(f, b))` to `Files.newBufferedWriter(f.toPath(), b ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)`."
+            description = "Convert `new BufferedWriter(new FileWriter(f, b))` to `Files.newBufferedWriter(f.toPath(), b ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)`.",
+            tags = {"RSPEC-S1943"}
     )
     static class BufferedWriterFromNewFileWriterWithFileAndBooleanArguments {
         @BeforeTemplate
@@ -82,7 +86,8 @@ public class BufferedWriterCreation {
 
     @RecipeDescriptor(
             name = "Convert `new BufferedWriter(new FileWriter(String, boolean))` to `Files.newBufferedWriter(Path, StandardOpenOption)`",
-            description = "Convert `new BufferedWriter(new FileWriter(s, b))` to `Files.newBufferedWriter(new java.io.File(s).toPath(), b ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)`."
+            description = "Convert `new BufferedWriter(new FileWriter(s, b))` to `Files.newBufferedWriter(new java.io.File(s).toPath(), b ? StandardOpenOption.APPEND : StandardOpenOption.CREATE)`.",
+            tags = {"RSPEC-S1943"}
     )
     static class BufferedWriterFromNewFileWriterWithStringAndBooleanArguments {
         @BeforeTemplate

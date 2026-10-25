@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -42,6 +43,9 @@ public class UnnecessaryReturnAsLastStatement extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3626");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

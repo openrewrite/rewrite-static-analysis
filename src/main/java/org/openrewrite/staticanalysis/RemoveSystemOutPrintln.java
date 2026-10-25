@@ -30,6 +30,7 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.emptyList;
@@ -50,6 +51,9 @@ public class RemoveSystemOutPrintln extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S106");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

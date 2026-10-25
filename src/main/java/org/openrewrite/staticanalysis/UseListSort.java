@@ -26,6 +26,10 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
+import java.util.Set;
+
+import static java.util.Collections.singleton;
+
 public class UseListSort extends Recipe {
 
     @Getter
@@ -33,6 +37,9 @@ public class UseListSort extends Recipe {
 
     @Getter
     final String description = "The `java.util.Collections#sort(..)` implementation defers to `java.util.List#sort(Comparator)`, so call `java.util.List#sort(Comparator)` directly for better readability.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S9412");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

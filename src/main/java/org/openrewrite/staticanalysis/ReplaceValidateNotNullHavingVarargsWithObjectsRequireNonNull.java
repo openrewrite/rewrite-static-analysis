@@ -38,7 +38,7 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
     private static final MethodMatcher VALIDATE_NOTNULL = new MethodMatcher("org.apache.commons.lang3.Validate notNull(Object, String, Object[])");
 
     @Getter
-    final String displayName = "Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
+    final String displayName = "Replace varargs `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
 
     @Getter
     final String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`, " +

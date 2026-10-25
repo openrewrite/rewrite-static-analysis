@@ -31,8 +31,8 @@ import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplemen
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -46,7 +46,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             "code duplication, and achieve better performance in some cases.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S1604");
+    final Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1604", "RSPEC-S9357"));
 
     transient AnonymousFunctionalInterfaceImplementations report = new AnonymousFunctionalInterfaceImplementations(this);
 
