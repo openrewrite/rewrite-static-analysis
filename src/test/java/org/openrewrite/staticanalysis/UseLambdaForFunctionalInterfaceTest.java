@@ -15,9 +15,9 @@
  */
 package org.openrewrite.staticanalysis;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -425,7 +425,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
         );
     }
 
-    @Disabled("The recipe currently avoids simplifying anonymous classes that use the this keyword.")
+    @ExpectedToFail("Any `this` blocks the conversion, even a qualified `Test.this` that means the same inside a lambda")
     @Test
     void useLambdaThenSimplifyFurther() {
         rewriteRun(

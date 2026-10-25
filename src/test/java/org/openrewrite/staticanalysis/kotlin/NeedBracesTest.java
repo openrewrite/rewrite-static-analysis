@@ -15,7 +15,6 @@
  */
 package org.openrewrite.staticanalysis.kotlin;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.staticanalysis.NeedBraces;
 import org.openrewrite.test.RecipeSpec;
@@ -30,7 +29,6 @@ class NeedBracesTest implements RewriteTest {
         spec.recipe(new NeedBraces());
     }
 
-    @Disabled("AutoFormat needs to be updated to support Kotlin")
     @Test
     void addBracesForIfBranch() {
         rewriteRun(
