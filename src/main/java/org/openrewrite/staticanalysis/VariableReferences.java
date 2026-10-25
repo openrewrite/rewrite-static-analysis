@@ -19,9 +19,9 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.ArrayList;
@@ -78,14 +78,6 @@ public class VariableReferences {
         return !(isIncrementKind(parent) && parent.getParentTreeCursor().getValue() instanceof J.Block);
     }
 
-    private static boolean isReference(J.Identifier identifier, J.Identifier target) {
-        return identifier.getSimpleName().equals(target.getSimpleName()) && isField(identifier) == isField(target);
-    }
-
-    private static boolean isField(J.Identifier identifier) {
-        return identifier.getFieldType() != null && identifier.getFieldType().getOwner() instanceof JavaType.FullyQualified;
-    }
-
     /**
      * An identifier is considered a right-hand side ("rhs") read operation if it is not used as the left operand
      * of an assignment, nor as the operand of a stand-alone increment.
@@ -98,7 +90,7 @@ public class VariableReferences {
         return new JavaIsoVisitor<List<J>>() {
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, List<J> ctx) {
-                if (isReference(identifier, target) && isRhsValue(getCursor())) {
+                if (SemanticallyEqual.areEqual(identifier, target) && isRhsValue(getCursor())) {
                     ctx.add(identifier);
                 }
                 return super.visitIdentifier(identifier, ctx);
@@ -115,7 +107,7 @@ public class VariableReferences {
         JavaIsoVisitor<List<Statement>> visitor = new JavaIsoVisitor<List<Statement>>() {
             @Override
             public J.Assignment visitAssignment(J.Assignment assignment, List<Statement> ctx) {
-                if (assignment.getVariable() instanceof J.Identifier && isReference((J.Identifier) assignment.getVariable(), target)) {
+                if (assignment.getVariable() instanceof J.Identifier && SemanticallyEqual.areEqual(assignment.getVariable(), target)) {
                     ctx.add(assignment);
                 }
                 return super.visitAssignment(assignment, ctx);
@@ -123,7 +115,7 @@ public class VariableReferences {
 
             @Override
             public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, List<Statement> ctx) {
-                if (assignOp.getVariable() instanceof J.Identifier && isReference((J.Identifier) assignOp.getVariable(), target)) {
+                if (assignOp.getVariable() instanceof J.Identifier && SemanticallyEqual.areEqual(assignOp.getVariable(), target)) {
                     ctx.add(assignOp);
                 }
                 return super.visitAssignmentOperation(assignOp, ctx);
@@ -131,7 +123,7 @@ public class VariableReferences {
 
             @Override
             public J.Unary visitUnary(J.Unary unary, List<Statement> ctx) {
-                if (unary.getOperator().isModifying() && unary.getExpression() instanceof J.Identifier && isReference((J.Identifier) unary.getExpression(), target)) {
+                if (unary.getOperator().isModifying() && unary.getExpression() instanceof J.Identifier && SemanticallyEqual.areEqual(unary.getExpression(), target)) {
                     ctx.add(unary);
                 }
                 return super.visitUnary(unary, ctx);
