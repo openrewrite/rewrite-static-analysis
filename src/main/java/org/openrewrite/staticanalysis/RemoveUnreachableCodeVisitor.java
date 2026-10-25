@@ -21,42 +21,30 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
-import java.util.Optional;
 
 class RemoveUnreachableCodeVisitor extends JavaIsoVisitor<ExecutionContext> {
 
-  @Override
-  public J.Block visitBlock(J.Block block, ExecutionContext executionContext) {
-    block = super.visitBlock(block, executionContext);
-
-    List<Statement> statements = block.getStatements();
-    Optional<Integer> maybeFirstJumpIndex = findFirstJump(statements);
-    if (!maybeFirstJumpIndex.isPresent()) {
-      return block;
-    }
-    int firstJumpIndex = maybeFirstJumpIndex.get();
-
-    if (firstJumpIndex == statements.size() - 1) {
-      // Jump is at the end of the block, so nothing to do
-      return block;
+    @Override
+    public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+        J.Block b = super.visitBlock(block, ctx);
+        List<Statement> statements = b.getStatements();
+        int firstJumpIndex = findFirstJump(statements);
+        if (firstJumpIndex == -1 || firstJumpIndex == statements.size() - 1) {
+            return b;
+        }
+        return b.withStatements(statements.subList(0, firstJumpIndex + 1));
     }
 
-    List<Statement> newStatements = statements.subList(0, firstJumpIndex + 1);
-    return block.withStatements(newStatements);
-  }
-
-  private Optional<Integer> findFirstJump(List<Statement> statements) {
-    for (int i = 0; i < statements.size(); i++) {
-      Statement statement = statements.get(i);
-      if (
-          statement instanceof J.Return ||
-          statement instanceof J.Throw ||
-          statement instanceof J.Break ||
-          statement instanceof J.Continue
-      ) {
-        return Optional.of(i);
-      }
+    private int findFirstJump(List<Statement> statements) {
+        for (int i = 0; i < statements.size(); i++) {
+            Statement statement = statements.get(i);
+            if (statement instanceof J.Return ||
+                statement instanceof J.Throw ||
+                statement instanceof J.Break ||
+                statement instanceof J.Continue) {
+                return i;
+            }
+        }
+        return -1;
     }
-    return Optional.empty();
-  }
 }
