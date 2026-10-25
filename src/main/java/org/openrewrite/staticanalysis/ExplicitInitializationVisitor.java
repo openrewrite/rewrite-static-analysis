@@ -93,7 +93,7 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
             } else if (primitive != null && !Boolean.TRUE.equals(style.getOnlyObjectReferences())) {
                 switch (primitive) {
                     case Boolean:
-                        if (literalInit.getValue() == Boolean.valueOf(false)) {
+                        if (J.Literal.isLiteralValue(literalInit, false)) {
                             v = v.withInitializer(null);
                         }
                         break;
