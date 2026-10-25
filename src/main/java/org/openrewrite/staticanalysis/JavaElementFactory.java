@@ -180,11 +180,11 @@ final class JavaElementFactory {
         return null;
     }
 
-    public static J.Identifier newThis(JavaType type) {
+    static J.Identifier newThis(JavaType type) {
         return new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "this", type, null);
     }
 
-    public static J.FieldAccess newQualifiedThis(JavaType.FullyQualified type) {
+    static J.FieldAccess newQualifiedThis(JavaType.FullyQualified type) {
         String className = type.getClassName();
         String simpleName = className.substring(className.lastIndexOf('.') + 1);
         return new J.FieldAccess(
