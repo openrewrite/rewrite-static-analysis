@@ -32,7 +32,7 @@ import static java.util.Collections.singleton;
 @Getter
 public class CollapsibleIfStatements extends Recipe {
 
-    final String displayName = "Mergeable \"if\" statements should be combined";
+    final String displayName = "Mergeable `if` statements should be combined";
 
     final String description = "When an `if` statement body contains only another `if` with no `else`, " +
             "the two conditions can be combined with `&&`. " +

@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 public class ReplaceCollectionToArrayArgWithEmptyArray extends Recipe {
 
     @Getter
-    final String displayName = "Use Empty Array for `Collection.toArray()`";
+    final String displayName = "Use empty array for `Collection.toArray()`";
 
     @Getter
     final String description = "Changes new array creation with `Collection#toArray(T[])` to use an empty array argument, which is better for performance.\n" +

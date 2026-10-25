@@ -28,10 +28,10 @@ import org.openrewrite.java.tree.TypeUtils;
 
 public class RedundantFileCreation extends Recipe {
     @Getter
-    final String displayName = "Redundant file creation";
+    final String displayName = "Redundant `File` creation";
 
     @Getter
-    final String description = "Remove unnecessary intermediate creations of files.";
+    final String description = "Removes the unnecessary intermediate `File` from `new FileInputStream(new File(name))`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

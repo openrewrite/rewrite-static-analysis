@@ -41,7 +41,8 @@ public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extend
     final String displayName = "Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
 
     @Getter
-    final String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`.";
+    final String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`, " +
+            "or with `Objects.requireNonNull(Object, Supplier<String>)` to format the message lazily when format arguments are passed.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

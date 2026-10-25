@@ -41,9 +41,9 @@ public class ReplaceStringBuilderWithString extends Recipe {
     final String displayName = "Replace `StringBuilder#append` with `String`";
 
     @Getter
-    final String description = "Replace `StringBuilder.append()` with String if you are only concatenating a small number of strings " +
+    final String description = "Replace `StringBuilder.append()` with `String` concatenation if you are only concatenating a small number of strings " +
             "and the code is simple and easy to read, as the compiler can optimize simple string concatenation " +
-            "expressions into a single String object, which can be more efficient than using StringBuilder.";
+            "expressions into a single `String` object, which can be more efficient than using `StringBuilder`.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

@@ -39,7 +39,7 @@ public class ExplicitInitialization extends Recipe {
     final String description = "Checks if any class or object member is explicitly initialized " +
             "to default for its type value:\n" +
             " - `null` for object references\n" +
-            " - zero for numeric types and `char`\n" +
+            " - zero for `int`, `long`, `short` and `char`\n" +
             " - and `false` for `boolean`\n" +
             "Removes explicit initializations where they aren't necessary. " +
             "Since the JVM already guarantees these defaults, restating them adds visual " +

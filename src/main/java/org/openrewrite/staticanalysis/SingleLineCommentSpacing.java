@@ -33,9 +33,9 @@ import static java.util.Collections.singleton;
 @Getter
 public class SingleLineCommentSpacing extends Recipe {
 
-    final String displayName = "Add space after // in single-line comments";
+    final String displayName = "Add space after `//` in single-line comments";
 
-    final String description = "Ensures there is exactly one space after // in single-line comments when missing.";
+    final String description = "Adds a space after `//` in single-line comments that do not start with one.";
 
     final Set<String> tags = singleton("formatting");
 

@@ -55,7 +55,7 @@ public class UseStringReplace extends Recipe {
 
     @Getter
     final String description = "When `String::replaceAll` is used, the first argument should be a real regular expression. " +
-            "If it’s not the case, `String::replace` does exactly the same thing as `String::replaceAll` without the performance drawback of the regex.";
+            "If that's not the case, `String::replace` does exactly the same thing as `String::replaceAll` without the performance drawback of the regex.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S5361");

@@ -24,7 +24,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 
 @RecipeDescriptor(
-        name = "Modernize `BufferedWriter` creation & prevent file descriptor leaks",
+        name = "Modernize `BufferedWriter` creation and prevent file descriptor leaks",
         description = "The code `new BufferedWriter(new FileWriter(f))` creates a `BufferedWriter` that does not close the underlying `FileWriter` when it is closed. " +
                       "This can lead to file descriptor leaks as per [CWE-755](https://cwe.mitre.org/data/definitions/755.html). " +
                       "Use `Files.newBufferedWriter` to create a `BufferedWriter` that closes the underlying file descriptor when it is closed."

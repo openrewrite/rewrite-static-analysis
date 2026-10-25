@@ -46,7 +46,7 @@ public class AtomicPrimitiveEqualsUsesGet extends Recipe {
     );
 
     @Getter
-    final String displayName = "Atomic Boolean, Integer, and Long equality checks compare their values";
+    final String displayName = "`AtomicBoolean`, `AtomicInteger`, and `AtomicLong` equality checks compare their values";
 
     @Getter
     final String description = "`AtomicBoolean#equals(Object)`, `AtomicInteger#equals(Object)` and " +

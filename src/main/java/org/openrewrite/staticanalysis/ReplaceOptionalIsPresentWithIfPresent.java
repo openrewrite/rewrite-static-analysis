@@ -40,7 +40,7 @@ public class ReplaceOptionalIsPresentWithIfPresent extends Recipe {
 
     String displayName = "Replace `Optional#isPresent()` with `Optional#ifPresent()`";
 
-    String description = "Replace `Optional#isPresent()` with `Optional#ifPresent()`. Please note that this recipe is only suitable for if-blocks that lack an Else-block and have a single condition applied.";
+    String description = "Replace `Optional#isPresent()` with `Optional#ifPresent()`. This recipe only applies to `if` statements without an `else` branch and with a single condition.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

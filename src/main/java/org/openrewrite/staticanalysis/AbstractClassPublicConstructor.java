@@ -34,7 +34,7 @@ public class AbstractClassPublicConstructor extends Recipe {
 
     @Getter
     final String description = "Constructors of `abstract` classes can only be called in constructors of their subclasses. " +
-            "Therefore the visibility of `public` constructors are reduced to `protected`. " +
+            "Therefore, the visibility of `public` constructors is reduced to `protected`. " +
             "Declaring them `public` is misleading since it implies they could be invoked directly, which is never possible.";
 
     @Getter

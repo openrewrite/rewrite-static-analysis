@@ -41,8 +41,8 @@ public class IsEmptyCallOnCollections extends Recipe {
     final String displayName = "Use `Collection#isEmpty()` instead of comparing `size()`";
 
     @Getter
-    final String description = "Also check for _not_ `isEmpty()` when testing for not equal " +
-            "to zero size. Using `isEmpty()` communicates intent more clearly " +
+    final String description = "Replaces comparisons of `size()` to zero with `isEmpty()`, or with `!isEmpty()` " +
+            "when testing for a non-zero size. Using `isEmpty()` communicates intent more clearly " +
             "than comparing `size()` to zero, and for some collection " +
             "implementations `isEmpty()` can be more efficient since `size()` " +
             "may require traversal.";

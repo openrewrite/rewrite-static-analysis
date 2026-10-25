@@ -37,7 +37,7 @@ public class NoRedundantJumpStatements extends Recipe {
     final String displayName = "Jump statements should not be redundant";
 
     @Getter
-    final String description = "Jump statements such as return and continue let you change the default flow of program execution, but jump statements that direct the control flow to the original direction are just a waste of keystrokes.";
+    final String description = "Jump statements such as `return` and `continue` let you change the default flow of program execution, but jump statements that direct the control flow to the original direction are just a waste of keystrokes.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3626");

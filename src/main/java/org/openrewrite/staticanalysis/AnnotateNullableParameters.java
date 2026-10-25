@@ -56,7 +56,7 @@ public class AnnotateNullableParameters extends Recipe {
     ));
 
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation to add. " +
+            description = "The fully qualified name of the `@Nullable` annotation to add. " +
                     "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
                     "Defaults to `org.jspecify.annotations.Nullable`.",
             example = "org.jspecify.annotations.Nullable",
@@ -68,7 +68,7 @@ public class AnnotateNullableParameters extends Recipe {
             displayName = "Additional null-checking methods",
             description = "A list of method patterns (in OpenRewrite MethodMatcher format) that should be considered as null-checking methods. " +
                     "These will be added to the built-in list of known null-checking methods. " +
-                    "Use `..` for any parameters, e.g., `com.mycompany.utils.StringUtil isEmpty(..)` or `com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)`",
+                    "Use `..` for any parameters, e.g., `com.mycompany.utils.StringUtil isEmpty(..)` or `com.mycompany.utils.CollectionUtil isNullOrEmpty(java.util.Collection)`.",
             example = "com.mycompany.utils.StringUtil isEmpty(..), com.mycompany.utils.CollectionUtil isNullOrEmpty(..)",
             required = false)
     @Nullable

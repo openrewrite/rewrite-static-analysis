@@ -39,7 +39,7 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
     private static final MethodMatcher METHOD_MATCHER = new MethodMatcher("java.lang.String#valueOf(..)", false);
 
     @Getter
-    final String displayName = "Replace String concatenation with `String.valueOf()`";
+    final String displayName = "Replace `String` concatenation with `String.valueOf()`";
 
     @Getter
     final String description = "Replace inefficient string concatenation patterns like `\"\" + ...` with " +

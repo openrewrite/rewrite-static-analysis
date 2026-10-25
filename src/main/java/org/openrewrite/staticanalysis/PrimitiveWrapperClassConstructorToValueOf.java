@@ -38,7 +38,7 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
     final String displayName = "Use primitive wrapper `valueOf` method";
 
     @Getter
-    final String description = "The constructor of all primitive types has been deprecated in favor of using the static " +
+    final String description = "The constructors of all primitive wrapper types have been deprecated in favor of using the static " +
             "factory method `valueOf` available for each of the primitive type wrappers. " +
             "Using `valueOf` enables object caching for frequently used values, reducing unnecessary heap allocations. " +
             "Note that this changes identity semantics: `valueOf` may return cached instances (such as `Boolean.TRUE` or " +

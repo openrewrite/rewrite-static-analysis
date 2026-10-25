@@ -46,7 +46,7 @@ public class ReplaceRedundantFormatWithPrintf extends Recipe {
 
 
     @Getter
-    final String displayName = "Replace redundant String format invocations that are wrapped with PrintStream operations";
+    final String displayName = "Replace redundant `String.format()` invocations that are wrapped with `PrintStream` operations";
 
     @Getter
     final String description = "Replaces `PrintStream.print(String.format(format, ...args))` with `PrintStream.printf(format, ...args)` (and for `println`, appends a newline to the format string).";
