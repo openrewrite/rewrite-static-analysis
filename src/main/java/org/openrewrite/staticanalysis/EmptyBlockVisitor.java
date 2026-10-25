@@ -17,14 +17,13 @@ package org.openrewrite.staticanalysis;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.SourceFile;
 import org.openrewrite.Tree;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.DeleteStatement;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.search.FindReferencedTypes;
 import org.openrewrite.java.style.Checkstyle;
@@ -38,17 +37,22 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.style.Style;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
 @NoArgsConstructor
 @AllArgsConstructor
 public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
+    private static final String REPLACEMENTS = EmptyBlockVisitor.class.getName() + ".REPLACEMENTS";
+
     private EmptyBlockStyle emptyBlockStyle;
 
     @Override
@@ -81,7 +85,22 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             return nestedBlock;
         });
 
-        return filtered.get() ? b.withStatements(statements) : b;
+        b = filtered.get() ? b.withStatements(statements) : b;
+
+        Map<UUID, List<? extends J>> replacements = getCursor().getMessage(REPLACEMENTS, emptyMap());
+        if (replacements.isEmpty()) {
+            return b;
+        }
+        return b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
+            List<? extends J> replacement = replacements.get(statement.getId());
+            if (replacement == null) {
+                return statement;
+            }
+            for (JavaType.FullyQualified referenced : FindReferencedTypes.find(statement)) {
+                maybeRemoveImport(referenced);
+            }
+            return ListUtils.mapFirst(replacement, first -> first.withPrefix(statement.getPrefix()));
+        }));
     }
 
     @Override
@@ -93,12 +112,12 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
             isEmptyResources(t.getResources())) {
             J.Block finallyBlock = t.getFinally();
             if (finallyBlock == null || finallyBlock.getStatements().isEmpty()) {
-                replaceStatement(tryable, emptyList());
-            } else if (finallyBlock.getStatements().stream()
-                    .anyMatch(s -> s instanceof J.VariableDeclarations || s instanceof J.ClassDeclaration)) {
-                replaceStatement(tryable, singletonList(finallyBlock));
+                replaceStatement(t, emptyList());
+            } else if (!finallyBlock.getEnd().getComments().isEmpty() ||
+                       finallyBlock.getStatements().stream().anyMatch(EmptyBlockVisitor::declaresNames)) {
+                replaceStatement(t, singletonList(finallyBlock));
             } else {
-                replaceStatement(tryable, finallyBlock.getStatements());
+                replaceStatement(t, ListUtils.map(finallyBlock.getStatements(), s -> ShiftFormat.indent(s, getCursor(), -1)));
             }
         } else if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralFinally()) && t.getFinally() != null &&
                    !t.getCatches().isEmpty() && isEmptyBlock(t.getFinally())) {
@@ -123,7 +142,7 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
         }
 
         if (i.getElsePart() == null) {
-            replaceWithSideEffects(i, i.getIfCondition().getTree());
+            replaceWithSideEffects(i, i.getIfCondition().getTree(), p);
             return i;
         }
 
@@ -195,27 +214,44 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     @Override
     public J.Switch visitSwitch(J.Switch switch_, P p) {
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralSwitch()) && isEmptyBlock(switch_.getCases())) {
-            replaceWithSideEffects(switch_, switch_.getSelector().getTree());
+            replaceWithSideEffects(switch_, switch_.getSelector().getTree(), p);
         }
 
         return super.visitSwitch(switch_, p);
     }
 
-    private void replaceWithSideEffects(Statement statement, Expression expression) {
+    private void replaceWithSideEffects(Statement statement, Expression expression, P p) {
         if (sideEffectsExtractable(expression)) {
-            replaceStatement(statement, expression.getSideEffects());
+            Cursor parent = getCursor().getParentTreeCursor();
+            replaceStatement(statement, ListUtils.map(expression.getSideEffects(), sideEffect -> autoFormat(sideEffect, p, parent)));
         }
     }
 
+    // Statements directly in a block are replaced by that block's visit, so the replacements
+    // already reflect what this visitor changed within them
     private void replaceStatement(Statement statement, List<? extends J> replacements) {
         if (replacements.isEmpty()) {
             doAfterVisit(new DeleteStatement<>(statement));
             return;
         }
-        J.Block enclosingBlock = getCursor().firstEnclosing(J.Block.class);
-        if (enclosingBlock != null) {
-            doAfterVisit(new ReplaceStatement<>(enclosingBlock, statement, new ArrayList<>(replacements)));
+        Cursor parent = getCursor().getParentTreeCursor();
+        if (parent.getValue() instanceof J.Block) {
+            parent.<Map<UUID, List<? extends J>>>computeMessageIfAbsent(REPLACEMENTS, k -> new HashMap<>())
+                    .put(statement.getId(), replacements);
         }
+    }
+
+    // Names declared by these statements, including pattern variables that flow scoping
+    // can introduce after an `if`, would clash with or shadow names in the enclosing block
+    private static boolean declaresNames(Statement statement) {
+        return statement instanceof J.VariableDeclarations || statement instanceof J.ClassDeclaration ||
+               new JavaIsoVisitor<AtomicBoolean>() {
+                   @Override
+                   public J.InstanceOf visitInstanceOf(J.InstanceOf instanceOf, AtomicBoolean found) {
+                       found.compareAndSet(false, instanceOf.getPattern() != null);
+                       return super.visitInstanceOf(instanceOf, found);
+                   }
+               }.reduce(statement, new AtomicBoolean()).get();
     }
 
     // `getSideEffects()` misses side effects inside ternaries, array accesses and the like,
@@ -275,31 +311,5 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
 
     private boolean isEmptyResources(@Nullable List<J.Try.Resource> resources) {
         return resources == null || resources.isEmpty();
-    }
-
-    @RequiredArgsConstructor
-    private static class ReplaceStatement<P> extends JavaVisitor<P> {
-        private final J.Block enclosingBlock;
-        private final Statement toReplace;
-        private final List<J> replacements;
-
-        @Override
-        public J visitBlock(J.Block block, P p) {
-            J.Block b = (J.Block) super.visitBlock(block, p);
-            if (enclosingBlock.isScope(block)) {
-                b = b.withStatements(ListUtils.flatMap(b.getStatements(), statement -> {
-                    if (!toReplace.isScope(statement)) {
-                        return statement;
-                    }
-                    for (JavaType.FullyQualified referenced : FindReferencedTypes.find(toReplace)) {
-                        maybeRemoveImport(referenced);
-                    }
-                    return ListUtils.mapFirst(
-                            ListUtils.map(replacements, replacement -> autoFormat(replacement, p, getCursor())),
-                            first -> first.withPrefix(toReplace.getPrefix()));
-                }));
-            }
-            return b;
-        }
     }
 }

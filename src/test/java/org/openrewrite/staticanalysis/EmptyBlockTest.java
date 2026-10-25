@@ -96,7 +96,7 @@ class EmptyBlockTest implements RewriteTest {
 
     @SuppressWarnings("EmptySynchronizedStatement")
     @Test
-    void emptySynchronizedUnchanged() {
+    void unchangedEmptySynchronized() {
         rewriteRun(
           //language=java
           java(
@@ -219,6 +219,80 @@ class EmptyBlockTest implements RewriteTest {
                           s.run();
                       }
                       Runnable s = r;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyFormattingAndNestedFixes() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(java.util.function.BooleanSupplier b) {
+                      try {
+                      } finally {
+                          if (b.getAsBoolean()) {
+                          }
+                          System.out.println(new int[]{1,2});
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(java.util.function.BooleanSupplier b) {
+                      b.getAsBoolean();
+                      System.out.println(new int[]{1,2});
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void emptyTryKeepsFinallyPatternVariablesAndCommentsInBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(Object o, Runnable r) {
+                      try {
+                      } finally {
+                          if (!(o instanceof String s)) {
+                              throw new IllegalStateException();
+                          }
+                          System.out.println(s);
+                      }
+                      String s = "";
+                      try {
+                      } finally {
+                          r.run();
+                          // released
+                      }
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(Object o, Runnable r) {
+                      {
+                          if (!(o instanceof String s)) {
+                              throw new IllegalStateException();
+                          }
+                          System.out.println(s);
+                      }
+                      String s = "";
+                      {
+                          r.run();
+                          // released
+                      }
                   }
               }
               """
