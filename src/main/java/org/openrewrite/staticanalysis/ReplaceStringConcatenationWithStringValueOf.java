@@ -29,7 +29,9 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.time.Duration;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
@@ -45,7 +47,7 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
             "a `String`, while `String.valueOf()` clearly communicates the conversion intent.";
 
     @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    final Set<String> tags = singleton("RSPEC-S9433");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

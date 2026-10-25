@@ -29,6 +29,11 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.time.Duration;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
+
 public class BigDecimalRoundingConstantsToEnums extends Recipe {
     private static final MethodMatcher BIG_DECIMAL_DIVIDE = new MethodMatcher("java.math.BigDecimal divide(java.math.BigDecimal, int)");
     private static final MethodMatcher BIG_DECIMAL_DIVIDE_WITH_SCALE = new MethodMatcher("java.math.BigDecimal divide(java.math.BigDecimal, int, int)");
@@ -42,6 +47,12 @@ public class BigDecimalRoundingConstantsToEnums extends Recipe {
             "`RoundingMode` enum. The integer-based rounding constants on `BigDecimal` " +
             "are deprecated and lack type safety; the `RoundingMode` enum makes the " +
             "rounding behavior self-documenting and prevents invalid values.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S1874");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

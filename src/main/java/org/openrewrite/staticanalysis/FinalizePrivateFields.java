@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.*;
 import static org.openrewrite.staticanalysis.csharp.CSharpFileChecker.isInstanceOfCs;
 
@@ -41,6 +42,9 @@ public class FinalizePrivateFields extends Recipe {
 
     @Getter
     final String description = "Adds the `final` modifier keyword to private instance variables which are not reassigned.";
+
+    @Getter
+    final Set<String> tags = singleton("RSPEC-S9438");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
