@@ -60,7 +60,7 @@ dependencies {
 // into the same `~/.npm/_npx` directory, and the resulting overlap leaves the package half-written, so
 // the tests fail with "RPC process shut down early". Installing once up front keeps every spawn a
 // cache hit.
-val warmJavaScriptRpcCache by tasks.registering {
+val warmJavaScriptRpcCache = tasks.register("warmJavaScriptRpcCache") {
     description = "Installs the npm package that the JavaScript RPC tests spawn, so they never race on a cold npx cache."
     val rewriteJavaScriptJars = configurations.named("testRuntimeClasspath")
         .map { classpath -> classpath.filter { it.name.startsWith("rewrite-javascript-") } }
