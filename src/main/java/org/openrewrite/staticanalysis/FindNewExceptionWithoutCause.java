@@ -38,7 +38,6 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.staticanalysis.table.ExceptionsWithoutCause;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
@@ -66,8 +65,6 @@ public class FindNewExceptionWithoutCause extends Recipe {
             "falsely reported. This mirrors PMD's `PreserveStackTrace` rule.";
 
     Set<String> tags = singleton("RSPEC-S1166");
-
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

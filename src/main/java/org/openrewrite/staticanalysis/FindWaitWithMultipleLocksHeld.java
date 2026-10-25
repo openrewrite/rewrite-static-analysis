@@ -27,7 +27,6 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.marker.SearchResult;
 
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -49,8 +48,6 @@ public class FindWaitWithMultipleLocksHeld extends Recipe {
             "self-releasing and less likely to cause the failure mode.";
 
     Set<String> tags = new HashSet<>(asList("RSPEC-S3046"));
-
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(30);
 
     private static final MethodMatcher OBJECT_WAIT = new MethodMatcher("java.lang.Object wait()");
 
