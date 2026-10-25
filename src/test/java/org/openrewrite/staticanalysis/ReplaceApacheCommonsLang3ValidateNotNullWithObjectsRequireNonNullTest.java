@@ -63,6 +63,34 @@ class ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNullTest impl
     }
 
     @Test
+    void replaceWithOneArgumentThroughSingleArgRecipe() {
+        rewriteRun(
+          spec -> spec.recipeFromResources("org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull"),
+          //language=java
+          java(
+            """
+              import org.apache.commons.lang3.Validate;
+
+              class Test {
+                  void test(Object obj) {
+                      Validate.notNull(obj);
+                  }
+              }
+              """,
+            """
+              import java.util.Objects;
+
+              class Test {
+                  void test(Object obj) {
+                      Objects.requireNonNull(obj);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNothingIfMethodNotFound() {
         rewriteRun(
           //language=java
