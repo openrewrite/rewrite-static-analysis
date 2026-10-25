@@ -24,7 +24,7 @@ import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
@@ -37,6 +37,7 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class UseStandardCharset extends Recipe {
+    private static final MethodMatcher CHARSET_FOR_NAME = new MethodMatcher("java.nio.charset.Charset forName(java.lang.String)");
 
     @Getter
     final String displayName = "Use `StandardCharset` constants";
@@ -56,9 +57,7 @@ public class UseStandardCharset extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesType<>("java.nio.charset.Charset", false), new JavaVisitor<ExecutionContext>() {
-            final MethodMatcher CHARSET_FOR_NAME = new MethodMatcher("java.nio.charset.Charset forName(java.lang.String)");
-
+        return Preconditions.check(new UsesMethod<>(CHARSET_FOR_NAME), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
