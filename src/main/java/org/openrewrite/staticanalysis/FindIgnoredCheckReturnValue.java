@@ -69,7 +69,7 @@ public class FindIgnoredCheckReturnValue extends ScanningRecipe<Set<String>> {
             "instance in custom AssertJ assertion constructors, and code under " +
             "`@SuppressWarnings(\"CheckReturnValue\")` are not marked.";
 
-    Set<String> tags = singleton("RSPEC-S2970");
+    Set<String> tags = singleton("RSPEC-S2201");
 
     @Override
     public Set<String> getInitialValue(ExecutionContext ctx) {

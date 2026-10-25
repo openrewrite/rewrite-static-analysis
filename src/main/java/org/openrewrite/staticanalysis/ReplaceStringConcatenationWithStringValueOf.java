@@ -30,9 +30,6 @@ import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
-import java.util.Set;
-
-import static java.util.Collections.singleton;
 
 public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
@@ -46,9 +43,6 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
             "`String.valueOf(...)`. This improves code readability and may have minor performance " +
             "benefits. The empty string prefix `\"\" +` is an indirect way to convert a value to " +
             "a `String`, while `String.valueOf()` clearly communicates the conversion intent.";
-
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1153");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

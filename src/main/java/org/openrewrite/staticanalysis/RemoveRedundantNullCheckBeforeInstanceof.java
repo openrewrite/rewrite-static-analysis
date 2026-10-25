@@ -42,7 +42,7 @@ public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
             "`instanceof` returns `false` for `null`. Removing the extra check simplifies the conditional " +
             "and makes the null-safety guarantee of `instanceof` more visible to readers.";
 
-    Set<String> tags = singleton("RSPEC-S1697");
+    Set<String> tags = singleton("RSPEC-S4201");
 
     Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
 

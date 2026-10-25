@@ -52,7 +52,7 @@ public class CovariantEquals extends Recipe {
             "incorrect behavior.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S2162");
+    final Set<String> tags = singleton("RSPEC-S1201");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

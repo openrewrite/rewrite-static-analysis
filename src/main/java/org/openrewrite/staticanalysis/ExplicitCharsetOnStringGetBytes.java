@@ -49,7 +49,7 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
                "produce different results across environments, leading to subtle data " +
                "corruption bugs.";
 
-    Set<String> tags = singleton("RSPEC-S4719");
+    Set<String> tags = singleton("RSPEC-S1943");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

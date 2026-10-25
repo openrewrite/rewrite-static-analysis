@@ -46,7 +46,7 @@ public class SimplifyConstantIfBranchExecution extends Recipe {
             "Branches that can never execute are dead code that misleads readers and may mask logic errors introduced during refactoring.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S6646");
+    final Set<String> tags = singleton("RSPEC-S2589");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

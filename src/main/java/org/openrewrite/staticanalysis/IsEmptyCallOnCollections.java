@@ -29,10 +29,10 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaCoordinates;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class IsEmptyCallOnCollections extends Recipe {
     private static final MethodMatcher COLLECTION_SIZE = new MethodMatcher("java.util.Collection size()", true);
@@ -48,7 +48,7 @@ public class IsEmptyCallOnCollections extends Recipe {
             "may require traversal.";
 
     @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
+    final Set<String> tags = singleton("RSPEC-S1155");
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

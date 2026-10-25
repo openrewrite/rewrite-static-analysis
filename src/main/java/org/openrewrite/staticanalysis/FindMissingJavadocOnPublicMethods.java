@@ -30,7 +30,11 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 import org.openrewrite.staticanalysis.table.MissingJavadocOnPublicMethods;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -42,6 +46,10 @@ public class FindMissingJavadocOnPublicMethods extends Recipe {
 
     String description = "Locates `public` method declarations that are not documented with a Javadoc comment, " +
             "marks them with a search result, and records them in a data table.";
+
+    Set<String> tags = singleton("RSPEC-S1176");
+
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
