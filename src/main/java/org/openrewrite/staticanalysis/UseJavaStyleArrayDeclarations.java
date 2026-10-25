@@ -53,15 +53,10 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
                     return varDecls;
                 }
                 List<JLeftPadded<Space>> dimensions = varDecls.getVariables().get(0).getDimensionsAfterName();
-                if (dimensions.isEmpty()) {
+                if (dimensions.isEmpty() ||
+                    varDecls.getVariables().stream().anyMatch(nv -> nv.getDimensionsAfterName().size() != dimensions.size())) {
                     return varDecls;
                 }
-                for (J.VariableDeclarations.NamedVariable nv : varDecls.getVariables()) {
-                    if (nv.getDimensionsAfterName().size() != dimensions.size()) {
-                        return varDecls;
-                    }
-                }
-                // Build array type by wrapping the type expression
                 TypeTree typeExpression = varDecls.getTypeExpression();
                 JavaType type = varDecls.getType();
                 for (JLeftPadded<Space> dim : dimensions) {

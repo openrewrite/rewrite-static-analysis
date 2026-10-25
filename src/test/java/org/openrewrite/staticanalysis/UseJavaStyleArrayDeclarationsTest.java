@@ -89,12 +89,9 @@ class UseJavaStyleArrayDeclarationsTest implements RewriteTest {
                   int c[], d;
                   int e[], f[][];
 
-                  int sum() {
-                      int total = a;
+                  void m() {
                       for (int i = 0, arr[] = {1, 2, 3}; i < arr.length; i++) {
-                          total += arr[i];
                       }
-                      return total;
                   }
               }
               """
