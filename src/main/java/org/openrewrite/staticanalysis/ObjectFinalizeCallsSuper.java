@@ -26,18 +26,25 @@ import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JContainer;
+import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.NameTree;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static org.openrewrite.Tree.randomId;
 
 public class ObjectFinalizeCallsSuper extends Recipe {
     private static final MethodMatcher FINALIZE_METHOD_MATCHER = new MethodMatcher("java.lang.Object finalize()", true);
@@ -83,12 +90,21 @@ public class ObjectFinalizeCallsSuper extends Recipe {
                                 throwz.stream().noneMatch(t -> TypeUtils.isAssignableTo(t.getType(), thrown)))) {
                             return md;
                         }
-                    } else if (superThrown.stream().anyMatch(t -> TypeUtils.isOfClassType(t, "java.lang.Throwable"))) {
-                        md = JavaTemplate.builder("Throwable")
-                                .build()
-                                .apply(updateCursor(md), md.getCoordinates().replaceThrows());
                     } else if (!superThrown.isEmpty()) {
-                        return md;
+                        // Built by hand, as a template could not attribute exception types declared in the project
+                        List<JRightPadded<NameTree>> declared = new ArrayList<>(superThrown.size());
+                        for (JavaType thrown : superThrown) {
+                            JavaType.FullyQualified exception = TypeUtils.asFullyQualified(thrown);
+                            if (exception == null) {
+                                return md;
+                            }
+                            String className = exception.getClassName();
+                            declared.add(JRightPadded.build(new J.Identifier(randomId(), Space.SINGLE_SPACE, Markers.EMPTY,
+                                    emptyList(), className.substring(className.lastIndexOf('.') + 1), exception, null)));
+                            maybeAddImport(exception);
+                        }
+                        md = md.getPadding().withThrows(JContainer.build(Space.SINGLE_SPACE, declared, Markers.EMPTY))
+                                .withMethodType(methodType.withThrownExceptions(superThrown));
                     }
                 }
 

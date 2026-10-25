@@ -226,7 +226,7 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     }
 
     @Test
-    void doNotChangeWhenSuperclassNarrowsThrowsToAnotherException() {
+    void declaresExceptionsOfSuperclassWhenOverrideDeclaresNoThrows() {
         rewriteRun(
           //language=java
           java(
@@ -238,10 +238,24 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
                   protected void finalize() throws IOException {
                   }
               }
-
+              """
+          ),
+          //language=java
+          java(
+            """
               class Child extends Parent {
                   @Override
                   protected void finalize() {
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                      super.finalize();
                   }
               }
               """
