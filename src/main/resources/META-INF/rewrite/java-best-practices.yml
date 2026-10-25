@@ -28,8 +28,6 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.UseMapContainsKey
 displayName: Use `Map#containsKey`
 description: '`map.keySet().contains(a)` can be simplified to `map.containsKey(a)`.'
-preconditions:
-  - org.openrewrite.Singleton
 recipeList:
   - org.openrewrite.java.SimplifyMethodChain:
       methodPatternChain:
@@ -41,8 +39,6 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.ReplaceApacheCommonsLang3ValidateNotNullWithObjectsRequireNonNull
 displayName: Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`
 description: 'Replace `org.apache.commons.lang3.Validate.notNull(..)` with `Objects.requireNonNull(..)`.'
-preconditions:
-  - org.openrewrite.Singleton
 recipeList:
   - org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull
   - org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull
@@ -51,8 +47,6 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.ReplaceValidateNotNullHavingSingleArgWithObjectsRequireNonNull
 displayName: Replace `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`
 description: 'Replace `org.apache.commons.lang3.Validate.notNull(Object)` with `Objects.requireNonNull(Object)`.'
-preconditions:
-  - org.openrewrite.Singleton
 recipeList:
   - org.openrewrite.java.ChangeMethodName:
       methodPattern: org.apache.commons.lang3.Validate notNull(..)
