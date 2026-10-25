@@ -174,10 +174,13 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 if (readReferences.isEmpty()) {
                     List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
                     for (Statement ref : assignmentReferences) {
+                        if (ref instanceof J.Assignment && mightSideEffect(((J.Assignment) ref).getAssignment()) ||
+                            ref instanceof J.AssignmentOperation && mightSideEffect(((J.AssignmentOperation) ref).getAssignment())) {
+                            return variable;
+                        }
+                    }
+                    for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment) {
-                            if (mightSideEffect(((J.Assignment) ref).getAssignment())) {
-                                return variable;
-                            }
                             doAfterVisit(new PruneAssignmentExpression((J.Assignment) ref));
                         }
                         doAfterVisit(new DeleteStatement<>(ref));
@@ -236,6 +239,21 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean result) {
                         result.set(true);
                         return assignment;
+                    }
+
+                    @Override
+                    public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, AtomicBoolean result) {
+                        result.set(true);
+                        return assignOp;
+                    }
+
+                    @Override
+                    public J.Unary visitUnary(J.Unary unary, AtomicBoolean result) {
+                        if (unary.getOperator().isModifying()) {
+                            result.set(true);
+                            return unary;
+                        }
+                        return super.visitUnary(unary, result);
                     }
                 }.reduce(initializer, new AtomicBoolean(false)).get();
             }
