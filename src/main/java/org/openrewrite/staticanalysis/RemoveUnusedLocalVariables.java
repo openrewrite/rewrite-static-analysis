@@ -46,7 +46,6 @@ import static org.openrewrite.Preconditions.not;
 @SuppressWarnings("ConstantConditions")
 @Value
 public class RemoveUnusedLocalVariables extends Recipe {
-    @Incubating(since = "7.17.2")
     @Option(displayName = "Ignore matching variable names",
             description = "An array of variable identifier names for local variables to ignore, even if the local variable is unused.",
             required = false,

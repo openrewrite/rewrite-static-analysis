@@ -27,7 +27,6 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
-@Incubating(since = "7.10.0")
 public class IndexOfShouldNotCompareGreaterThanZero extends Recipe {
     private static final MethodMatcher STRING_INDEX_MATCHER = new MethodMatcher("java.lang.String indexOf(String)");
     private static final MethodMatcher LIST_INDEX_MATCHER = new MethodMatcher("java.util.List indexOf(Object)");

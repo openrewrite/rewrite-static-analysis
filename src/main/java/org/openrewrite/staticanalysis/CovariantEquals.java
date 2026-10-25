@@ -32,7 +32,6 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
-@Incubating(since = "7.0.0")
 public class CovariantEquals extends Recipe {
 
     private static final MethodMatcher EQUALS_MATCHER = new MethodMatcher("* equals(..)");
