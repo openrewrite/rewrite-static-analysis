@@ -273,7 +273,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
             String variableName = replacements.get(literal);
             if (variableName != null) {
-                assert isClass.getType() != null;
                 return new J.Identifier(
                         randomId(),
                         literal.getPrefix(),

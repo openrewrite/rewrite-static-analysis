@@ -53,7 +53,9 @@ public class VariableReferences {
         }
 
         Cursor parent = dropParentWhile(J.Parentheses.class::isInstance, tree.getParent());
-        assert parent != null;
+        if (parent == null) {
+            return false;
+        }
         if (parent.getValue() instanceof J.Assignment) {
             if (dropParentUntil(J.ControlParentheses.class::isInstance, parent) != null) {
                 return true;

@@ -75,10 +75,9 @@ public class SimplifyBooleanReturn extends Recipe {
 
                     if (followingStatements.isEmpty() || singleFollowingStatement.map(r -> isLiteralFalse(r) || isLiteralTrue(r)).orElse(false)) {
                         J.Return return_ = getReturnIfOnlyStatementInThen(iff).orElse(null);
-                        assert return_ != null;
 
                         // Do not remove comments that are attached to the return statement
-                        if (!return_.getComments().isEmpty() || hasElseWithComment(i.getElsePart())) {
+                        if (return_ == null || !return_.getComments().isEmpty() || hasElseWithComment(i.getElsePart())) {
                             return i;
                         }
 

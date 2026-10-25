@@ -103,9 +103,7 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
                     new MethodMatcher(method),
                     J.Modifier.Type.Private
             );
-            md = (J.MethodDeclaration) changeMethodAccessLevelVisitor.visit(md, p, getCursor().getParentOrThrow());
-            assert md != null;
-            return md;
+            return (J.MethodDeclaration) changeMethodAccessLevelVisitor.visitNonNull(md, p, getCursor().getParentOrThrow());
         }
     }
 

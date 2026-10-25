@@ -23,6 +23,7 @@ import java.util.Scanner;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
 final class JavaElementFactory {
@@ -108,8 +109,7 @@ final class JavaElementFactory {
                 name = new J.Identifier(randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), part, type, null);
             }
         }
-        assert name != null;
-        return name;
+        return requireNonNull(name);
     }
 
     static J.MemberReference newInstanceMethodReference(Expression containing, JavaType.Method method, @Nullable JavaType type) {
