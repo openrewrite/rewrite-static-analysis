@@ -175,10 +175,13 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 if (readReferences.isEmpty()) {
                     List<Statement> assignmentReferences = VariableReferences.findLhsReferences(parentScope.getValue(), variable.getName());
                     for (Statement ref : assignmentReferences) {
+                        if (ref instanceof J.Assignment && mightSideEffect(((J.Assignment) ref).getAssignment()) ||
+                            ref instanceof J.AssignmentOperation && mightSideEffect(((J.AssignmentOperation) ref).getAssignment())) {
+                            return variable;
+                        }
+                    }
+                    for (Statement ref : assignmentReferences) {
                         if (ref instanceof J.Assignment) {
-                            if (mightSideEffect(((J.Assignment) ref).getAssignment())) {
-                                return variable;
-                            }
                             doAfterVisit(new PruneAssignmentExpression((J.Assignment) ref));
                         }
                         doAfterVisit(new DeleteStatement<>(ref));
@@ -191,11 +194,21 @@ public class RemoveUnusedLocalVariables extends Recipe {
 
             @Override
             public Statement visitStatement(Statement statement, ExecutionContext ctx) {
-                List<Comment> comments = getCursor().pollNearestMessage("COMMENTS_KEY");
-                if (comments != null) {
-                    statement = statement.withComments(ListUtils.concatAll(statement.getComments(), comments));
+                Space removedPrefix = getCursor().pollNearestMessage("COMMENTS_KEY");
+                if (removedPrefix != null) {
+                    statement = statement.withPrefix(withCommentsOf(removedPrefix, statement.getPrefix()));
                 }
                 return super.visitStatement(statement, ctx);
+            }
+
+            @Override
+            public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
+                J.Block b = super.visitBlock(block, ctx);
+                Space removedPrefix = getCursor().pollMessage("COMMENTS_KEY");
+                if (removedPrefix != null) {
+                    b = b.withEnd(withCommentsOf(removedPrefix, b.getEnd()));
+                }
+                return b;
             }
 
             @Override
@@ -207,11 +220,17 @@ public class RemoveUnusedLocalVariables extends Recipe {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
                 if (mv.getVariables().isEmpty()) {
                     if (!mv.getPrefix().getComments().isEmpty()) {
-                        getCursor().dropParentUntil(J.ClassDeclaration.class::isInstance).putMessage("COMMENTS_KEY", mv.getPrefix().getComments());
+                        getCursor().dropParentUntil(p -> p instanceof J.Block || p instanceof JavaSourceFile)
+                                .putMessage("COMMENTS_KEY", mv.getPrefix());
                     }
                     doAfterVisit(new DeleteStatement<>(mv));
                 }
                 return mv;
+            }
+
+            private Space withCommentsOf(Space removedPrefix, Space space) {
+                List<Comment> removedComments = ListUtils.mapLast(removedPrefix.getComments(), c -> c.withSuffix(space.getWhitespace()));
+                return Space.build(removedPrefix.getWhitespace(), ListUtils.concatAll(removedComments, space.getComments()));
             }
 
             private boolean mightSideEffect(Expression initializer) {
@@ -237,6 +256,21 @@ public class RemoveUnusedLocalVariables extends Recipe {
                     public J.Assignment visitAssignment(J.Assignment assignment, AtomicBoolean result) {
                         result.set(true);
                         return assignment;
+                    }
+
+                    @Override
+                    public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, AtomicBoolean result) {
+                        result.set(true);
+                        return assignOp;
+                    }
+
+                    @Override
+                    public J.Unary visitUnary(J.Unary unary, AtomicBoolean result) {
+                        if (unary.getOperator().isModifying()) {
+                            result.set(true);
+                            return unary;
+                        }
+                        return super.visitUnary(unary, result);
                     }
                 }.reduce(initializer, new AtomicBoolean(false)).get();
             }

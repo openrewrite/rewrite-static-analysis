@@ -24,6 +24,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.openrewrite.golang.Assertions.go;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.version;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -1324,6 +1325,99 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
                       count++;
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepIncrementAndCompoundAssignmentSideEffects() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int counter;
+                  int total;
+
+                  int next(int delta) {
+                      int incremented = counter++;
+                      int decremented = --counter;
+                      int added = total += delta;
+                      int reassigned = 0;
+                      reassigned = counter++;
+                      return counter;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCompoundAssignmentWithSideEffect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int next() {
+                      return 1;
+                  }
+
+                  void method() {
+                      int sum = 0;
+                      sum += next();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCommentOfRemovedVariableInPlace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void method() {
+                      // explains unused
+                      int unused = 0;
+                  }
+
+                  void other() {
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      // explains unused
+                  }
+
+                  void other() {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void groovyScriptVariableWithComment() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              // explains unused
+              def unused = 0
+              println "done"
+              """,
+            """
+              // explains unused
+              println "done"
               """
           )
         );

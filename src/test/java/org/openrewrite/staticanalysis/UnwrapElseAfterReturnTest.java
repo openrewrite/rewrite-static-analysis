@@ -30,6 +30,43 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
         spec.recipe(new UnwrapElseAfterReturn());
     }
 
+    @Test
+    void keepFormattingOfUnrelatedStatements() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      int x=1;
+                      if (condition) {
+                          return x;
+                      } else {
+                          if (x>0) {
+                              x=2;
+                          }
+                          return x;
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int foo(boolean condition) {
+                      int x=1;
+                      if (condition) {
+                          return x;
+                      }
+                      if (x>0) {
+                          x=2;
+                      }
+                      return x;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void simpleIfElseWithReturn() {
@@ -214,6 +251,33 @@ class UnwrapElseAfterReturnTest implements RewriteTest {
                           return "yes";
                       } else
                           return "no";
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String foo(boolean condition) {
+                      if (condition) {
+                          return "yes";
+                      }
+                      return "no";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void elseWithSingleStatementOnSameLine() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  String foo(boolean condition) {
+                      if (condition) {
+                          return "yes";
+                      } else return "no";
                   }
               }
               """,
