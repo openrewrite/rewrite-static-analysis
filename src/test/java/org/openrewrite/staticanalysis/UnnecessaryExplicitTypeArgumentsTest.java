@@ -551,7 +551,7 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Nested
-    class kotlinTest {
+    class Kotlin {
         @Test
         void doNotChangeIfHasNotTypeInference() {
             rewriteRun(
