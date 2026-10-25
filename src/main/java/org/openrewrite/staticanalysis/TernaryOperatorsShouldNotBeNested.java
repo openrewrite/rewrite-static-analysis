@@ -79,7 +79,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             if (!isNestedTernary(lambda.getBody()) || !keepsBranchValues((J.Ternary) lambda.getBody(), null)) {
                 return super.visitLambda(lambda, ctx);
             }
-            doAfterVisit(new RemoveUnneededBlock().getVisitor());
             Statement body = branchOf((J.Ternary) lambda.getBody(), TernaryOperatorsShouldNotBeNested::returnOf, true);
             return autoFormat(lambda.withBody(body.withPrefix(Space.SINGLE_SPACE)), ctx);
         }
@@ -92,8 +91,10 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     !keepsBranchValues((J.Ternary) retrn.getExpression(), method == null ? null : method.getReturnType())) {
                 return super.visitReturn(retrn, ctx);
             }
-            doAfterVisit(new RemoveUnneededBlock().getVisitor());
             Statement result = branchOf(retrn.getExpression(), TernaryOperatorsShouldNotBeNested::returnOf, true);
+            if (result instanceof J.Block) {
+                doAfterVisit(new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor((J.Block) result));
+            }
             return autoFormat(result.withPrefix(retrn.getPrefix()), ctx);
         }
 
@@ -434,7 +435,8 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     }
 
     private static J.Block blockOf(List<Statement> statements) {
-        return J.Block.createEmptyBlock().withStatements(statements);
+        // Only the blocks `branchOf` creates are nested here, and they are spliced in rather than left for `RemoveUnneededBlock`
+        return J.Block.createEmptyBlock().withStatements(ListUtils.flatMap(statements, s -> s instanceof J.Block ? ((J.Block) s).getStatements() : s));
     }
 
 }

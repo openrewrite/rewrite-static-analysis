@@ -21,7 +21,6 @@ import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.cleanup.UnnecessaryParenthesesVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -145,7 +144,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 lambda = lambda.withBody(lambdaBody.withPrefix(Space.format(" ")));
 
                 lambda = (J.Lambda) new LambdaBlockToExpression().getVisitor().visitNonNull(lambda, ctx, getCursor().getParentOrThrow());
-                doAfterVisit(new RemoveUnusedImports().getVisitor());
+                ReferencedImports.namesReferencedBy(n).forEach(this::maybeRemoveImport);
 
                 return autoFormat(maybeAddCast(lambda, n), ctx);
             }

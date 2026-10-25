@@ -32,6 +32,53 @@ class AnnotateRequiredParametersTest implements RewriteTest {
         spec.recipe(new AnnotateRequiredParameters(null));
     }
 
+    @Test
+    void simplifyOnlyTheReplacedNullChecks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  boolean unrelated(boolean b) {
+                      if (true) {
+                          System.out.println("unrelated");
+                      }
+                      return !!b;
+                  }
+
+                  public void process(String value, boolean b) {
+                      if (value == null || b == true) {
+                          throw new IllegalArgumentException();
+                      }
+                      boolean flag = !!b;
+                      System.out.println(value);
+                  }
+              }
+              """,
+            """
+              import org.jspecify.annotations.NonNull;
+
+              class Test {
+                  boolean unrelated(boolean b) {
+                      if (true) {
+                          System.out.println("unrelated");
+                      }
+                      return !!b;
+                  }
+
+                  public void process(@NonNull String value, boolean b) {
+                      if (b) {
+                          throw new IllegalArgumentException();
+                      }
+                      boolean flag = !!b;
+                      System.out.println(value);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @DocumentExample
     @Test
     void annotateParameterWithNullCheckThrowingException() {

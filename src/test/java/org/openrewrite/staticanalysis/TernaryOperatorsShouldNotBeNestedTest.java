@@ -36,6 +36,41 @@ class TernaryOperatorsShouldNotBeNestedTest {
             spec.recipe(new TernaryOperatorsShouldNotBeNested()).allSources(s -> s.markers(javaVersion(11)));
         }
 
+        @Test
+        void keepUnrelatedBlocks() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      String determineSomething(int a, int b, int c) {
+                          {
+                              System.out.println("unrelated");
+                          }
+                          return a == 1 ? "one" : b == 2 ? "two" : c == 3 ? "three" : "other";
+                      }
+                  }
+                  """,
+                """
+                  class Test {
+                      String determineSomething(int a, int b, int c) {
+                          {
+                              System.out.println("unrelated");
+                          }
+                          if (a == 1) {
+                              return "one";
+                          }
+                          if (b == 2) {
+                              return "two";
+                          }
+                          return c == 3 ? "three" : "other";
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
         @DocumentExample
         @Test
         void doReplaceNestedOrTernaryWithIfFollowedByTernary() {

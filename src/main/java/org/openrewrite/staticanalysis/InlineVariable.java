@@ -79,8 +79,9 @@ public class InlineVariable extends Recipe {
                                 if (assignedVar.getFieldType() != null &&
                                         assignedVar.getFieldType().getOwner() instanceof JavaType.Method &&
                                         SemanticallyEqual.areEqual(assignedVar, identReturned)) {
-                                    doAfterVisit(new RemoveUnusedLocalVariables(null, null, null).getVisitor());
-                                    return inlineExpression(assignment.getAssignment(), bl, statements, assignment.getPrefix(), assignment.getComments());
+                                    return removeDeclarationLeftUnused(
+                                            inlineExpression(assignment.getAssignment(), bl, statements, assignment.getPrefix(), assignment.getComments()),
+                                            assignedVar);
                                 }
                             }
                         }
@@ -114,6 +115,29 @@ public class InlineVariable extends Recipe {
                         }
                     }
                     return statement;
+                }));
+            }
+
+            private J.Block removeDeclarationLeftUnused(J.Block bl, J.Identifier variable) {
+                if (!VariableReferences.findRhsReferences(bl, variable).isEmpty() ||
+                        !VariableReferences.findLhsReferences(bl, variable).isEmpty()) {
+                    return bl;
+                }
+                return bl.withStatements(ListUtils.map(bl.getStatements(), statement -> {
+                    if (!(statement instanceof J.VariableDeclarations)) {
+                        return statement;
+                    }
+                    J.VariableDeclarations varDec = (J.VariableDeclarations) statement;
+                    if (!varDec.getLeadingAnnotations().isEmpty()) {
+                        return statement;
+                    }
+                    J.VariableDeclarations remaining = varDec.withVariables(ListUtils.map(varDec.getVariables(), v ->
+                            requireNonNull(variable.getFieldType()).equals(v.getVariableType()) &&
+                                    !SideEffects.mayHaveSideEffects(v.getInitializer()) ? null : v));
+                    if (remaining.getVariables().isEmpty()) {
+                        return varDec.getComments().isEmpty() ? null : statement;
+                    }
+                    return remaining;
                 }));
             }
 
