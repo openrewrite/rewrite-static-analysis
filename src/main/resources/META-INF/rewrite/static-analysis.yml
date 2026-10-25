@@ -18,7 +18,7 @@
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.CodeCleanup
 displayName: Code cleanup
-description: Automatically cleanup code, e.g. remove unnecessary parentheses, simplify expressions.
+description: Automatically clean up code, e.g. remove unnecessary parentheses, add missing braces and fix whitespace.
 preconditions:
   - org.openrewrite.Singleton
 recipeList:
@@ -51,7 +51,7 @@ recipeList:
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.staticanalysis.ReplaceThreadRunWithThreadStart
 displayName: "Replace calls to `Thread.run()` with `Thread.start()`"
-description: "`Thread.run()` should not be called directly."
+description: "Replaces calls to `Thread.run()` with `Thread.start()`, so that the code runs on a new thread instead of the calling thread."
 recipeList:
   - org.openrewrite.java.ChangeMethodName:
       methodPattern: java.lang.Thread run()
