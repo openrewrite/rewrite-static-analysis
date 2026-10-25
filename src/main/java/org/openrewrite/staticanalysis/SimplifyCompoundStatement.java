@@ -16,9 +16,17 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JLeftPadded;
 
 public class SimplifyCompoundStatement extends Recipe {
     @Getter
@@ -29,6 +37,38 @@ public class SimplifyCompoundStatement extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new SimplifyCompoundVisitor();
+        return new JavaVisitor<ExecutionContext>() {
+            @Override
+            public @Nullable J visitAssignmentOperation(J.AssignmentOperation assignOp, ExecutionContext ctx) {
+                J.AssignmentOperation.Type operator = assignOp.getOperator();
+                if (operator == J.AssignmentOperation.Type.BitAnd || operator == J.AssignmentOperation.Type.BitOr) {
+                    // `b &= true` and `b |= false` leave `b` unchanged
+                    boolean identity = operator == J.AssignmentOperation.Type.BitAnd;
+                    Cursor parent = getCursor().getParentOrThrow();
+                    Expression simplified = (Expression) new SimplifyBooleanExpressionVisitor()
+                            .visitNonNull(assignOp.getAssignment(), ctx, parent);
+                    simplified = (Expression) new SimplifyBooleanExpressionVisitor()
+                            .visitNonNull(simplified, ctx, parent);
+                    if (J.Literal.isLiteralValue(simplified, identity)) {
+                        return null;
+                    }
+                    if (J.Literal.isLiteralValue(simplified, !identity)) {
+                        return maybeAutoFormat(
+                                assignOp,
+                                new J.Assignment(
+                                        Tree.randomId(),
+                                        assignOp.getPrefix(),
+                                        assignOp.getMarkers(),
+                                        assignOp.getVariable(),
+                                        JLeftPadded.build(simplified),
+                                        assignOp.getType()
+                                ),
+                                ctx
+                        );
+                    }
+                }
+                return super.visitAssignmentOperation(assignOp, ctx);
+            }
+        };
     }
 }
