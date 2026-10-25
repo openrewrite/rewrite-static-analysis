@@ -39,14 +39,13 @@ import static java.util.Collections.singleton;
 public class UseStandardCharset extends Recipe {
 
     @Getter
-    final String displayName = "Use `StandardCharset` constants";
+    final String displayName = "Use `StandardCharsets` constants";
 
     @Getter
     final String description = "Replaces `Charset.forName(java.lang.String)` with the " +
-            "equivalent `StandardCharset` constant. Using the predefined constants " +
-            "is both compile-time safe and avoids the need to handle " +
-            "`UnsupportedEncodingException` for charsets that are guaranteed to " +
-            "exist on every JVM.";
+            "equivalent `StandardCharsets` constant. Using the predefined constants " +
+            "is compile-time safe and avoids looking up by name the charsets that " +
+            "are guaranteed to exist on every JVM.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S4719");

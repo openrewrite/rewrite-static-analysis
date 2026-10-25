@@ -35,7 +35,7 @@ public class ExplicitCharsetOnStringGetBytes extends Recipe {
     private static final MethodMatcher GET_BYTES = new MethodMatcher("java.lang.String getBytes()");
 
     @Option(displayName = "Default encoding",
-            description = "The default encoding to supply to the `getBytes` call",
+            description = "The default encoding to supply to the `getBytes` call.",
             example = "UTF_8",
             required = false)
     @Nullable

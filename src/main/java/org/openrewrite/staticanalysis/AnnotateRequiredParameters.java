@@ -39,7 +39,7 @@ public class AnnotateRequiredParameters extends Recipe {
     private static final String DEFAULT_NONNULL_ANN_CLASS = "org.jspecify.annotations.NonNull";
 
     @Option(displayName = "`@NonNull` annotation class",
-            description = "The fully qualified name of the @NonNull annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.NonNull`",
+            description = "The fully qualified name of the `@NonNull` annotation. The annotation should be meta annotated with `@Target(TYPE_USE)`. Defaults to `org.jspecify.annotations.NonNull`.",
             example = "org.jspecify.annotations.NonNull",
             required = false)
     @Nullable

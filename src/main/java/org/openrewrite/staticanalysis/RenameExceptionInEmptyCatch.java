@@ -35,7 +35,7 @@ public class RenameExceptionInEmptyCatch extends Recipe {
     final String displayName = "Rename caught exceptions in empty catch blocks to `ignored`";
 
     @Getter
-    final String description = "Renames caught exceptions in empty catch blocks to `ignored`. `ignored` will be incremented by 1 if a namespace conflict exists.";
+    final String description = "Renames caught exceptions in empty catch blocks to `ignored`. A numeric suffix is appended to `ignored` if that name is already taken.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

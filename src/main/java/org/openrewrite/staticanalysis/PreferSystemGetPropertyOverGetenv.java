@@ -45,10 +45,11 @@ public class PreferSystemGetPropertyOverGetenv extends Recipe {
     }
 
     @Getter
-    final String displayName = "Prefer `System.getProperty(\"user.home\")` over `System.getenv(\"HOME\")`";
+    final String displayName = "Prefer `System.getProperty(..)` over `System.getenv(..)`";
 
     @Getter
-    final String description = "Replaces `System.getenv(\"HOME\")` with `System.getProperty(\"user.home\")` for better portability.";
+    final String description = "Replaces `System.getenv(..)` for `USER`, `USERNAME`, `HOME`, `USERPROFILE`, `TMPDIR`, `TEMP` and `TMP` " +
+            "with `System.getProperty(..)` for `user.name`, `user.home` or `java.io.tmpdir`, for better portability.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -36,7 +36,7 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
     final String displayName = "Rename packages to lowercase";
 
     @Getter
-    final String description = "By convention all Java package names should contain only lowercase letters, numbers, and dashes. " +
+    final String description = "By convention all Java package names should contain only lowercase letters, numbers, and underscores. " +
             "This recipe converts any uppercase letters in package names to be lowercase. " +
             "Consistent package naming prevents confusion and potential issues on case-insensitive file systems.";
 

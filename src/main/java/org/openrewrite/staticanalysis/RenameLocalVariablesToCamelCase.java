@@ -30,7 +30,7 @@ import static java.util.Collections.singleton;
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
 /**
- * This recipe converts local variables and method parameters to camel case convention.
+ * This recipe converts local variables to camel case convention.
  * The recipe will not rename variables declared in for loop controls or catches with a single character.
  * <br/>
  * The first character is set to lower case and existing capital letters are preserved.
@@ -47,7 +47,7 @@ public class RenameLocalVariablesToCamelCase extends Recipe {
     final String displayName = "Reformat local variable names to camelCase";
 
     @Getter
-    final String description = "Reformat local variable and method parameter names to camelCase to comply " +
+    final String description = "Reformat local variable names to camelCase to comply " +
             "with Java naming convention. The recipe will not rename variables declared in for loop " +
             "controls or catches with a single character. " +
             "The first character is set to lower case and existing capital letters are preserved. " +

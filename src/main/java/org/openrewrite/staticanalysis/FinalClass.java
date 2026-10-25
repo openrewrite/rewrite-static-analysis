@@ -31,8 +31,8 @@ public class FinalClass extends Recipe {
     final String displayName = "Finalize classes with private constructors";
 
     @Getter
-    final String description = "Adds the `final` modifier to classes that expose no public or " +
-            "package-private constructors. If a class cannot be instantiated from the " +
+    final String description = "Adds the `final` modifier to classes whose constructors are all `private`. " +
+            "If a class cannot be instantiated from the " +
             "outside, marking it `final` communicates that it was not designed for " +
             "inheritance and prevents accidental subclassing.";
 

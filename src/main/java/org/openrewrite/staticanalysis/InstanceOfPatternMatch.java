@@ -49,7 +49,7 @@ import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMEN
 @Value
 public class InstanceOfPatternMatch extends Recipe {
 
-    String displayName = "Changes code to use Java 17's `instanceof` pattern matching";
+    String displayName = "Change code to use Java 17's `instanceof` pattern matching";
 
     String description = "Adds pattern variables to `instanceof` expressions wherever " +
                "the same (side effect free) expression is referenced in a " +

@@ -40,7 +40,7 @@ public class RemoveSystemOutPrintln extends Recipe {
     private static final MethodMatcher SYSTEM_OUT_PRINTLN = new MethodMatcher("java.io.PrintStream println(..)");
 
     @Getter
-    final String displayName = "Remove `System.out#println` statements";
+    final String displayName = "Remove `System.out#println` and `System.err#println` statements";
 
     @Getter
     final String description = "Print statements are often left accidentally after debugging an issue. " +

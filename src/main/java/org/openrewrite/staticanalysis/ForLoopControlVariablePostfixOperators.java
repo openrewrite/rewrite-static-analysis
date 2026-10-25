@@ -29,7 +29,7 @@ public class ForLoopControlVariablePostfixOperators extends Recipe {
 
     @Getter
     final String description = "Replace `for` loop control variables using pre-increment (`++i`) or pre-decrement (`--i`) operators " +
-            "with their post-increment (`i++`) or post-decrement (`i++`) notation equivalents.";
+            "with their post-increment (`i++`) or post-decrement (`i--`) notation equivalents.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

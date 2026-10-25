@@ -36,7 +36,7 @@ public class UnnecessaryCatch extends Recipe {
             description = "Whether to include `java.lang.Exception` in the list of checked exceptions to remove. " +
                     "Unlike other checked exceptions, `java.lang.Exception` is also the superclass of unchecked exceptions. " +
                     "So removing `catch(Exception e)` may result in changed runtime behavior in the presence of unchecked exceptions. " +
-                    "Default `false`",
+                    "Default `false`.",
             required = false)
     boolean includeJavaLangException;
 
@@ -44,7 +44,7 @@ public class UnnecessaryCatch extends Recipe {
             description = "Whether to include `java.lang.Throwable` in the list of exceptions to remove. " +
                     "Unlike other checked exceptions, `java.lang.Throwable` is also the superclass of unchecked exceptions. " +
                     "So removing `catch(Throwable e)` may result in changed runtime behavior in the presence of unchecked exceptions. " +
-                    "Default `false`",
+                    "Default `false`.",
             required = false)
     boolean includeJavaLangThrowable;
 

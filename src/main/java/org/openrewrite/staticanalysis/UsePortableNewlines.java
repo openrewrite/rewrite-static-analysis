@@ -48,9 +48,9 @@ public class UsePortableNewlines extends Recipe {
     private static final MethodMatcher FORMATTER_FORMAT = new MethodMatcher("java.util.Formatter format(java.lang.String, ..)");
     private static final MethodMatcher CONSOLE_PRINTF = new MethodMatcher("java.io.Console printf(java.lang.String, ..)");
 
-    String displayName = "Use %n instead of \\n in format strings";
+    String displayName = "Use `%n` instead of `\\n` in format strings";
 
-    String description = "Format strings should use %n rather than \\n to produce " +
+    String description = "Format strings should use `%n` rather than `\\n` to produce " +
             "platform-specific line separators. Hard-coded `\\n` characters produce " +
             "incorrect line endings on Windows, whereas `%n` adapts to the runtime " +
             "platform automatically.";
