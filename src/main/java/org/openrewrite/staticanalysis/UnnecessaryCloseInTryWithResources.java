@@ -23,6 +23,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
@@ -54,10 +55,13 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                Preconditions.or(
-                        new JavaFileChecker<>(),
-                        new KotlinFileChecker<>(),
-                        new GroovyFileChecker<>()
+                Preconditions.and(
+                        Preconditions.or(
+                                new JavaFileChecker<>(),
+                                new KotlinFileChecker<>(),
+                                new GroovyFileChecker<>()
+                        ),
+                        new UsesMethod<>(AUTO_CLOSEABLE_METHOD_MATCHER)
                 ),
                 new JavaIsoVisitor<ExecutionContext>() {
             @Override
