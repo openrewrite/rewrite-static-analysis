@@ -73,7 +73,7 @@ public class RemoveEmptyJavaDocParameters extends Recipe {
                     boolean useNewBody = false;
 
                     List<Javadoc> body = new ArrayList<>(javadoc.getBody());
-                    // We add a trailing element, to fix elements on the first line without space
+                    // We add a leading element, to fix elements on the first line without space
                     // We can use null since this element is never going to be read, and nulls get filtered later on.
                     body.add(0, null);
 

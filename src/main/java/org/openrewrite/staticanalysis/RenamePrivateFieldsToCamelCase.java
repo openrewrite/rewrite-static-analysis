@@ -86,11 +86,7 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 Cursor parentScope = getCursorToParentScope(getCursor());
 
-                // Does support renaming fields in a J.ClassDeclaration.
-                // We must have a variable type to make safe changes.
-                // Only make changes to private fields that are not constants.
-                // Does not apply for instance variables of inner classes
-                // Only make a change if the variable does not conform to lower camelcase format.
+                // private fields of top-level classes (nested ones have a `$` in their name), except `static final` constants
                 JavaType.Variable type = variable.getVariableType();
                 if (parentScope.getParent() != null &&
                     parentScope.getParent().getValue() instanceof J.ClassDeclaration &&
