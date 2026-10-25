@@ -15,6 +15,7 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
@@ -26,6 +27,7 @@ import org.openrewrite.test.RewriteTest;
 import java.util.UUID;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings("ConstantConditions")
@@ -495,5 +497,66 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class Kotlin {
+        @DocumentExample
+        @Test
+        void regular() {
+            rewriteRun(
+              kotlin(
+                """
+                  fun foo() {
+                      var EMPTY_METAS = HashMap<String, Any>()
+                      EMPTY_METAS.isEmpty()
+                  }
+                  """,
+                """
+                  fun foo() {
+                      var emptyMetas = HashMap<String, Any>()
+                      emptyMetas.isEmpty()
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void renameBothVariableAndUsage() {
+            rewriteRun(
+              kotlin(
+                """
+                  class MqttRegex (val topic : String)
+                  """
+              ),
+              kotlin(
+                """
+                  fun foo() {
+                      val MQTT = MqttRegex("topic1")
+                      val x = listOf("", MQTT.topic)
+                  }
+                  """,
+                """
+                  fun foo() {
+                      val mqtt = MqttRegex("topic1")
+                      val x = listOf("", mqtt.topic)
+                  }
+                  """
+              )
+            );
+        }
+
+        // `internal` modifier means package-private in Kotlin, so it's not a local variable
+        @Test
+        void doNotChangeIfHasInternalModifier() {
+            rewriteRun(
+              kotlin(
+                """
+                  internal val EMPTY_METAS = HashMap<String, Any>()
+                  """
+              )
+            );
+        }
     }
 }
