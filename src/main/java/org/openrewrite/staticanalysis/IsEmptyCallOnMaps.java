@@ -29,10 +29,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaCoordinates;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public class IsEmptyCallOnMaps extends Recipe {
     private static final MethodMatcher MAP_SIZE = new MethodMatcher("java.util.Map size()", true);
@@ -44,9 +41,6 @@ public class IsEmptyCallOnMaps extends Recipe {
     final String description = "Replace map size comparisons with `isEmpty()` or `!isEmpty()`. " +
             "Using `isEmpty()` communicates intent more clearly than comparing `size()` to zero, " +
             "and for some map implementations it can be more efficient since `size()` may require traversal.";
-
-    @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1155", "RSPEC-S3981"));
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
