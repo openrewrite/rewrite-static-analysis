@@ -27,13 +27,7 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
@@ -83,6 +77,9 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     }
                 }
                 J.VariableDeclarations result = (J.VariableDeclarations) super.visitVariableDeclarations(multiVariable, ctx);
+                if (result.getVariables().isEmpty()) {
+                    return result;
+                }
                 Expression newInitializer = result.getVariables().get(0).getInitializer();
                 if (replacementType != null && newInitializer instanceof J.Lambda) {
                     TypeTree resolved = resolveDiamond(replacementType, (J.Lambda) newInitializer);
@@ -249,7 +246,11 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 if (methodType == null) {
                     return false;
                 }
-                if (!TypeUtils.isOfClassType(methodType.getParameterTypes().get(argumentIndex), lambdaFqn)) {
+                JavaType parameterType = parameterTypeAt(methodType, argumentIndex);
+                if (parameterType == null) {
+                    return false;
+                }
+                if (!TypeUtils.isOfClassType(parameterType, lambdaFqn)) {
                     return true;
                 }
 
@@ -259,8 +260,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                     if (methodType.getName().equals(maybeAmbiguous.getName()) &&
                         methodType.getParameterTypes().size() == maybeAmbiguous.getParameterTypes().size()) {
                         if (areMethodsAmbiguous(
-                                getSamCompatible(methodType.getParameterTypes().get(argumentIndex)),
-                                getSamCompatible(maybeAmbiguous.getParameterTypes().get(argumentIndex)))) {
+                                getSamCompatible(parameterType),
+                                getSamCompatible(parameterTypeAt(maybeAmbiguous, argumentIndex)))) {
                             count++;
                         }
                     }
@@ -270,6 +271,22 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
 
                 return hasGenerics(lambda);
+            }
+
+            private @Nullable JavaType parameterTypeAt(JavaType.Method methodType, int argumentIndex) {
+                List<JavaType> parameterTypes = methodType.getParameterTypes();
+                if (parameterTypes.isEmpty()) {
+                    return null;
+                }
+                int index = Math.min(argumentIndex, parameterTypes.size() - 1);
+                JavaType parameterType = parameterTypes.get(index);
+                if (index == parameterTypes.size() - 1) {
+                    JavaType.Array array = TypeUtils.asArray(parameterType);
+                    if (array != null) {
+                        return array.getElemType();
+                    }
+                }
+                return parameterType;
             }
 
             private boolean areMethodsAmbiguous(JavaType.@Nullable Method m1, JavaType.@Nullable Method m2) {
@@ -428,15 +445,15 @@ public class UseLambdaForFunctionalInterface extends Recipe {
 
     /**
      * Sources of type information disagree about how they flag a default method: parsed sources mark it
-     * both {@link Flag#Abstract} and {@link Flag#Default}, while some type tables record neither. Neither
-     * flag alone identifies a default method under both conventions, so require both signals to agree —
-     * excluded by modifier, or not marked abstract by a type that marks abstract methods at all. Getting
-     * this wrong hides every interface that has a default method, {@code Comparator} included.
+     * both {@link Flag#Abstract} and {@link Flag#Default}, while sources derived from bytecode — where
+     * {@code default} is not an access flag — mark it with neither. Both conventions do mark genuinely abstract
+     * methods {@link Flag#Abstract}, so require that positive signal rather than inferring abstractness
+     * from the absence of {@link Flag#Default}: an interface whose methods are all {@code default} is not
+     * functional, and a lambda in its place does not compile.
      */
-    private static boolean isAbstract(JavaType.Method method, boolean marksAbstract) {
-        return !method.hasFlags(Flag.Default) && !method.hasFlags(Flag.Static) &&
-               !method.hasFlags(Flag.Private) &&
-               (!marksAbstract || method.hasFlags(Flag.Abstract));
+    private static boolean isConcrete(JavaType.Method method) {
+        return !method.hasFlags(Flag.Abstract) || method.hasFlags(Flag.Default) ||
+                method.hasFlags(Flag.Static) || method.hasFlags(Flag.Private);
     }
 
     private static void collectAbstractMethods(JavaType.FullyQualified type,
@@ -445,9 +462,8 @@ public class UseLambdaForFunctionalInterface extends Recipe {
         if (!visited.add(type.getFullyQualifiedName())) {
             return;
         }
-        boolean marksAbstract = type.getMethods().stream().anyMatch(m -> m.hasFlags(Flag.Abstract));
         for (JavaType.Method method : type.getMethods()) {
-            if (!isAbstract(method, marksAbstract) || overridesObjectMethod(method)) {
+            if (isConcrete(method) || overridesObjectMethod(method)) {
                 continue;
             }
             // Keyed by name and arity so a subinterface redeclaring an inherited method counts once.
@@ -701,8 +717,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
     }
 
     private static boolean hasGenerics(J.Lambda lambda) {
-        AtomicBoolean atomicBoolean = new AtomicBoolean();
-        new JavaVisitor<AtomicBoolean>() {
+        return new JavaVisitor<AtomicBoolean>() {
             @Override
             public J visitMethodInvocation(J.MethodInvocation method, AtomicBoolean atomicBoolean) {
                 if (method.getMethodType() != null &&
@@ -714,8 +729,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
                 }
                 return super.visitMethodInvocation(method, atomicBoolean);
             }
-        }.visit(lambda.getBody(), atomicBoolean);
-        return atomicBoolean.get();
+        }.reduce(lambda.getBody(), new AtomicBoolean()).get();
     }
 
     // TODO consider moving to TypeUtils
@@ -726,7 +740,7 @@ public class UseLambdaForFunctionalInterface extends Recipe {
             return null;
         }
         for (JavaType.Method method : fullyQualified.getMethods()) {
-            if (method.hasFlags(Flag.Default) || method.hasFlags(Flag.Static)) {
+            if (isConcrete(method)) {
                 continue;
             }
             if (sam != null) {

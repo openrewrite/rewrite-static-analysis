@@ -20,8 +20,10 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("RedundantThrows")
 class UnnecessaryCatchTest implements RewriteTest {
@@ -311,6 +313,54 @@ class UnnecessaryCatchTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void doNotRemoveJavaLangExceptionCoveringCheckedException() {
+        rewriteRun(
+          spec -> spec.recipe(new UnnecessaryCatch(true, false)),
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;
+
+              class Scratch {
+                  void method() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Exception e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1002")
+    @Test
+    void doNotRemoveJavaLangThrowableCoveringCheckedException() {
+        rewriteRun(
+          spec -> spec.recipe(new UnnecessaryCatch(false, true)),
+          //language=java
+          java(
+            """
+              import java.io.FileInputStream;
+
+              class Scratch {
+                  void method() {
+                      try {
+                          new FileInputStream("something");
+                      } catch (Throwable t) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotRemoveJavaLangThrowable() {
         rewriteRun(
@@ -522,6 +572,168 @@ class UnnecessaryCatchTest implements RewriteTest {
                           host = InetAddress.getLocalHost().getCanonicalHostName();
                       } catch (IOException ignore) {
                           host = "ignored";
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeCatchForSourceDeclaredMethodWithoutThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Scratch {
+                  void foo() {}
+
+                  void method() {
+                      try {
+                          foo();
+                      } catch (IOException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """,
+            """
+              class Scratch {
+                  void foo() {}
+
+                  void method() {
+                      foo();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCatchWhenTryBodyHasUnresolvedInvocation() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Scratch {
+                  void method(Unresolved u) {
+                      try {
+                          u.doSomething();
+                      } catch (IOException e) {
+                          System.out.println("an exception!");
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlinSources() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class A {
+                  fun waitFor(ms: Long) {
+                      try {
+                          Thread.sleep(ms)
+                      } catch (e: InterruptedException) {
+                          // Nothing we can do here
+                      }
+                  }
+              }
+              """
+          ),
+
+          // A try expression admits no unwrap at all: a `try` with neither catch nor finally is invalid Kotlin.
+          //language=kotlin
+          kotlin(
+            """
+              import java.text.NumberFormat
+              import java.text.ParseException
+
+              class B {
+                  fun parse(s: String) =
+                      try {
+                          NumberFormat.getInstance().parse(s)
+                      } catch (ignore: ParseException) {
+                          null
+                      }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeCatchWhenNestedResourceInheritsClose() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.DataInputStream;
+              import java.io.IOException;
+              import java.io.InputStream;
+
+              class Scratch {
+                  void method(InputStream in) {
+                      try {
+                          try (DataInputStream d = new DataInputStream(in)) {
+                              d.readInt();
+                          } catch (IOException e) {
+                              // Handled
+                          }
+                      } catch (ClassNotFoundException e) {
+                          // Never thrown
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.DataInputStream;
+              import java.io.IOException;
+              import java.io.InputStream;
+
+              class Scratch {
+                  void method(InputStream in) {
+                      try (DataInputStream d = new DataInputStream(in)) {
+                          d.readInt();
+                      } catch (IOException e) {
+                          // Handled
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotRemoveCatchWhenCalleeThrowsUnresolvedType() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Scratch {
+                  void foo() throws Unresolved {}
+
+                  void method() {
+                      try {
+                          foo();
+                      } catch (IOException e) {
+                          System.out.println("an exception!");
                       }
                   }
               }

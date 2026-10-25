@@ -281,6 +281,145 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepCastOnNullArgumentToOverloadInheritedFromSupertype() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package org.example;
+
+                public enum Platform {
+                    ANY
+                }
+                """,
+              """
+                package org.example;
+
+                public class Capabilities {
+                    public void setCapability(String key, String value) {}
+                }
+                """,
+              """
+                package org.example;
+
+                public class MutableCapabilities extends Capabilities {
+                    public void setCapability(String key, Platform value) {}
+                }
+                """
+            )
+          ),
+          //language=java
+          java(
+            """
+              import org.example.MutableCapabilities;
+              import org.example.Platform;
+
+              class Test {
+                  void method(MutableCapabilities cap) {
+                      cap.setCapability("platform", (Platform) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCastOnNullArgumentToOverloadDeclaredOnSubtype() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package org.example;
+
+                public class Handler {
+                    public void handle(String key, Object value) {}
+                }
+                """,
+              """
+                package org.example;
+
+                public class LoggingHandler extends Handler {
+                    public void handle(String key, String value) {}
+                }
+                """
+            )
+          ),
+          //language=java
+          java(
+            """
+              import org.example.LoggingHandler;
+
+              class Test {
+                  void method(LoggingHandler handler) {
+                      handler.handle("key", (Object) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepCastOnNullArgumentToAnonymousClassConstructor() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package org.example;
+
+                public class StringEntity {
+                    public StringEntity(String body, String contentType) {}
+                    public StringEntity(String body, Runnable onClose) {}
+                }
+                """
+            )
+          ),
+          //language=java
+          java(
+            """
+              import org.example.StringEntity;
+
+              class Test {
+                  Object entity = new StringEntity("data", (Runnable) null) {
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeCastOnNullArgumentWhenNotOverloaded() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void accept(Object o) {
+                  }
+                  void method() {
+                      accept((String) null);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void accept(Object o) {
+                  }
+                  void method() {
+                      accept(null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/899")
     @Test
     void keepObjectCastDisambiguatingVarargsFromThrowableOverload() {
@@ -749,6 +888,35 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/871")
+    @Test
+    void doNotRemoveCastNeededForGenericMethodInferenceInStreamMap() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("rewrite-core")),
+          //language=java
+          java(
+            """
+              import org.openrewrite.SourceFile;
+              import org.openrewrite.text.PlainTextParser;
+
+              import java.nio.file.Paths;
+              import java.util.Collection;
+
+              import static java.util.stream.Collectors.toList;
+
+              class Test {
+                  Collection<? extends SourceFile> generate() {
+                      return PlainTextParser.builder().build()
+                              .parse("")
+                              .map(it -> (SourceFile) it.withSourcePath(Paths.get("RELEASE.md")))
+                              .collect(toList());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/874")
     @Test
     void doNotRemoveObjectBridgeCastForUncheckedGenericCast() {
@@ -925,6 +1093,135 @@ class RemoveRedundantTypeCastTest implements RewriteTest {
                   }
 
                   static void sink(Object... args) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1024")
+    @Test
+    void doNotRemoveCastOnMethodHandleInvoke() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.invoke.MethodHandle;
+
+              class Example {
+                  String hello(MethodHandle handle) throws Throwable {
+                      return (String) handle.invoke();
+                  }
+
+                  void assign(MethodHandle handle) throws Throwable {
+                      String s = (String) handle.invokeExact();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1024")
+    @Test
+    void doNotRemoveCastOnVarHandleAccessor() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.lang.invoke.VarHandle;
+
+              class Example {
+                  String read(VarHandle handle, Object target) {
+                      return (String) handle.get(target);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1104")
+    @Test
+    void keepRawCastToBypassGenericInvarianceInMethodArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Reproducer {
+                  interface Container<T> {}
+                  static class SpecificContainer implements Container<String> {}
+                  static class Consumer {
+                      void accept(Container<Object> container) {}
+                  }
+
+                  void run(Consumer consumer, SpecificContainer specific) {
+                      consumer.accept((Container) specific);
+                      consumer.accept(((Container) specific));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1104")
+    @Test
+    void removeCastWhenParameterIsUnboundedWildcard() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Reproducer {
+                  interface Container<T> {}
+                  static class SpecificContainer implements Container<String> {}
+                  static class Consumer {
+                      void accept(Container<?> container) {}
+                  }
+
+                  void run(Consumer consumer, SpecificContainer specific) {
+                      consumer.accept((Container) specific);
+                  }
+              }
+              """,
+            """
+              class Reproducer {
+                  interface Container<T> {}
+                  static class SpecificContainer implements Container<String> {}
+                  static class Consumer {
+                      void accept(Container<?> container) {}
+                  }
+
+                  void run(Consumer consumer, SpecificContainer specific) {
+                      consumer.accept(specific);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeWideningCastOnSingleVarargsElement() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  void foo(CharSequence... values) {}
+
+                  void run(String s) {
+                      foo((CharSequence) s);
+                  }
+              }
+              """,
+            """
+              class A {
+                  void foo(CharSequence... values) {}
+
+                  void run(String s) {
+                      foo(s);
+                  }
               }
               """
           )

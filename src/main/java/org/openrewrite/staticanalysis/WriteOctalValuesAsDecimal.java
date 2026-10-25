@@ -16,15 +16,23 @@
 package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.TypeTree;
+import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static java.util.Collections.singleton;
 
@@ -42,27 +50,57 @@ public class WriteOctalValuesAsDecimal extends Recipe {
     @Getter
     final Set<String> tags = singleton("RSPEC-S1314");
 
+    private static final Pattern OCTAL_LITERAL = Pattern.compile("0[0-7_]*[0-7][lL]?");
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitLiteral(J.Literal literal, ExecutionContext ctx) {
                 String src = literal.getValueSource();
-                if (src != null && src.startsWith("0")) {
-                    if (src.length() >= 2 &&
-                        src.charAt(1) != 'x' && src.charAt(1) != 'X' &&
-                        src.charAt(1) != 'b' && src.charAt(1) != 'B' &&
-                        src.charAt(1) != '.' &&
-                        src.charAt(src.length() - 1) != 'L' && src.charAt(src.length() - 1) != 'l' &&
-                        src.charAt(src.length() - 1) != 'F' && src.charAt(src.length() - 1) != 'f' &&
-                        src.charAt(src.length() - 1) != 'D' && src.charAt(src.length() - 1) != 'd' &&
-                        !src.contains(".")) {
-                        assert literal.getValue() != null;
-                        return literal.withValueSource(literal.getValue().toString());
-                    }
+                if (src != null && literal.getValue() != null && OCTAL_LITERAL.matcher(src).matches() &&
+                        !isGoFileMode(literal, getCursor())) {
+                    String suffix = src.endsWith("l") || src.endsWith("L") ? src.substring(src.length() - 1) : "";
+                    return literal.withValueSource(literal.getValue() + suffix);
                 }
                 return super.visitLiteral(literal, ctx);
             }
         });
+    }
+
+    private static boolean isGoFileMode(J.Literal literal, Cursor cursor) {
+        Object parent = cursor.getParentTreeCursor().getValue();
+        // os.FileMode(0600) conversion, however the engine models it (call, cast, ...)
+        if (parent instanceof Expression && isGoFileModeType(((Expression) parent).getType())) {
+            return true;
+        }
+        if (parent instanceof J.MethodInvocation) {
+            J.MethodInvocation mi = (J.MethodInvocation) parent;
+            int i = mi.getArguments().indexOf(literal);
+            if (i < 0) {
+                return false;
+            }
+            if ("FileMode".equals(mi.getSimpleName())) {
+                return true;
+            }
+            if (mi.getMethodType() != null) {
+                List<JavaType> params = mi.getMethodType().getParameterTypes();
+                if (!params.isEmpty()) {
+                    return isGoFileModeType(i < params.size() ? params.get(i) : params.get(params.size() - 1));
+                }
+            }
+        } else if (parent instanceof J.VariableDeclarations.NamedVariable) {
+            Object grandparent = cursor.getParentTreeCursor().getParentTreeCursor().getValue();
+            if (grandparent instanceof J.VariableDeclarations) {
+                TypeTree typeExpression = ((J.VariableDeclarations) grandparent).getTypeExpression();
+                return typeExpression != null && isGoFileModeType(typeExpression.getType());
+            }
+        }
+        return false;
+    }
+
+    private static boolean isGoFileModeType(@Nullable JavaType type) {
+        // os.FileMode is an alias resolved to io/fs.FileMode
+        return TypeUtils.isOfClassType(type, "io/fs.FileMode") || TypeUtils.isOfClassType(type, "os.FileMode");
     }
 }

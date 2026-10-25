@@ -20,12 +20,15 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
+import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
+import static org.openrewrite.Preconditions.or;
 
 public class ExplicitInitialization extends Recipe {
 
@@ -51,6 +54,8 @@ public class ExplicitInitialization extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(Preconditions.not(new KotlinFileChecker<>()), new ExplicitInitializationVisitor<>());
+        return Preconditions.check(
+                or(new JavaFileChecker<>(), new CSharpFileChecker<>(), new GroovyFileChecker<>()),
+                new ExplicitInitializationVisitor<>());
     }
 }

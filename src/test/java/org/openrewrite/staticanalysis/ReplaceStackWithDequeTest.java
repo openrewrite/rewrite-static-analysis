@@ -50,7 +50,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
             """
               import java.util.ArrayDeque;
               import java.util.Deque;
-              import java.util.Stack;
 
               class Test {
                   void test() {
@@ -162,7 +161,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
             """
               import java.util.ArrayDeque
               import java.util.Deque
-              import java.util.Stack
 
               fun isImperative(name: String?, stack: Deque<String> = ArrayDeque()): Boolean =
                   name == "Recipe" || (!stack.contains(name) && isImperative(name, stack.apply { push(name) }))
@@ -193,7 +191,6 @@ class ReplaceStackWithDequeTest implements RewriteTest {
             """
               import java.util.ArrayDeque;
               import java.util.Deque;
-              import java.util.Stack;
 
               class Test {
                   void test(java.util.List<Test> result) {
@@ -202,6 +199,46 @@ class ReplaceStackWithDequeTest implements RewriteTest {
                       if (stack.isEmpty()) {
                           result.add(this);
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-analysis/issues/113")
+    @Test
+    void doNotFailOnDataFlowThroughNestedMethodInvocations() {
+        // Regression: dataflow was run for every initialized variable in the file, not just the `Stack`.
+        // On `Optional.ofNullable(a).orElse(opt.get())` the flow engine ping-ponged between the
+        // "argument to select" and "select to argument" steps until the stack overflowed.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Optional;
+              import java.util.Stack;
+
+              class Test {
+                  String test(Optional<String> opt) {
+                      Stack<Integer> stack = new Stack<>();
+                      stack.push(1);
+                      String a = "x";
+                      return Optional.ofNullable(a).orElse(opt.get());
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayDeque;
+              import java.util.Deque;
+              import java.util.Optional;
+
+              class Test {
+                  String test(Optional<String> opt) {
+                      Deque<Integer> stack = new ArrayDeque<>();
+                      stack.push(1);
+                      String a = "x";
+                      return Optional.ofNullable(a).orElse(opt.get());
                   }
               }
               """

@@ -51,7 +51,11 @@ public class MoveFieldAnnotationToType extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         String annotationTypeInput = annotationType == null ? "org.openrewrite..*" : annotationType;
 
-        return Preconditions.check(new UsesType<>(annotationTypeInput, null), new JavaIsoVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> condition = Preconditions.and(
+                new JavaFileChecker<>(),
+                new UsesType<>(annotationTypeInput, null)
+        );
+        return Preconditions.check(condition, new JavaIsoVisitor<ExecutionContext>() {
             final TypeMatcher typePattern = new TypeMatcher(annotationTypeInput);
 
             @Override

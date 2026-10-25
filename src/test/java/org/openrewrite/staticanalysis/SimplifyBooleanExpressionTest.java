@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings("ALL")
 class SimplifyBooleanExpressionTest implements RewriteTest {
@@ -459,6 +460,25 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
                       if (o1 == null ? o2 != null : !o1.equals(o2)) {
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaAndTrue() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(a: Boolean): Boolean = a && true
+              }
+              """,
+            """
+              class A {
+                def foo(a: Boolean): Boolean = a
               }
               """
           )

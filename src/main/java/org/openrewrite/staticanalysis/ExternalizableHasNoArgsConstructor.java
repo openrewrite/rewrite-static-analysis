@@ -20,6 +20,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.search.UsesType;
@@ -87,8 +88,9 @@ public class ExternalizableHasNoArgsConstructor extends Recipe {
                                         .build()
                                         .apply(updateCursor(cd), cd.getBody().getCoordinates().lastStatement());
                                 if (firstMethodDeclarationIndex != null) {
-                                    statements.add(firstMethodDeclarationIndex, cd.getBody().getStatements().remove(cd.getBody().getStatements().size() - 1));
-                                    cd = cd.withBody(cd.getBody().withStatements(statements));
+                                    List<Statement> withConstructor = cd.getBody().getStatements();
+                                    cd = cd.withBody(cd.getBody().withStatements(ListUtils.insert(
+                                            statements, withConstructor.get(withConstructor.size() - 1), firstMethodDeclarationIndex)));
                                 }
                             }
                         }

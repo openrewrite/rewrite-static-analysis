@@ -180,6 +180,10 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                     J.Try.Catch parent = parentCursor.getValue();
                     if (parent == scope) {
                         List<JRightPadded<NameTree>> combinedCatches = combineEquivalentCatches();
+                        TypeTree onlyType = onlyType(combinedCatches);
+                        if (onlyType != null) {
+                            return onlyType.withPrefix(m.getPrefix());
+                        }
                         m = maybeAutoFormat(m, m.getPadding().withAlternatives(combinedCatches), ctx);
                     }
                 }
@@ -192,13 +196,23 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
                 if (c == scope && !(c.getParameter().getTree().getTypeExpression() instanceof J.MultiCatch)) {
                     if (c.getParameter().getTree().getTypeExpression() != null) {
                         List<JRightPadded<NameTree>> combinedCatches = combineEquivalentCatches();
+                        TypeTree onlyType = onlyType(combinedCatches);
                         c = maybeAutoFormat(c, c.withParameter(c.getParameter()
                                 .withTree(c.getParameter().getTree()
-                                        .withTypeExpression(new J.MultiCatch(Tree.randomId(), EMPTY, Markers.EMPTY, combinedCatches)))),
+                                        .withTypeExpression(onlyType != null ? onlyType :
+                                                new J.MultiCatch(Tree.randomId(), EMPTY, Markers.EMPTY, combinedCatches)))),
                                 ctx);
                     }
                 }
                 return c;
+            }
+
+            /**
+             * The one type left to catch, which the parser makes a plain type rather than a multi-catch, or null.
+             */
+            private static @Nullable TypeTree onlyType(List<JRightPadded<NameTree>> combinedCatches) {
+                return combinedCatches.size() == 1 && combinedCatches.get(0).getElement() instanceof TypeTree ?
+                        (TypeTree) combinedCatches.get(0).getElement() : null;
             }
 
             private List<JRightPadded<NameTree>> combineEquivalentCatches() {

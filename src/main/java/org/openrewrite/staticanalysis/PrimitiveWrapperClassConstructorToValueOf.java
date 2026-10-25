@@ -92,8 +92,9 @@ public class PrimitiveWrapperClassConstructorToValueOf extends Recipe {
                             break;
                         case "java.lang.Float":
                             if (arg instanceof J.Literal && JavaType.Primitive.Double == ((J.Literal) arg).getType()) {
-                                arg = ((J.Literal) arg).withType(JavaType.Primitive.String);
-                                arg = ((J.Literal) arg).withValueSource("\"" + ((J.Literal) arg).getValue() + "\"");
+                                String value = String.valueOf(((J.Literal) arg).getValue());
+                                arg = ((J.Literal) arg).withType(JavaType.Primitive.String).withValue(value)
+                                        .withValueSource("\"" + value + "\"");
                             }
 
                             JavaType argType = arg.getType();

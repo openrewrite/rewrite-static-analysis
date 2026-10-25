@@ -15,12 +15,14 @@
  */
 package org.openrewrite.staticanalysis;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 class ExplicitThisTest implements RewriteTest {
 
@@ -489,4 +491,22 @@ class ExplicitThisTest implements RewriteTest {
         );
     }
 
+    @Nested
+    class Typescript {
+        @Test
+        void doNotCrashWhenInvokingFunctionTypedField() {
+            rewriteRun(
+              typescript(
+                """
+                  class C {
+                    handler = () => 1;
+                    run() {
+                      this.handler();
+                    }
+                  }
+                  """
+              )
+            );
+        }
+    }
 }

@@ -17,24 +17,25 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.JavadocVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
+import static java.util.Objects.requireNonNull;
 import static org.openrewrite.java.tree.J.Modifier.Type.*;
 
 public class UnnecessaryThrows extends Recipe {
@@ -57,6 +58,11 @@ public class UnnecessaryThrows extends Recipe {
             "methods overridden within the same source file, so that a subclass override which " +
             "does throw the exception keeps compiling. Overrides in other source files cannot be " +
             "detected without a scanning recipe and are therefore not accounted for.\n\n" +
+            "A `throws` declaration is also retained when the method body contains a call " +
+            "whose type does not fully resolve, because such a call may throw the exception.\n\n" +
+            "When a `throws` declaration is removed, any `@throws` or `@exception` " +
+            "JavaDoc tag documenting that exception is removed along with it, so that " +
+            "the documentation does not describe an exception the method no longer declares.\n\n" +
             "Declaring exceptions that are never thrown misleads callers into " +
             "writing unnecessary error-handling code and obscures the method's " +
             "true behavior.";
@@ -66,7 +72,9 @@ public class UnnecessaryThrows extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        // Sound only where the compiler enforces catch-or-declare: elsewhere a checked exception can be thrown
+        // without any callee declaring it, so an undeclared exception is no evidence that the `throws` is unused.
+        return Preconditions.check(new JavaFileChecker<>(), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
@@ -86,17 +94,14 @@ public class UnnecessaryThrows extends Recipe {
 
                         @Override
                         public J.Try.Resource visitTryResource(J.Try.Resource tryResource, ExecutionContext ctx) {
-                            TypedTree resource = tryResource.getVariableDeclarations();
-
-                            JavaType.FullyQualified resourceType = TypeUtils.asFullyQualified(resource.getType());
-                            if (resourceType != null) {
-                                // Find the close() method on the resource type to get its actual thrown exceptions
-                                for (JavaType.Method method : resourceType.getMethods()) {
-                                    if ("close".equals(method.getName()) && method.getParameterTypes().isEmpty()) {
-                                        removeThrownTypes(method);
-                                        break;
-                                    }
-                                }
+                            // A resource is closed implicitly at the end of the block, so its close() is a call
+                            // site. It is commonly inherited, so it has to be looked up through the supertypes.
+                            JavaType.FullyQualified resourceType = TypeUtils.asFullyQualified(tryResource.getVariableDeclarations().getType());
+                            Optional<JavaType.Method> close = TypeUtils.findDeclaredMethod(resourceType, "close", emptyList());
+                            if (close.isPresent()) {
+                                removeThrownTypes(close.get());
+                            } else {
+                                unusedThrows.clear();
                             }
 
                             return super.visitTryResource(tryResource, ctx);
@@ -104,11 +109,13 @@ public class UnnecessaryThrows extends Recipe {
 
                         @Override
                         public J.Throw visitThrow(J.Throw thrown, ExecutionContext ctx) {
-                            JavaType.FullyQualified type = TypeUtils.asFullyQualified(thrown.getException().getType());
-                            if (type != null) {
-                                unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, type));
+                            JavaType type = thrown.getException().getType();
+                            if (!TypeUtils.isWellFormedType(type)) {
+                                unusedThrows.clear();
+                                return thrown;
                             }
-                            return thrown;
+                            unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, type));
+                            return super.visitThrow(thrown, ctx);
                         }
 
                         @Override
@@ -123,14 +130,23 @@ public class UnnecessaryThrows extends Recipe {
                             return super.visitNewClass(newClass, ctx);
                         }
 
+                        // A call site that does not fully resolve is indistinguishable from one that throws
+                        // nothing, so it counts as possibly throwing every candidate. `isWellFormedType` does
+                        // not reach a method's thrown exceptions, which are checked here.
                         private void removeThrownTypes(JavaType.@Nullable Method type) {
-                            if (type != null) {
-                                for (JavaType thrownException : type.getThrownExceptions()) {
-                                    unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, thrownException));
+                            if (!TypeUtils.isWellFormedType(type)) {
+                                unusedThrows.clear();
+                                return;
+                            }
+                            for (JavaType thrownException : type.getThrownExceptions()) {
+                                if (!TypeUtils.isWellFormedType(thrownException)) {
+                                    unusedThrows.clear();
+                                    return;
                                 }
+                                unusedThrows.removeIf(t -> TypeUtils.isAssignableTo(t, thrownException));
                             }
                         }
-                    }.visit(m, ctx, getCursor().getParent());
+                    }.visit(m, ctx, requireNonNull(getCursor().getParent()));
 
                     if (!unusedThrows.isEmpty()) {
                         MethodMatcher originalMethodMatcher = new MethodMatcher(m);
@@ -150,6 +166,10 @@ public class UnnecessaryThrows extends Recipe {
                                 .withMethodType(replacementMethodType)
                                 .withName(m.getName().withType(replacementMethodType));
 
+                        // The `@throws` tags documenting the now-removed exceptions would otherwise
+                        // be left behind describing exceptions the method no longer declares.
+                        m = removeJavadocThrows(m, unusedThrows, ctx);
+
                         // Remove the thrown exceptions from the method type, such that UnnecessaryCatch can continue
                         doAfterVisit(new JavaIsoVisitor<ExecutionContext>() {
                             @Override
@@ -161,11 +181,31 @@ public class UnnecessaryThrows extends Recipe {
                                 return super.visitMethodInvocation(invocation, ctx);
                             }
                         });
-                        doAfterVisit(new UnnecessaryCatch(true, false).getVisitor());
+                        // Only catches that no longer compile are removed; `catch (Exception e)` and
+                        // `catch (Throwable t)` remain valid, and removing those would alter behavior.
+                        doAfterVisit(new UnnecessaryCatch(false, false).getVisitor());
                     }
                 }
 
                 return m;
+            }
+
+            /**
+             * Drop the `@throws`/`@exception` tags documenting exceptions that were just removed from
+             * the `throws` clause. Only reachable for methods whose javadoc does not guard removal in
+             * the first place, i.e. `private`, `static` and `final` methods.
+             */
+            private J.MethodDeclaration removeJavadocThrows(J.MethodDeclaration m, Set<JavaType.FullyQualified> removed, ExecutionContext ctx) {
+                if (m.getComments().stream().noneMatch(Javadoc.DocComment.class::isInstance)) {
+                    return m;
+                }
+                Cursor parent = getCursor().getParentTreeCursor();
+                return m.withComments(ListUtils.map(m.getComments(), c -> {
+                    if (c instanceof Javadoc.DocComment) {
+                        return (Comment) new RemoveThrowsTagVisitor(removed).visit((Javadoc.DocComment) c, ctx, parent);
+                    }
+                    return c;
+                }));
             }
 
             private Set<JavaType.FullyQualified> findExceptionCandidates(J.@Nullable MethodDeclaration method) {
@@ -215,7 +255,6 @@ public class UnnecessaryThrows extends Recipe {
                 Optional<JavaType.Method> superMethod = TypeUtils.findOverriddenMethod(method.getMethodType());
                 if (superMethod.isPresent()) {
                     JavaType.Method baseMethod = superMethod.get();
-                    baseMethod.getThrownExceptions();
                     for (JavaType baseException : baseMethod.getThrownExceptions()) {
                         if (baseException instanceof JavaType.FullyQualified) {
                             candidates.remove(baseException);
@@ -265,7 +304,96 @@ public class UnnecessaryThrows extends Recipe {
                 }
                 return candidates;
             }
-        };
+        });
     }
 
+    private static class RemoveThrowsTagVisitor extends JavadocVisitor<ExecutionContext> {
+        private final Set<JavaType.FullyQualified> removed;
+
+        RemoveThrowsTagVisitor(Set<JavaType.FullyQualified> removed) {
+            super(new JavaIsoVisitor<>());
+            this.removed = removed;
+        }
+
+        @Override
+        public @Nullable Javadoc visitDocComment(Javadoc.DocComment javadoc, ExecutionContext ctx) {
+            List<Javadoc> body = javadoc.getBody();
+            List<Javadoc> newBody = new ArrayList<>(body.size());
+            boolean changed = false;
+
+            // Walk backwards so that the line break and margin preceding a removed tag, along with
+            // any continuation lines belonging to its description, are dropped with it.
+            boolean dropUntilLineBreak = false;
+            for (int i = body.size() - 1; i >= 0; i--) {
+                Javadoc doc = body.get(i);
+                if (dropUntilLineBreak) {
+                    if (doc instanceof Javadoc.LineBreak) {
+                        dropUntilLineBreak = false;
+                    }
+                } else if (doc instanceof Javadoc.Throws && isRemoved((Javadoc.Throws) doc)) {
+                    changed = true;
+                    dropUntilLineBreak = true;
+                } else {
+                    newBody.add(doc);
+                }
+            }
+
+            if (!changed) {
+                return javadoc;
+            }
+            reverse(newBody);
+            // Removing the last tag can strand the blank line that separated the description from
+            // the tag block, so collapse any trailing empty lines back onto the closing delimiter.
+            trimTrailingBlankLines(newBody);
+            if (newBody.isEmpty() || RemoveJavaDocAuthorTag.isBlank(getCursor(), newBody)) {
+                //noinspection DataFlowIssue
+                return null;
+            }
+            return javadoc.withBody(newBody);
+        }
+
+        private void trimTrailingBlankLines(List<Javadoc> body) {
+            Javadoc.LineBreak lastLineBreak = null;
+            while (!body.isEmpty()) {
+                Javadoc last = body.get(body.size() - 1);
+                if (last instanceof Javadoc.LineBreak) {
+                    if (lastLineBreak == null) {
+                        lastLineBreak = (Javadoc.LineBreak) last;
+                    }
+                } else if (!(last instanceof Javadoc.Text) || !StringUtils.isBlank(((Javadoc.Text) last).getText())) {
+                    break;
+                }
+                body.remove(body.size() - 1);
+            }
+            if (!body.isEmpty() && lastLineBreak != null) {
+                // The margin carries the leading `*` of the line that followed; the closing `*/`
+                // supplies its own, so drop it to avoid printing a stray asterisk.
+                String margin = lastLineBreak.getMargin();
+                body.add(margin.endsWith("*") ?
+                        lastLineBreak.withMargin(margin.substring(0, margin.length() - 1)) :
+                        lastLineBreak);
+            }
+        }
+
+        private boolean isRemoved(Javadoc.Throws aThrows) {
+            if (aThrows.getExceptionName() instanceof TypeTree) {
+                TypeTree exceptionName = (TypeTree) aThrows.getExceptionName();
+                JavaType.FullyQualified type = TypeUtils.asFullyQualified(exceptionName.getType());
+                if (type != null) {
+                    return removed.contains(type);
+                }
+                // The tag may name an exception the compiler could not attribute; fall back to the
+                // simple name so an unattributed tag is not left behind.
+                if (exceptionName instanceof J.Identifier) {
+                    String simpleName = ((J.Identifier) exceptionName).getSimpleName();
+                    for (JavaType.FullyQualified fq : removed) {
+                        if (fq.getClassName().equals(simpleName)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+    }
 }

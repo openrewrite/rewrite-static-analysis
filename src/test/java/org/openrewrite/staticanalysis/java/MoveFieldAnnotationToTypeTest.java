@@ -17,11 +17,15 @@ package org.openrewrite.staticanalysis.java;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.groovy.GroovyParser;
+import org.openrewrite.kotlin.KotlinParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("deprecation")
 class MoveFieldAnnotationToTypeTest implements RewriteTest {
@@ -268,6 +272,47 @@ class MoveFieldAnnotationToTypeTest implements RewriteTest {
               public class Foo {
                   public B.@Nullable C bar() {
                       return null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeNonJavaSources() {
+        rewriteRun(
+          spec -> spec.recipe(new MoveFieldAnnotationToType("org.jspecify.annotations.*"))
+            .parser(GroovyParser.builder().classpath("jspecify"))
+            .parser(KotlinParser.builder().classpath("jspecify")),
+          //language=groovy
+          groovy(
+            """
+              import org.jspecify.annotations.NonNull
+              import java.util.function.Consumer
+
+              class Test {
+                  @NonNull Map.Entry field
+
+                  @NonNull Map.Entry method(@NonNull Map.Entry entry) {
+                      entry
+                  }
+
+                  Consumer<Map.Entry> consumer = new Consumer<Map.Entry>() {
+                      @Override
+                      void accept(@NonNull Map.Entry entry) {
+                      }
+                  }
+              }
+              """
+          ),
+          //language=kotlin
+          kotlin(
+            """
+              import org.jspecify.annotations.NonNull
+
+              class Test {
+                  fun method(@NonNull entry: java.util.Map.Entry<String, String>) {
                   }
               }
               """

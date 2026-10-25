@@ -301,6 +301,37 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
     }
 
     @Test
+    void retainsWitnessOnVarargsMethodWithBoundedTypeVariableAsSelect() {
+        // Mirrors JavaTemplate.apply(); without the witness J2 resolves to its bound, which lacks withName(..).
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Tree {}
+
+              class MethodCall extends Tree {
+                  MethodCall withName(String name) {
+                      return this;
+                  }
+              }
+
+              class Template {
+                  <J2 extends Tree> J2 apply(Object... parameters) {
+                      return null;
+                  }
+              }
+
+              class Test {
+                  MethodCall test(Template t) {
+                      return t.<MethodCall>apply("x").withName("y");
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void retainsWitnessOnInstanceMethodPassedAsArgumentToGenericMethod() {
         // STATE_VALUE isn't inferable from source()'s (zero) args or from of()'s target type.
         rewriteRun(
@@ -321,6 +352,57 @@ class UnnecessaryExplicitTypeArgumentsTest implements RewriteTest {
                   Pair<STATE_VALUE> test(Transition t, STATE_VALUE b) {
                       return Pair.of(t.<STATE_VALUE>source(), b);
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/783")
+    @Test
+    void retainsWitnessOnNoArgArgumentToMethodWithDependentTypeParameters() {
+        // naturalOrder() takes no arguments, so T is only inferable from lexicographical's target type.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              class Test {
+                  static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
+                      return null;
+                  }
+
+                  static final Comparator<Iterable<Integer>> COMPARATOR =
+                      lexicographical(Comparator.<Integer>naturalOrder());
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/783")
+    @Test
+    void retainsWitnessWhenEnclosingMethodHasDependentTypeParameters() {
+        // S depends on T, so lexicographical resolves both jointly against its target type. Without the
+        // witness, U infers as Comparable rather than Integer and the enclosing call no longer compiles.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.Comparator;
+
+              class Test {
+                  static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
+                      return null;
+                  }
+
+                  static <U> Comparator<U> reverse(Comparator<U> comparator) {
+                      return null;
+                  }
+
+                  static final Comparator<Iterable<Integer>> COMPARATOR =
+                      lexicographical(Test.<Integer>reverse(Comparator.naturalOrder()));
               }
               """
           )

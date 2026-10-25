@@ -17,12 +17,14 @@ package org.openrewrite.staticanalysis;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
@@ -32,6 +34,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
+import static org.openrewrite.java.VariableNameUtils.GenerationStrategy.INCREMENT_NUMBER;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -56,16 +60,18 @@ public class InterruptedExceptionHandling extends Recipe {
                 if (catchesInterruptedException(c) && !hasThreadInterruptCall(c)) {
                     boolean isMultiCatch = c.getParameter().getType() instanceof JavaType.MultiCatch;
                     if (isMultiCatch) {
-                        J.Identifier varId = c.getParameter().getTree().getVariables().get(0).getName();
-                        return JavaTemplate.builder("if (#{any()} instanceof InterruptedException) { Thread.currentThread().interrupt(); }")
-                                .contextSensitive()
-                                .build()
-                                .apply(updateCursor(c), c.getBody().getCoordinates().firstStatement(), varId);
+                        J.VariableDeclarations.NamedVariable variable = c.getParameter().getTree().getVariables().get(0);
+                        if ("_".equals(variable.getSimpleName())) {
+                            String name = VariableNameUtils.generateVariableName("e", new Cursor(getCursor(), c.getBody()), INCREMENT_NUMBER);
+                            JavaType.Variable variableType = variable.getVariableType() == null ? null : variable.getVariableType().withName(name);
+                            variable = variable
+                                    .withName(variable.getName().withSimpleName(name).withFieldType(variableType))
+                                    .withVariableType(variableType);
+                            c = c.withParameter(c.getParameter().withTree(c.getParameter().getTree().withVariables(singletonList(variable))));
+                        }
+                        return JavaTemplate.apply("if (#{any()} instanceof InterruptedException) { Thread.currentThread().interrupt(); }", updateCursor(c), c.getBody().getCoordinates().firstStatement(), variable.getName());
                     }
-                    return JavaTemplate.builder("Thread.currentThread().interrupt();")
-                            .contextSensitive()
-                            .build()
-                            .apply(updateCursor(c), c.getBody().getCoordinates().firstStatement());
+                    return JavaTemplate.apply("Thread.currentThread().interrupt();", updateCursor(c), c.getBody().getCoordinates().firstStatement());
                 }
                 return c;
             }

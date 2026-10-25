@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.StringUtils;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
@@ -35,6 +36,7 @@ import static org.openrewrite.java.tree.J.Wildcard.Bound.Super;
 @EqualsAndHashCode(callSuper = false)
 @Value
 public class DeclarationSiteTypeVariance extends Recipe {
+    private static final AnnotationMatcher OVERRIDE = new AnnotationMatcher("@java.lang.Override");
 
     @Option(displayName = "Variant types",
             description = "A list of well-known classes that have in/out type variance.",
@@ -86,7 +88,12 @@ public class DeclarationSiteTypeVariance extends Recipe {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-                if (m.getMethodType() != null && m.getMethodType().isOverride()) {
+                // An `@Override` method may implement a declaration outside the source set, whose signature
+                // cannot be changed. `isOverride()` only recognizes that when the supertype is resolvable, so
+                // fall back to the annotation.
+                // https://github.com/openrewrite/rewrite-static-analysis/issues/277
+                if ((m.getMethodType() != null && m.getMethodType().isOverride()) ||
+                        m.getLeadingAnnotations().stream().anyMatch(OVERRIDE::matches)) {
                     return m;
                 }
                 return m.withParameters(ListUtils.map(m.getParameters(), param -> {

@@ -27,6 +27,7 @@ import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.staticanalysis.go.GoFileChecker;
 import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
@@ -103,8 +104,8 @@ public class RemoveUnusedLocalVariables extends Recipe {
             ignoreVariableNames.addAll(Arrays.asList(ignoreVariablesNamed));
         }
 
-        TreeVisitor<?, ExecutionContext> notJsNorKt = and(not(new JavascriptFileChecker<>()), not(new KotlinFileChecker<>()));
-        return Preconditions.check(notJsNorKt, new JavaIsoVisitor<ExecutionContext>() {
+        TreeVisitor<?, ExecutionContext> notJsNorKtNorGo = and(not(new JavascriptFileChecker<>()), not(new KotlinFileChecker<>()), not(new GoFileChecker<>()));
+        return Preconditions.check(notJsNorKtNorGo, new JavaIsoVisitor<ExecutionContext>() {
             private Cursor getCursorToParentScope(Cursor cursor) {
                 return cursor.dropParentUntil(is ->
                         is instanceof J.ClassDeclaration ||

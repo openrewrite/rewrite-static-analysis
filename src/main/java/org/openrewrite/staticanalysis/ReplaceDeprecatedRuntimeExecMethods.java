@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavadocVisitor;
@@ -26,6 +27,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Javadoc;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -48,7 +50,9 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesJavaVersion<>(18), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(
+                Preconditions.and(new UsesJavaVersion<>(18), new JavaFileChecker<>()),
+                new JavaIsoVisitor<ExecutionContext>() {
             @Override
             protected JavadocVisitor<ExecutionContext> getJavadocVisitor() {
                 return new JavadocVisitor<ExecutionContext>(this) {
@@ -81,46 +85,27 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
                     }
 
                     updateCursor(m);
+                    Expression arg0 = m.getArguments().get(0);
+                    Cursor cursor = new Cursor(getCursor(), arg0);
+                    Expression newArg0;
                     if (flattenAble) {
                         String[] cmds = sb.toString().split(" ");
                         String templateCode = String.format("new String[] {%s}", toStringArguments(cmds));
-                        JavaTemplate template = JavaTemplate.builder(templateCode).build();
-
-                        List<Expression> args = m.getArguments();
-                        Cursor cursor = new Cursor(getCursor(), args.get(0));
-                        args.set(0, template.apply(cursor, args.get(0).getCoordinates().replace()));
-
-                        if (m.getMethodType() != null) {
-                            List<JavaType> parameterTypes = m.getMethodType().getParameterTypes();
-                            parameterTypes.set(0, JavaType.ShallowClass.build("java.lang.String[]"));
-
-                            return m.withArguments(args)
-                                    .withMethodType(m.getMethodType().withParameterTypes(parameterTypes));
-                        }
+                        newArg0 = JavaTemplate.apply(templateCode, cursor, arg0.getCoordinates().replace());
                     } else {
                         // replace argument to 'command.split(" ")'
-                        List<Expression> args = m.getArguments();
-                        boolean needWrap = false;
-                        Expression arg0 = args.get(0);
-                        if (!(arg0 instanceof J.Identifier) &&
-                            !(arg0 instanceof J.Literal) &&
-                            !(arg0 instanceof J.MethodInvocation)) {
-                            needWrap = true;
-                        }
-
+                        boolean needWrap = !(arg0 instanceof J.Identifier) &&
+                                           !(arg0 instanceof J.Literal) &&
+                                           !(arg0 instanceof J.MethodInvocation);
                         String code = needWrap ? "(#{any()}).split(\" \")" : "#{any()}.split(\" \")";
-                        JavaTemplate template = JavaTemplate.builder(code).contextSensitive().build();
-                        Cursor cursor = new Cursor(getCursor(), args.get(0));
-                        arg0 = template.apply(cursor, args.get(0).getCoordinates().replace(), args.get(0));
-                        args.set(0, arg0);
+                        newArg0 = JavaTemplate.builder(code).contextSensitive().build()
+                                .apply(cursor, arg0.getCoordinates().replace(), arg0);
+                    }
 
-                        if (m.getMethodType() != null) {
-                            List<JavaType> parameterTypes = m.getMethodType().getParameterTypes();
-                            parameterTypes.set(0, JavaType.ShallowClass.build("java.lang.String[]"));
-
-                            return m.withArguments(args).withMethodType(m.getMethodType().withParameterTypes(parameterTypes));
-                        }
-                        return m;
+                    if (m.getMethodType() != null) {
+                        return m.withArguments(ListUtils.mapFirst(m.getArguments(), a -> newArg0))
+                                .withMethodType(m.getMethodType().withParameterTypes(ListUtils.mapFirst(
+                                        m.getMethodType().getParameterTypes(), t -> JavaType.ShallowClass.build("java.lang.String[]"))));
                     }
                 }
 

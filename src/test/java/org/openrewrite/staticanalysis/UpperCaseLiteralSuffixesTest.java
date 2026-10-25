@@ -86,4 +86,94 @@ class UpperCaseLiteralSuffixesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void useUpperCaseHexadecimalDigits() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int i = 0xff;
+                  long l = 0Xdeadbeefl;
+                  int masked = 0xff_ff;
+                  int alreadyUpperCase = 0xFF;
+                  int decimal = 255;
+                  String s = "0xff";
+              }
+              """,
+            """
+              class Test {
+                  int i = 0xFF;
+                  long l = 0xDEADBEEFL;
+                  int masked = 0xFF_FF;
+                  int alreadyUpperCase = 0xFF;
+                  int decimal = 255;
+                  String s = "0xff";
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hexadecimalFloatingPointLiterals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  double d = 0x1.aP3;
+                  float f = 0x1.bp1f;
+              }
+              """,
+            """
+              class Test {
+                  double d = 0x1.Ap3;
+                  float f = 0x1.Bp1F;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void literalsOutsideOfVariableInitializers() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  long test(long l) {
+                      return test(0xab) & test(1l);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  long test(long l) {
+                      return test(0xAB) & test(1L);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeOtherLiterals() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int binary = 0b1010;
+                  int octal = 0777;
+                  double exponent = 1.5e3;
+                  char c = 'f';
+              }
+              """
+          )
+        );
+    }
 }

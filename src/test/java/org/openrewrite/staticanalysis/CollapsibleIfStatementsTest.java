@@ -20,11 +20,13 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
 import static org.openrewrite.python.Assertions.python;
+import static org.openrewrite.scala.Assertions.scala;
 
 class CollapsibleIfStatementsTest implements RewriteTest {
 
@@ -336,6 +338,78 @@ class CollapsibleIfStatementsTest implements RewriteTest {
               def test(a, b):
                   if a and b:
                       print()
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeNestedIfsGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              type User struct {
+                  Active        bool
+                  EmailVerified bool
+              }
+
+              func welcome(user User) {
+                  if user.Active {
+                      if user.EmailVerified {
+                          sendWelcome(user)
+                      }
+                  }
+              }
+
+              func sendWelcome(user User) {}
+              """,
+            """
+              package main
+
+              type User struct {
+                  Active        bool
+                  EmailVerified bool
+              }
+
+              func welcome(user User) {
+                  if user.Active && user.EmailVerified {
+                      sendWelcome(user)
+                  }
+              }
+
+              func sendWelcome(user User) {}
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeNestedIfsScala() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(a: Boolean, b: Boolean): Unit = {
+                  if (a) {
+                    if (b) {
+                      println("x")
+                    }
+                  }
+                }
+              }
+              """,
+            """
+              class A {
+                def foo(a: Boolean, b: Boolean): Unit = {
+                    if (a && b) {
+                        println("x")
+                    }
+                }
+              }
               """
           )
         );

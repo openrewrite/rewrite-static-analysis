@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
@@ -25,13 +26,14 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.javascript.JavascriptFileChecker;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
+import static java.util.Collections.*;
 
 public class ExplicitLambdaArgumentTypes extends Recipe {
     @Getter
@@ -47,195 +49,208 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new ExplicitLambdaArgumentTypesVisitor();
-    }
+        return Preconditions.check(Preconditions.not(new JavascriptFileChecker<>()), new JavaIsoVisitor<ExecutionContext>() {
 
-    private static class ExplicitLambdaArgumentTypesVisitor extends JavaIsoVisitor<ExecutionContext> {
+            @Override
+            public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
 
-        @Override
-        public J.Lambda visitLambda(J.Lambda lambda, ExecutionContext ctx) {
+                J.Lambda l = super.visitLambda(lambda, ctx);
+                if (l.getParameters().getParameters().size() <= 2 && !(l.getBody() instanceof J.Block)) {
+                    return l;
+                }
 
-            J.Lambda l = super.visitLambda(lambda, ctx);
-            if (l.getParameters().getParameters().size() <= 2 && !(l.getBody() instanceof J.Block)) {
-                return l;
+                J.Lambda after = l.withParameters(
+                        l.getParameters().withParameters(
+                                ListUtils.map(l.getParameters().getParameters(), parameter -> {
+                                    if (parameter instanceof J.VariableDeclarations) {
+                                        return maybeAddTypeExpression((J.VariableDeclarations) parameter);
+                                    }
+                                    return parameter;
+                                })
+                        )
+                );
+
+                if (after != l) {
+                    after = after.withParameters(after.getParameters().withParenthesized(true));
+                }
+                return after;
             }
 
-            J.Lambda after = l.withParameters(
-                    l.getParameters().withParameters(
-                            ListUtils.map(l.getParameters().getParameters(), parameter -> {
-                                if (parameter instanceof J.VariableDeclarations) {
-                                    return maybeAddTypeExpression((J.VariableDeclarations) parameter);
-                                }
-                                return parameter;
-                            })
-                    )
-            );
-
-            if (after != l) {
-                after = after.withParameters(after.getParameters().withParenthesized(true));
-            }
-            return after;
-        }
-
-        private J.VariableDeclarations maybeAddTypeExpression(J.VariableDeclarations multiVariable) {
-            // if the type expression is null, it implies the types on the lambda arguments are implicit.
-            if (multiVariable.getTypeExpression() == null) {
-                J.VariableDeclarations.NamedVariable nv = multiVariable.getVariables().get(0);
-                TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY);
-                if (typeExpression != null) {
-                    // "? extends Foo" is not a valid type definition on its own. Unwrap wildcard and replace with its bound
-                    if (typeExpression instanceof J.Wildcard) {
-                        J.Wildcard wildcard = (J.Wildcard) typeExpression;
-                        if (wildcard.getBoundedType() == null) {
-                            return multiVariable;
+            private J.VariableDeclarations maybeAddTypeExpression(J.VariableDeclarations multiVariable) {
+                // if the type expression is null, it implies the types on the lambda arguments are implicit.
+                if (multiVariable.getTypeExpression() == null) {
+                    J.VariableDeclarations.NamedVariable nv = multiVariable.getVariables().get(0);
+                    TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY, newRecursionGuard());
+                    if (typeExpression != null) {
+                        // "? extends Foo" is not a valid type definition on its own. Unwrap wildcard and replace with its bound
+                        if (typeExpression instanceof J.Wildcard) {
+                            J.Wildcard wildcard = (J.Wildcard) typeExpression;
+                            if (wildcard.getBoundedType() == null) {
+                                return multiVariable;
+                            }
+                            typeExpression = buildTypeTree(wildcard.getBoundedType().getType(), Space.EMPTY, newRecursionGuard());
                         }
-                        typeExpression = buildTypeTree(wildcard.getBoundedType().getType(), Space.EMPTY);
+                        multiVariable = multiVariable.withTypeExpression(typeExpression);
+                        multiVariable = multiVariable.withVariables(ListUtils.map(multiVariable.getVariables(), (index, variable) -> {
+                            if (index == 0) {
+                                return variable.withPrefix(variable.getPrefix().withWhitespace(" "));
+                            }
+                            return variable;
+                        }));
                     }
-                    multiVariable = multiVariable.withTypeExpression(typeExpression);
-                    multiVariable = multiVariable.withVariables(ListUtils.map(multiVariable.getVariables(), (index, variable) -> {
-                        if (index == 0) {
-                            return variable.withPrefix(variable.getPrefix().withWhitespace(" "));
-                        }
-                        return variable;
-                    }));
+                }
+                return multiVariable;
+            }
+
+            private Set<JavaType> newRecursionGuard() {
+                return newSetFromMap(new IdentityHashMap<>());
+            }
+
+            private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space, Set<JavaType> recursionGuard) {
+                if (type == null || type instanceof JavaType.Unknown) {
+                    return null;
+                }
+                if (!recursionGuard.add(type)) {
+                    return null;
+                }
+                try {
+                    return buildTypeTree0(type, space, recursionGuard);
+                } finally {
+                    recursionGuard.remove(type);
                 }
             }
-            return multiVariable;
-        }
 
-        private @Nullable TypeTree buildTypeTree(@Nullable JavaType type, Space space) {
-            if (type == null || type instanceof JavaType.Unknown) {
-                return null;
-            }
-            if (type instanceof JavaType.Primitive) {
-                return new J.Primitive(
-                        Tree.randomId(),
-                        space,
-                        Markers.EMPTY,
-                        (JavaType.Primitive) type
-                );
-            }
-            if (type instanceof JavaType.FullyQualified) {
-
-                JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
-
-                J.Identifier identifier = new J.Identifier(Tree.randomId(),
-                        space,
-                        Markers.EMPTY,
-                        emptyList(),
-                        fq.getClassName(),
-                        type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type,
-                        null
-                );
-
-                if (!fq.getTypeParameters().isEmpty()) {
-                    JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters());
-                    if (typeParameters == null) {
-                        //If there is a problem resolving one of the type parameters, then do not return a type
-                        //expression for the fully-qualified type.
-                        return null;
-                    }
-                    return new J.ParameterizedType(
+            private @Nullable TypeTree buildTypeTree0(JavaType type, Space space, Set<JavaType> recursionGuard) {
+                if (type instanceof JavaType.Primitive) {
+                    return new J.Primitive(
                             Tree.randomId(),
                             space,
                             Markers.EMPTY,
-                            identifier,
-                            typeParameters,
-                            new JavaType.Parameterized(null, fq, fq.getTypeParameters())
+                            (JavaType.Primitive) type
                     );
-
                 }
-                maybeAddImport(fq);
-                return identifier;
-            }
-            if (type instanceof JavaType.Array) {
-                JavaType.Array arrayType = (JavaType.Array) type;
-                // Get the base element type
-                JavaType elemType = arrayType.getElemType();
-                while (elemType instanceof JavaType.Array) {
-                    elemType = ((JavaType.Array) elemType).getElemType();
-                }
+                if (type instanceof JavaType.FullyQualified) {
 
-                // Build the base type expression
-                TypeTree result = buildTypeTree(elemType, space);
-                if (result == null) {
-                    return null;
-                }
+                    JavaType.FullyQualified fq = (JavaType.FullyQualified) type;
 
-                // Count dimensions and build array type
-                JavaType currentType = type;
-                while (currentType instanceof JavaType.Array) {
-                    result = new J.ArrayType(
-                            Tree.randomId(),
-                            Space.EMPTY,
-                            Markers.EMPTY,
-                            result,
-                            null,
-                            new JLeftPadded<>(Space.EMPTY, Space.EMPTY, Markers.EMPTY),
-                            currentType
-                    );
-                    currentType = ((JavaType.Array) currentType).getElemType();
-                }
-                return result;
-            }
-            if (type instanceof JavaType.Variable) {
-                return buildTypeTree(((JavaType.Variable) type).getType(), space);
-            }
-            if (type instanceof JavaType.GenericTypeVariable) {
-                JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
-
-                if (!"?".equals(genericType.getName())) {
-                    return new J.Identifier(Tree.randomId(),
+                    J.Identifier identifier = new J.Identifier(Tree.randomId(),
                             space,
                             Markers.EMPTY,
                             emptyList(),
-                            genericType.getName(),
-                            type,
+                            fq.getClassName(),
+                            type instanceof JavaType.Parameterized ? ((JavaType.Parameterized) type).getType() : type,
                             null
                     );
-                }
-                JLeftPadded<J.Wildcard.Bound> bound = null;
-                NameTree boundedType = null;
-                if (genericType.getVariance() == JavaType.GenericTypeVariable.Variance.COVARIANT) {
-                    bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Extends, Markers.EMPTY);
-                } else if (genericType.getVariance() == JavaType.GenericTypeVariable.Variance.CONTRAVARIANT) {
-                    bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Super, Markers.EMPTY);
-                }
 
-                if (!genericType.getBounds().isEmpty()) {
-                    boundedType = buildTypeTree(genericType.getBounds().get(0), Space.format(" "));
-                    if (boundedType == null) {
+                    if (!fq.getTypeParameters().isEmpty()) {
+                        JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters(), recursionGuard);
+                        if (typeParameters == null) {
+                            //If there is a problem resolving one of the type parameters, then do not return a type
+                            //expression for the fully-qualified type.
+                            return null;
+                        }
+                        return new J.ParameterizedType(
+                                Tree.randomId(),
+                                space,
+                                Markers.EMPTY,
+                                identifier,
+                                typeParameters,
+                                new JavaType.Parameterized(null, fq, fq.getTypeParameters())
+                        );
+
+                    }
+                    maybeAddImport(fq);
+                    return identifier;
+                }
+                if (type instanceof JavaType.Array) {
+                    JavaType.Array arrayType = (JavaType.Array) type;
+                    // Get the base element type
+                    JavaType elemType = arrayType.getElemType();
+                    while (elemType instanceof JavaType.Array) {
+                        elemType = ((JavaType.Array) elemType).getElemType();
+                    }
+
+                    // Build the base type expression
+                    TypeTree result = buildTypeTree(elemType, space, recursionGuard);
+                    if (result == null) {
                         return null;
                     }
+
+                    // Count dimensions and build array type
+                    JavaType currentType = type;
+                    while (currentType instanceof JavaType.Array) {
+                        result = new J.ArrayType(
+                                Tree.randomId(),
+                                Space.EMPTY,
+                                Markers.EMPTY,
+                                result,
+                                null,
+                                new JLeftPadded<>(Space.EMPTY, Space.EMPTY, Markers.EMPTY),
+                                currentType
+                        );
+                        currentType = ((JavaType.Array) currentType).getElemType();
+                    }
+                    return result;
                 }
-
-                return new J.Wildcard(
-                        Tree.randomId(),
-                        space,
-                        Markers.EMPTY,
-                        bound,
-                        boundedType
-                );
-            }
-            return null;
-        }
-
-        private @Nullable JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters) {
-            List<JRightPadded<Expression>> typeExpressions = new ArrayList<>();
-
-            for (JavaType type : typeParameters) {
-                Expression typeParameterExpression = (Expression) buildTypeTree(type, Space.EMPTY);
-                if (typeParameterExpression == null) {
-                    return null;
+                if (type instanceof JavaType.Variable) {
+                    return buildTypeTree(((JavaType.Variable) type).getType(), space, recursionGuard);
                 }
-                typeExpressions.add(new JRightPadded<>(
-                        typeParameterExpression,
-                        Space.EMPTY,
-                        Markers.EMPTY
-                ));
+                if (type instanceof JavaType.GenericTypeVariable) {
+                    JavaType.GenericTypeVariable genericType = (JavaType.GenericTypeVariable) type;
+
+                    if (!"?".equals(genericType.getName())) {
+                        return new J.Identifier(Tree.randomId(),
+                                space,
+                                Markers.EMPTY,
+                                emptyList(),
+                                genericType.getName(),
+                                type,
+                                null
+                        );
+                    }
+                    JLeftPadded<J.Wildcard.Bound> bound = null;
+                    NameTree boundedType = null;
+                    if (genericType.getVariance() == JavaType.GenericTypeVariable.Variance.COVARIANT) {
+                        bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Extends, Markers.EMPTY);
+                    } else if (genericType.getVariance() == JavaType.GenericTypeVariable.Variance.CONTRAVARIANT) {
+                        bound = new JLeftPadded<>(Space.format(" "), J.Wildcard.Bound.Super, Markers.EMPTY);
+                    }
+
+                    if (!genericType.getBounds().isEmpty()) {
+                        boundedType = buildTypeTree(genericType.getBounds().get(0), Space.format(" "), recursionGuard);
+                        if (boundedType == null) {
+                            return null;
+                        }
+                    }
+
+                    return new J.Wildcard(
+                            Tree.randomId(),
+                            space,
+                            Markers.EMPTY,
+                            bound,
+                            boundedType
+                    );
+                }
+                return null;
             }
-            return JContainer.build(Space.EMPTY, typeExpressions, Markers.EMPTY);
-        }
+
+            private @Nullable JContainer<Expression> buildTypeParameters(List<JavaType> typeParameters, Set<JavaType> recursionGuard) {
+                List<JRightPadded<Expression>> typeExpressions = new ArrayList<>();
+
+                for (JavaType type : typeParameters) {
+                    Expression typeParameterExpression = (Expression) buildTypeTree(type, Space.EMPTY, recursionGuard);
+                    if (typeParameterExpression == null) {
+                        return null;
+                    }
+                    typeExpressions.add(new JRightPadded<>(
+                            typeParameterExpression,
+                            Space.EMPTY,
+                            Markers.EMPTY
+                    ));
+                }
+                return JContainer.build(Space.EMPTY, typeExpressions, Markers.EMPTY);
+            }
+        });
     }
 
 }

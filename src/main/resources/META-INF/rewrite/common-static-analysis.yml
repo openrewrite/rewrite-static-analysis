@@ -71,6 +71,7 @@ recipeList:
   - org.openrewrite.staticanalysis.PrimitiveWrapperClassConstructorToValueOf
   - org.openrewrite.staticanalysis.RedundantFileCreation
   - org.openrewrite.staticanalysis.RemoveExtraSemicolons
+  - org.openrewrite.staticanalysis.RemoveNoArgumentSuperConstructorCall
   - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
   - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeLiteralEquals
 #  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast

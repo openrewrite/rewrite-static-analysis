@@ -437,6 +437,98 @@ class NoDoubleBraceInitializationTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/352")
+    @Test
+    void nestedDoubleBraceInitializationKeepsItsOwnReceiver() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.LinkedHashMap;
+
+              class A {
+                  void example() {
+                      LinkedHashMap<String, Object> expectedMap = new LinkedHashMap<>() {{
+                          put("a", 1);
+                          put("testArrayList", new ArrayList<>() {{
+                              add(1);
+                          }});
+                      }};
+                  }
+              }
+              """,
+            """
+              import java.util.ArrayList;
+              import java.util.LinkedHashMap;
+
+              class A {
+                  void example() {
+                      LinkedHashMap<String, Object> expectedMap = new LinkedHashMap<>();
+                      expectedMap.put("a", 1);
+                      expectedMap.put("testArrayList", new ArrayList<>() {
+                          {
+                              add(1);
+                          }
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/352")
+    @Test
+    void enclosingMethodCallInsideAnonymousClassKeepsNoSelect() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class A {
+                  String helper() {
+                      return "H";
+                  }
+
+                  void example() {
+                      Map<String, String> map = new HashMap<String, String>() {{
+                          put("a", new Object() {
+                              @Override
+                              public String toString() {
+                                  return helper();
+                              }
+                          }.toString());
+                      }};
+                  }
+              }
+              """,
+            """
+              import java.util.HashMap;
+              import java.util.Map;
+
+              class A {
+                  String helper() {
+                      return "H";
+                  }
+
+                  void example() {
+                      Map<String, String> map = new HashMap<String, String>();
+                      map.put("a", new Object() {
+                          @Override
+                          public String toString() {
+                              return helper();
+                          }
+                      }.toString());
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void implicitReceiver() {
         rewriteRun(

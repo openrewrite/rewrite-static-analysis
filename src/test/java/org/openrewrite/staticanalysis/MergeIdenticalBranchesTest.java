@@ -20,6 +20,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -317,6 +318,55 @@ class MergeIdenticalBranchesTest implements RewriteTest {
                       print("same")
                   else:
                       print("different")
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIdenticalBranchesGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              type Order struct {
+                  Expedited   bool
+                  GiftWrapped bool
+              }
+
+              func route(order Order) {
+                  if order.Expedited {
+                      queueFastLane(order)
+                  } else if order.GiftWrapped {
+                      queueFastLane(order)
+                  } else {
+                      queueStandard(order)
+                  }
+              }
+
+              func queueFastLane(order Order) {}
+              func queueStandard(order Order) {}
+              """,
+            """
+              package main
+
+              type Order struct {
+                  Expedited   bool
+                  GiftWrapped bool
+              }
+
+              func route(order Order) {
+                  if order.Expedited || order.GiftWrapped {
+                      queueFastLane(order)
+                  } else {
+                      queueStandard(order)
+                  }
+              }
+
+              func queueFastLane(order Order) {}
+              func queueStandard(order Order) {}
               """
           )
         );

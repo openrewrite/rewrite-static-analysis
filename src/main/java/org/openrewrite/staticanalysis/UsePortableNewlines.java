@@ -29,6 +29,9 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -88,19 +91,64 @@ public class UsePortableNewlines extends Recipe {
     }
 
     private static Expression replaceNewlineInLiteral(Expression maybeLiteral) {
-        if (maybeLiteral instanceof J.Literal) {
-            J.Literal literal = (J.Literal) maybeLiteral;
-            if (literal.getValue() instanceof String && literal.getValueSource() != null) {
-                String source = literal.getValueSource();
-                String value = (String) literal.getValue();
-                // Check if the source contains the escape sequence \n
-                if (source.contains("\\n")) {
-                    return literal
-                            .withValue(value.replace("\n", "%n"))
-                            .withValueSource(source.replace("\\n", "%n"));
+        if (!(maybeLiteral instanceof J.Literal)) {
+            return maybeLiteral;
+        }
+        J.Literal literal = (J.Literal) maybeLiteral;
+        String source = literal.getValueSource();
+        if (!(literal.getValue() instanceof String) || source == null || !source.contains("\\n")) {
+            return literal;
+        }
+        String value = (String) literal.getValue();
+        // An explicit \r\n is a deliberate line ending (HTTP, SMTP, CSV), %n would change it on every platform
+        if (value.indexOf('\r') >= 0) {
+            return literal;
+        }
+
+        // Every '\n' in the value comes, in order, from either a \n escape or a raw text block line break
+        StringBuilder newSource = new StringBuilder(source.length());
+        List<Boolean> replacedNewlines = new ArrayList<>();
+        boolean textBlockOpeningLine = source.startsWith("\"\"\"");
+        for (int i = 0; i < source.length(); i++) {
+            char c = source.charAt(i);
+            if (c == '\\' && i + 1 < source.length()) {
+                char escaped = source.charAt(++i);
+                if (escaped == 'n') {
+                    newSource.append("%n");
+                    replacedNewlines.add(true);
+                    continue;
+                }
+                newSource.append(c).append(escaped);
+                if (escaped == '\r' && i + 1 < source.length() && source.charAt(i + 1) == '\n') {
+                    newSource.append(source.charAt(++i));
+                }
+                continue;
+            }
+            newSource.append(c);
+            if (c == '\r' && i + 1 < source.length() && source.charAt(i + 1) == '\n') {
+                newSource.append(source.charAt(++i));
+            }
+            if (c == '\r' || c == '\n') {
+                if (textBlockOpeningLine) {
+                    textBlockOpeningLine = false;
+                } else {
+                    replacedNewlines.add(false);
                 }
             }
         }
-        return maybeLiteral;
+        if (!replacedNewlines.contains(true) || value.chars().filter(ch -> ch == '\n').count() != replacedNewlines.size()) {
+            return literal;
+        }
+
+        StringBuilder newValue = new StringBuilder(value.length());
+        Iterator<Boolean> replaced = replacedNewlines.iterator();
+        for (char c : value.toCharArray()) {
+            if (c == '\n' && replaced.next()) {
+                newValue.append("%n");
+            } else {
+                newValue.append(c);
+            }
+        }
+        return literal.withValue(newValue.toString()).withValueSource(newSource.toString());
     }
 }

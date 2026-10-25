@@ -295,6 +295,79 @@ class NoValueOfOnStringTypeTest implements RewriteTest {
         );
     }
 
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1009")
+    @Test
+    void doNotRemoveValueOfOnNullInitializedConstant() {
+        // String.valueOf(null String) is "null"; passing the constant directly throws in replace(..).
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  private static final String INCIDENT_OPEN_TASK = null;
+
+                  String replaceDummyValues(String templateBody) {
+                      return templateBody.replace("$INCIDENT_OPEN_TASK", String.valueOf(INCIDENT_OPEN_TASK));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1009")
+    @Test
+    void doNotRemoveValueOfOnNullableStringVariables() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String field;
+
+                  String returned(String parameter) {
+                      return String.valueOf(parameter);
+                  }
+
+                  String assigned() {
+                      String local = String.valueOf(field);
+                      return local;
+                  }
+
+                  int argument(String parameter) {
+                      return "text".indexOf(String.valueOf(parameter));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/1009")
+    @Test
+    void stillRemovesValueOfOnStringWithinConcatenation() {
+        // Concatenation renders a null operand as "null" already, so removal is safe here.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  String method(String parameter) {
+                      return "prefix" + String.valueOf(parameter);
+                  }
+              }
+              """,
+            """
+              class Test {
+                  String method(String parameter) {
+                      return "prefix" + parameter;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Test
     void doNotRemoveValueOfForNullableStrings() {
         rewriteRun(

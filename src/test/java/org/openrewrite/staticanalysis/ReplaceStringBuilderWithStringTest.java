@@ -421,4 +421,180 @@ class ReplaceStringBuilderWithStringTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void charArrayAppendKeepsCharacterRendering() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String render(char[] chars) {
+                      return new StringBuilder()
+                              .append("prefix:")
+                              .append(chars)
+                              .toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String render(char[] chars) {
+                      return "prefix:" +
+                              String.valueOf(chars);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void charArrayAppendInEveryChainPosition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String only(char[] chars) {
+                      return new StringBuilder().append(chars).toString();
+                  }
+                  String first(char[] chars) {
+                      return new StringBuilder().append(chars).append("suffix").toString();
+                  }
+                  String middle(char[] chars) {
+                      return new StringBuilder().append("a").append(chars).append("b").toString();
+                  }
+                  String last(char[] chars) {
+                      return new StringBuilder().append("prefix:").append(chars).toString();
+                  }
+                  String multiple(char[] a, char[] b) {
+                      return new StringBuilder().append(a).append("-").append(b).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String only(char[] chars) {
+                      return String.valueOf(chars);
+                  }
+                  String first(char[] chars) {
+                      return String.valueOf(chars) + "suffix";
+                  }
+                  String middle(char[] chars) {
+                      return "a" + String.valueOf(chars) + "b";
+                  }
+                  String last(char[] chars) {
+                      return "prefix:" + String.valueOf(chars);
+                  }
+                  String multiple(char[] a, char[] b) {
+                      return String.valueOf(a) + "-" + String.valueOf(b);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void charArrayAppendOfAnyExpressionShape() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  char[] field = {'f'};
+                  char[] make() {
+                      return new char[]{'m'};
+                  }
+                  String fromField() {
+                      return new StringBuilder().append("a").append(field).toString();
+                  }
+                  String fromMethod() {
+                      return new StringBuilder().append("a").append(make()).toString();
+                  }
+                  String fromNewArray() {
+                      return new StringBuilder().append("a").append(new char[]{'n'}).toString();
+                  }
+                  String fromCast(Object o) {
+                      return new StringBuilder().append("a").append((char[]) o).toString();
+                  }
+                  String fromTernary(boolean b, char[] x, char[] y) {
+                      return new StringBuilder().append("a").append(b ? x : y).toString();
+                  }
+                  String fromNull() {
+                      return new StringBuilder().append("a").append((char[]) null).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  char[] field = {'f'};
+                  char[] make() {
+                      return new char[]{'m'};
+                  }
+                  String fromField() {
+                      return "a" + String.valueOf(field);
+                  }
+                  String fromMethod() {
+                      return "a" + String.valueOf(make());
+                  }
+                  String fromNewArray() {
+                      return "a" + String.valueOf(new char[]{'n'});
+                  }
+                  String fromCast(Object o) {
+                      return "a" + String.valueOf((char[]) o);
+                  }
+                  String fromTernary(boolean b, char[] x, char[] y) {
+                      return "a" + String.valueOf(b ? x : y);
+                  }
+                  String fromNull() {
+                      return "a" + String.valueOf((char[]) null);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotWrapObjectAppendHoldingCharArray() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String render(char[] chars) {
+                      Object o = chars;
+                      return new StringBuilder().append("a").append(o).toString();
+                  }
+              }
+              """,
+            """
+              class A {
+                  String render(char[] chars) {
+                      Object o = chars;
+                      return "a" + o;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeCharArrayRangeAppend() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class A {
+                  String render(char[] chars) {
+                      return new StringBuilder().append("a").append(chars, 0, 2).toString();
+                  }
+              }
+              """
+          )
+        );
+    }
 }

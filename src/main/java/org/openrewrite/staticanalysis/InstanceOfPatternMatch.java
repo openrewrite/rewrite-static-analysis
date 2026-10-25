@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.search.SemanticallyEqual;
@@ -137,6 +138,16 @@ public class InstanceOfPatternMatch extends Recipe {
                     }
                 }
                 return instanceOf;
+            }
+
+            @Override
+            public J visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
+                J.Assignment a = (J.Assignment) super.visitAssignment(assignment, ctx);
+                InstanceOfPatternReplacements replacements = getCursor().getNearestMessage("flowTypeScope");
+                if (replacements != null) {
+                    replacements.invalidate(a.getVariable());
+                }
+                return a;
             }
 
             @Override
@@ -294,6 +305,10 @@ public class InstanceOfPatternMatch extends Recipe {
 
         public boolean isEmpty() {
             return replacements.isEmpty() && variablesToDelete.isEmpty();
+        }
+
+        public void invalidate(Expression assignedTo) {
+            instanceOfs.entrySet().removeIf(e -> SemanticallyEqual.areEqual(e.getKey().getExpression(), assignedTo));
         }
 
         private boolean shouldDeleteVariableDeclaration(Cursor parent, J.InstanceOf instanceOf) {
@@ -516,6 +531,41 @@ public class InstanceOfPatternMatch extends Recipe {
 
         static @Nullable J refactor(@Nullable J tree, InstanceOfPatternReplacements replacements, Cursor cursor, Set<String> introducedNames) {
             return new UseInstanceOfPatternMatching(replacements, introducedNames).visit(tree, 0, cursor);
+        }
+
+        @Override
+        public J.Block visitBlock(J.Block block, Integer p) {
+            J.Block b = (J.Block) super.visitBlock(block, p);
+            if (b.getStatements().size() == block.getStatements().size()) {
+                return b;
+            }
+            List<Statement> statements = new ArrayList<>(b.getStatements());
+            int next = 0;
+            Space pending = null;
+            for (Statement original : block.getStatements()) {
+                if (next < statements.size() && original.getId().equals(statements.get(next).getId())) {
+                    if (pending != null) {
+                        Statement statement = statements.get(next);
+                        statements.set(next, statement.withPrefix(pending.withComments(
+                                ListUtils.concatAll(pending.getComments(), statement.getComments()))));
+                        pending = null;
+                    }
+                    next++;
+                } else if (!original.getComments().isEmpty()) {
+                    if (pending == null) {
+                        pending = original.getPrefix();
+                    } else {
+                        pending = pending.withComments(ListUtils.concatAll(pending.getComments(), original.getComments()));
+                    }
+                }
+            }
+            if (pending != null) {
+                Space end = b.getEnd();
+                b = b.withEnd(pending.withComments(end.getComments().isEmpty() ?
+                        ListUtils.mapLast(pending.getComments(), c -> c.withSuffix(end.getWhitespace())) :
+                        ListUtils.concatAll(pending.getComments(), end.getComments())));
+            }
+            return b.withStatements(statements);
         }
 
         @Override

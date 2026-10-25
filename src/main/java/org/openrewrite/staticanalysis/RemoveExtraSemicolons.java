@@ -58,7 +58,7 @@ public class RemoveExtraSemicolons extends Recipe {
             // except in whitespace
             @Override
             public Space visitSpace(@Nullable Space space, Space.Location loc, ExecutionContext ctx) {
-                if (space.getWhitespace().contains(";")) {
+                if (space != null && space.getWhitespace().contains(";")) {
                     return space.withWhitespace(space.getWhitespace().replace(";", ""));
                 }
                 return space;

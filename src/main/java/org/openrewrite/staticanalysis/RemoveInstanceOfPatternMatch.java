@@ -18,6 +18,7 @@ package org.openrewrite.staticanalysis;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -65,14 +66,19 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
         private VariableUsage variableUsage;
 
         @Override
-        public J visitCompilationUnit(J.CompilationUnit cu, ExecutionContext ctx) {
-            // Analyze variable usage in the whole compilation unit and
-            // run the compilation unit transformation.
-            // Maybe it's better to use messages instead of the private field
-            variableUsage = VariableUsageAnalyzer.analyze(cu);
-            J.CompilationUnit result = (J.CompilationUnit) super.visitCompilationUnit(cu, ctx);
-            variableUsage = null;
-            return result;
+        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
+            // Only J.CompilationUnit carries `instanceof` pattern matching; other
+            // source files (e.g. Kotlin's K.CompilationUnit) start from an empty
+            // usage so the visitor never dereferences a null field.
+            if (tree instanceof JavaSourceFile) {
+                variableUsage = tree instanceof J.CompilationUnit ?
+                        VariableUsageAnalyzer.analyze((J.CompilationUnit) tree) :
+                        new VariableUsage();
+                J result = super.visit(tree, ctx);
+                variableUsage = null;
+                return result;
+            }
+            return super.visit(tree, ctx);
         }
 
         @Override
@@ -96,13 +102,16 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             // if (obj instanceof String str && str.isEmpty())
             // is replaced by:
             // if (obj instanceof String str && ((String) obj).isEmpty())
+            Object parent = getCursor().getParentTreeCursor().getValue();
+            if (parent instanceof J.MethodInvocation && ((J.MethodInvocation) parent).getName() == identifier) {
+                return identifier;
+            }
             J.InstanceOf instanceOf = variableUsage.conditions.get(identifier);
             if (instanceOf != null) {
                 J result = autoFormat(
                         typeCast((TypeTree) instanceOf.getClazz(), instanceOf.getExpression()),
                         ctx);
                 // If a parent expression is a method invocation, enclose type cast in parentheses
-                Object parent = getCursor().getParentTreeCursor().getValue();
                 if (parent instanceof J.MethodInvocation) {
                     result = parentheses(result);
                 }
@@ -185,11 +194,39 @@ public class RemoveInstanceOfPatternMatch extends Recipe {
             JavaTemplate template = JavaTemplate
                     .builder("#{} #{} = (#{}) #{any()};")
                     .contextSensitive()
+                    .imports(typesNamedBy(instanceOf.getClazz()))
                     .build();
             return template.apply(blockCursor, block.getCoordinates().firstStatement(), instanceOf.getClazz().toString(),
                     ((J.Identifier) Objects.requireNonNull(instanceOf.getPattern())).getSimpleName(),
                     instanceOf.getClazz().toString(),
                     visit(instanceOf.getExpression(), ctx));
+        }
+
+        /**
+         * The fully qualified names of the top-level types a type tree names by their simple names.
+         *
+         * @param typeTree the type tree
+         * @return the names for the template to import
+         */
+        private static String[] typesNamedBy(J typeTree) {
+            return new JavaIsoVisitor<Set<String>>() {
+                @Override
+                public J.FieldAccess visitFieldAccess(J.FieldAccess fieldAccess, Set<String> t) {
+                    // a qualified name is found through its first part
+                    visit(fieldAccess.getTarget(), t);
+                    return fieldAccess;
+                }
+
+                @Override
+                public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> t) {
+                    JavaType.FullyQualified type = TypeUtils.asFullyQualified(identifier.getType());
+                    if (type != null && !type.getPackageName().isEmpty() &&
+                            identifier.getSimpleName().equals(type.getClassName())) {
+                        t.add(type.getFullyQualifiedName());
+                    }
+                    return identifier;
+                }
+            }.reduce(typeTree, new LinkedHashSet<>()).toArray(new String[0]);
         }
 
         /**

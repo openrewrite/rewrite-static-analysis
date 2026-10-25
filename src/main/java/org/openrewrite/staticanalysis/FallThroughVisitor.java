@@ -102,8 +102,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
-                statements.add(breakToAdd);
-                return case_.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                return case_.withStatements(ListUtils.map(ListUtils.concat(statements, breakToAdd), stmt -> autoFormat(stmt, p, getCursor())));
             }
             return case_;
         }
@@ -120,8 +119,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                         new J.Break(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null),
                         p
                 );
-                statements.add(breakToAdd);
-                b = b.withStatements(ListUtils.map(statements, stmt -> autoFormat(stmt, p, getCursor())));
+                b = b.withStatements(ListUtils.map(ListUtils.concat(statements, breakToAdd), stmt -> autoFormat(stmt, p, getCursor())));
             }
             return b;
         }
@@ -140,9 +138,7 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
          * @return A set representing whether the last {@link Statement} is an acceptable "break"-able type or has a "fallthrough" comment.
          */
         private static Set<J> find(J.Switch enclosingSwitch, J.Case scope) {
-            Set<J> references = new HashSet<>();
-            new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).visit(enclosingSwitch, references);
-            return references;
+            return new FindLastLineBreaksOrFallsThroughCommentsVisitor(scope).reduce(enclosingSwitch, new HashSet<>());
         }
 
         @RequiredArgsConstructor
@@ -156,9 +152,32 @@ public class FallThroughVisitor<P> extends JavaIsoVisitor<P> {
                 return trees.stream()
                         .reduce((s1, s2) -> s2) // last statement
                         .map(s -> breaks(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/173
+                                guardsWithEarlyExit(s) || // https://github.com/openrewrite/rewrite-static-analysis/issues/460
                                 s.getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT) ||
                                 s instanceof J.Block && ((J.Block) s).getEnd().getComments().stream().anyMatch(HAS_RELIEF_PATTERN_COMMENT)
                         ).orElse(false);
+            }
+
+            /**
+             * An {@code if} without an {@code else} whose then part completes abruptly guards the statements
+             * after it, so a fall-through past it is deliberate rather than an omission and adding a
+             * {@code break} would change behavior. Only blocks and labels are unwrapped; constructs such as
+             * {@code try} and {@code switch} are deliberately not, because they can complete normally even
+             * when every {@code if} they contain completes abruptly.
+             */
+            private static boolean guardsWithEarlyExit(Statement s) {
+                if (s instanceof J.Block) {
+                    List<Statement> statements = ((J.Block) s).getStatements();
+                    return !statements.isEmpty() && guardsWithEarlyExit(statements.get(statements.size() - 1));
+                }
+                if (s instanceof J.Label) {
+                    return guardsWithEarlyExit(((J.Label) s).getStatement());
+                }
+                if (s instanceof J.If) {
+                    J.If iff = (J.If) s;
+                    return iff.getElsePart() == null && breaks(iff.getThenPart());
+                }
+                return false;
             }
 
             private static boolean breaks(Statement s) {

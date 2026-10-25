@@ -72,9 +72,15 @@ public class ModifierOrder extends Recipe {
 
     public static List<J.Modifier> sortModifiers(List<J.Modifier> modifiers) {
         for (J.Modifier mod : modifiers) {
-            if (mod.getType() == J.Modifier.Type.LanguageExtension) {
-                // avoid harmful changes with modifiers not seen in Java
-                return modifiers;
+            switch (mod.getType()) {
+                case LanguageExtension:
+                case Async:
+                case Reified:
+                case Inline:
+                    // avoid harmful changes with modifiers not seen in Java
+                    return modifiers;
+                default:
+                    break;
             }
         }
 

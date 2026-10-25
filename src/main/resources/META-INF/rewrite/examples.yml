@@ -183,7 +183,7 @@ examples:
       class Test {
           public void process(String value) {
               if (value == null) {
-                  throw new IllegalArgumentException("value cannot be null");
+                  throw new IllegalArgumentException();
               }
               System.out.println(value);
           }
@@ -1373,6 +1373,73 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindIgnoredCheckReturnValue
+examples:
+- description: '`FindIgnoredCheckReturnValueTest#ignoredResultOfAnnotatedClass`'
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      import com.example.Point;
+      class Test {
+          Point move(Point p) {
+              p.withX(1);
+              p.validate();
+              p.print();
+              return p.withX(2);
+          }
+      }
+    after: |
+      import com.example.Point;
+      class Test {
+          Point move(Point p) {
+              /*~~(Result of `withX` is ignored, but `@CheckReturnValue` on class `Point` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/p.withX(1);
+              p.validate();
+              p.print();
+              return p.withX(2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindMainWithThrowsClause
+examples:
+- description: '`FindMainWithThrowsClauseTest#flagsMainWithThrowsException`'
+  sources:
+  - before: |
+      class A {
+          public static void main(String[] args) throws Exception {
+              System.out.println("hello");
+          }
+      }
+    after: |
+      class A {
+          /*~~(`main` declares `throws`; uncaught exceptions propagate to the JVM's default handler. Handle them explicitly and exit with a meaningful code.)~~>*/public static void main(String[] args) throws Exception {
+              System.out.println("hello");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindMissingJavadocOnPublicMethods
+examples:
+- description: '`FindMissingJavadocOnPublicMethodsTest#dataTableRecordsUndocumentedMethod`'
+  sources:
+  - before: |
+      package com.example;
+      class A {
+          public void foo(String s, int i) {
+          }
+      }
+    after: |
+      package com.example;
+      class A {
+          public void /*~~>*/foo(String s, int i) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FindNewExceptionWithoutCause
 examples:
 - description: '`FindNewExceptionWithoutCauseTest#throwsNewExceptionWithoutReferencingCaught`'
@@ -1404,22 +1471,132 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindNonCaseLabelsInSwitch
+examples:
+- description: '`FindNonCaseLabelsInSwitchTest#labelNamedLikeEnumConstantWithoutCase`'
+  sources:
+  - before: |
+      class Test {
+          enum Day { MONDAY, TUESDAY, WEDNESDAY }
+
+          void test(Day day) {
+              switch (day) {
+                  case MONDAY:
+                  case TUESDAY:
+                  WEDNESDAY:
+                      System.out.println(day);
+                      break;
+              }
+          }
+      }
+    after: |
+      class Test {
+          enum Day { MONDAY, TUESDAY, WEDNESDAY }
+
+          void test(Day day) {
+              switch (day) {
+                  case MONDAY:
+                  case TUESDAY:
+                  /*~~(`WEDNESDAY` is a statement label, not a `case`, so `WEDNESDAY` never matches. Add the missing `case` keyword.)~~>*/WEDNESDAY:
+                      System.out.println(day);
+                      break;
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindSystemAndRuntimeExitCalls
+examples:
+- description: '`FindSystemAndRuntimeExitCallsTest#flagsSystemExit`'
+  sources:
+  - before: |
+      class A {
+          void bail() {
+              System.exit(1);
+          }
+      }
+    after: |
+      class A {
+          void bail() {
+              /*~~(JVM exit call; terminating from application code bypasses normal shutdown.)~~>*/System.exit(1);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindThreadGroupUsages
+examples:
+- description: '`FindThreadGroupUsagesTest#flagsThreadGroupConstruction`'
+  sources:
+  - before: |
+      class A {
+          void go() {
+              ThreadGroup group = new ThreadGroup("workers");
+              Thread t = new Thread(group, () -> {});
+              t.start();
+          }
+      }
+    after: |
+      class A {
+          void go() {
+              ThreadGroup group = /*~~(`ThreadGroup` is superseded by `java.util.concurrent.ExecutorService`.)~~>*/new ThreadGroup("workers");
+              Thread t = new Thread(group, () -> {});
+              t.start();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.FindWaitWithMultipleLocksHeld
+examples:
+- description: '`FindWaitWithMultipleLocksHeldTest#findsWaitInsideTwoNestedSynchronizedBlocks`'
+  sources:
+  - before: |
+      class A {
+          private final Object outer = new Object();
+          private final Object inner = new Object();
+
+          void await() throws InterruptedException {
+              synchronized (outer) {
+                  synchronized (inner) {
+                      inner.wait();
+                  }
+              }
+          }
+      }
+    after: |
+      class A {
+          private final Object outer = new Object();
+          private final Object inner = new Object();
+
+          void await() throws InterruptedException {
+              synchronized (outer) {
+                  synchronized (inner) {
+                      /*~~(`wait()` called while holding multiple monitors. Only the receiver's monitor is released; other held monitors continue to block their waiters and can deadlock.)~~>*/inner.wait();
+                  }
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.FixStringFormatExpressions
 examples:
-- description: '`FixStringFormatExpressionsTest#newLineFormat`'
+- description: '`FixStringFormatExpressionsTest#trimUnusedArguments`'
   sources:
   - before: |
       class T {
           static {
-              String s = String.format("hello world\n%s", "again");
-              String s2 = "hello world\n%s".formatted("again");
+              String s = String.format("count: %d, %d, %d, %d", 1, 3, 2, 4, 5);
+              String f = "count: %d, %d, %d, %d".formatted(1, 3, 2, 4, 5);
           }
       }
     after: |
       class T {
           static {
-              String s = String.format("hello world%n%s", "again");
-              String s2 = "hello world%n%s".formatted("again");
+              String s = String.format("count: %d, %d, %d, %d", 1, 3, 2, 4);
+              String f = "count: %d, %d, %d, %d".formatted(1, 3, 2, 4);
           }
       }
     language: java
@@ -2771,6 +2948,29 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveDuplicateAnnotations
+examples:
+- description: '`RemoveDuplicateAnnotationsTest#removeDuplicateAnnotationOnMethodParameter`'
+  parameters:
+  - org.jspecify.annotations.*
+  sources:
+  - before: |
+      import org.jspecify.annotations.Nullable;
+
+      class Foo {
+          public void add(@Nullable @org.jspecify.annotations.Nullable final String bar) {
+          }
+      }
+    after: |
+      import org.jspecify.annotations.Nullable;
+
+      class Foo {
+          public void add(@Nullable final String bar) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.RemoveDuplicateConditions
 examples:
 - description: '`RemoveDuplicateConditionsTest#removeDuplicateElseIf`'
@@ -2925,6 +3125,30 @@ examples:
   - before: |
       class Parent {
           void foo() {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveNoArgumentSuperConstructorCall
+examples:
+- description: '`RemoveNoArgumentSuperConstructorCallTest#removeNoArgumentSuperConstructorCall`'
+  sources:
+  - before: |
+      class A {
+          private final String name;
+
+          A(String name) {
+              super();
+              this.name = name;
+          }
+      }
+    after: |
+      class A {
+          private final String name;
+
+          A(String name) {
+              this.name = name;
           }
       }
     language: java
@@ -3102,6 +3326,35 @@ examples:
           void test() {
               Map<String, Integer> map = new HashMap<>();
               map.put("key", 2);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.RemoveUnnecessaryBitwiseOperation
+examples:
+- description: '`RemoveUnnecessaryBitwiseOperationTest#removeIdentityOperations`'
+  sources:
+  - before: |
+      class Test {
+          void test(int x) {
+              int a = x & -1;
+              int b = -1 & x;
+              int c = x | 0;
+              int d = 0 | x;
+              int e = x ^ 0;
+              int f = 0 ^ x;
+          }
+      }
+    after: |
+      class Test {
+          void test(int x) {
+              int a = x;
+              int b = x;
+              int c = x;
+              int d = x;
+              int e = x;
+              int f = x;
           }
       }
     language: java
@@ -4679,6 +4932,35 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UnnecessaryFinalInTryWithResources
+examples:
+- description: '`UnnecessaryFinalInTryWithResourcesTest#removeFinalModifier`'
+  sources:
+  - before: |
+      import java.io.ByteArrayInputStream;
+      import java.io.IOException;
+
+      class Test {
+          void method() throws IOException {
+              try (final var input = new ByteArrayInputStream(new byte[0])) {
+                  int x = input.read();
+              }
+          }
+      }
+    after: |
+      import java.io.ByteArrayInputStream;
+      import java.io.IOException;
+
+      class Test {
+          void method() throws IOException {
+              try (var input = new ByteArrayInputStream(new byte[0])) {
+                  int x = input.read();
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.staticanalysis.UnnecessaryParentheses
 examples:
 - description: '`UnnecessaryParenthesesTest#fullUnwrappingDefault`'
@@ -5091,6 +5373,35 @@ examples:
           public void sortUsersById(List<String> names) {
               names.sort(null);
               names.sort(Comparator.naturalOrder());
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.staticanalysis.UseMapEntrySetIteration
+examples:
+- description: '`UseMapEntrySetIterationTest#keySetIterationWithGet`'
+  sources:
+  - before: |
+      import java.util.Map;
+
+      class Test {
+          void test(Map<String, Integer> map) {
+              for (String key : map.keySet()) {
+                  Integer w = map.get(key);
+                  System.out.println(key + "=" + w);
+              }
+          }
+      }
+    after: |
+      import java.util.Map;
+
+      class Test {
+          void test(Map<String, Integer> map) {
+              for (Map.Entry<String, Integer> entry : map.entrySet()) {
+                  Integer w = entry.getValue();
+                  System.out.println(entry.getKey() + "=" + w);
+              }
           }
       }
     language: java

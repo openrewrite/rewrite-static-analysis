@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.typescript;
 
 @SuppressWarnings({
   "ComparatorCombinators",
@@ -694,6 +696,52 @@ class ExplicitLambdaArgumentTypesTest implements RewriteTest {
                       a.forEach((A it) -> { });
                   }
               }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotStackOverflowOnRecursiveGenericType() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("assertj-core"))
+            .typeValidationOptions(TypeValidation.none()),
+          //language=java
+          java(
+            """
+              import org.assertj.core.api.AbstractStringAssert;
+
+              class Test {
+                  static <C> void inject(C carrier, Setter<C> setter) {
+                  }
+
+                  interface Setter<C> {
+                      void set(C carrier);
+                  }
+
+                  static void method(AbstractStringAssert<?> assertion) {
+                      inject(assertion, a -> {
+                          a.isNotNull();
+                      });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotFailOnTypeScriptArrowFunction() {
+        rewriteRun(
+          typescript(
+            """
+              namespace com.example {
+                export class Foo {}
+              }
+              function run(cb: (x: com.example.Foo) => void) {}
+              run(x => {
+                console.log(x);
+              });
               """
           )
         );

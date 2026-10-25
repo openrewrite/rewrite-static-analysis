@@ -29,6 +29,8 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.NameTree;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.List;
 import java.util.Set;
@@ -53,7 +55,10 @@ public class ObjectFinalizeCallsSuper extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new DeclaresMethod<>(FINALIZE_METHOD_MATCHER), new JavaIsoVisitor<ExecutionContext>() {
+        // Kotlin's `Any` has no `finalize()` to call on `super`, and C# forbids calling `base.Finalize()`
+        return Preconditions.check(Preconditions.and(
+                Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()),
+                new DeclaresMethod<>(FINALIZE_METHOD_MATCHER)), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                 J.MethodDeclaration md = super.visitMethodDeclaration(method, ctx);

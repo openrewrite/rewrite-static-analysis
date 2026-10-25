@@ -34,6 +34,8 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 
 public class UnnecessaryCloseInTryWithResources extends Recipe {
+    private static final MethodMatcher AUTO_CLOSEABLE_METHOD_MATCHER = new MethodMatcher("java.lang.AutoCloseable close()", true);
+
     @Getter
     final String displayName = "Unnecessary close in try-with-resources";
 
@@ -57,45 +59,41 @@ public class UnnecessaryCloseInTryWithResources extends Recipe {
                         new KotlinFileChecker<>(),
                         new GroovyFileChecker<>()
                 ),
-                new UnnecessaryAutoCloseableVisitor()
-        );
-    }
-
-    private static class UnnecessaryAutoCloseableVisitor extends JavaIsoVisitor<ExecutionContext> {
-        private static final MethodMatcher AUTO_CLOSEABLE_METHOD_MATCHER = new MethodMatcher("java.lang.AutoCloseable close()", true);
-
-        @Override
-        public J.Try visitTry(J.Try aTry, ExecutionContext ctx) {
-            J.Try tr = super.visitTry(aTry, ctx);
-            if (tr.getResources() != null) {
-                String[] resourceNames = new String[tr.getResources().size()];
-                for (int i = 0; i < tr.getResources().size(); i++) {
-                    J.Try.Resource tryResource = tr.getResources().get(i);
-                    if (tryResource.getVariableDeclarations() instanceof J.VariableDeclarations) {
-                        J.VariableDeclarations varDecls = (J.VariableDeclarations) tryResource.getVariableDeclarations();
-                        resourceNames[i] = varDecls.getVariables().get(0).getSimpleName();
-                    } else if (tryResource.getVariableDeclarations() instanceof J.Identifier) {
-                        J.Identifier identifier = (J.Identifier) tryResource.getVariableDeclarations();
-                        resourceNames[i] = identifier.getSimpleName();
+                new JavaIsoVisitor<ExecutionContext>() {
+            @Override
+            public J.Try visitTry(J.Try aTry, ExecutionContext ctx) {
+                J.Try tr = super.visitTry(aTry, ctx);
+                if (tr.getResources() != null) {
+                    String[] resourceNames = new String[tr.getResources().size()];
+                    for (int i = 0; i < tr.getResources().size(); i++) {
+                        J.Try.Resource tryResource = tr.getResources().get(i);
+                        if (tryResource.getVariableDeclarations() instanceof J.VariableDeclarations) {
+                            J.VariableDeclarations varDecls = (J.VariableDeclarations) tryResource.getVariableDeclarations();
+                            resourceNames[i] = varDecls.getVariables().get(0).getSimpleName();
+                        } else if (tryResource.getVariableDeclarations() instanceof J.Identifier) {
+                            J.Identifier identifier = (J.Identifier) tryResource.getVariableDeclarations();
+                            resourceNames[i] = identifier.getSimpleName();
+                        }
                     }
-                }
 
-                tr = tr.withBody(tr.getBody().withStatements(ListUtils.map(tr.getBody().getStatements(), statement -> {
-                    if (statement instanceof J.MethodInvocation) {
-                        J.MethodInvocation mi = (J.MethodInvocation) statement;
-                        if (AUTO_CLOSEABLE_METHOD_MATCHER.matches(mi) && mi.getSelect() instanceof J.Identifier) {
-                            String selectName = ((J.Identifier) mi.getSelect()).getSimpleName();
-                            for (String resourceName : resourceNames) {
-                                if (resourceName.equals(selectName)) {
-                                    return null;
+                    tr = tr.withBody(tr.getBody().withStatements(ListUtils.map(tr.getBody().getStatements(), statement -> {
+                        if (statement instanceof J.MethodInvocation) {
+                            J.MethodInvocation mi = (J.MethodInvocation) statement;
+                            if (AUTO_CLOSEABLE_METHOD_MATCHER.matches(mi) && mi.getSelect() instanceof J.Identifier) {
+                                String selectName = ((J.Identifier) mi.getSelect()).getSimpleName();
+                                for (String resourceName : resourceNames) {
+                                    if (resourceName.equals(selectName)) {
+                                        return null;
+                                    }
                                 }
                             }
                         }
-                    }
-                    return statement;
-                })));
+                        return statement;
+                    })));
+                }
+                return tr;
             }
-            return tr;
         }
+        );
     }
 }

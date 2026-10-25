@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.Issue;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -78,6 +79,35 @@ class AddSerialVersionUidToSerializableTest implements RewriteTest {
                   private static final long serialVersionUID = 1L;
                   private String fred;
                   private int numberOfFreds;
+              }
+              """
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite/issues/8848")
+    @Test
+    void addSerialVersionUIDToGenericSerializableClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.Serializable;
+
+              public class Example<T> implements Serializable {
+              }
+
+              class NotSerializable<T> {
+              }
+              """,
+            """
+              import java.io.Serializable;
+
+              public class Example<T> implements Serializable {
+                  private static final long serialVersionUID = 1;
+              }
+
+              class NotSerializable<T> {
               }
               """
           )

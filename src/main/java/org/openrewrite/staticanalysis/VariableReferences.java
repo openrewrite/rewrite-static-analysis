@@ -86,8 +86,7 @@ public class VariableReferences {
      * @return found {@link J} locations of "right-hand" read calls.
      */
     public static List<J> findRhsReferences(J j, J.Identifier target) {
-        final List<J> refs = new ArrayList<>();
-        new JavaIsoVisitor<List<J>>() {
+        return new JavaIsoVisitor<List<J>>() {
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, List<J> ctx) {
                 if (identifier.getSimpleName().equals(target.getSimpleName()) && isRhsValue(getCursor())) {
@@ -95,8 +94,7 @@ public class VariableReferences {
                 }
                 return super.visitIdentifier(identifier, ctx);
             }
-        }.visit(j, refs);
-        return refs;
+        }.reduce(j, new ArrayList<>());
     }
 
     /**
@@ -140,8 +138,6 @@ public class VariableReferences {
             }
         };
 
-        List<Statement> refs = new ArrayList<>();
-        visitor.visit(j, refs);
-        return refs;
+        return visitor.reduce(j, new ArrayList<>());
     }
 }

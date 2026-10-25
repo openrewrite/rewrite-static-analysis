@@ -16,18 +16,25 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.Issue;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
-import org.openrewrite.test.RecipeSpec;
-import org.openrewrite.test.TypeValidation;
-import org.openrewrite.test.RewriteTest;
-
+import org.openrewrite.java.tree.Flag;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.staticanalysis.table.AnonymousFunctionalInterfaceImplementations;
+import org.openrewrite.test.RecipeSpec;
+import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
+
+import java.util.EnumSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.javascript.Assertions.javascript;
 
 @SuppressWarnings({"Convert2Lambda", "Anonymous2MethodRef", "WriteOnlyObject", "Convert2Diamond", "Convert2MethodRef", "ResultOfMethodCallIgnored", "StatementWithEmptyBody", "ConstantValue", "NonFinalFieldInEnum", "LoopConditionNotUpdatedInsideLoop"})
 class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
@@ -102,6 +109,68 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
                       AccessController.doPrivileged((PrivilegedExceptionAction<Integer>) () -> {
                           throw new Exception("i feel privileged to throw a checked exception");
                       });
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void varargsArgumentAfterFixedArguments() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(Object... args) {}
+                  void test(Object first) {
+                      of(first, new I() {
+                          @Override public int run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(Object... args) {}
+                  void test(Object first) {
+                      of(first, (I) () -> 0);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void functionalInterfaceVarargsNeedsNoCast() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(I... args) {}
+                  void test() {
+                      of(new I() {
+                          @Override public int run() {
+                              return 0;
+                          }
+                      });
+                  }
+              }
+              """,
+            """
+              class Test {
+                  interface I { int run(); }
+                  static void of(I... args) {}
+                  void test() {
+                      of(() -> 0);
                   }
               }
               """
@@ -1537,5 +1606,172 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Test
+    void doNotUseLambdaForInterfaceWithOnlyDefaultMethods() {
+        // An interface whose only method is `default` is not functional, so a lambda would not compile.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface OnlyDefault {
+                  default void act() {
+                  }
+              }
+              class Test {
+                  OnlyDefault o = new OnlyDefault() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUseLambdaWhenSubinterfaceDefaultsTheInheritedAbstractMethod() {
+        // `NoOp` implements the inherited abstract method with a `default`, leaving it with no abstract
+        // method at all — not a functional interface.
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface Task {
+                  void act();
+              }
+              interface NoOp extends Task {
+                  @Override
+                  default void act() {
+                  }
+              }
+              class Test {
+                  NoOp o = new NoOp() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotUseLambdaForAllDefaultInterfaceAttributedFromBytecode() {
+        // Without a `Default` flag to go on, the sole default method has to be recognised as non-abstract
+        // from the absence of `Abstract`; treating it as the SAM produced a lambda that did not compile.
+        rewriteRun(
+          spec -> spec.dataTable(AnonymousFunctionalInterfaceImplementations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().isConvertible()).isFalse();
+              assertThat(rows.getFirst().getReason())
+                .isEqualTo("the interface has no abstract methods recorded in its type attribution");
+          }),
+          //language=java
+          java(
+            """
+              interface OnlyDefault {
+                  default void act() {
+                  }
+              }
+              class Test {
+                  OnlyDefault o = new OnlyDefault() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(UseLambdaForFunctionalInterfaceTest::asBytecodeAttribution)
+          )
+        );
+    }
+
+    @Test
+    void useLambdaWhenAbstractMethodSitsAlongsideDefaultAttributedFromBytecode() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              interface WithDefault {
+                  void act();
+                  default void before() {
+                  }
+              }
+              class Test {
+                  WithDefault w = new WithDefault() {
+                      @Override
+                      public void act() {
+                      }
+                  };
+              }
+              """,
+            """
+              interface WithDefault {
+                  void act();
+                  default void before() {
+                  }
+              }
+              class Test {
+                  WithDefault w = () -> {
+                  };
+              }
+              """,
+            spec -> spec.mapBeforeRecipe(UseLambdaForFunctionalInterfaceTest::asBytecodeAttribution)
+          )
+        );
+    }
+
+    @Nested
+    class JavaScript {
+        @Test
+        void doNotCrashOnOptionalCatchBinding() {
+            rewriteRun(
+              javascript(
+                """
+                  function load() {
+                    try {
+                      doWork();
+                    } catch {
+                      return null;
+                    }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    /// Rewrite the type attribution the way a source derived from bytecode records it: `default` is not an
+    /// access flag, so a default method arrives carrying neither [Flag#Default] nor [Flag#Abstract],
+    /// where javac marks it with both.
+    private static J.CompilationUnit asBytecodeAttribution(J.CompilationUnit cu) {
+        return (J.CompilationUnit) new JavaIsoVisitor<Integer>() {
+            @Override
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, Integer p) {
+                JavaType.FullyQualified type = classDecl.getType();
+                if (type != null) {
+                    for (JavaType.Method method : type.getMethods()) {
+                        if (method.hasFlags(Flag.Default)) {
+                            var flags = EnumSet.copyOf(method.getFlags());
+                            flags.removeAll(EnumSet.of(Flag.Default, Flag.Abstract));
+                            // Mutated in place because every reference to the interface shares this instance.
+                            method.unsafeSet(method.getName(), Flag.flagsToBitMap(flags),
+                              method.getDeclaringType(), method.getReturnType(),
+                              method.getParameterNames().toArray(new String[0]),
+                              method.getParameterTypes().toArray(new JavaType[0]),
+                              method.getThrownExceptions().toArray(new JavaType[0]),
+                              method.getAnnotations().toArray(new JavaType.FullyQualified[0]),
+                              method.getDefaultValue(),
+                              method.getDeclaredFormalTypeNames().toArray(new String[0]));
+                        }
+                    }
+                }
+                return super.visitClassDeclaration(classDecl, p);
+            }
+        }.visitNonNull(cu, 0);
     }
 }

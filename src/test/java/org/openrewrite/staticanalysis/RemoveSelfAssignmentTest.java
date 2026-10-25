@@ -23,6 +23,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.golang.Assertions.go;
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
@@ -276,6 +277,42 @@ class RemoveSelfAssignmentTest implements RewriteTest {
             """
               x = 1
               print(x)
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeSelfAssignmentGo() {
+        rewriteRun(
+          //language=go
+          go(
+            """
+              package main
+
+              type Profile struct {
+                  Name string
+              }
+
+              func normalize(profile *Profile) {
+                  profile.Name = profile.Name
+                  trimName(profile)
+              }
+
+              func trimName(profile *Profile) {}
+              """,
+            """
+              package main
+
+              type Profile struct {
+                  Name string
+              }
+
+              func normalize(profile *Profile) {
+                  trimName(profile)
+              }
+
+              func trimName(profile *Profile) {}
               """
           )
         );

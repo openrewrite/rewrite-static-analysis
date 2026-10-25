@@ -17,7 +17,10 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -135,7 +138,7 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
                 J.Try generatedTry = JavaTemplate.builder(String.format("try {} catch (%s %s) {}", throwableTypes, variableName))
                         .imports(imports)
                         .build()
-                        .apply(new Cursor(getCursor(), surroundingTry), surroundingTry.getCoordinates().replace());
+                        .apply(getCursor(), surroundingTry.getCoordinates().replace());
                 return aCatch.withParameter(generatedTry.getCatches().get(0).getParameter());
             }
         };

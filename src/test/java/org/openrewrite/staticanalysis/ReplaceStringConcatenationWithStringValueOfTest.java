@@ -21,7 +21,9 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings("StringConcatenationMissingWhitespace")
 class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
@@ -165,6 +167,45 @@ class ReplaceStringConcatenationWithStringValueOfTest implements RewriteTest {
               class Test {
                   void method() {
                       String s = String.valueOf(System.currentTimeMillis());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void replaceInGroovy() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class Test {
+                  void method() {
+                      String s = "" + 1
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void method() {
+                      String s = String.valueOf(1)
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class Test {
+                  fun method() {
+                      val s = "" + 1
                   }
               }
               """

@@ -55,6 +55,9 @@ public class BooleanChecksNotInverted extends Recipe {
                     J.Parentheses<?> expr = (J.Parentheses<?>) unary.getExpression();
                     if (expr.getTree() instanceof J.Binary) {
                         J.Binary binary = (J.Binary) expr.getTree();
+                        if (isComparison(binary.getLeft()) || isComparison(binary.getRight())) {
+                            return super.visitUnary(unary, ctx);
+                        }
                         switch (binary.getOperator()) {
                             case LessThan:
                                 return super.visit(binary.withOperator(J.Binary.Type.GreaterThanOrEqual), ctx).withPrefix(unary.getPrefix());
@@ -77,6 +80,21 @@ public class BooleanChecksNotInverted extends Recipe {
                     }
                 }
                 return super.visitUnary(unary, ctx);
+            }
+
+            private boolean isComparison(J expr) {
+                if (expr instanceof J.Binary) {
+                    switch (((J.Binary) expr).getOperator()) {
+                        case LessThan:
+                        case GreaterThan:
+                        case LessThanOrEqual:
+                        case GreaterThanOrEqual:
+                        case Equal:
+                        case NotEqual:
+                            return true;
+                    }
+                }
+                return false;
             }
         };
     }

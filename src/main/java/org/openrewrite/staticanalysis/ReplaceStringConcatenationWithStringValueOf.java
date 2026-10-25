@@ -17,6 +17,7 @@ package org.openrewrite.staticanalysis;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaTemplate;
@@ -25,6 +26,8 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.MethodCall;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.time.Duration;
 import java.util.Set;
@@ -52,7 +55,9 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(
+                Preconditions.or(new JavaFileChecker<>(), new GroovyFileChecker<>()),
+                new JavaVisitor<ExecutionContext>() {
             @Override
             public <T extends J> J visitParentheses(J.Parentheses<T> parens, ExecutionContext ctx) {
                 J p = super.visitParentheses(parens, ctx);
@@ -80,6 +85,6 @@ public class ReplaceStringConcatenationWithStringValueOf extends Recipe {
                 }
                 return super.visitBinary(binary, ctx);
             }
-        };
+        });
     }
 }

@@ -27,6 +27,7 @@ import org.openrewrite.test.RewriteTest;
 import java.util.UUID;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 @SuppressWarnings("ConstantConditions")
 class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
@@ -502,4 +503,28 @@ class RenameLocalVariablesToCamelCaseTest implements RewriteTest {
         );
     }
 
+    @Test
+    void scalaSnakeCaseLocal() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(): Int = {
+                  val my_var = 1
+                  my_var
+                }
+              }
+              """,
+            """
+              class A {
+                def foo(): Int = {
+                  val myVar = 1
+                  myVar
+                }
+              }
+              """
+          )
+        );
+    }
 }

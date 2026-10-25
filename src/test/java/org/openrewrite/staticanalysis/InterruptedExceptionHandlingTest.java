@@ -16,11 +16,14 @@
 package org.openrewrite.staticanalysis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 @SuppressWarnings({"EmptyCatchBlock", "CatchMayIgnoreException", "InterruptedExceptionSwallowed"})
 class InterruptedExceptionHandlingTest implements RewriteTest {
@@ -224,6 +227,122 @@ class InterruptedExceptionHandlingTest implements RewriteTest {
                           }
                       }
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @EnabledForJreRange(min = JRE.JAVA_25)
+    @Test
+    void multiCatchWithUnnamedVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.nio.file.ClosedWatchServiceException;
+              import java.nio.file.WatchService;
+
+              class Test {
+                  void foo(WatchService watcher) {
+                      try {
+                          watcher.take();
+                      } catch (InterruptedException | ClosedWatchServiceException _) {
+                          return;
+                      }
+                  }
+              }
+              """,
+            """
+              import java.nio.file.ClosedWatchServiceException;
+              import java.nio.file.WatchService;
+
+              class Test {
+                  void foo(WatchService watcher) {
+                      try {
+                          watcher.take();
+                      } catch (InterruptedException | ClosedWatchServiceException e) {
+                          if (e instanceof InterruptedException) {
+                              Thread.currentThread().interrupt();
+                          }
+                          return;
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @EnabledForJreRange(min = JRE.JAVA_25)
+    @Test
+    void multiCatchWithUnnamedVariableAvoidsNameClash() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Test {
+                  void foo(String e) {
+                      try {
+                          Thread.sleep(1000);
+                      } catch (IOException | InterruptedException _) {
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Test {
+                  void foo(String e) {
+                      try {
+                          Thread.sleep(1000);
+                      } catch (IOException | InterruptedException e1) {
+                          if (e1 instanceof InterruptedException) {
+                              Thread.currentThread().interrupt();
+                          }
+                          System.out.println(e);
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void kotlinClassWithPrimaryConstructorAndSupertype() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              class Test(val name: String) : Runnable {
+                  override fun run() {
+                      execute {
+                          try {
+                              Thread.sleep(1000)
+                          } catch (e: InterruptedException) {
+                          }
+                      }
+                  }
+                  fun execute(block: () -> Unit) = block()
+              }
+              """,
+            """
+              class Test(val name: String) : Runnable {
+                  override fun run() {
+                      execute {
+                          try {
+                              Thread.sleep(1000)
+                          } catch (e: InterruptedException) {
+                              Thread.currentThread().interrupt()
+                          }
+                      }
+                  }
+                  fun execute(block: () -> Unit) = block()
               }
               """
           )

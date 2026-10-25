@@ -23,6 +23,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.python.Assertions.python;
 
 @SuppressWarnings("ALL")
 class SimplifyBooleanReturnTest implements RewriteTest {
@@ -335,5 +336,47 @@ class SimplifyBooleanReturnTest implements RewriteTest {
               )
             );
         }
+    }
+
+    @Test
+    void pythonImpliedElse() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              def is_ip(address):
+                  if re.match(regexp, address):
+                      return True
+
+                  return False
+              """,
+            """
+              def is_ip(address):
+                  return re.match(regexp, address)
+              """
+          )
+        );
+    }
+
+    @Test
+    void pythonInClass() {
+        rewriteRun(
+          //language=python
+          python(
+            """
+              class A:
+                  def is_ip(self, address):
+                      if re.match(regexp, address):
+                          return True
+
+                      return False
+              """,
+            """
+              class A:
+                  def is_ip(self, address):
+                      return re.match(regexp, address)
+              """
+          )
+        );
     }
 }

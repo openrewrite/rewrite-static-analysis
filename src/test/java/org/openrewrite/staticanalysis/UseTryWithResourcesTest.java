@@ -538,7 +538,7 @@ class UseTryWithResourcesTest implements RewriteTest {
 
               class Test {
                   void method() throws IOException {
-                      try (InputStream in = new FileInputStream("in.txt"); OutputStream out = new FileOutputStream("out.txt")) {
+                      try (OutputStream out = new FileOutputStream("out.txt"); InputStream in = new FileInputStream("in.txt")) {
                           out.write(in.read());
                       }
                   }
@@ -612,7 +612,6 @@ class UseTryWithResourcesTest implements RewriteTest {
     @Test
     void multipleClosesInFinallyPicksMatchingVariable() {
         rewriteRun(
-          spec -> spec.expectedCyclesThatMakeChanges(2),
           //language=java
           java(
             """
@@ -651,7 +650,7 @@ class UseTryWithResourcesTest implements RewriteTest {
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/927")
     @Test
-    void unusedResourceUsesUnnamedVariableOnJava21() {
+    void unusedResourceUsesUnnamedVariableOnJava22() {
         rewriteRun(
           //language=java
           java(
@@ -678,14 +677,14 @@ class UseTryWithResourcesTest implements RewriteTest {
                   }
               }
               """,
-            spec -> spec.markers(javaVersion(21))
+            spec -> spec.markers(javaVersion(22))
           )
         );
     }
 
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/927")
     @Test
-    void unusedResourceKeepsNameBelowJava21() {
+    void unusedResourceKeepsNameBelowJava22() {
         rewriteRun(
           //language=java
           java(
@@ -708,46 +707,123 @@ class UseTryWithResourcesTest implements RewriteTest {
               class Test {
                   void method() throws IOException {
                       try (InputStream in = new FileInputStream("file.txt")) {
+                      }
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(21))
+          )
+        );
+    }
+
+    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/927")
+    @Test
+    void resourceUsedInBodyKeepsNameOnJava22() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
+                          int data = in.read();
+                      } finally {
+                          in.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      try (InputStream in = new FileInputStream("file.txt")) {
+                          int data = in.read();
+                      }
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(22))
+          )
+        );
+    }
+
+    @Test
+    void resourceReferencedByExistingResourceKeepsNameOnJava22() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method(File f) throws IOException {
+                      Reader r = new FileReader(f);
+                      try (BufferedReader br = new BufferedReader(r)) {
+                          br.readLine();
+                      } finally {
+                          r.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method(File f) throws IOException {
+                      try (Reader r = new FileReader(f); BufferedReader br = new BufferedReader(r)) {
+                          br.readLine();
+                      }
+                  }
+              }
+              """,
+            spec -> spec.markers(javaVersion(22))
+          )
+        );
+    }
+
+    @Test
+    void prependedResourceKeepsMultiLineResourceLayout() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      OutputStream out = new FileOutputStream("out.txt");
+                      try (
+                              InputStream in = new FileInputStream("in.txt");
+                              Reader r = new InputStreamReader(in)
+                      ) {
+                          out.write(r.read());
+                      } finally {
+                          out.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      try (
+                              OutputStream out = new FileOutputStream("out.txt");
+                              InputStream in = new FileInputStream("in.txt");
+                              Reader r = new InputStreamReader(in)
+                      ) {
+                          out.write(r.read());
                       }
                   }
               }
               """
-          )
-        );
-    }
-
-    @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/927")
-    @Test
-    void resourceUsedInBodyKeepsNameOnJava21() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import java.io.*;
-
-              class Test {
-                  void method() throws IOException {
-                      InputStream in = new FileInputStream("file.txt");
-                      try {
-                          int data = in.read();
-                      } finally {
-                          in.close();
-                      }
-                  }
-              }
-              """,
-            """
-              import java.io.*;
-
-              class Test {
-                  void method() throws IOException {
-                      try (InputStream in = new FileInputStream("file.txt")) {
-                          int data = in.read();
-                      }
-                  }
-              }
-              """,
-            spec -> spec.markers(javaVersion(21))
           )
         );
     }
@@ -768,6 +844,136 @@ class UseTryWithResourcesTest implements RewriteTest {
                           int data = in.read();
                       } finally {
                           in.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nonConsecutiveClosesKeepCloseOrder() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method(String path) throws IOException {
+                      InputStream a = new FileInputStream(path);
+                      InputStream b = new FileInputStream(path);
+                      int x = 1;
+                      try {
+                          int data = a.read() + b.read();
+                      } finally {
+                          a.close();
+                          b.close();
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void method(String path) throws IOException {
+                      InputStream a = new FileInputStream(path);
+                      InputStream b = new FileInputStream(path);
+                      int x = 1;
+                      try (b; a) {
+                          int data = a.read() + b.read();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenParameterClosedFirst() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method(InputStream other) throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
+                          int data = in.read() + other.read();
+                      } finally {
+                          other.close();
+                          in.close();
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeResourceReassignedAfterTry() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void method() throws IOException {
+                      OutputStream out = new FileOutputStream("out.txt");
+                      try {
+                          out.write(1);
+                      } finally {
+                          out.close();
+                      }
+                      out = null;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void resourceReferencedLaterInFinallyUsesJava9Syntax() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.*;
+
+              class Test {
+                  void log(Object o) {}
+
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try {
+                          int data = in.read();
+                      } finally {
+                          in.close();
+                          log(in);
+                      }
+                  }
+              }
+              """,
+            """
+              import java.io.*;
+
+              class Test {
+                  void log(Object o) {}
+
+                  void method() throws IOException {
+                      InputStream in = new FileInputStream("file.txt");
+                      try (in) {
+                          int data = in.read();
+                      } finally {
+                          log(in);
                       }
                   }
               }

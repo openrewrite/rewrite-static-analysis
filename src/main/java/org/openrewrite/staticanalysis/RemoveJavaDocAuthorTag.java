@@ -81,9 +81,7 @@ public class RemoveJavaDocAuthorTag extends Recipe {
 
     static boolean isBlank(Cursor cursor, List<Javadoc> newBody) {
         return newBody.stream().allMatch(jd -> {
-            PrintOutputCapture<Object> p = new PrintOutputCapture<>(null);
-            jd.printer(cursor).visit(jd, p);
-            String currentLine = p.getOut().trim();
+            String currentLine = jd.printer(cursor).reduce(jd, new PrintOutputCapture<>(null)).getOut().trim();
             return StringUtils.isBlank(currentLine) || "*".equals(currentLine);
         });
     }

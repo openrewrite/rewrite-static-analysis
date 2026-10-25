@@ -21,6 +21,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.scala.Assertions.scala;
 
 class NoToStringOnStringTypeTest implements RewriteTest {
 
@@ -120,6 +121,25 @@ class NoToStringOnStringTypeTest implements RewriteTest {
                   static String method2() {
                       return "";
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void scalaToStringOnString() {
+        rewriteRun(
+          //language=scala
+          scala(
+            """
+              class A {
+                def foo(s: String): String = s.toString()
+              }
+              """,
+            """
+              class A {
+                def foo(s: String): String = s
               }
               """
           )

@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.kotlin.Assertions.kotlin;
 
 class TypecastParenPadTest implements RewriteTest {
 
@@ -72,6 +73,20 @@ class TypecastParenPadTest implements RewriteTest {
                   void m(Object o) {
                       int l = ( o as String).length()
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void noChangeForKotlin() {
+        rewriteRun(
+          //language=kotlin
+          kotlin(
+            """
+              fun m(o: Any) {
+                  val l = (o as String).length
               }
               """
           )

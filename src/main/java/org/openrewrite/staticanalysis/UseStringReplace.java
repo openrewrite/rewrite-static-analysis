@@ -45,6 +45,11 @@ import static java.util.Collections.singleton;
  */
 public class UseStringReplace extends Recipe {
 
+    private static final MethodMatcher REPLACE_ALL = new MethodMatcher("java.lang.String replaceAll(..)");
+    private static final Pattern ESCAPED_CHARACTER = Pattern.compile("\\\\\\.");
+    private static final Pattern METACHARACTERS = Pattern.compile("[(\\[{\\\\^\\-$!|\\]})?*+.]|\\?=|<=");
+    private static final Pattern CHARACTER_CLASSES = Pattern.compile("\\\\d|\\\\D|\\\\s|\\\\S|\\\\w|\\\\W");
+
     @Getter
     final String displayName = "Use `String::replace()` when first parameter is not a real regular expression";
 
@@ -60,68 +65,60 @@ public class UseStringReplace extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new UseStringReplaceVisitor();
-    }
+        return new JavaVisitor<ExecutionContext>() {
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
-    private static class UseStringReplaceVisitor extends JavaVisitor<ExecutionContext> {
+                // Checks if method invocation matches with String#replaceAll
+                if (REPLACE_ALL.matches(invocation)) {
+                    // Checks if the second argument is a string literal with $ or \ in it as this has special meaning
+                    // https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/regex/Matcher.html#replaceAll(java.lang.String)
+                    Expression secondArgument = invocation.getArguments().get(1);
+                    if (!isStringLiteral(secondArgument)) {
+                        return invocation; // Might contain special characters; unsafe to replace
+                    }
+                    String secondValue = (String) ((J.Literal) secondArgument).getValue();
+                    if (secondValue != null && (secondValue.contains("$") || secondValue.contains("\\"))) {
+                        return invocation; // Does contain special characters; unsafe to replace
+                    }
 
-        private static final MethodMatcher REPLACE_ALL = new MethodMatcher("java.lang.String replaceAll(..)");
-        private static final Pattern ESCAPED_CHARACTER = Pattern.compile("\\\\\\.");
-        private static final Pattern METACHARACTERS = Pattern.compile("[(\\[{\\\\^\\-$!|\\]})?*+.]|\\?=|<=");
-        private static final Pattern CHARACTER_CLASSES = Pattern.compile("\\\\d|\\\\D|\\\\s|\\\\S|\\\\w|\\\\W");
-
-        @Override
-        public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-            J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
-
-            // Checks if method invocation matches with String#replaceAll
-            if (REPLACE_ALL.matches(invocation)) {
-                // Checks if the second argument is a string literal with $ or \ in it as this has special meaning
-                // https://docs.oracle.com/en/java/javase/22/docs/api/java.base/java/util/regex/Matcher.html#replaceAll(java.lang.String)
-                Expression secondArgument = invocation.getArguments().get(1);
-                if (!isStringLiteral(secondArgument)) {
-                    return invocation; // Might contain special characters; unsafe to replace
-                }
-                String secondValue = (String) ((J.Literal) secondArgument).getValue();
-                if (secondValue != null && (secondValue.contains("$") || secondValue.contains("\\"))) {
-                    return invocation; // Does contain special characters; unsafe to replace
-                }
-
-                // Checks if the first argument is a String literal
-                Expression firstArgument = invocation.getArguments().get(0);
-                if (isStringLiteral(firstArgument)) {
-                    // Checks if the String literal may not be a regular expression,
-                    // if so, then change the method invocation name
-                    String firstValue = (String) ((J.Literal) firstArgument).getValue();
-                    if (firstValue != null && !mayBeRegExp(firstValue)) {
-                        String unEscapedLiteral = unEscapeCharacters(firstValue);
-                        invocation = invocation
-                                .withName(invocation.getName().withSimpleName("replace"))
-                                .withArguments(ListUtils.mapFirst(invocation.getArguments(), arg -> ((J.Literal) arg)
-                                        .withValue(unEscapedLiteral)
-                                        .withValueSource(String.format("\"%s\"", StringEscapeUtils.escapeJava(unEscapedLiteral)))));
+                    // Checks if the first argument is a String literal
+                    Expression firstArgument = invocation.getArguments().get(0);
+                    if (isStringLiteral(firstArgument)) {
+                        // Checks if the String literal may not be a regular expression,
+                        // if so, then change the method invocation name
+                        String firstValue = (String) ((J.Literal) firstArgument).getValue();
+                        if (firstValue != null && !mayBeRegExp(firstValue)) {
+                            String unEscapedLiteral = unEscapeCharacters(firstValue);
+                            invocation = invocation
+                                    .withName(invocation.getName().withSimpleName("replace"))
+                                    .withArguments(ListUtils.mapFirst(invocation.getArguments(), arg -> ((J.Literal) arg)
+                                            .withValue(unEscapedLiteral)
+                                            .withValueSource(String.format("\"%s\"", StringEscapeUtils.escapeJava(unEscapedLiteral)))));
+                        }
                     }
                 }
+
+                return invocation;
             }
 
-            return invocation;
-        }
+            private boolean isStringLiteral(Expression expression) {
+                return expression instanceof J.Literal && TypeUtils.isString(((J.Literal) expression).getType());
+            }
 
-        private boolean isStringLiteral(Expression expression) {
-            return expression instanceof J.Literal && TypeUtils.isString(((J.Literal) expression).getType());
-        }
+            private boolean mayBeRegExp(String argument) {
+                //Remove all escaped characters and then checks if argument contains any metacharacter or any character class
+                String cleanedValue = ESCAPED_CHARACTER.matcher(argument).replaceAll("");
+                return METACHARACTERS.matcher(cleanedValue).find() || CHARACTER_CLASSES.matcher(cleanedValue).find();
+            }
 
-        private boolean mayBeRegExp(String argument) {
-            //Remove all escaped characters and then checks if argument contains any metacharacter or any character class
-            String cleanedValue = ESCAPED_CHARACTER.matcher(argument).replaceAll("");
-            return METACHARACTERS.matcher(cleanedValue).find() || CHARACTER_CLASSES.matcher(cleanedValue).find();
-        }
-
-        private String unEscapeCharacters(String argument) {
-            return argument.replace("\\\\", "\\")
-                    .replace("\\\"", "\"")
-                    .replace("\\'", "'")
-                    .replace("\\", "");
-        }
+            private String unEscapeCharacters(String argument) {
+                return argument.replace("\\\\", "\\")
+                        .replace("\\\"", "\"")
+                        .replace("\\'", "'")
+                        .replace("\\", "");
+            }
+        };
     }
 }
