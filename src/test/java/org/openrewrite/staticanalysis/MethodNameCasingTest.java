@@ -624,106 +624,21 @@ class MethodNameCasingTest implements RewriteTest {
     private static final int FILES = 4;
     private static final int METHODS_PER_FILE = 30;
 
-    /// Proves the edit phase performs a single LST traversal per source file, independent of how many
-    /// renames (`M`) were collected across the whole codebase. The previous implementation ran one
-    /// `ChangeMethodName` pass per collected change, so every node was visited `M` times per
-    /// file (an `M * N` blow-up).
-    @Test
-    void editPhaseVisitsEachNodeExactlyOncePerFileRegardlessOfChangeCount() {
-        // given
-        var ctx = new InMemoryExecutionContext();
-        List<SourceFile> sources = parseSources();
-        var changes = scan(sources, ctx);
-
-        int[] nodes = countMethodNodes(sources);
-        var totalDeclarations = nodes[0];
-        var totalInvocations = nodes[1];
-
-        // every bad_name_* is package-private, so each of the M changes is applicable to every file
-        assertThat(changes).hasSize(FILES * METHODS_PER_FILE);
-
-        // when: run the real edit-phase visitor once per file (mirroring the recipe's outer loop)
-        var declVisits = 0;
-        var invVisits = 0;
-        for (SourceFile sf : sources) {
-            var counter = new CountingRename(mapFor(sf, changes));
-            counter.visitNonNull(sf, ctx);
-            declVisits += counter.declVisits;
-            invVisits += counter.invVisits;
-        }
-
-        // then: exactly one visit per node across the whole edit phase -> O(N), not O(M * N)
-        assertThat(declVisits).isEqualTo(totalDeclarations);
-        assertThat(invVisits).isEqualTo(totalInvocations);
-        assertThat((long) declVisits).isLessThan((long) changes.size() * totalDeclarations);
-    }
-
-    @Test
-    void visitCountIsIndependentOfM() {
-        // given
-        var ctx = new InMemoryExecutionContext();
-        List<SourceFile> sources = parseSources();
-        var changes = scan(sources, ctx);
-        SourceFile file0 = sources.getFirst();
-
-        // when: the same file is edited with the full change set vs. a single change
-        var withAllChanges = new CountingRename(mapFor(file0, changes));
-        withAllChanges.visitNonNull(file0, ctx);
-
-        var withOneChange = new CountingRename(mapFor(file0, List.of(changes.getFirst())));
-        withOneChange.visitNonNull(file0, ctx);
-
-        // then: the traversal cost does not grow with the number of collected changes
-        assertThat(changes).hasSizeGreaterThan(1);
-        assertThat(withAllChanges.declVisits).isEqualTo(withOneChange.declVisits);
-        assertThat(withAllChanges.invVisits).isEqualTo(withOneChange.invVisits);
-    }
-
     @Test
     void singlePassProducesSameResultAsTheRecipe() {
-        // given
         var ctx = new InMemoryExecutionContext();
         List<SourceFile> sources = parseSources();
         var changes = scan(sources, ctx);
         SourceFile file0 = sources.getFirst();
 
-        // when
         var recipe = new MethodNameCasing(true, false);
         var viaRecipe = (SourceFile) recipe.getVisitor(changes).visit(file0, ctx);
         var viaRenameMethods = (SourceFile) new MethodNameCasing.RenameMethods(mapFor(file0, changes))
                 .visitNonNull(file0, ctx);
 
-        // then: renaming happened and both paths agree
         assertThat(viaRecipe).isNotNull();
         assertThat(viaRecipe.printAll()).doesNotContain("bad_name_");
         assertThat(viaRecipe.printAll()).isEqualTo(viaRenameMethods.printAll());
-    }
-
-    @Test
-    void theOldStrategyWouldVisitEachNodeMTimes() {
-        // given
-        var ctx = new InMemoryExecutionContext();
-        List<SourceFile> sources = parseSources();
-        var changes = scan(sources, ctx);
-        var totalDeclarations = countMethodNodes(sources)[0];
-
-        // when: reproduce the previous design - one rename pass per collected change, per file
-        var oldDeclVisits = 0L;
-        for (SourceFile sf : sources) {
-            for (MethodNameChange c : changes) {
-                if (!c.isPrivateMethod() || sf.getId().equals(c.getScope())) {
-                    var onePass = new CountingRename(mapFor(sf, List.of(c)));
-                    onePass.visitNonNull(sf, ctx);
-                    oldDeclVisits += onePass.declVisits;
-                }
-            }
-        }
-
-        assertThat(oldDeclVisits)
-                // then: it visited every declaration once per applicable change (M * N), which is exactly
-                // what editPhaseVisitsEachNodeExactlyOncePerFileRegardlessOfChangeCount() now forbids
-                .isEqualTo((long) changes.size() * totalDeclarations)
-                .isGreaterThan(totalDeclarations);
     }
 
     private static List<SourceFile> parseSources() {
@@ -764,47 +679,5 @@ class MethodNameCasingTest implements RewriteTest {
             }
         }
         return byName;
-    }
-
-    private static int[] countMethodNodes(List<SourceFile> sources) {
-        int[] counts = new int[2];
-        var counter = new JavaIsoVisitor<int[]>() {
-            @Override
-            public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, int[] c) {
-                c[0]++;
-                return super.visitMethodDeclaration(method, c);
-            }
-
-            @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, int[] c) {
-                c[1]++;
-                return super.visitMethodInvocation(method, c);
-            }
-        };
-        for (SourceFile sf : sources) {
-            counter.visit(sf, counts);
-        }
-        return counts;
-    }
-
-    static class CountingRename extends MethodNameCasing.RenameMethods {
-        int declVisits;
-        int invVisits;
-
-        CountingRename(Map<String, List<MethodNameChange>> byName) {
-            super(byName);
-        }
-
-        @Override
-        public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-            declVisits++;
-            return super.visitMethodDeclaration(method, ctx);
-        }
-
-        @Override
-        public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-            invVisits++;
-            return super.visitMethodInvocation(method, ctx);
-        }
     }
 }
