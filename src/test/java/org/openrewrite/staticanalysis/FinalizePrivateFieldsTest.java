@@ -27,6 +27,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.openrewrite.groovy.Assertions.groovy;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.javascript.Assertions.typescript;
 import static org.openrewrite.kotlin.Assertions.kotlin;
@@ -1095,6 +1096,20 @@ class FinalizePrivateFieldsTest implements RewriteTest {
                   init {
                       name = "A"
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotFinalizeGroovyPrivateFields() {
+        rewriteRun(
+          //language=groovy
+          groovy(
+            """
+              class A {
+                  private int count = 0
               }
               """
           )
