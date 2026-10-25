@@ -573,7 +573,6 @@ class EqualsAvoidsNullTest implements RewriteTest {
         @Test
         void literalAndConstant() {
             rewriteRun(
-              spec -> spec.recipe(new EqualsAvoidsNull()),
               // language=java
               java(
                 """

@@ -110,7 +110,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void castingAmbiguity() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
           //language=java
           java(
             """
@@ -218,8 +217,7 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void gson() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface())
-            .parser(JavaParser.fromJavaVersion().classpath("gson")),
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath("gson")),
           //language=java
           java(
             """
@@ -407,7 +405,6 @@ class UseLambdaForFunctionalInterfaceTest implements RewriteTest {
     @Test
     void usedAsStatementWithNonInferrableType() {
         rewriteRun(
-          spec -> spec.recipe(new UseLambdaForFunctionalInterface()),
           //language=java
           java(
             """
