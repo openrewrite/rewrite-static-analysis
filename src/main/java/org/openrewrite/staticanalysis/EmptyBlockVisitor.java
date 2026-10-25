@@ -193,15 +193,6 @@ public class EmptyBlockVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     @Override
-    public J.Synchronized visitSynchronized(J.Synchronized synch, P p) {
-        if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralSynchronized()) && isEmptyBlock(synch.getBody())) {
-            replaceWithSideEffects(synch, synch.getLock().getTree());
-        }
-
-        return super.visitSynchronized(synch, p);
-    }
-
-    @Override
     public J.Switch visitSwitch(J.Switch switch_, P p) {
         if (Boolean.TRUE.equals(emptyBlockStyle.getLiteralSwitch()) && isEmptyBlock(switch_.getCases())) {
             replaceWithSideEffects(switch_, switch_.getSelector().getTree());

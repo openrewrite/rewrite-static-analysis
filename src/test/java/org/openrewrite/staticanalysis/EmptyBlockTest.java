@@ -96,23 +96,15 @@ class EmptyBlockTest implements RewriteTest {
 
     @SuppressWarnings("EmptySynchronizedStatement")
     @Test
-    void emptySynchronized() {
+    void emptySynchronizedUnchanged() {
         rewriteRun(
           //language=java
           java(
             """
-              public class A {
-                  {
-                      final Object o = new Object();
-                      synchronized(o) {
+              class A {
+                  void foo(Object lock) {
+                      synchronized (lock) {
                       }
-                  }
-              }
-              """,
-            """
-              public class A {
-                  {
-                      final Object o = new Object();
                   }
               }
               """
@@ -121,15 +113,13 @@ class EmptyBlockTest implements RewriteTest {
     }
 
     @Test
-    void emptySynchronizedAndSwitchKeepSideEffects() {
+    void emptySwitchKeepsSelectorSideEffects() {
         rewriteRun(
           //language=java
           java(
             """
               class A {
-                  void foo(java.util.function.Supplier<Object> lock, java.util.function.IntSupplier sel) {
-                      synchronized (lock.get()) {
-                      }
+                  void foo(java.util.function.IntSupplier sel) {
                       switch (sel.getAsInt()) {
                       }
                   }
@@ -137,8 +127,7 @@ class EmptyBlockTest implements RewriteTest {
               """,
             """
               class A {
-                  void foo(java.util.function.Supplier<Object> lock, java.util.function.IntSupplier sel) {
-                      lock.get();
+                  void foo(java.util.function.IntSupplier sel) {
                       sel.getAsInt();
                   }
               }
