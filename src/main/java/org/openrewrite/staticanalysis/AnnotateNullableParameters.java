@@ -26,7 +26,6 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.Statement;
 import org.openrewrite.staticanalysis.java.MoveFieldAnnotationToType;
 
 import java.util.*;
@@ -35,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -109,7 +109,11 @@ public class AnnotateNullableParameters extends Recipe {
                     return md;
                 }
 
-                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = buildIdentifierMap(findCandidateParameters(md));
+                Map<J.VariableDeclarations, J.Identifier> candidateIdentifiers = md.getParameters().stream()
+                        .filter(J.VariableDeclarations.class::isInstance)
+                        .map(J.VariableDeclarations.class::cast)
+                        .filter(vd -> !hasNullRelatedAnnotation(vd))
+                        .collect(toMap(vd -> vd, vd -> vd.getVariables().get(0).getName()));
 
                 NullCheckAndDereferenceVisitor visitor = new NullCheckAndDereferenceVisitor(candidateIdentifiers.values(), additionalNullCheckingMethods);
                 visitor.visit(md.getBody(), ctx);
@@ -174,25 +178,6 @@ public class AnnotateNullableParameters extends Recipe {
         return identifiers.stream().anyMatch(identifier -> SemanticallyEqual.areEqual(identifier, target));
     }
 
-    /**
-     * Finds method parameters that are candidates for @Nullable annotation.
-     * A parameter is a candidate if it doesn't already have any annotation whose simple name
-     * contains "null" (case-insensitive). This catches @Nullable, @CheckForNull, @NullableDecl,
-     * @NonNull, @NotNull, etc. from any framework, preventing duplication and conflicts.
-     */
-    private static List<J.VariableDeclarations> findCandidateParameters(J.MethodDeclaration md) {
-        List<J.VariableDeclarations> candidates = new ArrayList<>();
-        for (Statement parameter : md.getParameters()) {
-            if (parameter instanceof J.VariableDeclarations) {
-                J.VariableDeclarations vd = (J.VariableDeclarations) parameter;
-                if (!hasNullRelatedAnnotation(vd)) {
-                    candidates.add(vd);
-                }
-            }
-        }
-        return candidates;
-    }
-
     private static boolean hasNullRelatedAnnotation(J.VariableDeclarations vd) {
         for (J.Annotation ann : vd.getLeadingAnnotations()) {
             if (isNullAnnotation(ann)) {
@@ -211,19 +196,12 @@ public class AnnotateNullableParameters extends Recipe {
         }.reduce(vd.getTypeExpression(), new AtomicBoolean(false)).get();
     }
 
+    /**
+     * Any annotation whose simple name contains "null" (case-insensitive) counts, which catches @Nullable,
+     * @CheckForNull, @NullableDecl, @NonNull, @NotNull, etc. from any framework, preventing duplication and conflicts.
+     */
     private static boolean isNullAnnotation(J.Annotation ann) {
         return ann.getSimpleName().toLowerCase(Locale.ROOT).contains("null");
-    }
-
-    private Map<J.VariableDeclarations, J.Identifier> buildIdentifierMap(List<J.VariableDeclarations> parameters) {
-        Map<J.VariableDeclarations, J.Identifier> identifierMap = new HashMap<>();
-        for (J.VariableDeclarations vd : parameters) {
-            vd.getVariables().stream()
-                    .map(J.VariableDeclarations.NamedVariable::getName)
-                    .findFirst()
-                    .ifPresent(identifier -> identifierMap.put(vd, identifier));
-        }
-        return identifierMap;
     }
 
     /**

@@ -67,7 +67,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 }
 
                 // Handle parenthesized subtraction on right: i <= (n - 1) → i < n
-                Expression unwrappedRight = unwrapParentheses(binary.getRight());
+                Expression unwrappedRight = binary.getRight().unwrap();
                 if (unwrappedRight != binary.getRight() && unwrappedRight instanceof J.Binary) {
                     J.Binary rightArith = (J.Binary) unwrappedRight;
                     if (rightArith.getOperator() == J.Binary.Type.Subtraction && isIntLiteral(rightArith.getRight(), 1)) {
@@ -77,7 +77,7 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                 }
 
                 // Handle parenthesized addition on left: (i + 1) <= n → i < n
-                Expression unwrappedLeft = unwrapParentheses(binary.getLeft());
+                Expression unwrappedLeft = binary.getLeft().unwrap();
                 if (unwrappedLeft != binary.getLeft() && unwrappedLeft instanceof J.Binary) {
                     J.Binary leftArith = (J.Binary) unwrappedLeft;
                     if (leftArith.getOperator() == J.Binary.Type.Addition) {
@@ -151,13 +151,6 @@ public class SimplifyForLoopBoundaryComparison extends Recipe {
                                     withNewValue((J.Literal) leftArith.getLeft(), val - 1)));
                 }
                 return null;
-            }
-
-            private Expression unwrapParentheses(Expression expr) {
-                while (expr instanceof J.Parentheses) {
-                    expr = (Expression) ((J.Parentheses<?>) expr).getTree();
-                }
-                return expr;
             }
 
             private @Nullable Integer getIntLiteralValue(Expression expr) {

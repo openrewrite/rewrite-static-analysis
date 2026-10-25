@@ -61,30 +61,15 @@ public class FinalizeMethodArguments extends Recipe {
                     return declarations;
                 }
 
-                final AtomicBoolean assigned = new AtomicBoolean(false);
-
-                methodDeclaration.getParameters().forEach(p -> checkIfAssigned(assigned, p));
-                if (assigned.get()) {
+                J enclosing = getCursor().getParentTreeCursor().getValue();
+                if (methodDeclaration.getParameters().stream().anyMatch(p -> p instanceof J.VariableDeclarations &&
+                        ((J.VariableDeclarations) p).getVariables().stream()
+                                .anyMatch(v -> FindAssignmentReferencesToVariable.find(enclosing, v).get()))) {
                     return declarations;
                 }
 
                 List<Statement> parameters = ListUtils.map(declarations.getParameters(), FinalizeMethodArguments::updateParam);
                 return declarations.withParameters(parameters);
-            }
-
-            private void checkIfAssigned(final AtomicBoolean assigned, final Statement p) {
-                if (p instanceof J.VariableDeclarations) {
-                    J.VariableDeclarations variableDeclarations = (J.VariableDeclarations) p;
-                    if (variableDeclarations.getVariables().stream()
-                            .anyMatch(namedVariable ->
-                                    FindAssignmentReferencesToVariable.find(getCursor()
-                                                            .getParentTreeCursor()
-                                                            .getValue(),
-                                                    namedVariable)
-                                            .get())) {
-                        assigned.set(true);
-                    }
-                }
             }
         });
     }

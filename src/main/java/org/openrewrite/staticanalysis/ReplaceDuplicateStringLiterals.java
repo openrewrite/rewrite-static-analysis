@@ -20,6 +20,7 @@ import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.*;
 import org.openrewrite.java.marker.JavaSourceSet;
@@ -119,8 +120,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                             J.Block applied = template
                                     .apply(new Cursor(getCursor(), classDecl.getBody()), classDecl.getBody().getCoordinates().lastStatement(), replaceLiteral);
                             List<Statement> statements = applied.getStatements();
-                            statements.add(1, statements.remove(statements.size() - 1));
-                            classDecl = classDecl.withBody(applied.withStatements(statements));
+                            int last = statements.size() - 1;
+                            classDecl = classDecl.withBody(applied.withStatements(
+                                    ListUtils.insert(statements.subList(0, last), statements.get(last), 1)));
                         } else {
                             classDecl = classDecl.withBody(
                                     template
