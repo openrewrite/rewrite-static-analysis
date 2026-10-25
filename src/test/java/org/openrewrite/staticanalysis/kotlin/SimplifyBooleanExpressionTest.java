@@ -141,6 +141,21 @@ class SimplifyBooleanExpressionTest implements RewriteTest {
         );
     }
 
+    @Test
+    void nullableBooleanFunctionEqualsTrue() {
+        rewriteRun(
+          kotlin(
+            """
+              fun flag(): Boolean? = null
+
+              fun check() {
+                  if (flag() == true) println("true")
+              }
+              """
+          )
+        );
+    }
+
     @Issue("https://github.com/openrewrite/rewrite-static-analysis/issues/303")
     @Test
     void nullableBooleanParameterEqualsFalse() {

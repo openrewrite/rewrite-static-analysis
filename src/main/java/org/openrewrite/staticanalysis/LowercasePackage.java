@@ -23,6 +23,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaSourceFile;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -36,12 +37,15 @@ public class LowercasePackage extends ScanningRecipe<Map<String, String>> {
     final String displayName = "Rename packages to lowercase";
 
     @Getter
-    final String description = "By convention all Java package names should contain only lowercase letters, numbers, and dashes. " +
+    final String description = "By convention all Java package names should contain only lowercase letters, numbers, and underscores. " +
             "This recipe converts any uppercase letters in package names to be lowercase. " +
             "Consistent package naming prevents confusion and potential issues on case-insensitive file systems.";
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S120");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(10);
 
     @Override
     public Map<String, String> getInitialValue(ExecutionContext ctx) {

@@ -38,7 +38,7 @@ public class ExplicitThis extends Recipe {
 
     String displayName = "Use explicit `this.field` and `this.method()`";
 
-    String description = "Add explicit 'this.' prefix to field and method access.";
+    String description = "Add explicit `this.` prefix to field and method access.";
 
     Duration estimatedEffortPerOccurrence = Duration.ofSeconds(5);
 

@@ -62,6 +62,39 @@ class NoEqualityInForConditionTest implements RewriteTest {
     }
 
     @Test
+    void flipOperatorWhenVariableOnRight() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  void test(int n) {
+                      for (int i = 0; 10 != i; i++) {
+                      }
+                      for (int i = 10; 0 != i; i--) {
+                      }
+                      for (int i = 0; n != i; i++) {
+                      }
+                  }
+              }
+              """,
+            """
+              class Test {
+                  void test(int n) {
+                      for (int i = 0; 10 > i; i++) {
+                      }
+                      for (int i = 10; 0 < i; i--) {
+                      }
+                      for (int i = 0; n > i; i++) {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void allowNullCheck() {
         rewriteRun(
           //language=java
@@ -104,9 +137,12 @@ class NoEqualityInForConditionTest implements RewriteTest {
           java(
             """
               class Test {
+                  int x;
                   void test() {
                       int y = 9;
                       for (int x = 0; y != 10; x++) {
+                      }
+                      for (int x = 0; this.x != 10; x++) {
                       }
                   }
               }

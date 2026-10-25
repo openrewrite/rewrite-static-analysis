@@ -34,9 +34,11 @@ import org.openrewrite.style.Style;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 
@@ -52,7 +54,7 @@ public class NeedBraces extends Recipe {
             "structure.";
 
     @Getter
-    final Set<String> tags = singleton("RSPEC-S121");
+    final Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S121", "RSPEC-S5261"));
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);

@@ -19,6 +19,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.Tree;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
@@ -89,7 +90,7 @@ public class VariableReferences {
         return new JavaIsoVisitor<List<J>>() {
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, List<J> ctx) {
-                if (identifier.getSimpleName().equals(target.getSimpleName()) && isRhsValue(getCursor())) {
+                if (SemanticallyEqual.areEqual(identifier, target) && isRhsValue(getCursor())) {
                     ctx.add(identifier);
                 }
                 return super.visitIdentifier(identifier, ctx);
@@ -106,33 +107,24 @@ public class VariableReferences {
         JavaIsoVisitor<List<Statement>> visitor = new JavaIsoVisitor<List<Statement>>() {
             @Override
             public J.Assignment visitAssignment(J.Assignment assignment, List<Statement> ctx) {
-                if (assignment.getVariable() instanceof J.Identifier) {
-                    J.Identifier i = (J.Identifier) assignment.getVariable();
-                    if (i.getSimpleName().equals(target.getSimpleName())) {
-                        ctx.add(assignment);
-                    }
+                if (assignment.getVariable() instanceof J.Identifier && SemanticallyEqual.areEqual(assignment.getVariable(), target)) {
+                    ctx.add(assignment);
                 }
                 return super.visitAssignment(assignment, ctx);
             }
 
             @Override
             public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, List<Statement> ctx) {
-                if (assignOp.getVariable() instanceof J.Identifier) {
-                    J.Identifier i = (J.Identifier) assignOp.getVariable();
-                    if (i.getSimpleName().equals(target.getSimpleName())) {
-                        ctx.add(assignOp);
-                    }
+                if (assignOp.getVariable() instanceof J.Identifier && SemanticallyEqual.areEqual(assignOp.getVariable(), target)) {
+                    ctx.add(assignOp);
                 }
                 return super.visitAssignmentOperation(assignOp, ctx);
             }
 
             @Override
             public J.Unary visitUnary(J.Unary unary, List<Statement> ctx) {
-                if (unary.getExpression() instanceof J.Identifier) {
-                    J.Identifier i = (J.Identifier) unary.getExpression();
-                    if (i.getSimpleName().equals(target.getSimpleName())) {
-                        ctx.add(unary);
-                    }
+                if (unary.getOperator().isModifying() && unary.getExpression() instanceof J.Identifier && SemanticallyEqual.areEqual(unary.getExpression(), target)) {
+                    ctx.add(unary);
                 }
                 return super.visitUnary(unary, ctx);
             }

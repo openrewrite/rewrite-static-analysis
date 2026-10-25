@@ -42,7 +42,7 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
     final String displayName = "Use method references in lambda";
 
     @Getter
-    final String description = "Replaces the single statement lambdas `o -> o instanceOf X`, " +
+    final String description = "Replaces the single statement lambdas `o -> o instanceof X`, " +
             "`o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, " +
             "`o -> o == null` with the equivalent method reference. Method references are often " +
             "more concise and readable than their lambda equivalents, making the code's intent " +

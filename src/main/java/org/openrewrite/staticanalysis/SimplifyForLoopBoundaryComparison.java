@@ -29,7 +29,7 @@ import org.openrewrite.java.tree.TypeUtils;
 public class SimplifyForLoopBoundaryComparison extends Recipe {
 
     @Getter
-    final String displayName = "Simplify for loop boundary comparisons";
+    final String displayName = "Simplify `for` loop boundary comparisons";
 
     @Getter
     final String description = "Replace `<=` with `<` in for loop conditions by adjusting the comparison operands. " +

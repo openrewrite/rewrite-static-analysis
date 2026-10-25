@@ -40,10 +40,10 @@ import static java.util.Collections.singletonList;
 public class RemoveInstanceOfPatternMatch extends Recipe {
 
     @Getter
-    final String displayName = "Removes from code Java 14's `instanceof` pattern matching";
+    final String displayName = "Remove Java 14's `instanceof` pattern matching";
 
     @Getter
-    final String description = "Adds an explicit variable declaration at the beginning of `if` statement instead of `instanceof` pattern matching.";
+    final String description = "Adds an explicit variable declaration at the beginning of the `if` statement instead of `instanceof` pattern matching.";
 
     @Getter
     final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);

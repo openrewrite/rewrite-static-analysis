@@ -30,6 +30,7 @@ import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.JavaType.FullyQualified;
 import org.openrewrite.java.tree.TypeUtils;
 
+import java.time.Duration;
 import java.util.*;
 
 import static java.util.stream.Collectors.joining;
@@ -52,6 +53,9 @@ public class OnlyCatchDeclaredExceptions extends Recipe {
 
     @Getter
     final Set<String> tags = new HashSet<>(Arrays.asList("CWE-396", "RSPEC-S2221"));
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

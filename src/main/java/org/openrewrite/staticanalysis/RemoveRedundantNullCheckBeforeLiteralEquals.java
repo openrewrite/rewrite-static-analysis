@@ -18,11 +18,13 @@ package org.openrewrite.staticanalysis;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.SemanticallyEqual;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
@@ -43,7 +45,7 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(EQUALS_MATCHER), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitBinary(J.Binary binary, ExecutionContext ctx) {
                 J.Binary bi = (J.Binary) super.visitBinary(binary, ctx);
@@ -115,6 +117,6 @@ public class RemoveRedundantNullCheckBeforeLiteralEquals extends Recipe {
                 }
                 return false;
             }
-        };
+        });
     }
 }

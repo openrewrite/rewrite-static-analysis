@@ -25,7 +25,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
-import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
@@ -119,7 +118,7 @@ public class RemoveMethodsOnlyCallSuper extends Recipe {
                     return md;
                 }
 
-                doAfterVisit(new RemoveUnusedImports().getVisitor());
+                ReferencedImports.namesReferencedBy(md).forEach(this::maybeRemoveImport);
                 //noinspection DataFlowIssue
                 return null;
             }

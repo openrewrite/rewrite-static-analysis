@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
-import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -36,15 +35,13 @@ import static java.util.Collections.singleton;
 @Value
 public class RemoveRedundantNullCheckBeforeInstanceof extends Recipe {
 
-    String displayName = "Remove redundant null checks before instanceof";
+    String displayName = "Remove redundant null checks before `instanceof`";
 
-    String description = "Removes redundant null checks before instanceof operations since " +
-            "instanceof returns false for null. Removing the extra check simplifies the conditional " +
+    String description = "Removes redundant null checks before `instanceof` operations since " +
+            "`instanceof` returns `false` for `null`. Removing the extra check simplifies the conditional " +
             "and makes the null-safety guarantee of `instanceof` more visible to readers.";
 
-    Set<String> tags = singleton("RSPEC-S1697");
-
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(1);
+    Set<String> tags = singleton("RSPEC-S4201");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

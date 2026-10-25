@@ -19,15 +19,16 @@ import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
 import java.util.*;
 import java.util.function.Function;
@@ -56,22 +57,19 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new JavaFileChecker<>(), new TreeVisitor<Tree, ExecutionContext>() {
             @Override
-            public J.CompilationUnit visitCompilationUnit(
-                    final J.CompilationUnit cu,
-                    final ExecutionContext ctx
-            ) {
-                if (cu.getMarkers()
+            public @Nullable Tree visit(@Nullable Tree tree, ExecutionContext ctx) {
+                Tree t = tree;
+                if (t != null && t.getMarkers()
                         .findFirst(JavaVersion.class)
                         .filter(javaVersion -> javaVersion.getMajorVersion() >= 14)
                         .isPresent()) {
-                    doAfterVisit(new UseSwitchExpressionVisitor());
+                    t = new UseSwitchExpressionVisitor().visit(t, ctx);
                 }
-                doAfterVisit(new UseIfVisitor());
-                return cu;
+                return new UseIfVisitor().visit(t, ctx);
             }
-        };
+        });
     }
 
     private static class UseIfVisitor extends JavaVisitor<ExecutionContext> {
@@ -81,7 +79,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
             if (!isNestedTernary(lambda.getBody()) || !keepsBranchValues((J.Ternary) lambda.getBody(), null)) {
                 return super.visitLambda(lambda, ctx);
             }
-            doAfterVisit(new RemoveUnneededBlock().getVisitor());
             Statement body = branchOf((J.Ternary) lambda.getBody(), TernaryOperatorsShouldNotBeNested::returnOf, true);
             return autoFormat(lambda.withBody(body.withPrefix(Space.SINGLE_SPACE)), ctx);
         }
@@ -94,8 +91,10 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
                     !keepsBranchValues((J.Ternary) retrn.getExpression(), method == null ? null : method.getReturnType())) {
                 return super.visitReturn(retrn, ctx);
             }
-            doAfterVisit(new RemoveUnneededBlock().getVisitor());
             Statement result = branchOf(retrn.getExpression(), TernaryOperatorsShouldNotBeNested::returnOf, true);
+            if (result instanceof J.Block) {
+                doAfterVisit(new RemoveUnneededBlock.RemoveUnneededBlockStatementVisitor((J.Block) result));
+            }
             return autoFormat(result.withPrefix(retrn.getPrefix()), ctx);
         }
 
@@ -436,7 +435,8 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
     }
 
     private static J.Block blockOf(List<Statement> statements) {
-        return J.Block.createEmptyBlock().withStatements(statements);
+        // Only the blocks `branchOf` creates are nested here, and they are spliced in rather than left for `RemoveUnneededBlock`
+        return J.Block.createEmptyBlock().withStatements(ListUtils.flatMap(statements, s -> s instanceof J.Block ? ((J.Block) s).getStatements() : s));
     }
 
 }

@@ -38,7 +38,7 @@ public class CaseInsensitiveComparisonsDoNotChangeCase extends Recipe {
     private static final MethodMatcher TO_UPPER_CASE_METHOD_MATCHER = new MethodMatcher("java.lang.String toUpperCase()");
 
     @Getter
-    final String displayName = "CaseInsensitive comparisons do not alter case";
+    final String displayName = "Case-insensitive comparisons do not alter case";
 
     @Getter
     final String description = "Remove `String#toLowerCase()` or `String#toUpperCase()` from `String#equalsIgnoreCase(..)` comparisons. " +

@@ -83,6 +83,203 @@ class ObjectFinalizeCallsSuperTest implements RewriteTest {
     }
 
     @Test
+    void addsThrowsThrowableToEmptyBody() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class F {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class F {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsThrowsThrowableWhenSuperclassDeclaresThrowable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws Throwable {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsSuperFinalizeWithoutThrowsWhenSuperclassDeclaresNoThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() {
+                      try {
+                          super.finalize();
+                      } catch (Throwable ignored) {
+                      }
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              class Parent {
+                  @Override
+                  protected void finalize() {
+                      try {
+                          super.finalize();
+                      } catch (Throwable ignored) {
+                      }
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void addsSuperFinalizeWhenThrowsClauseCoversSuperclassThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                  }
+              }
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void declaresExceptionsOfSuperclassWhenOverrideDeclaresNoThrows() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import java.io.IOException;
+
+              class Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                  }
+              }
+              """
+          ),
+          //language=java
+          java(
+            """
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() {
+                  }
+              }
+              """,
+            """
+              import java.io.IOException;
+
+              class Child extends Parent {
+                  @Override
+                  protected void finalize() throws IOException {
+                      super.finalize();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeWhenThrowsClauseDoesNotCoverThrowable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class F {
+                  @Override
+                  protected void finalize() throws Exception {
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void addsSuperFinalizeInvocationInGroovy() {
         rewriteRun(
           //language=groovy

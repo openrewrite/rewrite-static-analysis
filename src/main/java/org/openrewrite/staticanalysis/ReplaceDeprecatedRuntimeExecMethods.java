@@ -32,6 +32,9 @@ import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
     private static final MethodMatcher RUNTIME_EXEC_CMD = new MethodMatcher("java.lang.Runtime exec(String)");
@@ -43,10 +46,13 @@ public class ReplaceDeprecatedRuntimeExecMethods extends Recipe {
 
     @Getter
     final String description = "Replace `Runtime#exec(String)` methods to use `exec(String[])` instead because the former is deprecated " +
-            "after Java 18 and is no longer recommended for use by the Java documentation.";
+            "since Java 18 and is no longer recommended for use by the Java documentation.";
 
     @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(3);
+    final Set<String> tags = singleton("RSPEC-S1874");
+
+    @Getter
+    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(15);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

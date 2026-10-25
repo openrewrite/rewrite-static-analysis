@@ -33,11 +33,12 @@ import org.openrewrite.staticanalysis.kotlin.KotlinFileChecker;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.Collections.singleton;
+import static java.util.Arrays.asList;
 import static org.openrewrite.Preconditions.and;
 import static org.openrewrite.Preconditions.not;
 
@@ -89,7 +90,7 @@ public class RemoveUnusedLocalVariables extends Recipe {
             "Unused variables increase cognitive load for readers who must determine whether the variable matters, " +
             "and they may signal incomplete implementations or missed refactoring.";
 
-    Set<String> tags = singleton("RSPEC-S1481");
+    Set<String> tags = new LinkedHashSet<>(asList("RSPEC-S1481", "RSPEC-S1854"));
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

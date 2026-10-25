@@ -31,9 +31,10 @@ import org.openrewrite.java.tree.J;
 @Value
 public class SortedSetStreamToLinkedHashSet extends Recipe {
 
-    String displayName = "Sorted set stream should be collected to LinkedHashSet";
+    String displayName = "Sorted set stream should be collected to `LinkedHashSet`";
 
-    String description = "Converts `set.stream().sorted().collect(Collectors.toSet())` to `set.stream().sorted().collect(LinkedHashSet::new)`.";
+    String description = "Converts `stream.sorted().collect(Collectors.toSet())` to `stream.sorted().collect(Collectors.toCollection(LinkedHashSet::new))`, " +
+            "so that the sort order is preserved.";
 
     private static final MethodMatcher STREAM_COLLECT_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream collect(java.util.stream.Collector)");
     private static final MethodMatcher STREAM_SORTED_METHOD_MATCHER = new MethodMatcher("java.util.stream.Stream sorted()");

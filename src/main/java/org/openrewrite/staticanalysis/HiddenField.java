@@ -21,9 +21,9 @@ import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Set;
+
+import static java.util.Collections.singleton;
 
 @Incubating(since = "7.6.0")
 public class HiddenField extends Recipe {
@@ -37,7 +37,7 @@ public class HiddenField extends Recipe {
             "one, leading to confusing bugs.";
 
     @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S1117", "RSPEC-S2387"));
+    final Set<String> tags = singleton("RSPEC-S1117");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -19,12 +19,14 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.VariableNameUtils;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
@@ -53,7 +55,7 @@ public class InterruptedExceptionHandling extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesType<>("java.lang.InterruptedException", false), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Try.Catch visitCatch(J.Try.Catch aCatch, ExecutionContext ctx) {
                 J.Try.Catch c = super.visitCatch(aCatch, ctx);
@@ -106,6 +108,6 @@ public class InterruptedExceptionHandling extends Recipe {
                     }
                 }.reduce(aCatch, new AtomicBoolean()).get();
             }
-        };
+        });
     }
 }

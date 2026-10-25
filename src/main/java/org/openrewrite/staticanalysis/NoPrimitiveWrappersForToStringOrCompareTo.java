@@ -46,7 +46,7 @@ public class NoPrimitiveWrappersForToStringOrCompareTo extends Recipe {
     private static final MethodMatcher BOOLEAN_COMPARE_TO_MATCHER = new MethodMatcher("java.lang.Boolean compareTo(..)", true);
 
     @Getter
-    final String displayName = "No primitive wrappers for #toString() or #compareTo(..)";
+    final String displayName = "No primitive wrappers for `#toString()` or `#compareTo(..)`";
 
     @Getter
     final String description = "Primitive wrappers should not be instantiated only for " +

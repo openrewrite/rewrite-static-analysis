@@ -246,7 +246,6 @@ class CatchClauseOnlyRethrowsTest implements RewriteTest {
             """
               import java.io.FileReader;
               import java.io.IOException;
-              import java.io.FileNotFoundException;
 
               class A {
                   void foo() throws IOException {

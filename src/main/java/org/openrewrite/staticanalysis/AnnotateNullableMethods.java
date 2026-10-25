@@ -51,7 +51,7 @@ public class AnnotateNullableMethods extends Recipe {
     ));
 
     @Option(displayName = "`@Nullable` annotation class",
-            description = "The fully qualified name of the @Nullable annotation to add. " +
+            description = "The fully qualified name of the `@Nullable` annotation to add. " +
                     "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
                     "Defaults to `org.jspecify.annotations.Nullable`.",
             example = "org.jspecify.annotations.Nullable",
@@ -61,7 +61,7 @@ public class AnnotateNullableMethods extends Recipe {
 
     String displayName = "Annotate methods which may return `null` with `@Nullable`";
 
-    String description = "Add `@Nullable` to non-private methods that may return `null`. " +
+    String description = "Add `@Nullable` to `public` methods that may return `null`. " +
             "By default `org.jspecify.annotations.Nullable` is used, but through the `nullableAnnotationClass` option a custom annotation can be provided. " +
             "Both `@Target(TYPE_USE)` and declaration annotations (e.g. `javax.annotation.CheckForNull`) are supported. " +
             "Methods that already carry a known nullable annotation (matched by simple name) are skipped to avoid duplication. " +

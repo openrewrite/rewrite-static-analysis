@@ -42,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.openrewrite.Tree.randomId;
 
@@ -62,6 +63,8 @@ public class FindNewExceptionWithoutCause extends Recipe {
             "the `catch` block establishes whether the caught exception—or any value derived from it—reaches the thrown " +
             "exception, so indirect references through local variables, helper calls and string concatenation are not " +
             "falsely reported. This mirrors PMD's `PreserveStackTrace` rule.";
+
+    Set<String> tags = singleton("RSPEC-S1166");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

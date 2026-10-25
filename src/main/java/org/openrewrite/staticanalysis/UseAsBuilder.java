@@ -34,8 +34,8 @@ import static org.openrewrite.java.format.TabsAndIndents.formatTabsAndIndents;
 @Value
 public class UseAsBuilder extends Recipe {
     @Option(
-            displayName = "Builder Type",
-            description = "Fully qualified name of the Builder",
+            displayName = "Builder type",
+            description = "Fully qualified name of the builder.",
             example = "org.example.Buildable.Builder")
     String builderType;
 
@@ -198,6 +198,6 @@ public class UseAsBuilder extends Recipe {
             }
         };
 
-        return builderCreator == null ? v : Preconditions.check(new UsesMethod<>(builderCreator), v);
+        return Preconditions.check(new UsesMethod<>(builderCreator == null ? builderType + " *(..)" : builderCreator), v);
     }
 }
