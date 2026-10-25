@@ -1997,7 +1997,6 @@ class ReplaceLambdaWithMethodReferenceTest implements RewriteTest {
 
     @Nested
     class Kotlin {
-        @DocumentExample
         @ExpectedToFail("The Kotlin visitor is an empty stub; see #1092")
         @Test
         void toQualifiedMethodReference() {
