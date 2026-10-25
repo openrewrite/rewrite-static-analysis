@@ -31,7 +31,6 @@ import java.util.*;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 import static org.openrewrite.Tree.randomId;
 
@@ -72,9 +71,9 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                 return tree;
             }
         };
-        return Preconditions.check(inIncludedSourceSet, new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(inIncludedSourceSet, new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+            public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 if (classDecl.getType() == null) {
                     return classDecl;
                 }
@@ -132,7 +131,7 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
                     entry.getValue().forEach(v -> replacements.put(v, variableName));
                 }
                 return replacements.isEmpty() ? classDecl :
-                        new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, requireNonNull(getCursor().getParent()));
+                        (J.ClassDeclaration) new ReplaceStringLiterals(classDecl, replacements).visitNonNull(classDecl, ctx, getCursor().getParentOrThrow());
             }
 
             private String getNameWithoutShadow(String name, Set<String> variableNames) {

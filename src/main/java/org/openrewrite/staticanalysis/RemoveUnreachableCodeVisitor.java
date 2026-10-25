@@ -16,18 +16,18 @@
 package org.openrewrite.staticanalysis;
 
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
 import java.util.List;
 import java.util.Optional;
 
-class RemoveUnreachableCodeVisitor extends JavaVisitor<ExecutionContext> {
+class RemoveUnreachableCodeVisitor extends JavaIsoVisitor<ExecutionContext> {
 
   @Override
-  public J visitBlock(J.Block block, ExecutionContext executionContext) {
-    block = (J.Block) super.visitBlock(block, executionContext);
+  public J.Block visitBlock(J.Block block, ExecutionContext executionContext) {
+    block = super.visitBlock(block, executionContext);
 
     List<Statement> statements = block.getStatements();
     Optional<Integer> maybeFirstJumpIndex = findFirstJump(statements);

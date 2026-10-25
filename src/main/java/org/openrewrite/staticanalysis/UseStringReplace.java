@@ -22,7 +22,7 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
@@ -57,10 +57,10 @@ public class UseStringReplace extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new UsesMethod<>(REPLACE_ALL), new JavaVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesMethod<>(REPLACE_ALL), new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                J.MethodInvocation invocation = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                J.MethodInvocation invocation = super.visitMethodInvocation(method, ctx);
 
                 // Checks if method invocation matches with String#replaceAll
                 if (REPLACE_ALL.matches(invocation)) {

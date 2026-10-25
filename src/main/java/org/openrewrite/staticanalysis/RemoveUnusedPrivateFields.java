@@ -22,7 +22,6 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
@@ -197,11 +196,11 @@ public class RemoveUnusedPrivateFields extends Recipe {
     }
 
     @RequiredArgsConstructor
-    private static class RemoveUnusedField extends JavaVisitor<AtomicBoolean> {
+    private static class RemoveUnusedField extends JavaIsoVisitor<AtomicBoolean> {
         private final J.VariableDeclarations.NamedVariable namedVariable;
 
         @Override
-        public @Nullable J visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
+        public J.@Nullable VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, AtomicBoolean declarationDeleted) {
             if (multiVariable.getVariables().size() == 1 && multiVariable.getVariables().contains(namedVariable)) {
                 declarationDeleted.set(true);
                 return null;
@@ -210,7 +209,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public @Nullable J visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
+        public J.VariableDeclarations.@Nullable NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, AtomicBoolean declarationDeleted) {
             if (variable == namedVariable) {
                 return null;
             }
@@ -219,14 +218,14 @@ public class RemoveUnusedPrivateFields extends Recipe {
     }
 
     @RequiredArgsConstructor
-    private static class MaybeRemoveComment extends JavaVisitor<ExecutionContext> {
+    private static class MaybeRemoveComment extends JavaIsoVisitor<ExecutionContext> {
         @Nullable
         private final Statement statement;
 
         private final J.ClassDeclaration classDeclaration;
 
         @Override
-        public J visitStatement(Statement s, ExecutionContext ctx) {
+        public Statement visitStatement(Statement s, ExecutionContext ctx) {
             if (s == statement) {
                 Space prefix = s.getPrefix();
                 if (!prefix.getComments().isEmpty() && !prefix.getWhitespace().contains("\n")) {
@@ -241,7 +240,7 @@ public class RemoveUnusedPrivateFields extends Recipe {
         }
 
         @Override
-        public J visitClassDeclaration(J.ClassDeclaration c, ExecutionContext ctx) {
+        public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration c, ExecutionContext ctx) {
             // a removed last field's trailing comment is in the end of the class body
             if (statement == null && c == classDeclaration) {
                 Space end = c.getBody().getEnd();

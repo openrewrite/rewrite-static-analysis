@@ -20,7 +20,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -48,9 +48,9 @@ public class NoEqualityInForCondition extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        JavaVisitor<ExecutionContext> javaVisitor = new JavaVisitor<ExecutionContext>() {
+        JavaIsoVisitor<ExecutionContext> javaVisitor = new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J visitForControl(J.ForLoop.Control control, ExecutionContext ctx) {
+            public J.ForLoop.Control visitForControl(J.ForLoop.Control control, ExecutionContext ctx) {
                 if (control.getCondition() instanceof J.Binary) {
                     J.Binary condition = (J.Binary) control.getCondition();
 

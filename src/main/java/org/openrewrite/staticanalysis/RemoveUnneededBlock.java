@@ -21,7 +21,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
 import org.openrewrite.java.tree.Statement;
@@ -53,7 +53,7 @@ public class RemoveUnneededBlock extends Recipe {
         return new RemoveUnneededBlockStatementVisitor();
     }
 
-    static class RemoveUnneededBlockStatementVisitor extends JavaVisitor<ExecutionContext> {
+    static class RemoveUnneededBlockStatementVisitor extends JavaIsoVisitor<ExecutionContext> {
         /**
          * When set, only this block is inlined, so that recipes which leave one block behind
          * do not flatten every other block in the file.
@@ -70,7 +70,7 @@ public class RemoveUnneededBlock extends Recipe {
 
         @Override
         public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
-            J.Block bl = (J.Block) super.visitBlock(block, ctx);
+            J.Block bl = super.visitBlock(block, ctx);
             J directParent = getCursor().getParentTreeCursor().getValue();
             if (directParent instanceof J.NewClass || directParent instanceof J.ClassDeclaration) {
                 // If the direct parent is an initializer block or a static block, skip it

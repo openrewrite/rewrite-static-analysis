@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
-import org.openrewrite.java.JavaVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.tree.J;
 
@@ -43,11 +43,11 @@ public class RemoveSelfAssignment extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return new JavaVisitor<ExecutionContext>() {
+        return new JavaIsoVisitor<ExecutionContext>() {
 
             @Override
             public J.@Nullable Assignment visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
-                J.Assignment a = (J.Assignment) super.visitAssignment(assignment, ctx);
+                J.Assignment a = super.visitAssignment(assignment, ctx);
                 if (SemanticallyEqual.areEqual(a.getVariable(), a.getAssignment())) {
                     return null;
                 }
