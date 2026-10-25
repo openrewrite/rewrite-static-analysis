@@ -46,14 +46,12 @@ public class NoFinalizedLocalVariables extends Recipe {
             public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
                 J.VariableDeclarations mv = super.visitVariableDeclarations(multiVariable, ctx);
 
-                // if this doesn't have "final", we don't need to bother going any further; we're done
                 if (!mv.hasModifier(J.Modifier.Type.Final)) {
                     return mv;
                 }
 
                 Tree parent = getCursor().getParentTreeCursor().getValue();
                 if (parent instanceof J.MethodDeclaration || parent instanceof J.Lambda || parent instanceof J.Lambda.Parameters) {
-                    // this variable is a method parameter or lambda parameter
                     if (Boolean.TRUE.equals(excludeMethodParameters)) {
                         return mv;
                     }

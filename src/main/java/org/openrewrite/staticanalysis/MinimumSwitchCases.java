@@ -55,14 +55,12 @@ public class MinimumSwitchCases extends Recipe {
         return Preconditions.check(Preconditions.not(new CSharpFileChecker<>()), new JavaVisitor<ExecutionContext>() {
             @Override
             public J visitBlock(J.Block block, ExecutionContext ctx) {
-                // Handle the edge case of the extra-pointless switch statement which contains _only_ the default case
                 return block.withStatements(ListUtils.flatMap(block.getStatements(), statement -> {
                     Statement visited = (Statement) visit(statement, ctx, getCursor());
                     Set<UUID> defaultOnly = getCursor().getMessage(DEFAULT_ONLY, emptySet());
                     if (!(visited instanceof J.Switch) || !defaultOnly.contains(visited.getId())) {
                         return visited;
                     }
-                    // Unwrap the contents of the default block, discarding the break statement if one exists
                     J.Case defaultCase = (J.Case) ((J.Switch) visited).getCases().getStatements().get(0);
 
                     return ListUtils.map(defaultCase.getStatements(), caseStatement -> {
@@ -157,24 +155,19 @@ public class MinimumSwitchCases extends Recipe {
                             }
                         }
 
-                        // move first case to "if"
                         List<Statement> thenStatements = getStatements(cases[0]);
                         List<Statement> filteredThen = removeBreaksPreservingComments(thenStatements);
 
                         generatedIf = generatedIf.withThenPart(((J.Block) generatedIf.getThenPart()).withStatements(filteredThen));
 
-                        // Collect variable declarations from first case for redeclaration in else block
                         Map<String, J.VariableDeclarations> declaredVars = collectDeclaredVariables(filteredThen);
 
-                        // move second case to "else"
                         if (cases[1] != null) {
                             assert generatedIf.getElsePart() != null;
                             List<Statement> elseStatements = removeBreaksPreservingComments(getStatements(cases[1]));
-                            // Transfer comments from the switch block's end space to the else block
                             Space switchEnd = sortedSwitch.getCases().getEnd();
                             if (!switchEnd.getComments().isEmpty()) {
                                 if (elseStatements.isEmpty()) {
-                                    // Create a placeholder empty statement to carry the comments
                                     J.Block elseBlock = (J.Block) (isDefault(cases[1]) ?
                                             generatedIf.getElsePart().getBody() :
                                             ((J.If) generatedIf.getElsePart().getBody()).getThenPart());
@@ -288,7 +281,6 @@ public class MinimumSwitchCases extends Recipe {
                     if (s instanceof J.Break) {
                         return null;
                     }
-                    // Collect comments from any following break statement
                     if (i + 1 < statements.size() && statements.get(i + 1) instanceof J.Break) {
                         List<Comment> breakComments = statements.get(i + 1).getComments();
                         if (!breakComments.isEmpty()) {

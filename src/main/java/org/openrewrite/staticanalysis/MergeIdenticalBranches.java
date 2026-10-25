@@ -72,7 +72,6 @@ public class MergeIdenticalBranches extends Recipe {
                     J.If elseIf = (J.If) elseBody;
 
                     if (SemanticallyEqual.areEqual(outerIf.getThenPart(), elseIf.getThenPart())) {
-                        // Merge: combine conditions with ||, skip the else-if
                         Expression combined = JavaElementFactory.newLogicalExpression(
                                 J.Binary.Type.Or,
                                 outerIf.getIfCondition().getTree(),
@@ -83,11 +82,9 @@ public class MergeIdenticalBranches extends Recipe {
                                 .withIfCondition(outerIf.getIfCondition().withTree(combined))
                                 .withElsePart(elseIf.getElsePart());
 
-                        // Continue merging in case the next branch also matches
                         return mergeConsecutiveIdentical(merged);
                     }
 
-                    // Recurse into the rest of the chain
                     J.If rebuiltElseIf = mergeConsecutiveIdentical(elseIf);
                     if (rebuiltElseIf != elseIf) {
                         return outerIf.withElsePart(outerIf.getElsePart().withBody(rebuiltElseIf));

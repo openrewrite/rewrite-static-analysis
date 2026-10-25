@@ -55,17 +55,13 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        // use JavaVisitor instead of JavaIsoVisitor because we changed the type of LST
         return Preconditions.check(new UsesMethod<>(ISINSTANCE_MATCHER), new JavaVisitor<ExecutionContext>() {
 
             @Override
             public J visitMethodInvocation(MethodInvocation method, ExecutionContext ctx) {
-                // make sure we find the right method and the left part is something like "SomeClass.class"
                 if (ISINSTANCE_MATCHER.matches(method) && isObjectClass(method.getSelect())) {
-                    // for code like "A.class.isInstance(a)", select is "String.class", name is "isInstance", argument is "a"
                     Expression objectExpression = method.getArguments().get(0);
                     FieldAccess fieldAccessPart = (FieldAccess) method.getSelect();
-                    // upcast to type J, so J.MethodInvocation can be replaced by J.InstanceOf
                     JavaCoordinates coordinates = method.getCoordinates().replace();
                     J updated = JavaTemplate.apply("#{any()} instanceof Object", getCursor(), coordinates, objectExpression);
                     updated = mapInstanceOf(updated,
@@ -90,7 +86,6 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
             private boolean isObjectClass(@Nullable Expression expression) {
                 if (expression instanceof J.FieldAccess) {
                     J.FieldAccess fieldAccess = (J.FieldAccess) expression;
-                    // the target is a simple or a fully qualified type name
                     return "class".equals(fieldAccess.getName().getSimpleName()) &&
                             fieldAccess.getTarget().getType() instanceof JavaType.Class;
                 }

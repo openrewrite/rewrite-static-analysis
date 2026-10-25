@@ -77,7 +77,6 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
             }
 
             private J.VariableDeclarations maybeAddTypeExpression(J.VariableDeclarations multiVariable) {
-                // if the type expression is null, it implies the types on the lambda arguments are implicit.
                 if (multiVariable.getTypeExpression() == null) {
                     J.VariableDeclarations.NamedVariable nv = multiVariable.getVariables().get(0);
                     TypeTree typeExpression = buildTypeTree(nv.getType(), Space.EMPTY, newRecursionGuard());
@@ -145,8 +144,6 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                     if (!fq.getTypeParameters().isEmpty()) {
                         JContainer<Expression> typeParameters = buildTypeParameters(fq.getTypeParameters(), recursionGuard);
                         if (typeParameters == null) {
-                            //If there is a problem resolving one of the type parameters, then do not return a type
-                            //expression for the fully-qualified type.
                             return null;
                         }
                         return new J.ParameterizedType(
@@ -164,19 +161,16 @@ public class ExplicitLambdaArgumentTypes extends Recipe {
                 }
                 if (type instanceof JavaType.Array) {
                     JavaType.Array arrayType = (JavaType.Array) type;
-                    // Get the base element type
                     JavaType elemType = arrayType.getElemType();
                     while (elemType instanceof JavaType.Array) {
                         elemType = ((JavaType.Array) elemType).getElemType();
                     }
 
-                    // Build the base type expression
                     TypeTree result = buildTypeTree(elemType, space, recursionGuard);
                     if (result == null) {
                         return null;
                     }
 
-                    // Count dimensions and build array type
                     JavaType currentType = type;
                     while (currentType instanceof JavaType.Array) {
                         result = new J.ArrayType(

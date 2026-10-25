@@ -50,7 +50,6 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
                 J.VariableDeclarations varDecls = super.visitVariableDeclarations(multiVariable, ctx);
                 List<JLeftPadded<Space>> dimensions = getCursor().pollMessage("VAR_DIMENSIONS");
                 if (dimensions != null && varDecls.getTypeExpression() != null) {
-                    // Build array type by wrapping the type expression
                     TypeTree typeExpression = varDecls.getTypeExpression();
                     JavaType type = varDecls.getType();
                     for (JLeftPadded<Space> dim : dimensions) {

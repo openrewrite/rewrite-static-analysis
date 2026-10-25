@@ -71,10 +71,7 @@ public class StringLiteralEquality extends Recipe {
             }
 
             /**
-             * Transform a binary expression into a method invocation on String.equals, with the literal as the
-             * receiver so that a {@code null} operand cannot throw. For example,
-             * <p>
-             * {@code s == "bar"} into {@code "bar".equals(s)}
+             * Makes the literal the receiver, so that a {@code null} operand cannot throw.
              */
             private J.MethodInvocation asEqualsMethodInvocation(J.Binary binary) {
                 boolean literalFirst = isStringLiteral(binary.getLeft()) || !isStringLiteral(binary.getRight());
@@ -101,11 +98,6 @@ public class StringLiteralEquality extends Recipe {
                 );
             }
 
-            /**
-             * Wrap a method invocation within a negated unary expression. For example,
-             * <p>
-             * {@code "foo".equals("bar")} into {@code !"foo".equals("bar")}
-             */
             private J.Unary asNegatedUnary(J.MethodInvocation mi) {
                 return new J.Unary(
                         Tree.randomId(),
