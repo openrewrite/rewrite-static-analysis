@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -27,25 +28,23 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceWeekYearWithYear extends Recipe {
     private static final MethodMatcher SIMPLE_DATE_FORMAT_CONSTRUCTOR_MATCHER = new MethodMatcher("java.text.SimpleDateFormat <constructor>(..)");
     private static final MethodMatcher OF_PATTERN_MATCHER = new MethodMatcher("java.time.format.DateTimeFormatter ofPattern(..)");
 
-    @Getter
-    final String displayName = "Week Year (YYYY) should not be used for date formatting";
+    String displayName = "Week Year (YYYY) should not be used for date formatting";
 
-    @Getter
-    final String description = "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. " +
+    String description = "For most dates Week Year (YYYY) and Year (yyyy) yield the same results. " +
             "However, on the last week of December and the first week of January, Week Year could " +
             "produce unexpected results. This is a common source of off-by-one-year bugs that " +
             "typically only manifest around New Year's Eve, making them difficult to catch " +
             "during development and testing.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S3986");
+    Set<String> tags = singleton("RSPEC-S3986");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

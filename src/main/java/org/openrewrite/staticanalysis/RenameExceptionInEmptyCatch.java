@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -29,16 +30,15 @@ import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class RenameExceptionInEmptyCatch extends Recipe {
 
-    @Getter
-    final String displayName = "Rename caught exceptions in empty catch blocks to `ignored`";
+    String displayName = "Rename caught exceptions in empty catch blocks to `ignored`";
 
-    @Getter
-    final String description = "Renames caught exceptions in empty catch blocks to `ignored`. A numeric suffix is appended to `ignored` if that name is already taken.";
+    String description = "Renames caught exceptions in empty catch blocks to `ignored`. A numeric suffix is appended to `ignored` if that name is already taken.";
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -36,23 +37,21 @@ import java.util.Set;
 import static java.util.Collections.singleton;
 import static org.openrewrite.staticanalysis.JavaElementFactory.*;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceLambdaWithMethodReference extends Recipe {
 
-    @Getter
-    final String displayName = "Use method references in lambda";
+    String displayName = "Use method references in lambda";
 
-    @Getter
-    final String description = "Replaces the single statement lambdas `o -> o instanceof X`, " +
+    String description = "Replaces the single statement lambdas `o -> o instanceof X`, " +
             "`o -> (A) o`, `o -> System.out.println(o)`, `o -> o != null`, " +
             "`o -> o == null` with the equivalent method reference. Method references are often " +
             "more concise and readable than their lambda equivalents, making the code's intent " +
             "clearer at a glance.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1612");
+    Set<String> tags = singleton("RSPEC-S1612");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

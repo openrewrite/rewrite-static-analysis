@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
@@ -33,14 +34,14 @@ import java.util.*;
 import static java.util.Collections.emptyList;
 import static org.openrewrite.internal.NameCaseConvention.LOWER_CAMEL;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class RenamePrivateFieldsToCamelCase extends Recipe {
     private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok.*");
 
-    @Getter
-    final String displayName = "Reformat private field names to camelCase";
+    String displayName = "Reformat private field names to camelCase";
 
-    @Getter
-    final String description = "Reformat private field names to camelCase to comply with Java naming convention. " +
+    String description = "Reformat private field names to camelCase to comply with Java naming convention. " +
             "The recipe will not rename fields with default, protected or public access modifiers. " +
             "The recipe will not rename private constants. " +
             "The first character is set to lower case and existing capital letters are preserved. " +
@@ -51,11 +52,9 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             "Consistent naming conventions improve code readability and help developers quickly " +
             "understand the purpose and scope of fields.";
 
-    @Getter
-    final Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
+    Set<String> tags = new LinkedHashSet<>(Arrays.asList("RSPEC-S116", "RSPEC-S3008"));
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

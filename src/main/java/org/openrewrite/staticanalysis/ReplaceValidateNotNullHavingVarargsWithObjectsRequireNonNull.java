@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -33,14 +34,14 @@ import java.util.List;
 import static java.util.Arrays.asList;
 import static java.util.Collections.nCopies;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceValidateNotNullHavingVarargsWithObjectsRequireNonNull extends Recipe {
     private static final MethodMatcher VALIDATE_NOTNULL = new MethodMatcher("org.apache.commons.lang3.Validate notNull(Object, String, Object[])");
 
-    @Getter
-    final String displayName = "Replace varargs `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
+    String displayName = "Replace varargs `org.apache.commons.lang3.Validate#notNull` with `Objects#requireNonNull`";
 
-    @Getter
-    final String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`, " +
+    String description = "Replace `org.apache.commons.lang3.Validate.notNull(Object, String, Object[])` with `Objects.requireNonNull(Object, String)`, " +
             "or with `Objects.requireNonNull(Object, Supplier<String>)` to format the message lazily when format arguments are passed.";
 
     @Override

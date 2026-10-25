@@ -15,31 +15,30 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceStringBufferWithStringBuilder extends ReplaceLegacyCollection {
 
-    @Getter
-    final String displayName = "Replace `java.lang.StringBuffer` with `java.lang.StringBuilder`";
+    String displayName = "Replace `java.lang.StringBuffer` with `java.lang.StringBuilder`";
 
-    @Getter
-    final String description = "`StringBuffer` synchronizes every operation, which adds overhead in the common " +
+    String description = "`StringBuffer` synchronizes every operation, which adds overhead in the common " +
             "single-threaded case. `StringBuilder` exposes the identical API without the synchronization. This " +
             "recipe replaces a local `StringBuffer` with a `StringBuilder` when data flow analysis can prove the " +
             "`StringBuffer` never escapes its method (it is not returned, assigned to a field, or passed as an " +
             "argument), so no other thread can observe it and the synchronization is redundant. Fields and " +
             "escaping variables are left untouched.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S1149");
+    Set<String> tags = singleton("RSPEC-S1149");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     String getLegacyType() {

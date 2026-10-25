@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -34,24 +35,22 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class SimplifyArraysAsList extends Recipe {
     private static final MethodMatcher ARRAYS_AS_LIST = new MethodMatcher("java.util.Arrays asList(..)");
 
-    @Getter
-    final String displayName = "Simplify `Arrays.asList(..)` with varargs";
+    String displayName = "Simplify `Arrays.asList(..)` with varargs";
 
-    @Getter
-    final String description = "Simplifies `Arrays.asList()` method calls that use explicit array creation " +
+    String description = "Simplifies `Arrays.asList()` method calls that use explicit array creation " +
             "to use varargs instead. For example, " +
             "`Arrays.asList(new String[]{\"a\", \"b\", \"c\"})` becomes `Arrays.asList(\"a\", \"b\", \"c\")`. " +
             "Explicitly constructing an array to pass to a varargs parameter adds visual clutter " +
             "without changing behavior, since the compiler generates the array automatically.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S3878");
+    Set<String> tags = singleton("RSPEC-S3878");
 
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
+    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(2);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

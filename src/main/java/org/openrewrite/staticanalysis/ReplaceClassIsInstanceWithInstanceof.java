@@ -15,7 +15,8 @@
  */
 package org.openrewrite.staticanalysis;
 
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -37,21 +38,20 @@ import java.util.function.Function;
 
 import static java.util.Collections.singleton;
 
+@EqualsAndHashCode(callSuper = false)
+@Value
 public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     private static final MethodMatcher ISINSTANCE_MATCHER = new MethodMatcher("java.lang.Class isInstance(..)");
 
-    @Getter
-    final String displayName = "Replace `A.class.isInstance(a)` with `a instanceof A`";
+    String displayName = "Replace `A.class.isInstance(a)` with `a instanceof A`";
 
-    @Getter
-    final String description = "There should be no `A.class.isInstance(a)`, it should be replaced by " +
+    String description = "There should be no `A.class.isInstance(a)`, it should be replaced by " +
             "`a instanceof A`. Using `instanceof` enables the compiler to catch type " +
             "incompatibilities at compile time rather than silently passing at runtime, " +
             "which helps detect dead code early.";
 
-    @Getter
-    final Set<String> tags = singleton("RSPEC-S6202");
+    Set<String> tags = singleton("RSPEC-S6202");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
