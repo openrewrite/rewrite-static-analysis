@@ -29,7 +29,6 @@ import org.openrewrite.java.marker.JavaVersion;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -54,9 +53,6 @@ public class TernaryOperatorsShouldNotBeNested extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S3358");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

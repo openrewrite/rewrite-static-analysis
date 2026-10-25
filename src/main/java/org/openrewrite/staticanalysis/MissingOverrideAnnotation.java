@@ -28,7 +28,6 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.groovy.GroovyFileChecker;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.Set;
 
@@ -50,8 +49,6 @@ public class MissingOverrideAnnotation extends Recipe {
                 "Additionally, when annotated, the compiler will emit an error when a signature of the overridden method does not match the superclass method.";
 
     Set<String> tags = singleton("RSPEC-S1161");
-
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -25,7 +25,6 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypedTree;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -51,9 +50,6 @@ public class RemoveToStringCallsFromArrayInstances extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2116");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Getter
     final String displayName = "Remove `toString()` calls on arrays";

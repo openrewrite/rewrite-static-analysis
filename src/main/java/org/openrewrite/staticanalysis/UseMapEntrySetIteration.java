@@ -44,7 +44,6 @@ import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.java.JavaFileChecker;
 import org.openrewrite.staticanalysis.table.MapKeySetIterations;
 
-import java.time.Duration;
 import java.util.*;
 
 import static java.util.Collections.singleton;
@@ -81,8 +80,6 @@ public class UseMapEntrySetIteration extends Recipe {
             "left alone.";
 
     Set<String> tags = singleton("RSPEC-S2864");
-
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

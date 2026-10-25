@@ -22,7 +22,6 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
@@ -42,9 +41,6 @@ public class UseJavaStyleArrayDeclarations extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1197");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

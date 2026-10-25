@@ -27,7 +27,6 @@ import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 import org.openrewrite.staticanalysis.python.PythonFileChecker;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -49,9 +48,6 @@ public class CombineSemanticallyEqualCatchBlocks extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S2147");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

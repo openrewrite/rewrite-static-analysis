@@ -32,7 +32,6 @@ import org.openrewrite.java.tree.J.MethodInvocation;
 import org.openrewrite.java.tree.JavaCoordinates;
 import org.openrewrite.java.tree.JavaType;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -53,9 +52,6 @@ public class ReplaceClassIsInstanceWithInstanceof extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S6202");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

@@ -33,7 +33,6 @@ import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 
 import javax.lang.model.SourceVersion;
-import java.time.Duration;
 import java.util.*;
 
 import static java.util.Collections.singleton;
@@ -64,8 +63,6 @@ public class MethodNameCasing extends ScanningRecipe<List<MethodNameCasing.Metho
                "quickly distinguish methods from classes or constants.";
 
     Set<String> tags = singleton("RSPEC-S100");
-
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public List<MethodNameChange> getInitialValue(ExecutionContext ctx) {

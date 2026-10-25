@@ -30,7 +30,6 @@ import org.openrewrite.java.tree.TypeTree;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.staticanalysis.csharp.CSharpFileChecker;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -50,9 +49,6 @@ public class WriteOctalValuesAsDecimal extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1314");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     private static final Pattern OCTAL_LITERAL = Pattern.compile("0[0-7_]*[0-7][lL]?");
 

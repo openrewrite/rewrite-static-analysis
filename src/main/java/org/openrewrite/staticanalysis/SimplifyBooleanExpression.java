@@ -25,7 +25,6 @@ import org.openrewrite.java.cleanup.SimplifyBooleanExpressionVisitor;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.kotlin.marker.IsNullSafe;
 
-import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -43,9 +42,6 @@ public class SimplifyBooleanExpression extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1125");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

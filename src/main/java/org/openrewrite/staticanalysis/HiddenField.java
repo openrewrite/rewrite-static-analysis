@@ -21,7 +21,6 @@ import org.openrewrite.Incubating;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 
-import java.time.Duration;
 import java.util.Set;
 
 import static java.util.Collections.singleton;
@@ -39,9 +38,6 @@ public class HiddenField extends Recipe {
 
     @Getter
     final Set<String> tags = singleton("RSPEC-S1117");
-
-    @Getter
-    final Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

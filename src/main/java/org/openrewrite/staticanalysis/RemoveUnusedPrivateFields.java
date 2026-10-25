@@ -27,7 +27,6 @@ import org.openrewrite.java.NoMissingTypes;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -45,8 +44,6 @@ public class RemoveUnusedPrivateFields extends Recipe {
             "memory footprint, and can mislead developers into thinking they are part of the class's behavior.";
 
     Set<String> tags = singleton("RSPEC-S1068");
-
-    Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
