@@ -1299,6 +1299,36 @@ class RemoveUnusedLocalVariablesTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepFieldWriteShadowedByUnusedLocalVariable() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              class Test {
+                  int count;
+
+                  void method() {
+                      count = 5;
+                      count++;
+                      int count = 0;
+                  }
+              }
+              """,
+            """
+              class Test {
+                  int count;
+
+                  void method() {
+                      count = 5;
+                      count++;
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class Kotlin {
 
