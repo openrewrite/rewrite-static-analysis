@@ -73,7 +73,6 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (matchingAnnotation.get() != null) {
-                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(at.getTypeExpression(), matchingAnnotation.get());
                         at = at.withTypeExpression(te);
                         // auto format should handle this, but evidently doesn't
@@ -100,7 +99,6 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (mv.getTypeExpression() != null && matchingAnnotation.get() != null) {
-                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(mv.getTypeExpression(), matchingAnnotation.get());
                         mv = mv.withTypeExpression(te);
                         // auto format should handle this, but evidently doesn't
@@ -127,7 +125,6 @@ public class MoveFieldAnnotationToType extends Recipe {
                         return a;
                     }));
                     if (md.getReturnTypeExpression() != null && matchingAnnotation.get() != null) {
-                        //noinspection DataFlowIssue
                         TypeTree te = annotateInnerClass(md.getReturnTypeExpression(), matchingAnnotation.get());
                         md = md.withReturnTypeExpression(te);
                         // auto format should handle this, but evidently doesn't

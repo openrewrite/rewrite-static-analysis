@@ -45,7 +45,6 @@ public class ExplicitInitializationVisitor<P> extends JavaIsoVisitor<P> {
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(ExplicitInitializationStyle.class, (SourceFile)tree, Checkstyle::explicitInitialization);
         }

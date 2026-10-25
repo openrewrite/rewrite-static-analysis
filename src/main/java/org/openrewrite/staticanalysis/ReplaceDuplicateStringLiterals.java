@@ -74,7 +74,6 @@ public class ReplaceDuplicateStringLiterals extends Recipe {
         };
         return Preconditions.check(inIncludedSourceSet, new JavaVisitor<ExecutionContext>() {
             @Override
-            @SuppressWarnings("UnusedAssignment")
             public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 if (classDecl.getType() == null) {
                     return classDecl;

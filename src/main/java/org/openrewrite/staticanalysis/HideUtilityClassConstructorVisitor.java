@@ -62,14 +62,11 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
     private static final EnumSet<J.ClassDeclaration.Kind.Type> EXCLUDE_CLASS_TYPES =
             EnumSet.of(J.ClassDeclaration.Kind.Type.Interface, J.ClassDeclaration.Kind.Type.Record);
 
-    @SuppressWarnings("NotNullFieldNotInitialized")
     private UtilityClassMatcher utilityClassMatcher;
-    @SuppressWarnings("NotNullFieldNotInitialized")
     private HideUtilityClassConstructorStyle style;
 
     @Override
     public @Nullable J visit(@Nullable Tree tree, P p) {
-        //noinspection ConstantValue
         if (style == null && tree instanceof SourceFile) {
             style = Style.from(HideUtilityClassConstructorStyle.class, (SourceFile)tree, Checkstyle::hideUtilityClassConstructorStyle);
             utilityClassMatcher = new UtilityClassMatcher(style.getIgnoreIfAnnotatedBy());
@@ -78,7 +75,6 @@ public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
     }
 
     @Override
-    @SuppressWarnings("ConstantConditions")
     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, P p) {
         J.ClassDeclaration c = super.visitClassDeclaration(classDecl, p);
         if (!EXCLUDE_CLASS_TYPES.contains(c.getKind()) && !c.hasModifier(J.Modifier.Type.Abstract) && utilityClassMatcher.isRefactorableUtilityClass(getCursor())) {

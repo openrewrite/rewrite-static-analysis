@@ -79,7 +79,6 @@ public class ReplaceTextBlockWithString extends Recipe {
                     }
                     // Format the resulting expression
                     Expression j = ChainStringBuilderAppendCalls.additiveExpression(literals);
-                    //noinspection DataFlowIssue
                     return j == null ? null : autoFormat(j, ctx);
                 }
                 return literal;

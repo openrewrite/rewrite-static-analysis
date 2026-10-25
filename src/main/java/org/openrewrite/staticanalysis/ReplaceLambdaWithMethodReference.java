@@ -108,7 +108,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                     JavaType.Class classType = getClassType(originalType);
                     if (classType != null) {
                         J.FieldAccess classLiteral = newClassLiteral(classType, originalType, j);
-                        //noinspection DataFlowIssue
                         JavaType.FullyQualified rawClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                         Optional<JavaType.Method> isInstanceMethod = rawClassType.getMethods().stream().filter(m -> "isInstance".equals(m.getName())).findFirst();
                         if (isInstanceMethod.isPresent()) {
@@ -133,7 +132,6 @@ public class ReplaceLambdaWithMethodReference extends Recipe {
                         JavaType.Class classType = getClassType(((Expression) tree).getType());
                         if (classType != null) {
                             J.FieldAccess classLiteral = newClassLiteral(classType, ((Expression) tree).getType(), tree);
-                            //noinspection DataFlowIssue
                             JavaType.FullyQualified fullClassType = ((JavaType.Parameterized) classLiteral.getType()).getType();
                             Optional<JavaType.Method> castMethod = fullClassType.getMethods().stream().filter(m -> "cast".equals(m.getName())).findFirst();
                             if (castMethod.isPresent()) {

@@ -93,7 +93,6 @@ public class RenamePrivateFieldsToCamelCase extends Recipe {
             }
 
             @Override
-            @SuppressWarnings("all")
             public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, ExecutionContext ctx) {
                 Cursor parentScope = getCursorToParentScope(getCursor());
 

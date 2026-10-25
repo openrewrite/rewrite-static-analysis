@@ -49,7 +49,6 @@ public class RemoveSelfAssignment extends Recipe {
             public J.@Nullable Assignment visitAssignment(J.Assignment assignment, ExecutionContext ctx) {
                 J.Assignment a = (J.Assignment) super.visitAssignment(assignment, ctx);
                 if (SemanticallyEqual.areEqual(a.getVariable(), a.getAssignment())) {
-                    //noinspection DataFlowIssue
                     return null;
                 }
                 return a;

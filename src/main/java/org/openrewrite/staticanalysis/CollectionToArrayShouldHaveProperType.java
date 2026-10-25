@@ -93,7 +93,6 @@ public class CollectionToArrayShouldHaveProperType extends Recipe {
                                         maybeAddImport(fqn);
 
                                         // Return the result wrapped in parentheses to preserve the original structure
-                                        //noinspection unchecked
                                         return visitedParentheses.withTree((T) result);
                                     }
                                 }
