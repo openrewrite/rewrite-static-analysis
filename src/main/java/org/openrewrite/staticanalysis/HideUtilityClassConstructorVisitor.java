@@ -33,30 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 
-/**
- * HideUtilityClassConstructorVisitor will perform the following operations on a Utility Class:
- * <ul>
- *     <li>Change any Public constructors to Private</li>
- *     <li>Change any Package-Private ("Default", no modifiers) to Private</li>
- *     <li>If the Implicit Default Constructor is used (as in, no explicit constructors defined), add a Private constructor</li>
- * </ul>
- * <p>
- * HideUtilityClassConstructorVisitor will NOT perform operations on a Utility Class under these circumstances:
- * <ul>
- *     <li>Will NOT change any Protected constructors to Private</li>
- *     <li>
- *         HideUtilityClassConstructorVisitor will ignore classes with a Main method signature ({@code public static void main(String[] args)}).
- *         This prevents HideUtilityClassConstructorVisitor from generating a Private constructor on classes which only
- *         serve as application entry points, though they are technically a Utility Class.
- *     </li>
- *     <li>
- *         HideUtilityClassConstructorVisitor can be configured with a list of fully-qualified "ignorable Annotations" strings.
- *         These are used with {@link AnnotationMatcher} to check for the presence of annotations on the class.
- *         HideUtilityClassConstructorVisitor will ignore classes which have any of the configured Annotations.
- *         This is valuable for situations such as Lombok Utility classes, which generate Private constructors in bytecode.
- *     </li>
- * </ul>
- */
 public class HideUtilityClassConstructorVisitor<P> extends JavaIsoVisitor<P> {
 
     private static final EnumSet<J.ClassDeclaration.Kind.Type> EXCLUDE_CLASS_TYPES =

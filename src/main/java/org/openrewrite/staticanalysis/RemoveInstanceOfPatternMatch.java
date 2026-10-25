@@ -33,10 +33,6 @@ import java.util.*;
 
 import static java.util.Collections.singletonList;
 
-/**
- * The recipe that replaces `instanceof` pattern matching by a simple variable
- * declarations.
- */
 public class RemoveInstanceOfPatternMatch extends Recipe {
 
     @Getter

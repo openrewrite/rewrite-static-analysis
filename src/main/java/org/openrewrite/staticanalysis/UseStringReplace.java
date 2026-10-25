@@ -35,16 +35,6 @@ import java.util.regex.Pattern;
 
 import static java.util.Collections.singleton;
 
-/**
- * Recipe to use {@link String#replace(CharSequence, CharSequence)} when the fist argument is not a regular expression.
- * <p>
- * The underlying implementation of {@link String#replaceAll(String, String)} calls the {@link Pattern#compile(String)}
- * method each time it is called even if the first argument is not a regular expression. This has a significant
- * performance cost and therefore should be used with care.
- *
- * @see <a href="https://rules.sonarsource.com/java/RSPEC-S5361"></a>
- * @see <a href="https://docs.oracle.com/javase/tutorial/essential/regex/index.html"></a>
- */
 public class UseStringReplace extends Recipe {
 
     private static final MethodMatcher REPLACE_ALL = new MethodMatcher("java.lang.String replaceAll(..)");

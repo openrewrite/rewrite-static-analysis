@@ -39,9 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.emptyList;
 
-/**
- * Finalize method arguments v2
- */
 public class FinalizeMethodArguments extends Recipe {
 
     @Getter
